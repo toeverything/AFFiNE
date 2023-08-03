@@ -19,6 +19,26 @@
       "types": "./dist/src/preload/*.d.ts",
       "import": "./dist/preload/*.js",
       "require": "./dist/preload/*.cjs"
+    },
+    "./atom": {
+      "type": "./dist/src/atom.d.ts",
+      "import": "./dist/atom.js",
+      "require": "./dist/atom.cjs"
+    },
+    "./type": {
+      "type": "./dist/src/type.d.ts",
+      "import": "./dist/type.js",
+      "require": "./dist/type.cjs"
+    },
+    "./__internal__/workspace": {
+      "type": "./dist/src/__internal__/workspace.d.ts",
+      "import": "./dist/__internal__/workspace.js",
+      "require": "./dist/__internal__/workspace.cjs"
+    },
+    "./__internal__/react": {
+      "type": "./dist/src/__internal__/react.d.ts",
+      "import": "./dist/__internal__/react.js",
+      "require": "./dist/__internal__/react.cjs"
     }
   },
   "files": [
@@ -27,6 +47,17 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@affine/sdk": "workspace:*",
+    "@blocksuite/blocks": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/editor": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/global": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/lit": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/store": "0.0.0-20230802200139-381599c0-nightly",
+    "jotai": "^2.2.2",
+    "react": "^18.2.0",
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "async-call-rpc": "^6.3.1",

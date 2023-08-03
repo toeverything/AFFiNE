@@ -7,7 +7,7 @@ import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
-import * as Atom from '@toeverything/plugin-infra/atom';
+import * as Atom from '@toeverything/infra/atom';
 import {
   contentLayoutAtom,
   currentPageAtom,
@@ -17,7 +17,7 @@ import {
   rootStore,
   settingItemsAtom,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import * as Jotai from 'jotai/index';
 import { Provider } from 'jotai/react';
 import * as JotaiUtils from 'jotai/utils';

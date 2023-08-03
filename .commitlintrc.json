@@ -24,7 +24,6 @@
         "debug",
         "storage",
         "infra",
-        "plugin-infra",
         "plugin-cli",
         "sdk"
       ]

@@ -17,7 +17,7 @@
   "exclude": ["node_modules", "out", "dist", "**/__tests__/**/*"],
   "references": [
     {
-      "path": "../../packages/plugin-infra"
+      "path": "../../packages/infra"
     },
     {
       "path": "../../packages/native"

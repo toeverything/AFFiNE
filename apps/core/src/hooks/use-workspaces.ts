@@ -7,7 +7,7 @@ import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { assertEquals } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
-import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
+import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

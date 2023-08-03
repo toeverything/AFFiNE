@@ -41,7 +41,6 @@
     "@electron-forge/shared-types": "^6.2.1",
     "@electron/remote": "2.0.10",
     "@reforged/maker-appimage": "^3.3.1",
-    "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.2",
     "cross-env": "7.0.3",
@@ -60,7 +59,7 @@
     "zx": "^7.2.3"
   },
   "dependencies": {
-    "@toeverything/plugin-infra": "workspace:*",
+    "@toeverything/infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
     "electron-updater": "^6.0.0",
     "link-preview-js": "^3.0.4",
