@@ -60,7 +60,7 @@ test('database migration', async ({ page, context }) => {
     timeout: 10000,
   });
   await page.getByTestId('new-page-button').click();
-  const title = page.locator('.affine-default-page-block-title');
+  const title = page.locator('.affine-doc-page-block-title');
   await title.type('hello');
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.press('/', { delay: 50 });
