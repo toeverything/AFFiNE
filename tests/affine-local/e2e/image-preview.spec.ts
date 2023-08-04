@@ -577,7 +577,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   const locator = page.getByTestId('image-preview-modal');
   await page.waitForTimeout(500);
   await locator.getByTestId('previous-image-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const previousImageTooltip = await element.getByText('Previous').count();
@@ -585,7 +585,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('next-image-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const nextImageTooltip = await element.getByText('Next').count();
@@ -593,7 +593,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('fit-to-screen-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const fitToScreenToolTip = await element.getByText('Fit to Screen').count();
@@ -601,7 +601,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('zoom-out-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const zoomOutToolTip = await element.getByText('Zoom out').count();
@@ -609,7 +609,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('reset-scale-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const resetScaleTooltip = await element.getByText('Reset Scale').count();
@@ -617,7 +617,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('zoom-in-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const zoominToolTip = await element.getByText('Zoom in').count();
@@ -625,7 +625,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('download-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(2000);
   {
     const element = await page.getByRole('tooltip');
     const downloadTooltip = await element.getByText('Download').count();
@@ -633,7 +633,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('copy-to-clipboard-button').hover();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const downloadTooltip = await element
