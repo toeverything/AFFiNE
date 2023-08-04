@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "lib",
     "typeRoots": ["../../node_modules", "../../node_modules/@types"],
-    "types": ["webpack-env", "ses"]
+    "types": ["webpack-env", "ses", "affine__env"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"],

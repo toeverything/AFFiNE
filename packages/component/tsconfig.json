@@ -5,8 +5,7 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "outDir": "lib",
-    "types": ["affine__env"]
+    "outDir": "lib"
   },
   "references": [
     {
