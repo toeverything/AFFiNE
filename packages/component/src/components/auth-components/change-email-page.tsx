@@ -5,17 +5,13 @@ import { useCallback, useState } from 'react';
 import { Button } from '../../ui/button';
 import { AuthInput } from './auth-input';
 import { AuthPageContainer } from './auth-page-container';
+import { emailRegex } from './utils';
 type User = {
   id: string;
   name: string;
   email: string;
   image: string;
 };
-function validateEmail(email: string) {
-  return new RegExp(
-    /^(?:(?:[^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(?:(?:\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|((?:[a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  ).test(email);
-}
 
 export const ChangeEmailPage: FC<{
   user: User;
@@ -28,7 +24,7 @@ export const ChangeEmailPage: FC<{
   const [isValidEmail, setIsValidEmail] = useState(true);
   const [loading, setLoading] = useState(false);
   const onContinue = useCallback(async () => {
-    if (!validateEmail(email)) {
+    if (!emailRegex.test(email)) {
       setIsValidEmail(false);
       return;
     }
