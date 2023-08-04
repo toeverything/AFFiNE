@@ -1,5 +1,4 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { FC } from 'react';
 
 import {
   ExportToHtmlMenuItem,
@@ -8,9 +7,9 @@ import {
   ExportToPngMenuItem,
 } from '../page-list/operation-menu-items/export';
 import { actionsStyle, descriptionStyle, menuItemStyle } from './index.css';
-import type { ShareMenuProps } from './share-menu';
+// import type { ShareMenuProps } from './share-menu';
 
-export const Export: FC<ShareMenuProps> = () => {
+export const Export = () => {
   const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>

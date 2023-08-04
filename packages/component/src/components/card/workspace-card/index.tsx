@@ -10,7 +10,6 @@ import {
 } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
-import type { FC } from 'react';
 import { useCallback } from 'react';
 
 import { WorkspaceAvatar } from '../../workspace-avatar';
@@ -21,9 +20,6 @@ import {
   StyleWorkspaceTitle,
 } from './styles';
 
-export type WorkspaceTypeProps = {
-  flavour: WorkspaceFlavour;
-};
 const JoinedWorkspaceIcon = () => {
   return <DefaultJoinedWorkspaceIcon style={{ color: '#FF646B' }} />;
 };
@@ -39,7 +35,11 @@ const LocalDataIcon = () => {
   return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
 };
 
-const WorkspaceType: FC<WorkspaceTypeProps> = ({ flavour }) => {
+export interface WorkspaceTypeProps {
+  flavour: WorkspaceFlavour;
+}
+
+const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
   const t = useAFFiNEI18N();
   // fixme: cloud regression
   const isOwner = true;
@@ -66,19 +66,19 @@ const WorkspaceType: FC<WorkspaceTypeProps> = ({ flavour }) => {
   );
 };
 
-export type WorkspaceCardProps = {
+export interface WorkspaceCardProps {
   currentWorkspaceId: string | null;
   meta: RootWorkspaceMetadata;
   onClick: (workspaceId: string) => void;
   onSettingClick: (workspaceId: string) => void;
-};
+}
 
-export const WorkspaceCard: FC<WorkspaceCardProps> = ({
+export const WorkspaceCard = ({
   onClick,
   onSettingClick,
   currentWorkspaceId,
   meta,
-}) => {
+}: WorkspaceCardProps) => {
   const t = useAFFiNEI18N();
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [name] = useBlockSuiteWorkspaceName(workspace);

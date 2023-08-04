@@ -20,7 +20,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-66-orange.svg?style=flat-square
+[all-contributors-badge]: https://img.shields.io/badge/all_contributors-97-orange.svg?style=flat-square
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 

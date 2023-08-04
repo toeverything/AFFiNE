@@ -106,14 +106,15 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
     cleanup: () => {
       // todo
     },
-    sync: async () => {
+    sync: () => {
       logger.info('connect sqlite download provider', id);
-      try {
-        await syncUpdates(rootDoc);
-        _resolve();
-      } catch (error) {
-        _reject(error);
-      }
+      syncUpdates(rootDoc)
+        .then(() => {
+          _resolve();
+        })
+        .catch(error => {
+          _reject(error);
+        });
     },
   };
 };

@@ -1,7 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
-import type { FC } from 'react';
 import { useState } from 'react';
 
 import { Modal, ModalCloseButton, ModalWrapper } from '../..';
@@ -26,12 +25,12 @@ import {
   videoStyle,
 } from './index.css';
 
-type TourModalProps = {
+export interface TourModalProps {
   open: boolean;
   onClose: () => void;
-};
+}
 
-export const TourModal: FC<TourModalProps> = ({ open, onClose }) => {
+export const TourModal = ({ open, onClose }: TourModalProps) => {
   const t = useAFFiNEI18N();
   const [step, setStep] = useState(-1);
   const handleClose = () => {

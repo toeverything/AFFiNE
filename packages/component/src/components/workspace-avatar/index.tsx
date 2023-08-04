@@ -3,29 +3,26 @@ import * as RadixAvatar from '@radix-ui/react-avatar';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
-import type React from 'react';
 
 import { DefaultAvatar } from './default-avatar';
 import { avatarImageStyle, avatarStyle } from './index.css';
 
-export type WorkspaceAvatarProps = {
+export interface WorkspaceAvatarProps {
   size?: number;
   workspace: Workspace | null;
   className?: string;
-};
+}
 
-export type BlockSuiteWorkspaceAvatar = Omit<
-  WorkspaceAvatarProps,
-  'workspace'
-> & {
+export interface BlockSuiteWorkspaceAvatar
+  extends Omit<WorkspaceAvatarProps, 'workspace'> {
   workspace: Workspace;
-};
+}
 
-export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
+export const BlockSuiteWorkspaceAvatar = ({
   size,
   workspace,
   ...props
-}) => {
+}: BlockSuiteWorkspaceAvatar) => {
   const [avatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   const [name] = useBlockSuiteWorkspaceName(workspace);
 
@@ -46,11 +43,11 @@ export const BlockSuiteWorkspaceAvatar: React.FC<BlockSuiteWorkspaceAvatar> = ({
   );
 };
 
-export const WorkspaceAvatar: React.FC<WorkspaceAvatarProps> = ({
+export const WorkspaceAvatar = ({
   size = 20,
   workspace,
   ...props
-}) => {
+}: WorkspaceAvatarProps) => {
   if (workspace) {
     return (
       <BlockSuiteWorkspaceAvatar {...props} size={size} workspace={workspace} />

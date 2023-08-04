@@ -63,10 +63,14 @@ export const CollectionBar = (props: CollectionBarProps) => {
           : t['com.affine.collection-bar.action.tooltip.pin'](),
         className: styles.pin,
         click: () => {
-          return setting.updateCollection({
-            ...collection,
-            pinned: !collection.pinned,
-          });
+          setting
+            .updateCollection({
+              ...collection,
+              pinned: !collection.pinned,
+            })
+            .catch(err => {
+              console.error(err);
+            });
         },
       },
       {
@@ -102,6 +106,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
             init={collection}
             open={open}
             onClose={onClose}
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
             onConfirm={setting.updateCollection}
           ></EditCollectionModel>
           <ViewLayersIcon
