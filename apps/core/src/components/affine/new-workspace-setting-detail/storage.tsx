@@ -55,7 +55,6 @@ export const StoragePanel: FC<{
         if (!result?.error && !result?.canceled) {
           toast(t['Move folder success']());
         } else if (result?.error) {
-          // @ts-expect-error: result.error is dynamic
           toast(t[result.error]());
         }
       })
