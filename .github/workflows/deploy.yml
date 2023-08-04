@@ -32,7 +32,7 @@ jobs:
   build-server:
     name: Build Server
     runs-on: ubuntu-latest
-    environment: development
+    environment: production
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -50,7 +50,7 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-    environment: development
+    environment: production
 
     steps:
       - uses: actions/checkout@v3
@@ -93,6 +93,7 @@ jobs:
     if: github.base_ref == 'master'
     name: Build Docker
     runs-on: ubuntu-latest
+    environment: production
     needs:
       - build-server
       - build-core
@@ -167,6 +168,7 @@ jobs:
 
   deploy:
     name: Deploy to cluster
+    environment: production
     permissions:
       contents: 'write'
       id-token: 'write'
