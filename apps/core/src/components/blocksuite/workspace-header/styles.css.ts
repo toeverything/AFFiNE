@@ -88,7 +88,7 @@ export const title = style({
   },
 } as ComplexStyleRule);
 export const pageTitle = style({
-  width: '600px',
+  maxWidth: '600px',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -96,13 +96,13 @@ export const pageTitle = style({
   cursor: 'pointer',
   '@container': {
     [`${headerVanillaContainer} (max-width: 1920px)`]: {
-      width: '800px',
+      maxWidth: '800px',
     },
     [`${headerVanillaContainer} (max-width: 1300px)`]: {
-      width: '400px',
+      maxWidth: '400px',
     },
     [`${headerVanillaContainer} (max-width: 768px)`]: {
-      width: '250px',
+      maxWidth: '220px',
     },
   },
 });
@@ -155,16 +155,12 @@ export const headerRightSide = style({
       height: 'auto',
       right: '0',
       bottom: '8px',
+      marginRight: '18px',
     },
   },
 });
 export const headerRightSideWindow = style({
-  marginRight: '130px',
-  '@container': {
-    [`${headerVanillaContainer} (max-width: 900px)`]: {
-      marginRight: '18px',
-    },
-  },
+  marginRight: '140px',
 });
 
 export const browserWarning = style({
@@ -280,24 +276,22 @@ export const windowAppControl = style({
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '42px',
-  height: 'calc(100% - 10px)',
-  paddingTop: '10px',
+  width: '51px',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '0',
   selectors: {
     '&[data-type="close"]': {
       width: '56px',
-      paddingRight: '14px',
-      marginRight: '-14px',
+      paddingRight: '5px',
+      marginRight: '-12px',
     },
     '&[data-type="close"]:hover': {
-      background: 'var(--affine-error-color)',
-      color: '#FFFFFF',
+      background: 'var(--affine-windows-close-button)',
+      color: 'var(--affine-pure-white)',
     },
     '&:hover': {
-      background: 'var(--affine-background-tertiary-color)',
+      background: 'var(--affine-hover-color)',
     },
   },
   '@container': {

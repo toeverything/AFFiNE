@@ -199,7 +199,6 @@ export const Header = forwardRef<
               [styles.headerLeftSideOpen]: open,
             })}
           >
-            {' '}
             {props.leftSlot}
           </div>
         </div>
