@@ -39,6 +39,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![React-version-icon]](https://reactjs.org/)
 [![blocksuite-icon]](https://github.com/toeverything/blocksuite)
 [![Rust-version-icon]](https://www.rust-lang.org/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_shield)
 
 </div>
 
@@ -205,3 +206,5 @@ See [LICENSE] for details.
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
 [react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
 [blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_large)
