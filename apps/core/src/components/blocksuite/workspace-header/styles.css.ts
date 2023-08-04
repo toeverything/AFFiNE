@@ -61,6 +61,13 @@ export const titleContainer = style({
   alignItems: 'center',
   alignContent: 'unset',
   fontSize: 'var(--affine-font-base)',
+  ['WebkitAppRegion' as string]: 'no-drag',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      alignItems: 'start',
+      paddingTop: '2px',
+    },
+  },
 });
 
 export const title = style({
@@ -80,9 +87,26 @@ export const title = style({
     },
   },
 } as ComplexStyleRule);
-
+export const pageTitle = style({
+  width: '600px',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  transition: 'width .15s',
+  cursor: 'pointer',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 1920px)`]: {
+      width: '800px',
+    },
+    [`${headerVanillaContainer} (max-width: 1300px)`]: {
+      width: '400px',
+    },
+    [`${headerVanillaContainer} (max-width: 768px)`]: {
+      width: '250px',
+    },
+  },
+});
 export const titleWrapper = style({
-  height: '100%',
   position: 'relative',
   display: 'flex',
   justifyContent: 'center',
@@ -91,6 +115,30 @@ export const titleWrapper = style({
 export const headerLeftSide = style({
   display: 'flex',
   alignItems: 'center',
+  transition: 'all .15s',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      height: '68px',
+    },
+  },
+});
+export const headerLeftSideItem = style({
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      position: 'absolute',
+      left: '0',
+      bottom: '8px',
+    },
+  },
+});
+export const headerLeftSideOpen = style({
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      marginLeft: '20px',
+    },
+  },
 });
 export const headerRightSide = style({
   height: '100%',
@@ -100,10 +148,21 @@ export const headerRightSide = style({
   zIndex: 1,
   marginLeft: '20px',
   justifyContent: 'flex-end',
+  transition: 'all .15s',
   '@container': {
     [`${headerVanillaContainer} (max-width: 900px)`]: {
-      flexDirection: 'column-reverse',
-      alignItems: 'flex-end',
+      position: 'absolute',
+      height: 'auto',
+      right: '0',
+      bottom: '8px',
+    },
+  },
+});
+export const headerRightSideWindow = style({
+  marginRight: '130px',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      marginRight: '18px',
     },
   },
 });
@@ -137,22 +196,12 @@ export const closeButton = style({
 });
 
 export const switchWrapper = style({
-  position: 'absolute',
-  right: '100%',
-  top: 0,
-  bottom: 0,
-  margin: 'auto',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
 });
 
 export const searchArrowWrapper = style({
-  position: 'absolute',
-  left: 'calc(100% + 4px)',
-  top: 0,
-  bottom: 0,
-  margin: 'auto',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -171,10 +220,11 @@ export const allPageListTitleWrapper = style({
   display: 'flex',
   alignItems: 'center',
   width: '100%',
+  height: '100%',
   '@container': {
     [`${headerVanillaContainer} (max-width: 900px)`]: {
-      alignItems: 'start',
-      height: '100%',
+      alignItems: 'flex-start',
+      marginTop: '8px',
     },
   },
 });
@@ -222,6 +272,8 @@ export const windowAppControlsWrapper = style({
   gap: '2px',
   transform: 'translateX(8px)',
   height: '100%',
+  position: 'absolute',
+  right: '14px',
 });
 
 export const windowAppControl = style({
@@ -246,6 +298,12 @@ export const windowAppControl = style({
     },
     '&:hover': {
       background: 'var(--affine-background-tertiary-color)',
+    },
+  },
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      height: '50px',
+      paddingTop: '0',
     },
   },
 } as ComplexStyleRule);
