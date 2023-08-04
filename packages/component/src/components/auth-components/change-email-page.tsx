@@ -23,19 +23,23 @@ export const ChangeEmailPage: FC<{
   const [email, setEmail] = useState('');
   const [isValidEmail, setIsValidEmail] = useState(true);
   const [loading, setLoading] = useState(false);
-  const onContinue = useCallback(async () => {
-    if (!emailRegex.test(email)) {
-      setIsValidEmail(false);
-      return;
-    }
-    setIsValidEmail(true);
-    setLoading(true);
+  const onContinue = useCallback(
+    () =>
+      void (async () => {
+        if (!emailRegex.test(email)) {
+          setIsValidEmail(false);
+          return;
+        }
+        setIsValidEmail(true);
+        setLoading(true);
 
-    const setup = await propsOnChangeEmail(email);
+        const setup = await propsOnChangeEmail(email);
 
-    setLoading(false);
-    setHasSetUp(setup);
-  }, [email, propsOnChangeEmail]);
+        setLoading(false);
+        setHasSetUp(setup);
+      })(),
+    [email, propsOnChangeEmail]
+  );
   const onEmailChange = useCallback((value: string) => {
     setEmail(value);
   }, []);
