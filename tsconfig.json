@@ -21,7 +21,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types"],
+    "types": ["affine__env"],
+    "typeRoots": ["./node_modules/@types", "./packages/@types"],
 
     // Emit
     "declaration": true,

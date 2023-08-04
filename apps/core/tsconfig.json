@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
+    "outDir": "lib",
     "typeRoots": ["../../node_modules", "../../node_modules/@types"],
     "types": ["webpack-env", "ses"]
   },

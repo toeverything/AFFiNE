@@ -1,5 +1,14 @@
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type { Environment, Platform, RuntimeConfig } from './src/global';
+import type { Environment, Platform, RuntimeConfig } from '@affine/env/global';
+import type {
+  DBHandlerManager,
+  DebugHandlerManager,
+  DialogHandlerManager,
+  ExportHandlerManager,
+  UIHandlerManager,
+  UnwrapManagerHandlerToClientSide,
+  UpdaterHandlerManager,
+  WorkspaceHandlerManager,
+} from '@toeverything/infra';
 
 declare global {
   interface Window {
