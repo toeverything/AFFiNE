@@ -3,25 +3,8 @@ name: Deploy
 on:
   push:
     branches:
-      - master
-    paths-ignore:
-      - README.md
-      - .github/**
-      - '!.github/workflows/deploy.yml'
-      - '!.github/actions/build-rust/action.yml'
-      - '!.github/actions/setup-node/action.yml'
-      - '!.github/actions/deploy/action.yml'
-  pull_request:
-  merge_group:
-    branches:
-      - master
-    paths-ignore:
-      - README.md
-      - .github/**
-      - '!.github/workflows/deploy.yml'
-      - '!.github/actions/build-rust/action.yml'
-      - '!.github/actions/setup-node/action.yml'
-      - '!.github/actions/deploy/action.yml'
+      # change this to production when we merge to the main branch
+      - himself65/0629-login
 
 env:
   BUILD_TYPE: stable
@@ -90,7 +73,6 @@ jobs:
           if-no-files-found: error
 
   build-docker:
-    if: github.base_ref == 'master'
     name: Build Docker
     runs-on: ubuntu-latest
     environment: production
