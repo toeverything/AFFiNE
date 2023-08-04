@@ -169,5 +169,11 @@
     }
   ],
   "files": [],
-  "exclude": ["node_modules", "target", "lib", "test-results"]
+  "exclude": ["node_modules", "target", "lib", "test-results"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "Node"
+    }
+  }
 }

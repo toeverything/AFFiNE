@@ -235,6 +235,7 @@ __metadata:
     "@sentry/webpack-plugin": ^2.5.0
     "@svgr/webpack": ^8.0.1
     "@swc/core": ^1.3.71
+    "@toeverything/components": ^0.0.6
     "@types/webpack-env": ^1.18.1
     async-call-rpc: ^6.3.1
     cmdk: ^0.2.0
@@ -3403,7 +3404,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:^2.1.29":
+"@blocksuite/icons@npm:^2.1.26, @blocksuite/icons@npm:^2.1.29":
   version: 2.1.29
   resolution: "@blocksuite/icons@npm:2.1.29"
   peerDependencies:
@@ -11347,6 +11348,20 @@ __metadata:
   peerDependencies:
     "@testing-library/dom": ">=7.21.4"
   checksum: 852c48ea6db1c9471b18276617c84fec4320771e466cd58339a732ca3fd73ad35e5a43ae14f51af51a8d0a150dcf60fcaab049ef367871207bea8f92c4b8195e
+  languageName: node
+  linkType: hard
+
+"@toeverything/components@npm:^0.0.6":
+  version: 0.0.6
+  resolution: "@toeverything/components@npm:0.0.6"
+  dependencies:
+    "@blocksuite/icons": ^2.1.26
+  peerDependencies:
+    "@radix-ui/react-avatar": ^1
+    clsx: ^2
+    react: ^18
+    react-dom: ^18
+  checksum: 838bcbecda4eea29c949aa241c99f5512b7d248163156979af93cc70aff396f5ea1087c5e0ea7bee09a964e2960cd9977b065a306bf61cc04894560af6bc166a
   languageName: node
   linkType: hard
 
