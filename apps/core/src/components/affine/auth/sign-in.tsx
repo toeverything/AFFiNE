@@ -13,10 +13,11 @@ import { useCallback } from 'react';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
+const emailRegex =
+  /^(?:(?:[^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(?:(?:\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|((?:[a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
 function validateEmail(email: string) {
-  return new RegExp(
-    /^(?:(?:[^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(?:(?:\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|((?:[a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  ).test(email);
+  return emailRegex.test(email);
 }
 
 export const SignIn: FC<AuthPanelProps> = ({
