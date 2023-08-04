@@ -199,13 +199,15 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     const snapshot = await this.getSnapshot(workspaceId, guid);
     const updates = await this.getUpdates(workspaceId, guid);
 
-    if (!snapshot && !updates.length) {
-      return;
+    if (updates.length) {
+      if (snapshot) {
+        return this.mergeUpdates(guid, snapshot, ...updates);
+      } else {
+        return this.mergeUpdates(guid, ...updates);
+      }
     }
 
-    return snapshot
-      ? this.mergeUpdates(guid, snapshot, ...updates)
-      : this.mergeUpdates(guid, ...updates);
+    return snapshot;
   }
 
   /**
