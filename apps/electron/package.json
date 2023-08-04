@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.8.0-canary.8",
+  "version": "0.8.0-canary.10",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -10,6 +10,7 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
+    "start": "electron .",
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "dev:prod": "yarn node scripts/dev.mjs",
     "build": "NODE_ENV=production zx scripts/build-layers.mjs",
@@ -25,7 +26,6 @@
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
-    "@affine/maker-dmg": "workspace:*",
     "@affine/native": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230802200139-381599c0-nightly",

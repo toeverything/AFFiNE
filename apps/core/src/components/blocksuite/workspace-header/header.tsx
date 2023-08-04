@@ -8,7 +8,7 @@ import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { headerItemsAtom } from '@toeverything/infra/atom';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
@@ -19,6 +19,7 @@ import {
   useState,
 } from 'react';
 
+import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { currentModeAtom } from '../../../atoms/mode';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import DownloadClientTip from './download-tips';
@@ -154,10 +155,9 @@ export const Header = forwardRef<
   PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
 >((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
-  const [showDownloadTip, setShowDownloadTip] = useState(true);
-  // const [shouldShowGuideDownloadClientTip] = useAtom(
-  //   guideDownloadClientTipAtom
-  // );
+  const [showDownloadTip, setShowDownloadTip] = useAtom(
+    guideDownloadClientTipAtom
+  );
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
@@ -177,7 +177,10 @@ export const Header = forwardRef<
       {showDownloadTip ? (
         <DownloadClientTip
           show={showDownloadTip}
-          onClose={() => setShowDownloadTip(false)}
+          onClose={() => {
+            setShowDownloadTip(false);
+            localStorage.setItem('affine-is-dt-hide', '1');
+          }}
         />
       ) : (
         <BrowserWarning

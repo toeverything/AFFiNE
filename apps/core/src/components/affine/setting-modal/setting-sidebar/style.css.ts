@@ -4,7 +4,7 @@ export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
   background: 'var(--affine-background-secondary-color)',
-  padding: '20px 16px',
+  padding: '20px 0px',
   height: '100%',
   flexShrink: 0,
   display: 'flex',
@@ -15,14 +15,14 @@ export const sidebarTitle = style({
   fontSize: 'var(--affine-font-h-6)',
   fontWeight: '600',
   lineHeight: 'var(--affine-line-height)',
-  paddingLeft: '8px',
+  padding: '0px 16px 0px 24px',
 });
 
 export const sidebarSubtitle = style({
   fontSize: 'var(--affine-font-sm)',
   lineHeight: 'var(--affine-line-height)',
   color: 'var(--affine-text-secondary-color)',
-  paddingLeft: '8px',
+  padding: '0px 16px 0px 24px',
   marginTop: '20px',
   marginBottom: '4px',
   display: 'flex',
@@ -34,7 +34,7 @@ export const sidebarItemsWrapper = style({
   selectors: {
     '&.scroll': {
       flexGrow: 1,
-      overflowY: 'auto',
+      overflowY: 'hidden',
     },
   },
 });
@@ -42,9 +42,9 @@ export const sidebarItemsWrapper = style({
 export const sidebarSelectItem = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '0 8px',
+  margin: '0px 16px 4px 16px',
+  padding: '0px 8px',
   height: '30px',
-  marginBottom: '4px',
   fontSize: 'var(--affine-font-sm)',
   borderRadius: '8px',
   cursor: 'pointer',

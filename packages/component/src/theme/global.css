@@ -211,9 +211,6 @@ input[type='number']::-webkit-outer-spin-button {
 }
 .editor-wrapper {
   position: relative;
-  width: 100%;
-  height: 100%;
-  padding: 0 1rem;
   padding-right: 0;
 }
 
