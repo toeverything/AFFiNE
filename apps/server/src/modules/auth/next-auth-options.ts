@@ -170,6 +170,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               email: user.email,
               picture: user.avatarUrl,
               createdAt: user.createdAt.toISOString(),
+              hasPassword: Boolean(user.password),
             },
             iat: now,
             exp: now + (maxAge ?? config.auth.accessTokenExpiresIn),
@@ -190,7 +191,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         if (!token) {
           return null;
         }
-        const { name, email, id, picture } = (
+        const { name, email, id, picture, hasPassword } = (
           await jwtVerify(token, config.auth.publicKey, {
             algorithms: [Algorithm.ES256],
             iss: [config.serverId],
@@ -206,6 +207,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           picture,
           sub: id,
           id,
+          hasPassword,
         };
       },
     };
@@ -225,11 +227,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             // technically the sub should be the same as id
             // @ts-expect-error Third part library type mismatch
             session.user.id = token.sub;
-            const databaseUser = await prisma.user.findUnique({
-              where: { id: token.sub },
-            });
             // @ts-expect-error Third part library type mismatch
-            session.user.hasPassword = Boolean(databaseUser?.password);
+            session.user.hasPassword = token.hasPassword;
           }
           if (token && token.picture) {
             session.user.image = token.picture;
