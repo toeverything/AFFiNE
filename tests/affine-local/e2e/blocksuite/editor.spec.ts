@@ -3,15 +3,14 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+
 const addDatabase = async (page: Page) => {
-  await page.keyboard.press('/', { delay: 50 });
-  await page.keyboard.press('d');
-  await page.keyboard.press('a');
-  await page.keyboard.press('t');
-  await page.keyboard.press('a');
-  await page.keyboard.press('b');
-  await page.keyboard.press('a', { delay: 50 });
-  await page.keyboard.press('Enter', { delay: 50 });
+  await page.keyboard.press('/', { delay: 500 });
+  await page.keyboard.press('d', { delay: 500 });
+  await page.keyboard.press('a', { delay: 500 });
+  await page.keyboard.press('t', { delay: 500 });
+  await page.keyboard.press('a', { delay: 500 });
+  await page.getByTestId('Table View').click();
 };
 
 test('database is useable', async ({ page }) => {
