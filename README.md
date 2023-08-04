@@ -14,15 +14,6 @@
 </div>
 
 <div align="center">
-<!--
-Make New Badge Pattern badges inline
-See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
--->
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-97-orange.svg?style=flat-square
-
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![AFFiNE Web](<https://img.shields.io/badge/-Try%20It%20Online%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=affine>)](https://app.affine.pro)
 [![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
@@ -39,6 +30,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![React-version-icon]](https://reactjs.org/)
 [![blocksuite-icon]](https://github.com/toeverything/blocksuite)
 [![Rust-version-icon]](https://www.rust-lang.org/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_shield)
 
 </div>
 
@@ -191,6 +183,7 @@ See [docs/contributing/tutorial.md](./docs/contributing/tutorial.md) for details
 
 See [LICENSE] for details.
 
+[all-contributors-badge]: https://img.shields.io/github/all-contributors/toeverything/AFFiNE/master?color=orange
 [license]: ./LICENSE
 [building.md]: ./docs/BUILDING.md
 [these people]: https://twitter.com/AffineOfficial/followers
@@ -205,3 +198,5 @@ See [LICENSE] for details.
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
 [react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
 [blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_large)
