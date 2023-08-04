@@ -6,6 +6,7 @@ import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
 import {
   createIndexeddbStorage,
   Generator,
+  Schema,
   Workspace,
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
@@ -43,6 +44,10 @@ type SubdocEvent = {
 };
 
 const docUpdateCallbackWeakMap = new WeakMap<Doc, UpdateCallback>();
+
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
 
 const createMonitor = (doc: Doc) => {
   const onUpdate: UpdateCallback = (_, origin) => {
@@ -118,9 +123,8 @@ export function getOrCreateWorkspace(
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,
-  })
-    .register(AffineSchemas)
-    .register(__unstableSchemas);
+    schema,
+  });
   createMonitor(workspace.doc);
   setEditorFlags(workspace);
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);

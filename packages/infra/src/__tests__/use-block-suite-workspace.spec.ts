@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { getDefaultStore } from 'jotai/vanilla';
 import { expect, test, vi } from 'vitest';
@@ -20,6 +20,7 @@ test('useStaticBlockSuiteWorkspace', async () => {
   let connected = false;
   const connect = vi.fn(() => (connected = true));
   const workspace = new Workspace({
+    schema: new Schema(),
     id: '1',
     providerCreators: [
       () => ({
