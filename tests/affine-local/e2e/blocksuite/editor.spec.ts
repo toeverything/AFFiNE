@@ -1,6 +1,10 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  getBlockSuiteEditorTitle,
+  newPage,
+  waitEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -18,7 +22,7 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
-  const title = page.locator('.affine-default-page-block-title');
+  const title = await getBlockSuiteEditorTitle(page);
   await title.type('test title');
   await page.keyboard.press('Enter');
   expect(await title.innerText()).toBe('test title');
@@ -29,7 +33,7 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
-  const title2 = page.locator('.affine-default-page-block-title');
+  const title2 = await getBlockSuiteEditorTitle(page);
   title2.type('test title2');
   await page.waitForTimeout(500);
   expect(await title2.innerText()).toBe('test title2');
@@ -44,13 +48,13 @@ test('link page is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
-  const title = page.locator('.affine-default-page-block-title');
+  const title = await getBlockSuiteEditorTitle(page);
   await title.type('page1');
   await page.keyboard.press('Enter');
   expect(await title.innerText()).toBe('page1');
   await newPage(page);
   await waitEditorLoad(page);
-  const title2 = page.locator('.affine-default-page-block-title');
+  const title2 = await getBlockSuiteEditorTitle(page);
   await title2.type('page2');
   await page.keyboard.press('Enter');
   expect(await title2.innerText()).toBe('page2');
