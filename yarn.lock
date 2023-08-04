@@ -319,7 +319,6 @@ __metadata:
   dependencies:
     "@affine-test/kit": "workspace:*"
     "@affine/env": "workspace:*"
-    "@affine/maker-dmg": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230802200139-381599c0-nightly
@@ -456,18 +455,6 @@ __metadata:
     "@blocksuite/lit": "*"
     "@blocksuite/store": "*"
     lottie-web: "*"
-  languageName: unknown
-  linkType: soft
-
-"@affine/maker-dmg@workspace:*, @affine/maker-dmg@workspace:packages/maker-dmg":
-  version: 0.0.0-use.local
-  resolution: "@affine/maker-dmg@workspace:packages/maker-dmg"
-  dependencies:
-    "@electron-forge/maker-base": ^6.2.1
-    "@electron-forge/shared-types": ^6.2.1
-    fs-extra: ^11.1.1
-    typescript: ^5.1.6
-    vite: ^4.4.7
   languageName: unknown
   linkType: soft
 
@@ -3914,7 +3901,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/maker-base@npm:6.2.1, @electron-forge/maker-base@npm:^6.0.4, @electron-forge/maker-base@npm:^6.2.1":
+"@electron-forge/maker-base@npm:6.2.1, @electron-forge/maker-base@npm:^6.0.4":
   version: 6.2.1
   resolution: "@electron-forge/maker-base@npm:6.2.1"
   dependencies:
