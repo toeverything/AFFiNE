@@ -119,7 +119,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             if (!body.password || !password) {
               return null;
             }
-            if (!verify(body.password, password)) {
+            if (!(await verify(body.password, password))) {
               return null;
             }
             return body;

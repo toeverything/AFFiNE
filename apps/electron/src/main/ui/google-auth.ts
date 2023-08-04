@@ -34,7 +34,7 @@ export function getGoogleOauthCode() {
         logger.error('Failed to open external url', e);
         reject(e);
       });
-      const handleOpenUrl = async (_: any, url: string) => {
+      const handleOpenUrl = (_: any, url: string) => {
         const mainWindow = BrowserWindow.getAllWindows().find(
           w => !w.isDestroyed()
         );

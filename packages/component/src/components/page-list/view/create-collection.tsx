@@ -32,7 +32,7 @@ type CreateCollectionProps = {
 };
 
 type SaveCollectionButtonProps = {
-  onConfirm: (collection: Collection) => void;
+  onConfirm: (collection: Collection) => Promise<void>;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   filterList: Filter[];
@@ -49,7 +49,7 @@ export const EditCollectionModel = ({
   title,
 }: {
   init?: Collection;
-  onConfirm: (view: Collection) => void;
+  onConfirm: (view: Collection) => Promise<void>;
   open: boolean;
   onClose: () => void;
   title?: string;
@@ -57,6 +57,18 @@ export const EditCollectionModel = ({
   propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
+  const onConfirmOnCollection = useCallback(
+    (view: Collection) => {
+      onConfirm(view)
+        .then(() => {
+          onClose();
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    [onClose, onConfirm]
+  );
   return (
     <Modal open={open} onClose={onClose}>
       <ModalWrapper
@@ -75,10 +87,7 @@ export const EditCollectionModel = ({
             init={init}
             getPageInfo={getPageInfo}
             onCancel={onClose}
-            onConfirm={view => {
-              onConfirm(view);
-              onClose();
-            }}
+            onConfirm={onConfirmOnCollection}
           />
         ) : null}
       </ModalWrapper>
