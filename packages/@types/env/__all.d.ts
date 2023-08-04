@@ -32,6 +32,10 @@ declare global {
   }
 
   // eslint-disable-next-line no-var
+  var process: {
+    env: Record<string, string>;
+  };
+  // eslint-disable-next-line no-var
   var $migrationDone: boolean;
   // eslint-disable-next-line no-var
   var platform: Platform | undefined;
