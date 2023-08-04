@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.8.0-canary.9",
+  "version": "0.8.0-canary.10",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -26,7 +26,6 @@
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
-    "@affine/maker-dmg": "workspace:*",
     "@affine/native": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230802200139-381599c0-nightly",
