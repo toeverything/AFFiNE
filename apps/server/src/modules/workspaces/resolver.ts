@@ -77,7 +77,7 @@ export class WorkspaceResolver {
       return workspace.permission;
     }
 
-    const permission = this.permissionProvider.get(workspace.id, user.id);
+    const permission = await this.permissionProvider.get(workspace.id, user.id);
 
     if (!permission) {
       throw new ForbiddenException();

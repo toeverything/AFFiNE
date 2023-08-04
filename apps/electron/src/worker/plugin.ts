@@ -19,10 +19,15 @@ const mainThread = AsyncCall<{
   channel: new MessageEventChannel(parentPort),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.log = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.error = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.info = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.debug = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.warn = mainThread.log;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
