@@ -115,21 +115,26 @@ export const toast = (
 
   element.animate(fadeIn, options);
 
-  setTimeout(async () => {
+  setTimeout(() => {
     const animation = element.animate(
       // fade out
       fadeIn.reverse(),
       options
     );
-    await animation.finished;
-    element.style.maxHeight = '0';
-    element.style.margin = '0';
-    element.style.padding = '0';
-    // wait for transition
-    // ToastContainer = null;
-    element.addEventListener('transitionend', () => {
-      element.remove();
-    });
+    animation.finished
+      .then(() => {
+        element.style.maxHeight = '0';
+        element.style.margin = '0';
+        element.style.padding = '0';
+        // wait for transition
+        // ToastContainer = null;
+        element.addEventListener('transitionend', () => {
+          element.remove();
+        });
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }, duration);
   return element;
 };

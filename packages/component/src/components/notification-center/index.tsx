@@ -181,7 +181,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
 
   const onClickUndo = useCallback(() => {
     if (notification.undo) {
-      return notification.undo();
+      notification.undo().catch(err => {
+        console.error(err);
+      });
     }
     return void 0;
   }, [notification]);

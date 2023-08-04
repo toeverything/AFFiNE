@@ -226,6 +226,7 @@ const config = {
             ignoreIIFE: false,
           },
         ],
+        '@typescript-eslint/no-misused-promises': ['error'],
       },
     })),
     {
@@ -251,6 +252,7 @@ const config = {
           },
         ],
         '@typescript-eslint/no-floating-promises': 0,
+        '@typescript-eslint/no-misused-promises': 0,
       },
     },
   ],
