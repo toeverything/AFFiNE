@@ -13,7 +13,7 @@ import {
   editorItemsAtom,
   rootStore,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';

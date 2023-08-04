@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.8.0-canary.8",
+  "version": "0.8.0-canary.9",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -10,6 +10,7 @@
   "description": "AFFiNE App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
+    "start": "electron .",
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "dev:prod": "yarn node scripts/dev.mjs",
     "build": "NODE_ENV=production zx scripts/build-layers.mjs",
@@ -41,7 +42,6 @@
     "@electron-forge/shared-types": "^6.2.1",
     "@electron/remote": "2.0.10",
     "@reforged/maker-appimage": "^3.3.1",
-    "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.2",
     "cross-env": "7.0.3",
@@ -60,7 +60,7 @@
     "zx": "^7.2.3"
   },
   "dependencies": {
-    "@toeverything/plugin-infra": "workspace:*",
+    "@toeverything/infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
     "electron-deeplink": "^1.0.10",
     "electron-updater": "^6.0.0",

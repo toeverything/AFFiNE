@@ -28,5 +28,5 @@
   "dependencies": {
     "lit": "^2.7.6"
   },
-  "version": "0.8.0-canary.8"
+  "version": "0.8.0-canary.9"
 }

@@ -1,4 +1,4 @@
-import { currentPageIdAtom } from '@toeverything/plugin-infra/atom';
+import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { atom } from 'jotai/vanilla';
 
 import { pageSettingFamily } from './index';

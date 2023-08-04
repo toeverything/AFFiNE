@@ -202,9 +202,5 @@ export function setupGlobal() {
   }
   globalThis.environment = environment;
 
-  if (environment.isBrowser) {
-    globalThis.editorVersion = global.editorVersion;
-  }
-
   globalThis.$AFFINE_SETUP = true;
 }

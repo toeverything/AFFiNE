@@ -3,7 +3,6 @@
 packages=(
   "y-indexeddb"
   "infra"
-  "plugin-infra"
   "sdk"
 )
 

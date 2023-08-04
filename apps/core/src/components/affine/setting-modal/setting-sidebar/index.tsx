@@ -11,7 +11,7 @@ import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import { useAtom } from 'jotai';

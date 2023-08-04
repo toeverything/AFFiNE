@@ -1,7 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
-import { rootStore } from '@toeverything/plugin-infra/atom';
+import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
+import { rootStore } from '@toeverything/infra/atom';
 import { lazy } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';

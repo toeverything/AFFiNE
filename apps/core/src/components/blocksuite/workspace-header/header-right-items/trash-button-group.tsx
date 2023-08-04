@@ -3,7 +3,7 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { currentPageIdAtom } from '@toeverything/plugin-infra/atom';
+import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 

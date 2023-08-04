@@ -19,26 +19,28 @@ import { Button } from '../../../ui/button/button';
 import { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
 
-export const CollectionBar = ({
-  getPageInfo,
-  propertiesMeta,
-  columnsCount,
-  workspaceId,
-}: {
+interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   columnsCount: number;
   workspaceId: string;
-}) => {
+}
+
+interface CollectionBarAction {
+  icon: ReactNode;
+  click: () => void;
+  className?: string;
+  name: string;
+  tooltip: string;
+}
+
+export const CollectionBar = (props: CollectionBarProps) => {
+  const { getPageInfo, propertiesMeta, columnsCount, workspaceId } = props;
+  const t = useAFFiNEI18N();
   const setting = useCollectionManager(workspaceId);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
-  const actions: {
-    icon: ReactNode;
-    click: () => void;
-    className?: string;
-    name: string;
-  }[] = useMemo(
+  const actions = useMemo<CollectionBarAction[]>(
     () => [
       {
         icon: (
@@ -56,6 +58,9 @@ export const CollectionBar = ({
           </>
         ),
         name: 'pin',
+        tooltip: collection.pinned
+          ? t['com.affine.collection-bar.action.tooltip.unpin']()
+          : t['com.affine.collection-bar.action.tooltip.pin'](),
         className: styles.pin,
         click: () => {
           return setting.updateCollection({
@@ -67,6 +72,7 @@ export const CollectionBar = ({
       {
         icon: <FilterIcon />,
         name: 'edit',
+        tooltip: t['com.affine.collection-bar.action.tooltip.edit'](),
         click: () => {
           setOpen(true);
         },
@@ -74,6 +80,7 @@ export const CollectionBar = ({
       {
         icon: <DeleteIcon style={{ color: 'var(--affine-error-color)' }} />,
         name: 'delete',
+        tooltip: t['com.affine.collection-bar.action.tooltip.delete'](),
         click: () => {
           setting.deleteCollection(collection.id).catch(err => {
             console.error(err);
@@ -81,10 +88,10 @@ export const CollectionBar = ({
         },
       },
     ],
-    [setting, collection]
+    [collection, t, setting]
   );
   const onClose = useCallback(() => setOpen(false), []);
-  const t = useAFFiNEI18N();
+
   return !setting.isDefault ? (
     <tr style={{ userSelect: 'none' }}>
       <td>
@@ -120,14 +127,19 @@ export const CollectionBar = ({
           </Tooltip>
           {actions.map(action => {
             return (
-              <div
+              <Tooltip
                 key={action.name}
-                data-testid={`collection-bar-option-${action.name}`}
-                onClick={action.click}
-                className={clsx(styles.option, action.className)}
+                content={action.tooltip}
+                placement="top-start"
               >
-                {action.icon}
-              </div>
+                <div
+                  data-testid={`collection-bar-option-${action.name}`}
+                  onClick={action.click}
+                  className={clsx(styles.option, action.className)}
+                >
+                  {action.icon}
+                </div>
+              </Tooltip>
             );
           })}
         </div>
