@@ -35,7 +35,7 @@ const HoverAnimateController = ({
     >
       {cloneElement(children, {
         isStopped: !startAnimate,
-        speed: 5,
+        speed: 1,
         width: 20,
         height: 20,
       })}

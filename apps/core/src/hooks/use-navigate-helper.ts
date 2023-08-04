@@ -2,7 +2,7 @@ import type { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports

@@ -11,7 +11,6 @@ export class Metrics implements OnModuleDestroy {
 
   socketIOEventCounter = metricsCreator.counter('socket_io_counter', ['event']);
   socketIOEventTimer = metricsCreator.timer('socket_io_timer', ['event']);
-
   socketIOConnectionGauge = metricsCreator.gauge(
     'socket_io_connection_counter'
   );
@@ -19,4 +18,7 @@ export class Metrics implements OnModuleDestroy {
   gqlRequest = metricsCreator.counter('gql_request', ['operation']);
   gqlError = metricsCreator.counter('gql_error', ['operation']);
   gqlTimer = metricsCreator.timer('gql_timer', ['operation']);
+
+  jwstCodecDidnotMatch = metricsCreator.counter('jwst_codec_didnot_match');
+  jwstCodecFail = metricsCreator.counter('jwst_codec_fail');
 }

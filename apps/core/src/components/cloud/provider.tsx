@@ -2,7 +2,6 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { assertExists } from '@blocksuite/global/utils';
 import { GraphQLError } from 'graphql/index';
 import { useSetAtom } from 'jotai';
-import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
@@ -54,9 +53,6 @@ export const Provider = (props: PropsWithChildren): ReactElement => {
   if (!runtimeConfig.enableCloud) {
     return <>{props.children}</>;
   }
-  return (
-    <SessionProvider refetchOnWindowFocus>
-      <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>
-    </SessionProvider>
-  );
+
+  return <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>;
 };

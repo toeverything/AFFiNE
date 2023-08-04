@@ -275,6 +275,13 @@ export interface AFFiNEConfig {
        * in {ms}
        */
       updatePollInterval: number;
+
+      /**
+       * Use JwstCodec to merge updates at the same time when merging using Yjs.
+       *
+       * This is an experimental feature, and aimed to check the correctness of JwstCodec.
+       */
+      experimentalMergeWithJwstCodec: boolean;
     };
   };
 }

@@ -136,7 +136,7 @@ export const Component = () => {
     return null;
   };
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus>
       <Page />
     </SessionProvider>
   );

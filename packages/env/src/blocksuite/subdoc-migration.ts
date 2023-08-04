@@ -239,3 +239,15 @@ export function migrateToSubdoc(doc: Y.Doc): Y.Doc {
   migrateBlocks(doc, output);
   return output;
 }
+
+export async function migrateDatabaseBlockTo3(doc: Y.Doc) {
+  const { migratePageBlock } = await import(
+    '@blocksuite/store/workspace/migration/migrate-block'
+  );
+  migratePageBlock(doc, {
+    'affine:database': 2,
+  });
+  const meta = doc.getMap('meta') as Y.Map<unknown>;
+  const versions = meta.get('blockVersions') as Y.Map<number>;
+  versions.set('affine:database', 3);
+}

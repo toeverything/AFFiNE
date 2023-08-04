@@ -5,7 +5,7 @@ import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
-import { currentPageIdAtom } from '@toeverything/plugin-infra/atom';
+import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

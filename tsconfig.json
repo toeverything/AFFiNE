@@ -77,7 +77,7 @@
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
       "@toeverything/infra/*": ["./packages/infra/src/*"],
-      "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
+      "@affine/sdk/*": ["./packages/sdk/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"],
       "@affine/storage": ["./packages/storage/index.d.ts"],
@@ -113,7 +113,7 @@
     },
     // Plugins
     {
-      "path": "./packages/plugin-infra"
+      "path": "./packages/sdk"
     },
     {
       "path": "./plugins/bookmark"
@@ -123,6 +123,9 @@
     },
     {
       "path": "./plugins/hello-world"
+    },
+    {
+      "path": "./plugins/image-preview"
     },
     // Packages
     {

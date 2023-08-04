@@ -9,7 +9,7 @@ import {
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
 } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import type { FC } from 'react';
 import { useCallback } from 'react';
 

@@ -1,0 +1,13 @@
+name: Setup @sentry/cli
+description: 'Setup @sentry/cli'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Install @sentry/cli from brew'
+      if: runner.os == 'macos'
+      shell: bash
+      run: brew install getsentry/tools/sentry-cli
+    - name: 'Install @sentry/cli from npm'
+      if: runner.os != 'macos'
+      shell: bash
+      run: sudo npm install -g @sentry/cli --unsafe-perm

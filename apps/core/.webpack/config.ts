@@ -1,7 +1,6 @@
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import HTMLPlugin from 'html-webpack-plugin';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 import { PerfseePlugin } from '@perfsee/webpack';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
@@ -80,6 +79,10 @@ export const createConfiguration: (
     name: 'affine',
     // to set a correct base path for the source map
     context: projectRoot,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: false,
+    },
     output: {
       environment: {
         module: true,
@@ -131,6 +134,10 @@ export const createConfiguration: (
     module: {
       parser: {
         javascript: {
+          // Do not mock Node.js globals
+          node: false,
+          requireJs: false,
+          import: true,
           // Treat as missing export as error
           strictExportPresence: true,
         },
@@ -138,6 +145,20 @@ export const createConfiguration: (
       rules: [
         {
           test: /\.m?js?$/,
+          enforce: 'pre',
+          use: [
+            {
+              loader: require.resolve('source-map-loader'),
+              options: {
+                filterSourceMappingUrl: (
+                  _url: string,
+                  resourcePath: string
+                ) => {
+                  return resourcePath.includes('@blocksuite');
+                },
+              },
+            },
+          ],
           resolve: {
             fullySpecified: false,
           },
@@ -253,14 +274,6 @@ export const createConfiguration: (
               ignoreOrder: true,
             }),
           ]),
-      new HTMLPlugin({
-        template: join(rootPath, '.webpack', 'template.html'),
-        inject: 'body',
-        scriptLoading: 'module',
-        minify: false,
-        chunks: ['index', 'plugin', 'polyfill-ses'],
-        filename: 'index.html',
-      }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),

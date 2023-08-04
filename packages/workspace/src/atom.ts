@@ -6,7 +6,7 @@ import { assertEquals } from '@blocksuite/global/utils';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { atom } from 'jotai';
 import { z } from 'zod';
 
@@ -153,7 +153,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
             ...item.map(x => ({
               id: x.id,
               flavour: x.flavour,
-              version: WorkspaceVersion.SubDoc,
+              version: WorkspaceVersion.DatabaseV3,
             }))
           );
         } catch (e) {

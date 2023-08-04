@@ -10,7 +10,7 @@
       "path": "../../packages/component"
     },
     {
-      "path": "../../packages/plugin-infra"
+      "path": "../../packages/sdk"
     },
     {
       "path": "../../packages/env"

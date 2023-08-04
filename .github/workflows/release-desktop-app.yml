@@ -47,6 +47,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+      - name: Setup @sentry/cli
+        uses: ./.github/actions/setup-sentry
       - name: Get canary version
         id: get-canary-version
         if: ${{ github.ref_type == 'tag' }}
@@ -115,7 +117,6 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Setup Maker
         uses: ./.github/actions/setup-maker
-        if: ${{ matrix.spec.platform == 'macos' }}
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:

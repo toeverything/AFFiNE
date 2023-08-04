@@ -94,6 +94,12 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.app.oauth.email.secretName }}"
                 key: password
+          - name: DOC_MERGE_INTERVAL
+            value: "{{ .Values.app.doc.mergeInterval }}"
+          {{ if .Values.app.experimental.enableJwstCodec }}
+          - name: DOC_MERGE_USE_JWST_CODEC
+            value: "true"
+          {{ end }}
           {{ if .Values.app.objectStorage.r2.enabled }}
           - name: R2_OBJECT_STORAGE_ACCOUNT_ID
             valueFrom:

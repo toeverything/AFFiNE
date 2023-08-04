@@ -1,8 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import {
-  registeredPluginAtom,
-  rootStore,
-} from '@toeverything/plugin-infra/atom';
+import { registeredPluginAtom, rootStore } from '@toeverything/infra/atom';
 
 import { evaluatePluginEntry, setupPluginCode } from './plugins/setup';
 
@@ -22,7 +19,7 @@ declare global {
 
 globalThis.__pluginPackageJson__ = [];
 
-Promise.all(
+export const pluginRegisterPromise = Promise.all(
   [...builtinPluginUrl].map(url => {
     return fetch(`${url}/package.json`)
       .then(async res => {

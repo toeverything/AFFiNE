@@ -5,10 +5,39 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { mergeUpdates } from 'yjs';
+import * as Y from 'yjs';
 
 import { Config } from '../../config';
+import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
+import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
+
+function yjsMergeUpdates(updates: Buffer[]): Buffer {
+  const doc = new Y.Doc();
+
+  updates.forEach(update => {
+    Y.applyUpdate(doc, update);
+  });
+
+  return Buffer.from(Y.encodeStateAsUpdate(doc));
+}
+
+function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
+  if (yBinary.equals(jwstBinary)) {
+    return true;
+  }
+
+  if (strict) {
+    return false;
+  }
+
+  const doc = new Y.Doc();
+  Y.applyUpdate(doc, jwstBinary);
+
+  const yBinary2 = Buffer.from(Y.encodeStateAsUpdate(doc));
+
+  return compare(yBinary, yBinary2, true);
+}
 
 /**
  * Since we can't directly save all client updates into database, in which way the database will overload,
@@ -30,7 +59,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     protected readonly db: PrismaService,
     @Inject('DOC_MANAGER_AUTOMATION')
     protected readonly automation: boolean,
-    protected readonly config: Config
+    protected readonly config: Config,
+    protected readonly metrics: Metrics
   ) {}
 
   onModuleInit() {
@@ -44,10 +74,33 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     this.destroy();
   }
 
-  static mergeUpdates(updates: Buffer[]): Buffer {
-    return Buffer.from(
-      mergeUpdates(updates.map(update => new Uint8Array(update)))
-    );
+  protected mergeUpdates(guid: string, ...updates: Buffer[]): Buffer {
+    const yjsResult = yjsMergeUpdates(updates);
+    if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
+      try {
+        const jwstResult = jwstMergeUpdates(updates);
+        if (!compare(yjsResult, jwstResult)) {
+          this.metrics.jwstCodecDidnotMatch(1, {});
+          this.logger.warn(
+            `jwst codec result doesn't match yjs codec result for: ${guid}`
+          );
+          this.logger.warn(
+            'Updates:',
+            updates.map(u => u.toString('hex'))
+          );
+
+          if (this.config.dev) {
+            this.logger.warn(`Expected:\n  ${yjsResult.toString('hex')}`);
+          }
+          this.logger.warn(`Result:\n  ${jwstResult.toString('hex')}`);
+        }
+      } catch (e) {
+        this.metrics.jwstCodecFail(1, {});
+        this.logger.error('jwst apply update failed', e);
+      }
+    }
+
+    return yjsResult;
   }
 
   /**
@@ -68,6 +121,11 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     }, this.config.doc.manager.updatePollInterval);
 
     this.logger.log('Automation started');
+    if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
+      this.logger.warn(
+        'Experimental feature enabled: merge updates with jwst codec is enabled'
+      );
+    }
   }
 
   /**
@@ -146,8 +204,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     }
 
     return snapshot
-      ? DocManager.mergeUpdates([snapshot, ...updates])
-      : DocManager.mergeUpdates(updates);
+      ? this.mergeUpdates(guid, snapshot, ...updates)
+      : this.mergeUpdates(guid, ...updates);
   }
 
   /**
@@ -221,8 +279,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
       // merge updates
       const merged = snapshot
-        ? DocManager.mergeUpdates([snapshot.blob, ...updates.map(u => u.blob)])
-        : DocManager.mergeUpdates(updates.map(u => u.blob));
+        ? this.mergeUpdates(id, snapshot.blob, ...updates.map(u => u.blob))
+        : this.mergeUpdates(id, ...updates.map(u => u.blob));
 
       // save snapshot
       await this.upsert(workspaceId, id, merged);
