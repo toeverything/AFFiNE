@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import {
-  type FC,
   forwardRef,
   type HTMLAttributes,
   type PropsWithChildren,
@@ -10,6 +9,7 @@ import {
 
 import { Loading } from '../loading';
 import { button, buttonIcon } from './style.css';
+
 export type ButtonType =
   | 'default'
   | 'primary'
@@ -18,18 +18,21 @@ export type ButtonType =
   | 'warning'
   | 'success'
   | 'processing';
+
 export type ButtonSize = 'default' | 'large' | 'extraLarge';
-export type ButtonProps = PropsWithChildren &
-  Omit<HTMLAttributes<HTMLButtonElement>, 'type'> & {
-    type?: ButtonType;
-    disabled?: boolean;
-    icon?: ReactElement;
-    iconPosition?: 'start' | 'end';
-    shape?: 'default' | 'round' | 'circle';
-    block?: boolean;
-    size?: ButtonSize;
-    loading?: boolean;
-  };
+
+export interface ButtonProps
+  extends Omit<HTMLAttributes<HTMLButtonElement>, 'type'> {
+  type?: ButtonType;
+  disabled?: boolean;
+  icon?: ReactElement;
+  iconPosition?: 'start' | 'end';
+  shape?: 'default' | 'round' | 'circle';
+  block?: boolean;
+  size?: ButtonSize;
+  loading?: boolean;
+}
+
 const defaultProps = {
   type: 'default',
   disabled: false,
@@ -39,7 +42,7 @@ const defaultProps = {
   loading: false,
 };
 
-const ButtonIcon: FC<ButtonProps> = props => {
+const ButtonIcon = (props: PropsWithChildren<ButtonProps>) => {
   const {
     size,
     icon,
@@ -65,6 +68,7 @@ const ButtonIcon: FC<ButtonProps> = props => {
     </div>
   );
 };
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (props, ref) => {
     const {

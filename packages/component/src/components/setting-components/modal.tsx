@@ -1,17 +1,17 @@
 import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { useCallback } from 'react';
 
-export type SettingModalProps = {
+export interface SettingModalProps {
   open: boolean;
   setOpen: (value: boolean) => void;
-};
+}
 
-export const SettingModal: FC<PropsWithChildren<SettingModalProps>> = ({
+export const SettingModal = ({
   children,
   open,
   setOpen,
-}) => {
+}: PropsWithChildren<SettingModalProps>) => {
   const handleClose = useCallback(() => {
     setOpen(false);
   }, [setOpen]);
