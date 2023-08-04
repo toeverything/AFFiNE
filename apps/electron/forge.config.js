@@ -26,44 +26,50 @@ const arch =
     ? process.argv[process.argv.indexOf('--arch') + 1]
     : process.arch;
 
+const platform =
+  process.argv.indexOf('--platform') > 0
+    ? process.argv[process.argv.indexOf('--platform') + 1]
+    : process.platform;
+
 const windowsIconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
 
 const makers = [
-  !process.env.SKIP_BUNDLE && {
-    name: '@electron-forge/maker-dmg',
-    config: {
-      format: 'ULFO',
-      icon: icnsPath,
-      name: 'AFFiNE',
-      'icon-size': 128,
-      background: path.resolve(
-        __dirname,
-        './resources/icons/dmg-background.png'
-      ),
-      contents: [
-        {
-          x: 176,
-          y: 192,
-          type: 'file',
-          path: path.resolve(
-            __dirname,
-            'out',
-            buildType,
-            `${productName}-darwin-${arch}`,
-            `${productName}.app`
-          ),
-        },
-        { x: 432, y: 192, type: 'link', path: '/Applications' },
-      ],
-      file: path.resolve(
-        __dirname,
-        'out',
-        buildType,
-        `${productName}-darwin-${arch}`,
-        `${productName}.app`
-      ),
+  !process.env.SKIP_BUNDLE &&
+    platform === 'darwin' && {
+      name: '@electron-forge/maker-dmg',
+      config: {
+        format: 'ULFO',
+        icon: icnsPath,
+        name: 'AFFiNE',
+        'icon-size': 128,
+        background: path.resolve(
+          __dirname,
+          './resources/icons/dmg-background.png'
+        ),
+        contents: [
+          {
+            x: 176,
+            y: 192,
+            type: 'file',
+            path: path.resolve(
+              __dirname,
+              'out',
+              buildType,
+              `${productName}-darwin-${arch}`,
+              `${productName}.app`
+            ),
+          },
+          { x: 432, y: 192, type: 'link', path: '/Applications' },
+        ],
+        file: path.resolve(
+          __dirname,
+          'out',
+          buildType,
+          `${productName}-darwin-${arch}`,
+          `${productName}.app`
+        ),
+      },
     },
-  },
   {
     name: '@electron-forge/maker-zip',
     config: {
