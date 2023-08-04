@@ -139,7 +139,6 @@ const SetDBLocationContent = ({
       if (result?.filePath) {
         onConfirmLocation(result.filePath);
       } else if (result?.error) {
-        // @ts-expect-error: result.error is dynamic so the type is unknown
         toast(t[result.error]());
       }
     })().catch(err => {
@@ -273,7 +272,6 @@ export const CreateWorkspaceModal = ({
           setStep('set-syncing-mode');
         } else if (result.error || result.canceled) {
           if (result.error) {
-            // @ts-expect-error: result.error is dynamic so the type is unknown
             toast(t[result.error]());
           }
           onClose();

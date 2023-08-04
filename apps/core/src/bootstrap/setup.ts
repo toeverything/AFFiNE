@@ -7,7 +7,11 @@ import type {
   LocalIndexedDBDownloadProvider,
   WorkspaceAdapter,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import {
+  type LocalWorkspace,
+  WorkspaceFlavour,
+  WorkspaceVersion,
+} from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   type RootWorkspaceMetadataV2,
@@ -36,13 +40,15 @@ async function tryMigration() {
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
           const upgrade = async () => {
-            const workspace = await adapter.CRUD.get(oldMeta.id);
-            if (!workspace) {
-              console.warn('cannot find workspace', oldMeta.id);
+            if (oldMeta.flavour !== WorkspaceFlavour.LOCAL) {
+              console.warn('not supported');
               return;
             }
-            if (workspace.flavour !== WorkspaceFlavour.LOCAL) {
-              console.warn('not supported');
+            const workspace = (await adapter.CRUD.get(
+              oldMeta.id
+            )) as LocalWorkspace | null;
+            if (!workspace) {
+              console.warn('cannot find workspace', oldMeta.id);
               return;
             }
             const doc = workspace.blockSuiteWorkspace.doc;
@@ -83,11 +89,14 @@ async function tryMigration() {
           // create a new workspace and push it to metadata
           promises.push(upgrade());
         } else if (oldMeta.version < WorkspaceVersion.DatabaseV3) {
-          console.log('migrate to v3');
           const adapter = WorkspaceAdapters[oldMeta.flavour];
           assertExists(adapter);
           promises.push(
             (async () => {
+              if (oldMeta.flavour !== WorkspaceFlavour.LOCAL) {
+                console.warn('not supported');
+                return;
+              }
               const workspace = await adapter.CRUD.get(oldMeta.id);
               if (workspace) {
                 const provider = createIndexedDBDownloadProvider(
@@ -107,11 +116,11 @@ async function tryMigration() {
               const index = newMetadata.findIndex(
                 meta => meta.id === oldMeta.id
               );
-              console.log('migrate to v3');
               newMetadata[index] = {
                 ...oldMeta,
                 version: WorkspaceVersion.DatabaseV3,
               };
+              console.log('migrate to v3');
             })()
           );
         }
@@ -121,8 +130,8 @@ async function tryMigration() {
         .then(() => {
           console.log('migration done');
         })
-        .catch(() => {
-          console.error('migration failed');
+        .catch(e => {
+          console.error('migration failed', e);
         })
         .finally(() => {
           localStorage.setItem('jotai-workspaces', JSON.stringify(newMetadata));
