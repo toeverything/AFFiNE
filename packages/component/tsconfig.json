@@ -6,7 +6,8 @@
     "composite": true,
     "noEmit": false,
     "outDir": "lib",
-    "types": ["@affine/env"]
+    "typeRoots": [".."],
+    "types": ["env"]
   },
   "references": [
     {
