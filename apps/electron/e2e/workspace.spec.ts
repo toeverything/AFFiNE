@@ -47,8 +47,8 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
 test('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
 
-  await page.focus('.affine-default-page-block-title');
-  await page.fill('.affine-default-page-block-title', 'test1');
+  await page.focus('.affine-doc-page-block-title');
+  await page.fill('.affine-doc-page-block-title', 'test1');
 
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
