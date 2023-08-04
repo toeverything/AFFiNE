@@ -30,7 +30,7 @@ const windowsIconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
 
 const makers = [
   !process.env.SKIP_BUNDLE && {
-    name: '@affine/maker-dmg',
+    name: '@electron-forge/maker-dmg',
     config: {
       format: 'ULFO',
       icon: icnsPath,
@@ -40,6 +40,21 @@ const makers = [
         __dirname,
         './resources/icons/dmg-background.png'
       ),
+      contents: [
+        {
+          x: 176,
+          y: 192,
+          type: 'file',
+          path: path.resolve(
+            __dirname,
+            'out',
+            buildType,
+            `${productName}-darwin-${arch}`,
+            `${productName}.app`
+          ),
+        },
+        { x: 432, y: 192, type: 'link', path: '/Applications' },
+      ],
       file: path.resolve(
         __dirname,
         'out',

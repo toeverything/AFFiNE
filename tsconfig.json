@@ -151,9 +151,6 @@
     {
       "path": "./packages/y-indexeddb"
     },
-    {
-      "path": "./packages/maker-dmg"
-    },
     // Tests
     {
       "path": "./tests/kit"
