@@ -14,15 +14,6 @@
 </div>
 
 <div align="center">
-<!--
-Make New Badge Pattern badges inline
-See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
--->
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-97-orange.svg?style=flat-square
-
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![AFFiNE Web](<https://img.shields.io/badge/-Try%20It%20Online%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=affine>)](https://app.affine.pro)
 [![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
@@ -192,6 +183,7 @@ See [docs/contributing/tutorial.md](./docs/contributing/tutorial.md) for details
 
 See [LICENSE] for details.
 
+[all-contributors-badge]: https://img.shields.io/github/all-contributors/toeverything/AFFiNE/master?color=orange
 [license]: ./LICENSE
 [building.md]: ./docs/BUILDING.md
 [these people]: https://twitter.com/AffineOfficial/followers
