@@ -4,7 +4,7 @@ inputs:
   extra-flags:
     description: 'Extra flags to pass to the yarn install.'
     required: false
-    default: '--immutable --inline-builds'
+    default: '--inline-builds'
 
 runs:
   using: 'composite'
@@ -13,7 +13,7 @@ runs:
       if: runner.os == 'macos'
       shell: bash
       working-directory: ./apps/electron
-      run: yarn add @electron-forge/maker-dmg --dev
+      run: yarn add @electron-forge/maker-dmg --dev ${{ inputs.extra-flags }}
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
