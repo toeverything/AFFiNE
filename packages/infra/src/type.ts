@@ -105,9 +105,9 @@ export type DBHandlers = {
     key: string,
     data: Uint8Array
   ) => Promise<void>;
-  getBlob: (workspaceId: string, key: string) => Promise<any>;
+  getBlob: (workspaceId: string, key: string) => Promise<Buffer | null>;
   deleteBlob: (workspaceId: string, key: string) => Promise<void>;
-  getBlobKeys: (workspaceId: string) => Promise<any>;
+  getBlobKeys: (workspaceId: string) => Promise<string[]>;
   getDefaultStorageLocation: () => Promise<string>;
 };
 
@@ -116,13 +116,55 @@ export type DebugHandlers = {
   logFilePath: () => Promise<string>;
 };
 
+export type ErrorMessage =
+  | 'DB_FILE_ALREADY_LOADED'
+  | 'DB_FILE_PATH_INVALID'
+  | 'DB_FILE_INVALID'
+  | 'DB_FILE_MIGRATION_FAILED'
+  | 'FILE_ALREADY_EXISTS'
+  | 'UNKNOWN_ERROR';
+
+export interface LoadDBFileResult {
+  workspaceId?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+export interface SaveDBFileResult {
+  filePath?: string;
+  canceled?: boolean;
+  error?: ErrorMessage;
+}
+
+export interface SelectDBFileLocationResult {
+  filePath?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+export interface MoveDBFileResult {
+  filePath?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+// provide a backdoor to set dialog path for testing in playwright
+export interface FakeDialogResult {
+  canceled?: boolean;
+  filePath?: string;
+  filePaths?: string[];
+}
+
 export type DialogHandlers = {
-  revealDBFile: (workspaceId: string) => Promise<any>;
-  loadDBFile: () => Promise<any>;
-  saveDBFileAs: (workspaceId: string) => Promise<any>;
-  moveDBFile: (workspaceId: string, dbFileLocation?: string) => Promise<any>;
-  selectDBFileLocation: () => Promise<any>;
-  setFakeDialogResult: (result: any) => Promise<any>;
+  revealDBFile: (workspaceId: string) => Promise<void>;
+  loadDBFile: () => Promise<LoadDBFileResult>;
+  saveDBFileAs: (workspaceId: string) => Promise<SaveDBFileResult>;
+  moveDBFile: (
+    workspaceId: string,
+    dbFileLocation?: string
+  ) => Promise<MoveDBFileResult>;
+  selectDBFileLocation: () => Promise<SelectDBFileLocationResult>;
+  setFakeDialogResult: (result: any) => Promise<FakeDialogResult>;
 };
 
 export type UIHandlers = {
