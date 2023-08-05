@@ -1,5 +1,5 @@
+import type { IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
-import type { IDBPDatabase } from 'idb/build/entry';
 import { mergeUpdates } from 'yjs';
 
 import type { BlockSuiteBinaryDB, OldYjsDB, UpdateMessage } from './shared';

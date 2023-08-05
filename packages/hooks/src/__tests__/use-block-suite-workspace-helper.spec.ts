@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 
@@ -14,12 +14,14 @@ import { useBlockSuiteWorkspaceHelper } from '../use-block-suite-workspace-helpe
 
 let blockSuiteWorkspace: Workspace;
 
+const schema = new Schema();
+schema.register(AffineSchemas).register(__unstableSchemas);
+
 beforeEach(async () => {
   blockSuiteWorkspace = new Workspace({
     id: 'test',
-  })
-    .register(AffineSchemas)
-    .register(__unstableSchemas);
+    schema,
+  });
   await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
   await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
   await initEmptyPage(blockSuiteWorkspace.createPage({ id: 'page2' }));

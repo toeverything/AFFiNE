@@ -18,9 +18,11 @@
     "useUnknownInCatchVariables": true,
 
     // Modules
-    "module": "ES2022",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "types": ["affine__env"],
+    "typeRoots": ["./node_modules/@types"],
 
     // Emit
     "declaration": true,
@@ -36,10 +38,12 @@
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
 
     // Language and Environment
-    "jsx": "react-jsx",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "@emotion/react",
+    "lib": ["ESNext", "DOM"],
     "target": "ES2022",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
@@ -76,7 +80,6 @@
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
       "@toeverything/infra/*": ["./packages/infra/src/*"],
-      "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
       "@affine/sdk/*": ["./packages/sdk/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"],
@@ -104,9 +107,6 @@
     // Top level packages
     {
       "path": "./packages/infra"
-    },
-    {
-      "path": "./packages/plugin-infra"
     },
     {
       "path": "./packages/graphql"
@@ -155,9 +155,6 @@
     {
       "path": "./packages/y-indexeddb"
     },
-    {
-      "path": "./packages/maker-dmg"
-    },
     // Tests
     {
       "path": "./tests/kit"
@@ -176,5 +173,11 @@
     }
   ],
   "files": [],
-  "exclude": ["node_modules", "target", "lib", "test-results"]
+  "exclude": ["node_modules", "target", "lib", "test-results"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "Node"
+    }
+  }
 }

@@ -29,7 +29,6 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
 
   // move db file to tmp folder
   await page.evaluate(tmpPath => {
-    // @ts-expect-error
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
@@ -47,8 +46,8 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
 test('export then add', async ({ page, appInfo, workspace }) => {
   const w = await workspace.current();
 
-  await page.focus('.affine-default-page-block-title');
-  await page.fill('.affine-default-page-block-title', 'test1');
+  await page.focus('.affine-doc-page-block-title');
+  await page.fill('.affine-doc-page-block-title', 'test1');
 
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
@@ -72,7 +71,6 @@ test('export then add', async ({ page, appInfo, workspace }) => {
 
   // export db file to tmp folder
   await page.evaluate(tmpPath => {
-    // @ts-expect-error
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });
@@ -92,7 +90,6 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('add-or-new-workspace').click();
 
   await page.evaluate(tmpPath => {
-    // @ts-expect-error
     window.apis?.dialog.setFakeDialogResult({
       filePath: tmpPath,
     });

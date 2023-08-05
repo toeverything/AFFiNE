@@ -1,13 +1,14 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.0-canary.8",
+  "version": "0.8.0-canary.11",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
     "run-test": "./scripts/run-test.ts"
   },
   "scripts": {
+    "build": "tsc",
     "dev": "nodemon ./src/index.ts",
     "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
     "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",

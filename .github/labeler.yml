@@ -23,7 +23,6 @@ plugin:copilot:
   - 'plugins/copilot/**/*'
 
 mod:infra:
-  - 'packages/plugin-infra/**/*'
   - 'packages/infra/**/*'
 
 mod:sdk:

@@ -1,4 +1,4 @@
-import { Tooltip } from '@affine/component';
+import { ScrollableContainer, Tooltip } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
@@ -8,7 +8,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { FC } from 'react';
@@ -76,10 +76,12 @@ export const SettingSidebar: FC<{
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
-          <WorkspaceList
-            onWorkspaceSettingClick={onWorkspaceSettingClick}
-            selectedWorkspaceId={selectedWorkspaceId}
-          />
+          <ScrollableContainer>
+            <WorkspaceList
+              onWorkspaceSettingClick={onWorkspaceSettingClick}
+              selectedWorkspaceId={selectedWorkspaceId}
+            />
+          </ScrollableContainer>
         </Suspense>
       </div>
     </div>

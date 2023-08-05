@@ -1,5 +1,7 @@
+import type { PrimitiveAtom } from 'jotai';
 import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
+import type { AtomFamily } from 'jotai/vanilla/utils/atomFamily';
 
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import type { SettingProps } from '../components/affine/setting-modal';
@@ -59,19 +61,16 @@ const defaultPageSetting = {
   mode: 'page',
 } satisfies PageLocalSetting;
 
-export const pageSettingFamily = atomFamily((pageId: string) =>
+export const pageSettingFamily: AtomFamily<
+  string,
+  PrimitiveAtom<PageLocalSetting>
+> = atomFamily((pageId: string) =>
   atom(
     get =>
       get(pageSettingsBaseAtom)[pageId] ?? {
         ...defaultPageSetting,
       },
-    (
-      get,
-      set,
-      patch:
-        | Partial<PageLocalSetting>
-        | ((prevSetting: PageLocalSetting | undefined) => void)
-    ) => {
+    (get, set, patch) => {
       set(recentPageSettingsBaseAtom, ids => {
         // pick 3 recent page ids
         return [...new Set([pageId, ...ids]).values()].slice(0, 3);

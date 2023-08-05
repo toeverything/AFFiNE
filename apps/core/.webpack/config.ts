@@ -79,6 +79,10 @@ export const createConfiguration: (
     name: 'affine',
     // to set a correct base path for the source map
     context: projectRoot,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: false,
+    },
     output: {
       environment: {
         module: true,
@@ -130,6 +134,10 @@ export const createConfiguration: (
     module: {
       parser: {
         javascript: {
+          // Do not mock Node.js globals
+          node: false,
+          requireJs: false,
+          import: true,
           // Treat as missing export as error
           strictExportPresence: true,
         },
@@ -137,6 +145,20 @@ export const createConfiguration: (
       rules: [
         {
           test: /\.m?js?$/,
+          enforce: 'pre',
+          use: [
+            {
+              loader: require.resolve('source-map-loader'),
+              options: {
+                filterSourceMappingUrl: (
+                  _url: string,
+                  resourcePath: string
+                ) => {
+                  return resourcePath.includes('@blocksuite');
+                },
+              },
+            },
+          ],
           resolve: {
             fullySpecified: false,
           },

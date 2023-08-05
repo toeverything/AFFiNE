@@ -1,18 +1,18 @@
 import clsx from 'clsx';
-import type { CSSProperties, FC, PropsWithChildren, ReactNode } from 'react';
+import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 
 import { settingRow } from './share.css';
 
-export const SettingRow: FC<
-  PropsWithChildren<{
-    name: ReactNode;
-    desc: ReactNode;
-    style?: CSSProperties;
-    onClick?: () => void;
-    spreadCol?: boolean;
-    testId?: string;
-  }>
-> = ({
+interface SettingRowProps {
+  name: ReactNode;
+  desc: ReactNode;
+  style?: CSSProperties;
+  onClick?: () => void;
+  spreadCol?: boolean;
+  testId?: string;
+}
+
+export const SettingRow = ({
   name,
   desc,
   children,
@@ -20,7 +20,7 @@ export const SettingRow: FC<
   style,
   spreadCol = true,
   testId = '',
-}) => {
+}: PropsWithChildren<SettingRowProps>) => {
   return (
     <div
       className={clsx(settingRow, {

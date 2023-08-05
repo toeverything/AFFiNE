@@ -13,7 +13,7 @@ import { IndexedDBChatMessageHistory } from './langchain/message-history';
 import { chatPrompt, followupQuestionPrompt } from './prompts';
 import { followupQuestionParser } from './prompts/output-parser';
 
-type ChatAI = {
+export type ChatAI = {
   // Core chat AI
   conversationChain: ConversationChain;
   // Followup AI, used to generate followup questions

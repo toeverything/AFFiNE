@@ -99,7 +99,9 @@ export const registerUpdater = async () => {
   });
   autoUpdater.forceDevUpdateConfig = isDev;
 
-  app.on('activate', async () => {
-    await checkForUpdates(false);
+  app.on('activate', () => {
+    checkForUpdates(false).catch(err => {
+      console.error(err);
+    });
   });
 };

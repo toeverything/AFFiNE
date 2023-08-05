@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.8.0-canary.8",
+  "version": "0.8.0-canary.11",
   "description": "IndexedDB database adapter for Yjs",
   "repository": "toeverything/AFFiNE",
   "author": "toeverything",
@@ -37,8 +37,8 @@
   },
   "devDependencies": {
     "@affine/y-provider": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230802200139-381599c0-nightly",
-    "@blocksuite/store": "0.0.0-20230802200139-381599c0-nightly",
+    "@blocksuite/blocks": "0.0.0-20230804190636-37f66904-nightly",
+    "@blocksuite/store": "0.0.0-20230804190636-37f66904-nightly",
     "vite": "^4.4.7",
     "vite-plugin-dts": "3.3.1",
     "y-indexeddb": "^9.0.11"

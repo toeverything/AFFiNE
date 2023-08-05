@@ -1,0 +1,11 @@
+{
+  "name": "@types/affine__env",
+  "private": true,
+  "types": "./__all.d.ts",
+  "type": "module",
+  "dependencies": {
+    "@affine/env": "workspace:*",
+    "@toeverything/infra": "workspace:*"
+  },
+  "version": "0.8.0-canary.11"
+}

@@ -1,5 +1,4 @@
 import type { PluginContext } from '@affine/sdk/entry';
-import { currentWorkspaceAtom, rootStore } from '@affine/sdk/entry';
 import { createElement } from 'react';
 import { lazy } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -11,7 +10,6 @@ const HeaderItem = lazy(() =>
 export const entry = (context: PluginContext) => {
   console.log('register');
   console.log('hello, world!');
-  console.log(rootStore.get(currentWorkspaceAtom));
   context.register('headerItem', div => {
     const root = createRoot(div);
     root.render(createElement(HeaderItem));

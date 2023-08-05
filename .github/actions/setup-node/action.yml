@@ -17,10 +17,6 @@ inputs:
     description: 'Download the Electron binary'
     required: false
     default: 'true'
-  npm-token:
-    description: 'The NPM token to use for private packages.'
-    required: false
-    default: ''
   hard-link-nm:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
@@ -48,20 +44,20 @@ runs:
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
       env:
-        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        SENTRYCLI_SKIP_DOWNLOAD: '1'
 
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
       env:
-        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        SENTRYCLI_SKIP_DOWNLOAD: '1'
 
     - name: Get installed Playwright version
       id: playwright-version
