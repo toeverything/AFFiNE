@@ -340,7 +340,7 @@ __metadata:
     "@types/uuid": ^9.0.2
     async-call-rpc: ^6.3.1
     cross-env: 7.0.3
-    electron: ^25.3.1
+    electron: ^25.4.0
     electron-log: ^5.0.0-beta.24
     electron-squirrel-startup: 1.0.0
     electron-updater: ^6.0.0
@@ -17258,16 +17258,16 @@ __metadata:
   languageName: node
   linkType: soft
 
-"electron@npm:^25.3.1":
-  version: 25.3.2
-  resolution: "electron@npm:25.3.2"
+"electron@npm:^25.4.0":
+  version: 25.4.0
+  resolution: "electron@npm:25.4.0"
   dependencies:
     "@electron/get": ^2.0.0
     "@types/node": ^18.11.18
     extract-zip: ^2.0.1
   bin:
     electron: cli.js
-  checksum: ea30c161cbebc505752d2f7d9ee34a671fbab4b6c140220e1e66c06effdee6cf3295aaadefafa96a1e35b1bb87ddb8fcf7e9d9e3cd4b7c0fd264961793bb7133
+  checksum: a1c667dfc52e33a08a396b710a436bada4552bb3b622501e27abc85081c4c07965ce1620bb9d87f77f0d80df5d93d0e8dd169f8df17f6313c77ceff28c58420e
   languageName: node
   linkType: hard
 
