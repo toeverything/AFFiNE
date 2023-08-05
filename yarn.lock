@@ -247,7 +247,7 @@ __metadata:
     graphql: ^16.7.1
     html-webpack-plugin: ^5.5.3
     jotai: ^2.2.2
-    jotai-devtools: ^0.6.0
+    jotai-devtools: ^0.6.1
     lit: ^2.7.6
     lottie-web: ^5.12.2
     mini-css-extract-plugin: ^2.7.6
@@ -6112,7 +6112,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mantine/core@npm:^6.0.13":
+"@mantine/core@npm:^6.0.17":
   version: 6.0.17
   resolution: "@mantine/core@npm:6.0.17"
   dependencies:
@@ -6130,7 +6130,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mantine/hooks@npm:^6.0.13":
+"@mantine/hooks@npm:^6.0.17":
   version: 6.0.17
   resolution: "@mantine/hooks@npm:6.0.17"
   peerDependencies:
@@ -6139,7 +6139,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mantine/prism@npm:^6.0.13":
+"@mantine/prism@npm:^6.0.17":
   version: 6.0.17
   resolution: "@mantine/prism@npm:6.0.17"
   dependencies:
@@ -11150,25 +11150,6 @@ __metadata:
   dependencies:
     defer-to-connect: ^2.0.0
   checksum: c29df3bcec6fc3bdec2b17981d89d9c9fc9bd7d0c9bcfe92821dc533f4440bc890ccde79971838b4ceed1921d456973c4180d7175ee1d0023ad0562240a58d95
-  languageName: node
-  linkType: hard
-
-"@tabler/icons-react@npm:^2.22.0":
-  version: 2.29.0
-  resolution: "@tabler/icons-react@npm:2.29.0"
-  dependencies:
-    "@tabler/icons": 2.29.0
-    prop-types: ^15.7.2
-  peerDependencies:
-    react: ^16.5.1 || ^17.0.0 || ^18.0.0
-  checksum: 6d92ca50d88ae473d2065d67792ba28a4eebf2b57cc1fc89210ae787449eda0ecdabfbf5a4ddd1b44e2f3bd2d26c841c812a49934de07eeb4f8dec29734a2100
-  languageName: node
-  linkType: hard
-
-"@tabler/icons@npm:2.29.0":
-  version: 2.29.0
-  resolution: "@tabler/icons@npm:2.29.0"
-  checksum: c11f8837c3362239e8828a7336073c368efe669f8f64a94f409fc32778fff9e5d3f9cf6f36241352722416670bb8d8fda1f0c2991a4535aa0eb5335cdfa57941
   languageName: node
   linkType: hard
 
@@ -22345,24 +22326,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-devtools@npm:^0.6.0":
-  version: 0.6.0
-  resolution: "jotai-devtools@npm:0.6.0"
+"jotai-devtools@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "jotai-devtools@npm:0.6.1"
   dependencies:
-    "@mantine/core": ^6.0.13
-    "@mantine/hooks": ^6.0.13
-    "@mantine/prism": ^6.0.13
+    "@mantine/core": ^6.0.17
+    "@mantine/hooks": ^6.0.17
+    "@mantine/prism": ^6.0.17
     "@redux-devtools/extension": ^3.2.5
-    "@tabler/icons-react": ^2.22.0
     javascript-stringify: ^2.1.0
     jsondiffpatch: ^0.4.1
-    react-error-boundary: ^3.1.4
+    react-error-boundary: ^4.0.10
     react-json-tree: ^0.18.0
-    react-resizable-panels: ^0.0.42
+    react-resizable-panels: ^0.0.54
   peerDependencies:
     "@emotion/react": ">=11.0.0"
     react: ">=17.0.0"
-  checksum: e54f792f9db929a64f7c2c6163067db9329743cdfe35cd426d6cb1cc21d60e4be96e8b0191421e48599af811afd2787a9ffa294127d6b308f2d7d8e81f320251
+  checksum: d0ca9dd711cdb462d0f5235a4e3f618d00e14eac714035c636fa0e7ec2949fae7c61dd339e9d3b30816418bb8c297d5913ef074df719dfcaeb7804c0a63937d7
   languageName: node
   linkType: hard
 
@@ -27278,17 +27258,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-error-boundary@npm:^3.1.4":
-  version: 3.1.4
-  resolution: "react-error-boundary@npm:3.1.4"
-  dependencies:
-    "@babel/runtime": ^7.12.5
-  peerDependencies:
-    react: ">=16.13.1"
-  checksum: f36270a5d775a25c8920f854c0d91649ceea417b15b5bc51e270a959b0476647bb79abb4da3be7dd9a4597b029214e8fe43ea914a7f16fa7543c91f784977f1b
-  languageName: node
-  linkType: hard
-
 "react-error-boundary@npm:^4.0.10":
   version: 4.0.10
   resolution: "react-error-boundary@npm:4.0.10"
@@ -27458,16 +27427,6 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 0a31f822136f4d4cde0c34264b68dd3a0432d36e2ca5162cd2df0f205980debb9a5e107843120220a599275af02df7805f0d5f44e54f2bd8b0c39a7fdd304036
-  languageName: node
-  linkType: hard
-
-"react-resizable-panels@npm:^0.0.42":
-  version: 0.0.42
-  resolution: "react-resizable-panels@npm:0.0.42"
-  peerDependencies:
-    react: ^16.14.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0
-  checksum: 229322d1c130916bb79a5a74d6860ff5d613e60da56e483bd599fa1e5ca1a2319c75d709d60f5cd72fba68a8125448aaddb2d30d2e32fef9d7eaa8ee826e2cda
   languageName: node
   linkType: hard
 
