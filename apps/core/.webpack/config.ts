@@ -75,6 +75,8 @@ export const createConfiguration: (
 
   const cacheKey = computeCacheKey(buildFlags);
 
+  const blocksuiteBaseDir = process.env.LOCAL_BLOCK_SUITE;
+
   const config = {
     name: 'affine',
     // to set a correct base path for the source map
@@ -121,6 +123,59 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
+      fallback:
+        blocksuiteBaseDir === undefined
+          ? undefined
+          : {
+              events: false,
+            },
+      alias:
+        blocksuiteBaseDir === undefined
+          ? undefined
+          : {
+              '@blocksuite/block-std': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'block-std'
+              ),
+              '@blocksuite/blocks': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'blocks'
+              ),
+              '@blocksuite/editor': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'editor'
+              ),
+              '@blocksuite/global': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'global'
+              ),
+              '@blocksuite/lit': resolve(blocksuiteBaseDir, 'packages', 'lit'),
+              '@blocksuite/phasor': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'phasor'
+              ),
+              '@blocksuite/store/workspace/migration/migrate-block': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'store',
+                'src/workspace/migration/migrate-block'
+              ),
+              '@blocksuite/store': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'store'
+              ),
+              '@blocksuite/virgo': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'virgo'
+              ),
+            },
     },
 
     cache: {
@@ -168,7 +223,6 @@ export const createConfiguration: (
             {
               test: /\.tsx?$/,
               // Compile all ts files in the workspace
-              include: resolve(rootPath, '..', '..'),
               loader: require.resolve('swc-loader'),
               options: {
                 // https://swc.rs/docs/configuring-swc/
@@ -179,9 +233,10 @@ export const createConfiguration: (
                     dynamicImport: true,
                     topLevelAwait: false,
                     tsx: true,
+                    decorators: true,
                   },
                   target: 'es2022',
-                  externalHelpers: true,
+                  externalHelpers: false,
                   transform: {
                     react: {
                       runtime: 'automatic',
