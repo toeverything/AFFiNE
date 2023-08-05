@@ -91,7 +91,7 @@
     "eslint-plugin-unicorn": "^48.0.0",
     "eslint-plugin-unused-imports": "^3.0.0",
     "fake-indexeddb": "4.0.2",
-    "happy-dom": "^10.5.2",
+    "happy-dom": "^10.8.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",
     "madge": "^6.1.0",
