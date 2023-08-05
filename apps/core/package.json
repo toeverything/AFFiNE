@@ -40,7 +40,7 @@
     "cssnano": "^6.0.1",
     "graphql": "^16.7.1",
     "jotai": "^2.2.2",
-    "jotai-devtools": "^0.6.0",
+    "jotai-devtools": "^0.6.1",
     "lit": "^2.7.6",
     "lottie-web": "^5.12.2",
     "mini-css-extract-plugin": "^2.7.6",
