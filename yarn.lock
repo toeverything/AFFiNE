@@ -472,7 +472,7 @@ __metadata:
     "@istanbuljs/schema": ^0.1.3
     "@magic-works/i18n-codegen": ^0.5.0
     "@nx/vite": 16.5.5
-    "@perfsee/sdk": ^1.8.3
+    "@perfsee/sdk": ^1.8.5
     "@playwright/test": ^1.36.2
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
@@ -7850,9 +7850,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@perfsee/sdk@npm:^1.8.3":
-  version: 1.8.3
-  resolution: "@perfsee/sdk@npm:1.8.3"
+"@perfsee/sdk@npm:^1.8.5":
+  version: 1.8.5
+  resolution: "@perfsee/sdk@npm:1.8.5"
   dependencies:
     chalk: ^4.1.2
     clipanion: ^3.1.0
@@ -7862,7 +7862,7 @@ __metadata:
     simple-git: ^3.15.0
   bin:
     perfsee: bin/cli.js
-  checksum: 8fc69eab9dd5461cfd9c34366414eef81b750adfc1bbab062c1d8bdd04607f13b426eeb5c80996d6441a0e5ff661af951445dae8e390efb8bb1fd9166eab9c78
+  checksum: 92ae2aa3f3734f7df1fbbb242f8e35736863c6b9f180eec6257eff973c40c13070ace595974e62891ac8bf8ff82ed563557a79357185b5bfbb2a00577b4bd403
   languageName: node
   linkType: hard
 
