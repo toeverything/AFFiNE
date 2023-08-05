@@ -9,7 +9,7 @@ import {
   SaveIcon,
 } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   Button,
@@ -167,7 +167,7 @@ export const EditCollection = ({
     },
     [value]
   );
-  const isNameEmpty = (value: Collection) => value.name.trim().length === 0;
+  const isNameEmpty = useMemo(() => value.name.trim().length === 0, [value]);
   return (
     <div
       style={{
@@ -274,9 +274,9 @@ export const EditCollection = ({
           size="large"
           data-testid="save-collection"
           type="primary"
-          disabled={isNameEmpty(value)}
+          disabled={isNameEmpty}
           onClick={() => {
-            if (!isNameEmpty(value)) {
+            if (!isNameEmpty) {
               onConfirm(value);
             }
           }}
