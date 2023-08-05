@@ -8,13 +8,17 @@ import type {
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { afterEach, describe, expect, test } from 'vitest';
 
 import {
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
 } from '..';
+
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
 
 afterEach(() => {
   globalThis.localStorage.clear();
@@ -28,8 +32,8 @@ describe('download provider', () => {
       const workspace = new Workspace({
         id: 'test',
         isSSR: true,
+        schema,
       });
-      workspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createIndexedDBBackgroundProvider(
         workspace.id,
         workspace.doc,
@@ -57,8 +61,8 @@ describe('download provider', () => {
       const workspace = new Workspace({
         id: 'test',
         isSSR: true,
+        schema,
       });
-      workspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createIndexedDBDownloadProvider(
         workspace.id,
         workspace.doc,

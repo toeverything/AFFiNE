@@ -6,14 +6,19 @@ import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
-import { createMemoryStorage, Workspace } from '@blocksuite/store';
+import { createMemoryStorage, Schema, Workspace } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { use } from 'foxact/use';
 
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
+
 const blockSuiteWorkspace = new Workspace({
   id: 'test',
   blobStorages: [createMemoryStorage],
+  schema,
 });
 
 async function initPage(page: Page) {
@@ -34,7 +39,6 @@ async function initPage(page: Page) {
   page.resetHistory();
 }
 
-blockSuiteWorkspace.register(AffineSchemas).register(__unstableSchemas);
 const page = blockSuiteWorkspace.createPage('page0');
 
 type BlockSuiteMeta = Meta<typeof BlockSuiteEditor>;
