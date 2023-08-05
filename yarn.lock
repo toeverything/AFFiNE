@@ -497,7 +497,7 @@ __metadata:
     eslint-plugin-unicorn: ^48.0.0
     eslint-plugin-unused-imports: ^3.0.0
     fake-indexeddb: 4.0.2
-    happy-dom: ^10.5.2
+    happy-dom: ^10.8.0
     husky: ^8.0.3
     lint-staged: ^13.2.3
     madge: ^6.1.0
@@ -20021,9 +20021,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^10.5.2":
-  version: 10.5.2
-  resolution: "happy-dom@npm:10.5.2"
+"happy-dom@npm:^10.8.0":
+  version: 10.8.0
+  resolution: "happy-dom@npm:10.8.0"
   dependencies:
     css.escape: ^1.5.1
     entities: ^4.5.0
@@ -20031,7 +20031,7 @@ __metadata:
     webidl-conversions: ^7.0.0
     whatwg-encoding: ^2.0.0
     whatwg-mimetype: ^3.0.0
-  checksum: 5fa61c2367c7396da9e379e1b091d666dffa16336cfe95c058af3e3d7ada45a5c68746cee6cba524dc15a1bea6a7cdcd235be0e06f4f44ac0627ca0c08edf59b
+  checksum: 81ae160f475cf5d6b3ed0685e2bac6042a548c07b445a031c2460df985a27e8ae88c7a7189fb4a63307439c8871ad392e4a1b19d2a1ef8b0a06d5babcdba5f13
   languageName: node
   linkType: hard
 
