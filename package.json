@@ -9,6 +9,7 @@
     "apps/*",
     "plugins/*",
     "packages/*",
+    "packages/@types/*",
     "tests/fixtures",
     "tests/kit",
     "tests/affine-legacy/*",

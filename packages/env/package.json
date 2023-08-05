@@ -4,7 +4,6 @@
   "type": "module",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
-  "types": "./src/global.ts",
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20230804190636-37f66904-nightly",
     "react": "18.2.0",
