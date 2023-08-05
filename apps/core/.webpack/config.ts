@@ -73,9 +73,9 @@ export const createConfiguration: (
 ) => webpack.Configuration = (buildFlags, runtimeConfig) => {
   let publicPath = process.env.PUBLIC_PATH ?? '/';
 
-  const cacheKey = computeCacheKey(buildFlags);
-
   const blocksuiteBaseDir = process.env.LOCAL_BLOCK_SUITE;
+
+  const cacheKey = computeCacheKey(buildFlags);
 
   const config = {
     name: 'affine',
@@ -123,11 +123,17 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
+      modules: [
+        // Root directory's node_modules takes precedence over other node_modules.
+        resolve(rootPath, '../../', 'node_modules'),
+        'node_modules',
+      ],
       fallback:
         blocksuiteBaseDir === undefined
           ? undefined
           : {
-              events: false,
+              events: require.resolve('events'),
+              path: false,
             },
       alias:
         blocksuiteBaseDir === undefined
@@ -222,7 +228,7 @@ export const createConfiguration: (
           oneOf: [
             {
               test: /\.tsx?$/,
-              // Compile all ts files in the workspace
+              exclude: /node_modules/,
               loader: require.resolve('swc-loader'),
               options: {
                 // https://swc.rs/docs/configuring-swc/
@@ -246,6 +252,7 @@ export const createConfiguration: (
                         emitFullSignatures: true,
                       },
                     },
+                    useDefineForClassFields: false,
                   },
                   experimental: {
                     keepImportAssertions: true,
