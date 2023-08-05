@@ -17,23 +17,18 @@ export const navWrapperStyle = style({
   paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
-    [`(max-width: ${floatingMaxWidth}px)`]: {
-      position: 'absolute',
-      width: `calc(${navWidthVar})`,
-      zIndex: 4,
-      backgroundColor: 'var(--affine-background-primary-color)',
-      selectors: {
-        '&[data-open="false"]': {
-          marginLeft: `calc((10vw + ${navWidthVar}) * -1)`,
-        },
-      },
-    },
     print: {
       display: 'none',
       zIndex: -1,
     },
   },
   selectors: {
+    '&[data-is-floating="true"]': {
+      position: 'absolute',
+      width: `calc(${navWidthVar})`,
+      zIndex: 4,
+      backgroundColor: 'var(--affine-background-primary-color)',
+    },
     '&[data-open="false"]': {
       marginLeft: `calc(${navWidthVar} * -1)`,
     },
@@ -93,17 +88,15 @@ export const sidebarFloatMaskStyle = style({
   right: '100%',
   bottom: 0,
   background: 'var(--affine-background-modal-color)',
-  '@media': {
-    [`(max-width: ${floatingMaxWidth}px)`]: {
-      selectors: {
-        '&[data-open="true"]': {
-          opacity: 1,
-          pointerEvents: 'auto',
-          right: '0',
-          zIndex: 3,
-        },
-      },
+  selectors: {
+    '&[data-open="true"][data-is-floating="true"]': {
+      opacity: 1,
+      pointerEvents: 'auto',
+      right: '0',
+      zIndex: 3,
     },
+  },
+  '@media': {
     print: {
       display: 'none',
     },

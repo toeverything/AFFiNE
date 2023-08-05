@@ -18,9 +18,11 @@
     "useUnknownInCatchVariables": true,
 
     // Modules
-    "module": "ES2022",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "types": ["affine__env"],
+    "typeRoots": ["./node_modules/@types"],
 
     // Emit
     "declaration": true,
@@ -36,10 +38,12 @@
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
 
     // Language and Environment
-    "jsx": "react-jsx",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "@emotion/react",
+    "lib": ["ESNext", "DOM"],
     "target": "ES2022",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,

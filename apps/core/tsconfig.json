@@ -1,23 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "ESNext",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "moduleResolution": "bundler",
-    "jsx": "preserve",
-    "jsxImportSource": "@emotion/react",
-    "incremental": true,
-    "experimentalDecorators": true,
+    "outDir": "lib",
     "typeRoots": ["../../node_modules", "../../node_modules/@types"],
-    "types": ["webpack-env", "ses"]
+    "types": ["webpack-env", "ses", "affine__env"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"],

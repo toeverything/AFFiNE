@@ -1,5 +1,7 @@
 import type { ComplexStyleRule } from '@vanilla-extract/css';
-import { style } from '@vanilla-extract/css';
+import { createContainer, style } from '@vanilla-extract/css';
+
+export const headerVanillaContainer = createContainer();
 
 export const headerContainer = style({
   height: 'auto',
@@ -27,19 +29,26 @@ export const headerContainer = style({
 } as ComplexStyleRule);
 
 export const header = style({
+  containerName: headerVanillaContainer,
+  containerType: 'inline-size',
   flexShrink: 0,
-  height: '52px',
+  minHeight: '52px',
   width: '100%',
-  padding: '0 20px',
-  display: 'flex',
-  justifyContent: 'space-between',
+  padding: '8px 20px',
+  display: 'grid',
+  gridTemplateColumns: '1fr auto 1fr',
   alignItems: 'center',
   background: 'var(--affine-background-primary-color)',
   zIndex: 99,
   position: 'relative',
   selectors: {
-    '&[data-is-edgeless="true"]': {
+    '&[data-is-page-list="true"], &[data-is-edgeless="true"]': {
       borderBottom: `1px solid var(--affine-border-color)`,
+    },
+  },
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      alignItems: 'start',
     },
   },
 });
@@ -47,15 +56,18 @@ export const header = style({
 export const titleContainer = style({
   width: '100%',
   height: '100%',
-  margin: 'auto',
-  position: 'absolute',
-  inset: 'auto auto auto 50%',
-  transform: 'translate(-50%, 0px)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   alignContent: 'unset',
   fontSize: 'var(--affine-font-base)',
+  ['WebkitAppRegion' as string]: 'no-drag',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      alignItems: 'start',
+      paddingTop: '2px',
+    },
+  },
 });
 
 export const title = style({
@@ -75,9 +87,26 @@ export const title = style({
     },
   },
 } as ComplexStyleRule);
-
+export const pageTitle = style({
+  maxWidth: '600px',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  transition: 'width .15s',
+  cursor: 'pointer',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 1920px)`]: {
+      maxWidth: '800px',
+    },
+    [`${headerVanillaContainer} (max-width: 1300px)`]: {
+      maxWidth: '400px',
+    },
+    [`${headerVanillaContainer} (max-width: 768px)`]: {
+      maxWidth: '220px',
+    },
+  },
+});
 export const titleWrapper = style({
-  height: '100%',
   position: 'relative',
   display: 'flex',
   justifyContent: 'center',
@@ -86,10 +115,28 @@ export const titleWrapper = style({
 export const headerLeftSide = style({
   display: 'flex',
   alignItems: 'center',
-  width: '150px',
-  '@media': {
-    '(max-width: 900px)': {
-      width: 'auto',
+  transition: 'all .15s',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      height: '68px',
+    },
+  },
+});
+export const headerLeftSideItem = style({
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      position: 'absolute',
+      left: '0',
+      bottom: '8px',
+    },
+  },
+});
+export const headerLeftSideOpen = style({
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      marginLeft: '20px',
     },
   },
 });
@@ -99,7 +146,21 @@ export const headerRightSide = style({
   alignItems: 'center',
   gap: '12px',
   zIndex: 1,
+  marginLeft: '20px',
   justifyContent: 'flex-end',
+  transition: 'all .15s',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      position: 'absolute',
+      height: 'auto',
+      right: '0',
+      bottom: '8px',
+      marginRight: '18px',
+    },
+  },
+});
+export const headerRightSideWindow = style({
+  marginRight: '140px',
 });
 
 export const browserWarning = style({
@@ -131,22 +192,12 @@ export const closeButton = style({
 });
 
 export const switchWrapper = style({
-  position: 'absolute',
-  right: '100%',
-  top: 0,
-  bottom: 0,
-  margin: 'auto',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
 });
 
 export const searchArrowWrapper = style({
-  position: 'absolute',
-  left: 'calc(100% + 4px)',
-  top: 0,
-  bottom: 0,
-  margin: 'auto',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -164,16 +215,13 @@ export const allPageListTitleWrapper = style({
   color: 'var(--affine-text-primary-color)',
   display: 'flex',
   alignItems: 'center',
-  '::after': {
-    content: '""',
-    display: 'block',
-    width: '100%',
-    height: '1px',
-    background: 'var(--affine-border-color)',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    margin: '0 1px',
+  width: '100%',
+  height: '100%',
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      alignItems: 'flex-start',
+      marginTop: '8px',
+    },
   },
 });
 export const pageListTitleIcon = style({
@@ -220,30 +268,36 @@ export const windowAppControlsWrapper = style({
   gap: '2px',
   transform: 'translateX(8px)',
   height: '100%',
+  position: 'absolute',
+  right: '14px',
 });
 
 export const windowAppControl = style({
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '42px',
-  height: 'calc(100% - 10px)',
-  paddingTop: '10px',
+  width: '51px',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '0',
   selectors: {
     '&[data-type="close"]': {
       width: '56px',
-      paddingRight: '14px',
-      marginRight: '-14px',
+      paddingRight: '5px',
+      marginRight: '-12px',
     },
     '&[data-type="close"]:hover': {
-      background: 'var(--affine-error-color)',
-      color: '#FFFFFF',
+      background: 'var(--affine-windows-close-button)',
+      color: 'var(--affine-pure-white)',
     },
     '&:hover': {
-      background: 'var(--affine-background-tertiary-color)',
+      background: 'var(--affine-hover-color)',
+    },
+  },
+  '@container': {
+    [`${headerVanillaContainer} (max-width: 900px)`]: {
+      height: '50px',
+      paddingTop: '0',
     },
   },
 } as ComplexStyleRule);
