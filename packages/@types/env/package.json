@@ -6,5 +6,6 @@
   "dependencies": {
     "@affine/env": "workspace:*",
     "@toeverything/infra": "workspace:*"
-  }
+  },
+  "version": "0.8.0-canary.11"
 }
