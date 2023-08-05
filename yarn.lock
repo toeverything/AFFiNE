@@ -576,7 +576,7 @@ __metadata:
     "@aws-sdk/client-s3": ^3.378.0
     "@napi-rs/image": ^1.6.1
     "@nestjs/apollo": ^12.0.7
-    "@nestjs/common": ^10.1.2
+    "@nestjs/common": ^10.1.3
     "@nestjs/core": ^10.1.2
     "@nestjs/graphql": ^12.0.8
     "@nestjs/platform-express": ^10.1.2
@@ -6774,9 +6774,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/common@npm:^10.1.2":
-  version: 10.1.2
-  resolution: "@nestjs/common@npm:10.1.2"
+"@nestjs/common@npm:^10.1.3":
+  version: 10.1.3
+  resolution: "@nestjs/common@npm:10.1.3"
   dependencies:
     iterare: 1.2.1
     tslib: 2.6.1
@@ -6791,7 +6791,7 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: 9cc8211eaac5e0a6a1aa2e39624a61b5020180aa79ac728d1dc75a3007025f0dba84dea4a7a950e021180beda55df97268a6921b386909670b00fb241c92afb7
+  checksum: 921d11525e9fa8e495a155dcae366b2797ea6ba9a47cfa77c9c36e69b49318eb2391407ed64a687f359b97ab0f71cc9bfe8c57cb4ef960df64d02450019a6ba3
   languageName: node
   linkType: hard
 
