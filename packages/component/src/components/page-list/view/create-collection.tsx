@@ -172,7 +172,7 @@ export const EditCollection = ({
     if (!isNameEmpty) {
       onConfirm(value);
     }
-  }, [value, isNameEmpty]);
+  }, [value, isNameEmpty, onConfirm]);
   return (
     <div
       style={{
