@@ -167,6 +167,7 @@ export const EditCollection = ({
     },
     [value]
   );
+  const isNameEmpty = (value: Collection) => value.name.trim().length === 0;
   return (
     <div
       style={{
@@ -273,8 +274,9 @@ export const EditCollection = ({
           size="large"
           data-testid="save-collection"
           type="primary"
+          disabled={isNameEmpty(value)}
           onClick={() => {
-            if (value.name.trim().length > 0) {
+            if (!isNameEmpty(value)) {
               onConfirm(value);
             }
           }}
