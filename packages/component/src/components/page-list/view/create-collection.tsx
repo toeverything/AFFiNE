@@ -168,6 +168,11 @@ export const EditCollection = ({
     [value]
   );
   const isNameEmpty = useMemo(() => value.name.trim().length === 0, [value]);
+  const onSaveCollection = useCallback(() => {
+    if (!isNameEmpty) {
+      onConfirm(value);
+    }
+  }, [value, isNameEmpty]);
   return (
     <div
       style={{
@@ -275,11 +280,7 @@ export const EditCollection = ({
           data-testid="save-collection"
           type="primary"
           disabled={isNameEmpty}
-          onClick={() => {
-            if (!isNameEmpty) {
-              onConfirm(value);
-            }
-          }}
+          onClick={onSaveCollection}
         >
           {onConfirmText ?? t['Create']()}
         </Button>
