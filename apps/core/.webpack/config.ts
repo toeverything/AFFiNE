@@ -132,7 +132,7 @@ export const createConfiguration: (
         blocksuiteBaseDir === undefined
           ? undefined
           : {
-              events: require.resolve('events'),
+              events: false,
               path: false,
             },
       alias:
