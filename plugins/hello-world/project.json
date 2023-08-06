@@ -1,7 +1,13 @@
 {
   "name": "@affine/hello-world-plugin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "tags": ["plugin"],
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "{workspaceRoot}/packages/plugin-cli/src/**/*",
+      "sharedGlobals"
+    ]
+  },
   "targets": {
     "build": {
       "executor": "nx:run-script",
@@ -9,11 +15,12 @@
         "script": "build"
       },
       "dependsOn": ["^build"],
-      "inputs": ["{projectRoot}/**/*"],
+      "inputs": ["default"],
       "outputs": [
         "{workspaceRoot}/apps/core/public/plugins/hello-world",
         "{workspaceRoot}/apps/electron/dist/plugins/hello-world"
       ]
     }
-  }
+  },
+  "tags": ["plugin"]
 }

@@ -114,9 +114,12 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Plugins
 
-> Plugins are a way to extend the functionality of AFFiNE.
+> Plugins are a way to extend the functionality of AFFiNE. You can use plugins to add new blocks, new features, and even new ways to edit content.
 >
-> (Currently, plugins are under heavy development, and the SDK is not yet available.)
+> (Currently, the plugin system is under heavy development. You will see the plugin system in the canary release.)
+
+- [@affine/sdk](./packages/sdk) - SDK for developing plugins
+- [@affine/plugin-cli](./packages/plugin-cli) - CLI for developing plugins
 
 | Official Plugin                                       | Description                               |
 | ----------------------------------------------------- | ----------------------------------------- |
@@ -128,15 +131,15 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
-- [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
+- [blockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
-- [Yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync.
-- [Electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
-- [React](https://github.com/facebook/react) - View layer support and web GUI framework.
-- [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.
+- [yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync.
+- [electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
+- [React](https://github.com/facebook/react) - The library for web and native user interfaces.
+- [napi-rs](https://github.com/napi-rs/napi-rs) - A framework for building compiled Node.js add-ons in Rust via Node-API.
 - [Jotai](https://github.com/pmndrs/jotai) - Primitive and flexible state management for React.
-- [MUI](https://github.com/mui/material-ui) - Our most used graphic UI component library.
 - [async-call-rpc](https://github.com/Jack-Works/async-call-rpc) - A lightweight JSON RPC client & server.
+- [Vite](https://github.com/vitejs/vite) - Next generation frontend tooling.
 - Other upstream [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.

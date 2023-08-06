@@ -14,6 +14,7 @@
     "@swc/core": "^1.3.72",
     "@toeverything/infra": "workspace:^",
     "@vanilla-extract/rollup-plugin": "^1.2.2",
+    "@vitejs/plugin-vue": "^4.2.3",
     "rollup": "^3.27.0",
     "rollup-plugin-swc3": "^0.9.1",
     "ts-node": "^10.9.1"

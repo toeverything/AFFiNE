@@ -25,7 +25,8 @@
         "storage",
         "infra",
         "plugin-cli",
-        "sdk"
+        "sdk",
+        "plugin"
       ]
     ]
   }

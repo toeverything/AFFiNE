@@ -44,5 +44,11 @@ test('plugin should exist', async ({ page }) => {
       description: expect.any(String),
       affinePlugin: expect.anything(),
     },
+    {
+      name: '@affine/vue-hello-world-plugin',
+      version: expect.any(String),
+      description: expect.any(String),
+      affinePlugin: expect.anything(),
+    },
   ]);
 });

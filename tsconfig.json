@@ -130,6 +130,9 @@
     {
       "path": "./plugins/image-preview"
     },
+    {
+      "path": "./plugins/vue-hello-world"
+    },
     // Packages
     {
       "path": "./packages/cli"

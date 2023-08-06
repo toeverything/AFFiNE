@@ -1,5 +1,5 @@
 {
-  "name": "@affine/copilot-plugin",
+  "name": "@affine/vue-hello-world-plugin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "namedInputs": {
     "default": [
@@ -17,8 +17,8 @@
       "dependsOn": ["^build"],
       "inputs": ["default"],
       "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/copilot",
-        "{workspaceRoot}/apps/electron/dist/plugins/copilot"
+        "{workspaceRoot}/apps/core/public/plugins/vue-hello-world",
+        "{workspaceRoot}/apps/electron/dist/plugins/vue-hello-world"
       ]
     }
   },

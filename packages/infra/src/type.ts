@@ -9,7 +9,7 @@ export const packageJsonInputSchema = z.object({
   version: z.string(),
   description: z.string(),
   affinePlugin: z.object({
-    release: z.boolean(),
+    release: z.union([z.boolean(), z.enum(['development'])]),
     entry: z.object({
       core: z.string(),
       server: z.string().optional(),
@@ -23,7 +23,7 @@ export const packageJsonOutputSchema = z.object({
   version: z.string(),
   description: z.string(),
   affinePlugin: z.object({
-    release: z.boolean(),
+    release: z.union([z.boolean(), z.enum(['development'])]),
     entry: z.object({
       core: z.string(),
     }),
