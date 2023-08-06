@@ -31,7 +31,19 @@ if (!plugin) {
 
 const command = result.positionals[0];
 
-const isWatch = command === 'dev';
+const isWatch = (() => {
+  switch (command) {
+    case 'dev': {
+      return true;
+    }
+    case 'build': {
+      return false;
+    }
+    default: {
+      throw new Error('invalid command');
+    }
+  }
+})();
 
 const external = [
   // built-in packages
@@ -132,7 +144,7 @@ await build({
   build: {
     watch: isWatch ? {} : undefined,
     minify: false,
-    target: 'esnext',
+    target: 'es2020',
     outDir: coreOutDir,
     emptyOutDir: true,
     lib: {
