@@ -11,6 +11,7 @@ import {
 } from '@toeverything/infra/type';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
+import vue from '@vitejs/plugin-vue';
 import { build, type PluginOption } from 'vite';
 import type { z } from 'zod';
 
@@ -30,7 +31,19 @@ if (!plugin) {
 
 const command = result.positionals[0];
 
-const isWatch = command === 'dev';
+const isWatch = (() => {
+  switch (command) {
+    case 'dev': {
+      return true;
+    }
+    case 'build': {
+      return false;
+    }
+    default: {
+      throw new Error('invalid command');
+    }
+  }
+})();
 
 const external = [
   // built-in packages
@@ -131,6 +144,7 @@ await build({
   build: {
     watch: isWatch ? {} : undefined,
     minify: false,
+    target: 'es2020',
     outDir: coreOutDir,
     emptyOutDir: true,
     lib: {
@@ -169,6 +183,7 @@ await build({
   },
   plugins: [
     vanillaExtractPlugin(),
+    vue(),
     react(),
     {
       name: 'parse-bundle',
