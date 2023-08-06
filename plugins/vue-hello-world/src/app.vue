@@ -5,7 +5,9 @@ const count = ref(0);
 </script>
 
 <template>
-  <button @click="count++">{{ count }}</button>
+  <el-button @click="count++">
+    {{ count }}
+  </el-button>
 </template>
 
 <style scoped></style>

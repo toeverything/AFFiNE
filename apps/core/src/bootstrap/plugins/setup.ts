@@ -135,7 +135,14 @@ const pluginFetch = createFetch({});
 const timer = createTimers(abortController.signal);
 
 const sharedGlobalThis = Object.assign(Object.create(null), timer, {
+  Object: globalThis.Object,
   fetch: pluginFetch,
+  Symbol: globalThis.Symbol,
+  Error: globalThis.Error,
+  TypeError: globalThis.TypeError,
+  RangeError: globalThis.RangeError,
+  console: globalThis.console,
+  crypto: globalThis.crypto,
 });
 
 const dynamicImportMap = new Map<
@@ -265,15 +272,11 @@ export const createOrGetGlobalThis = (
         userAgent: navigator.userAgent,
       },
 
-      // safe to use for all plugins
-      Error: globalThis.Error,
-      TypeError: globalThis.TypeError,
-      RangeError: globalThis.RangeError,
-      console: globalThis.console,
-      crypto: globalThis.crypto,
+      MouseEvent: globalThis.MouseEvent,
+      KeyboardEvent: globalThis.KeyboardEvent,
+      CustomEvent: globalThis.CustomEvent,
 
       // copilot uses these
-      CustomEvent: globalThis.CustomEvent,
       Date: globalThis.Date,
       Math: globalThis.Math,
       URL: globalThis.URL,
@@ -306,6 +309,7 @@ export const createOrGetGlobalThis = (
       IDBVersionChangeEvent: globalThis.IDBVersionChangeEvent,
     }
   );
+  pluginGlobalThis.global = pluginGlobalThis;
   globalThisMap.set(pluginName, pluginGlobalThis);
   return pluginGlobalThis;
 };

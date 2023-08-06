@@ -17,6 +17,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
+    "element-plus": "^2.3.9",
     "vue": "^3.3.4"
   },
   "devDependencies": {
