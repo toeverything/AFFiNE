@@ -11,6 +11,7 @@ import {
 } from '@toeverything/infra/type';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
+import vue from '@vitejs/plugin-vue';
 import { build, type PluginOption } from 'vite';
 import type { z } from 'zod';
 
@@ -169,6 +170,7 @@ await build({
   },
   plugins: [
     vanillaExtractPlugin(),
+    vue(),
     react(),
     {
       name: 'parse-bundle',

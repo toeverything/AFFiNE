@@ -8,6 +8,7 @@ const builtinPluginUrl = new Set([
   '/plugins/copilot',
   '/plugins/hello-world',
   '/plugins/image-preview',
+  '/plugins/vue-hello-world',
 ]);
 
 const logger = new DebugLogger('register-plugins');

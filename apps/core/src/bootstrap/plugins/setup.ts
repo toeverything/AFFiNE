@@ -222,6 +222,9 @@ export const createOrGetGlobalThis = (
             if (sharedGlobalThis[key]) return sharedGlobalThis[key];
             const result = Reflect.get(window, key);
             if (typeof result === 'function') {
+              if (result === ShadowRoot) {
+                return result;
+              }
               return function (...args: any[]) {
                 permissionLogger.debug(
                   `${pluginName} is calling window`,
@@ -283,6 +286,10 @@ export const createOrGetGlobalThis = (
       // image-preview uses these
       Blob: globalThis.Blob,
       ClipboardItem: globalThis.ClipboardItem,
+
+      // vue uses these
+      Element: globalThis.Element,
+      SVGElement: globalThis.SVGElement,
 
       // fixme: use our own db api
       indexedDB: globalThis.indexedDB,

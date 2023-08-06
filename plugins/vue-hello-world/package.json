@@ -1,0 +1,25 @@
+{
+  "name": "@affine/vue-hello-world-plugin",
+  "type": "module",
+  "private": true,
+  "description": "Vue hello world plugin",
+  "version": "0.8.0-canary.11",
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
+  "affinePlugin": {
+    "release": false,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
+    "vue": "^3.3.4"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
+  }
+}
