@@ -123,22 +123,17 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
-      modules: [
-        // Root directory's node_modules takes precedence over other node_modules.
-        resolve(rootPath, '../../', 'node_modules'),
-        'node_modules',
-      ],
       fallback:
         blocksuiteBaseDir === undefined
           ? undefined
           : {
               events: false,
-              path: false,
             },
       alias:
         blocksuiteBaseDir === undefined
           ? undefined
           : {
+              yjs: require.resolve('yjs'),
               '@blocksuite/block-std': resolve(
                 blocksuiteBaseDir,
                 'packages',
