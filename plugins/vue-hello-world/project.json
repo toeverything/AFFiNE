@@ -11,8 +11,8 @@
       "dependsOn": ["^build"],
       "inputs": ["{projectRoot}/**/*"],
       "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/hello-world",
-        "{workspaceRoot}/apps/electron/dist/plugins/hello-world"
+        "{workspaceRoot}/apps/core/public/plugins/vue-hello-world",
+        "{workspaceRoot}/apps/electron/dist/plugins/vue-hello-world"
       ]
     }
   }
