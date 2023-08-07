@@ -12,3 +12,5 @@ e2e-dist-*
 static
 web-static
 public
+packages/sdk/src/*.d.ts
+packages/sdk/src/*.js

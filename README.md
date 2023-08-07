@@ -131,7 +131,7 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
-- [blockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
+- [blocksuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
 - [yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync.
 - [electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
@@ -163,15 +163,11 @@ Some amazing companies including AFFiNE are looking for developers! Are you inte
 
 ## Upgrading
 
-For upgrading information please see our [update page].
+For upgrading information, please see our [update page].
 
 ## Feature Request
 
-For feature request please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
-
-## Is it awesome?
-
-[These people] seem to like it.
+For feature request, please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
 
 ## Building
 
@@ -189,7 +185,6 @@ See [LICENSE] for details.
 [all-contributors-badge]: https://img.shields.io/github/all-contributors/toeverything/AFFiNE/master?color=orange
 [license]: ./LICENSE
 [building.md]: ./docs/BUILDING.md
-[these people]: https://twitter.com/AffineOfficial/followers
 [update page]: https://affine.pro/blog?tag=Release%20Note
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
