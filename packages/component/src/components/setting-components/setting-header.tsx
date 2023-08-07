@@ -1,13 +1,18 @@
-import type { FC, HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 import { settingHeader } from './share.css';
 
-export const SettingHeader: FC<
-  { title: ReactNode; subtitle?: ReactNode } & Omit<
-    HTMLAttributes<HTMLDivElement>,
-    'title'
-  >
-> = ({ title, subtitle, ...otherProps }) => {
+interface SettingHeaderProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title: ReactNode;
+  subtitle?: ReactNode;
+}
+
+export const SettingHeader = ({
+  title,
+  subtitle,
+  ...otherProps
+}: SettingHeaderProps) => {
   return (
     <div className={settingHeader} {...otherProps}>
       <div className="title">{title}</div>

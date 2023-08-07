@@ -232,19 +232,15 @@ export const AllWorkspaceModals = (): ReactElement => {
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
             id => {
-              startTransition(() => {
-                setOpenCreateWorkspaceModal(false);
-                setOpenWorkspacesModal(false);
-                setCurrentWorkspaceId(id);
+              setOpenCreateWorkspaceModal(false);
+              setOpenWorkspacesModal(false);
+              // if jumping immediately, the page may stuck in loading state
+              // not sure why yet .. here is a workaround
+              setTimeout(() => {
                 jumpToSubPath(id, WorkspaceSubPath.ALL);
               });
             },
-            [
-              jumpToSubPath,
-              setCurrentWorkspaceId,
-              setOpenCreateWorkspaceModal,
-              setOpenWorkspacesModal,
-            ]
+            [jumpToSubPath, setOpenCreateWorkspaceModal, setOpenWorkspacesModal]
           )}
         />
       </Suspense>

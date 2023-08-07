@@ -4,13 +4,12 @@ import type {
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { FC } from 'react';
 
 import { Button } from '../../ui/button';
 import { descriptionStyle, menuItemStyle } from './index.css';
 import type { ShareMenuProps } from './share-menu';
 
-const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
+const ShareLocalWorkspace = (props: ShareMenuProps<LocalWorkspace>) => {
   const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
@@ -29,9 +28,7 @@ const ShareLocalWorkspace: FC<ShareMenuProps<LocalWorkspace>> = props => {
   );
 };
 
-const ShareAffineWorkspace: FC<
-  ShareMenuProps<AffineCloudWorkspace>
-> = props => {
+const ShareAffineWorkspace = (props: ShareMenuProps<AffineCloudWorkspace>) => {
   // fixme: regression
   const isPublicWorkspace = false;
   const t = useAFFiNEI18N();
@@ -54,7 +51,7 @@ const ShareAffineWorkspace: FC<
   );
 };
 
-export const ShareWorkspace: FC<ShareMenuProps> = props => {
+export const ShareWorkspace = (props: ShareMenuProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return (
       <ShareLocalWorkspace {...(props as ShareMenuProps<LocalWorkspace>)} />

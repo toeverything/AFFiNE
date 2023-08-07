@@ -1,11 +1,15 @@
-import type { FC, PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 
 import { wrapper } from './share.css';
-export const SettingWrapper: FC<
-  PropsWithChildren<{
-    title?: ReactNode;
-  }>
-> = ({ title, children }) => {
+
+interface SettingWrapperProps {
+  title?: ReactNode;
+}
+
+export const SettingWrapper = ({
+  title,
+  children,
+}: PropsWithChildren<SettingWrapperProps>) => {
   return (
     <div className={wrapper}>
       {title ? <div className="title">{title}</div> : null}

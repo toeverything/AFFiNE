@@ -11,26 +11,26 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
-import type { CSSProperties, FC } from 'react';
+import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 
 import { WorkspaceCard } from '../../components/card/workspace-card';
 import { workspaceItemStyle } from './index.css';
 
-export type WorkspaceListProps = {
+export interface WorkspaceListProps {
   disabled?: boolean;
   currentWorkspaceId: string | null;
   items: (AffineCloudWorkspace | LocalWorkspace)[];
   onClick: (workspaceId: string) => void;
   onSettingClick: (workspaceId: string) => void;
   onDragEnd: (event: DragEndEvent) => void;
-};
+}
 
-const SortableWorkspaceItem: FC<
-  Omit<WorkspaceListProps, 'items'> & {
-    item: RootWorkspaceMetadata;
-  }
-> = props => {
+interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
+  item: RootWorkspaceMetadata;
+}
+
+const SortableWorkspaceItem = (props: SortableWorkspaceItemProps) => {
   const { setNodeRef, attributes, listeners, transform } = useSortable({
     id: props.item.id,
   });
@@ -63,7 +63,7 @@ const SortableWorkspaceItem: FC<
   );
 };
 
-export const WorkspaceList: FC<WorkspaceListProps> = props => {
+export const WorkspaceList = (props: WorkspaceListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

@@ -7,10 +7,14 @@ import type { WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
-import { Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { afterEach, assertType, describe, expect, test } from 'vitest';
 
 import { CRUD } from '../crud';
+
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
 
 afterEach(() => {
   localStorage.clear();
@@ -30,14 +34,12 @@ describe('crud', () => {
 
   test('delete not exist', async () => {
     await expect(async () =>
-      CRUD.delete(new Workspace({ id: 'test' }))
+      CRUD.delete(new Workspace({ id: 'test', schema }))
     ).rejects.toThrowError();
   });
 
   test('create & delete', async () => {
-    const workspace = new Workspace({ id: 'test' })
-      .register(AffineSchemas)
-      .register(__unstableSchemas);
+    const workspace = new Workspace({ id: 'test', schema });
     const page = workspace.createPage({ id: 'page0' });
     await page.waitForLoaded();
     const pageBlockId = page.addBlock('affine:page', {

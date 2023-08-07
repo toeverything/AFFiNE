@@ -3,7 +3,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import type { FC } from 'react';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -17,7 +16,7 @@ import {
 import type { ShareMenuProps } from './share-menu';
 import { StyledDisableButton, StyledInput, StyledLinkSpan } from './styles';
 
-export const LocalSharePage: FC<ShareMenuProps> = props => {
+export const LocalSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
@@ -35,7 +34,7 @@ export const LocalSharePage: FC<ShareMenuProps> = props => {
   );
 };
 
-export const AffineSharePage: FC<ShareMenuProps> = props => {
+export const AffineSharePage = (props: ShareMenuProps) => {
   const [isPublic, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(
     props.currentPage
   );
@@ -123,7 +122,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   );
 };
 
-export const SharePage: FC<ShareMenuProps> = props => {
+export const SharePage = (props: ShareMenuProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {

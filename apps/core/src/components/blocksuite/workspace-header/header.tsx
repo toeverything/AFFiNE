@@ -8,6 +8,7 @@ import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { headerItemsAtom } from '@toeverything/infra/atom';
+import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
@@ -38,8 +39,6 @@ export type BaseHeaderProps<
 
 export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
-  // some windows only items
-  WindowsAppControls = 'windowsAppControls',
 }
 
 type HeaderItem = {
@@ -63,59 +62,54 @@ const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
       );
     },
   },
-  [HeaderRightItemName.WindowsAppControls]: {
-    Component: () => {
-      const handleMinimizeApp = useCallback(() => {
-        window.apis?.ui.handleMinimizeApp().catch(err => {
-          console.error(err);
-        });
-      }, []);
-      const handleMaximizeApp = useCallback(() => {
-        window.apis?.ui.handleMaximizeApp().catch(err => {
-          console.error(err);
-        });
-      }, []);
-      const handleCloseApp = useCallback(() => {
-        window.apis?.ui.handleCloseApp().catch(err => {
-          console.error(err);
-        });
-      }, []);
-      return (
-        <div
-          data-platform-target="win32"
-          className={styles.windowAppControlsWrapper}
-        >
-          <button
-            data-type="minimize"
-            className={styles.windowAppControl}
-            onClick={handleMinimizeApp}
-          >
-            <MinusIcon />
-          </button>
-          <button
-            data-type="maximize"
-            className={styles.windowAppControl}
-            onClick={handleMaximizeApp}
-          >
-            <RoundedRectangleIcon />
-          </button>
-          <button
-            data-type="close"
-            className={styles.windowAppControl}
-            onClick={handleCloseApp}
-          >
-            <CloseIcon />
-          </button>
-        </div>
-      );
-    },
-    availableWhen: () => {
-      return isDesktop && globalThis.platform === 'win32';
-    },
-  },
 };
 
 export type HeaderProps = BaseHeaderProps;
+const WindowsAppControls = () => {
+  const handleMinimizeApp = useCallback(() => {
+    window.apis?.ui.handleMinimizeApp().catch(err => {
+      console.error(err);
+    });
+  }, []);
+  const handleMaximizeApp = useCallback(() => {
+    window.apis?.ui.handleMaximizeApp().catch(err => {
+      console.error(err);
+    });
+  }, []);
+  const handleCloseApp = useCallback(() => {
+    window.apis?.ui.handleCloseApp().catch(err => {
+      console.error(err);
+    });
+  }, []);
+  return (
+    <div
+      data-platform-target="win32"
+      className={styles.windowAppControlsWrapper}
+    >
+      <button
+        data-type="minimize"
+        className={styles.windowAppControl}
+        onClick={handleMinimizeApp}
+      >
+        <MinusIcon />
+      </button>
+      <button
+        data-type="maximize"
+        className={styles.windowAppControl}
+        onClick={handleMaximizeApp}
+      >
+        <RoundedRectangleIcon />
+      </button>
+      <button
+        data-type="close"
+        className={styles.windowAppControl}
+        onClick={handleCloseApp}
+      >
+        <CloseIcon />
+      </button>
+    </div>
+  );
+};
 
 const PluginHeader = () => {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -165,7 +159,7 @@ export const Header = forwardRef<
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
 
   const mode = useAtomValue(currentModeAtom);
-
+  const isWindowsDesktop = globalThis.platform === 'win32' && isDesktop;
   return (
     <div
       className={styles.headerContainer}
@@ -196,14 +190,25 @@ export const Header = forwardRef<
         data-has-warning={showWarning}
         data-testid="editor-header-items"
         data-is-edgeless={mode === 'edgeless'}
+        data-is-page-list={props.currentPage === null}
       >
         <div className={styles.headerLeftSide}>
-          {!open && <SidebarSwitch />}
-          {props.leftSlot}
+          <div>{!open && <SidebarSwitch />}</div>
+          <div
+            className={clsx(styles.headerLeftSideItem, {
+              [styles.headerLeftSideOpen]: open,
+            })}
+          >
+            {props.leftSlot}
+          </div>
         </div>
 
         {props.children}
-        <div className={styles.headerRightSide}>
+        <div
+          className={clsx(styles.headerRightSide, {
+            [styles.headerRightSideWindow]: isWindowsDesktop,
+          })}
+        >
           <PluginHeader />
           {useMemo(() => {
             return Object.entries(HeaderRightItems).map(
@@ -227,6 +232,7 @@ export const Header = forwardRef<
             );
           }, [props])}
         </div>
+        {isWindowsDesktop ? <WindowsAppControls /> : null}
       </div>
     </div>
   );
