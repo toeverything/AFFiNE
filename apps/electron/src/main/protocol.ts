@@ -1,26 +1,13 @@
 import { net, protocol, session } from 'electron';
 import { join } from 'path';
 
-import { logger } from './logger';
 import { CLOUD_API_URL } from './config';
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'file',
-    privileges: {
-      secure: false,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      bypassCSP: true,
-      stream: true,
-    },
-  },
-]);
+import { logger } from './logger';
 
 const NETWORK_REQUESTS = ['/api', '/socket.io', '/graphql'];
 
 export function registerProtocol() {
+  // it seems that there is some issue to postMessage between renderer with custom protocol & helper process
   protocol.handle('file', request => {
     const url = request.url.replace(/^file:\/\//, '');
     let realpath = decodeURIComponent(url);
