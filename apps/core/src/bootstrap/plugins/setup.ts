@@ -1,12 +1,8 @@
-import * as AFFiNEComponent from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
 import { FormatQuickBar } from '@blocksuite/blocks';
-import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
-import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import * as Icons from '@blocksuite/icons';
 import {
   contentLayoutAtom,
   currentPageAtom,
@@ -17,67 +13,41 @@ import {
   settingItemsAtom,
   windowItemsAtom,
 } from '@toeverything/infra/atom';
-import * as Jotai from 'jotai/index';
 import { Provider } from 'jotai/react';
-import * as JotaiUtils from 'jotai/utils';
-import * as React from 'react';
 import { createElement, type PropsWithChildren } from 'react';
-import * as ReactJSXRuntime from 'react/jsx-runtime';
-import * as ReactDom from 'react-dom';
-import * as ReactDomClient from 'react-dom/client';
-import * as SWR from 'swr';
 
 import { createFetch } from './endowments/fercher';
 import { createTimers } from './endowments/timer';
+import { setupImportsMap } from './setup-imports-map';
 
 const dynamicImportKey = '$h‍_import';
 
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
 
-const setupRootImportsMap = () => {
-  _rootImportsMap.set('react', new Map(Object.entries(React)));
-  _rootImportsMap.set(
-    'react/jsx-runtime',
-    new Map(Object.entries(ReactJSXRuntime))
-  );
-  _rootImportsMap.set('react-dom', new Map(Object.entries(ReactDom)));
-  _rootImportsMap.set(
-    'react-dom/client',
-    new Map(Object.entries(ReactDomClient))
-  );
-  _rootImportsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
-  _rootImportsMap.set(
-    '@affine/component',
-    new Map(Object.entries(AFFiNEComponent))
-  );
-  _rootImportsMap.set(
-    '@blocksuite/blocks/std',
-    new Map(Object.entries(BlockSuiteBlocksStd))
-  );
-  _rootImportsMap.set(
-    '@blocksuite/global/utils',
-    new Map(Object.entries(BlockSuiteGlobalUtils))
-  );
-  _rootImportsMap.set('jotai', new Map(Object.entries(Jotai)));
-  _rootImportsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
-  _rootImportsMap.set(
-    '@affine/sdk/entry',
-    new Map(
-      Object.entries({
-        rootStore: rootStore,
-        currentWorkspaceAtom: currentWorkspaceAtom,
-        currentPageAtom: currentPageAtom,
-        contentLayoutAtom: contentLayoutAtom,
-      })
-    )
-  );
-  _rootImportsMap.set('swr', new Map(Object.entries(SWR)));
-};
-
 // module -> importName -> updater[]
 export const _rootImportsMap = new Map<string, Map<string, any>>();
-setupRootImportsMap();
+const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
+  react: import('react'),
+  'react/jsx-runtime': import('react/jsx-runtime'),
+  'react-dom': import('react-dom'),
+  'react-dom/client': import('react-dom/client'),
+  jotai: import('jotai'),
+  'jotai/utils': import('jotai/utils'),
+  swr: import('swr'),
+  '@affine/component': import('@affine/component'),
+  '@blocksuite/icons': import('@blocksuite/icons'),
+  '@affine/sdk/entry': {
+    rootStore: rootStore,
+    currentWorkspaceAtom: currentWorkspaceAtom,
+    currentPageAtom: currentPageAtom,
+    contentLayoutAtom: contentLayoutAtom,
+  },
+  '@blocksuite/blocks/std': import('@blocksuite/blocks/std'),
+  '@blocksuite/global/utils': import('@blocksuite/global/utils'),
+  '@toeverything/infra/atom': import('@toeverything/infra/atom'),
+});
+
 // pluginName -> module -> importName -> updater[]
 export const _pluginNestedImportsMap = new Map<
   string,
@@ -213,6 +183,7 @@ export const createOrGetGlobalThis = (
     Object.create(null),
     sharedGlobalThis,
     {
+      // fixme: vite build output bundle will have this, we should remove it
       process: Object.freeze({
         env: {
           NODE_ENV: process.env.NODE_ENV,
@@ -319,6 +290,7 @@ export const setupPluginCode = async (
   pluginName: string,
   filename: string
 ) => {
+  await rootImportsMapSetupPromise;
   if (!_pluginNestedImportsMap.has(pluginName)) {
     _pluginNestedImportsMap.set(pluginName, new Map());
   }
