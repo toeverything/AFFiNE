@@ -73,7 +73,7 @@ export const createConfiguration: (
 ) => webpack.Configuration = (buildFlags, runtimeConfig) => {
   let publicPath = process.env.PUBLIC_PATH ?? '/';
 
-  const blocksuiteBaseDir = process.env.LOCAL_BLOCK_SUITE;
+  const blocksuiteBaseDir = buildFlags.localBlockSuite;
 
   const cacheKey = computeCacheKey(buildFlags);
 
@@ -165,6 +165,12 @@ export const createConfiguration: (
                 'packages',
                 'store',
                 'src/workspace/migration/migrate-block'
+              ),
+              '@blocksuite/store/providers/broadcast-channel': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'store',
+                'src/providers/broadcast-channel'
               ),
               '@blocksuite/store': resolve(
                 blocksuiteBaseDir,
