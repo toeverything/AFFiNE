@@ -9,11 +9,10 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import {
-  contentLayoutAtom,
   editorItemsAtom,
-  rootStore,
-  windowItemsAtom,
-} from '@toeverything/infra/atom';
+  windowItemAtom,
+} from '@toeverything/infra/__internal__/plugin';
+import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';
@@ -168,7 +167,7 @@ const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
 ): ReactElement {
   const node = props.node;
-  const windowItems = useAtomValue(windowItemsAtom);
+  const windowItems = useAtomValue(windowItemAtom);
   if (typeof node === 'string') {
     if (node === 'editor') {
       return <EditorWrapper {...props.editorProps} />;

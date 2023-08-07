@@ -7,18 +7,11 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { headerItemsAtom } from '@toeverything/infra/atom';
+import { headerRootDivAtom } from '@toeverything/infra/__internal__/plugin';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { currentModeAtom } from '../../../atoms/mode';
@@ -112,37 +105,17 @@ const WindowsAppControls = () => {
 };
 
 const PluginHeader = () => {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const headerItems = useAtomValue(headerItemsAtom);
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    let disposes: (() => void)[] = [];
-    const renderTimeout = setTimeout(() => {
-      disposes = Object.entries(headerItems).map(([id, headerItem]) => {
-        const div = document.createElement('div');
-        div.setAttribute('plugin-id', id);
-        div.style.display = 'flex';
-        const cleanup = headerItem(div);
-        root.appendChild(div);
-        return () => {
-          cleanup();
-          root.removeChild(div);
-        };
-      });
-    });
-
-    return () => {
-      clearTimeout(renderTimeout);
-      setTimeout(() => {
-        disposes.forEach(dispose => dispose());
-      });
-    };
-  }, [headerItems]);
-
-  return <div className={styles.pluginHeaderItems} ref={rootRef} />;
+  const headerRootDiv = useAtomValue(headerRootDivAtom);
+  return (
+    <div
+      className={styles.pluginHeaderItems}
+      ref={ref => {
+        if (ref) {
+          ref.appendChild(headerRootDiv);
+        }
+      }}
+    />
+  );
 };
 
 export const Header = forwardRef<

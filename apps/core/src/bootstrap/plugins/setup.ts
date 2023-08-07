@@ -2,16 +2,18 @@ import { DebugLogger } from '@affine/debug';
 import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
 import { FormatQuickBar } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import {
+  addCleanup,
+  editorItemsAtom,
+  headerRootDivAtom,
+  settingRootDivAtom,
+  windowItemAtom,
+} from '@toeverything/infra/__internal__/plugin';
 import {
   contentLayoutAtom,
   currentPageAtom,
   currentWorkspaceAtom,
-  editorItemsAtom,
-  headerItemsAtom,
   rootStore,
-  settingItemsAtom,
-  windowItemsAtom,
 } from '@toeverything/infra/atom';
 import { Provider } from 'jotai/react';
 import { createElement, type PropsWithChildren } from 'react';
@@ -379,7 +381,6 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
     children
   );
 
-const group = new DisposableGroup();
 const entryLogger = new DebugLogger('plugin:entry');
 
 export const evaluatePluginEntry = (pluginName: string) => {
@@ -392,29 +393,38 @@ export const evaluatePluginEntry = (pluginName: string) => {
     register: (part, callback) => {
       entryLogger.info(`Registering ${pluginName} to ${part}`);
       if (part === 'headerItem') {
-        rootStore.set(headerItemsAtom, items => ({
-          ...items,
-          [pluginName]: callback as CallbackMap['headerItem'],
-        }));
+        const cb = callback as CallbackMap['headerItem'];
+        const headerRoot = rootStore.get(headerRootDivAtom);
+        const child = document.createElement('div');
+        const cleanup = cb(child);
+        headerRoot.appendChild(child);
+        addCleanup(pluginName, cleanup);
       } else if (part === 'editor') {
         rootStore.set(editorItemsAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['editor'],
         }));
       } else if (part === 'window') {
-        rootStore.set(windowItemsAtom, items => ({
+        rootStore.set(windowItemAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['window'],
         }));
       } else if (part === 'setting') {
-        rootStore.set(settingItemsAtom, items => ({
-          ...items,
-          [pluginName]: callback as CallbackMap['setting'],
-        }));
+        const cb = callback as CallbackMap['setting'];
+        const settingRoot = rootStore.get(settingRootDivAtom);
+        const child = document.createElement('div');
+        const cleanup = cb(child);
+        settingRoot.appendChild(child);
+        addCleanup(pluginName, cleanup);
       } else if (part === 'formatBar') {
         FormatQuickBar.customElements.push((page, getBlockRange) => {
           const div = document.createElement('div');
-          (callback as CallbackMap['formatBar'])(div, page, getBlockRange);
+          const cleanup = (callback as CallbackMap['formatBar'])(
+            div,
+            page,
+            getBlockRange
+          );
+          addCleanup(pluginName, cleanup);
           return div;
         });
       } else {
@@ -428,5 +438,5 @@ export const evaluatePluginEntry = (pluginName: string) => {
   if (typeof cleanup !== 'function') {
     throw new Error('Plugin entry must return a function');
   }
-  group.add(cleanup);
+  addCleanup(pluginName, cleanup);
 };

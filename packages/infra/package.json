@@ -30,15 +30,10 @@
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
     },
-    "./__internal__/workspace": {
-      "type": "./dist/src/__internal__/workspace.d.ts",
-      "import": "./dist/__internal__/workspace.js",
-      "require": "./dist/__internal__/workspace.cjs"
-    },
-    "./__internal__/react": {
-      "type": "./dist/src/__internal__/react.d.ts",
-      "import": "./dist/__internal__/react.js",
-      "require": "./dist/__internal__/react.cjs"
+    "./__internal__/*": {
+      "type": "./dist/src/__internal__/*.d.ts",
+      "import": "./dist/__internal__/*.js",
+      "require": "./dist/__internal__/*.cjs"
     }
   },
   "files": [
