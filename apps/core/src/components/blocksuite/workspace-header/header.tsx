@@ -124,6 +124,7 @@ const PluginHeader = () => {
       disposes = Object.entries(headerItems).map(([id, headerItem]) => {
         const div = document.createElement('div');
         div.setAttribute('plugin-id', id);
+        div.style.display = 'flex';
         const cleanup = headerItem(div);
         root.appendChild(div);
         return () => {
@@ -192,7 +193,12 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
         data-is-page-list={props.currentPage === null}
       >
-        <div className={styles.headerLeftSide}>
+        <div
+          className={clsx(styles.headerLeftSide, {
+            [styles.headerLeftSideColumn]:
+              isWindowsDesktop || props.currentPage === null,
+          })}
+        >
           <div>{!open && <SidebarSwitch />}</div>
           <div
             className={clsx(styles.headerLeftSideItem, {
@@ -207,6 +213,8 @@ export const Header = forwardRef<
         <div
           className={clsx(styles.headerRightSide, {
             [styles.headerRightSideWindow]: isWindowsDesktop,
+            [styles.headerRightSideColumn]:
+              isWindowsDesktop || props.currentPage === null,
           })}
         >
           <PluginHeader />
