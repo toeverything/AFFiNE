@@ -4,8 +4,8 @@ import { FormatQuickBar } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   addCleanup,
-  headerRootDivAtom,
   pluginEditorAtom,
+  pluginHeaderItemAtom,
   pluginSettingAtom,
   pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
@@ -393,27 +393,53 @@ export const evaluatePluginEntry = (pluginName: string) => {
     register: (part, callback) => {
       entryLogger.info(`Registering ${pluginName} to ${part}`);
       if (part === 'headerItem') {
-        const cb = callback as CallbackMap['headerItem'];
-        const headerRoot = rootStore.get(headerRootDivAtom);
-        const child = document.createElement('div');
-        const cleanup = cb(child);
-        headerRoot.appendChild(child);
-        addCleanup(pluginName, cleanup);
+        rootStore.set(pluginHeaderItemAtom, items => ({
+          ...items,
+          [pluginName]: callback as CallbackMap['headerItem'],
+        }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginHeaderItemAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'editor') {
         rootStore.set(pluginEditorAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['editor'],
         }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginEditorAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'window') {
         rootStore.set(pluginWindowAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['window'],
         }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginWindowAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'setting') {
         rootStore.set(pluginSettingAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['setting'],
         }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginSettingAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'formatBar') {
         FormatQuickBar.customElements.push((page, getBlockRange) => {
           const div = document.createElement('div');

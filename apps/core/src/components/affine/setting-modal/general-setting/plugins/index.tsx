@@ -2,8 +2,8 @@ import { Switch } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { CallbackMap } from '@affine/sdk/entry';
-import { assertExists } from '@blocksuite/global/utils';
 import {
+  addCleanup,
   enabledPluginAtom,
   pluginPackageJson,
   pluginSettingAtom,
@@ -11,7 +11,7 @@ import {
 import { loadedPluginNameAtom } from '@toeverything/infra/atom';
 import type { packageJsonOutputSchema } from '@toeverything/infra/type';
 import { useAtom, useAtomValue } from 'jotai/react';
-import { useCallback, useMemo, useRef } from 'react';
+import { startTransition, useCallback, useMemo } from 'react';
 import type { z } from 'zod';
 
 import { pluginItemStyle } from './style.css';
@@ -21,27 +21,24 @@ type PluginItemProps = {
 };
 
 type PluginSettingDetailProps = {
+  pluginName: string;
   create: CallbackMap['setting'];
 };
 
-const PluginSettingDetail = ({ create }: PluginSettingDetailProps) => {
-  const disposeRef = useRef<(() => void) | null>(null);
+const PluginSettingDetail = ({
+  pluginName,
+  create,
+}: PluginSettingDetailProps) => {
   return (
     <div
       ref={useCallback(
         (ref: HTMLDivElement | null) => {
           if (ref) {
-            disposeRef.current = create(ref);
-          } else {
-            assertExists(disposeRef.current);
-            const dispose = disposeRef.current;
-            setTimeout(() => {
-              dispose();
-              disposeRef.current = null;
-            });
+            const cleanup = create(ref);
+            addCleanup(pluginName, cleanup);
           }
         },
-        [create]
+        [pluginName, create]
       )}
     />
   );
@@ -62,12 +59,14 @@ const PluginItem = ({ json }: PluginItemProps) => {
           checked={checked}
           onChange={useCallback(
             (checked: boolean) => {
-              setEnabledPlugins(plugins => {
-                if (checked) {
-                  return [...plugins, json.name];
-                } else {
-                  return plugins.filter(plugin => plugin !== json.name);
-                }
+              startTransition(() => {
+                setEnabledPlugins(plugins => {
+                  if (checked) {
+                    return [...plugins, json.name];
+                  } else {
+                    return plugins.filter(plugin => plugin !== json.name);
+                  }
+                });
               });
             },
             [json.name, setEnabledPlugins]
@@ -75,7 +74,7 @@ const PluginItem = ({ json }: PluginItemProps) => {
         />
       </div>
       <div>{json.description}</div>
-      {create && <PluginSettingDetail create={create} />}
+      {create && <PluginSettingDetail pluginName={json.name} create={create} />}
     </div>
   );
 };

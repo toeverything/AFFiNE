@@ -36,19 +36,9 @@ export const enabledPluginAtom = atomWithStorage('affine-enabled-plugin', [
   '@affine/image-preview-plugin',
 ]);
 
-function divAtom(debugLabel?: string) {
-  const aAtom = atom(() => {
-    if (environment.isBrowser) {
-      return document.createElement('div');
-    } else {
-      throw new Error('divAtom is only available in browser');
-    }
-  });
-  aAtom.debugLabel = debugLabel;
-  return aAtom;
-}
-
-export const headerRootDivAtom = divAtom('headerRootDiv');
+export const pluginHeaderItemAtom = atom<
+  Record<string, CallbackMap['headerItem']>
+>({});
 
 export const pluginSettingAtom = atom<Record<string, CallbackMap['setting']>>(
   {}

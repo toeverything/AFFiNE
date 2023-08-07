@@ -7,11 +7,22 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { headerRootDivAtom } from '@toeverything/infra/__internal__/plugin';
+import {
+  addCleanup,
+  pluginHeaderItemAtom,
+} from '@toeverything/infra/__internal__/plugin';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import { currentModeAtom } from '../../../atoms/mode';
@@ -105,15 +116,37 @@ const WindowsAppControls = () => {
 };
 
 const PluginHeader = () => {
-  const headerRootDiv = useAtomValue(headerRootDivAtom);
+  const headerItem = useAtomValue(pluginHeaderItemAtom);
+  const pluginsRef = useRef<string[]>([]);
   return (
     <div
       className={styles.pluginHeaderItems}
-      ref={ref => {
-        if (ref) {
-          ref.appendChild(headerRootDiv);
-        }
-      }}
+      ref={useCallback(
+        (root: HTMLDivElement | null) => {
+          if (root) {
+            Object.entries(headerItem).forEach(([pluginName, create]) => {
+              if (pluginsRef.current.includes(pluginName)) {
+                return;
+              }
+              pluginsRef.current.push(pluginName);
+              const div = document.createElement('div');
+              div.setAttribute('plugin-id', pluginName);
+              startTransition(() => {
+                const cleanup = create(div);
+                root.appendChild(div);
+                addCleanup(pluginName, () => {
+                  pluginsRef.current = pluginsRef.current.filter(
+                    name => name !== pluginName
+                  );
+                  root.removeChild(div);
+                  cleanup();
+                });
+              });
+            });
+          }
+        },
+        [headerItem]
+      )}
     />
   );
 };

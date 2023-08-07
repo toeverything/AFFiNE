@@ -2,6 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import {
   builtinPluginPaths,
   enabledPluginAtom,
+  invokeCleanup,
   pluginPackageJson,
 } from '@toeverything/infra/__internal__/plugin';
 import { loadedPluginNameAtom, rootStore } from '@toeverything/infra/atom';
@@ -42,8 +43,12 @@ rootStore.sub(enabledPluginAtom, () => {
   enabledPlugin.forEach(pluginName => {
     enabledPluginSet.add(pluginName);
   });
-  console.log('added', added);
-  console.log('removed', removed);
+  added.forEach(pluginName => {
+    evaluatePluginEntry(pluginName);
+  });
+  removed.forEach(pluginName => {
+    invokeCleanup(pluginName);
+  });
 });
 const enabledPluginSet = new Set(rootStore.get(enabledPluginAtom));
 const loadedAssets = new Set<string>();
