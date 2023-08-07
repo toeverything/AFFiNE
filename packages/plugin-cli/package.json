@@ -11,7 +11,7 @@
   ],
   "dependencies": {
     "@endo/static-module-record": "^0.7.20",
-    "@swc/core": "^1.3.72",
+    "@swc/core": "^1.3.74",
     "@toeverything/infra": "workspace:^",
     "@vanilla-extract/rollup-plugin": "^1.2.2",
     "@vitejs/plugin-vue": "^4.2.3",
