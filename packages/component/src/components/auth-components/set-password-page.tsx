@@ -28,9 +28,6 @@ export const SetPasswordPage: FC<{
     },
     [propsOnSetPassword]
   );
-  const onLater = useCallback(() => {
-    setHasSetUp(true);
-  }, []);
 
   return (
     <AuthPageContainer
@@ -56,11 +53,7 @@ export const SetPasswordPage: FC<{
           {t['com.affine.auth.open.affine']()}
         </Button>
       ) : (
-        <SetPassword
-          onSetPassword={onSetPassword}
-          onLater={onLater}
-          confirmButtonContent={t['com.affine.auth.set.password.save']()}
-        />
+        <SetPassword onSetPassword={onSetPassword} />
       )}
     </AuthPageContainer>
   );

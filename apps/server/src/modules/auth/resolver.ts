@@ -70,10 +70,21 @@ export class AuthResolver {
   @Mutation(() => UserType)
   async changePassword(
     @Context() ctx: { req: Request },
-    @Args('email') email: string,
+    @Args('id') id: string,
     @Args('newPassword') newPassword: string
   ) {
-    const user = await this.auth.changePassword(email, newPassword);
+    const user = await this.auth.changePassword(id, newPassword);
+    ctx.req.user = user;
+    return user;
+  }
+
+  @Mutation(() => UserType)
+  async changeEmail(
+    @Context() ctx: { req: Request },
+    @Args('id') id: string,
+    @Args('email') email: string
+  ) {
+    const user = await this.auth.changeEmail(id, email);
     ctx.req.user = user;
     return user;
   }

@@ -26,12 +26,14 @@ export type AuthAtom = {
   open: boolean;
   state: AuthModalProps['state'];
   email?: string;
+  emailType?: AuthModalProps['emailType'];
 };
 
 export const openAuthModalAtom = atom<AuthAtom>({
   open: false,
   state: 'signIn',
   email: '',
+  emailType: 'changeEmail',
 });
 
 export const openDisableCloudAlertModalAtom = atom(false);

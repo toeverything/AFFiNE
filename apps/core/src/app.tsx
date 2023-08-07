@@ -47,7 +47,7 @@ const languageLoadingPromise = loadLanguage().catch(console.error);
 export const App = memo(function App() {
   use(languageLoadingPromise);
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus>
       <CacheProvider value={cache}>
         <AffineContext>
           <DebugProvider>
