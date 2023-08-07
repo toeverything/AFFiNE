@@ -215,12 +215,12 @@ export const gqlFetcherFactory = (endpoint: string) => {
 };
 
 // TODO
-const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
 const traceWorkerEndpoint = '';
 
 export const fetchWithReport = (
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: RequestInit,
+  reportToWorker = true
 ): Promise<Response> => {
   const startTime = toZuluDateFormat(new Date());
   const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
@@ -239,14 +239,33 @@ export const fetchWithReport = (
   }
 
   return fetch(input, init).finally(() => {
-    if (!GCP_PROJECT_ID) return;
+    if (!reportToWorker) return;
+    // replace {GCP_PROJECT_ID} in cloud functions
+    const name = `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`;
     const postBody = {
-      name: `projects/${GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
-      spanId,
-      displayName: 'fetch',
-      startTime,
-      endTime: toZuluDateFormat(new Date()),
-      attributes: JSON.stringify({ requestId }),
+      spans: [
+        {
+          name,
+          spanId,
+          displayName: {
+            value: 'fetch',
+            truncatedByteCount: 0,
+          },
+          startTime,
+          endTime: toZuluDateFormat(new Date()),
+          attributes: {
+            attributeMap: {
+              requestId: {
+                stringValue: {
+                  value: requestId,
+                  truncatedByteCount: 0,
+                },
+              },
+            },
+            droppedAttributesCount: 0,
+          },
+        },
+      ],
     };
 
     fetch(traceWorkerEndpoint, {
@@ -256,7 +275,7 @@ export const fetchWithReport = (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(postBody), // body data type must match "Content-Type" header
+      body: JSON.stringify(postBody),
     }).catch(console.error);
   });
 };
