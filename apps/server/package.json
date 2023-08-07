@@ -38,7 +38,7 @@
     "next-auth": "^4.22.1",
     "nodemailer": "^6.9.3",
     "parse-duration": "^1.1.0",
-    "prisma": "^5.0.0",
+    "prisma": "^5.1.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "semver": "^7.5.4"
