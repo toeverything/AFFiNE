@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { Schema, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
 import { describe, expect, test } from 'vitest';
@@ -19,10 +19,11 @@ import { useBlockSuiteWorkspacePageTitle } from '../use-block-suite-workspace-pa
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
+const schema = new Schema();
+schema.register(AffineSchemas).register(__unstableSchemas);
+
 beforeEach(async () => {
-  blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
-    .register(AffineSchemas)
-    .register(__unstableSchemas);
+  blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test', schema });
   const initPage = async (page: Page) => {
     await page.waitForLoaded();
     expect(page).not.toBeNull();

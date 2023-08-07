@@ -59,18 +59,22 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
 
   useEffect(() => {
     function onResize() {
-      const { matches } = window.matchMedia(
+      const isFloatingMaxWidth = window.matchMedia(
         `(max-width: ${floatingMaxWidth}px)`
-      );
+      ).matches;
+      const isOverflowWidth = window.matchMedia(
+        `(max-width: ${appSidebarWidth / 0.4}px)`
+      ).matches;
+      const isFloating = isFloatingMaxWidth || isOverflowWidth;
       if (
         open === undefined &&
         localStorage.getItem(APP_SIDEBAR_OPEN) === null
       ) {
         // give the initial value,
         // so that the sidebar can be closed on mobile by default
-        setOpen(!matches);
+        setOpen(!isFloating);
       }
-      setAppSidebarFloating(matches && !!open);
+      setAppSidebarFloating(isFloating && !!open);
     }
 
     onResize();
@@ -78,7 +82,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [open, setAppSidebarFloating, setOpen]);
+  }, [appSidebarWidth, open, setAppSidebarFloating, setOpen]);
 
   // disable animation to avoid UI flash
   const enableAnimation = useEnableAnimation();
@@ -99,6 +103,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         })}
         data-open={open}
         data-is-macos-electron={isMacosDesktop}
+        data-is-floating={appSidebarFloating}
         data-enable-animation={enableAnimation && !isResizing}
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">

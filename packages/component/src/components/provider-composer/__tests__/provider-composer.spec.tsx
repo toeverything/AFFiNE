@@ -10,7 +10,7 @@ import { ProviderComposer } from '..';
 
 test('ProviderComposer', async () => {
   const Context = createContext('null');
-  const Provider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const Provider = ({ children }: React.PropsWithChildren) => {
     return <Context.Provider value="test1">{children}</Context.Provider>;
   };
   const ConsumerComponent = () => {

@@ -4,7 +4,7 @@ export default defineRouter(
   async id => {
     switch (id) {
       case 'index': {
-        const { default: AppCreator } = await import('./src/app.js');
+        const { default: AppCreator } = await import('./app.js');
         return AppCreator(id);
       }
       default:

@@ -65,7 +65,7 @@ export const BlockSuiteEditorHeader: FC<
                 }}
               />
             </div>
-            <div>
+            <div className={styles.pageTitle}>
               {isEditable ? (
                 <div>
                   <input
@@ -88,11 +88,7 @@ export const BlockSuiteEditorHeader: FC<
                   </Button>
                 </div>
               ) : (
-                <span
-                  data-testid="title-edit-button"
-                  onClick={handleClick}
-                  style={{ cursor: 'pointer' }}
-                >
+                <span data-testid="title-edit-button" onClick={handleClick}>
                   {title || 'Untitled'}
                 </span>
               )}

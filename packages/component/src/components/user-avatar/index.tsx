@@ -1,24 +1,24 @@
 import * as Avatar from '@radix-ui/react-avatar';
 import clsx from 'clsx';
-import type { CSSProperties, FC } from 'react';
+import type { CSSProperties } from 'react';
 
 import * as style from './style.css';
 
-export type UserAvatar = {
+export interface UserAvatar {
   size?: number;
   url?: string;
   name?: string;
   className?: string;
   style?: CSSProperties;
-};
+}
 
-export const UserAvatar: FC<UserAvatar> = ({
+export const UserAvatar = ({
   size = 20,
   style: propsStyles = {},
   url,
   name,
   className,
-}) => {
+}: UserAvatar) => {
   return (
     <Avatar.Root
       style={{

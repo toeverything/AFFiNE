@@ -5,12 +5,16 @@ import 'fake-indexeddb/auto';
 
 import type { AffineSocketIOProvider } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { describe, expect, test } from 'vitest';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import { Doc } from 'yjs';
 
 import { createAffineSocketIOProvider } from '..';
+
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
 
 describe('sockio provider', () => {
   test.skip('test storage', async () => {
@@ -19,8 +23,8 @@ describe('sockio provider', () => {
       const workspace = new Workspace({
         id: workspaceId,
         isSSR: true,
+        schema,
       });
-      workspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createAffineSocketIOProvider(
         workspace.id,
         workspace.doc,
@@ -45,8 +49,8 @@ describe('sockio provider', () => {
       const workspace = new Workspace({
         id: workspaceId,
         isSSR: true,
+        schema,
       });
-      workspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createAffineSocketIOProvider(
         workspace.id,
         workspace.doc,

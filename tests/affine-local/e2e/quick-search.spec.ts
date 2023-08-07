@@ -10,7 +10,7 @@ const openQuickSearchByShortcut = async (page: Page) =>
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
-    const locator = page.locator('.affine-default-page-block-title').nth(0);
+    const locator = page.locator('.affine-doc-page-block-title').nth(0);
     const actual = await locator.inputValue();
     expect(actual).toBe(text);
   }
@@ -24,7 +24,7 @@ async function assertResultList(page: Page, texts: string[]) {
 async function titleIsFocused(page: Page) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
-    const title = page.locator('.affine-default-page-block-title');
+    const title = page.locator('.affine-doc-page-block-title');
     await expect(title).toBeVisible();
     await expect(title).toBeFocused();
   }
