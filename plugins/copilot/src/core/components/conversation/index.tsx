@@ -1,5 +1,5 @@
-import { Button } from '@affine/component';
 import { PlusIcon, ResetIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';

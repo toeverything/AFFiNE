@@ -4,6 +4,7 @@
 
 import { CloseIcon, InformationIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
+import { IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
@@ -16,7 +17,6 @@ import {
   useState,
 } from 'react';
 
-import { IconButton } from '../../ui/button';
 import * as styles from './index.css';
 import type { Notification } from './index.jotai';
 import {

@@ -1,5 +1,6 @@
-import { IconButton, Tooltip } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { Logo1Icon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useCallback } from 'react';
 
 export const HeaderItem = () => {

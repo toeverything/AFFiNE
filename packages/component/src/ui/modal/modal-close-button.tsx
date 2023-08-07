@@ -1,8 +1,10 @@
 import { CloseIcon } from '@blocksuite/icons';
+import {
+  IconButton,
+  type IconButtonProps,
+} from '@toeverything/components/button';
 import type { HTMLAttributes } from 'react';
 
-import type { IconButtonProps } from '../button/icon-button';
-import { IconButton } from '../button/icon-button';
 export type ModalCloseButtonProps = {
   top?: number;
   right?: number;

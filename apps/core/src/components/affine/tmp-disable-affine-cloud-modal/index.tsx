@@ -1,7 +1,8 @@
-import { Empty, IconButton, Modal, ModalWrapper } from '@affine/component';
+import { Empty, Modal, ModalWrapper } from '@affine/component';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import type React from 'react';
 
 import {

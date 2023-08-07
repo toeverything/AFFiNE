@@ -1,4 +1,3 @@
-import { IconButton } from '@affine/component';
 import {
   AppSidebar,
   AppSidebarFallback,
@@ -19,6 +18,7 @@ import {
   SidebarIcon,
 } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
+import { IconButton } from '@toeverything/components/button';
 import { useAtom } from 'jotai';
 import { type PropsWithChildren, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
