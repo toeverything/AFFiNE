@@ -1,8 +1,9 @@
 import type { Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 
-import { Button, IconButton, Menu } from '../../..';
+import { IconButton, Menu } from '../../..';
 import { Condition } from './condition';
 import * as styles from './index.css';
 import { CreateFilterMenu } from './vars';

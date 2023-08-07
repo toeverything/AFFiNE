@@ -66,7 +66,7 @@ export const TmpDisableAffineCloudModal: React.FC<
             />
           </StyleImage>
           <StyleButtonContainer>
-            <StyleButton shape="round" type="primary" onClick={onClose}>
+            <StyleButton type="primary" onClick={onClose}>
               {t['Got it']()}
             </StyleButton>
           </StyleButtonContainer>

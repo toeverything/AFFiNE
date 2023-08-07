@@ -1,7 +1,8 @@
-import { Button, displayFlex, Menu, MenuItem, styled } from '@affine/component';
+import { displayFlex, Menu, MenuItem, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
 import { ArrowDownSmallIcon, LanguageIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 

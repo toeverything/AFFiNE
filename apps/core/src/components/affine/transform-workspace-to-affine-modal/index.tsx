@@ -35,7 +35,6 @@ export const TransformWorkspaceToAffineModal: React.FC<
           <div>
             <StyleButton
               data-testid="confirm-enable-cloud-button"
-              shape="round"
               type="primary"
               onClick={onConform}
             >
