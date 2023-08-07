@@ -5,12 +5,13 @@
   },
   "include": ["."],
   "exclude": [
-    "target",
-    "node_modules",
-    "dist",
-    "lib",
+    "**/target",
+    "**/node_modules",
+    "**/dist",
+    "**/lib",
     ".coverage",
     ".yarn",
-    "test-results"
+    "**/test-results",
+    "**/web-static"
   ]
 }

@@ -135,7 +135,14 @@ const pluginFetch = createFetch({});
 const timer = createTimers(abortController.signal);
 
 const sharedGlobalThis = Object.assign(Object.create(null), timer, {
+  Object: globalThis.Object,
   fetch: pluginFetch,
+  Symbol: globalThis.Symbol,
+  Error: globalThis.Error,
+  TypeError: globalThis.TypeError,
+  RangeError: globalThis.RangeError,
+  console: globalThis.console,
+  crypto: globalThis.crypto,
 });
 
 const dynamicImportMap = new Map<
@@ -222,6 +229,9 @@ export const createOrGetGlobalThis = (
             if (sharedGlobalThis[key]) return sharedGlobalThis[key];
             const result = Reflect.get(window, key);
             if (typeof result === 'function') {
+              if (result === ShadowRoot) {
+                return result;
+              }
               return function (...args: any[]) {
                 permissionLogger.debug(
                   `${pluginName} is calling window`,
@@ -262,15 +272,11 @@ export const createOrGetGlobalThis = (
         userAgent: navigator.userAgent,
       },
 
-      // safe to use for all plugins
-      Error: globalThis.Error,
-      TypeError: globalThis.TypeError,
-      RangeError: globalThis.RangeError,
-      console: globalThis.console,
-      crypto: globalThis.crypto,
+      MouseEvent: globalThis.MouseEvent,
+      KeyboardEvent: globalThis.KeyboardEvent,
+      CustomEvent: globalThis.CustomEvent,
 
       // copilot uses these
-      CustomEvent: globalThis.CustomEvent,
       Date: globalThis.Date,
       Math: globalThis.Math,
       URL: globalThis.URL,
@@ -283,6 +289,10 @@ export const createOrGetGlobalThis = (
       // image-preview uses these
       Blob: globalThis.Blob,
       ClipboardItem: globalThis.ClipboardItem,
+
+      // vue uses these
+      Element: globalThis.Element,
+      SVGElement: globalThis.SVGElement,
 
       // fixme: use our own db api
       indexedDB: globalThis.indexedDB,
@@ -299,6 +309,7 @@ export const createOrGetGlobalThis = (
       IDBVersionChangeEvent: globalThis.IDBVersionChangeEvent,
     }
   );
+  pluginGlobalThis.global = pluginGlobalThis;
   globalThisMap.set(pluginName, pluginGlobalThis);
   return pluginGlobalThis;
 };
