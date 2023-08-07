@@ -307,7 +307,7 @@ __metadata:
     jotai: ^2.2.2
     react: 18.3.0-canary-1fdacbefd-20230630
     react-dom: 18.3.0-canary-1fdacbefd-20230630
-    react-server-dom-webpack: 18.3.0-canary-1fdacbefd-20230630
+    react-server-dom-webpack: 18.3.0-next-819687279-20221208
     tailwindcss: ^3.3.3
     typescript: ^5.1.6
     waku: 0.14.0
@@ -13332,15 +13332,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn-loose@npm:^8.3.0":
-  version: 8.3.0
-  resolution: "acorn-loose@npm:8.3.0"
-  dependencies:
-    acorn: ^8.5.0
-  checksum: 3418a20bded1e74a20950dee8289fb87808c21a50d4065e4ec48230668ea77f4238be1dd1ee30b2116f469e496bcdaf937ccb86d469482e028052f8eec804c07
-  languageName: node
-  linkType: hard
-
 "acorn-walk@npm:^7.2.0":
   version: 7.2.0
   resolution: "acorn-walk@npm:7.2.0"
@@ -13355,6 +13346,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"acorn@npm:^6.2.1":
+  version: 6.4.2
+  resolution: "acorn@npm:6.4.2"
+  bin:
+    acorn: bin/acorn
+  checksum: 44b07053729db7f44d28343eed32247ed56dc4a6ec6dff2b743141ecd6b861406bbc1c20bf9d4f143ea7dd08add5dc8c290582756539bc03a8db605050ce2fb4
+  languageName: node
+  linkType: hard
+
 "acorn@npm:^7.4.1":
   version: 7.4.1
   resolution: "acorn@npm:7.4.1"
@@ -13364,7 +13364,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.4.1, acorn@npm:^8.5.0, acorn@npm:^8.7.1, acorn@npm:^8.8.0, acorn@npm:^8.8.1, acorn@npm:^8.8.2, acorn@npm:^8.9.0":
+"acorn@npm:^8.4.1, acorn@npm:^8.7.1, acorn@npm:^8.8.0, acorn@npm:^8.8.1, acorn@npm:^8.8.2, acorn@npm:^8.9.0":
   version: 8.10.0
   resolution: "acorn@npm:8.10.0"
   bin:
@@ -27697,18 +27697,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-server-dom-webpack@npm:18.3.0-canary-1fdacbefd-20230630":
-  version: 18.3.0-canary-1fdacbefd-20230630
-  resolution: "react-server-dom-webpack@npm:18.3.0-canary-1fdacbefd-20230630"
+"react-server-dom-webpack@npm:18.3.0-next-819687279-20221208":
+  version: 18.3.0-next-819687279-20221208
+  resolution: "react-server-dom-webpack@npm:18.3.0-next-819687279-20221208"
   dependencies:
-    acorn-loose: ^8.3.0
+    acorn: ^6.2.1
     loose-envify: ^1.1.0
     neo-async: ^2.6.1
   peerDependencies:
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.3.0-next-819687279-20221208
+    react-dom: 18.3.0-next-819687279-20221208
     webpack: ^5.59.0
-  checksum: e7cd837c0469443a46a355168c27e24c779158f4e49857b4ad4504942a46d482e1b3841517f99c6ef2eca1b4db723a759a94c46e73ad00dc6ff0d817a6b4b0ca
+  checksum: 1fb5b7df6d62c1c21082f0538e65a45c328b697a61ca94c3f30c27f7615532dbc722cdf7728c7be24215b46f2ed0dcff743a19b9d135de0ef5a9a67284de916d
   languageName: node
   linkType: hard
 
