@@ -3,6 +3,7 @@ import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
 import type { app, dialog, shell } from 'electron';
 import { ipcRenderer } from 'electron';
 import { Subject } from 'rxjs';
+import { z } from 'zod';
 
 export interface ExposedMeta {
   handlers: [string, string[]][];
@@ -48,8 +49,17 @@ export function getElectronAPIs() {
   };
 }
 
+// todo: remove duplicated codes
+const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
+const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const buildType = ReleaseTypeSchema.parse(envBuildType);
+const isDev = process.env.NODE_ENV === 'development';
+let schema = buildType === 'stable' ? 'affine' : `affine-${envBuildType}`;
+schema = isDev ? 'affine-dev' : schema;
+
 export const appInfo = {
   electron: true,
+  schema,
 };
 
 function getMainAPIs() {

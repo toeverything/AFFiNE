@@ -6,13 +6,13 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { isDesktop } from '@affine/env/constant';
 import { sendChangePasswordEmailMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai/index';
 import { type FC, useCallback, useState } from 'react';
 
+import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 
 export const SendPasswordEmail: FC<AuthPanelProps> = ({
@@ -59,9 +59,7 @@ export const SendPasswordEmail: FC<AuthPanelProps> = ({
           setLoading(true);
           const res = await sendChangePasswordEmail({
             email,
-            callbackUrl: `/auth/changePassword?isClient=${
-              isDesktop ? 'true' : 'false'
-            }`,
+            callbackUrl: buildCallbackUrl('changePassword'),
           });
           setLoading(false);
           console.log('res', res?.sendChangePasswordEmail);
