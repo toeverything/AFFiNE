@@ -34,7 +34,11 @@ const PluginSettingDetail = ({ create }: PluginSettingDetailProps) => {
             disposeRef.current = create(ref);
           } else {
             assertExists(disposeRef.current);
-            disposeRef.current();
+            const dispose = disposeRef.current;
+            setTimeout(() => {
+              dispose();
+              disposeRef.current = null;
+            });
           }
         },
         [create]

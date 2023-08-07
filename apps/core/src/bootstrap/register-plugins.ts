@@ -71,12 +71,6 @@ export const pluginRegisterPromise = Promise.all(
         if (!release && !runtimeConfig.enablePlugin) {
           return Promise.resolve();
         }
-        if (!enabledPluginSet.has(pluginName)) {
-          logger.debug(`plugin ${pluginName} is not enabled`);
-          return Promise.resolve();
-        } else {
-          logger.debug(`plugin ${pluginName} is enabled`);
-        }
         const baseURL = url;
         const entryURL = `${baseURL}/${core}`;
         rootStore.set(loadedPluginNameAtom, prev => [...prev, pluginName]);
@@ -109,7 +103,12 @@ export const pluginRegisterPromise = Promise.all(
               })
             );
           }
-          evaluatePluginEntry(pluginName);
+          if (!enabledPluginSet.has(pluginName)) {
+            logger.debug(`plugin ${pluginName} is not enabled`);
+          } else {
+            logger.debug(`plugin ${pluginName} is enabled`);
+            evaluatePluginEntry(pluginName);
+          }
         });
       })
       .catch(e => {
