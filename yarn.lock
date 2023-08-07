@@ -563,7 +563,7 @@ __metadata:
     "@blocksuite/store": 0.0.0-20230806233219-17ca6eee-nightly
     jotai: ^2.2.2
     vite: ^4.4.7
-    vite-plugin-dts: 3.3.1
+    vite-plugin-dts: 3.5.1
     zod: ^3.21.4
   languageName: unknown
   linkType: soft
@@ -6230,7 +6230,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@microsoft/api-extractor@npm:^7.36.0":
+"@microsoft/api-extractor@npm:^7.36.3":
   version: 7.36.3
   resolution: "@microsoft/api-extractor@npm:7.36.3"
   dependencies:
@@ -11298,7 +11298,7 @@ __metadata:
     jotai: ^2.2.2
     react: ^18.2.0
     vite: ^4.4.7
-    vite-plugin-dts: 3.3.1
+    vite-plugin-dts: 3.5.1
     zod: ^3.21.4
   peerDependencies:
     async-call-rpc: "*"
@@ -11334,7 +11334,7 @@ __metadata:
     "@blocksuite/store": 0.0.0-20230806233219-17ca6eee-nightly
     idb: ^7.1.1
     vite: ^4.4.7
-    vite-plugin-dts: 3.3.1
+    vite-plugin-dts: 3.5.1
     y-indexeddb: ^9.0.11
   peerDependencies:
     yjs: ^13.5.51
@@ -12807,7 +12807,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vue/language-core@npm:1.8.8, @vue/language-core@npm:^1.8.1":
+"@vue/language-core@npm:1.8.8, @vue/language-core@npm:^1.8.8":
   version: 1.8.8
   resolution: "@vue/language-core@npm:1.8.8"
   dependencies:
@@ -31680,23 +31680,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite-plugin-dts@npm:3.3.1":
-  version: 3.3.1
-  resolution: "vite-plugin-dts@npm:3.3.1"
+"vite-plugin-dts@npm:3.5.1":
+  version: 3.5.1
+  resolution: "vite-plugin-dts@npm:3.5.1"
   dependencies:
-    "@microsoft/api-extractor": ^7.36.0
+    "@microsoft/api-extractor": ^7.36.3
     "@rollup/pluginutils": ^5.0.2
-    "@vue/language-core": ^1.8.1
+    "@vue/language-core": ^1.8.8
     debug: ^4.3.4
     kolorist: ^1.8.0
-    vue-tsc: ^1.8.1
+    vue-tsc: ^1.8.8
   peerDependencies:
     typescript: "*"
     vite: "*"
   peerDependenciesMeta:
     vite:
       optional: true
-  checksum: 09fe0f5d246c875e3c21856844c5501b7f81cd9f5cdfa7456dc10888425f84a8faefc6fb2781701110ee55c7217616679dfa5df53175a0327616ec305e94803f
+  checksum: 8a47a78336fe5074592fbbd8855dbd113707a9f15d2cfa3f9a17d760b0b49b5f5560d728f0acb4e8fae034d781af914279064b61778fa611f88ff2dee8296aa1
   languageName: node
   linkType: hard
 
@@ -31939,7 +31939,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue-tsc@npm:^1.8.1":
+"vue-tsc@npm:^1.8.8":
   version: 1.8.8
   resolution: "vue-tsc@npm:1.8.8"
   dependencies:
