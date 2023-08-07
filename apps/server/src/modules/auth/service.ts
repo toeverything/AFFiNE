@@ -14,8 +14,10 @@ import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { MailService } from './mailer';
 
-export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'> & {
-  avatarUrl: string;
+export type UserClaim = Pick<
+  User,
+  'id' | 'name' | 'email' | 'emailVerified' | 'createdAt' | 'avatarUrl'
+> & {
   hasPassword?: boolean;
 };
 
@@ -37,6 +39,7 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          emailVerified: user.emailVerified?.toISOString(),
           image: user.avatarUrl,
           hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
@@ -65,6 +68,7 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          emailVerified: user.emailVerified?.toISOString(),
           image: user.avatarUrl,
           hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
@@ -87,7 +91,7 @@ export class AuthService {
 
   async verify(token: string) {
     try {
-      return (
+      const data = (
         await jwtVerify(token, this.config.auth.publicKey, {
           algorithms: [Algorithm.ES256],
           iss: [this.config.serverId],
@@ -95,6 +99,12 @@ export class AuthService {
           requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
         })
       ).data as UserClaim;
+
+      return {
+        ...data,
+        emailVerified: data.emailVerified ? new Date(data.emailVerified) : null,
+        createdAt: new Date(data.createdAt),
+      };
     } catch (e) {
       throw new UnauthorizedException('Invalid token');
     }

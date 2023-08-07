@@ -168,6 +168,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               id: user.id,
               name: user.name,
               email: user.email,
+              emailVerified: user.emailVerified?.toISOString(),
               picture: user.avatarUrl,
               createdAt: user.createdAt.toISOString(),
               hasPassword: Boolean(user.password),
@@ -191,7 +192,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         if (!token) {
           return null;
         }
-        const { name, email, id, picture, hasPassword } = (
+        const { name, email, emailVerified, id, picture, hasPassword } = (
           await jwtVerify(token, config.auth.publicKey, {
             algorithms: [Algorithm.ES256],
             iss: [config.serverId],
@@ -204,6 +205,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         return {
           name,
           email,
+          emailVerified,
           picture,
           sub: id,
           id,
@@ -222,11 +224,15 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             // @ts-expect-error Third part library type mismatch
             session.user.image = user.image ?? user.avatarUrl;
             // @ts-expect-error Third part library type mismatch
+            session.user.emailVerified = user.emailVerified;
+            // @ts-expect-error Third part library type mismatch
             session.user.hasPassword = Boolean(user.password);
           } else {
             // technically the sub should be the same as id
             // @ts-expect-error Third part library type mismatch
             session.user.id = token.sub;
+            // @ts-expect-error Third part library type mismatch
+            session.user.emailVerified = token.emailVerified;
             // @ts-expect-error Third part library type mismatch
             session.user.hasPassword = token.hasPassword;
           }
