@@ -61,7 +61,6 @@
   "dependencies": {
     "@toeverything/infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "electron-deeplink": "^1.0.10",
     "electron-updater": "^6.0.0",
     "link-preview-js": "^3.0.4",
     "lodash-es": "^4.17.21",

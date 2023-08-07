@@ -18,11 +18,7 @@ export function registerProtocol() {
       if (NETWORK_REQUESTS.some(path => url.startsWith('.' + path))) {
         const realUrl = CLOUD_API_URL + url.substring(1);
         logger.info('proxy', request.url, 'to', realUrl);
-        return net.fetch(realUrl, {
-          body: request.body,
-          method: request.method,
-          headers: request.headers,
-        });
+        return net.fetch(realUrl, request);
       }
       // if is a file type, load the file in resources
       else if (url.split('/').at(-1)?.includes('.')) {
@@ -33,6 +29,7 @@ export function registerProtocol() {
       }
     }
     return net.fetch('file://' + realpath, {
+      ...request,
       // we need this otherwise the request will be handled recursively
       bypassCustomProtocolHandlers: true,
     });
