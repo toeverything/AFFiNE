@@ -20,6 +20,6 @@ const API_URL_MAPPING = {
   beta: `https://affine.fail`,
   canary: `https://affine.fail`,
   internal: `https://affine.fail`,
-}
+};
 
 export const CLOUD_API_URL = API_URL_MAPPING[buildType];

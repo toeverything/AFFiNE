@@ -142,7 +142,7 @@ const createMessagePortChannel = (port: MessagePort): EventBasedChannel => {
 
 function getHelperAPIs() {
   const events$ = new Subject<{ channel: string; args: any[] }>();
-  const meta: ExposedMeta = (() => {
+  const meta: ExposedMeta | null = (() => {
     const val = process.argv
       .find(arg => arg.startsWith('--helper-exposed-meta='))
       ?.split('=')[1];
@@ -211,7 +211,10 @@ function getHelperAPIs() {
     return [helperHandlers, helperEvents];
   };
 
-  const [apis, events] = setup(meta);
-
-  return { apis, events };
+  if (meta) {
+    const [apis, events] = setup(meta);
+    return { apis, events };
+  } else {
+    return { apis: {}, events: {} };
+  }
 }
