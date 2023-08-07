@@ -50,8 +50,10 @@ function divAtom(debugLabel?: string) {
 
 export const headerRootDivAtom = divAtom('headerRootDiv');
 
-export const settingRootDivAtom = divAtom('settingRootDiv');
+export const pluginSettingAtom = atom<Record<string, CallbackMap['setting']>>(
+  {}
+);
 
-export const editorItemsAtom = atom<Record<string, CallbackMap['editor']>>({});
+export const pluginEditorAtom = atom<Record<string, CallbackMap['editor']>>({});
 
-export const windowItemAtom = atom<Record<string, CallbackMap['window']>>({});
+export const pluginWindowAtom = atom<Record<string, CallbackMap['window']>>({});

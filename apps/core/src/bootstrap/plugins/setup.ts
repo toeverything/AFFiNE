@@ -4,10 +4,10 @@ import { FormatQuickBar } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   addCleanup,
-  editorItemsAtom,
   headerRootDivAtom,
-  settingRootDivAtom,
-  windowItemAtom,
+  pluginEditorAtom,
+  pluginSettingAtom,
+  pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
 import {
   contentLayoutAtom,
@@ -400,22 +400,20 @@ export const evaluatePluginEntry = (pluginName: string) => {
         headerRoot.appendChild(child);
         addCleanup(pluginName, cleanup);
       } else if (part === 'editor') {
-        rootStore.set(editorItemsAtom, items => ({
+        rootStore.set(pluginEditorAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['editor'],
         }));
       } else if (part === 'window') {
-        rootStore.set(windowItemAtom, items => ({
+        rootStore.set(pluginWindowAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['window'],
         }));
       } else if (part === 'setting') {
-        const cb = callback as CallbackMap['setting'];
-        const settingRoot = rootStore.get(settingRootDivAtom);
-        const child = document.createElement('div');
-        const cleanup = cb(child);
-        settingRoot.appendChild(child);
-        addCleanup(pluginName, cleanup);
+        rootStore.set(pluginSettingAtom, items => ({
+          ...items,
+          [pluginName]: callback as CallbackMap['setting'],
+        }));
       } else if (part === 'formatBar') {
         FormatQuickBar.customElements.push((page, getBlockRange) => {
           const div = document.createElement('div');

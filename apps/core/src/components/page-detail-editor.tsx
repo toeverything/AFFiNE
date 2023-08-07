@@ -9,8 +9,8 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import {
-  editorItemsAtom,
-  windowItemAtom,
+  pluginEditorAtom,
+  pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
 import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
@@ -95,7 +95,7 @@ const EditorWrapper = memo(function EditorWrapper({
             if (onLoad) {
               dispose = onLoad(page, editor);
             }
-            const editorItems = rootStore.get(editorItemsAtom);
+            const editorItems = rootStore.get(pluginEditorAtom);
             let disposes: (() => void)[] = [];
             const renderTimeout = setTimeout(() => {
               disposes = Object.entries(editorItems).map(([id, editorItem]) => {
@@ -167,7 +167,7 @@ const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
 ): ReactElement {
   const node = props.node;
-  const windowItems = useAtomValue(windowItemAtom);
+  const windowItems = useAtomValue(pluginWindowAtom);
   if (typeof node === 'string') {
     if (node === 'editor') {
       return <EditorWrapper {...props.editorProps} />;
