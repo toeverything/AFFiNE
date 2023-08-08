@@ -14,21 +14,19 @@ const StyledIconButtonWithAnimate = styled(IconButton)(() => {
       svg: {
         transform: 'translateY(3px)',
       },
-      '::after': {
-        background: 'var(--affine-background-primary-color)',
-      },
+      backgroundColor: 'transparent !important',
     },
   };
 });
 
 // fixme(himself65): need to refactor
-export const QuickSearchButton = ({
+export const HeaderDropDownButton = ({
   onClick,
   ...props
 }: Omit<IconButtonProps, 'children'>) => {
   return (
     <StyledIconButtonWithAnimate
-      data-testid="header-quickSearchButton"
+      data-testid="header-dropDownButton"
       {...props}
       onClick={e => {
         onClick?.(e);

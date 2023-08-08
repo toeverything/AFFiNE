@@ -1,44 +1,18 @@
 import { RadioButton, RadioButtonGroup } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
 import type { ReactNode } from 'react';
 import type React from 'react';
 
-import {
-  allPageModeSelectAtom,
-  openQuickSearchModalAtom,
-} from '../../../atoms';
+import { allPageModeSelectAtom } from '../../../atoms';
 import type { HeaderProps } from '../../blocksuite/workspace-header/header';
 import { Header } from '../../blocksuite/workspace-header/header';
 import * as styles from '../../blocksuite/workspace-header/styles.css';
-import { QuickSearchButton } from '../quick-search-button';
 
 export interface WorkspaceTitleProps
   extends React.PropsWithChildren<HeaderProps> {
   icon?: ReactNode;
 }
-
-export const WorkspaceTitle = ({
-  icon,
-  children,
-  ...props
-}: WorkspaceTitleProps) => {
-  const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
-  return (
-    <Header {...props}>
-      <div className={styles.pageListTitleWrapper}>
-        <div className={styles.pageListTitleIcon}>{icon}</div>
-        {children}
-        <QuickSearchButton
-          onClick={() => {
-            setOpenQuickSearch(true);
-          }}
-        />
-      </div>
-    </Header>
-  );
-};
 
 export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
   const t = useAFFiNEI18N();

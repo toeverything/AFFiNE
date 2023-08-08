@@ -17,6 +17,10 @@ import { Menu, MenuItem } from '../../..';
 import { getContentParser } from './get-content-parser';
 import type { CommonMenuItemProps } from './types';
 
+const MenuItemStyle = {
+  padding: '4px 12px',
+};
+
 export const ExportToPdfMenuItem = ({
   onSelect,
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
@@ -83,6 +87,7 @@ export const ExportToPdfMenuItem = ({
       data-testid="export-to-pdf"
       onClick={onClickDownloadPDF}
       icon={<ExportToPdfIcon />}
+      style={MenuItemStyle}
     >
       {t['Export to PDF']()}
     </MenuItem>
@@ -128,6 +133,7 @@ export const ExportToHtmlMenuItem = ({
         data-testid="export-to-html"
         onClick={onClickExportHtml}
         icon={<ExportToHtmlIcon />}
+        style={MenuItemStyle}
       >
         {t['Export to HTML']()}
       </MenuItem>
@@ -176,6 +182,7 @@ export const ExportToPngMenuItem = ({
         data-testid="export-to-png"
         onClick={onClickDownloadPNG}
         icon={<ExportToPngIcon />}
+        style={MenuItemStyle}
       >
         {t['Export to PNG']()}
       </MenuItem>
@@ -222,6 +229,7 @@ export const ExportToMarkdownMenuItem = ({
         data-testid="export-to-markdown"
         onClick={onClickExportMarkdown}
         icon={<ExportToMarkdownIcon />}
+        style={MenuItemStyle}
       >
         {t['Export to Markdown']()}
       </MenuItem>
@@ -236,8 +244,8 @@ export const Export = ({
   return (
     <Menu
       width={248}
-      placement="left"
       trigger="click"
+      placement="right-start"
       content={
         <>
           <ExportToPdfMenuItem></ExportToPdfMenuItem>
@@ -246,11 +254,17 @@ export const Export = ({
           <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
         </>
       }
+      menuStyles={{
+        borderRadius: '8px',
+        padding: '8px',
+        background: 'var(--affine-background-overlay-panel-color)',
+      }}
     >
       <MenuItem
         data-testid="export-menu"
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
+        style={{ padding: '4px 12px' }}
         onClick={e => {
           e.stopPropagation();
           onItemClick?.();

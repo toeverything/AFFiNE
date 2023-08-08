@@ -60,10 +60,8 @@ interface HeaderItem {
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
-    availableWhen: (_, currentPage, { isPublic }) => {
-      return (
-        !isPublic && currentPage?.meta.trash !== true && currentPage !== null
-      );
+    availableWhen: () => {
+      return false;
     },
   },
 };

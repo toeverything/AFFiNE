@@ -428,5 +428,7 @@
   "Choose your font style": "Choose your font style",
   "Switch": "Switch",
   "com.affine.settings.workspace.publish.local-tooltip": "Enable AFFiNE Cloud to publish this Workspace",
-  "com.affine.settings.workspace.member.local-tooltip": "Enable AFFiNE Cloud to collaborate with others"
+  "com.affine.settings.workspace.member.local-tooltip": "Enable AFFiNE Cloud to collaborate with others",
+  "com.affine.header.option.add-tag": "Add Tag",
+  "com.affine.header.option.duplicate": "Duplicate"
 }
