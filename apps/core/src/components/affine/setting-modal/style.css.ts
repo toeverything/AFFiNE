@@ -3,8 +3,8 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const settingContent = style({
   flexGrow: '1',
   height: '100%',
-  padding: '40px 15px 20px',
-  overflow: 'auto',
+  padding: '40px 15px',
+  overflow: 'hidden',
 });
 
 globalStyle(`${settingContent} .wrapper`, {
@@ -13,6 +13,7 @@ globalStyle(`${settingContent} .wrapper`, {
   height: '100%',
   maxWidth: '560px',
   margin: '0 auto',
+  overflowY: 'auto',
 });
 
 globalStyle(`${settingContent} .wrapper::-webkit-scrollbar`, {
