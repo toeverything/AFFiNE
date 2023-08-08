@@ -116,6 +116,8 @@ export const headerLeftSide = style({
   display: 'flex',
   alignItems: 'center',
   transition: 'all .15s',
+});
+export const headerLeftSideColumn = style({
   '@container': {
     [`${headerVanillaContainer} (max-width: 900px)`]: {
       flexDirection: 'column',
@@ -149,6 +151,9 @@ export const headerRightSide = style({
   marginLeft: '20px',
   justifyContent: 'flex-end',
   transition: 'all .15s',
+});
+
+export const headerRightSideColumn = style({
   '@container': {
     [`${headerVanillaContainer} (max-width: 900px)`]: {
       position: 'absolute',
@@ -162,7 +167,6 @@ export const headerRightSide = style({
 export const headerRightSideWindow = style({
   marginRight: '140px',
 });
-
 export const browserWarning = style({
   backgroundColor: 'var(--affine-background-warning-color)',
   color: 'var(--affine-warning-color)',

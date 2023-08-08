@@ -2,14 +2,14 @@ import type { getCurrentBlockRange } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type { Workspace } from '@blocksuite/store';
-import type { Atom, getDefaultStore, PrimitiveAtom } from 'jotai/vanilla';
+import type { Atom, getDefaultStore } from 'jotai/vanilla';
+import type { WritableAtom } from 'jotai/vanilla/atom';
 import type { FC } from 'react';
 
-export type Part = 'headerItem' | 'editor' | 'window' | 'setting' | 'formatBar';
+export type Part = 'headerItem' | 'editor' | 'setting' | 'formatBar';
 
 export type CallbackMap = {
   headerItem: (root: HTMLElement) => () => void;
-  window: (root: HTMLElement) => () => void;
   editor: (root: HTMLElement, editor: EditorContainer) => () => void;
   setting: (root: HTMLElement) => () => void;
   formatBar: (
@@ -31,13 +31,13 @@ export type LayoutNode = LayoutParentNode | string;
 export type LayoutParentNode = {
   direction: LayoutDirection;
   splitPercentage: number; // 0 - 100
-  first: LayoutNode;
+  first: string;
   second: LayoutNode;
 };
 
 export type ExpectedLayout =
   | {
-      direction: LayoutDirection;
+      direction: 'horizontal';
       // the first element is always the editor
       first: 'editor';
       second: LayoutNode;
@@ -46,7 +46,12 @@ export type ExpectedLayout =
     }
   | 'editor';
 
-export declare const contentLayoutAtom: PrimitiveAtom<ExpectedLayout>;
+export declare const pushLayoutAtom: WritableAtom<
+  null,
+  [string, (div: HTMLDivElement) => () => void],
+  void
+>;
+export declare const deleteLayoutAtom: WritableAtom<null, [string], void>;
 export declare const currentPageAtom: Atom<Promise<Page>>;
 export declare const currentWorkspaceAtom: Atom<Promise<Workspace>>;
 export declare const rootStore: ReturnType<typeof getDefaultStore>;

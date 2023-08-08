@@ -5,6 +5,7 @@ export type BuildFlags = {
   mode: 'development' | 'production';
   channel: 'stable' | 'beta' | 'canary' | 'internal';
   coverage?: boolean;
+  localBlockSuite?: string;
 };
 
 export const projectRoot = fileURLToPath(
