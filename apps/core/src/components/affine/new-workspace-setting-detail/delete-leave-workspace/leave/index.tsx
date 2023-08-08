@@ -1,7 +1,7 @@
 import { Modal } from '@affine/component';
 import { ModalCloseButton } from '@affine/component';
-import { Button } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 
 import {
   StyledButtonContent,
@@ -38,7 +38,6 @@ export const WorkspaceLeave = ({ open, onClose }: WorkspaceDeleteProps) => {
           <Button
             onClick={handleLeave}
             type="error"
-            shape="circle"
             style={{ marginLeft: '24px' }}
           >
             {t['Leave']()}

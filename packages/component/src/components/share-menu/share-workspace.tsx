@@ -4,8 +4,8 @@ import type {
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 
-import { Button } from '../../ui/button';
 import { descriptionStyle, menuItemStyle } from './index.css';
 import type { ShareMenuProps } from './share-menu';
 

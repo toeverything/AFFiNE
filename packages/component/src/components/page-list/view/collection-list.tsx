@@ -11,12 +11,13 @@ import {
   PinIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
 import type { MouseEvent, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Button, MenuItem, Tooltip } from '../../..';
+import { MenuItem, Tooltip } from '../../..';
 import Menu from '../../../ui/menu/menu';
 import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';

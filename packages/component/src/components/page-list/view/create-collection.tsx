@@ -9,10 +9,10 @@ import {
   SaveIcon,
 } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
+import { Button } from '@toeverything/components/button';
 import { useCallback, useMemo, useState } from 'react';
 
 import {
-  Button,
   Input,
   Modal,
   ModalCloseButton,

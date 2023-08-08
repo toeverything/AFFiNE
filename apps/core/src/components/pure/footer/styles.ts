@@ -4,17 +4,7 @@ import {
   styled,
   textEllipsis,
 } from '@affine/component';
-import { Button } from '@affine/component';
-
-export const StyledSplitLine = styled('div')(() => {
-  return {
-    width: '1px',
-    height: '20px',
-    background: 'var(--affine-border-color)',
-    marginRight: '24px',
-  };
-});
-
+import { Button } from '@toeverything/components/button';
 export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
