@@ -1,5 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
+import { viewMenu } from './collection-list.css';
+
 export const view = style({
   display: 'flex',
   alignItems: 'center',
@@ -36,12 +38,18 @@ export const pinedIcon = style({
     [`${option}:hover &`]: {
       display: 'none',
     },
+    [`${viewMenu}:hover &`]: {
+      display: 'none',
+    },
   },
 });
 export const pinIcon = style({
   display: 'none',
   selectors: {
     [`${option}:hover &`]: {
+      display: 'block',
+    },
+    [`${viewMenu}:hover &`]: {
       display: 'block',
     },
   },
