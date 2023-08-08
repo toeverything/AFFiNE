@@ -98,6 +98,11 @@ export const loader: LoaderFunction = async args => {
     if (!page) {
       return redirect('/404');
     }
+    if (page.meta.jumpOnce) {
+      currentWorkspace.setPageMeta(page.id, {
+        jumpOnce: false,
+      });
+    }
     rootStore.set(currentPageIdAtom, pageId);
   } else {
     return redirect('/404');

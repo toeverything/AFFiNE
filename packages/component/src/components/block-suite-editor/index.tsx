@@ -97,12 +97,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     }
     container.appendChild(editor);
     return () => {
-      if (setBlockHub) {
-        setBlockHub(null);
-      }
       container.removeChild(editor);
     };
-  }, [editor, setBlockHub]);
+  }, [editor]);
 
   useEffect(() => {
     if (page.awarenessStore.getFlag('enable_block_hub')) {
@@ -121,6 +118,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
           console.error(err);
         });
       return () => {
+        if (setBlockHub) {
+          setBlockHub(null);
+        }
         blockHubRef.current?.remove();
       };
     }
