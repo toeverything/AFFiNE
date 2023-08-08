@@ -9,7 +9,6 @@ import {
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
-import { uuidv4 } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -37,7 +36,6 @@ export const ExportToPdfMenuItem = ({
         .then(() => {
           onSelect?.({ type: 'pdf' });
           setPushNotification({
-            key: uuidv4(),
             title: t['com.affine.export.success.title'](),
             message: t['com.affine.export.success.message'](),
             type: 'success',
@@ -46,7 +44,6 @@ export const ExportToPdfMenuItem = ({
         .catch(err => {
           console.error(err);
           setPushNotification({
-            key: uuidv4(),
             title: t['com.affine.export.error.title'](),
             message: t['com.affine.export.error.message'](),
             type: 'error',
@@ -60,7 +57,6 @@ export const ExportToPdfMenuItem = ({
         .then(() => {
           onSelect?.({ type: 'pdf' });
           setPushNotification({
-            key: uuidv4(),
             title: t['com.affine.export.success.title'](),
             message: t['com.affine.export.success.message'](),
             type: 'success',
@@ -69,7 +65,6 @@ export const ExportToPdfMenuItem = ({
         .catch(err => {
           console.error(err);
           setPushNotification({
-            key: uuidv4(),
             title: t['com.affine.export.error.title'](),
             message: t['com.affine.export.error.message'](),
             type: 'error',
@@ -105,7 +100,6 @@ export const ExportToHtmlMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'html' });
         setPushNotification({
-          key: uuidv4(),
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -114,7 +108,6 @@ export const ExportToHtmlMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: uuidv4(),
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
@@ -153,7 +146,6 @@ export const ExportToPngMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'png' });
         setPushNotification({
-          key: uuidv4(),
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -162,7 +154,6 @@ export const ExportToPngMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: uuidv4(),
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
@@ -199,7 +190,6 @@ export const ExportToMarkdownMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'markdown' });
         setPushNotification({
-          key: uuidv4(),
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -208,7 +198,6 @@ export const ExportToMarkdownMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: uuidv4(),
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
