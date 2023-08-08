@@ -227,7 +227,7 @@ if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
     reportIntervalId = window.setInterval(() => {
       if (spansCache.length > 0) {
         reportTrace(JSON.stringify({ spans: [...spansCache] })).catch(
-          console.error
+          console.warn
         );
         spansCache = [];
       }
@@ -236,7 +236,7 @@ if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
     reportIntervalId = setInterval(() => {
       if (spansCache.length > 0) {
         reportTrace(JSON.stringify({ spans: [...spansCache] })).catch(
-          console.error
+          console.warn
         );
         spansCache = [];
       }
@@ -277,7 +277,7 @@ export const fetchWithReport = (
       const postBody = {
         spans: [createTraceSpan(traceId, spanId, requestId, startTime)],
       };
-      reportTrace(JSON.stringify(postBody)).catch(console.error);
-      throw err;
+      reportTrace(JSON.stringify(postBody)).catch(console.warn);
+      return Promise.reject(err);
     });
 };
