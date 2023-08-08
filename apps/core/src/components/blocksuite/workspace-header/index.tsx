@@ -1,4 +1,3 @@
-import { Button } from '@affine/component';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   useBlockSuitePageMeta,
@@ -56,36 +55,30 @@ export const BlockSuiteEditorHeader: FC<
       {!isPublic && currentPage && (
         <div className={styles.titleContainer}>
           <div className={styles.titleWrapper}>
-            <div className={styles.switchWrapper}>
-              <EditorModeSwitch
-                blockSuiteWorkspace={workspace.blockSuiteWorkspace}
-                pageId={currentPage.id}
-                style={{
-                  marginRight: '12px',
-                }}
-              />
-            </div>
+            {isEditable ? (
+              <></>
+            ) : (
+              <div className={styles.switchWrapper}>
+                <EditorModeSwitch
+                  blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+                  pageId={currentPage.id}
+                  style={{
+                    marginRight: '12px',
+                  }}
+                />
+              </div>
+            )}
             <div className={styles.pageTitle}>
               {isEditable ? (
                 <div>
                   <input
                     autoFocus={true}
-                    className={styles.title}
                     type="text"
                     data-testid="title-content"
                     defaultValue={pageMeta?.title}
                     onBlur={handleClick}
                     ref={inputRef}
                   />
-                  <Button
-                    onClick={handleClick}
-                    data-testid="save-edit-button"
-                    style={{
-                      marginLeft: '12px',
-                    }}
-                  >
-                    Save
-                  </Button>
                 </div>
               ) : (
                 <span data-testid="title-edit-button" onClick={handleClick}>
@@ -93,13 +86,17 @@ export const BlockSuiteEditorHeader: FC<
                 </span>
               )}
             </div>
-            <div className={styles.searchArrowWrapper}>
-              <QuickSearchButton
-                onClick={() => {
-                  setOpenQuickSearch(true);
-                }}
-              />
-            </div>
+            {isEditable ? (
+              <></>
+            ) : (
+              <div className={styles.searchArrowWrapper}>
+                <QuickSearchButton
+                  onClick={() => {
+                    setOpenQuickSearch(true);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
