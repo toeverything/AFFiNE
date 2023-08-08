@@ -2,17 +2,20 @@ import { Menu, MenuItem, MenuTrigger, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
 import type { ButtonProps } from '@toeverything/components/button';
-import type { FC, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useCallback } from 'react';
+
 export const StyledListItem = styled(MenuItem)(() => ({
   width: '132px',
   height: '38px',
   textTransform: 'capitalize',
 }));
 
-const LanguageMenuContent: FC<{
+interface LanguageMenuContentProps {
   currentLanguage?: string;
-}> = ({ currentLanguage }) => {
+}
+
+const LanguageMenuContent = ({ currentLanguage }: LanguageMenuContentProps) => {
   const i18n = useI18N();
   const changeLanguage = useCallback(
     (event: string) => {
@@ -20,6 +23,7 @@ const LanguageMenuContent: FC<{
     },
     [i18n]
   );
+
   return (
     <>
       {LOCALES.map(option => {
@@ -41,9 +45,12 @@ const LanguageMenuContent: FC<{
     </>
   );
 };
-export const LanguageMenu: FC<{ triggerProps?: ButtonProps }> = ({
-  triggerProps,
-}) => {
+
+interface LanguageMenuProps {
+  triggerProps?: ButtonProps;
+}
+
+export const LanguageMenu = ({ triggerProps }: LanguageMenuProps) => {
   const i18n = useI18N();
 
   const currentLanguage = LOCALES.find(item => item.tag === i18n.language);

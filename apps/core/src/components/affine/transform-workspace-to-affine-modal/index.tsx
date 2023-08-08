@@ -2,19 +2,20 @@ import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
-import type React from 'react';
 
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
 
-export type TransformWorkspaceToAffineModalProps = {
+export interface TransformWorkspaceToAffineModalProps {
   open: boolean;
   onClose: () => void;
   onConform: () => void;
-};
+}
 
-export const TransformWorkspaceToAffineModal: React.FC<
-  TransformWorkspaceToAffineModalProps
-> = ({ open, onClose, onConform }) => {
+export const TransformWorkspaceToAffineModal = ({
+  open,
+  onClose,
+  onConform,
+}: TransformWorkspaceToAffineModalProps) => {
   const t = useAFFiNEI18N();
 
   return (

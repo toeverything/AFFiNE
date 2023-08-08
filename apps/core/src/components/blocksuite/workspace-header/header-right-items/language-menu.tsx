@@ -3,10 +3,10 @@ import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
 import { ArrowDownSmallIcon, LanguageIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import type { FC, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
-const LanguageMenuContent: FC = () => {
+const LanguageMenuContent = () => {
   const i18n = useI18N();
   const changeLanguage = useCallback(
     (event: string) => {
@@ -16,6 +16,7 @@ const LanguageMenuContent: FC = () => {
     },
     [i18n]
   );
+
   return (
     <>
       {LOCALES.map(option => {
@@ -34,7 +35,8 @@ const LanguageMenuContent: FC = () => {
     </>
   );
 };
-export const LanguageMenu: React.FC = () => {
+
+export const LanguageMenu = () => {
   const i18n = useI18N();
 
   const currentLanguage = LOCALES.find(item => item.tag === i18n.language);
@@ -87,6 +89,7 @@ const StyledContainer = styled('div')(() => {
     padding: '0 14px',
   };
 });
+
 const StyledIconContainer = styled('div')(() => {
   return {
     width: '20px',
@@ -96,6 +99,7 @@ const StyledIconContainer = styled('div')(() => {
     ...displayFlex('flex-start', 'center'),
   };
 });
+
 const StyledButtonContainer = styled('div')(() => {
   return {
     width: '100%',
@@ -107,6 +111,7 @@ const StyledButtonContainer = styled('div')(() => {
     marginLeft: '12px',
   };
 });
+
 const StyledButton = styled(Button)(() => {
   return {
     width: '100%',
@@ -118,6 +123,7 @@ const StyledButton = styled(Button)(() => {
     padding: '0',
   };
 });
+
 const StyledArrowDownContainer = styled('div')(() => {
   return {
     height: '32px',
@@ -128,6 +134,7 @@ const StyledArrowDownContainer = styled('div')(() => {
     fontSize: '24px',
   };
 });
+
 const StyledCurrentLanguage = styled('div')(() => {
   return {
     marginLeft: '12px',
