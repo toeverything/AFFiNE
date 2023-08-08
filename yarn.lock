@@ -3436,7 +3436,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:^2.1.30":
+"@blocksuite/icons@npm:^2.1.26, @blocksuite/icons@npm:^2.1.29, @blocksuite/icons@npm:^2.1.30":
   version: 2.1.30
   resolution: "@blocksuite/icons@npm:2.1.30"
   peerDependencies:
@@ -11276,6 +11276,20 @@ __metadata:
     react: ^18
     react-dom: ^18
   checksum: b1e15d5a03e6e83ca6dfa4794b23047ea7dba66cb333246be01ac96b5871ed16c20c455931ebe9dd38d1fb98793acee9510e6e2ad8d5ffba7956d2df24d887dd
+  languageName: node
+  linkType: hard
+
+"@toeverything/components@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@toeverything/components@npm:0.0.8"
+  dependencies:
+    "@blocksuite/icons": ^2.1.26
+  peerDependencies:
+    "@radix-ui/react-avatar": ^1
+    clsx: ^2
+    react: ^18
+    react-dom: ^18
+  checksum: 9c955d3c46729397e92031cc6a5ba0f15eb8a67893862b4c6c017c87fff2ab8e9ee8505695b0da571f2af35ad6545f643fc34f657f1c9d1913648796971540d9
   languageName: node
   linkType: hard
 
