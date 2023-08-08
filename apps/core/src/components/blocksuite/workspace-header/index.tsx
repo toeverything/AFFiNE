@@ -4,7 +4,6 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useSetAtom } from 'jotai';
 import type {
   FC,
   HTMLAttributes,
@@ -13,11 +12,10 @@ import type {
 } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
-import { openQuickSearchModalAtom } from '../../../atoms';
-import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';
 import type { BaseHeaderProps } from './header';
 import { Header } from './header';
+import { PageMenu } from './header-right-items/editor-option-menu';
 import * as styles from './styles.css';
 
 export type WorkspaceHeaderProps = BaseHeaderProps;
@@ -27,7 +25,6 @@ export const BlockSuiteEditorHeader: FC<
 > = (props): ReactElement => {
   const { workspace, currentPage, children, isPublic } = props;
   // fixme(himself65): remove this atom and move it to props
-  const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
     meta => meta.id === currentPage?.id
   );
@@ -94,11 +91,7 @@ export const BlockSuiteEditorHeader: FC<
               )}
             </div>
             <div className={styles.searchArrowWrapper}>
-              <QuickSearchButton
-                onClick={() => {
-                  setOpenQuickSearch(true);
-                }}
-              />
+              <PageMenu />
             </div>
           </div>
         </div>

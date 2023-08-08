@@ -205,6 +205,7 @@ export const searchArrowWrapper = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
+  marginLeft: '4px',
 });
 
 export const pageListTitleWrapper = style({

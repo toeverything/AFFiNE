@@ -251,6 +251,7 @@ export const Export = ({
         data-testid="export-menu"
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
+        style={{ padding: '4px 12px' }}
         onClick={e => {
           e.stopPropagation();
           onItemClick?.();

@@ -4,11 +4,15 @@ import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
+  DuplicateIcon,
   EdgelessIcon,
+  EditIcon,
   FavoritedIcon,
   FavoriteIcon,
+  ImportIcon,
   MoreVerticalIcon,
   PageIcon,
+  TagsIcon,
 } from '@blocksuite/icons';
 import {
   useBlockSuitePageMeta,
@@ -23,6 +27,7 @@ import { pageSettingFamily } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
+import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
 import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
 import { LanguageMenu } from './language-menu';
 const CommonMenu = () => {
@@ -51,7 +56,7 @@ const CommonMenu = () => {
     </FlexWrapper>
   );
 };
-const PageMenu = () => {
+export const PageMenu = () => {
   const t = useAFFiNEI18N();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -89,12 +94,32 @@ const PageMenu = () => {
     toast(t['Moved to Trash']());
     setOpenConfirm(false);
   }, [pageMeta.id, removeToTrash, t]);
-
+  const menuItemStyle = {
+    padding: '4px 12px',
+  };
   const EditMenu = (
     <>
       <MenuItem
+        icon={<EditIcon />}
+        data-testid="editor-option-menu-rename"
+        onClick={() => {}}
+        style={menuItemStyle}
+      >
+        {t['Rename']()}
+      </MenuItem>
+      <MenuItem
+        icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+        data-testid="editor-option-menu-edgeless"
+        onClick={handleSwitchMode}
+        style={menuItemStyle}
+      >
+        {t['Convert to ']()}
+        {mode === 'page' ? t['Edgeless']() : t['Page']()}
+      </MenuItem>
+      <MenuItem
         data-testid="editor-option-menu-favorite"
         onClick={handleFavorite}
+        style={menuItemStyle}
         icon={
           favorite ? (
             <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
@@ -106,14 +131,32 @@ const PageMenu = () => {
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
       <MenuItem
-        icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
-        data-testid="editor-option-menu-edgeless"
-        onClick={handleSwitchMode}
+        icon={<TagsIcon />}
+        data-testid="editor-option-menu-add-tag"
+        onClick={() => {}}
+        style={menuItemStyle}
       >
-        {t['Convert to ']()}
-        {mode === 'page' ? t['Edgeless']() : t['Page']()}
+        {t['com.affine.header.option.add-tag']()}
+      </MenuItem>
+      <hr />
+      <MenuItem
+        icon={<DuplicateIcon />}
+        data-testid="editor-option-menu-duplicate"
+        onClick={() => {}}
+        style={menuItemStyle}
+      >
+        {t['com.affine.header.option.duplicate']()}
+      </MenuItem>
+      <MenuItem
+        icon={<ImportIcon />}
+        data-testid="editor-option-menu-import"
+        onClick={() => {}}
+        style={menuItemStyle}
+      >
+        {t['Import']()}
       </MenuItem>
       <Export />
+      <hr />
       <MoveToTrash
         data-testid="editor-option-menu-delete"
         onItemClick={() => {
@@ -131,10 +174,15 @@ const PageMenu = () => {
           placement="bottom-end"
           disablePortal={true}
           trigger="click"
+          menuStyles={{
+            borderRadius: '8px',
+            padding: '8px',
+            background: 'var(--affine-background-overlay-panel-color)',
+          }}
         >
-          <IconButton data-testid="editor-option-menu">
-            <MoreVerticalIcon />
-          </IconButton>
+          <div>
+            <HeaderDropDownButton />
+          </div>
         </Menu>
         <MoveToTrash.ConfirmModal
           open={openConfirm}
