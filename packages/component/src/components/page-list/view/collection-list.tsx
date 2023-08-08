@@ -3,19 +3,12 @@ import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteIcon,
-  FilteredIcon,
-  FilterIcon,
-  FolderIcon,
-  PinIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons';
+import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
-import type { MouseEvent, ReactNode } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
+import { useCallback, useState } from 'react';
 
 import { MenuItem, Tooltip } from '../../..';
 import Menu from '../../../ui/menu/menu';
@@ -23,6 +16,7 @@ import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
+import { useActions } from './use-action';
 
 const CollectionOption = ({
   collection,
@@ -33,46 +27,12 @@ const CollectionOption = ({
   setting: ReturnType<typeof useCollectionManager>;
   updateCollection: (view: Collection) => void;
 }) => {
-  const actions: {
-    icon: ReactNode;
-    click: () => void;
-    className?: string;
-    name: string;
-  }[] = useMemo(
-    () => [
-      {
-        icon: <PinIcon />,
-        name: 'pin',
-        click: () => {
-          setting
-            .updateCollection({
-              ...collection,
-              pinned: !collection.pinned,
-            })
-            .catch(err => {
-              console.error(err);
-            });
-        },
-      },
-      {
-        icon: <FilterIcon />,
-        name: 'edit',
-        click: () => {
-          updateCollection(collection);
-        },
-      },
-      {
-        icon: <DeleteIcon style={{ color: 'var(--affine-error-color)' }} />,
-        name: 'delete',
-        click: () => {
-          setting.deleteCollection(collection.id).catch(err => {
-            console.error(err);
-          });
-        },
-      },
-    ],
-    [setting, updateCollection, collection]
-  );
+  const actions = useActions({
+    collection,
+    setting,
+    openEdit: updateCollection,
+  });
+
   const selectCollection = useCallback(
     () => setting.selectCollection(collection.id),
     [setting, collection.id]
@@ -112,20 +72,21 @@ const CollectionOption = ({
               alignItems: 'center',
             }}
           >
-            {actions.map((v, i) => {
+            {actions.map((action, i) => {
               const onClick = (e: MouseEvent<HTMLDivElement>) => {
                 e.stopPropagation();
-                v.click();
+                action.click();
               };
+
               return (
                 <div
-                  data-testid={`collection-select-option-${v.name}`}
+                  data-testid={`collection-select-option-${action.name}`}
                   key={i}
                   onClick={onClick}
                   style={{ marginLeft: i === 0 ? 28 : undefined }}
-                  className={clsx(styles.viewOption, v.className)}
+                  className={clsx(styles.viewOption, action.className)}
                 >
-                  {v.icon}
+                  {action.icon}
                 </div>
               );
             })}

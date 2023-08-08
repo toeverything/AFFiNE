@@ -223,6 +223,21 @@ export const Basic = () => {
           gif
         </button>
       </div>
+      <div>
+        <button
+          onClick={() => {
+            const key = id++;
+            push({
+              title: `${key} title`,
+              type: 'info',
+              theme: 'default',
+              timeout: 3000,
+            });
+          }}
+        >
+          default message
+        </button>
+      </div>
       <NotificationCenter />
     </>
   );

@@ -177,21 +177,20 @@ export const notificationContentStyle = style({
   width: '380px',
   borderRadius: '8px',
   boxShadow: 'var(--affine-shadow-1)',
-  border: '1px solid var(--affine-border-color)',
+  border: '1px solid var(--affine-black-10)',
   background: 'var(--affine-white)',
   transition: 'all 0.3s',
 });
 export const notificationTitleContactStyle = style({
   marginRight: '22px',
   width: '200px',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-  overflow: 'hidden',
-  lineHeight: '1.5',
+  overflow: 'wrap',
+  lineHeight: '24px',
+  fontSize: 'var(--affine-font-base)',
 });
 export const notificationTitleStyle = style({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   width: '100%',
   justifyContent: 'flex-start',
 });
@@ -199,6 +198,7 @@ export const notificationDescriptionStyle = style({
   fontSize: 'var(--affine-font-sm)',
   color: 'var(--affine-text-secondary-color)',
   marginBottom: '4px',
+  lineHeight: '22px',
 });
 export const notificationTimeStyle = style({
   fontSize: 'var(--affine-font-sm)',
@@ -234,7 +234,7 @@ export const closeButtonWithMediaStyle = style({
   },
 });
 export const closeButtonColorStyle = style({
-  color: 'var(--affine-white)',
+  color: 'var(--affine-text-primary-color)',
 });
 export const undoButtonStyle = style({
   fontSize: 'var(--affine-font-sm)',
@@ -296,10 +296,10 @@ export const lightWarningStyle = style({
   borderRadius: '8px',
 });
 export const darkColorStyle = style({
-  color: 'var(--affine-white)',
+  color: 'var(--affine-pure-white)',
 });
 export const lightInfoIconStyle = style({
-  color: 'var(--affine-processing-color)',
+  color: 'var(--affine-icon-color)',
 });
 export const defaultCollapseStyle = styleVariants({
   secondary: {
