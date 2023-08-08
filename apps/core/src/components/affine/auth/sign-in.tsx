@@ -50,7 +50,6 @@ export const SignIn: FC<AuthPanelProps> = ({
         email: email,
         callbackUrl: buildCallbackUrl('signIn'),
         redirect: true,
-        foobar: true,
       }).catch(console.error);
 
       setAuthState('afterSignInSendEmail');
@@ -59,7 +58,6 @@ export const SignIn: FC<AuthPanelProps> = ({
         email: email,
         callbackUrl: buildCallbackUrl('signUp'),
         redirect: true,
-        foobar: true,
       }).catch(console.error);
 
       setAuthState('afterSignUpSendEmail');

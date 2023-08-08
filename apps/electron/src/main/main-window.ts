@@ -5,6 +5,7 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
+import { CLOUD_BASE_URL } from './config';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
@@ -101,7 +102,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
+  const pageUrl = CLOUD_BASE_URL; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 
@@ -113,7 +114,7 @@ async function createWindow() {
 }
 
 // singleton
-let browserWindow: Electron.BrowserWindow | undefined;
+let browserWindow: BrowserWindow | undefined;
 let popup: BrowserWindow | undefined;
 
 function createPopupWindow() {
@@ -131,6 +132,7 @@ function createPopupWindow() {
           // popup window does not need helper process, right?
         ],
       },
+      show: false,
     });
     popup.on('close', e => {
       e.preventDefault();
@@ -139,6 +141,9 @@ function createPopupWindow() {
     });
     browserWindow?.webContents.once('did-finish-load', () => {
       closePopup();
+    });
+    popup.webContents.openDevTools({
+      mode: 'detach',
     });
   }
   return popup;
@@ -165,9 +170,11 @@ export async function restoreOrCreateWindow() {
 export async function handleOpenUrlInPopup(url: string) {
   const popup = createPopupWindow();
 
-  console.log('handleOpenUrlInPopup', url);
+  popup.on('ready-to-show', () => {
+    popup.show();
+  });
+
   await popup.loadURL(url);
-  popup.show();
 }
 
 export function closePopup() {

@@ -22,4 +22,5 @@ const API_URL_MAPPING = {
   internal: `https://affine.fail`,
 };
 
-export const CLOUD_API_URL = API_URL_MAPPING[buildType];
+export const CLOUD_BASE_URL =
+  process.env.DEV_SERVER_URL || API_URL_MAPPING[buildType];

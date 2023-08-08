@@ -1,38 +1,62 @@
 import { net, protocol, session } from 'electron';
 import { join } from 'path';
 
-import { CLOUD_API_URL } from './config';
-import { logger } from './logger';
+import { CLOUD_BASE_URL, isDev } from './config';
 
-const NETWORK_REQUESTS = ['/api', '/socket.io', '/graphql'];
+const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
+const webStaticDir = join(__dirname, '../resources/web-static');
+
+function isNetworkResource(pathname: string) {
+  return NETWORK_REQUESTS.some(opt => pathname.startsWith(opt));
+}
+
+async function handleHttpRequest(request: Request) {
+  const clonedRequest = Object.assign(request.clone(), {
+    bypassCustomProtocolHandlers: true,
+  });
+  const { pathname, origin } = new URL(request.url);
+  if (
+    !origin.startsWith(CLOUD_BASE_URL) ||
+    isNetworkResource(pathname) ||
+    isDev
+  ) {
+    // note: I don't find a good way to get over with 302 redirect
+    // by default in net.fetch, or don't know if there is a way to
+    // bypass http request handling to browser instead ...
+    if (pathname.startsWith('/api/auth/callback')) {
+      const originResponse = await fetch(request.url, request);
+      const headers = new Headers(originResponse.headers);
+      headers.set('location', originResponse.url);
+      return new Response(originResponse.body, {
+        headers,
+        status: 302,
+      });
+    } else {
+      // just pass through (proxy)
+      return net.fetch(request.url, clonedRequest);
+    }
+  } else {
+    // this will be file types (in the web-static folder)
+    let filepath = '';
+    // if is a file type, load the file in resources
+    if (pathname.split('/').at(-1)?.includes('.')) {
+      filepath = join(webStaticDir, decodeURIComponent(pathname));
+    } else {
+      // else, fallback to load the index.html instead
+      filepath = join(webStaticDir, 'index.html');
+    }
+    return net.fetch('file://' + filepath, clonedRequest);
+  }
+}
 
 export function registerProtocol() {
   // it seems that there is some issue to postMessage between renderer with custom protocol & helper process
-  protocol.handle('file', request => {
-    const url = request.url.replace(/^file:\/\//, '');
-    let realpath = decodeURIComponent(url);
+  protocol.handle('http', request => {
+    return handleHttpRequest(request);
+  });
 
-    const webStaticDir = join(__dirname, '../resources/web-static');
-    // ALL URLs should start with ./
-    if (url.startsWith('./')) {
-      if (NETWORK_REQUESTS.some(path => url.startsWith('.' + path))) {
-        const realUrl = CLOUD_API_URL + url.substring(1);
-        logger.info('proxy', request.url, 'to', realUrl);
-        return net.fetch(realUrl, request);
-      }
-      // if is a file type, load the file in resources
-      else if (url.split('/').at(-1)?.includes('.')) {
-        realpath = join(webStaticDir, decodeURIComponent(url));
-      } else {
-        // else, fallback to load the index.html instead
-        realpath = join(webStaticDir, 'index.html');
-      }
-    }
-    return net.fetch('file://' + realpath, {
-      ...request,
-      // we need this otherwise the request will be handled recursively
-      bypassCustomProtocolHandlers: true,
-    });
+  protocol.handle('https', request => {
+    return handleHttpRequest(request);
   });
 
   // hack for CORS

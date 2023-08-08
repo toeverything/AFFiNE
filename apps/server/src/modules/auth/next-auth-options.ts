@@ -20,8 +20,8 @@ import { getUtcTimestamp, UserClaim } from './service';
 
 export const NextAuthOptionsProvide = Symbol('NextAuthOptions');
 
-function getSchemaFromCallbackUrl(callbackUrl: string) {
-  const { searchParams } = new URL(callbackUrl);
+function getSchemaFromCallbackUrl(origin: string, callbackUrl: string) {
+  const { searchParams } = new URL(callbackUrl, origin);
   return searchParams.has('schema') ? searchParams.get('schema') : null;
 }
 
@@ -80,12 +80,12 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           from: config.auth.email.sender,
           async sendVerificationRequest(params: SendVerificationRequestParams) {
             const { identifier, url, provider } = params;
-            const { host, searchParams } = new URL(url);
+            const { host, searchParams, origin } = new URL(url);
             const callbackUrl = searchParams.get('callbackUrl') || '';
             if (!callbackUrl) {
               throw new Error('callbackUrl is not set');
             }
-            const schema = getSchemaFromCallbackUrl(callbackUrl);
+            const schema = getSchemaFromCallbackUrl(origin, callbackUrl);
             const wrappedUrl = wrapUrlWithSchema(url, schema);
             // hack: check if link is opened via desktop
             const result = await mailer.sendMail({
