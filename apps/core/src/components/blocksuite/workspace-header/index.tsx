@@ -5,12 +5,7 @@ import {
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useSetAtom } from 'jotai';
-import type {
-  FC,
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-} from 'react';
+import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
 import { openQuickSearchModalAtom } from '../../../atoms';
@@ -20,11 +15,15 @@ import type { BaseHeaderProps } from './header';
 import { Header } from './header';
 import * as styles from './styles.css';
 
-export type WorkspaceHeaderProps = BaseHeaderProps;
+export interface WorkspaceHeaderProps
+  extends BaseHeaderProps,
+    HTMLAttributes<HTMLDivElement> {
+  children?: ReactNode;
+}
 
-export const BlockSuiteEditorHeader: FC<
-  PropsWithChildren<WorkspaceHeaderProps> & HTMLAttributes<HTMLDivElement>
-> = (props): ReactElement => {
+export const BlockSuiteEditorHeader = (
+  props: WorkspaceHeaderProps
+): ReactElement => {
   const { workspace, currentPage, children, isPublic } = props;
   // fixme(himself65): remove this atom and move it to props
   const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
@@ -50,6 +49,7 @@ export const BlockSuiteEditorHeader: FC<
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
   const title = pageMeta?.title;
+
   return (
     <Header ref={headerRef} {...props}>
       {children}

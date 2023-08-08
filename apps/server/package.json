@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.0-canary.12",
+  "version": "0.8.0-canary.13",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -47,7 +47,7 @@
     "on-headers": "^1.0.2",
     "parse-duration": "^1.1.0",
     "pretty-time": "^1.1.0",
-    "prisma": "^5.0.0",
+    "prisma": "^5.1.1",
     "prom-client": "^14.2.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",

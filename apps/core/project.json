@@ -16,6 +16,7 @@
         "{projectRoot}/.webpack/**/*",
         "{projectRoot}/**/*",
         "{projectRoot}/public/**/*",
+        "{workspaceRoot}/packages/env/src/**/*",
         "{workspaceRoot}/packages/component/src/**/*",
         "{workspaceRoot}/packages/debug/src/**/*",
         "{workspaceRoot}/packages/graphql/src/**/*",

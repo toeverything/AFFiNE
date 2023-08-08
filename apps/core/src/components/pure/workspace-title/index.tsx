@@ -14,17 +14,16 @@ import { Header } from '../../blocksuite/workspace-header/header';
 import * as styles from '../../blocksuite/workspace-header/styles.css';
 import { QuickSearchButton } from '../quick-search-button';
 
-export type WorkspaceTitleProps = React.PropsWithChildren<
-  HeaderProps & {
-    icon?: ReactNode;
-  }
->;
+export interface WorkspaceTitleProps
+  extends React.PropsWithChildren<HeaderProps> {
+  icon?: ReactNode;
+}
 
-export const WorkspaceTitle: React.FC<WorkspaceTitleProps> = ({
+export const WorkspaceTitle = ({
   icon,
   children,
   ...props
-}) => {
+}: WorkspaceTitleProps) => {
   const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   return (
     <Header {...props}>
@@ -50,6 +49,7 @@ export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
     }
     setMode(value);
   };
+
   return (
     <Header {...props}>
       <div className={styles.allPageListTitleWrapper}>

@@ -1,88 +1,141 @@
-import * as AFFiNEComponent from '@affine/component';
 import { DebugLogger } from '@affine/debug';
-import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
-import { FormatQuickBar } from '@blocksuite/blocks';
-import * as BlockSuiteBlocksStd from '@blocksuite/blocks/std';
-import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
+import type {
+  CallbackMap,
+  ExpectedLayout,
+  LayoutNode,
+  PluginContext,
+} from '@affine/sdk/entry';
+import { AffineFormatBarWidget } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import { DisposableGroup } from '@blocksuite/global/utils';
-import * as Icons from '@blocksuite/icons';
-import * as Button from '@toeverything/components/button';
+import {
+  addCleanup,
+  pluginEditorAtom,
+  pluginHeaderItemAtom,
+  pluginSettingAtom,
+  pluginWindowAtom,
+} from '@toeverything/infra/__internal__/plugin';
 import {
   contentLayoutAtom,
   currentPageAtom,
   currentWorkspaceAtom,
-  editorItemsAtom,
-  headerItemsAtom,
   rootStore,
-  settingItemsAtom,
-  windowItemsAtom,
 } from '@toeverything/infra/atom';
-import * as Jotai from 'jotai/index';
+import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
-import * as JotaiUtils from 'jotai/utils';
-import * as React from 'react';
 import { createElement, type PropsWithChildren } from 'react';
-import * as ReactJSXRuntime from 'react/jsx-runtime';
-import * as ReactDom from 'react-dom';
-import * as ReactDomClient from 'react-dom/client';
-import * as SWR from 'swr';
 
 import { createFetch } from './endowments/fercher';
 import { createTimers } from './endowments/timer';
+import { setupImportsMap } from './setup-imports-map';
 
 const dynamicImportKey = '$h‍_import';
 
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
 
-const setupRootImportsMap = () => {
-  _rootImportsMap.set('react', new Map(Object.entries(React)));
-  _rootImportsMap.set(
-    'react/jsx-runtime',
-    new Map(Object.entries(ReactJSXRuntime))
-  );
-  _rootImportsMap.set('react-dom', new Map(Object.entries(ReactDom)));
-  _rootImportsMap.set(
-    'react-dom/client',
-    new Map(Object.entries(ReactDomClient))
-  );
-  _rootImportsMap.set(
-    '@toeverything/components/button',
-    new Map(Object.entries(Button))
-  );
-  _rootImportsMap.set('@blocksuite/icons', new Map(Object.entries(Icons)));
-  _rootImportsMap.set(
-    '@affine/component',
-    new Map(Object.entries(AFFiNEComponent))
-  );
-  _rootImportsMap.set(
-    '@blocksuite/blocks/std',
-    new Map(Object.entries(BlockSuiteBlocksStd))
-  );
-  _rootImportsMap.set(
-    '@blocksuite/global/utils',
-    new Map(Object.entries(BlockSuiteGlobalUtils))
-  );
-  _rootImportsMap.set('jotai', new Map(Object.entries(Jotai)));
-  _rootImportsMap.set('jotai/utils', new Map(Object.entries(JotaiUtils)));
-  _rootImportsMap.set(
-    '@affine/sdk/entry',
-    new Map(
-      Object.entries({
-        rootStore: rootStore,
-        currentWorkspaceAtom: currentWorkspaceAtom,
-        currentPageAtom: currentPageAtom,
-        contentLayoutAtom: contentLayoutAtom,
-      })
-    )
-  );
-  _rootImportsMap.set('swr', new Map(Object.entries(SWR)));
-};
+const pushLayoutAtom = atom<
+  null,
+  // fixme: check plugin name here
+  [pluginName: string, create: (root: HTMLElement) => () => void],
+  void
+>(null, (_, set, pluginName, callback) => {
+  set(pluginWindowAtom, items => ({
+    ...items,
+    [pluginName]: callback,
+  }));
+  set(contentLayoutAtom, layout => {
+    if (layout === 'editor') {
+      return {
+        direction: 'horizontal',
+        first: 'editor',
+        second: pluginName,
+        splitPercentage: 70,
+      };
+    } else {
+      return {
+        ...layout,
+        direction: 'horizontal',
+        first: 'editor',
+        second: {
+          direction: 'horizontal',
+          // fixme: incorrect type here
+          first: layout.second,
+          second: pluginName,
+          splitPercentage: 70,
+        },
+      } as ExpectedLayout;
+    }
+  });
+  addCleanup(pluginName, () => {
+    set(deleteLayoutAtom, pluginName);
+  });
+});
+
+const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
+  set(pluginWindowAtom, items => {
+    const newItems = { ...items };
+    delete newItems[id];
+    return newItems;
+  });
+  const removeLayout = (layout: LayoutNode): LayoutNode => {
+    if (layout === 'editor') {
+      return 'editor';
+    } else {
+      if (typeof layout === 'string') {
+        return layout as ExpectedLayout;
+      }
+      if (layout.first === id) {
+        return layout.second;
+      } else if (layout.second === id) {
+        return layout.first;
+      } else {
+        return removeLayout(layout.second);
+      }
+    }
+  };
+  set(contentLayoutAtom, layout => {
+    if (layout === 'editor') {
+      return 'editor';
+    } else {
+      if (typeof layout === 'string') {
+        return layout as ExpectedLayout;
+      }
+      if (layout.first === id) {
+        return layout.second as ExpectedLayout;
+      } else if (layout.second === id) {
+        return layout.first as ExpectedLayout;
+      } else {
+        return removeLayout(layout.second) as ExpectedLayout;
+      }
+    }
+  });
+});
 
 // module -> importName -> updater[]
 export const _rootImportsMap = new Map<string, Map<string, any>>();
-setupRootImportsMap();
+const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
+  react: import('react'),
+  'react/jsx-runtime': import('react/jsx-runtime'),
+  'react-dom': import('react-dom'),
+  'react-dom/client': import('react-dom/client'),
+  jotai: import('jotai'),
+  'jotai/utils': import('jotai/utils'),
+  swr: import('swr'),
+  '@affine/component': import('@affine/component'),
+  '@blocksuite/icons': import('@blocksuite/icons'),
+  '@affine/sdk/entry': {
+    rootStore: rootStore,
+    currentWorkspaceAtom: currentWorkspaceAtom,
+    currentPageAtom: currentPageAtom,
+    pushLayoutAtom: pushLayoutAtom,
+    deleteLayoutAtom: deleteLayoutAtom,
+  },
+  '@blocksuite/blocks/std': import('@blocksuite/blocks/std'),
+  '@blocksuite/global/utils': import('@blocksuite/global/utils'),
+  '@toeverything/infra/atom': import('@toeverything/infra/atom'),
+  '@toeverything/components/button': import('@toeverything/components/button'),
+});
+
 // pluginName -> module -> importName -> updater[]
 export const _pluginNestedImportsMap = new Map<
   string,
@@ -218,6 +271,7 @@ export const createOrGetGlobalThis = (
     Object.create(null),
     sharedGlobalThis,
     {
+      // fixme: vite build output bundle will have this, we should remove it
       process: Object.freeze({
         env: {
           NODE_ENV: process.env.NODE_ENV,
@@ -324,6 +378,7 @@ export const setupPluginCode = async (
   pluginName: string,
   filename: string
 ) => {
+  await rootImportsMapSetupPromise;
   if (!_pluginNestedImportsMap.has(pluginName)) {
     _pluginNestedImportsMap.set(pluginName, new Map());
   }
@@ -412,7 +467,6 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
     children
   );
 
-const group = new DisposableGroup();
 const entryLogger = new DebugLogger('plugin:entry');
 
 export const evaluatePluginEntry = (pluginName: string) => {
@@ -425,31 +479,59 @@ export const evaluatePluginEntry = (pluginName: string) => {
     register: (part, callback) => {
       entryLogger.info(`Registering ${pluginName} to ${part}`);
       if (part === 'headerItem') {
-        rootStore.set(headerItemsAtom, items => ({
+        rootStore.set(pluginHeaderItemAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['headerItem'],
         }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginHeaderItemAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'editor') {
-        rootStore.set(editorItemsAtom, items => ({
+        rootStore.set(pluginEditorAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['editor'],
         }));
-      } else if (part === 'window') {
-        rootStore.set(windowItemsAtom, items => ({
-          ...items,
-          [pluginName]: callback as CallbackMap['window'],
-        }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginEditorAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'setting') {
-        rootStore.set(settingItemsAtom, items => ({
+        rootStore.set(pluginSettingAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['setting'],
         }));
-      } else if (part === 'formatBar') {
-        FormatQuickBar.customElements.push((page, getBlockRange) => {
-          const div = document.createElement('div');
-          (callback as CallbackMap['formatBar'])(div, page, getBlockRange);
-          return div;
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginSettingAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
         });
+      } else if (part === 'formatBar') {
+        const register = (widget: AffineFormatBarWidget) => {
+          const div = document.createElement('div');
+          const root = widget.root;
+          const cleanup = (callback as CallbackMap['formatBar'])(
+            div,
+            widget.page,
+            () => {
+              return root.selectionManager.value;
+            }
+          );
+          addCleanup(pluginName, () => {
+            // todo: unregister
+            cleanup();
+          });
+          return div;
+        };
+        AffineFormatBarWidget.customElements.push(register);
       } else {
         throw new Error(`Unknown part: ${part}`);
       }
@@ -461,5 +543,5 @@ export const evaluatePluginEntry = (pluginName: string) => {
   if (typeof cleanup !== 'function') {
     throw new Error('Plugin entry must return a function');
   }
-  group.add(cleanup);
+  addCleanup(pluginName, cleanup);
 };

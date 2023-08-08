@@ -67,7 +67,7 @@ const AllPagesHead = ({
         content: t['Created'](),
         proportion: 0.1,
         tableCellStyle: {
-          width: '80px',
+          width: '110px',
         } satisfies CSSProperties,
       },
       {
@@ -75,7 +75,7 @@ const AllPagesHead = ({
         content: t['Updated'](),
         proportion: 0.1,
         tableCellStyle: {
-          width: '80px',
+          width: '110px',
         } satisfies CSSProperties,
       },
       {
@@ -90,7 +90,7 @@ const AllPagesHead = ({
         showWhen: () => !isPublicWorkspace,
         sortable: false,
         tableCellStyle: {
-          width: '130px',
+          width: '140px',
         } satisfies CSSProperties,
         styles: {
           justifyContent: 'flex-end',
