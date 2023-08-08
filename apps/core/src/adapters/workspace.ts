@@ -31,9 +31,14 @@ export const WorkspaceAdapters = {
     loadPriority: LoadPriority.HIGH,
     Events: {
       'app:access': async () => {
-        const { getSession } = await import('next-auth/react');
-        const session = await getSession();
-        return !!session;
+        try {
+          const { getSession } = await import('next-auth/react');
+          const session = await getSession();
+          return !!session;
+        } catch (e) {
+          console.error('failed to get session', e);
+          return false;
+        }
       },
     } as Partial<AppEvents>,
     CRUD: CloudCRUD,

@@ -9,7 +9,7 @@
   "include": ["src"],
   "references": [
     {
-      "path": "../plugin-infra"
+      "path": "../infra"
     }
   ]
 }

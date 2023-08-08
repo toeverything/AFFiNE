@@ -1,4 +1,4 @@
-import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
+import type { DBSchema, IDBPDatabase } from 'idb';
 
 export const dbVersion = 1;
 export const DEFAULT_DB_NAME = 'affine-local';

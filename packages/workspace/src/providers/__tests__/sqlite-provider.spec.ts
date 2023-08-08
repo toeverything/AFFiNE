@@ -5,7 +5,7 @@ import type {
 import { getDoc } from '@affine/y-provider';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
-import { uuidv4, Workspace } from '@blocksuite/store';
+import { Schema, uuidv4, Workspace } from '@blocksuite/store';
 import { setTimeout } from 'timers/promises';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -70,13 +70,17 @@ vi.stubGlobal('environment', {
   isDesktop: true,
 });
 
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
+
 beforeEach(() => {
   id = uuidv4();
   workspace = new Workspace({
     id,
     isSSR: true,
+    schema,
   });
-  workspace.register(AffineSchemas).register(__unstableSchemas);
   provider = createSQLiteProvider(workspace.id, workspace.doc, {
     awareness: workspace.awarenessStore.awareness,
   }) as SQLiteProvider;

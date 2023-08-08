@@ -43,10 +43,14 @@ const CollectionOption = ({
         icon: <PinIcon />,
         name: 'pin',
         click: () => {
-          return setting.updateCollection({
-            ...collection,
-            pinned: !collection.pinned,
-          });
+          setting
+            .updateCollection({
+              ...collection,
+              pinned: !collection.pinned,
+            })
+            .catch(err => {
+              console.error(err);
+            });
         },
       },
       {
@@ -144,10 +148,14 @@ export const CollectionList = ({
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
-      return setting.updateCollection({
-        ...setting.currentCollection,
-        filterList,
-      });
+      setting
+        .updateCollection({
+          ...setting.currentCollection,
+          filterList,
+        })
+        .catch(err => {
+          console.error(err);
+        });
     },
     [setting]
   );
@@ -156,10 +164,9 @@ export const CollectionList = ({
     []
   );
   const onConfirm = useCallback(
-    (view: Collection) => {
-      return setting.updateCollection(view).then(() => {
-        closeUpdateCollectionModal();
-      });
+    async (view: Collection) => {
+      await setting.updateCollection(view);
+      closeUpdateCollectionModal();
     },
     [closeUpdateCollectionModal, setting]
   );

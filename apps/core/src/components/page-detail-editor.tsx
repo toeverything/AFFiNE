@@ -1,6 +1,7 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
+import type { CallbackMap, LayoutNode } from '@affine/sdk//entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
@@ -12,9 +13,7 @@ import {
   editorItemsAtom,
   rootStore,
   windowItemsAtom,
-} from '@toeverything/plugin-infra/atom';
-import type { CallbackMap } from '@toeverything/plugin-infra/entry';
-import type { LayoutNode } from '@toeverything/plugin-infra/type';
+} from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';

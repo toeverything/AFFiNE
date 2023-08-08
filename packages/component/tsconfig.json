@@ -5,8 +5,7 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "outDir": "lib",
-    "types": ["@affine/env"]
+    "outDir": "lib"
   },
   "references": [
     {
@@ -22,7 +21,7 @@
       "path": "../hooks"
     },
     {
-      "path": "../plugin-infra"
+      "path": "../infra"
     },
     { "path": "../workspace" },
     { "path": "../../tests/fixtures" }

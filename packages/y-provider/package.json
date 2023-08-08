@@ -1,11 +1,11 @@
 {
   "name": "@affine/y-provider",
   "type": "module",
-  "version": "0.8.0-canary.6",
+  "version": "0.8.0-canary.12",
   "description": "Yjs provider utilities for AFFiNE",
   "main": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/store": "0.0.0-20230731152415-fdd3d9b0-nightly"
+    "@blocksuite/store": "0.0.0-20230806233219-17ca6eee-nightly"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"

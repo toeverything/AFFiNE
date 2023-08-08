@@ -111,8 +111,11 @@ export const createIndexedDBProvider = (
   let datasource: ReturnType<typeof createDatasource> | null = null;
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
-  return {
+  const apis = {
     connect: () => {
+      if (apis.connected) {
+        apis.disconnect();
+      }
       datasource = createDatasource({ dbName, mergeCount });
       provider = createLazyProvider(doc, datasource, { origin: 'idb' });
       provider.connect();
@@ -130,4 +133,6 @@ export const createIndexedDBProvider = (
       return provider?.connected || false;
     },
   };
+
+  return apis;
 };

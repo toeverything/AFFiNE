@@ -27,8 +27,8 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-default-page-block-title');
-      await page.type('.affine-default-page-block-title', 'test1', {
+      await page.focus('.affine-doc-page-block-title');
+      await page.type('.affine-doc-page-block-title', 'test1', {
         delay: 100,
       });
       await page.waitForTimeout(500);
@@ -36,8 +36,8 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-default-page-block-title');
-      await page.type('.affine-default-page-block-title', 'test2', {
+      await page.focus('.affine-doc-page-block-title');
+      await page.type('.affine-doc-page-block-title', 'test2', {
         delay: 100,
       });
       await page.waitForTimeout(500);
@@ -45,14 +45,14 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-default-page-block-title');
-      await page.type('.affine-default-page-block-title', 'test3', {
+      await page.focus('.affine-doc-page-block-title');
+      await page.type('.affine-doc-page-block-title', 'test3', {
         delay: 100,
       });
     }
     {
       const title = (await page
-        .locator('.affine-default-page-block-title')
+        .locator('.affine-doc-page-block-title')
         .textContent()) as string;
       expect(title.trim()).toBe('test3');
     }
@@ -63,7 +63,7 @@ if (platform() === 'darwin') {
     await page.waitForTimeout(1000);
     {
       const title = (await page
-        .locator('.affine-default-page-block-title')
+        .locator('.affine-doc-page-block-title')
         .textContent()) as string;
       expect(title.trim()).toBe('test1');
     }
@@ -73,7 +73,7 @@ if (platform() === 'darwin') {
     await page.waitForTimeout(1000);
     {
       const title = (await page
-        .locator('.affine-default-page-block-title')
+        .locator('.affine-doc-page-block-title')
         .textContent()) as string;
       expect(title.trim()).toBe('test3');
     }

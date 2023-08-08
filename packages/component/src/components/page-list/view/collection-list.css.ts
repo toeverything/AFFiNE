@@ -21,7 +21,7 @@ export const viewButton = style({
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',
   ['WebkitAppRegion' as string]: 'no-drag',
-  maxWidth: '200px',
+  maxWidth: '150px',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
   transition: 'margin-left 0.2s ease-in-out',
@@ -30,15 +30,6 @@ export const viewButton = style({
     background: 'var(--affine-hover-color)',
   },
   marginRight: '20px',
-  '@media': {
-    '(max-width: 1200px)': {
-      maxWidth: '100px',
-    },
-    '(max-width: 900px)': {
-      maxWidth: '150px',
-      marginRight: '10px',
-    },
-  },
 });
 globalStyle(`${viewButton} > span`, {
   display: 'block',
@@ -74,6 +65,8 @@ export const deleteOption = style({
 export const filterButton = style({
   borderRadius: '8px',
   height: '100%',
+  width: '100%',
+  marginRight: '20px',
   padding: '4px 8px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',

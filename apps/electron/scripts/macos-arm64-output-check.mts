@@ -3,10 +3,11 @@ import { readdir } from 'node:fs/promises';
 
 const outputRoot = fileURLToPath(
   new URL(
-    '../zip-out/AFFiNE-canary.app/Contents/Resources/app',
+    '../out/canary/AFFiNE-canary-darwin-arm64/AFFiNE-canary.app/Contents/Resources/app',
     import.meta.url
   )
 );
+
 const outputList = [
   [
     'dist',

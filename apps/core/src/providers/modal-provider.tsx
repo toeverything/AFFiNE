@@ -5,7 +5,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
@@ -91,13 +91,22 @@ export const Setting: FC = () => {
 };
 
 export const AuthModal: FC = () => {
-  const [{ open, state, email = '' }, setOpenAuthModalAtom] =
-    useAtom(openAuthModalAtom);
+  const [
+    { open, state, email = '', emailType = 'changePassword' },
+    setOpenAuthModalAtom,
+  ] = useAtom(openAuthModalAtom);
   return (
     <Auth
       open={open}
       state={state}
       email={email}
+      emailType={emailType}
+      setEmailType={useCallback(
+        emailType => {
+          setOpenAuthModalAtom(prev => ({ ...prev, emailType }));
+        },
+        [setOpenAuthModalAtom]
+      )}
       setOpen={useCallback(
         open => {
           setOpenAuthModalAtom(prev => ({ ...prev, open }));
@@ -232,19 +241,15 @@ export const AllWorkspaceModals = (): ReactElement => {
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
             id => {
-              startTransition(() => {
-                setOpenCreateWorkspaceModal(false);
-                setOpenWorkspacesModal(false);
-                setCurrentWorkspaceId(id);
+              setOpenCreateWorkspaceModal(false);
+              setOpenWorkspacesModal(false);
+              // if jumping immediately, the page may stuck in loading state
+              // not sure why yet .. here is a workaround
+              setTimeout(() => {
                 jumpToSubPath(id, WorkspaceSubPath.ALL);
               });
             },
-            [
-              jumpToSubPath,
-              setCurrentWorkspaceId,
-              setOpenCreateWorkspaceModal,
-              setOpenWorkspacesModal,
-            ]
+            [jumpToSubPath, setOpenCreateWorkspaceModal, setOpenWorkspacesModal]
           )}
         />
       </Suspense>

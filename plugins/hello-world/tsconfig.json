@@ -8,7 +8,7 @@
   },
   "references": [
     {
-      "path": "../../packages/plugin-infra"
+      "path": "../../packages/sdk"
     },
     {
       "path": "../../packages/component"

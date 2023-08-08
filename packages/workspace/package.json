@@ -21,7 +21,6 @@
     "@affine/graphql": "workspace:*",
     "@affine/y-provider": "workspace:*",
     "@toeverything/hooks": "workspace:*",
-    "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
     "jotai": "^2.2.2",
@@ -39,5 +38,5 @@
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.8.0-canary.6"
+  "version": "0.8.0-canary.12"
 }
