@@ -10,6 +10,10 @@ import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import type {
+  LoadDBFileResult,
+  SelectDBFileLocationResult,
+} from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useEffect } from 'react';
@@ -134,7 +138,8 @@ const SetDBLocationContent = ({
     }
     setOpening(true);
     (async function () {
-      const result = await window.apis?.dialog.selectDBFileLocation();
+      const result: SelectDBFileLocationResult =
+        await window.apis?.dialog.selectDBFileLocation();
       setOpening(false);
       if (result?.filePath) {
         onConfirmLocation(result.filePath);
@@ -266,7 +271,7 @@ export const CreateWorkspaceModal = ({
         }
         logger.info('load db file');
         setStep(undefined);
-        const result = await window.apis.dialog.loadDBFile();
+        const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           setAddedId(result.workspaceId);
           setStep('set-syncing-mode');
