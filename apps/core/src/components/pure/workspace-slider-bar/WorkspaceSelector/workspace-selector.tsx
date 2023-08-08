@@ -14,19 +14,19 @@ import {
   StyledWorkspaceStatus,
 } from './styles';
 
-export type WorkspaceSelectorProps = {
+export interface WorkspaceSelectorProps {
   currentWorkspace: AllWorkspace;
   onClick: () => void;
-};
+}
 
 /**
  * @todo-Doma Co-locate WorkspaceListModal with {@link WorkspaceSelector},
  *            because it's never used elsewhere.
  */
-export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
+export const WorkspaceSelector = ({
   currentWorkspace,
   onClick,
-}) => {
+}: WorkspaceSelectorProps) => {
   const [name] = useBlockSuiteWorkspaceName(
     currentWorkspace?.blockSuiteWorkspace
   );

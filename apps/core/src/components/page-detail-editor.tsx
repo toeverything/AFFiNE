@@ -16,7 +16,7 @@ import {
 import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
-import type { CSSProperties, FC, ReactElement } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
@@ -27,13 +27,13 @@ import { TrashButtonGroup } from './blocksuite/workspace-header/header-right-ite
 import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 
-export type PageDetailEditorProps = {
+export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
-};
+}
 
 const EditorWrapper = memo(function EditorWrapper({
   workspace,
@@ -128,35 +128,39 @@ const EditorWrapper = memo(function EditorWrapper({
   );
 });
 
-const PluginContentAdapter = memo<{
+interface PluginContentAdapterProps {
   windowItem: (div: HTMLDivElement) => () => void;
   pluginName: string;
-}>(function PluginContentAdapter({ windowItem, pluginName }) {
-  return (
-    <div
-      className={pluginContainer}
-      ref={useCallback(
-        (ref: HTMLDivElement | null) => {
-          if (ref) {
-            const div = document.createElement('div');
-            const cleanup = windowItem(div);
-            ref.appendChild(div);
-            addCleanup(pluginName, () => {
-              cleanup();
-              ref.removeChild(div);
-            });
-          }
-        },
-        [pluginName, windowItem]
-      )}
-    />
-  );
-});
+}
 
-type LayoutPanelProps = {
+const PluginContentAdapter = memo<PluginContentAdapterProps>(
+  function PluginContentAdapter({ windowItem, pluginName }) {
+    return (
+      <div
+        className={pluginContainer}
+        ref={useCallback(
+          (ref: HTMLDivElement | null) => {
+            if (ref) {
+              const div = document.createElement('div');
+              const cleanup = windowItem(div);
+              ref.appendChild(div);
+              addCleanup(pluginName, () => {
+                cleanup();
+                ref.removeChild(div);
+              });
+            }
+          },
+          [pluginName, windowItem]
+        )}
+      />
+    );
+  }
+);
+
+interface LayoutPanelProps {
   node: LayoutNode;
   editorProps: PageDetailEditorProps;
-};
+}
 
 const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
@@ -199,7 +203,7 @@ const LayoutPanel = memo(function LayoutPanel(
   }
 });
 
-export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
+export const PageDetailEditor = (props: PageDetailEditorProps) => {
   const { workspace, pageId } = props;
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
