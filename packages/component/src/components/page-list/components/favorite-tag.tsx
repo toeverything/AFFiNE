@@ -1,9 +1,12 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
+import {
+  IconButton,
+  type IconButtonProps,
+} from '@toeverything/components/button';
 import { forwardRef } from 'react';
 
-import type { IconButtonProps } from '../../..';
-import { IconButton, Tooltip } from '../../..';
+import { Tooltip } from '../../..';
 
 export const FavoriteTag = forwardRef<
   HTMLButtonElement,

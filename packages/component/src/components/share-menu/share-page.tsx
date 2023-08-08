@@ -2,11 +2,12 @@ import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
-import { Button, toast } from '../..';
+import { toast } from '../../ui/toast';
 import { PublicLinkDisableModal } from './disable-public-link';
 import {
   descriptionStyle,

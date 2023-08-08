@@ -1,22 +1,21 @@
-import { Button } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import { signIn } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
+import { emailRegex } from '../../../utils/email-regex';
 import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
 function validateEmail(email: string) {
-  return new RegExp(
-    /^(?:(?:[^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(?:(?:\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|((?:[a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  ).test(email);
+  return emailRegex.test(email);
 }
 
 export const SignIn: FC<AuthPanelProps> = ({
@@ -26,12 +25,10 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
 
-  const { trigger: verifyUser } = useMutation({
+  const { trigger: verifyUser, isMutating } = useMutation({
     mutation: getUserQuery,
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
-
-  const [loading, setLoading] = useState(false);
 
   const onContinue = useCallback(async () => {
     if (!validateEmail(email)) {
@@ -40,9 +37,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsValidEmail(true);
-    setLoading(true);
     const res = await verifyUser({ email: email });
-    setLoading(false);
 
     setAuthEmail(email);
     if (res?.user) {
@@ -102,12 +97,11 @@ export const SignIn: FC<AuthPanelProps> = ({
           }
           onEnter={onContinue}
         />
-        {/*<ContinueButton onClick={onContinue} loading={loading} />*/}
 
         <Button
           size="extraLarge"
           block
-          loading={loading}
+          loading={isMutating}
           icon={
             <ArrowDownBigIcon
               width={20}

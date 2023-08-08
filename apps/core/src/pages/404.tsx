@@ -33,7 +33,6 @@ export const NotfoundPage = () => {
 
       <p>{t['404 - Page Not Found']()}</p>
       <Button
-        shape="round"
         onClick={() => {
           const id = localStorage.getItem('last_workspace_id');
           if (id) {

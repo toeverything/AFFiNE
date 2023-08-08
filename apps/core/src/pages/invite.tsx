@@ -1,8 +1,8 @@
-import { Button } from '@affine/component';
 import {
   acceptInviteByInviteIdMutation,
   acceptInviteByWorkspaceIdMutation,
 } from '@affine/graphql';
+import { Button } from '@toeverything/components/button';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';

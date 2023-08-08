@@ -1,7 +1,6 @@
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import { Button, type ButtonProps } from '@toeverything/components/button';
 import { forwardRef } from 'react';
-
-import { Button, type ButtonProps } from '../button';
 
 export const MenuTrigger = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ children, ...props }, ref) => {

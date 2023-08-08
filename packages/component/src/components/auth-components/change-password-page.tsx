@@ -1,8 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
-import { Button } from '../../ui/button';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';
 type User = {
@@ -27,16 +27,13 @@ export const ChangePasswordPage: FC<{
     },
     [propsOnSetPassword]
   );
-  const onLater = useCallback(() => {
-    setHasSetUp(true);
-  }, []);
 
   return (
     <AuthPageContainer
       title={
         hasSetUp
           ? t['com.affine.auth.set.password.page.success']()
-          : t['com.affine.auth.set.password.page.title']()
+          : t['com.affine.auth.reset.password.page.title']()
       }
       subtitle={
         hasSetUp ? (
@@ -54,11 +51,7 @@ export const ChangePasswordPage: FC<{
           {t['com.affine.auth.open.affine']()}
         </Button>
       ) : (
-        <SetPassword
-          onSetPassword={onSetPassword}
-          onLater={onLater}
-          confirmButtonContent={t['com.affine.auth.set.password.save']()}
-        />
+        <SetPassword onSetPassword={onSetPassword} />
       )}
     </AuthPageContainer>
   );

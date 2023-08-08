@@ -1,6 +1,7 @@
-import { IconButton, Modal, ModalWrapper } from '@affine/component';
+import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import type React from 'react';
 
 import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
@@ -35,7 +36,6 @@ export const TransformWorkspaceToAffineModal: React.FC<
           <div>
             <StyleButton
               data-testid="confirm-enable-cloud-button"
-              shape="round"
               type="primary"
               onClick={onConform}
             >

@@ -1,15 +1,9 @@
-import {
-  type ButtonProps,
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  styled,
-} from '@affine/component';
+import { Menu, MenuItem, MenuTrigger, styled } from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
+import type { ButtonProps } from '@toeverything/components/button';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
-
 export const StyledListItem = styled(MenuItem)(() => ({
   width: '132px',
   height: '38px',

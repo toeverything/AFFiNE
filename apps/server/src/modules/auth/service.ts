@@ -14,8 +14,11 @@ import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { MailService } from './mailer';
 
-export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'> & {
-  avatarUrl?: string;
+export type UserClaim = Pick<
+  User,
+  'id' | 'name' | 'email' | 'emailVerified' | 'createdAt' | 'avatarUrl'
+> & {
+  hasPassword?: boolean;
 };
 
 export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
@@ -36,7 +39,9 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          emailVerified: user.emailVerified?.toISOString(),
           image: user.avatarUrl,
+          hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
         },
         iat: now,
@@ -63,7 +68,9 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          emailVerified: user.emailVerified?.toISOString(),
           image: user.avatarUrl,
+          hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
         },
         exp: now + this.config.auth.refreshTokenExpiresIn,
@@ -84,7 +91,7 @@ export class AuthService {
 
   async verify(token: string) {
     try {
-      return (
+      const data = (
         await jwtVerify(token, this.config.auth.publicKey, {
           algorithms: [Algorithm.ES256],
           iss: [this.config.serverId],
@@ -92,6 +99,12 @@ export class AuthService {
           requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
         })
       ).data as UserClaim;
+
+      return {
+        ...data,
+        emailVerified: data.emailVerified ? new Date(data.emailVerified) : null,
+        createdAt: new Date(data.createdAt),
+      };
     } catch (e) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -186,10 +199,10 @@ export class AuthService {
     return Boolean(user.password);
   }
 
-  async changePassword(email: string, newPassword: string): Promise<User> {
-    const user = await this.prisma.user.findFirst({
+  async changePassword(id: string, newPassword: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
       where: {
-        email,
+        id,
       },
     });
 
@@ -201,10 +214,30 @@ export class AuthService {
 
     return this.prisma.user.update({
       where: {
-        email,
+        id,
       },
       data: {
         password: hashedPassword,
+      },
+    });
+  }
+  async changeEmail(id: string, newEmail: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        email: newEmail,
       },
     });
   }

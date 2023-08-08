@@ -5,6 +5,8 @@ import type { BuildFlags } from '@affine/cli/config';
 import { getRuntimeConfig } from './runtime-config.js';
 import HTMLPlugin from 'html-webpack-plugin';
 
+import { gitShortHash } from './s3-plugin.js';
+
 export default async function (cli_env: any, _: any) {
   const flags: BuildFlags = JSON.parse(
     Buffer.from(cli_env.flags, 'hex').toString('utf-8')
@@ -41,6 +43,9 @@ export default async function (cli_env: any, _: any) {
         minify: false,
         chunks: ['app', 'plugin', 'polyfill/ses'],
         filename: 'index.html',
+        templateParameters: {
+          GIT_SHORT_SHA: gitShortHash(),
+        },
       }),
       new HTMLPlugin({
         template: join(rootPath, '.webpack', 'template.html'),
@@ -49,6 +54,9 @@ export default async function (cli_env: any, _: any) {
         minify: false,
         chunks: ['_plugin/index.test', 'plugin', 'polyfill/ses'],
         filename: '_plugin/index.html',
+        templateParameters: {
+          GIT_SHORT_SHA: gitShortHash(),
+        },
       }),
     ],
   });

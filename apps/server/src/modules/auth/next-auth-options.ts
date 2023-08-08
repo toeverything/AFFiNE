@@ -4,7 +4,6 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { BadRequestException, FactoryProvider } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
-import type { User } from '@prisma/client';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Email, {
@@ -62,6 +61,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       if (result) {
         // @ts-expect-error Third part library type mismatch
         result.image = result.avatarUrl;
+        // @ts-expect-error Third part library type mismatch
+        result.hasPassword = Boolean(result.password);
       }
       return result;
     };
@@ -128,20 +129,21 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             password: { label: 'Password', type: 'password' },
           },
           async authorize(
-            credentials: Record<'email' | 'password', string> | undefined,
-            { body }: { body: Pick<User, 'email' | 'password' | 'avatarUrl'> }
+            credentials:
+              | Record<'email' | 'password' | 'hashedPassword', string>
+              | undefined
           ) {
             if (!credentials) {
               return null;
             }
-            const { password } = credentials;
-            if (!body.password || !password) {
+            const { password, hashedPassword } = credentials;
+            if (!password || !hashedPassword) {
               return null;
             }
-            if (!(await verify(body.password, password))) {
+            if (!(await verify(hashedPassword, password))) {
               return null;
             }
-            return body;
+            return credentials;
           },
         })
       );
@@ -185,8 +187,10 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               id: user.id,
               name: user.name,
               email: user.email,
+              emailVerified: user.emailVerified?.toISOString(),
               picture: user.avatarUrl,
               createdAt: user.createdAt.toISOString(),
+              hasPassword: Boolean(user.password),
             },
             iat: now,
             exp: now + (maxAge ?? config.auth.accessTokenExpiresIn),
@@ -207,7 +211,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         if (!token) {
           return null;
         }
-        const { name, email, id, picture } = (
+        const { name, email, emailVerified, id, picture, hasPassword } = (
           await jwtVerify(token, config.auth.publicKey, {
             algorithms: [Algorithm.ES256],
             iss: [config.serverId],
@@ -220,9 +224,11 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         return {
           name,
           email,
+          emailVerified,
           picture,
           sub: id,
           id,
+          hasPassword,
         };
       },
     };
@@ -236,10 +242,18 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             session.user.id = user.id;
             // @ts-expect-error Third part library type mismatch
             session.user.image = user.image ?? user.avatarUrl;
+            // @ts-expect-error Third part library type mismatch
+            session.user.emailVerified = user.emailVerified;
+            // @ts-expect-error Third part library type mismatch
+            session.user.hasPassword = Boolean(user.password);
           } else {
             // technically the sub should be the same as id
             // @ts-expect-error Third part library type mismatch
             session.user.id = token.sub;
+            // @ts-expect-error Third part library type mismatch
+            session.user.emailVerified = token.emailVerified;
+            // @ts-expect-error Third part library type mismatch
+            session.user.hasPassword = token.hasPassword;
           }
           if (token && token.picture) {
             session.user.image = token.picture;

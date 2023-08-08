@@ -1,5 +1,5 @@
-import { Button } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { type FC, useCallback, useEffect, useState } from 'react';
 
 import { resendButtonWrapper } from './share.css';

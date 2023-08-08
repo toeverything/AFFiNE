@@ -1,15 +1,15 @@
-import { Button, Wrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { type FC, useCallback, useRef, useState } from 'react';
 
+import { Wrapper } from '../../ui/layout';
 import { PasswordInput } from './password-input';
 
 export const SetPassword: FC<{
   showLater?: boolean;
-  onLater: () => void;
+  onLater?: () => void;
   onSetPassword: (password: string) => void;
-  confirmButtonContent?: string;
-}> = ({ onLater, onSetPassword, showLater = false, confirmButtonContent }) => {
+}> = ({ onLater, onSetPassword, showLater = false }) => {
   const t = useAFFiNEI18N();
 
   const [passwordPass, setPasswordPass] = useState(false);
@@ -38,7 +38,7 @@ export const SetPassword: FC<{
           onSetPassword(passwordRef.current);
         }, [onSetPassword])}
       >
-        {confirmButtonContent}
+        {t['com.affine.auth.set.password.save']()}
       </Button>
       {showLater ? (
         <Button type="plain" size="large" onClick={onLater}>

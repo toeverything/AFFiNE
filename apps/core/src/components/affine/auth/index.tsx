@@ -8,7 +8,7 @@ import { type FC, useCallback, useEffect, useMemo } from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
-import { SendPasswordEmail } from './send-password-email';
+import { SendEmail } from './send-email';
 import { SignIn } from './sign-in';
 import { SignInWithPassword } from './sign-in-with-password';
 
@@ -19,16 +19,20 @@ export type AuthModalProps = AuthModalBaseProps & {
     | 'afterSignInSendEmail'
     // throw away
     | 'signInWithPassword'
-    | 'sendPasswordEmail';
+    | 'sendEmail';
   setAuthState: (state: AuthModalProps['state']) => void;
   setAuthEmail: (state: AuthModalProps['email']) => void;
+  setEmailType: (state: AuthModalProps['emailType']) => void;
   email: string;
+  emailType: 'setPassword' | 'changePassword' | 'changeEmail';
 };
 
 export type AuthPanelProps = {
   email: string;
   setAuthState: AuthModalProps['setAuthState'];
   setAuthEmail: AuthModalProps['setAuthEmail'];
+  setEmailType: AuthModalProps['setEmailType'];
+  emailType: AuthModalProps['emailType'];
   setOpen: (open: boolean) => void;
   authStore: AuthStoreAtom;
   setAuthStore: (data: Partial<AuthStoreAtom>) => void;
@@ -41,15 +45,15 @@ const config: {
   afterSignUpSendEmail: AfterSignUpSendEmail,
   afterSignInSendEmail: AfterSignInSendEmail,
   signInWithPassword: SignInWithPassword,
-  sendPasswordEmail: SendPasswordEmail,
+  sendEmail: SendEmail,
 };
 
 type AuthStoreAtom = {
-  hasSentPasswordEmail: boolean;
+  hasSentEmail: boolean;
   resendCountDown: number;
 };
 export const authStoreAtom = atom<AuthStoreAtom>({
-  hasSentPasswordEmail: false,
+  hasSentEmail: false,
   resendCountDown: 60,
 });
 
@@ -60,6 +64,8 @@ export const AuthModal: FC<AuthModalProps> = ({
   email,
   setAuthEmail,
   setAuthState,
+  setEmailType,
+  emailType,
 }) => {
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
 
@@ -70,7 +76,7 @@ export const AuthModal: FC<AuthModalProps> = ({
   useEffect(() => {
     if (!open) {
       setAuthStore({
-        hasSentPasswordEmail: false,
+        hasSentEmail: false,
         resendCountDown: 60,
       });
       setAuthEmail('');
@@ -91,8 +97,10 @@ export const AuthModal: FC<AuthModalProps> = ({
         email={email}
         setAuthState={setAuthState}
         setAuthEmail={setAuthEmail}
+        setEmailType={setEmailType}
         setOpen={setOpen}
         authStore={authStore}
+        emailType={emailType}
         setAuthStore={useCallback(
           (data: Partial<AuthStoreAtom>) => {
             setAuthStore(prev => ({

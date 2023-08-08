@@ -53,5 +53,6 @@ export const Provider = (props: PropsWithChildren): ReactElement => {
   if (!runtimeConfig.enableCloud) {
     return <>{props.children}</>;
   }
+
   return <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>;
 };

@@ -67,8 +67,8 @@ export class NextAuthController {
             ...req.body,
             name: user.name,
             email: user.email,
-            password: user.password,
             image: user.avatarUrl,
+            hashedPassword: user.password,
           };
         }
       }
@@ -86,6 +86,7 @@ export class NextAuthController {
           user: {
             ...pick(user, 'id', 'name', 'email'),
             image: user.avatarUrl,
+            hasPassword: !!user.password,
           },
           expires: session.expires,
         };
@@ -121,7 +122,9 @@ export class NextAuthController {
       }
     }
     if (redirect) {
-      if (action === 'signout') {
+      if (providerId === 'credentials') {
+        res.send(JSON.stringify({ ok: true, url: redirect }));
+      } else if (action === 'signout') {
         res.send(JSON.stringify({ url: redirect }));
       } else {
         res.redirect(redirect);
