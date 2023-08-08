@@ -200,7 +200,7 @@ export const WorkspaceListModal = ({
             />
           </StyledOperationWrapper>
         </StyledModalHeader>
-        <ScrollableContainer>
+        <ScrollableContainer styles={{ height: 'calc(100% - 124px)' }}>
           <StyledModalContent>
             <WorkspaceList
               disabled={disabled}

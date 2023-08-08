@@ -2,7 +2,7 @@ import type { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -103,6 +103,16 @@ export function useNavigateHelper() {
     },
     [navigate, setCurrentPageId, setWorkspaceId]
   );
+  const jumpToExpired = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      setWorkspaceId(null);
+      setCurrentPageId(null);
+      return navigate('/expired', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate, setCurrentPageId, setWorkspaceId]
+  );
 
   return {
     jumpToPage,
@@ -111,5 +121,6 @@ export function useNavigateHelper() {
     jumpToIndex,
     jumpTo404,
     openPage,
+    jumpToExpired,
   };
 }

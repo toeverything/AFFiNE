@@ -8,9 +8,6 @@
   "references": [
     {
       "path": "../../kit"
-    },
-    {
-      "path": "./tsconfig.node.json"
     }
   ]
 }

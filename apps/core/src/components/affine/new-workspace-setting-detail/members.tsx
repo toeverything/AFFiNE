@@ -14,6 +14,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import type { MouseEvent, ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
@@ -23,8 +24,10 @@ import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-memb
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { WorkspaceAvatar } from '../../pure/footer';
+import { AnyErrorBoundary } from '../any-error-boundary';
 import { PermissionSelect } from './permission-select';
 import * as style from './style.css';
+
 export type MembersPanelProps = {
   workspace: AffineOfficialWorkspace;
 };
@@ -167,8 +170,10 @@ export const MembersPanel = (props: MembersPanelProps): ReactElement | null => {
     return <MembersPanelLocal />;
   }
   return (
-    <Suspense>
-      <CloudWorkspaceMembersPanel {...props} />
-    </Suspense>
+    <ErrorBoundary FallbackComponent={AnyErrorBoundary}>
+      <Suspense>
+        <CloudWorkspaceMembersPanel {...props} />
+      </Suspense>
+    </ErrorBoundary>
   );
 };

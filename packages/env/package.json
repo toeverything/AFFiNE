@@ -4,14 +4,14 @@
   "type": "module",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
-  "types": "./src/global.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230730071529-580daeb9-nightly",
+    "@blocksuite/global": "0.0.0-20230806233219-17ca6eee-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.21.4"
   },
   "exports": {
+    "./automation": "./src/automation.ts",
     "./global": "./src/global.ts",
     "./constant": "./src/constant.ts",
     "./workspace": "./src/workspace.ts",
@@ -27,5 +27,5 @@
   "dependencies": {
     "lit": "^2.7.6"
   },
-  "version": "0.8.0-canary.4"
+  "version": "0.8.0-canary.12"
 }

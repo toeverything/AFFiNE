@@ -127,11 +127,11 @@ const main = async () => {
     return;
   }
 
-  diff.add.forEach(async key => {
+  for (const key of diff.add) {
     const val = flatLocalTranslations[key];
     console.log(`Creating new key: ${key} -> ${val}`);
     await createsNewKey(key, { [BASE_LANGUAGES]: val });
-  });
+  }
 
   // TODO remove unused tags from used keys
 

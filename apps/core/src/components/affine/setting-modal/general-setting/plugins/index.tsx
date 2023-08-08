@@ -3,10 +3,12 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   registeredPluginAtom,
   settingItemsAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import type { FC, ReactNode } from 'react';
 import { useRef } from 'react';
+
+import { pluginItem } from './style.css';
 
 const PluginSettingWrapper: FC<{
   id: string;
@@ -45,7 +47,9 @@ export const Plugins = () => {
         data-testid="plugins-title"
       />
       {allowedPlugins.map(plugin => (
-        <PluginSettingWrapper key={plugin} id={plugin} title={plugin} />
+        <div className={pluginItem} key={plugin}>
+          <PluginSettingWrapper key={plugin} id={plugin} title={plugin} />
+        </div>
       ))}
     </>
   );

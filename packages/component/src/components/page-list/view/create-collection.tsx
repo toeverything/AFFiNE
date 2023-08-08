@@ -9,7 +9,7 @@ import {
   SaveIcon,
 } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   Button,
@@ -32,7 +32,7 @@ type CreateCollectionProps = {
 };
 
 type SaveCollectionButtonProps = {
-  onConfirm: (collection: Collection) => void;
+  onConfirm: (collection: Collection) => Promise<void>;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   filterList: Filter[];
@@ -49,7 +49,7 @@ export const EditCollectionModel = ({
   title,
 }: {
   init?: Collection;
-  onConfirm: (view: Collection) => void;
+  onConfirm: (view: Collection) => Promise<void>;
   open: boolean;
   onClose: () => void;
   title?: string;
@@ -57,6 +57,18 @@ export const EditCollectionModel = ({
   propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
+  const onConfirmOnCollection = useCallback(
+    (view: Collection) => {
+      onConfirm(view)
+        .then(() => {
+          onClose();
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    [onClose, onConfirm]
+  );
   return (
     <Modal open={open} onClose={onClose}>
       <ModalWrapper
@@ -75,10 +87,7 @@ export const EditCollectionModel = ({
             init={init}
             getPageInfo={getPageInfo}
             onCancel={onClose}
-            onConfirm={view => {
-              onConfirm(view);
-              onClose();
-            }}
+            onConfirm={onConfirmOnCollection}
           />
         ) : null}
       </ModalWrapper>
@@ -158,6 +167,12 @@ export const EditCollection = ({
     },
     [value]
   );
+  const isNameEmpty = useMemo(() => value.name.trim().length === 0, [value]);
+  const onSaveCollection = useCallback(() => {
+    if (!isNameEmpty) {
+      onConfirm(value);
+    }
+  }, [value, isNameEmpty, onConfirm]);
   return (
     <div
       style={{
@@ -264,11 +279,8 @@ export const EditCollection = ({
           size="large"
           data-testid="save-collection"
           type="primary"
-          onClick={() => {
-            if (value.name.trim().length > 0) {
-              onConfirm(value);
-            }
-          }}
+          disabled={isNameEmpty}
+          onClick={onSaveCollection}
         >
           {onConfirmText ?? t['Create']()}
         </Button>

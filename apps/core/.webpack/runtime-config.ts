@@ -19,7 +19,7 @@ const editorFlags: BlockSuiteFeatureFlags = {
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<string, RuntimeConfig> = {
     stable: {
-      enablePlugin: false,
+      enablePlugin: true,
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,

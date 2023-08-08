@@ -1,7 +1,7 @@
 import { join, resolve } from 'node:path';
 import { parentPort } from 'node:worker_threads';
 
-import type { ServerContext } from '@toeverything/plugin-infra/server';
+import type { ServerContext } from '@affine/sdk/server';
 import { AsyncCall } from 'async-call-rpc';
 
 import { MessageEventChannel } from '../shared/utils';
@@ -19,10 +19,15 @@ const mainThread = AsyncCall<{
   channel: new MessageEventChannel(parentPort),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.log = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.error = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.info = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.debug = mainThread.log;
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 globalThis.console.warn = mainThread.log;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires

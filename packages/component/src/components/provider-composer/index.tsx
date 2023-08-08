@@ -1,11 +1,15 @@
-import type { FC, PropsWithChildren, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cloneElement } from 'react';
 
-export const ProviderComposer: FC<
-  PropsWithChildren<{
-    contexts: any;
-  }>
-> = ({ contexts, children }) =>
+interface ProviderComposerProps {
+  contexts: any;
+  children: ReactNode;
+}
+
+export const ProviderComposer = ({
+  contexts,
+  children,
+}: ProviderComposerProps) =>
   contexts.reduceRight(
     (kids: ReactNode, parent: any) =>
       cloneElement(parent, {

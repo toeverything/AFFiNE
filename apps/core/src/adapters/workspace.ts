@@ -29,7 +29,18 @@ export const WorkspaceAdapters = {
     releaseType: ReleaseType.UNRELEASED,
     flavour: WorkspaceFlavour.AFFINE_CLOUD,
     loadPriority: LoadPriority.HIGH,
-    Events: {} as Partial<AppEvents>,
+    Events: {
+      'app:access': async () => {
+        try {
+          const { getSession } = await import('next-auth/react');
+          const session = await getSession();
+          return !!session;
+        } catch (e) {
+          console.error('failed to get session', e);
+          return false;
+        }
+      },
+    } as Partial<AppEvents>,
     CRUD: CloudCRUD,
     UI: CloudUI,
   },

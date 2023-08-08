@@ -14,7 +14,7 @@ import { localProviderLogger as logger } from './logger';
 
 const Y = BlockSuiteWorkspace.Y;
 
-const sqliteOrigin = Symbol('sqlite-provider-origin');
+const sqliteOrigin = 'sqlite-provider-origin';
 
 const createDatasource = (workspaceId: string): DatasourceDocAdapter => {
   if (!window.apis?.db) {
@@ -106,14 +106,15 @@ export const createSQLiteDBDownloadProvider: DocProviderCreator = (
     cleanup: () => {
       // todo
     },
-    sync: async () => {
+    sync: () => {
       logger.info('connect sqlite download provider', id);
-      try {
-        await syncUpdates(rootDoc);
-        _resolve();
-      } catch (error) {
-        _reject(error);
-      }
+      syncUpdates(rootDoc)
+        .then(() => {
+          _resolve();
+        })
+        .catch(error => {
+          _reject(error);
+        });
     },
   };
 };

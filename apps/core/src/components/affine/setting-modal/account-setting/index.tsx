@@ -1,4 +1,4 @@
-import { FlexWrapper, IconButton, Input } from '@affine/component';
+import { Button, FlexWrapper, IconButton, Input } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
@@ -8,17 +8,19 @@ import { uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
+import { useAtom } from 'jotai/index';
 import { signOut } from 'next-auth/react';
-import { useCallback, useState } from 'react';
+import { type FC, useCallback, useState } from 'react';
 
+import { openAuthModalAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-// import { toast } from '../../../../utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
+
   const [input, setInput] = useState<string>(user.name);
 
   const { trigger: avatarTrigger } = useMutation({
@@ -106,9 +108,27 @@ export const AvatarAndName = () => {
   );
 };
 
-export const AccountSetting = () => {
+export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
-  // const user = useCurrentUser();
+  const user = useCurrentUser();
+  const [, setAuthModal] = useAtom(openAuthModalAtom);
+
+  const onChangeEmail = useCallback(() => {
+    setAuthModal({
+      open: true,
+      state: 'sendEmail',
+      email: user.email,
+      emailType: 'changeEmail',
+    });
+  }, [setAuthModal, user.email]);
+  const onChangePassword = useCallback(() => {
+    setAuthModal({
+      open: true,
+      state: 'sendEmail',
+      email: user.email,
+      emailType: 'changePassword',
+    });
+  }, [setAuthModal, user.email]);
 
   return (
     <>
@@ -118,32 +138,21 @@ export const AccountSetting = () => {
         data-testid="account-title"
       />
       <AvatarAndName />
-      {/*<SettingRow*/}
-      {/*  name={t['com.affine.settings.email']()}*/}
-      {/*  desc={user.email}*/}
-      {/*  disabled={true}*/}
-      {/*>*/}
-      {/*  <Button*/}
-      {/*    onClick={() => {*/}
-      {/*      toast('Function coming soon');*/}
-      {/*    }}*/}
-      {/*  >*/}
-      {/*    {t['com.affine.settings.email.action']()}*/}
-      {/*  </Button>*/}
-      {/*</SettingRow>*/}
-      {/*<SettingRow*/}
-      {/*  name={t['com.affine.settings.password']()}*/}
-      {/*  desc={t['com.affine.settings.password.message']()}*/}
-      {/*  disabled={true}*/}
-      {/*>*/}
-      {/*  <Button*/}
-      {/*    onClick={() => {*/}
-      {/*      toast('Function coming soon');*/}
-      {/*    }}*/}
-      {/*  >*/}
-      {/*    {t['com.affine.settings.password.action']()}*/}
-      {/*  </Button>*/}
-      {/*</SettingRow>*/}
+      <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
+        <Button onClick={onChangeEmail}>
+          {t['com.affine.settings.email.action']()}
+        </Button>
+      </SettingRow>
+      <SettingRow
+        name={t['com.affine.settings.password']()}
+        desc={t['com.affine.settings.password.message']()}
+      >
+        <Button onClick={onChangePassword}>
+          {user.hasPassword
+            ? t['com.affine.settings.password.action.change']()
+            : t['com.affine.settings.password.action.set']()}
+        </Button>
+      </SettingRow>
 
       <SettingRow
         name={t[`Sign out`]()}
@@ -163,9 +172,10 @@ export const AccountSetting = () => {
       {/*  }*/}
       {/*  desc={t['com.affine.setting.account.delete.message']()}*/}
       {/*  style={{ cursor: 'pointer' }}*/}
-      {/*  onClick={() => {}}*/}
+      {/*  onClick={useCallback(() => {*/}
+      {/*    toast('Function coming soon');*/}
+      {/*  }, [])}*/}
       {/*  testId="delete-account-button"*/}
-      {/*  disabled={true}*/}
       {/*>*/}
       {/*  <ArrowRightSmallIcon />*/}
       {/*</SettingRow>*/}

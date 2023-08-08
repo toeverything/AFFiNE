@@ -9,7 +9,7 @@ import type { BaseMessage } from 'langchain/schema';
 import { AIMessage } from 'langchain/schema';
 import { HumanMessage } from 'langchain/schema';
 
-import type { ChatAIConfig } from '../chat';
+import type { ChatAI, ChatAIConfig } from '../chat';
 import { createChatAI } from '../chat';
 import type { IndexedDBChatMessageHistory } from '../langchain/message-history';
 import { followupQuestionParser } from '../prompts/output-parser';
@@ -28,7 +28,7 @@ const conversationWeakMap = new WeakMap<
   WritableAtom<BaseMessage[], [string], Promise<void>>
 >();
 
-export const chatAtom = atom(async get => {
+export const chatAtom = atom<Promise<ChatAI>>(async get => {
   const openAIApiKey = get(openAIApiKeyAtom);
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not set, chat will not work');

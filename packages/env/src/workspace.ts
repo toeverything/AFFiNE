@@ -11,6 +11,7 @@ import type { Collection } from './filter.js';
 
 export enum WorkspaceVersion {
   SubDoc = 2,
+  DatabaseV3 = 3,
 }
 
 export enum WorkspaceSubPath {
@@ -176,12 +177,10 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
 
 export interface AppEvents {
   // event there is no workspace
-  // usually used to initialize workspace plugin
+  // usually used to initialize workspace adapter
   'app:init': () => string[];
-  // request to gain access to workspace plugin
-  'workspace:access': () => Promise<void>;
-  // request to revoke access to workspace plugin
-  'workspace:revoke': () => Promise<void>;
+  // event if you have access to workspace adapter
+  'app:access': () => Promise<boolean>;
 }
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {

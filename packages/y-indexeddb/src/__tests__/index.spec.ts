@@ -8,7 +8,7 @@ import { setTimeout } from 'node:timers/promises';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { uuidv4, Workspace } from '@blocksuite/store';
+import { Schema, uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
@@ -56,13 +56,17 @@ let id: string;
 let workspace: Workspace;
 const rootDBName = DEFAULT_DB_NAME;
 
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
+
 beforeEach(() => {
   id = uuidv4();
   workspace = new Workspace({
     id,
     isSSR: true,
+    schema,
   });
-  workspace.register(AffineSchemas).register(__unstableSchemas);
 });
 
 afterEach(() => {
@@ -109,9 +113,8 @@ describe('indexeddb provider', () => {
       expect(data.id).toBe(id);
       const testWorkspace = new Workspace({
         id: 'test',
-      })
-        .register(AffineSchemas)
-        .register(__unstableSchemas);
+        schema,
+      });
       // data should only contain updates for the root doc
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
@@ -379,8 +382,8 @@ describe('subDoc', () => {
       const newWorkspace = new Workspace({
         id,
         isSSR: true,
+        schema,
       });
-      newWorkspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createIndexedDBProvider(newWorkspace.doc, rootDBName);
       provider.connect();
       await setTimeout(200);
@@ -419,8 +422,8 @@ describe('utils', () => {
     const newWorkspace = new Workspace({
       id,
       isSSR: true,
+      schema,
     });
-    newWorkspace.register(AffineSchemas).register(__unstableSchemas);
     applyUpdate(newWorkspace.doc, update);
     await setTimeout();
     expect(workspace.doc.toJSON()['meta']).toEqual(

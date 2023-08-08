@@ -36,8 +36,7 @@ export const ExportPanel: FC<{
     await syncBlobsToSqliteDb(workspace);
     const result = await window.apis?.dialog.saveDBFileAs(workspaceId);
     if (result?.error) {
-      // @ts-expect-error: result.error is dynamic
-      toast(t[result.error]());
+      toast(result.error);
     } else if (!result?.canceled) {
       toast(t['Export success']());
     }

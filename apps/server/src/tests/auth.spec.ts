@@ -1,5 +1,5 @@
 /// <reference types="../global.d.ts" />
-import { ok } from 'node:assert';
+import { equal } from 'node:assert';
 import { afterEach, beforeEach, test } from 'node:test';
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -53,24 +53,32 @@ test('should be able to register and signIn', async () => {
 test('should be able to verify', async () => {
   await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
+  const date = new Date();
+
   const user = {
     id: '1',
     name: 'Alex Yang',
     email: 'alexyang@example.org',
-    createdAt: new Date(),
+    emailVerified: date,
+    createdAt: date,
+    avatarUrl: '',
   };
   {
     const token = await auth.sign(user);
     const claim = await auth.verify(token);
-    ok(claim.id === '1');
-    ok(claim.name === 'Alex Yang');
-    ok(claim.email === 'alexyang@example.org');
+    equal(claim.id, '1');
+    equal(claim.name, 'Alex Yang');
+    equal(claim.email, 'alexyang@example.org');
+    equal(claim.emailVerified?.toISOString(), date.toISOString());
+    equal(claim.createdAt.toISOString(), date.toISOString());
   }
   {
     const token = await auth.refresh(user);
     const claim = await auth.verify(token);
-    ok(claim.id === '1');
-    ok(claim.name === 'Alex Yang');
-    ok(claim.email === 'alexyang@example.org');
+    equal(claim.id, '1');
+    equal(claim.name, 'Alex Yang');
+    equal(claim.email, 'alexyang@example.org');
+    equal(claim.emailVerified?.toISOString(), date.toISOString());
+    equal(claim.createdAt.toISOString(), date.toISOString());
   }
 });

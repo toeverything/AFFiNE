@@ -134,7 +134,6 @@ export const StyledHelperContainer = styled('div')(() => {
 });
 
 export const StyledModalContent = styled('div')({
-  height: '540px',
   padding: '8px 40px',
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',

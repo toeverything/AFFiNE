@@ -1,16 +1,21 @@
 {
   "name": "@affine/core",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "root": "apps/core",
-  "sourceRoot": "apps/core/src",
   "targets": {
     "build": {
       "executor": "nx:run-script",
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        {
+          "projects": ["tag:plugin"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
       "inputs": [
+        "{projectRoot}/.webpack/**/*",
         "{projectRoot}/**/*",
-        "{projectRoot}/public/plugins/**/*",
+        "{projectRoot}/public/**/*",
         "{workspaceRoot}/packages/component/src/**/*",
         "{workspaceRoot}/packages/debug/src/**/*",
         "{workspaceRoot}/packages/graphql/src/**/*",
@@ -46,7 +51,7 @@
       "options": {
         "script": "build"
       },
-      "outputs": ["{projectRoot}/dist", "{projectRoot}/public/plugins"]
+      "outputs": ["{projectRoot}/dist"]
     }
   }
 }

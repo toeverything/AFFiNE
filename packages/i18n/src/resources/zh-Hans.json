@@ -199,7 +199,7 @@
   "Workspace description": "工作区是为个人和团队进行引用、创建和规划的虚拟空间。",
   "Workspace Settings": "工作区设置",
   "Workspace Name": "工作区名称",
-  "emptyAllPages": "此工作区为空。创建新页面并开始编辑。",
+  "emptyAllPages": "此工作区为空。<1>$t(New Page)</1>并开始编辑。",
   "emptyFavorite": "单击“添加到收藏夹”，页面将显示在此处。",
   "emptyTrash": "单击“添加到垃圾箱”，页面将显示在此处。",
   "login success": "登录成功",
@@ -404,5 +404,9 @@
   "com.affine.settings.workspace.remove.message": "从此设备中删除工作区，并可选择删除所有数据。",
   "com.affine.settings.appearance.sidebar.noise": "侧边栏的噪点背景",
   "com.affine.settings.appearance.sidebar.translucent": "侧边栏的透明效果",
-  "com.affine.settings.appearance.sidebar.translucent.message": "在侧边栏使用半透明效果。"
+  "com.affine.settings.appearance.sidebar.translucent.message": "在侧边栏使用半透明效果。",
+  "com.affine.collection-bar.action.tooltip.pin": "固定到侧边栏",
+  "com.affine.collection-bar.action.tooltip.unpin": "取消固定",
+  "com.affine.collection-bar.action.tooltip.edit": "编辑",
+  "com.affine.collection-bar.action.tooltip.delete": "删除"
 }

@@ -1,4 +1,4 @@
-import { Tooltip } from '@affine/component';
+import { ScrollableContainer, Tooltip } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
@@ -11,17 +11,16 @@ import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import { signIn } from 'next-auth/react';
-// import { useAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import type { FC, ReactElement } from 'react';
 import { useCallback } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 
-// import { openAuthModalAtom } from '../../../../atoms';
+import { openAuthModalAtom } from '../../../../atoms';
 import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -70,17 +69,14 @@ export const UserInfo = ({
 
 export const SignInButton = () => {
   const t = useAFFiNEI18N();
-  // const [, setAuthModal] = useAtom(openAuthModalAtom);
+  const [, setAuthModal] = useAtom(openAuthModalAtom);
 
   return (
     <div
       className={accountButton}
-      // onClick={useCallback(() => {
-      //   setAuthModal({ open: true, state: 'signIn' });
-      // }, [setAuthModal])}
       onClick={useCallback(() => {
-        signIn().catch(console.error);
-      }, [])}
+        setAuthModal({ open: true, state: 'signIn' });
+      }, [setAuthModal])}
     >
       <div className="avatar not-sign">
         <Logo1Icon />
@@ -148,10 +144,12 @@ export const SettingSidebar: FC<{
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
-          <WorkspaceList
-            onWorkspaceSettingClick={onWorkspaceSettingClick}
-            selectedWorkspaceId={selectedWorkspaceId}
-          />
+          <ScrollableContainer>
+            <WorkspaceList
+              onWorkspaceSettingClick={onWorkspaceSettingClick}
+              selectedWorkspaceId={selectedWorkspaceId}
+            />
+          </ScrollableContainer>
         </Suspense>
       </div>
 
