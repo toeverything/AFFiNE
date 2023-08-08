@@ -247,7 +247,16 @@ export async function migrateDatabaseBlockTo3(rootDoc: Y.Doc, schema: Schema) {
   spaces.forEach(space => {
     schema.upgradePage(
       {
+        'affine:note': 1,
+        'affine:bookmark': 1,
         'affine:database': 2,
+        'affine:divider': 1,
+        'affine:image': 1,
+        'affine:list': 1,
+        'affine:code': 1,
+        'affine:page': 2,
+        'affine:paragraph': 1,
+        'affine:surface': 3,
       },
       space
     );
