@@ -3,7 +3,6 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
-import type React from 'react';
 
 import {
   Content,
@@ -20,10 +19,12 @@ interface TmpDisableAffineCloudModalProps {
   onClose: () => void;
 }
 
-export const TmpDisableAffineCloudModal: React.FC<
-  TmpDisableAffineCloudModalProps
-> = ({ open, onClose }) => {
+export const TmpDisableAffineCloudModal = ({
+  open,
+  onClose,
+}: TmpDisableAffineCloudModalProps) => {
   const t = useAFFiNEI18N();
+
   return (
     <Modal
       data-testid="disable-affine-cloud-modal"

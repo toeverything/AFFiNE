@@ -2,7 +2,6 @@ import { Modal, ModalWrapper, Wrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
-import type React from 'react';
 
 import { Content, ContentTitle, Header, StyleTips } from './style';
 
@@ -12,11 +11,11 @@ interface EnableAffineCloudModalProps {
   onClose: () => void;
 }
 
-export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
+export const EnableAffineCloudModal = ({
   onConfirm,
   open,
   onClose,
-}) => {
+}: EnableAffineCloudModalProps) => {
   const t = useAFFiNEI18N();
 
   return (

@@ -6,26 +6,31 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
-import type { FC, SVGProps } from 'react';
+import type { ReactElement, SVGProps } from 'react';
 import { useMemo } from 'react';
 
 import { openSettingModalAtom } from '../../../atoms';
 
-export type Config =
-  | {
-      title: string;
-      icon: FC<SVGProps<SVGSVGElement>>;
-      subPath: WorkspaceSubPath;
-    }
-  | {
-      title: string;
-      icon: FC<SVGProps<SVGSVGElement>>;
-      onClick: () => void;
-    };
+type IconComponent = (props: SVGProps<SVGSVGElement>) => ReactElement;
+
+interface ConfigItem {
+  title: string;
+  icon: IconComponent;
+  onClick: () => void;
+}
+
+interface ConfigPathItem {
+  title: string;
+  icon: IconComponent;
+  subPath: WorkspaceSubPath;
+}
+
+export type Config = ConfigItem | ConfigPathItem;
 
 export const useSwitchToConfig = (workspaceId: string): Config[] => {
   const t = useAFFiNEI18N();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
   return useMemo(
     () => [
       {
