@@ -7,6 +7,7 @@ import * as BlockSuiteGlobalUtils from '@blocksuite/global/utils';
 import { assertExists } from '@blocksuite/global/utils';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import * as Icons from '@blocksuite/icons';
+import * as Button from '@toeverything/components/button';
 import {
   contentLayoutAtom,
   currentPageAtom,
@@ -50,6 +51,10 @@ const setupRootImportsMap = () => {
   _rootImportsMap.set(
     '@affine/component',
     new Map(Object.entries(AFFiNEComponent))
+  );
+  _rootImportsMap.set(
+    '@toeverything/components/button',
+    new Map(Object.entries(Button))
   );
   _rootImportsMap.set(
     '@blocksuite/blocks/std',

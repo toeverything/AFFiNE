@@ -186,6 +186,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
+    "@toeverything/components": ^0.0.8
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.2.2
@@ -403,6 +404,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
+    "@toeverything/components": ^0.0.8
   languageName: unknown
   linkType: soft
 
@@ -428,6 +430,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
+    "@toeverything/components": ^0.0.8
     "@toeverything/theme": ^0.7.9
     clsx: ^2.0.0
     foxact: ^0.2.17
