@@ -54,6 +54,9 @@ export default async function (cli_env: any, _: any) {
         minify: false,
         chunks: ['_plugin/index.test', 'plugin', 'polyfill/ses'],
         filename: '_plugin/index.html',
+        templateParameters: {
+          GIT_SHORT_SHA: gitShortHash(),
+        },
       }),
     ],
   });
