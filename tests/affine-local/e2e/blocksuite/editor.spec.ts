@@ -27,7 +27,7 @@ test('database is useable', async ({ page }) => {
   await page.keyboard.press('Enter');
   expect(await title.innerText()).toBe('test title');
   await addDatabase(page);
-  const database = page.locator('.affine-database-table');
+  const database = page.locator('affine-database');
   await expect(database).toBeVisible();
   await page.reload();
   await waitEditorLoad(page);
@@ -39,7 +39,7 @@ test('database is useable', async ({ page }) => {
   expect(await title2.innerText()).toBe('test title2');
   await page.keyboard.press('Enter');
   await addDatabase(page);
-  const database2 = page.locator('.affine-database-table');
+  const database2 = page.locator('affine-database');
   await expect(database2).toBeVisible();
 });
 
