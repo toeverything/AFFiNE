@@ -1,6 +1,6 @@
 {
   "name": "@affine/sdk",
-  "version": "0.8.0-canary.12",
+  "version": "0.8.0-canary.13",
   "type": "module",
   "scripts": {
     "build": "vite build",
