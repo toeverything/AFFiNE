@@ -5,7 +5,7 @@ import type {
   LayoutNode,
   PluginContext,
 } from '@affine/sdk/entry';
-import { FormatQuickBar } from '@blocksuite/blocks';
+import { AffineFormatBarWidget } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   addCleanup,
@@ -514,16 +514,23 @@ export const evaluatePluginEntry = (pluginName: string) => {
           });
         });
       } else if (part === 'formatBar') {
-        FormatQuickBar.customElements.push((page, getBlockRange) => {
+        const register = (widget: AffineFormatBarWidget) => {
           const div = document.createElement('div');
+          const root = widget.root;
           const cleanup = (callback as CallbackMap['formatBar'])(
             div,
-            page,
-            getBlockRange
+            widget.page,
+            () => {
+              return root.selectionManager.value;
+            }
           );
-          addCleanup(pluginName, cleanup);
+          addCleanup(pluginName, () => {
+            // todo: unregister
+            cleanup();
+          });
           return div;
-        });
+        };
+        AffineFormatBarWidget.customElements.push(register);
       } else {
         throw new Error(`Unknown part: ${part}`);
       }
