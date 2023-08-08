@@ -43,6 +43,11 @@ jobs:
         run: yarn run build:plugins
       - name: Build Core
         run: yarn nx build @affine/core
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: 'assets-dev'
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
