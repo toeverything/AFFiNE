@@ -1,4 +1,3 @@
-import { Button } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { isDesktop } from '@affine/env/constant';
 import { getUserQuery } from '@affine/graphql';
@@ -6,6 +5,7 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import { signIn } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
