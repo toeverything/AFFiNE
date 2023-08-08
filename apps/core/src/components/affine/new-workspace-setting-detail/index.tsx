@@ -9,7 +9,7 @@ import type {
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { type FC, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
@@ -18,7 +18,7 @@ import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
 
-export type WorkspaceSettingDetailProps = {
+export interface WorkspaceSettingDetailProps {
   workspaceId: string;
   onDeleteWorkspace: (id: string) => Promise<void>;
   onTransferWorkspace: <
@@ -29,13 +29,13 @@ export type WorkspaceSettingDetailProps = {
     to: To,
     workspace: WorkspaceRegistry[From]
   ) => void;
-};
+}
 
-export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
+export const WorkspaceSettingDetail = ({
   workspaceId,
   onDeleteWorkspace,
   ...props
-}) => {
+}: WorkspaceSettingDetailProps) => {
   const t = useAFFiNEI18N();
   const workspace = useWorkspace(workspaceId);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);

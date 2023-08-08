@@ -11,7 +11,6 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import type { FC } from 'react';
 import { Suspense } from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -28,21 +27,24 @@ import {
   sidebarTitle,
 } from './style.css';
 
-export const SettingSidebar: FC<{
+interface SettingSidebarProps {
   generalSettingList: GeneralSettingList;
   onGeneralSettingClick: (key: GeneralSettingKeys) => void;
   onWorkspaceSettingClick: (workspaceId: string) => void;
   selectedWorkspaceId: string | null;
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
-}> = ({
+}
+
+export const SettingSidebar = ({
   generalSettingList,
   onGeneralSettingClick,
   onWorkspaceSettingClick,
   selectedWorkspaceId,
   selectedGeneralKey,
-}) => {
+}: SettingSidebarProps) => {
   const t = useAFFiNEI18N();
+
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>{t['Settings']()}</div>
@@ -88,10 +90,15 @@ export const SettingSidebar: FC<{
   );
 };
 
-export const WorkspaceList: FC<{
+interface WorkspaceListProps {
   onWorkspaceSettingClick: (workspaceId: string) => void;
   selectedWorkspaceId: string | null;
-}> = ({ onWorkspaceSettingClick, selectedWorkspaceId }) => {
+}
+
+export const WorkspaceList = ({
+  onWorkspaceSettingClick,
+  selectedWorkspaceId,
+}: WorkspaceListProps) => {
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   return (
@@ -114,19 +121,22 @@ export const WorkspaceList: FC<{
   );
 };
 
+interface WorkspaceListItemProps {
+  meta: RootWorkspaceMetadata;
+  onClick: () => void;
+  isCurrent: boolean;
+  isActive: boolean;
+}
+
 const WorkspaceListItem = ({
   meta,
   onClick,
   isCurrent,
   isActive,
-}: {
-  meta: RootWorkspaceMetadata;
-  onClick: () => void;
-  isCurrent: boolean;
-  isActive: boolean;
-}) => {
+}: WorkspaceListItemProps) => {
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
+
   return (
     <div
       className={clsx(sidebarSelectItem, { active: isActive })}

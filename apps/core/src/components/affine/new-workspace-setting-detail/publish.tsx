@@ -9,7 +9,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
@@ -19,26 +18,20 @@ import { TmpDisableAffineCloudModal } from '../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
 
-export type PublishPanelProps = Omit<
-  WorkspaceSettingDetailProps,
-  'workspaceId'
-> & {
+export interface PublishPanelProps
+  extends Omit<WorkspaceSettingDetailProps, 'workspaceId'> {
   workspace: AffineOfficialWorkspace;
-};
-export type PublishPanelLocalProps = Omit<
-  WorkspaceSettingDetailProps,
-  'workspaceId'
-> & {
+}
+export interface PublishPanelLocalProps
+  extends Omit<WorkspaceSettingDetailProps, 'workspaceId'> {
   workspace: LocalWorkspace;
-};
-export type PublishPanelAffineProps = Omit<
-  WorkspaceSettingDetailProps,
-  'workspaceId'
-> & {
+}
+export interface PublishPanelAffineProps
+  extends Omit<WorkspaceSettingDetailProps, 'workspaceId'> {
   workspace: AffineCloudWorkspace;
-};
+}
 
-const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
+const PublishPanelAffine = (props: PublishPanelAffineProps) => {
   const { workspace } = props;
   const t = useAFFiNEI18N();
   // const toggleWorkspacePublish = useToggleWorkspacePublish(workspace);
@@ -58,6 +51,7 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
     await navigator.clipboard.writeText(shareUrl);
     toast(t['Copied link to clipboard']());
   }, [shareUrl, t]);
+
   return (
     <>
       <SettingRow
@@ -91,10 +85,13 @@ const PublishPanelAffine: FC<PublishPanelAffineProps> = props => {
   );
 };
 
-const FakePublishPanelAffine: FC<{
+interface FakePublishPanelAffineProps {
   workspace: AffineOfficialWorkspace;
-}> = () => {
+}
+
+const FakePublishPanelAffine = (_props: FakePublishPanelAffineProps) => {
   const t = useAFFiNEI18N();
+
   return (
     <Tooltip
       content={t['com.affine.settings.workspace.publish.local-tooltip']()}
@@ -108,10 +105,11 @@ const FakePublishPanelAffine: FC<{
     </Tooltip>
   );
 };
-const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
+
+const PublishPanelLocal = ({
   workspace,
   onTransferWorkspace,
-}) => {
+}: PublishPanelLocalProps) => {
   const t = useAFFiNEI18N();
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
 
@@ -167,7 +165,7 @@ const PublishPanelLocal: FC<PublishPanelLocalProps> = ({
   );
 };
 
-export const PublishPanel: FC<PublishPanelProps> = props => {
+export const PublishPanel = (props: PublishPanelProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     return <PublishPanelAffine {...props} workspace={props.workspace} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {

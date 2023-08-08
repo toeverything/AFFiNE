@@ -3,7 +3,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useMemo } from 'react';
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import * as style from './style.css';
@@ -31,9 +31,11 @@ const useDBFileSecondaryPath = (workspaceId: string) => {
   return path;
 };
 
-export const StoragePanel: FC<{
+interface StoragePanelProps {
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}
+
+export const StoragePanel = ({ workspace }: StoragePanelProps) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
   const secondaryPath = useDBFileSecondaryPath(workspaceId);
