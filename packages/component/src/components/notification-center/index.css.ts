@@ -184,14 +184,13 @@ export const notificationContentStyle = style({
 export const notificationTitleContactStyle = style({
   marginRight: '22px',
   width: '200px',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-  overflow: 'hidden',
-  lineHeight: '1.5',
+  overflow: 'wrap',
+  lineHeight: '24px',
+  fontSize: 'var(--affine-font-base)',
 });
 export const notificationTitleStyle = style({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   width: '100%',
   justifyContent: 'flex-start',
 });
@@ -199,6 +198,7 @@ export const notificationDescriptionStyle = style({
   fontSize: 'var(--affine-font-sm)',
   color: 'var(--affine-text-secondary-color)',
   marginBottom: '4px',
+  lineHeight: '22px',
 });
 export const notificationTimeStyle = style({
   fontSize: 'var(--affine-font-sm)',
