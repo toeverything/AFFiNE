@@ -143,7 +143,7 @@ export const CloudWorkspaceMembersPanel = (
       {isOwner && (
         <FlexWrapper justifyContent="space-between" alignItems="center">
           <Input
-            className={style.urlButton}
+            // className={style.urlButton}
             data-testid="invite-by-email-input"
             placeholder="Invite by email"
             onChange={setInviteEmail}
