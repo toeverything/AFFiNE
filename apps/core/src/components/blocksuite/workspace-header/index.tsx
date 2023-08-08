@@ -1,5 +1,4 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { Button } from '@toeverything/components/button';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -30,7 +29,6 @@ export const BlockSuiteEditorHeader = (
   const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
   const [isEditable, setIsEditable] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
   const handleClick = useCallback(() => {
     if (isEditable) {
       setIsEditable(!isEditable);
@@ -42,7 +40,14 @@ export const BlockSuiteEditorHeader = (
       setIsEditable(!isEditable);
     }
   }, [currentPage, isEditable, pageMeta?.title, pageTitleMeta]);
-
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        handleClick();
+      }
+    },
+    [handleClick]
+  );
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
   const title = pageMeta?.title;
@@ -73,16 +78,8 @@ export const BlockSuiteEditorHeader = (
                     defaultValue={pageMeta?.title}
                     onBlur={handleClick}
                     ref={inputRef}
+                    onKeyDown={handleKeyDown}
                   />
-                  <Button
-                    onClick={handleClick}
-                    data-testid="save-edit-button"
-                    style={{
-                      marginLeft: '12px',
-                    }}
-                  >
-                    Save
-                  </Button>
                 </div>
               ) : (
                 <span data-testid="title-edit-button" onClick={handleClick}>
@@ -91,7 +88,7 @@ export const BlockSuiteEditorHeader = (
               )}
             </div>
             <div className={styles.searchArrowWrapper}>
-              <PageMenu />
+              <PageMenu rename={handleClick} />
             </div>
           </div>
         </div>
