@@ -22,7 +22,7 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
-  const title = await getBlockSuiteEditorTitle(page);
+  const title = getBlockSuiteEditorTitle(page);
   await title.type('test title');
   await page.keyboard.press('Enter');
   expect(await title.innerText()).toBe('test title');
@@ -33,8 +33,8 @@ test('database is useable', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await waitEditorLoad(page);
-  const title2 = await getBlockSuiteEditorTitle(page);
-  title2.type('test title2');
+  const title2 = getBlockSuiteEditorTitle(page);
+  await title2.type('test title2');
   await page.waitForTimeout(500);
   expect(await title2.innerText()).toBe('test title2');
   await page.keyboard.press('Enter');
