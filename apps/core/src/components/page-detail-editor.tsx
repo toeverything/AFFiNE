@@ -17,7 +17,7 @@ import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useMemo } from 'react';
+import { memo, startTransition, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
@@ -141,12 +141,14 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
         ref={useCallback(
           (ref: HTMLDivElement | null) => {
             if (ref) {
-              const div = document.createElement('div');
-              const cleanup = windowItem(div);
-              ref.appendChild(div);
-              addCleanup(pluginName, () => {
-                cleanup();
-                ref.removeChild(div);
+              startTransition(() => {
+                const div = document.createElement('div');
+                const cleanup = windowItem(div);
+                ref.appendChild(div);
+                addCleanup(pluginName, () => {
+                  cleanup();
+                  ref.removeChild(div);
+                });
               });
             }
           },

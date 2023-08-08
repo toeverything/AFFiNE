@@ -53,17 +53,16 @@ const pushLayoutAtom = atom<
       };
     } else {
       return {
-        ...layout,
         direction: 'horizontal',
         first: 'editor',
+        splitPercentage: 70,
         second: {
           direction: 'horizontal',
-          // fixme: incorrect type here
-          first: layout.second,
-          second: pluginName,
-          splitPercentage: 70,
+          first: pluginName,
+          second: layout.second,
+          splitPercentage: 50,
         },
-      } as ExpectedLayout;
+      } satisfies ExpectedLayout;
     }
   });
   addCleanup(pluginName, () => {
@@ -77,36 +76,27 @@ const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
     delete newItems[id];
     return newItems;
   });
-  const removeLayout = (layout: LayoutNode): LayoutNode => {
-    if (layout === 'editor') {
-      return 'editor';
+  const removeLayout = (layout: LayoutNode): LayoutNode | string => {
+    if (typeof layout === 'string') {
+      return layout;
+    }
+    if (layout.first === id) {
+      return layout.second;
+    } else if (layout.second === id) {
+      return layout.first;
     } else {
-      if (typeof layout === 'string') {
-        return layout as ExpectedLayout;
-      }
-      if (layout.first === id) {
-        return layout.second;
-      } else if (layout.second === id) {
-        return layout.first;
-      } else {
-        return removeLayout(layout.second);
-      }
+      return {
+        ...layout,
+        second: removeLayout(layout.second),
+      };
     }
   };
+
   set(contentLayoutAtom, layout => {
     if (layout === 'editor') {
       return 'editor';
     } else {
-      if (typeof layout === 'string') {
-        return layout as ExpectedLayout;
-      }
-      if (layout.first === id) {
-        return layout.second as ExpectedLayout;
-      } else if (layout.second === id) {
-        return layout.first as ExpectedLayout;
-      } else {
-        return removeLayout(layout.second) as ExpectedLayout;
-      }
+      return removeLayout(layout) as ExpectedLayout;
     }
   });
 });
@@ -352,6 +342,9 @@ export const createOrGetGlobalThis = (
       // vue uses these
       Element: globalThis.Element,
       SVGElement: globalThis.SVGElement,
+
+      // scroll-snap uses these
+      ShadowRoot: globalThis.ShadowRoot,
 
       // fixme: use our own db api
       indexedDB: globalThis.indexedDB,
