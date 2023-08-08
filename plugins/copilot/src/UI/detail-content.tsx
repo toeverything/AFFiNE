@@ -1,5 +1,5 @@
-import { IconButton } from '@affine/component';
 import { SendIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';

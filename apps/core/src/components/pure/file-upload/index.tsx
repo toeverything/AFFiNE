@@ -1,6 +1,6 @@
-import { Button } from '@affine/component';
 import { styled } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import type { ChangeEvent } from 'react';
 import type React from 'react';
 import { useRef } from 'react';

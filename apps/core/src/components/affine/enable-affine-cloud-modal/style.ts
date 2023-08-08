@@ -1,4 +1,4 @@
-import { Button, styled } from '@affine/component';
+import { styled } from '@affine/component';
 
 export const Header = styled('div')({
   height: '44px',
@@ -27,14 +27,5 @@ export const StyleTips = styled('div')(() => {
     margin: 'auto',
     marginBottom: '32px',
     marginTop: '12px',
-  };
-});
-
-export const StyleButton = styled(Button)(() => {
-  return {
-    width: '284px',
-    display: 'block',
-    margin: 'auto',
-    marginTop: '16px',
   };
 });

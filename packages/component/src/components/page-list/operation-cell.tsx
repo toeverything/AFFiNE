@@ -8,16 +8,10 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useState } from 'react';
 
-import {
-  Confirm,
-  FlexWrapper,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '../../..';
+import { Confirm, FlexWrapper, Menu, MenuItem, Tooltip } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export interface OperationCellProps {
