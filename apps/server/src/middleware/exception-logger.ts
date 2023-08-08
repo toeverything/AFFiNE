@@ -12,7 +12,7 @@ export class ExceptionLogger implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
     const requestId = request?.header(REQUEST_ID);
     this.logger.error(
-      `${requestId ? `${requestId}:` : ''}${exception.message}`,
+      `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
       exception.name,
       exception.cause,
       exception.stack
