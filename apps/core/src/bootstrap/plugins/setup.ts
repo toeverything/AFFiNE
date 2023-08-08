@@ -343,9 +343,6 @@ export const createOrGetGlobalThis = (
       Element: globalThis.Element,
       SVGElement: globalThis.SVGElement,
 
-      // scroll-snap uses these
-      ShadowRoot: globalThis.ShadowRoot,
-
       // fixme: use our own db api
       indexedDB: globalThis.indexedDB,
       IDBRequest: globalThis.IDBRequest,

@@ -9,7 +9,7 @@
     "build": "af build"
   },
   "affinePlugin": {
-    "release": false,
+    "release": "development",
     "entry": {
       "core": "./src/index.ts"
     }
