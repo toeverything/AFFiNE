@@ -7,12 +7,16 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { headerItemsAtom } from '@toeverything/infra/atom';
+import {
+  addCleanup,
+  pluginHeaderItemAtom,
+} from '@toeverything/infra/__internal__/plugin';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import {
   forwardRef,
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -112,37 +116,39 @@ const WindowsAppControls = () => {
 };
 
 const PluginHeader = () => {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const headerItems = useAtomValue(headerItemsAtom);
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    let disposes: (() => void)[] = [];
-    const renderTimeout = setTimeout(() => {
-      disposes = Object.entries(headerItems).map(([id, headerItem]) => {
-        const div = document.createElement('div');
-        div.setAttribute('plugin-id', id);
-        div.style.display = 'flex';
-        const cleanup = headerItem(div);
-        root.appendChild(div);
-        return () => {
-          cleanup();
-          root.removeChild(div);
-        };
-      });
-    });
-
-    return () => {
-      clearTimeout(renderTimeout);
-      setTimeout(() => {
-        disposes.forEach(dispose => dispose());
-      });
-    };
-  }, [headerItems]);
-
-  return <div className={styles.pluginHeaderItems} ref={rootRef} />;
+  const headerItem = useAtomValue(pluginHeaderItemAtom);
+  const pluginsRef = useRef<string[]>([]);
+  return (
+    <div
+      className={styles.pluginHeaderItems}
+      ref={useCallback(
+        (root: HTMLDivElement | null) => {
+          if (root) {
+            Object.entries(headerItem).forEach(([pluginName, create]) => {
+              if (pluginsRef.current.includes(pluginName)) {
+                return;
+              }
+              pluginsRef.current.push(pluginName);
+              const div = document.createElement('div');
+              div.setAttribute('plugin-id', pluginName);
+              startTransition(() => {
+                const cleanup = create(div);
+                root.appendChild(div);
+                addCleanup(pluginName, () => {
+                  pluginsRef.current = pluginsRef.current.filter(
+                    name => name !== pluginName
+                  );
+                  root.removeChild(div);
+                  cleanup();
+                });
+              });
+            });
+          }
+        },
+        [headerItem]
+      )}
+    />
+  );
 };
 
 export const Header = forwardRef<
