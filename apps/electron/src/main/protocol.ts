@@ -1,7 +1,7 @@
 import { net, protocol, session } from 'electron';
 import { join } from 'path';
 
-import { CLOUD_BASE_URL, isDev } from './config';
+import { CLOUD_BASE_URL } from './config';
 
 const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
 const webStaticDir = join(__dirname, '../resources/web-static');
@@ -18,7 +18,7 @@ async function handleHttpRequest(request: Request) {
   if (
     !origin.startsWith(CLOUD_BASE_URL) ||
     isNetworkResource(pathname) ||
-    isDev
+    process.env.DEV_SERVER_URL // when debugging locally
   ) {
     // note: I don't find a good way to get over with 302 redirect
     // by default in net.fetch, or don't know if there is a way to
