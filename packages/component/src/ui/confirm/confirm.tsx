@@ -1,6 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 
-import { Button } from '../button';
 import type { ModalProps } from '../modal';
 import { Modal, ModalCloseButton } from '../modal';
 import {

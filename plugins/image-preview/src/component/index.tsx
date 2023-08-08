@@ -1,4 +1,4 @@
-import { Button, IconButton, Tooltip } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -12,6 +12,7 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
+import { Button, IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import { useAtom } from 'jotai';

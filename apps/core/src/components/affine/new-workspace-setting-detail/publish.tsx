@@ -1,4 +1,4 @@
-import { Button, FlexWrapper, Switch, Tooltip } from '@affine/component';
+import { FlexWrapper, Switch, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Unreachable } from '@affine/env/constant';
 import type {
@@ -7,6 +7,7 @@ import type {
 } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';

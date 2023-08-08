@@ -133,6 +133,7 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
   '@blocksuite/blocks/std': import('@blocksuite/blocks/std'),
   '@blocksuite/global/utils': import('@blocksuite/global/utils'),
   '@toeverything/infra/atom': import('@toeverything/infra/atom'),
+  '@toeverything/components/button': import('@toeverything/components/button'),
 });
 
 // pluginName -> module -> importName -> updater[]

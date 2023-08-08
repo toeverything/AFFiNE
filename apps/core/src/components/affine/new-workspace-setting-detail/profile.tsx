@@ -1,7 +1,8 @@
-import { IconButton, Input, toast } from '@affine/component';
+import { Input, toast } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DoneIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { type FC, useCallback, useState } from 'react';

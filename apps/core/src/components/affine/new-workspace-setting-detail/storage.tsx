@@ -1,6 +1,7 @@
-import { Button, FlexWrapper, toast, Tooltip } from '@affine/component';
+import { FlexWrapper, toast, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { useMemo } from 'react';
 import { type FC, useCallback, useEffect, useState } from 'react';
 

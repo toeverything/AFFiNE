@@ -186,6 +186,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
+    "@toeverything/components": ^0.0.8
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.2.2
@@ -235,7 +236,7 @@ __metadata:
     "@sentry/webpack-plugin": ^2.5.0
     "@svgr/webpack": ^8.0.1
     "@swc/core": ^1.3.74
-    "@toeverything/components": ^0.0.6
+    "@toeverything/components": ^0.0.8
     "@types/webpack-env": ^1.18.1
     async-call-rpc: ^6.3.1
     cmdk: ^0.2.0
@@ -403,6 +404,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
+    "@toeverything/components": ^0.0.8
   languageName: unknown
   linkType: soft
 
@@ -428,6 +430,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.29
+    "@toeverything/components": ^0.0.8
     "@toeverything/theme": ^0.7.9
     clsx: ^2.0.0
     foxact: ^0.2.17
@@ -11246,9 +11249,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/components@npm:^0.0.6":
-  version: 0.0.6
-  resolution: "@toeverything/components@npm:0.0.6"
+"@toeverything/components@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@toeverything/components@npm:0.0.8"
   dependencies:
     "@blocksuite/icons": ^2.1.26
   peerDependencies:
@@ -11256,7 +11259,7 @@ __metadata:
     clsx: ^2
     react: ^18
     react-dom: ^18
-  checksum: 838bcbecda4eea29c949aa241c99f5512b7d248163156979af93cc70aff396f5ea1087c5e0ea7bee09a964e2960cd9977b065a306bf61cc04894560af6bc166a
+  checksum: 9c955d3c46729397e92031cc6a5ba0f15eb8a67893862b4c6c017c87fff2ab8e9ee8505695b0da571f2af35ad6545f643fc34f657f1c9d1913648796971540d9
   languageName: node
   linkType: hard
 

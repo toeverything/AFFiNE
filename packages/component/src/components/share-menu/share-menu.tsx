@@ -4,11 +4,11 @@ import type {
 } from '@affine/env/workspace';
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { type ReactElement, useRef } from 'react';
 import { useCallback, useState } from 'react';
 
-import { Button } from '../../ui/button';
 import { Menu } from '../../ui/menu/menu';
 import { Export } from './export';
 import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';

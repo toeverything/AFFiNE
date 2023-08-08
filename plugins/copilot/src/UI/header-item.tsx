@@ -1,6 +1,7 @@
-import { IconButton, Tooltip } from '@affine/component';
+import { Tooltip } from '@affine/component';
 import { deleteLayoutAtom, pushLayoutAtom } from '@affine/sdk/entry';
 import { AiIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 import type { ComponentType, PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useState } from 'react';

@@ -1,5 +1,5 @@
-import { Button } from '@affine/component';
 import { assertExists } from '@blocksuite/global/utils';
+import { Button } from '@toeverything/components/button';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,

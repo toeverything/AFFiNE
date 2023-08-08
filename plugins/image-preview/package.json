@@ -17,6 +17,7 @@
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/icons": "^2.1.29",
+    "@toeverything/components": "^0.0.8",
     "@toeverything/theme": "^0.7.9",
     "clsx": "^2.0.0",
     "foxact": "^0.2.17",
