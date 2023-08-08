@@ -3,6 +3,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import type { SaveDBFileResult } from '@toeverything/infra/type';
 import { useCallback } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
@@ -37,7 +38,9 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   const t = useAFFiNEI18N();
   const onExport = useCallback(async () => {
     await syncBlobsToSqliteDb(workspace);
-    const result = await window.apis?.dialog.saveDBFileAs(workspaceId);
+    const result: SaveDBFileResult = await window.apis?.dialog.saveDBFileAs(
+      workspaceId
+    );
     if (result?.error) {
       toast(t[result.error]());
     } else if (!result?.canceled) {
