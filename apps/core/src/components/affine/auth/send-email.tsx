@@ -1,4 +1,4 @@
-import { Button, Wrapper } from '@affine/component';
+import { Wrapper } from '@affine/component';
 import {
   AuthContent,
   AuthInput,
@@ -14,6 +14,7 @@ import {
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
+import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai/index';
 import { type FC, useCallback } from 'react';
 

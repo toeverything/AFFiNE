@@ -11,11 +11,11 @@ import {
   UnpinIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Button } from '../../../ui/button/button';
 import { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
 
