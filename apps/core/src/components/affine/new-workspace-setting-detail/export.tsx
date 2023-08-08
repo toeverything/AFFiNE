@@ -3,7 +3,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
-import { type FC, useCallback } from 'react';
+import { useCallback } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 
@@ -28,9 +28,11 @@ async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
   }
 }
 
-export const ExportPanel: FC<{
+interface ExportPanelProps {
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}
+
+export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
   const onExport = useCallback(async () => {
@@ -42,6 +44,7 @@ export const ExportPanel: FC<{
       toast(t['Export success']());
     }
   }, [t, workspace, workspaceId]);
+
   return (
     <>
       <SettingRow name={t['Export']()} desc={t['Export Description']()}>

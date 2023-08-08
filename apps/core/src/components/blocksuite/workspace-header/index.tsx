@@ -4,12 +4,7 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import type {
-  FC,
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-} from 'react';
+import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
 import { EditorModeSwitch } from './editor-mode-switch';
@@ -18,11 +13,15 @@ import { Header } from './header';
 import { PageMenu } from './header-right-items/editor-option-menu';
 import * as styles from './styles.css';
 
-export type WorkspaceHeaderProps = BaseHeaderProps;
+export interface WorkspaceHeaderProps
+  extends BaseHeaderProps,
+    HTMLAttributes<HTMLDivElement> {
+  children?: ReactNode;
+}
 
-export const BlockSuiteEditorHeader: FC<
-  PropsWithChildren<WorkspaceHeaderProps> & HTMLAttributes<HTMLDivElement>
-> = (props): ReactElement => {
+export const BlockSuiteEditorHeader = (
+  props: WorkspaceHeaderProps
+): ReactElement => {
   const { workspace, currentPage, children, isPublic } = props;
   // fixme(himself65): remove this atom and move it to props
   const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
@@ -47,6 +46,7 @@ export const BlockSuiteEditorHeader: FC<
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
   const title = pageMeta?.title;
+
   return (
     <Header ref={headerRef} {...props}>
       {children}

@@ -9,11 +9,10 @@ import type { HeaderProps } from '../../blocksuite/workspace-header/header';
 import { Header } from '../../blocksuite/workspace-header/header';
 import * as styles from '../../blocksuite/workspace-header/styles.css';
 
-export type WorkspaceTitleProps = React.PropsWithChildren<
-  HeaderProps & {
-    icon?: ReactNode;
-  }
->;
+export interface WorkspaceTitleProps
+  extends React.PropsWithChildren<HeaderProps> {
+  icon?: ReactNode;
+}
 
 export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
   const t = useAFFiNEI18N();
@@ -24,6 +23,7 @@ export const WorkspaceModeFilterTab = ({ ...props }: WorkspaceTitleProps) => {
     }
     setMode(value);
   };
+
   return (
     <Header {...props}>
       <div className={styles.allPageListTitleWrapper}>

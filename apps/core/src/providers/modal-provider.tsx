@@ -7,7 +7,7 @@ import {
   currentWorkspaceIdAtom,
 } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { FC, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
@@ -52,7 +52,7 @@ const OnboardingModal = lazy(() =>
   }))
 );
 
-export const Setting: FC = () => {
+export const Setting = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [{ open, workspaceId, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
@@ -89,6 +89,7 @@ export function CurrentWorkspaceModals() {
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
+
   return (
     <>
       <Suspense>
@@ -139,6 +140,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     },
     [setOpenSettingModalAtom, setOpenWorkspacesModal]
   );
+
   return (
     <>
       <Suspense>
