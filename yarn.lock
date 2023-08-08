@@ -247,7 +247,7 @@ __metadata:
     "@svgr/webpack": ^8.0.1
     "@swc/core": ^1.3.76
     "@toeverything/components": ^0.0.10
-    "@types/lodash.throttle": ^4.1.7
+    "@types/lodash.debounce": ^4.0.7
     "@types/webpack-env": ^1.18.1
     async-call-rpc: ^6.3.1
     cmdk: ^0.2.0
@@ -262,7 +262,7 @@ __metadata:
     jotai: ^2.3.1
     jotai-devtools: ^0.6.1
     lit: ^2.8.0
-    lodash.throttle: ^4.1.1
+    lodash.debounce: ^4.0.8
     lottie-web: ^5.12.2
     mini-css-extract-plugin: ^2.7.6
     next-themes: ^0.2.1
@@ -12043,12 +12043,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash.throttle@npm:^4.1.7":
-  version: 4.1.7
-  resolution: "@types/lodash.throttle@npm:4.1.7"
+"@types/lodash.debounce@npm:^4.0.7":
+  version: 4.0.7
+  resolution: "@types/lodash.debounce@npm:4.0.7"
   dependencies:
     "@types/lodash": "*"
-  checksum: 6e1b3836488fecbdc537b6ad9b3fe4855c7336b0fa388773cd57d486619f565a48cabc04b28677fd3819be3f2d13d2bb8f9d4428aa5632885c86cb99729bfd69
+  checksum: e873b2d77f89010876baba3437ef826b17221b98948e00b5590828334a481dea1c8f9d28543210e564adc53199584f42c3cb171f8b6c3614fefc0b4e0888679c
   languageName: node
   linkType: hard
 
@@ -23752,13 +23752,6 @@ __metadata:
   dependencies:
     lodash._reinterpolate: ^3.0.0
   checksum: 863e025478b092997e11a04e9d9e735875eeff1ffcd6c61742aa8272e3c2cddc89ce795eb9726c4e74cef5991f722897ff37df7738a125895f23fc7d12a7bb59
-  languageName: node
-  linkType: hard
-
-"lodash.throttle@npm:^4.1.1":
-  version: 4.1.1
-  resolution: "lodash.throttle@npm:4.1.1"
-  checksum: 129c0a28cee48b348aef146f638ef8a8b197944d4e9ec26c1890c19d9bf5a5690fe11b655c77a4551268819b32d27f4206343e30c78961f60b561b8608c8c805
   languageName: node
   linkType: hard
 

@@ -7,7 +7,7 @@ import {
 import { isDesktop } from '@affine/env/constant';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import throttle from 'lodash.throttle';
+import debounce from 'lodash.debounce';
 import type { MutableRefObject, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -38,7 +38,7 @@ const useIsTinyScreen = ({
   const [isTinyScreen, setIsTinyScreen] = useState(false);
 
   useEffect(() => {
-    const handleResize = throttle(() => {
+    const handleResize = debounce(() => {
       if (!centerDom.current) {
         return;
       }
