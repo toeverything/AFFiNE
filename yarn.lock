@@ -383,6 +383,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/graphql@workspace:packages/graphql"
   dependencies:
+    "@affine/env": "workspace:*"
     "@graphql-codegen/add": ^5.0.0
     "@graphql-codegen/cli": 5.0.0
     "@graphql-codegen/typescript": ^4.0.1

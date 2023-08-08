@@ -214,13 +214,12 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-// TODO
-const traceWorkerEndpoint = '';
+const traceReportEndpoint = runtimeConfig.traceReportEndpoint;
+const shouldReportTrace = runtimeConfig.shouldReportTrace;
 
 export const fetchWithReport = (
   input: RequestInfo | URL,
-  init?: RequestInit,
-  reportToWorker = true
+  init?: RequestInit
 ): Promise<Response> => {
   const startTime = toZuluDateFormat(new Date());
   const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
@@ -239,7 +238,7 @@ export const fetchWithReport = (
   }
 
   return fetch(input, init).finally(() => {
-    if (!reportToWorker) return;
+    if (!shouldReportTrace) return;
     // replace {GCP_PROJECT_ID} in cloud functions
     const name = `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`;
     const postBody = {
@@ -268,7 +267,7 @@ export const fetchWithReport = (
       ],
     };
 
-    fetch(traceWorkerEndpoint, {
+    fetch(traceReportEndpoint, {
       method: 'POST',
       mode: 'cors',
       cache: 'no-cache',
