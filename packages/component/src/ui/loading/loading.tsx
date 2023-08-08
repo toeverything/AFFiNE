@@ -1,14 +1,13 @@
 import { assignInlineVars } from '@vanilla-extract/dynamic';
-import type { FC } from 'react';
 
 import { loading, speedVar } from './styles.css';
 
-export type LoadingProps = {
+export interface LoadingProps {
   size?: number;
   speed?: number;
-};
+}
 
-export const Loading: FC<LoadingProps> = ({ size, speed = 1.2 }) => {
+export const Loading = ({ size, speed = 1.2 }: LoadingProps) => {
   return (
     <svg
       className={loading}

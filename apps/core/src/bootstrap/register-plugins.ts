@@ -1,8 +1,7 @@
 import { DebugLogger } from '@affine/debug';
-import {
-  registeredPluginAtom,
-  rootStore,
-} from '@toeverything/plugin-infra/atom';
+import { registeredPluginAtom, rootStore } from '@toeverything/infra/atom';
+import { packageJsonOutputSchema } from '@toeverything/infra/type';
+import type { z } from 'zod';
 
 import { evaluatePluginEntry, setupPluginCode } from './plugins/setup';
 
@@ -11,6 +10,7 @@ const builtinPluginUrl = new Set([
   '/plugins/copilot',
   '/plugins/hello-world',
   '/plugins/image-preview',
+  '/plugins/vue-hello-world',
 ]);
 
 const logger = new DebugLogger('register-plugins');
@@ -22,11 +22,14 @@ declare global {
 
 globalThis.__pluginPackageJson__ = [];
 
-Promise.all(
+export const pluginRegisterPromise = Promise.all(
   [...builtinPluginUrl].map(url => {
     return fetch(`${url}/package.json`)
       .then(async res => {
-        const packageJson = await res.json();
+        const packageJson = (await res.json()) as z.infer<
+          typeof packageJsonOutputSchema
+        >;
+        packageJsonOutputSchema.parse(packageJson);
         const {
           name: pluginName,
           affinePlugin: {
@@ -39,6 +42,12 @@ Promise.all(
         logger.debug(`registering plugin ${pluginName}`);
         logger.debug(`package.json: ${packageJson}`);
         if (!release && !runtimeConfig.enablePlugin) {
+          return Promise.resolve();
+        }
+        if (
+          release === 'development' &&
+          process.env.NODE_ENV !== 'development'
+        ) {
           return Promise.resolve();
         }
         const baseURL = url;

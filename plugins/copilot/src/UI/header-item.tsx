@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@affine/component';
-import { contentLayoutAtom } from '@toeverything/plugin-infra/atom';
+import { contentLayoutAtom } from '@affine/sdk/entry';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';

@@ -5,10 +5,10 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { signInMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { signIn, useSession } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -21,13 +21,34 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   setOpen,
 }) => {
   const t = useAFFiNEI18N();
-  const { trigger: sigInWithPassword } = useMutation({
-    mutation: signInMutation,
-  });
+  const { update } = useSession();
+
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+
+  const onSignIn = useCallback(async () => {
+    const res = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+      callbackUrl: '/',
+    }).catch(console.error);
+
+    if (!res?.ok) {
+      return setPasswordError(true);
+    }
+
+    await update();
+    setOpen(false);
+    pushNotification({
+      title: `${email}${t['com.affine.auth.has.signed']()}`,
+      message: '',
+      key: Date.now().toString(),
+      type: 'success',
+    });
+  }, [email, password, pushNotification, setOpen, t, update]);
 
   return (
     <>
@@ -57,13 +78,14 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           }, [])}
           error={passwordError}
           errorHint={t['com.affine.auth.password.error']()}
+          onEnter={onSignIn}
         />
         <span></span>
         <button
           className={forgetPasswordButton}
-          onClick={useCallback(() => {
-            setAuthState('sendPasswordEmail');
-          }, [setAuthState])}
+          // onClick={useCallback(() => {
+          //   setAuthState('sendPasswordEmail');
+          // }, [setAuthState])}
         >
           {t['com.affine.auth.forget']()}
         </button>
@@ -72,33 +94,14 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         type="primary"
         size="extraLarge"
         style={{ width: '100%' }}
-        onClick={useCallback(async () => {
-          const res = await sigInWithPassword({
-            email: email,
-            password,
-          });
-
-          if (!res?.signIn?.token?.token) {
-            setPasswordError(true);
-            return;
-          }
-
-          pushNotification({
-            title: `${email}${t['com.affine.auth.has.signed']()}`,
-            message: '',
-            key: Date.now().toString(),
-            type: 'success',
-          });
-
-          setOpen(false);
-        }, [email, password, pushNotification, setOpen, sigInWithPassword, t])}
+        onClick={onSignIn}
       >
         {t['com.affine.auth.sign.in']()}
       </Button>
 
       <BackButton
         onClick={useCallback(() => {
-          setAuthState('signIn');
+          setAuthState('afterSignInSendEmail');
         }, [setAuthState])}
       />
     </>

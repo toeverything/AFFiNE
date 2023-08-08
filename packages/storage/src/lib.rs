@@ -7,6 +7,7 @@ use std::{
 };
 
 use jwst::BlobStorage;
+use jwst_codec::Doc;
 use jwst_storage::{BlobStorageType, JwstStorage, JwstStorageError};
 
 use napi::{bindgen_prelude::*, Error, Result, Status};
@@ -146,4 +147,17 @@ impl Storage {
   pub async fn blobs_size(&self, workspace_id: String) -> Result<i64> {
     map_err!(self.blobs().get_blobs_size(workspace_id).await)
   }
+}
+
+/// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the result binary.
+#[napi]
+pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
+  let mut doc = Doc::default();
+  for update in updates {
+    map_err!(doc.apply_update_from_binary(update.as_ref().to_vec()))?;
+  }
+
+  let buf = map_err!(doc.encode_update_v1())?;
+
+  Ok(buf.into())
 }

@@ -3,7 +3,7 @@
 packages=(
   "y-indexeddb"
   "infra"
-  "plugin-infra"
+  "sdk"
 )
 
 for package in "${packages[@]}"; do

@@ -69,8 +69,24 @@ export type SetBlobMutationVariables = Exact<{
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
 
+export type ChangeEmailMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+  newEmail: Scalars['String']['input'];
+}>;
+
+export type ChangeEmailMutation = {
+  __typename?: 'Mutation';
+  changeEmail: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    email: string;
+  };
+};
+
 export type ChangePasswordMutationVariables = Exact<{
-  email: Scalars['String']['input'];
+  id: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
 }>;
 
@@ -392,6 +408,11 @@ export type Mutations =
       name: 'setBlobMutation';
       variables: SetBlobMutationVariables;
       response: SetBlobMutation;
+    }
+  | {
+      name: 'changeEmailMutation';
+      variables: ChangeEmailMutationVariables;
+      response: ChangeEmailMutation;
     }
   | {
       name: 'changePasswordMutation';

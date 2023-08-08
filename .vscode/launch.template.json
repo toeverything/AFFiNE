@@ -2,16 +2,24 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "command": "yarn run dev",
       "name": "Run Dev",
+      "type": "node-terminal",
       "request": "launch",
-      "type": "node-terminal"
+      "command": "yarn run dev"
     },
     {
-      "command": "yarn run dev:local",
       "name": "Run Dev Locally",
+      "type": "node-terminal",
       "request": "launch",
-      "type": "node-terminal"
+      "command": "yarn run dev:local"
+    },
+    {
+      "name": "Launch AFFiNE Cloud",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": ["workspace", "@affine/server", "dev"]
     }
   ]
 }

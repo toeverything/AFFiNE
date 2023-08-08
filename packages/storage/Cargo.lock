@@ -32,6 +32,7 @@ name = "affine_storage"
 version = "1.0.0"
 dependencies = [
  "jwst",
+ "jwst-codec",
  "jwst-storage",
  "napi",
  "napi-build",
@@ -1529,7 +1530,7 @@ dependencies = [
 [[package]]
 name = "jwst"
 version = "0.1.1"
-source = "git+https://github.com/toeverything/OctoBase.git?rev=da3824e#da3824e419dbf2cf514ddf68402e8f211f2564f8"
+source = "git+https://github.com/toeverything/OctoBase.git#91288a8a3b7577982892b1ecf26a278f9a32f126"
 dependencies = [
  "async-trait",
  "base64 0.21.2",
@@ -1557,7 +1558,7 @@ dependencies = [
 [[package]]
 name = "jwst-codec"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git?rev=da3824e#da3824e419dbf2cf514ddf68402e8f211f2564f8"
+source = "git+https://github.com/toeverything/OctoBase.git#91288a8a3b7577982892b1ecf26a278f9a32f126"
 dependencies = [
  "arbitrary",
  "bitvec",
@@ -1569,6 +1570,7 @@ dependencies = [
  "ordered-float",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
+ "serde",
  "serde_json",
  "thiserror",
 ]
@@ -1576,7 +1578,7 @@ dependencies = [
 [[package]]
 name = "jwst-logger"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git?rev=da3824e#da3824e419dbf2cf514ddf68402e8f211f2564f8"
+source = "git+https://github.com/toeverything/OctoBase.git#91288a8a3b7577982892b1ecf26a278f9a32f126"
 dependencies = [
  "chrono",
  "nu-ansi-term",
@@ -1589,7 +1591,7 @@ dependencies = [
 [[package]]
 name = "jwst-storage"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git?rev=da3824e#da3824e419dbf2cf514ddf68402e8f211f2564f8"
+source = "git+https://github.com/toeverything/OctoBase.git#91288a8a3b7577982892b1ecf26a278f9a32f126"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1619,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "jwst-storage-migration"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git?rev=da3824e#da3824e419dbf2cf514ddf68402e8f211f2564f8"
+source = "git+https://github.com/toeverything/OctoBase.git#91288a8a3b7577982892b1ecf26a278f9a32f126"
 dependencies = [
  "sea-orm-migration",
  "tokio",

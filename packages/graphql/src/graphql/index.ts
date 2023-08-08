@@ -40,14 +40,30 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 }`,
 };
 
+export const changeEmailMutation = {
+  id: 'changeEmailMutation' as const,
+  operationName: 'changeEmail',
+  definitionName: 'changeEmail',
+  containsFile: false,
+  query: `
+mutation changeEmail($id: String!, $newEmail: String!) {
+  changeEmail(id: $id, email: $newEmail) {
+    id
+    name
+    avatarUrl
+    email
+  }
+}`,
+};
+
 export const changePasswordMutation = {
   id: 'changePasswordMutation' as const,
   operationName: 'changePassword',
   definitionName: 'changePassword',
   containsFile: false,
   query: `
-mutation changePassword($email: String!, $newPassword: String!) {
-  changePassword(email: $email, newPassword: $newPassword) {
+mutation changePassword($id: String!, $newPassword: String!) {
+  changePassword(id: $id, newPassword: $newPassword) {
     id
     name
     avatarUrl

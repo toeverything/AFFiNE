@@ -34,9 +34,12 @@ const Actions = () => {
         />
         <IconButton
           className={sendButtonStyle}
-          onClick={useCallback(async () => {
-            await call(input);
-            await generateFollowingUp();
+          onClick={useCallback(() => {
+            call(input)
+              .then(() => generateFollowingUp())
+              .catch(e => {
+                console.error(e);
+              });
           }, [call, generateFollowingUp, input])}
         >
           <SendIcon />
