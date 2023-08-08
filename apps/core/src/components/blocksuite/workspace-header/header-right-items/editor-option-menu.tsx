@@ -4,7 +4,6 @@ import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
-  DuplicateIcon,
   EdgelessIcon,
   EditIcon,
   FavoritedIcon,
@@ -12,9 +11,9 @@ import {
   ImportIcon,
   MoreVerticalIcon,
   PageIcon,
-  TagsIcon,
 } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
+import { Divider } from '@toeverything/components/divider';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -29,6 +28,7 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
+import { usePageHelper } from '../../block-suite-page-list/utils';
 import { LanguageMenu } from './language-menu';
 import { MenuThemeModeSwitch } from './theme-mode-switch';
 const CommonMenu = () => {
@@ -57,7 +57,12 @@ const CommonMenu = () => {
     </FlexWrapper>
   );
 };
-export const PageMenu = () => {
+
+type PageMenuProps = {
+  rename?: () => void;
+};
+
+export const PageMenu = ({ rename }: PageMenuProps) => {
   const t = useAFFiNEI18N();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -76,6 +81,7 @@ export const PageMenu = () => {
   const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const { importFile } = usePageHelper(blockSuiteWorkspace);
   const handleFavorite = useCallback(() => {
     setPageMeta(pageId, { favorite: !favorite });
     toast(favorite ? t['Removed from Favorites']() : t['Added to Favorites']());
@@ -103,7 +109,7 @@ export const PageMenu = () => {
       <MenuItem
         icon={<EditIcon />}
         data-testid="editor-option-menu-rename"
-        onClick={() => {}}
+        onClick={rename}
         style={menuItemStyle}
       >
         {t['Rename']()}
@@ -131,33 +137,34 @@ export const PageMenu = () => {
       >
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
-      <MenuItem
+      {/* {TODO: add tag and duplicate function support} */}
+      {/* <MenuItem
         icon={<TagsIcon />}
         data-testid="editor-option-menu-add-tag"
         onClick={() => {}}
         style={menuItemStyle}
       >
         {t['com.affine.header.option.add-tag']()}
-      </MenuItem>
-      <hr />
-      <MenuItem
+      </MenuItem> */}
+      <Divider />
+      {/* <MenuItem
         icon={<DuplicateIcon />}
         data-testid="editor-option-menu-duplicate"
         onClick={() => {}}
         style={menuItemStyle}
       >
         {t['com.affine.header.option.duplicate']()}
-      </MenuItem>
+      </MenuItem> */}
       <MenuItem
         icon={<ImportIcon />}
         data-testid="editor-option-menu-import"
-        onClick={() => {}}
+        onClick={importFile}
         style={menuItemStyle}
       >
         {t['Import']()}
       </MenuItem>
       <Export />
-      <hr />
+      <Divider />
       <MoveToTrash
         data-testid="editor-option-menu-delete"
         onItemClick={() => {
