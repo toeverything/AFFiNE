@@ -4,7 +4,11 @@ export const TRACE_VERSION = '00';
 export const TRACE_FLAG = '01';
 
 const BytesBuffer = Array(32);
+
 const traceReportEndpoint = runtimeConfig.traceReportEndpoint;
+const reportInterval = 60_000;
+export let spansCache = new Array<TraceSpan>();
+let reportIntervalId: number | undefined | NodeJS.Timeout;
 
 export type TraceSpan = {
   name: string;
@@ -95,7 +99,7 @@ export function createTraceSpan(
   };
 }
 
-export function reportTrace(payload: string): Promise<Response> {
+export function reportToTraceEndpoint(payload: string): Promise<Response> {
   return fetch(traceReportEndpoint, {
     method: 'POST',
     mode: 'cors',
@@ -106,3 +110,28 @@ export function reportTrace(payload: string): Promise<Response> {
     body: payload,
   });
 }
+
+export const reportHandler = () => {
+  if (spansCache.length <= 0) {
+    if (typeof window !== 'undefined') {
+      window.clearInterval(reportIntervalId);
+    } else {
+      clearInterval(reportIntervalId);
+    }
+    reportIntervalId = undefined;
+  }
+  reportToTraceEndpoint(JSON.stringify({ spans: [...spansCache] })).catch(
+    console.warn
+  );
+  spansCache = [];
+};
+
+export const InitTraceReport = () => {
+  if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
+    if (typeof window !== 'undefined') {
+      reportIntervalId = window.setInterval(reportHandler, reportInterval);
+    } else {
+      reportIntervalId = setInterval(reportHandler, reportInterval);
+    }
+  }
+};

@@ -5,12 +5,13 @@ import { nanoid } from 'nanoid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
-import type { TraceSpan } from './utils';
 import {
   createTraceSpan,
   generateRandUTF16Chars,
-  reportTrace,
+  InitTraceReport,
+  reportToTraceEndpoint,
   SPAN_ID_BYTES,
+  spansCache,
   toZuluDateFormat,
   TRACE_FLAG,
   TRACE_ID_BYTES,
@@ -95,11 +96,6 @@ export type QueryOptions<Q extends GraphQLQuery> = RequestOptions<Q> & {
 export type MutationOptions<M extends GraphQLQuery> = RequestOptions<M> & {
   mutation: M;
 };
-
-const reportInterval = 60_000;
-
-let spansCache = new Array<TraceSpan>();
-let reportIntervalId: number | undefined | NodeJS.Timeout;
 
 function filterEmptyValue(vars: any) {
   const newVars: Record<string, any> = {};
@@ -222,28 +218,6 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
-  if (typeof window !== 'undefined') {
-    reportIntervalId = window.setInterval(() => {
-      if (spansCache.length > 0) {
-        reportTrace(JSON.stringify({ spans: [...spansCache] })).catch(
-          console.warn
-        );
-        spansCache = [];
-      }
-    }, reportInterval);
-  } else {
-    reportIntervalId = setInterval(() => {
-      if (spansCache.length > 0) {
-        reportTrace(JSON.stringify({ spans: [...spansCache] })).catch(
-          console.warn
-        );
-        spansCache = [];
-      }
-    }, reportInterval);
-  }
-}
-
 export const fetchWithReport = (
   input: RequestInfo | URL,
   init?: RequestInit
@@ -271,13 +245,14 @@ export const fetchWithReport = (
   return fetch(input, init)
     .then(response => {
       spansCache.push(createTraceSpan(traceId, spanId, requestId, startTime));
+      InitTraceReport();
       return response;
     })
     .catch(err => {
       const postBody = {
         spans: [createTraceSpan(traceId, spanId, requestId, startTime)],
       };
-      reportTrace(JSON.stringify(postBody)).catch(console.warn);
+      reportToTraceEndpoint(JSON.stringify(postBody)).catch(console.warn);
       return Promise.reject(err);
     });
 };
