@@ -1,7 +1,9 @@
-import type { IconButtonProps } from '@affine/component';
-import { IconButton } from '@affine/component';
 import { styled } from '@affine/component';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import {
+  IconButton,
+  type IconButtonProps,
+} from '@toeverything/components/button';
 
 const StyledIconButtonWithAnimate = styled(IconButton)(() => {
   return {

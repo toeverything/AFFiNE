@@ -1,5 +1,4 @@
 import {
-  Button,
   Input,
   Modal,
   ModalCloseButton,
@@ -10,6 +9,7 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useEffect } from 'react';

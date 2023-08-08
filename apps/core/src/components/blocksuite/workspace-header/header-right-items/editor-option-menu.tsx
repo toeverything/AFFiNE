@@ -1,5 +1,5 @@
 // fixme(himself65): refactor this file
-import { FlexWrapper, IconButton, Menu, MenuItem } from '@affine/component';
+import { FlexWrapper, Menu, MenuItem } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -14,6 +14,7 @@ import {
   PageIcon,
   TagsIcon,
 } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -28,8 +29,8 @@ import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suit
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { toast } from '../../../../utils';
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
-import { MenuThemeModeSwitch } from '../header-right-items/theme-mode-switch';
 import { LanguageMenu } from './language-menu';
+import { MenuThemeModeSwitch } from './theme-mode-switch';
 const CommonMenu = () => {
   const content = (
     <div
