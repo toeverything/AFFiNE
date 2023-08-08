@@ -63,7 +63,7 @@
     "@types/react-dom": "^18.2.7",
     "@vanilla-extract/css": "^1.12.0",
     "typescript": "^5.1.6",
-    "vite": "^4.4.7",
+    "vite": "^4.4.9",
     "yjs": "^13.6.7"
   },
   "version": "0.8.0-canary.14"

@@ -107,7 +107,7 @@
     "serve": "^14.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6",
-    "vite": "^4.4.7",
+    "vite": "^4.4.9",
     "vite-plugin-istanbul": "^5.0.0",
     "vite-plugin-static-copy": "^0.17.0",
     "vite-tsconfig-paths": "^4.2.0",
