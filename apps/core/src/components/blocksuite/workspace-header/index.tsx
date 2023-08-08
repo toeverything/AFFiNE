@@ -55,9 +55,7 @@ export const BlockSuiteEditorHeader: FC<
       {!isPublic && currentPage && (
         <div className={styles.titleContainer}>
           <div className={styles.titleWrapper}>
-            {isEditable ? (
-              <></>
-            ) : (
+            {isEditable ? null : (
               <div className={styles.switchWrapper}>
                 <EditorModeSwitch
                   blockSuiteWorkspace={workspace.blockSuiteWorkspace}
@@ -86,9 +84,7 @@ export const BlockSuiteEditorHeader: FC<
                 </span>
               )}
             </div>
-            {isEditable ? (
-              <></>
-            ) : (
+            {isEditable ? null : (
               <div className={styles.searchArrowWrapper}>
                 <QuickSearchButton
                   onClick={() => {
