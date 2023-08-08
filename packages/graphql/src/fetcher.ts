@@ -5,8 +5,11 @@ import { nanoid } from 'nanoid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
+import type { TraceSpan } from './utils';
 import {
+  createTraceSpan,
   generateRandUTF16Chars,
+  reportTrace,
   SPAN_ID_BYTES,
   toZuluDateFormat,
   TRACE_FLAG,
@@ -92,6 +95,11 @@ export type QueryOptions<Q extends GraphQLQuery> = RequestOptions<Q> & {
 export type MutationOptions<M extends GraphQLQuery> = RequestOptions<M> & {
   mutation: M;
 };
+
+const reportInterval = 60_000;
+
+let spansCache = new Array<TraceSpan>();
+let reportIntervalId: number | undefined | NodeJS.Timeout;
 
 function filterEmptyValue(vars: any) {
   const newVars: Record<string, any> = {};
@@ -214,8 +222,27 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-const traceReportEndpoint = runtimeConfig.traceReportEndpoint;
-const shouldReportTrace = runtimeConfig.shouldReportTrace;
+if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
+  if (typeof window !== 'undefined') {
+    reportIntervalId = window.setInterval(() => {
+      if (spansCache.length > 0) {
+        reportTrace(JSON.stringify({ spans: [...spansCache] })).catch(
+          console.error
+        );
+        spansCache = [];
+      }
+    }, reportInterval);
+  } else {
+    reportIntervalId = setInterval(() => {
+      if (spansCache.length > 0) {
+        reportTrace(JSON.stringify({ spans: [...spansCache] })).catch(
+          console.error
+        );
+        spansCache = [];
+      }
+    }, reportInterval);
+  }
+}
 
 export const fetchWithReport = (
   input: RequestInfo | URL,
@@ -237,44 +264,20 @@ export const fetchWithReport = (
     headers['traceparent'] = traceparent;
   }
 
-  return fetch(input, init).finally(() => {
-    if (!shouldReportTrace) return;
-    // replace {GCP_PROJECT_ID} in cloud functions
-    const name = `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`;
-    const postBody = {
-      spans: [
-        {
-          name,
-          spanId,
-          displayName: {
-            value: 'fetch',
-            truncatedByteCount: 0,
-          },
-          startTime,
-          endTime: toZuluDateFormat(new Date()),
-          attributes: {
-            attributeMap: {
-              requestId: {
-                stringValue: {
-                  value: requestId,
-                  truncatedByteCount: 0,
-                },
-              },
-            },
-            droppedAttributesCount: 0,
-          },
-        },
-      ],
-    };
+  if (!runtimeConfig.shouldReportTrace) {
+    return fetch(input, init);
+  }
 
-    fetch(traceReportEndpoint, {
-      method: 'POST',
-      mode: 'cors',
-      cache: 'no-cache',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(postBody),
-    }).catch(console.error);
-  });
+  return fetch(input, init)
+    .then(response => {
+      spansCache.push(createTraceSpan(traceId, spanId, requestId, startTime));
+      return response;
+    })
+    .catch(err => {
+      const postBody = {
+        spans: [createTraceSpan(traceId, spanId, requestId, startTime)],
+      };
+      reportTrace(JSON.stringify(postBody)).catch(console.error);
+      throw err;
+    });
 };

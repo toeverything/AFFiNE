@@ -4,6 +4,29 @@ export const TRACE_VERSION = '00';
 export const TRACE_FLAG = '01';
 
 const BytesBuffer = Array(32);
+const traceReportEndpoint = runtimeConfig.traceReportEndpoint;
+
+export type TraceSpan = {
+  name: string;
+  spanId: string;
+  displayName: {
+    value: string;
+    truncatedByteCount: number;
+  };
+  startTime: string;
+  endTime: string;
+  attributes: {
+    attributeMap: {
+      requestId: {
+        stringValue: {
+          value: string;
+          truncatedByteCount: number;
+        };
+      };
+    };
+    droppedAttributesCount: number;
+  };
+};
 
 /**
  * inspired by open-telemetry/opentelemetry-js
@@ -41,4 +64,45 @@ export function toZuluDateFormat(date: Date): string {
     pad(date.getUTCMilliseconds(), 3) +
     'Z'
   );
+}
+
+export function createTraceSpan(
+  traceId: string,
+  spanId: string,
+  requestId: string,
+  startTime: string
+): TraceSpan {
+  return {
+    name: `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
+    spanId,
+    displayName: {
+      value: 'fetch',
+      truncatedByteCount: 0,
+    },
+    startTime,
+    endTime: toZuluDateFormat(new Date()),
+    attributes: {
+      attributeMap: {
+        requestId: {
+          stringValue: {
+            value: requestId,
+            truncatedByteCount: 0,
+          },
+        },
+      },
+      droppedAttributesCount: 0,
+    },
+  };
+}
+
+export function reportTrace(payload: string): Promise<Response> {
+  return fetch(traceReportEndpoint, {
+    method: 'POST',
+    mode: 'cors',
+    cache: 'no-cache',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: payload,
+  });
 }
