@@ -8,7 +8,7 @@ import type { Mutations, Queries } from './schema';
 import {
   createTraceSpan,
   generateRandUTF16Chars,
-  InitTraceReport,
+  initTraceReport,
   reportToTraceEndpoint,
   SPAN_ID_BYTES,
   spansCache,
@@ -245,7 +245,7 @@ export const fetchWithReport = (
   return fetch(input, init)
     .then(response => {
       spansCache.push(createTraceSpan(traceId, spanId, requestId, startTime));
-      InitTraceReport();
+      initTraceReport();
       return response;
     })
     .catch(err => {

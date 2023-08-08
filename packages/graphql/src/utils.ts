@@ -126,7 +126,7 @@ export const reportHandler = () => {
   spansCache = [];
 };
 
-export const InitTraceReport = () => {
+export const initTraceReport = () => {
   if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
     if (typeof window !== 'undefined') {
       reportIntervalId = window.setInterval(reportHandler, reportInterval);
