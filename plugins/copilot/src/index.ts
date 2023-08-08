@@ -3,7 +3,6 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { DebugContent } from './UI/debug-content';
-import { DetailContent } from './UI/detail-content';
 import { HeaderItem } from './UI/header-item';
 
 export const entry = (context: PluginContext) => {
@@ -11,20 +10,12 @@ export const entry = (context: PluginContext) => {
   context.register('headerItem', div => {
     const root = createRoot(div);
     root.render(
-      createElement(context.utils.PluginProvider, {}, createElement(HeaderItem))
-    );
-    return () => {
-      root.unmount();
-    };
-  });
-
-  context.register('window', div => {
-    const root = createRoot(div);
-    root.render(
       createElement(
         context.utils.PluginProvider,
         {},
-        createElement(DetailContent)
+        createElement(HeaderItem, {
+          Provider: context.utils.PluginProvider,
+        })
       )
     );
     return () => {

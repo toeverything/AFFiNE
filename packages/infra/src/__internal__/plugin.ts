@@ -46,4 +46,6 @@ export const pluginSettingAtom = atom<Record<string, CallbackMap['setting']>>(
 
 export const pluginEditorAtom = atom<Record<string, CallbackMap['editor']>>({});
 
-export const pluginWindowAtom = atom<Record<string, CallbackMap['window']>>({});
+export const pluginWindowAtom = atom<
+  Record<string, (root: HTMLElement) => () => void>
+>({});

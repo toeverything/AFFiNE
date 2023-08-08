@@ -1,5 +1,10 @@
 import { DebugLogger } from '@affine/debug';
-import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
+import type {
+  CallbackMap,
+  ExpectedLayout,
+  LayoutNode,
+  PluginContext,
+} from '@affine/sdk/entry';
 import { FormatQuickBar } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -15,6 +20,7 @@ import {
   currentWorkspaceAtom,
   rootStore,
 } from '@toeverything/infra/atom';
+import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
 import { createElement, type PropsWithChildren } from 'react';
 
@@ -26,6 +32,84 @@ const dynamicImportKey = '$h‍_import';
 
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
+
+const pushLayoutAtom = atom<
+  null,
+  // fixme: check plugin name here
+  [pluginName: string, create: (root: HTMLElement) => () => void],
+  void
+>(null, (_, set, pluginName, callback) => {
+  set(pluginWindowAtom, items => ({
+    ...items,
+    [pluginName]: callback,
+  }));
+  set(contentLayoutAtom, layout => {
+    if (layout === 'editor') {
+      return {
+        direction: 'horizontal',
+        first: 'editor',
+        second: pluginName,
+        splitPercentage: 70,
+      };
+    } else {
+      return {
+        ...layout,
+        direction: 'horizontal',
+        first: 'editor',
+        second: {
+          direction: 'horizontal',
+          // fixme: incorrect type here
+          first: layout.second,
+          second: pluginName,
+          splitPercentage: 70,
+        },
+      } as ExpectedLayout;
+    }
+  });
+  addCleanup(pluginName, () => {
+    set(deleteLayoutAtom, pluginName);
+  });
+});
+
+const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
+  set(pluginWindowAtom, items => {
+    const newItems = { ...items };
+    delete newItems[id];
+    return newItems;
+  });
+  const removeLayout = (layout: LayoutNode): LayoutNode => {
+    if (layout === 'editor') {
+      return 'editor';
+    } else {
+      if (typeof layout === 'string') {
+        return layout as ExpectedLayout;
+      }
+      if (layout.first === id) {
+        return layout.second;
+      } else if (layout.second === id) {
+        return layout.first;
+      } else {
+        return removeLayout(layout.second);
+      }
+    }
+  };
+  set(contentLayoutAtom, layout => {
+    if (layout === 'editor') {
+      return 'editor';
+    } else {
+      if (typeof layout === 'string') {
+        return layout as ExpectedLayout;
+      }
+      if (layout.first === id) {
+        return layout.second as ExpectedLayout;
+      } else if (layout.second === id) {
+        return layout.first as ExpectedLayout;
+      } else {
+        return removeLayout(layout.second) as ExpectedLayout;
+      }
+    }
+  });
+});
 
 // module -> importName -> updater[]
 export const _rootImportsMap = new Map<string, Map<string, any>>();
@@ -43,7 +127,8 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
     rootStore: rootStore,
     currentWorkspaceAtom: currentWorkspaceAtom,
     currentPageAtom: currentPageAtom,
-    contentLayoutAtom: contentLayoutAtom,
+    pushLayoutAtom: pushLayoutAtom,
+    deleteLayoutAtom: deleteLayoutAtom,
   },
   '@blocksuite/blocks/std': import('@blocksuite/blocks/std'),
   '@blocksuite/global/utils': import('@blocksuite/global/utils'),
@@ -411,18 +496,6 @@ export const evaluatePluginEntry = (pluginName: string) => {
         }));
         addCleanup(pluginName, () => {
           rootStore.set(pluginEditorAtom, items => {
-            const newItems = { ...items };
-            delete newItems[pluginName];
-            return newItems;
-          });
-        });
-      } else if (part === 'window') {
-        rootStore.set(pluginWindowAtom, items => ({
-          ...items,
-          [pluginName]: callback as CallbackMap['window'],
-        }));
-        addCleanup(pluginName, () => {
-          rootStore.set(pluginWindowAtom, items => {
             const newItems = { ...items };
             delete newItems[pluginName];
             return newItems;
