@@ -76,7 +76,6 @@ const EditorWrapper = memo(function EditorWrapper({
             '--affine-font-family': value,
           } as CSSProperties
         }
-        key={`${workspace.id}-${pageId}`}
         mode={isPublic ? 'page' : currentMode}
         page={page}
         onInit={useCallback(
