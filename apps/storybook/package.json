@@ -23,7 +23,7 @@
     "@storybook/testing-library": "^0.2.0",
     "@vitejs/plugin-react": "^4.0.3",
     "concurrently": "^8.2.0",
-    "jest-mock": "^29.6.1",
+    "jest-mock": "^29.6.2",
     "serve": "^14.2.0",
     "storybook": "^7.1.1",
     "storybook-dark-mode": "^3.0.0",
