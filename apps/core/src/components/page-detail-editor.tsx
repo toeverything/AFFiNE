@@ -1,7 +1,7 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
-import type { CallbackMap, LayoutNode } from '@affine/sdk//entry';
+import type { LayoutNode } from '@affine/sdk//entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
@@ -9,15 +9,15 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import {
-  contentLayoutAtom,
-  editorItemsAtom,
-  rootStore,
-  windowItemsAtom,
-} from '@toeverything/infra/atom';
+  addCleanup,
+  pluginEditorAtom,
+  pluginWindowAtom,
+} from '@toeverything/infra/__internal__/plugin';
+import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, FC, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
@@ -96,7 +96,7 @@ const EditorWrapper = memo(function EditorWrapper({
             if (onLoad) {
               dispose = onLoad(page, editor);
             }
-            const editorItems = rootStore.get(editorItemsAtom);
+            const editorItems = rootStore.get(pluginEditorAtom);
             let disposes: (() => void)[] = [];
             const renderTimeout = setTimeout(() => {
               disposes = Object.entries(editorItems).map(([id, editorItem]) => {
@@ -129,34 +129,28 @@ const EditorWrapper = memo(function EditorWrapper({
 });
 
 const PluginContentAdapter = memo<{
-  windowItem: CallbackMap['window'];
-}>(function PluginContentAdapter({ windowItem }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) {
-      return;
-    }
-    let cleanup: () => void = () => {};
-    let childDiv: HTMLDivElement | null = null;
-    const renderTimeout = setTimeout(() => {
-      const div = document.createElement('div');
-      cleanup = windowItem(div);
-      root.appendChild(div);
-      childDiv = div;
-    });
-
-    return () => {
-      clearTimeout(renderTimeout);
-      setTimeout(() => {
-        cleanup();
-        if (childDiv) {
-          root.removeChild(childDiv);
-        }
-      });
-    };
-  }, [windowItem]);
-  return <div className={pluginContainer} ref={ref} />;
+  windowItem: (div: HTMLDivElement) => () => void;
+  pluginName: string;
+}>(function PluginContentAdapter({ windowItem, pluginName }) {
+  return (
+    <div
+      className={pluginContainer}
+      ref={useCallback(
+        (ref: HTMLDivElement | null) => {
+          if (ref) {
+            const div = document.createElement('div');
+            const cleanup = windowItem(div);
+            ref.appendChild(div);
+            addCleanup(pluginName, () => {
+              cleanup();
+              ref.removeChild(div);
+            });
+          }
+        },
+        [pluginName, windowItem]
+      )}
+    />
+  );
 });
 
 type LayoutPanelProps = {
@@ -168,13 +162,13 @@ const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
 ): ReactElement {
   const node = props.node;
-  const windowItems = useAtomValue(windowItemsAtom);
+  const windowItems = useAtomValue(pluginWindowAtom);
   if (typeof node === 'string') {
     if (node === 'editor') {
       return <EditorWrapper {...props.editorProps} />;
     } else {
       const windowItem = windowItems[node];
-      return <PluginContentAdapter windowItem={windowItem} />;
+      return <PluginContentAdapter pluginName={node} windowItem={windowItem} />;
     }
   } else {
     return (

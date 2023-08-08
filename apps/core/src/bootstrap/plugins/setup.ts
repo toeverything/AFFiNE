@@ -1,18 +1,26 @@
 import { DebugLogger } from '@affine/debug';
-import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
+import type {
+  CallbackMap,
+  ExpectedLayout,
+  LayoutNode,
+  PluginContext,
+} from '@affine/sdk/entry';
 import { FormatQuickBar } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import {
+  addCleanup,
+  pluginEditorAtom,
+  pluginHeaderItemAtom,
+  pluginSettingAtom,
+  pluginWindowAtom,
+} from '@toeverything/infra/__internal__/plugin';
 import {
   contentLayoutAtom,
   currentPageAtom,
   currentWorkspaceAtom,
-  editorItemsAtom,
-  headerItemsAtom,
   rootStore,
-  settingItemsAtom,
-  windowItemsAtom,
 } from '@toeverything/infra/atom';
+import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
 import { createElement, type PropsWithChildren } from 'react';
 
@@ -24,6 +32,84 @@ const dynamicImportKey = '$h‍_import';
 
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
+
+const pushLayoutAtom = atom<
+  null,
+  // fixme: check plugin name here
+  [pluginName: string, create: (root: HTMLElement) => () => void],
+  void
+>(null, (_, set, pluginName, callback) => {
+  set(pluginWindowAtom, items => ({
+    ...items,
+    [pluginName]: callback,
+  }));
+  set(contentLayoutAtom, layout => {
+    if (layout === 'editor') {
+      return {
+        direction: 'horizontal',
+        first: 'editor',
+        second: pluginName,
+        splitPercentage: 70,
+      };
+    } else {
+      return {
+        ...layout,
+        direction: 'horizontal',
+        first: 'editor',
+        second: {
+          direction: 'horizontal',
+          // fixme: incorrect type here
+          first: layout.second,
+          second: pluginName,
+          splitPercentage: 70,
+        },
+      } as ExpectedLayout;
+    }
+  });
+  addCleanup(pluginName, () => {
+    set(deleteLayoutAtom, pluginName);
+  });
+});
+
+const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
+  set(pluginWindowAtom, items => {
+    const newItems = { ...items };
+    delete newItems[id];
+    return newItems;
+  });
+  const removeLayout = (layout: LayoutNode): LayoutNode => {
+    if (layout === 'editor') {
+      return 'editor';
+    } else {
+      if (typeof layout === 'string') {
+        return layout as ExpectedLayout;
+      }
+      if (layout.first === id) {
+        return layout.second;
+      } else if (layout.second === id) {
+        return layout.first;
+      } else {
+        return removeLayout(layout.second);
+      }
+    }
+  };
+  set(contentLayoutAtom, layout => {
+    if (layout === 'editor') {
+      return 'editor';
+    } else {
+      if (typeof layout === 'string') {
+        return layout as ExpectedLayout;
+      }
+      if (layout.first === id) {
+        return layout.second as ExpectedLayout;
+      } else if (layout.second === id) {
+        return layout.first as ExpectedLayout;
+      } else {
+        return removeLayout(layout.second) as ExpectedLayout;
+      }
+    }
+  });
+});
 
 // module -> importName -> updater[]
 export const _rootImportsMap = new Map<string, Map<string, any>>();
@@ -41,7 +127,8 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
     rootStore: rootStore,
     currentWorkspaceAtom: currentWorkspaceAtom,
     currentPageAtom: currentPageAtom,
-    contentLayoutAtom: contentLayoutAtom,
+    pushLayoutAtom: pushLayoutAtom,
+    deleteLayoutAtom: deleteLayoutAtom,
   },
   '@blocksuite/blocks/std': import('@blocksuite/blocks/std'),
   '@blocksuite/global/utils': import('@blocksuite/global/utils'),
@@ -379,7 +466,6 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
     children
   );
 
-const group = new DisposableGroup();
 const entryLogger = new DebugLogger('plugin:entry');
 
 export const evaluatePluginEntry = (pluginName: string) => {
@@ -392,29 +478,50 @@ export const evaluatePluginEntry = (pluginName: string) => {
     register: (part, callback) => {
       entryLogger.info(`Registering ${pluginName} to ${part}`);
       if (part === 'headerItem') {
-        rootStore.set(headerItemsAtom, items => ({
+        rootStore.set(pluginHeaderItemAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['headerItem'],
         }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginHeaderItemAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'editor') {
-        rootStore.set(editorItemsAtom, items => ({
+        rootStore.set(pluginEditorAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['editor'],
         }));
-      } else if (part === 'window') {
-        rootStore.set(windowItemsAtom, items => ({
-          ...items,
-          [pluginName]: callback as CallbackMap['window'],
-        }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginEditorAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'setting') {
-        rootStore.set(settingItemsAtom, items => ({
+        rootStore.set(pluginSettingAtom, items => ({
           ...items,
           [pluginName]: callback as CallbackMap['setting'],
         }));
+        addCleanup(pluginName, () => {
+          rootStore.set(pluginSettingAtom, items => {
+            const newItems = { ...items };
+            delete newItems[pluginName];
+            return newItems;
+          });
+        });
       } else if (part === 'formatBar') {
         FormatQuickBar.customElements.push((page, getBlockRange) => {
           const div = document.createElement('div');
-          (callback as CallbackMap['formatBar'])(div, page, getBlockRange);
+          const cleanup = (callback as CallbackMap['formatBar'])(
+            div,
+            page,
+            getBlockRange
+          );
+          addCleanup(pluginName, cleanup);
           return div;
         });
       } else {
@@ -428,5 +535,5 @@ export const evaluatePluginEntry = (pluginName: string) => {
   if (typeof cleanup !== 'function') {
     throw new Error('Plugin entry must return a function');
   }
-  group.add(cleanup);
+  addCleanup(pluginName, cleanup);
 };

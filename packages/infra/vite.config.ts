@@ -21,6 +21,7 @@ export default defineConfig({
           'src/__internal__/workspace.ts'
         ),
         '__internal__/react': resolve(root, 'src/__internal__/react.ts'),
+        '__internal__/plugin': resolve(root, 'src/__internal__/plugin.ts'),
       },
       formats: ['es', 'cjs'],
       name: 'AffineInfra',

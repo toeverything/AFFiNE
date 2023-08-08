@@ -1,4 +1,4 @@
-import type { CallbackMap, ExpectedLayout } from '@affine/sdk/entry';
+import type { ExpectedLayout } from '@affine/sdk/entry';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
@@ -7,20 +7,7 @@ import { getWorkspace, waitForWorkspace } from './__internal__/workspace.js';
 
 // global store
 export const rootStore = createStore();
-
-// id -> HTML element
-export const headerItemsAtom = atom<Record<string, CallbackMap['headerItem']>>(
-  {}
-);
-export const editorItemsAtom = atom<Record<string, CallbackMap['editor']>>({});
-export const registeredPluginAtom = atom<string[]>([]);
-export const windowItemsAtom = atom<Record<string, CallbackMap['window']>>({});
-export const settingItemsAtom = atom<Record<string, CallbackMap['setting']>>(
-  {}
-);
-export const formatBarItemsAtom = atom<
-  Record<string, CallbackMap['formatBar']>
->({});
+export const loadedPluginNameAtom = atom<string[]>([]);
 
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);

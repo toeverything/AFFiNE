@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css';
 
-export const settingWrapper = style({
+export const settingWrapperStyle = style({
   flexGrow: 1,
   display: 'flex',
   justifyContent: 'flex-end',
@@ -8,7 +8,7 @@ export const settingWrapper = style({
   maxWidth: '250px',
 });
 
-export const pluginItem = style({
+export const pluginItemStyle = style({
   borderBottom: '1px solid var(--affine-border-color)',
   transition: '0.3s',
   padding: '24px 8px',
