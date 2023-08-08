@@ -45,9 +45,9 @@ type SubdocEvent = {
 
 const docUpdateCallbackWeakMap = new WeakMap<Doc, UpdateCallback>();
 
-const schema = new Schema();
+export const globalBlockSuiteSchema = new Schema();
 
-schema.register(AffineSchemas).register(__unstableSchemas);
+globalBlockSuiteSchema.register(AffineSchemas).register(__unstableSchemas);
 
 const createMonitor = (doc: Doc) => {
   const onUpdate: UpdateCallback = (_, origin) => {
@@ -123,7 +123,7 @@ export function getOrCreateWorkspace(
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
     idGenerator,
-    schema,
+    schema: globalBlockSuiteSchema,
   });
   createMonitor(workspace.doc);
   setEditorFlags(workspace);

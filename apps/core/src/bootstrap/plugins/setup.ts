@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
-import { FormatQuickBar } from '@blocksuite/blocks';
+import { AffineFormatBarWidget } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import {
@@ -412,9 +412,12 @@ export const evaluatePluginEntry = (pluginName: string) => {
           [pluginName]: callback as CallbackMap['setting'],
         }));
       } else if (part === 'formatBar') {
-        FormatQuickBar.customElements.push((page, getBlockRange) => {
+        AffineFormatBarWidget.customElements.push(widget => {
           const div = document.createElement('div');
-          (callback as CallbackMap['formatBar'])(div, page, getBlockRange);
+          const root = widget.root;
+          (callback as CallbackMap['formatBar'])(div, widget.page, () => {
+            return root.selectionManager.value;
+          });
           return div;
         });
       } else {

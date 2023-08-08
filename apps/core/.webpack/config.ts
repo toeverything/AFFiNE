@@ -160,12 +160,6 @@ export const createConfiguration: (
                 'packages',
                 'phasor'
               ),
-              '@blocksuite/store/workspace/migration/migrate-block': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'store',
-                'src/workspace/migration/migrate-block'
-              ),
               '@blocksuite/store/providers/broadcast-channel': resolve(
                 blocksuiteBaseDir,
                 'packages',

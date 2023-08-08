@@ -14,6 +14,7 @@ import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
+import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import {
   migrateLocalBlobStorage,
   upgradeV1ToV2,
@@ -62,7 +63,10 @@ async function tryMigration() {
               return;
             }
             const newWorkspace = upgradeV1ToV2(workspace);
-            await migrateDatabaseBlockTo3(newWorkspace.blockSuiteWorkspace.doc);
+            await migrateDatabaseBlockTo3(
+              newWorkspace.blockSuiteWorkspace.doc,
+              globalBlockSuiteSchema
+            );
 
             const newId = await adapter.CRUD.create(
               newWorkspace.blockSuiteWorkspace
@@ -104,7 +108,8 @@ async function tryMigration() {
                 provider.sync();
                 await provider.whenReady;
                 await migrateDatabaseBlockTo3(
-                  workspace.blockSuiteWorkspace.doc
+                  workspace.blockSuiteWorkspace.doc,
+                  globalBlockSuiteSchema
                 );
               }
               const index = newMetadata.findIndex(
