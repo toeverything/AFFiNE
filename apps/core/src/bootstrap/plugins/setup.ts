@@ -526,12 +526,12 @@ export const evaluatePluginEntry = (pluginName: string) => {
             }
           );
           addCleanup(pluginName, () => {
-            // todo: unregister
+            AffineFormatBarWidget.customElements.delete(register);
             cleanup();
           });
           return div;
         };
-        AffineFormatBarWidget.customElements.push(register);
+        AffineFormatBarWidget.customElements.add(register);
       } else {
         throw new Error(`Unknown part: ${part}`);
       }

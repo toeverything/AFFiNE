@@ -2,7 +2,7 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/index.tsx
 
-import { CloseIcon, InformationIcon } from '@blocksuite/icons';
+import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
 import { IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
@@ -33,7 +33,7 @@ export {
 };
 type Height = {
   height: number;
-  notificationKey: number | string;
+  notificationKey: number | string | undefined;
 };
 export type NotificationCardProps = {
   notification: Notification;
@@ -46,24 +46,29 @@ const typeColorMap = {
   info: {
     light: styles.lightInfoStyle,
     dark: styles.darkInfoStyle,
+    default: '',
   },
   success: {
     light: styles.lightSuccessStyle,
     dark: styles.darkSuccessStyle,
+    default: '',
   },
   warning: {
     light: styles.lightWarningStyle,
     dark: styles.darkWarningStyle,
+    default: '',
   },
   error: {
     light: styles.lightErrorStyle,
     dark: styles.darkErrorStyle,
+    default: '',
   },
 };
 
 function NotificationCard(props: NotificationCardProps): ReactElement {
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, notifications, setHeights, heights, index } = props;
+
   const [expand, setExpand] = useAtom(expandNotificationCenterAtom);
   // const setNotificationRemoveAnimation = useSetAtom(notificationRemoveAnimationAtom);
   const [mounted, setMounted] = useState<boolean>(false);
@@ -89,6 +94,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const duration = notification.timeout || 3000;
   const offset = useRef(0);
   const pointerStartYRef = useRef<number | null>(null);
+
   const notificationsHeightBefore = useMemo(() => {
     return heights.reduce((prev, curr, reducerIndex) => {
       // Calculate offset up until current  notification
@@ -149,7 +155,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   }, [notification.title, notification.key, mounted, setHeights]);
 
   const typeStyle =
-    typeColorMap[notification.type][notification.theme || 'light'];
+    typeColorMap[notification.type][notification.theme || 'dark'];
 
   const onClickRemove = useCallback(() => {
     // Save the offset for the exit swipe animation
@@ -159,6 +165,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       h.filter(height => height.notificationKey !== notification.key)
     );
     setTimeout(() => {
+      if (!notification.key) {
+        return;
+      }
       removeNotification(notification.key);
     }, 200);
   }, [setHeights, notification.key, removeNotification, offset]);
@@ -291,7 +300,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     >
       <div
         className={clsx({
-          [typeStyle]: notification.theme,
+          [typeStyle]: notification.theme !== 'default',
           [styles.hasMediaStyle]: notification.multimedia,
           [styles.notificationContentStyle]: !notification.multimedia,
         })}
@@ -306,16 +315,20 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         ) : null}
         <Toast.Title
           className={clsx(styles.notificationTitleStyle, {
-            [styles.darkColorStyle]: notification.theme === 'dark',
+            [styles.darkColorStyle]:
+              notification.theme !== 'light' &&
+              notification.theme !== 'default',
           })}
         >
           <div
             className={clsx(styles.notificationIconStyle, {
-              [styles.darkColorStyle]: notification.theme === 'dark',
-              [styles.lightInfoIconStyle]: notification.theme !== 'dark',
+              [styles.darkColorStyle]:
+                notification.theme !== 'light' &&
+                notification.theme !== 'default',
+              [styles.lightInfoIconStyle]: notification.theme === 'light',
             })}
           >
-            <InformationIcon />
+            <InformationFillDuotoneIcon />
           </div>
           <div className={styles.notificationTitleContactStyle}>
             {notification.title}
@@ -323,7 +336,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           {notification.undo && (
             <div
               className={clsx(styles.undoButtonStyle, {
-                [styles.darkColorStyle]: notification.theme === 'dark',
+                [styles.darkColorStyle]:
+                  notification.theme !== 'light' &&
+                  notification.theme !== 'default',
                 [styles.undoButtonWithMediaStyle]: notification.multimedia,
               })}
               onClick={onClickUndo}
@@ -338,9 +353,10 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
               })}
               style={{
                 color:
-                  notification.theme === 'dark'
-                    ? 'var(--affine-white)'
-                    : 'var(--affine-icon-color)',
+                  notification.theme !== 'light' &&
+                  notification.theme !== 'default'
+                    ? 'var(--affine-pure-white)'
+                    : 'var(--affine-text-primary-color)',
               }}
             >
               <CloseIcon onClick={onClickRemove} />
@@ -349,7 +365,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
         </Toast.Title>
         <Toast.Description
           className={clsx(styles.messageStyle, {
-            [styles.darkColorStyle]: notification.theme === 'dark',
+            [styles.darkColorStyle]:
+              notification.theme !== 'light' &&
+              notification.theme !== 'default',
           })}
         >
           {notification.message}
@@ -410,16 +428,18 @@ export function NotificationCenter(): ReactElement {
   if (!notifications.length) return <></>;
   return (
     <Toast.Provider swipeDirection="right">
-      {notifications.map((notification, index) => (
-        <NotificationCard
-          notification={notification}
-          index={index}
-          key={notification.key}
-          notifications={notifications}
-          heights={heights}
-          setHeights={setHeights}
-        />
-      ))}
+      {notifications.map((notification, index) =>
+        notification.key ? (
+          <NotificationCard
+            notification={notification}
+            index={index}
+            key={notification.key}
+            notifications={notifications}
+            heights={heights}
+            setHeights={setHeights}
+          />
+        ) : null
+      )}
       <Toast.Viewport
         tabIndex={-1}
         ref={listRef}
