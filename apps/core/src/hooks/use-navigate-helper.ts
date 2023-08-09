@@ -80,13 +80,11 @@ export function useNavigateHelper() {
   );
   const jumpToExpired = useCallback(
     (logic: RouteLogic = RouteLogic.PUSH) => {
-      setWorkspaceId(null);
-      setCurrentPageId(null);
       return navigate('/expired', {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    [navigate, setCurrentPageId, setWorkspaceId]
+    [navigate]
   );
 
   return {
