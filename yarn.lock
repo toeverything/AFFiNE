@@ -588,6 +588,7 @@ __metadata:
     "@blocksuite/icons": ^2.1.31
     "@blocksuite/lit": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/store": 0.0.0-20230809030546-32e6e21d-nightly
+    "@toeverything/hooks": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/react": ^18.2.20
     "@types/react-dom": ^18.2.7
