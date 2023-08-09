@@ -1,9 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  AiIcon,
   AppearanceIcon,
   InformationIcon,
   KeyboardIcon,
+  PluginIcon,
 } from '@blocksuite/icons';
 import type { ReactElement, SVGProps } from 'react';
 
@@ -46,7 +46,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     {
       key: 'plugins',
       title: 'Plugins',
-      icon: AiIcon,
+      icon: PluginIcon,
       testId: 'plugins-panel-trigger',
     },
     {
