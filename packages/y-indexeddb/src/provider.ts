@@ -34,9 +34,11 @@ const createDatasource = ({
     type: 'idle',
   };
   const callbackSet = new Set<() => void>();
-  const changeStatus = (newStatus: Status) => {
-    status = newStatus;
-    callbackSet.forEach(cb => cb());
+  const changeStatus = async (newStatus: Status) => {
+    await navigator.locks.request(`datasource-${dbName}-update-status`, () => {
+      status = newStatus;
+      callbackSet.forEach(cb => cb());
+    });
   };
 
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
@@ -45,7 +47,7 @@ const createDatasource = ({
   const adapter = {
     queryDocState: async (guid, options) => {
       try {
-        changeStatus({
+        await changeStatus({
           type: 'syncing',
         });
         const db = await dbPromise;
@@ -65,14 +67,14 @@ const createDatasource = ({
           ? diffUpdate(update, options?.stateVector)
           : update;
 
-        changeStatus({
+        await changeStatus({
           type: 'synced',
         });
 
         return diff;
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
-          changeStatus({
+          await changeStatus({
             type: 'error',
             error: err,
           });
@@ -83,7 +85,7 @@ const createDatasource = ({
     },
     sendDocUpdate: async (guid, update) => {
       try {
-        changeStatus({
+        await changeStatus({
           type: 'syncing',
         });
         const db = await dbPromise;
@@ -107,12 +109,12 @@ const createDatasource = ({
             updates: rows,
           })
         );
-        changeStatus({
+        await changeStatus({
           type: 'synced',
         });
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
-          changeStatus({
+          await changeStatus({
             type: 'error',
             error: err,
           });
