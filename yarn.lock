@@ -656,7 +656,7 @@ __metadata:
     "@storybook/react-vite": ^7.1.1
     "@storybook/test-runner": ^0.11.0
     "@storybook/testing-library": ^0.2.0
-    "@vitejs/plugin-react": ^4.0.3
+    "@vitejs/plugin-react": ^4.0.4
     concurrently: ^8.2.0
     jest-mock: ^29.6.2
     react: 18.2.0
@@ -12673,6 +12673,20 @@ __metadata:
   peerDependencies:
     vite: ^4.2.0
   checksum: dd9136aec8f30b0251b88f390c60b8ee5472454884c4f82720725c213f8988bf8e202cc2430e575a268d413c1dc7257a51b342ac431a43c02d923de932c5707c
+  languageName: node
+  linkType: hard
+
+"@vitejs/plugin-react@npm:^4.0.4":
+  version: 4.0.4
+  resolution: "@vitejs/plugin-react@npm:4.0.4"
+  dependencies:
+    "@babel/core": ^7.22.9
+    "@babel/plugin-transform-react-jsx-self": ^7.22.5
+    "@babel/plugin-transform-react-jsx-source": ^7.22.5
+    react-refresh: ^0.14.0
+  peerDependencies:
+    vite: ^4.2.0
+  checksum: ec25400dc7c5fce914122d1f57de0fbaff9216addb8cd6187308ad2c7a3d3b73ea3a6f2dd0a8c7ec5e90e56b37046fe90d3e0ec285a9446e73695cb174377f84
   languageName: node
   linkType: hard
 
