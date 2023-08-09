@@ -101,7 +101,7 @@ export const createConfiguration: (
         buildFlags.mode === 'production'
           ? 'js/chunk.[name]-[contenthash:8].js'
           : 'js/chunk.[name].js',
-      assetModuleFilename: 'assets/[contenthash:8][ext][query]',
+      assetModuleFilename: 'assets/[name]-[contenthash:8][ext][query]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
@@ -292,7 +292,7 @@ export const createConfiguration: (
                 {
                   loader: 'css-loader',
                   options: {
-                    url: false,
+                    url: true,
                     sourceMap: false,
                     modules: false,
                     import: true,
