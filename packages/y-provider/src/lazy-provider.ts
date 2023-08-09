@@ -59,6 +59,9 @@ export const createLazyProvider = (
       ? encodeStateVectorFromUpdate(remoteUpdate)
       : undefined;
 
+    if (!connected) {
+      return;
+    }
     // perf: optimize me
     // it is possible the doc is only in memory but not yet in the datasource
     // we need to send the whole update to the datasource
