@@ -3,21 +3,14 @@ import { EditCollectionModel } from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteIcon,
-  FilterIcon,
-  PinedIcon,
-  PinIcon,
-  UnpinIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons';
+import { ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
+import { useActions } from './use-action';
 
 interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
@@ -26,74 +19,17 @@ interface CollectionBarProps {
   workspaceId: string;
 }
 
-interface CollectionBarAction {
-  icon: ReactNode;
-  click: () => void;
-  className?: string;
-  name: string;
-  tooltip: string;
-}
-
 export const CollectionBar = (props: CollectionBarProps) => {
   const { getPageInfo, propertiesMeta, columnsCount, workspaceId } = props;
   const t = useAFFiNEI18N();
   const setting = useCollectionManager(workspaceId);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
-  const actions = useMemo<CollectionBarAction[]>(
-    () => [
-      {
-        icon: (
-          <>
-            {collection.pinned ? (
-              <PinedIcon className={styles.pinedIcon}></PinedIcon>
-            ) : (
-              <PinIcon className={styles.pinedIcon}></PinIcon>
-            )}
-            {collection.pinned ? (
-              <UnpinIcon className={styles.pinIcon}></UnpinIcon>
-            ) : (
-              <PinIcon className={styles.pinIcon}></PinIcon>
-            )}
-          </>
-        ),
-        name: 'pin',
-        tooltip: collection.pinned
-          ? t['com.affine.collection-bar.action.tooltip.unpin']()
-          : t['com.affine.collection-bar.action.tooltip.pin'](),
-        className: styles.pin,
-        click: () => {
-          setting
-            .updateCollection({
-              ...collection,
-              pinned: !collection.pinned,
-            })
-            .catch(err => {
-              console.error(err);
-            });
-        },
-      },
-      {
-        icon: <FilterIcon />,
-        name: 'edit',
-        tooltip: t['com.affine.collection-bar.action.tooltip.edit'](),
-        click: () => {
-          setOpen(true);
-        },
-      },
-      {
-        icon: <DeleteIcon style={{ color: 'var(--affine-error-color)' }} />,
-        name: 'delete',
-        tooltip: t['com.affine.collection-bar.action.tooltip.delete'](),
-        click: () => {
-          setting.deleteCollection(collection.id).catch(err => {
-            console.error(err);
-          });
-        },
-      },
-    ],
-    [collection, t, setting]
-  );
+  const actions = useActions({
+    collection,
+    setting,
+    openEdit: () => setOpen(true),
+  });
   const onClose = useCallback(() => setOpen(false), []);
 
   return !setting.isDefault ? (

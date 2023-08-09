@@ -7,5 +7,6 @@ export function computeCacheKey(buildFlags: BuildFlags) {
     buildFlags.mode,
     buildFlags.distribution,
     buildFlags.channel,
+    ...(buildFlags.localBlockSuite ? [buildFlags.localBlockSuite] : []),
   ].join('-');
 }

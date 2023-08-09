@@ -5,7 +5,7 @@ import { DoneIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { type FC, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { Upload } from '../../pure/file-upload';
@@ -30,9 +30,11 @@ const CameraIcon = () => {
   );
 };
 
-export const ProfilePanel: FC<{
+interface ProfilePanelProps {
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}
+
+export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(

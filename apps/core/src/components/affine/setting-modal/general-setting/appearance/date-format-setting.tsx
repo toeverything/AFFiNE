@@ -1,6 +1,6 @@
 import { Menu, MenuItem, MenuTrigger } from '@affine/component';
 import dayjs from 'dayjs';
-import { type FC, useCallback } from 'react';
+import { useCallback } from 'react';
 
 import {
   dateFormatOptions,
@@ -8,10 +8,15 @@ import {
   useAppSetting,
 } from '../../../../../atoms/settings';
 
-const DateFormatMenuContent: FC<{
+interface DateFormatMenuContentProps {
   currentOption: DateFormats;
   onSelect: (option: DateFormats) => void;
-}> = ({ onSelect, currentOption }) => {
+}
+
+const DateFormatMenuContent = ({
+  onSelect,
+  currentOption,
+}: DateFormatMenuContentProps) => {
   return (
     <>
       {dateFormatOptions.map(option => {
@@ -30,6 +35,7 @@ const DateFormatMenuContent: FC<{
     </>
   );
 };
+
 export const DateFormatSetting = () => {
   const [appearanceSettings, setAppSettings] = useAppSetting();
   const handleSelect = useCallback(
@@ -38,6 +44,7 @@ export const DateFormatSetting = () => {
     },
     [setAppSettings]
   );
+
   return (
     <Menu
       content={

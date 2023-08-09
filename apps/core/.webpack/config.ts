@@ -77,6 +77,8 @@ export const createConfiguration: (
     ? join(process.env.PUBLIC_PATH, gitShortHash())
     : '/';
 
+  const blocksuiteBaseDir = buildFlags.localBlockSuite;
+
   const config = {
     name: 'affine',
     // to set a correct base path for the source map
@@ -121,6 +123,60 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
+      fallback:
+        blocksuiteBaseDir === undefined
+          ? undefined
+          : {
+              events: false,
+            },
+      alias:
+        blocksuiteBaseDir === undefined
+          ? undefined
+          : {
+              yjs: require.resolve('yjs'),
+              '@blocksuite/block-std': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'block-std'
+              ),
+              '@blocksuite/blocks': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'blocks'
+              ),
+              '@blocksuite/editor': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'editor'
+              ),
+              '@blocksuite/global': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'global'
+              ),
+              '@blocksuite/lit': resolve(blocksuiteBaseDir, 'packages', 'lit'),
+              '@blocksuite/phasor': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'phasor'
+              ),
+              '@blocksuite/store/providers/broadcast-channel': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'store',
+                'src/providers/broadcast-channel'
+              ),
+              '@blocksuite/store': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'store'
+              ),
+              '@blocksuite/virgo': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'virgo'
+              ),
+            },
     },
 
     module: {
@@ -159,8 +215,7 @@ export const createConfiguration: (
           oneOf: [
             {
               test: /\.tsx?$/,
-              // Compile all ts files in the workspace
-              include: resolve(rootPath, '..', '..'),
+              exclude: /node_modules/,
               loader: require.resolve('swc-loader'),
               options: {
                 // https://swc.rs/docs/configuring-swc/
@@ -171,9 +226,10 @@ export const createConfiguration: (
                     dynamicImport: true,
                     topLevelAwait: false,
                     tsx: true,
+                    decorators: true,
                   },
                   target: 'es2022',
-                  externalHelpers: true,
+                  externalHelpers: false,
                   transform: {
                     react: {
                       runtime: 'automatic',
@@ -183,6 +239,7 @@ export const createConfiguration: (
                         emitFullSignatures: true,
                       },
                     },
+                    useDefineForClassFields: false,
                   },
                   experimental: {
                     keepImportAssertions: true,

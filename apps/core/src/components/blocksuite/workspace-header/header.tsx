@@ -7,12 +7,16 @@ import { SidebarSwitch } from '@affine/component/app-sidebar/sidebar-header';
 import { isDesktop } from '@affine/env/constant';
 import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { headerItemsAtom } from '@toeverything/infra/atom';
+import {
+  addCleanup,
+  pluginHeaderItemAtom,
+} from '@toeverything/infra/__internal__/plugin';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import type { FC, HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
+import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
 import {
   forwardRef,
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -28,21 +32,21 @@ import { EditorOptionMenu } from './header-right-items/editor-option-menu';
 import * as styles from './styles.css';
 import { OSWarningMessage, shouldShowWarning } from './utils';
 
-export type BaseHeaderProps<
+export interface BaseHeaderProps<
   Workspace extends AffineOfficialWorkspace = AffineOfficialWorkspace,
-> = {
+> {
   workspace: Workspace;
   currentPage: Page | null;
   isPublic: boolean;
   leftSlot?: ReactNode;
-};
+}
 
 export enum HeaderRightItemName {
   EditorOptionMenu = 'editorOptionMenu',
 }
 
-type HeaderItem = {
-  Component: FC<BaseHeaderProps>;
+interface HeaderItem {
+  Component: (props: BaseHeaderProps) => ReactElement;
   // todo: public workspace should be one of the flavour
   availableWhen: (
     workspace: AffineOfficialWorkspace,
@@ -51,20 +55,17 @@ type HeaderItem = {
       isPublic: boolean;
     }
   ) => boolean;
-};
+}
 
 const HeaderRightItems: Record<HeaderRightItemName, HeaderItem> = {
   [HeaderRightItemName.EditorOptionMenu]: {
     Component: EditorOptionMenu,
-    availableWhen: (_, currentPage, { isPublic }) => {
-      return (
-        !isPublic && currentPage?.meta.trash !== true && currentPage !== null
-      );
+    availableWhen: () => {
+      return false;
     },
   },
 };
 
-export type HeaderProps = BaseHeaderProps;
 const WindowsAppControls = () => {
   const handleMinimizeApp = useCallback(() => {
     window.apis?.ui.handleMinimizeApp().catch(err => {
@@ -81,6 +82,7 @@ const WindowsAppControls = () => {
       console.error(err);
     });
   }, []);
+
   return (
     <div
       data-platform-target="win32"
@@ -112,42 +114,49 @@ const WindowsAppControls = () => {
 };
 
 const PluginHeader = () => {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const headerItems = useAtomValue(headerItemsAtom);
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    let disposes: (() => void)[] = [];
-    const renderTimeout = setTimeout(() => {
-      disposes = Object.entries(headerItems).map(([id, headerItem]) => {
-        const div = document.createElement('div');
-        div.setAttribute('plugin-id', id);
-        const cleanup = headerItem(div);
-        root.appendChild(div);
-        return () => {
-          cleanup();
-          root.removeChild(div);
-        };
-      });
-    });
+  const headerItem = useAtomValue(pluginHeaderItemAtom);
+  const pluginsRef = useRef<string[]>([]);
 
-    return () => {
-      clearTimeout(renderTimeout);
-      setTimeout(() => {
-        disposes.forEach(dispose => dispose());
-      });
-    };
-  }, [headerItems]);
-
-  return <div className={styles.pluginHeaderItems} ref={rootRef} />;
+  return (
+    <div
+      className={styles.pluginHeaderItems}
+      ref={useCallback(
+        (root: HTMLDivElement | null) => {
+          if (root) {
+            Object.entries(headerItem).forEach(([pluginName, create]) => {
+              if (pluginsRef.current.includes(pluginName)) {
+                return;
+              }
+              pluginsRef.current.push(pluginName);
+              const div = document.createElement('div');
+              div.setAttribute('plugin-id', pluginName);
+              startTransition(() => {
+                const cleanup = create(div);
+                root.appendChild(div);
+                addCleanup(pluginName, () => {
+                  pluginsRef.current = pluginsRef.current.filter(
+                    name => name !== pluginName
+                  );
+                  root.removeChild(div);
+                  cleanup();
+                });
+              });
+            });
+          }
+        },
+        [headerItem]
+      )}
+    />
+  );
 };
 
-export const Header = forwardRef<
-  HTMLDivElement,
-  PropsWithChildren<HeaderProps> & HTMLAttributes<HTMLDivElement>
->((props, ref) => {
+export interface HeaderProps
+  extends BaseHeaderProps,
+    HTMLAttributes<HTMLDivElement> {
+  children?: ReactNode;
+}
+
+export const Header = forwardRef<HTMLDivElement, HeaderProps>((props, ref) => {
   const [showWarning, setShowWarning] = useState(false);
   const [showDownloadTip, setShowDownloadTip] = useAtom(
     guideDownloadClientTipAtom
@@ -160,6 +169,7 @@ export const Header = forwardRef<
 
   const mode = useAtomValue(currentModeAtom);
   const isWindowsDesktop = globalThis.platform === 'win32' && isDesktop;
+
   return (
     <div
       className={styles.headerContainer}
@@ -192,7 +202,12 @@ export const Header = forwardRef<
         data-is-edgeless={mode === 'edgeless'}
         data-is-page-list={props.currentPage === null}
       >
-        <div className={styles.headerLeftSide}>
+        <div
+          className={clsx(styles.headerLeftSide, {
+            [styles.headerLeftSideColumn]:
+              isWindowsDesktop || props.currentPage === null,
+          })}
+        >
           <div>{!open && <SidebarSwitch />}</div>
           <div
             className={clsx(styles.headerLeftSideItem, {
@@ -207,6 +222,8 @@ export const Header = forwardRef<
         <div
           className={clsx(styles.headerRightSide, {
             [styles.headerRightSideWindow]: isWindowsDesktop,
+            [styles.headerRightSideColumn]:
+              isWindowsDesktop || props.currentPage === null,
           })}
         >
           <PluginHeader />
