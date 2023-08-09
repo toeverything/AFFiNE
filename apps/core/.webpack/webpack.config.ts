@@ -1,4 +1,4 @@
-import { createConfiguration, rootPath } from './config.js';
+import { createConfiguration, rootPath, publicPath } from './config.js';
 import { merge } from 'webpack-merge';
 import { join, resolve } from 'node:path';
 import type { BuildFlags } from '@affine/cli/config';
@@ -52,6 +52,7 @@ export default async function (cli_env: any, _: any) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
+        publicPath,
         chunks: ['_plugin/index.test', 'plugin', 'polyfill/ses'],
         filename: '_plugin/index.html',
         templateParameters: {
