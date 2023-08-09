@@ -663,7 +663,7 @@ __metadata:
     react-dom: 18.2.0
     serve: ^14.2.0
     storybook: ^7.1.1
-    storybook-dark-mode: ^3.0.0
+    storybook-dark-mode: ^3.0.1
     wait-on: ^7.0.1
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -29690,9 +29690,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook-dark-mode@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "storybook-dark-mode@npm:3.0.0"
+"storybook-dark-mode@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "storybook-dark-mode@npm:3.0.1"
   dependencies:
     "@storybook/addons": ^7.0.0
     "@storybook/api": ^7.0.0
@@ -29710,7 +29710,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: a66b7d52e303cc71ab603e7fb02bab39c56fdffc6428c7977136b53e8da9b47279bee06957f642ac2812a548076ab6a76657cbb3e31a5cee1c782c56810a2e93
+  checksum: d04213c92e8a4af0035e80eb02b75b8da725ba7b1ecbfe050eb04cb4018d91394f08c8fe7c1b106c971b2047ef5a1ba776e78050ae1f6d7563cdfdba5e701a29
   languageName: node
   linkType: hard
 

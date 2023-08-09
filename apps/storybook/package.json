@@ -26,7 +26,7 @@
     "jest-mock": "^29.6.2",
     "serve": "^14.2.0",
     "storybook": "^7.1.1",
-    "storybook-dark-mode": "^3.0.0",
+    "storybook-dark-mode": "^3.0.1",
     "wait-on": "^7.0.1"
   },
   "devDependencies": {
