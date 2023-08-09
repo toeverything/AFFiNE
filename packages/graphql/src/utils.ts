@@ -75,8 +75,6 @@ export class TraceReporter {
 
   private static instance: TraceReporter;
 
-  private constructor() {}
-
   public static getInstance(): TraceReporter {
     if (!TraceReporter.instance) {
       const instance = (TraceReporter.instance = new TraceReporter());
@@ -116,21 +114,23 @@ export class TraceReporter {
       requestId,
       startTime
     );
-    TraceReporter.reportToTraceEndpoint(
-      JSON.stringify({ spans: [span] })
-    ).catch(console.warn);
+    TraceReporter.reportToTraceEndpoint(JSON.stringify({ spans: [span] }));
   }
 
-  public static reportToTraceEndpoint(payload: string): Promise<Response> {
-    return fetch(TraceReporter.traceReportEndpoint, {
-      method: 'POST',
-      mode: 'cors',
-      cache: 'no-cache',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: payload,
-    });
+  public static reportToTraceEndpoint(payload: string): void {
+    if (typeof navigator !== 'undefined') {
+      navigator.sendBeacon(TraceReporter.traceReportEndpoint, payload);
+    } else {
+      fetch(TraceReporter.traceReportEndpoint, {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: payload,
+      }).catch(console.warn);
+    }
   }
 
   public static createTraceSpan(
@@ -180,17 +180,13 @@ export class TraceReporter {
 
   private reportHandler = () => {
     if (this.spansCache.length <= 0) {
-      if (typeof window !== 'undefined') {
-        window.clearInterval(this.reportIntervalId);
-      } else {
-        clearInterval(this.reportIntervalId);
-      }
+      clearInterval(this.reportIntervalId);
       this.reportIntervalId = undefined;
       return;
     }
     TraceReporter.reportToTraceEndpoint(
       JSON.stringify({ spans: [...this.spansCache] })
-    ).catch(console.warn);
+    );
     this.spansCache = [];
   };
 }
