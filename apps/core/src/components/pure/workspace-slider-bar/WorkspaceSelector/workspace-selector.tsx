@@ -1,11 +1,8 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import type { StatusAdapter } from '@affine/y-provider';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useDataSourceStatus } from '@toeverything/hooks/use-data-source-status';
-import type { IndexedDBProvider } from '@toeverything/y-indexeddb';
 import type React from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import type { AllWorkspace } from '../../../../shared';
 import { workspaceAvatarStyle } from './index.css';
@@ -20,36 +17,6 @@ export interface WorkspaceSelectorProps {
   currentWorkspace: AllWorkspace;
   onClick: () => void;
 }
-
-type WorkspaceStatusBarProps = {
-  currentWorkspace: AllWorkspace;
-};
-
-type WorkspaceStatusBarImplProps = {
-  provider: StatusAdapter;
-};
-
-const WorkspaceStatusBarImpl = ({ provider }: WorkspaceStatusBarImplProps) => {
-  const status = useDataSourceStatus(provider);
-  return <div>{status.type}</div>;
-};
-
-const WorkspaceStatusBar = ({ currentWorkspace }: WorkspaceStatusBarProps) => {
-  const mainProvider = useMemo(
-    () =>
-      currentWorkspace.blockSuiteWorkspace.providers.find(
-        provider => provider.flavour === 'local-indexeddb-background'
-      ) as IndexedDBProvider | undefined,
-    [currentWorkspace.blockSuiteWorkspace.providers]
-  );
-  useEffect(() => {
-    console.log(mainProvider);
-  }, [mainProvider]);
-  if (!mainProvider) {
-    return null;
-  }
-  return <WorkspaceStatusBarImpl provider={mainProvider} />;
-};
 
 /**
  * @todo-Doma Co-locate WorkspaceListModal with {@link WorkspaceSelector},
@@ -94,7 +61,6 @@ export const WorkspaceSelector = ({
         <StyledWorkspaceName data-testid="workspace-name">
           {name}
         </StyledWorkspaceName>
-        <WorkspaceStatusBar currentWorkspace={currentWorkspace} />
         <StyledWorkspaceStatus>
           {currentWorkspace.flavour === 'local' ? (
             <LocalWorkspaceIcon />
