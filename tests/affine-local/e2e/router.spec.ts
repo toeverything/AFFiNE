@@ -1,5 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
-import { coreUrl,openHomePage } from '@affine-test/kit/utils/load-page';
+import { coreUrl, openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
