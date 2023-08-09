@@ -1,6 +1,7 @@
 import {
   createLazyProvider,
   type DatasourceDocAdapter,
+  type Status,
   writeOperation,
 } from '@affine/y-provider';
 import { openDB } from 'idb';
@@ -29,6 +30,15 @@ const createDatasource = ({
   dbName: string;
   mergeCount?: number;
 }) => {
+  let status: Status = {
+    type: 'idle',
+  };
+  const callbackSet = new Set<() => void>();
+  const changeStatus = (newStatus: Status) => {
+    status = newStatus;
+    callbackSet.forEach(cb => cb());
+  };
+
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
   });
@@ -77,18 +87,36 @@ const createDatasource = ({
           const merged = mergeUpdates(rows.map(({ update }) => update));
           rows = [{ timestamp: Date.now(), update: merged }];
         }
-
+        changeStatus({
+          type: 'syncing',
+        });
         await writeOperation(
           store.put({
             id: guid,
             updates: rows,
           })
         );
+        changeStatus({
+          type: 'synced',
+        });
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
+          changeStatus({
+            type: 'error',
+            error: err,
+          });
           throw err;
         }
       }
+    },
+    getStatus(): Status {
+      return status;
+    },
+    subscribeStatusChange(onStatusChange: () => void): () => void {
+      callbackSet.add(onStatusChange);
+      return () => {
+        callbackSet.delete(onStatusChange);
+      };
     },
   } satisfies DatasourceDocAdapter;
 

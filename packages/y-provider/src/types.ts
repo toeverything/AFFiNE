@@ -1,3 +1,18 @@
+export type Status =
+  | {
+      type: 'idle';
+    }
+  | {
+      type: 'syncing';
+    }
+  | {
+      type: 'synced';
+    }
+  | {
+      type: 'error';
+      error: Error;
+    };
+
 export interface DatasourceDocAdapter {
   // request diff update from other clients
   queryDocState: (
@@ -16,4 +31,8 @@ export interface DatasourceDocAdapter {
   onDocUpdate?(
     callback: (guid: string, update: Uint8Array) => void
   ): () => void;
+
+  getStatus?(): Status;
+
+  subscribeStatusChange?(onStatusChange: () => void): () => void;
 }

@@ -11298,20 +11298,39 @@ __metadata:
   resolution: "@toeverything/hooks@workspace:packages/hooks"
   dependencies:
     "@affine/env": "workspace:*"
+    "@affine/y-provider": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/blocks": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/editor": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/global": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/lit": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/store": 0.0.0-20230808131052-ef3445a9-nightly
-    "@toeverything/y-indexeddb": "workspace:*"
+    foxact: ^0.2.17
   peerDependencies:
+    "@affine/y-provider": "workspace:*"
     "@blocksuite/block-std": "*"
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
     "@blocksuite/global": "*"
     "@blocksuite/lit": "*"
     "@blocksuite/store": "*"
+  peerDependenciesMeta:
+    "@affine/env":
+      optional: true
+    "@affine/y-provider":
+      optional: true
+    "@blocksuite/block-std":
+      optional: true
+    "@blocksuite/blocks":
+      optional: true
+    "@blocksuite/editor":
+      optional: true
+    "@blocksuite/global":
+      optional: true
+    "@blocksuite/lit":
+      optional: true
+    "@blocksuite/store":
+      optional: true
   languageName: unknown
   linkType: soft
 
