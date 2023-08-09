@@ -83,6 +83,9 @@ const createDatasource = ({
     },
     sendDocUpdate: async (guid, update) => {
       try {
+        changeStatus({
+          type: 'syncing',
+        });
         const db = await dbPromise;
         const store = db
           .transaction('workspace', 'readwrite')
@@ -98,9 +101,6 @@ const createDatasource = ({
           const merged = mergeUpdates(rows.map(({ update }) => update));
           rows = [{ timestamp: Date.now(), update: merged }];
         }
-        changeStatus({
-          type: 'syncing',
-        });
         await writeOperation(
           store.put({
             id: guid,
