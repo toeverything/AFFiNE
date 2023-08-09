@@ -1,11 +1,12 @@
+import { uuidv4 } from '@blocksuite/store';
 import { atom } from 'jotai';
 
 export type Notification = {
-  key: string;
+  key?: string;
   title: string;
-  message: string;
+  message?: string;
   type: 'success' | 'error' | 'warning' | 'info';
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'default';
   timeout?: number;
   progressingBar?: boolean;
   multimedia?: React.ReactNode | JSX.Element | HTMLElement;
@@ -32,7 +33,7 @@ export const notificationsAtom = atom<Notification[]>(get =>
   get(notificationsBaseAtom)
 );
 
-export const removeNotificationAtom = atom(null, (get, set, key: string) => {
+export const removeNotificationAtom = atom(null, (_, set, key: string) => {
   set(notificationsBaseAtom, notifications =>
     notifications.filter(notification => notification.key !== key)
   );
@@ -40,7 +41,8 @@ export const removeNotificationAtom = atom(null, (get, set, key: string) => {
 
 export const pushNotificationAtom = atom<null, [Notification], void>(
   null,
-  (get, set, newNotification) => {
+  (_, set, newNotification) => {
+    newNotification.key = newNotification.key || uuidv4();
     const key = newNotification.key;
     const removeNotification = () =>
       set(notificationsBaseAtom, notifications =>

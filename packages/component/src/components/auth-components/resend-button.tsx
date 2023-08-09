@@ -1,5 +1,5 @@
-import { Button } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { type FC, useCallback, useEffect, useState } from 'react';
 
 import { resendButtonWrapper } from './share.css';
@@ -36,19 +36,22 @@ const CountDown: FC<{
     return () => clearInterval(intervalId);
   }, [onEnd, timeLeft]);
 
-  return <>{formatTime(timeLeft)}</>;
+  return (
+    <div style={{ width: 45, textAlign: 'center' }}>{formatTime(timeLeft)}</div>
+  );
 };
 
 export const ResendButton: FC<{
   onClick: () => void;
-}> = () => {
+  countDownSeconds?: number;
+}> = ({ onClick, countDownSeconds = 60 }) => {
   const t = useAFFiNEI18N();
   const [canResend, setCanResend] = useState(false);
 
   const onButtonClick = useCallback(() => {
+    onClick();
     setCanResend(false);
-    console.log('222', 222);
-  }, [setCanResend]);
+  }, [onClick]);
 
   const onCountDownEnd = useCallback(() => {
     setCanResend(true);
@@ -65,7 +68,7 @@ export const ResendButton: FC<{
           <span className="resend-code-hint">
             {t['com.affine.auth.sign.auth.code.on.resend.hint']()}
           </span>
-          <CountDown seconds={10} onEnd={onCountDownEnd} />
+          <CountDown seconds={countDownSeconds} onEnd={onCountDownEnd} />
         </>
       )}
     </div>

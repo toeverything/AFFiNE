@@ -19,11 +19,11 @@ const editorFlags: BlockSuiteFeatureFlags = {
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<string, RuntimeConfig> = {
     stable: {
-      enablePlugin: false,
+      enablePlugin: true,
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
-      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
+      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0728',
       imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
       enablePreloading: true,
       enableNewSettingModal: true,
@@ -43,7 +43,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableTestProperties: true,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
-      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
+      changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
       imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
       enablePreloading: true,
       enableNewSettingModal: true,

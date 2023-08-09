@@ -1,6 +1,5 @@
-import { IconButton } from '@affine/component';
 import { SendIcon } from '@blocksuite/icons';
-import { contentLayoutAtom } from '@toeverything/plugin-infra/atom';
+import { IconButton } from '@toeverything/components/button';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
@@ -35,9 +34,12 @@ const Actions = () => {
         />
         <IconButton
           className={sendButtonStyle}
-          onClick={useCallback(async () => {
-            await call(input);
-            await generateFollowingUp();
+          onClick={useCallback(() => {
+            call(input)
+              .then(() => generateFollowingUp())
+              .catch(e => {
+                console.error(e);
+              });
           }, [call, generateFollowingUp, input])}
         >
           <SendIcon />
@@ -62,11 +64,7 @@ const DetailContentImpl = () => {
 };
 
 export const DetailContent = (): ReactElement => {
-  const layout = useAtomValue(contentLayoutAtom);
   const key = useAtomValue(openAIApiKeyAtom);
-  if (layout === 'editor' || layout.second !== 'copilot') {
-    return <></>;
-  }
   if (!key) {
     return <span>Please set OpenAI API Key in the debug panel.</span>;
   }

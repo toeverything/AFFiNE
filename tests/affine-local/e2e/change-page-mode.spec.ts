@@ -70,7 +70,7 @@ test('Able to insert the title of an untitled page', async ({ page }) => {
   await titleBarTextContent.click({ delay: 100 });
   const titleContent = await page.getByTestId('title-content');
   await titleContent.fill('test');
-  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
 });
 
@@ -81,11 +81,11 @@ test('Able to edit the title of an existing page', async ({ page }) => {
   await titleBarTextContent.click({ delay: 100 });
   const titleContent = await page.getByTestId('title-content');
   await titleContent.fill('test');
-  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
   await titleBarTextContent.click({ delay: 100 });
   await titleContent.fill('Sample text 2');
-  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('Sample text 2');
 });
 
@@ -98,10 +98,28 @@ test('Clearing out the title bar will remove the page title', async ({
   await titleBarTextContent.click({ delay: 100 });
   const titleContent = await page.getByTestId('title-content');
   await titleContent.fill('test');
-  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
   await titleBarTextContent.click({ delay: 100 });
   await titleContent.fill('');
-  await page.getByTestId('save-edit-button').click({ delay: 100 });
+  await titleContent.blur();
+  expect(await titleBarTextContent.textContent()).toBe('Untitled');
+});
+
+test('Rename by editor header items, save with shortcut', async ({ page }) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await clickPageMoreActions(page);
+  const menusRenameItem = page.getByTestId('editor-option-menu-rename');
+  await menusRenameItem.click({ delay: 100 });
+  const titleBarTextContent = page.getByTestId('title-edit-button');
+  const titleContent = page.getByTestId('title-content');
+  await titleContent.fill('test');
+  await page.keyboard.press('Enter');
+  expect(await titleBarTextContent.textContent()).toBe('test');
+  await clickPageMoreActions(page);
+  await menusRenameItem.click({ delay: 100 });
+  await titleContent.fill('');
+  await page.keyboard.press('Escape');
   expect(await titleBarTextContent.textContent()).toBe('Untitled');
 });

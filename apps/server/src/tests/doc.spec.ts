@@ -3,17 +3,24 @@ import { afterEach, beforeEach, mock, test } from 'node:test';
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { register } from 'prom-client';
 import * as Sinon from 'sinon';
 import * as Y from 'yjs';
 
 import { Config, ConfigModule } from '../config';
+import { MetricsModule } from '../metrics';
 import { DocManager, DocModule } from '../modules/doc';
 import { PrismaModule, PrismaService } from '../prisma';
 import { flushDB } from './utils';
 
 const createModule = () => {
   return Test.createTestingModule({
-    imports: [PrismaModule, ConfigModule.forRoot(), DocModule.forRoot()],
+    imports: [
+      PrismaModule,
+      MetricsModule,
+      ConfigModule.forRoot(),
+      DocModule.forRoot(),
+    ],
   }).compile();
 };
 
@@ -30,6 +37,7 @@ test('Doc Module', async t => {
     await flushDB();
     m = await createModule();
     app = m.createNestApplication();
+    app.enableShutdownHooks();
     await app.init();
   });
 
@@ -39,6 +47,7 @@ test('Doc Module', async t => {
   });
 
   await t.test('should setup update poll interval', async () => {
+    register.clear();
     const m = await createModule();
     const manager = m.get(DocManager);
     const fake = mock.method(manager, 'setup');
@@ -141,9 +150,6 @@ test('Doc Module', async t => {
 
     await manager.apply();
 
-    deepEqual(
-      await manager.getLatest(ws.id, '1'),
-      Y.mergeUpdates([update, appendUpdate])
-    );
+    deepEqual(await manager.getLatest(ws.id, '1'), Y.encodeStateAsUpdate(doc));
   });
 });

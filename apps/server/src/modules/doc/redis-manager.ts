@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 
 import { Config } from '../../config';
+import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { DocManager } from './manager';
 
@@ -30,9 +31,10 @@ export class RedisDocManager extends DocManager {
     protected override readonly db: PrismaService,
     @Inject('DOC_MANAGER_AUTOMATION')
     protected override readonly automation: boolean,
-    protected override readonly config: Config
+    protected override readonly config: Config,
+    protected override readonly metrics: Metrics
   ) {
-    super(db, automation, config);
+    super(db, automation, config, metrics);
     this.redis = new Redis(config.redis);
     this.redis.defineCommand('pushDocUpdate', {
       numberOfKeys: 2,
@@ -124,8 +126,8 @@ export class RedisDocManager extends DocManager {
 
       // merge
       const blob = snapshot
-        ? DocManager.mergeUpdates([snapshot, ...updates])
-        : DocManager.mergeUpdates(updates);
+        ? this.mergeUpdates(id, snapshot, ...updates)
+        : this.mergeUpdates(id, ...updates);
 
       // update snapshot
 

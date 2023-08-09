@@ -16,7 +16,7 @@ export async function newPage(page: Page) {
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {
-  return page.locator('.affine-default-page-block-title').nth(0);
+  return page.locator('.affine-doc-page-block-title').nth(0);
 }
 
 export async function type(page: Page, content: string, delay = 50) {
@@ -46,6 +46,6 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
 export async function clickPageMoreActions(page: Page) {
   return page
     .getByTestId('editor-header-items')
-    .getByTestId('editor-option-menu')
+    .getByTestId('header-dropDownButton')
     .click();
 }

@@ -7,7 +7,7 @@ type MetricsCreator<T extends string> = (
 ) => void;
 type TimerMetricsCreator<T extends string> = (
   labels: LabelValues<T>
-) => () => void;
+) => () => number;
 
 export const metricsCreatorGenerator = () => {
   const counterCreator = <T extends string>(
@@ -58,6 +58,7 @@ export const metricsCreatorGenerator = () => {
         const value = delta[0] + delta[1] / 1e9;
 
         summary.observe(labels, value);
+        return value;
       };
     };
   };

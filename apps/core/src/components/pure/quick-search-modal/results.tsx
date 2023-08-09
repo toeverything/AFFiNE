@@ -6,7 +6,7 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
 import { useAtomValue } from 'jotai';
-import type { Dispatch, FC, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import { recentPageSettingsAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -14,18 +14,18 @@ import type { AllWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { StyledListItem, StyledNotFound } from './style';
 
-export type ResultsProps = {
+export interface ResultsProps {
   workspace: AllWorkspace;
   query: string;
   onClose: () => void;
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
-};
-export const Results: FC<ResultsProps> = ({
+}
+export const Results = ({
   query,
   workspace,
   setShowCreatePage,
   onClose,
-}) => {
+}: ResultsProps) => {
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
@@ -52,7 +52,9 @@ export const Results: FC<ResultsProps> = ({
       return page.trash !== true;
     }
   });
+
   setShowCreatePage(resultsPageMeta.length === 0);
+
   if (!query) {
     return (
       <>

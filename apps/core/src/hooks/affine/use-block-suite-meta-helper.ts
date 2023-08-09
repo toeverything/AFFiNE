@@ -10,7 +10,8 @@ import { useReferenceLinkHelper } from './use-reference-link-helper';
 export function useBlockSuiteMetaHelper(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
-  const { setPageMeta, getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { setPageMeta, getPageMeta, setPageReadonly } =
+    usePageMetaHelper(blockSuiteWorkspace);
   const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
 
@@ -56,8 +57,9 @@ export function useBlockSuiteMetaHelper(
         trashDate: +new Date(),
         trashRelate: isRoot ? parentMeta?.id : undefined,
       });
+      setPageReadonly(pageId, true);
     },
-    [getPageMeta, metas, setPageMeta]
+    [getPageMeta, metas, setPageMeta, setPageReadonly]
   );
 
   const restoreFromTrash = useCallback(
@@ -73,11 +75,12 @@ export function useBlockSuiteMetaHelper(
         trashDate: undefined,
         trashRelate: undefined,
       });
+      setPageReadonly(pageId, false);
       subpageIds.forEach(id => {
         restoreFromTrash(id);
       });
     },
-    [addReferenceLink, getPageMeta, setPageMeta]
+    [addReferenceLink, getPageMeta, setPageMeta, setPageReadonly]
   );
 
   const permanentlyDeletePage = useCallback(

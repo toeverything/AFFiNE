@@ -1,6 +1,7 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
+import type { LayoutNode } from '@affine/sdk//entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
@@ -8,17 +9,15 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import {
-  contentLayoutAtom,
-  editorItemsAtom,
-  rootStore,
-  windowItemsAtom,
-} from '@toeverything/plugin-infra/atom';
-import type { CallbackMap } from '@toeverything/plugin-infra/entry';
-import type { LayoutNode } from '@toeverything/plugin-infra/type';
+  addCleanup,
+  pluginEditorAtom,
+  pluginWindowAtom,
+} from '@toeverything/infra/__internal__/plugin';
+import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
-import type { CSSProperties, FC, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
+import { memo, Suspense, useCallback, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
@@ -28,13 +27,13 @@ import { TrashButtonGroup } from './blocksuite/workspace-header/header-right-ite
 import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 
-export type PageDetailEditorProps = {
+export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
-};
+}
 
 const EditorWrapper = memo(function EditorWrapper({
   workspace,
@@ -77,7 +76,6 @@ const EditorWrapper = memo(function EditorWrapper({
             '--affine-font-family': value,
           } as CSSProperties
         }
-        key={`${workspace.id}-${pageId}`}
         mode={isPublic ? 'page' : currentMode}
         page={page}
         onInit={useCallback(
@@ -97,7 +95,7 @@ const EditorWrapper = memo(function EditorWrapper({
             if (onLoad) {
               dispose = onLoad(page, editor);
             }
-            const editorItems = rootStore.get(editorItemsAtom);
+            const editorItems = rootStore.get(pluginEditorAtom);
             let disposes: (() => void)[] = [];
             const renderTimeout = setTimeout(() => {
               disposes = Object.entries(editorItems).map(([id, editorItem]) => {
@@ -129,53 +127,51 @@ const EditorWrapper = memo(function EditorWrapper({
   );
 });
 
-const PluginContentAdapter = memo<{
-  windowItem: CallbackMap['window'];
-}>(function PluginContentAdapter({ windowItem }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) {
-      return;
-    }
-    let cleanup: () => void = () => {};
-    let childDiv: HTMLDivElement | null = null;
-    const renderTimeout = setTimeout(() => {
-      const div = document.createElement('div');
-      cleanup = windowItem(div);
-      root.appendChild(div);
-      childDiv = div;
-    });
+interface PluginContentAdapterProps {
+  windowItem: (div: HTMLDivElement) => () => void;
+  pluginName: string;
+}
 
-    return () => {
-      clearTimeout(renderTimeout);
-      setTimeout(() => {
-        cleanup();
-        if (childDiv) {
-          root.removeChild(childDiv);
-        }
-      });
-    };
-  }, [windowItem]);
-  return <div className={pluginContainer} ref={ref} />;
-});
+const PluginContentAdapter = memo<PluginContentAdapterProps>(
+  function PluginContentAdapter({ windowItem, pluginName }) {
+    return (
+      <div
+        className={pluginContainer}
+        ref={useCallback(
+          (ref: HTMLDivElement | null) => {
+            if (ref) {
+              const div = document.createElement('div');
+              const cleanup = windowItem(div);
+              ref.appendChild(div);
+              addCleanup(pluginName, () => {
+                cleanup();
+                ref.removeChild(div);
+              });
+            }
+          },
+          [pluginName, windowItem]
+        )}
+      />
+    );
+  }
+);
 
-type LayoutPanelProps = {
+interface LayoutPanelProps {
   node: LayoutNode;
   editorProps: PageDetailEditorProps;
-};
+}
 
 const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
 ): ReactElement {
   const node = props.node;
-  const windowItems = useAtomValue(windowItemsAtom);
+  const windowItems = useAtomValue(pluginWindowAtom);
   if (typeof node === 'string') {
     if (node === 'editor') {
       return <EditorWrapper {...props.editorProps} />;
     } else {
       const windowItem = windowItems[node];
-      return <PluginContentAdapter windowItem={windowItem} />;
+      return <PluginContentAdapter pluginName={node} windowItem={windowItem} />;
     }
   } else {
     return (
@@ -191,7 +187,12 @@ const LayoutPanel = memo(function LayoutPanel(
           </Suspense>
         </Panel>
         <PanelResizeHandle />
-        <Panel defaultSize={100 - node.splitPercentage}>
+        <Panel
+          defaultSize={100 - node.splitPercentage}
+          style={{
+            overflow: 'scroll',
+          }}
+        >
           <Suspense>
             <LayoutPanel node={node.second} editorProps={props.editorProps} />
           </Suspense>
@@ -201,7 +202,7 @@ const LayoutPanel = memo(function LayoutPanel(
   }
 });
 
-export const PageDetailEditor: FC<PageDetailEditorProps> = props => {
+export const PageDetailEditor = (props: PageDetailEditorProps) => {
   const { workspace, pageId } = props;
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {

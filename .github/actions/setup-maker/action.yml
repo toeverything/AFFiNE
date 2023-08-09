@@ -1,0 +1,16 @@
+name: Setup maker
+description: 'Setup maker dmg for electron'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Install @electron-forge/maker-dmg'
+      if: runner.os == 'macos'
+      shell: bash
+      working-directory: ./apps/electron
+      run: yarn add @electron-forge/maker-dmg --dev
+      env:
+        HUSKY: '0'
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        SENTRYCLI_SKIP_DOWNLOAD: '1'

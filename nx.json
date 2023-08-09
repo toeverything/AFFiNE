@@ -36,6 +36,8 @@
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
       ],
       "inputs": [
+        "{workspaceRoot}/infra/**/*",
+        "{workspaceRoot}/sdk/**/*",
         {
           "runtime": "node -v"
         },

@@ -7,8 +7,6 @@ import {
 import type { Collection } from '@affine/env/filter';
 import type { WorkspaceHeaderProps } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SettingsIcon } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
@@ -16,14 +14,13 @@ import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
 import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
 import { filterContainerStyle } from './filter-container.css';
-import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
+import { WorkspaceModeFilterTab } from './pure/workspace-title';
 
 export function WorkspaceHeader({
   currentWorkspaceId,
   currentEntry,
 }: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
   const setting = useCollectionManager(currentWorkspaceId);
-  const t = useAFFiNEI18N();
   const saveToCollection = useCallback(
     async (collection: Collection) => {
       await setting.saveCollection(collection);
@@ -88,17 +85,6 @@ export function WorkspaceHeader({
           />
           {filterContainer}
         </>
-      );
-    } else if (currentEntry.subPath === WorkspaceSubPath.SETTING) {
-      return (
-        <WorkspaceTitle
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPublic={false}
-          icon={<SettingsIcon />}
-        >
-          {t['Workspace Settings']()}
-        </WorkspaceTitle>
       );
     } else if (
       currentEntry.subPath === WorkspaceSubPath.SHARED ||

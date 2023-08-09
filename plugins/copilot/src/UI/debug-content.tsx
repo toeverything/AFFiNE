@@ -1,4 +1,5 @@
-import { Button, FlexWrapper, Input } from '@affine/component';
+import { FlexWrapper, Input } from '@affine/component';
+import { Button } from '@toeverything/components/button';
 import { useAtom } from 'jotai';
 import { type ReactElement, useCallback } from 'react';
 
@@ -11,6 +12,8 @@ export const DebugContent = (): ReactElement => {
     <div>
       <FlexWrapper justifyContent="space-between">
         <Input
+          width={280}
+          height={32}
           defaultValue={key ?? undefined}
           onChange={useCallback(
             (newValue: string) => {
@@ -18,6 +21,7 @@ export const DebugContent = (): ReactElement => {
             },
             [setKey]
           )}
+          placeholder="Enter your API_KEY here"
         />
         <Button
           size="large"

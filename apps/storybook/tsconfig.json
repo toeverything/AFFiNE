@@ -19,6 +19,9 @@
       "path": "../../packages/workspace"
     },
     {
+      "path": "../../plugins/image-preview"
+    },
+    {
       "path": "./tsconfig.node.json"
     }
   ]

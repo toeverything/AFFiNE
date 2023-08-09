@@ -116,7 +116,7 @@ function getMainAPIs() {
 }
 
 const helperPort$ = new Promise<MessagePort>(resolve =>
-  ipcRenderer.on('helper-connection', async e => {
+  ipcRenderer.on('helper-connection', e => {
     console.info('[preload] helper-connection', e);
     resolve(e.ports[0]);
   })

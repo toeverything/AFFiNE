@@ -4,34 +4,38 @@ import type {
 } from '@affine/env/workspace';
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import type { FC } from 'react';
-import { useRef } from 'react';
+import { type ReactElement, useRef } from 'react';
 import { useCallback, useState } from 'react';
 
-import { Button } from '../../ui/button';
 import { Menu } from '../../ui/menu/menu';
 import { Export } from './export';
 import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
 import { SharePage } from './share-page';
 import { ShareWorkspace } from './share-workspace';
 import { StyledIndicator, TabItem } from './styles';
+
 type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
-const MenuItems: Record<SharePanel, FC<ShareMenuProps>> = {
+type ShareMenuComponent<T> = (props: T) => ReactElement;
+
+const MenuItems: Record<SharePanel, ShareMenuComponent<ShareMenuProps>> = {
   SharePage: SharePage,
   Export: Export,
   ShareWorkspace: ShareWorkspace,
 };
+
 const tabIcons = {
   SharePage: <ShareIcon />,
   Export: <ExportIcon />,
   ShareWorkspace: <PublishIcon />,
 };
-export type ShareMenuProps<
+
+export interface ShareMenuProps<
   Workspace extends AffineCloudWorkspace | LocalWorkspace =
     | AffineCloudWorkspace
     | LocalWorkspace,
-> = {
+> {
   workspace: Workspace;
   currentPage: Page;
   onEnableAffineCloud: (workspace: LocalWorkspace) => void;
@@ -41,7 +45,7 @@ export type ShareMenuProps<
     workspace: Workspace,
     publish: boolean
   ) => Promise<void>;
-};
+}
 
 function assertInstanceOf<T, U extends T>(
   obj: T,
@@ -52,7 +56,7 @@ function assertInstanceOf<T, U extends T>(
   }
 }
 
-export const ShareMenu: FC<ShareMenuProps> = props => {
+export const ShareMenu = (props: ShareMenuProps) => {
   const [activeItem, setActiveItem] = useState<SharePanel>('SharePage');
   const [isPublic] = useBlockSuiteWorkspacePageIsPublic(props.currentPage);
   const [open, setOpen] = useState(false);
@@ -84,7 +88,7 @@ export const ShareMenu: FC<ShareMenuProps> = props => {
     activeItem: SharePanel;
     onChangeTab: (selectedItem: SharePanel) => void;
   }
-  const ShareMenu: FC<ShareMenuProps> = ({ activeItem, onChangeTab }) => {
+  const ShareMenu = ({ activeItem, onChangeTab }: ShareMenuProps) => {
     const handleButtonClick = (itemName: SharePanel) => {
       onChangeTab(itemName);
       setActiveItem(itemName);

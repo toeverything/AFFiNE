@@ -150,6 +150,7 @@ export const Page = ({
     <Collapsible.Root open={!collapsed}>
       <MenuItem
         data-testid="collection-page"
+        data-type="collection-list-item"
         icon={icon}
         onClick={clickPage}
         className={styles.title}

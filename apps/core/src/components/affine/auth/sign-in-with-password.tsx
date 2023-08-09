@@ -1,7 +1,15 @@
-import { Button, Wrapper } from '@affine/component';
-import { AuthInput, ModalHeader } from '@affine/component/auth-components';
+import { Wrapper } from '@affine/component';
+import {
+  AuthInput,
+  BackButton,
+  ModalHeader,
+} from '@affine/component/auth-components';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowLeftSmallIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
+import { useSetAtom } from 'jotai';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { signIn, useSession } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -10,13 +18,39 @@ import { forgetPasswordButton } from './style.css';
 
 export const SignInWithPassword: FC<AuthPanelProps> = ({
   setAuthState,
-  currentEmail,
+  email,
+  setOpen,
 }) => {
-  console.log('currentEmail', currentEmail);
-
   const t = useAFFiNEI18N();
+  const { update } = useSession();
+
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+
+  const onSignIn = useCallback(async () => {
+    const res = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+      callbackUrl: '/',
+    }).catch(console.error);
+
+    if (!res?.ok) {
+      return setPasswordError(true);
+    }
+
+    await update();
+    setOpen(false);
+    pushNotification({
+      title: `${email}${t['com.affine.auth.has.signed']()}`,
+      message: '',
+      key: Date.now().toString(),
+      type: 'success',
+    });
+  }, [email, password, pushNotification, setOpen, t, update]);
+
   return (
     <>
       <ModalHeader
@@ -26,7 +60,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
       <Wrapper
         marginTop={30}
-        marginBottom={56}
+        marginBottom={50}
         style={{
           position: 'relative',
         }}
@@ -34,7 +68,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         <AuthInput
           label={t['com.affine.settings.email']()}
           disabled={true}
-          value={currentEmail}
+          value={email}
         />
         <AuthInput
           label={t['com.affine.auth.password']()}
@@ -43,41 +77,34 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           onChange={useCallback((value: string) => {
             setPassword(value);
           }, [])}
+          error={passwordError}
+          errorHint={t['com.affine.auth.password.error']()}
+          onEnter={onSignIn}
         />
-        <button className={forgetPasswordButton}>
+        <span></span>
+        <button
+          className={forgetPasswordButton}
+          // onClick={useCallback(() => {
+          //   setAuthState('sendPasswordEmail');
+          // }, [setAuthState])}
+        >
           {t['com.affine.auth.forget']()}
         </button>
       </Wrapper>
       <Button
         type="primary"
-        size="large"
+        size="extraLarge"
         style={{ width: '100%' }}
-        onClick={useCallback(() => {
-          console.log('password', password);
-        }, [password])}
+        onClick={onSignIn}
       >
-        {t['com.affine.auth.create.count']()}
+        {t['com.affine.auth.sign.in']()}
       </Button>
 
-      <Button
-        type="plain"
+      <BackButton
         onClick={useCallback(() => {
-          setAuthState('signIn');
+          setAuthState('afterSignInSendEmail');
         }, [setAuthState])}
-        style={{
-          marginTop: 8,
-          marginLeft: -16,
-        }}
-        icon={
-          <ArrowLeftSmallIcon
-            style={{
-              color: 'var(--affine-text-secondary-color)',
-            }}
-          />
-        }
-      >
-        {t['Back']()}
-      </Button>
+      />
     </>
   );
 };

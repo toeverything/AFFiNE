@@ -19,6 +19,9 @@ type UserType {
 
   """User created date"""
   createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
   token: TokenType!
 }
 
@@ -51,6 +54,9 @@ type InviteUserType {
 
   """User created date"""
   createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
   id: ID!
 
   """User permission in workspace"""
@@ -138,6 +144,11 @@ type Mutation {
   deleteAccount: DeleteAccount!
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
+  changePassword(id: String!, newPassword: String!): UserType!
+  changeEmail(id: String!, email: String!): UserType!
+  sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
+  sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
+  sendChangeEmail(email: String!, callbackUrl: String!): Boolean!
 }
 
 """The `Upload` scalar type represents a file upload."""

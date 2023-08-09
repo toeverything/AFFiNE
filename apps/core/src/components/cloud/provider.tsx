@@ -3,7 +3,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import { GraphQLError } from 'graphql/index';
 import { useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
 import { SWRConfig } from 'swr';
 
@@ -29,8 +29,15 @@ const cloudConfig: SWRConfiguration = {
                   key: Date.now().toString(),
                   type: 'error',
                 });
+              } else {
+                pushNotification({
+                  title: 'Error',
+                  message: e.toString(),
+                  key: Date.now().toString(),
+                  type: 'error',
+                });
               }
-              return e;
+              throw e;
             });
           }
           return d;
@@ -46,20 +53,6 @@ export const Provider = (props: PropsWithChildren): ReactElement => {
   if (!runtimeConfig.enableCloud) {
     return <>{props.children}</>;
   }
-  return (
-    <SWRConfig
-      value={
-        // This is a safe conditional hook
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useMemo(
-          () => ({
-            ...cloudConfig,
-          }),
-          []
-        )
-      }
-    >
-      {props.children}
-    </SWRConfig>
-  );
+
+  return <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>;
 };

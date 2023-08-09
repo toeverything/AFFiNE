@@ -16,17 +16,17 @@ import {
   StyledShortcut,
 } from './style';
 
-export type QuickSearchModalProps = {
+export interface QuickSearchModalProps {
   workspace: AllWorkspace;
   open: boolean;
   setOpen: (value: boolean) => void;
-};
+}
 
-export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
+export const QuickSearchModal = ({
   open,
   setOpen,
   workspace,
-}) => {
+}: QuickSearchModalProps) => {
   const blockSuiteWorkspace = workspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,6 +40,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   const handleClose = useCallback(() => {
     setOpen(false);
   }, [setOpen]);
+
   // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
@@ -59,6 +60,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [open, setOpen, setQuery]);
+
   useEffect(() => {
     if (open) {
       // Waiting for DOM rendering
@@ -68,6 +70,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       });
     }
   }, [open]);
+
   return (
     <Modal
       open={open}

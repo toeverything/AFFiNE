@@ -1,12 +1,12 @@
 import {
   SettingModal as SettingModalBase,
-  type SettingModalProps,
+  type SettingModalProps as SettingModalBaseProps,
 } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import type React from 'react';
 import { useCallback } from 'react';
 
+import { useCurrenLoginStatus } from '../../../hooks/affine/use-curren-login-status';
 import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
@@ -18,22 +18,27 @@ import { settingContent } from './style.css';
 import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
-export type SettingProps = {
+
+export interface SettingProps {
   activeTab: ActiveTab;
   workspaceId: string | null;
   onSettingClick: (params: {
     activeTab: ActiveTab;
     workspaceId: string | null;
   }) => void;
-};
-export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
+}
+
+type SettingModalProps = SettingModalBaseProps & SettingProps;
+
+export const SettingModal = ({
   open,
   setOpen,
   activeTab = 'appearance',
   workspaceId = null,
   onSettingClick,
-}) => {
+}: SettingModalProps) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrenLoginStatus();
 
   const generalSettingList = useGeneralSettingList();
 
@@ -79,7 +84,9 @@ export const SettingModal: React.FC<SettingModalProps & SettingProps> = ({
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
             ) : null}
-            {activeTab === 'account' ? <AccountSetting /> : null}
+            {activeTab === 'account' && loginStatus === 'authenticated' ? (
+              <AccountSetting />
+            ) : null}
           </div>
           <div className="footer">
             <ContactWithUsIcon />

@@ -1,23 +1,29 @@
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { type FC, useState } from 'react';
+import { useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
 import { WorkspaceLeave } from './leave';
 
-export const DeleteLeaveWorkspace: FC<{
+interface DeleteLeaveWorkspaceProps {
   workspace: AffineOfficialWorkspace;
   onDeleteWorkspace: WorkspaceSettingDetailProps['onDeleteWorkspace'];
-}> = ({ workspace, onDeleteWorkspace }) => {
+}
+
+export const DeleteLeaveWorkspace = ({
+  workspace,
+  onDeleteWorkspace,
+}: DeleteLeaveWorkspaceProps) => {
   const t = useAFFiNEI18N();
   // fixme: cloud regression
   const isOwner = true;
 
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
+
   return (
     <>
       <SettingRow

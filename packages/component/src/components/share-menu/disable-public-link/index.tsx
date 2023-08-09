@@ -1,7 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 
 import { Modal, ModalCloseButton } from '../../..';
-import { Button } from '../../../ui/button';
 import {
   StyledButtonContent,
   StyledModalHeader,

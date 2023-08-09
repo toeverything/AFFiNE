@@ -1,7 +1,7 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
 import type { DBSchema } from 'idb';
+import type { IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
-import type { IDBPDatabase } from 'idb/build/entry';
 import { useAtom } from 'jotai';
 import { atomWithReset, RESET } from 'jotai/utils';
 import { useCallback } from 'react';

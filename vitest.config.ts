@@ -6,7 +6,6 @@ import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
-const pluginOutputDir = resolve(rootDir, './apps/electron/dist/plugins');
 
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
@@ -17,22 +16,18 @@ export default defineConfig({
       yjs: resolve(rootDir, 'node_modules/yjs'),
     },
   },
-  define: {
-    'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
-  },
   test: {
     setupFiles: [
       resolve(rootDir, './scripts/setup/lit.ts'),
       resolve(rootDir, './scripts/setup/i18n.ts'),
-      resolve(rootDir, './scripts/setup/search.ts'),
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
       resolve(rootDir, './scripts/setup/global.ts'),
     ],
     include: [
       resolve(rootDir, 'packages/**/*.spec.ts'),
       resolve(rootDir, 'packages/**/*.spec.tsx'),
-      resolve(rootDir, 'apps/web/**/*.spec.ts'),
-      resolve(rootDir, 'apps/web/**/*.spec.tsx'),
+      resolve(rootDir, 'apps/core/**/*.spec.ts'),
+      resolve(rootDir, 'apps/core/**/*.spec.tsx'),
       resolve(rootDir, 'tests/unit/**/*.spec.ts'),
       resolve(rootDir, 'tests/unit/**/*.spec.tsx'),
     ],

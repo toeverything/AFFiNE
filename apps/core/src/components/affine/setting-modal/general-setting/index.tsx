@@ -5,7 +5,7 @@ import {
   InformationIcon,
   KeyboardIcon,
 } from '@blocksuite/icons';
-import type { FC, SVGProps } from 'react';
+import type { ReactElement, SVGProps } from 'react';
 
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
@@ -18,15 +18,18 @@ export type GeneralSettingKeys =
   | 'plugins'
   | 'about';
 
-export type GeneralSettingList = {
+interface GeneralSettingListItem {
   key: GeneralSettingKeys;
   title: string;
-  icon: FC<SVGProps<SVGSVGElement>>;
+  icon: (props: SVGProps<SVGSVGElement>) => ReactElement;
   testId: string;
-}[];
+}
+
+export type GeneralSettingList = GeneralSettingListItem[];
 
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useAFFiNEI18N();
+
   return [
     {
       key: 'appearance',
@@ -55,11 +58,11 @@ export const useGeneralSettingList = (): GeneralSettingList => {
   ];
 };
 
-export const GeneralSetting = ({
-  generalKey,
-}: {
+interface GeneralSettingProps {
   generalKey: GeneralSettingKeys;
-}) => {
+}
+
+export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
   switch (generalKey) {
     case 'shortcuts':
       return <Shortcuts />;

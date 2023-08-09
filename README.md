@@ -14,15 +14,6 @@
 </div>
 
 <div align="center">
-<!--
-Make New Badge Pattern badges inline
-See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
--->
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
-[all-contributors-badge]: https://img.shields.io/badge/all_contributors-66-orange.svg?style=flat-square
-
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![AFFiNE Web](<https://img.shields.io/badge/-Try%20It%20Online%20%E2%86%92-rgb(84,56,255)?style=flat-square&logoColor=white&logo=affine>)](https://app.affine.pro)
 [![AFFiNE macOS M1/M2 Chip](https://img.shields.io/badge/-macOS_M_Chip%20%E2%86%92-black?style=flat-square&logo=apple&logoColor=white)](https://affine.pro/download)
@@ -39,6 +30,7 @@ See https://github.com/all-?/all-contributors/issues/361#issuecomment-637166066
 [![React-version-icon]](https://reactjs.org/)
 [![blocksuite-icon]](https://github.com/toeverything/blocksuite)
 [![Rust-version-icon]](https://www.rust-lang.org/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_shield)
 
 </div>
 
@@ -122,28 +114,32 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Plugins
 
-> Plugins are a way to extend the functionality of AFFiNE.
+> Plugins are a way to extend the functionality of AFFiNE. You can use plugins to add new blocks, new features, and even new ways to edit content.
 >
-> (Currently, plugins are under heavy development, and the SDK is not yet available.)
+> (Currently, the plugin system is under heavy development. You will see the plugin system in the canary release.)
 
-| Name                                 |                                           |
-| ------------------------------------ | ----------------------------------------- |
-| [@affine/bookmark](plugins/bookmark) | A block for bookmarking a website         |
-| [@affine/copilot](plugins/copilot)   | AI Copilot that help you document writing |
+- [@affine/sdk](./packages/sdk) - SDK for developing plugins
+- [@affine/plugin-cli](./packages/plugin-cli) - CLI for developing plugins
+
+| Official Plugin                                       | Description                               |
+| ----------------------------------------------------- | ----------------------------------------- |
+| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         |
+| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing |
+| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         |
 
 ## Thanks
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
-- [BlockSuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
+- [blocksuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
-- [Yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync.
-- [Electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
-- [React](https://github.com/facebook/react) - View layer support and web GUI framework.
-- [Rust](https://github.com/rust-lang/rust) - High performance language that extends the ability and availability of our real-time backend, OctoBase.
+- [yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync.
+- [electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
+- [React](https://github.com/facebook/react) - The library for web and native user interfaces.
+- [napi-rs](https://github.com/napi-rs/napi-rs) - A framework for building compiled Node.js add-ons in Rust via Node-API.
 - [Jotai](https://github.com/pmndrs/jotai) - Primitive and flexible state management for React.
-- [MUI](https://github.com/mui/material-ui) - Our most used graphic UI component library.
 - [async-call-rpc](https://github.com/Jack-Works/async-call-rpc) - A lightweight JSON RPC client & server.
+- [Vite](https://github.com/vitejs/vite) - Next generation frontend tooling.
 - Other upstream [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
@@ -167,15 +163,11 @@ Some amazing companies including AFFiNE are looking for developers! Are you inte
 
 ## Upgrading
 
-For upgrading information please see our [update page].
+For upgrading information, please see our [update page].
 
 ## Feature Request
 
-For feature request please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
-
-## Is it awesome?
-
-[These people] seem to like it.
+For feature request, please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
 
 ## Building
 
@@ -190,17 +182,19 @@ See [docs/contributing/tutorial.md](./docs/contributing/tutorial.md) for details
 
 See [LICENSE] for details.
 
+[all-contributors-badge]: https://img.shields.io/github/all-contributors/toeverything/AFFiNE/master?color=orange
 [license]: ./LICENSE
 [building.md]: ./docs/BUILDING.md
-[these people]: https://twitter.com/AffineOfficial/followers
 [update page]: https://affine.pro/blog?tag=Release%20Note
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/master/.github/CLA.md
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.70.0-dea584
+[rust-version-icon]: https://img.shields.io/badge/Rust-1.71.0-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
 [react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
 [blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_large)

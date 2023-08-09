@@ -26,20 +26,20 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
-import { currentWorkspaceIdAtom } from '@toeverything/plugin-infra/atom';
+import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
+import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { FC, PropsWithChildren, ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useMemo } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 
+import { WorkspaceAdapters } from '../adapters/workspace';
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAppSetting } from '../atoms/settings';
-import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import type { IslandItemNames } from '../components/pure/help-island';
@@ -65,15 +65,21 @@ const QuickSearchModal = lazy(() =>
   }))
 );
 
-export const QuickSearch: FC = () => {
+function DefaultProvider({ children }: PropsWithChildren) {
+  return <>{children}</>;
+}
+
+export const QuickSearch = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+
   if (!blockSuiteWorkspace) {
     return null;
   }
+
   return (
     <QuickSearchModal
       workspace={currentWorkspace}
@@ -82,15 +88,6 @@ export const QuickSearch: FC = () => {
     />
   );
 };
-
-declare global {
-  // eslint-disable-next-line no-var
-  var HALTING_PROBLEM_TIMEOUT: number;
-}
-
-if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
-  globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
-}
 
 const showList: IslandItemNames[] = environment.isDesktop
   ? ['whatNew', 'contact', 'guide']
@@ -114,38 +111,41 @@ export const CurrentWorkspaceContext = ({
   return <>{children}</>;
 };
 
-export const WorkspaceLayout: FC<PropsWithChildren> =
-  function WorkspacesSuspense({ children }) {
-    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-    const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
-    const meta = useMemo(
-      () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
-      [currentWorkspaceId, jotaiWorkspaces]
-    );
+export const WorkspaceLayout = function WorkspacesSuspense({
+  children,
+}: PropsWithChildren) {
+  const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+  const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
+  const meta = useMemo(
+    () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
+    [currentWorkspaceId, jotaiWorkspaces]
+  );
 
-    if (!meta) {
-      return <WorkspaceFallback />;
-    }
+  const Provider =
+    (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
 
-    return (
-      <AdapterProviderWrapper>
+  return (
+    <>
+      {/* load all workspaces is costly, do not block the whole UI */}
+      <Suspense fallback={null}>
+        <AllWorkspaceModals />
         <CurrentWorkspaceContext>
-          <Suspense fallback={<WorkspaceFallback />}>
-            <WorkspaceLayoutInner>
-              {/* load all workspaces is costly, do not block the whole UI */}
-              <Suspense fallback={null}>
-                <AllWorkspaceModals />
-                <CurrentWorkspaceModals />
-              </Suspense>
-              {children}
-            </WorkspaceLayoutInner>
-          </Suspense>
+          {/* fixme(himself65): don't re-render whole modals */}
+          <CurrentWorkspaceModals key={currentWorkspaceId} />
         </CurrentWorkspaceContext>
-      </AdapterProviderWrapper>
-    );
-  };
+      </Suspense>
+      <CurrentWorkspaceContext>
+        <Suspense fallback={<WorkspaceFallback />}>
+          <Provider>
+            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+          </Provider>
+        </Suspense>
+      </CurrentWorkspaceContext>
+    </>
+  );
+};
 
-export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
+export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
 

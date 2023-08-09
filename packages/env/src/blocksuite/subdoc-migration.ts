@@ -1,6 +1,8 @@
+import type { Schema } from '@blocksuite/store';
 import * as Y from 'yjs';
 
 type XYWH = [number, number, number, number];
+
 function deserializeXYWH(xywh: string): XYWH {
   return JSON.parse(xywh) as XYWH;
 }
@@ -238,4 +240,28 @@ export function migrateToSubdoc(doc: Y.Doc): Y.Doc {
   migrateMeta(doc, output);
   migrateBlocks(doc, output);
   return output;
+}
+
+export async function migrateDatabaseBlockTo3(rootDoc: Y.Doc, schema: Schema) {
+  const spaces = rootDoc.getMap('spaces') as Y.Map<any>;
+  spaces.forEach(space => {
+    schema.upgradePage(
+      {
+        'affine:note': 1,
+        'affine:bookmark': 1,
+        'affine:database': 2,
+        'affine:divider': 1,
+        'affine:image': 1,
+        'affine:list': 1,
+        'affine:code': 1,
+        'affine:page': 2,
+        'affine:paragraph': 1,
+        'affine:surface': 3,
+      },
+      space
+    );
+  });
+  const meta = rootDoc.getMap('meta') as Y.Map<unknown>;
+  const versions = meta.get('blockVersions') as Y.Map<number>;
+  versions.set('affine:database', 3);
 }

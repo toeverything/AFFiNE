@@ -2,8 +2,8 @@ import { app } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { z } from 'zod';
 
+import { isMacOS } from '../../shared/utils';
 import { logger } from '../logger';
-import { isMacOS } from '../utils';
 import { updaterSubjects } from './event';
 
 export const ReleaseTypeSchema = z.enum([
@@ -99,7 +99,9 @@ export const registerUpdater = async () => {
   });
   autoUpdater.forceDevUpdateConfig = isDev;
 
-  app.on('activate', async () => {
-    await checkForUpdates(false);
+  app.on('activate', () => {
+    checkForUpdates(false).catch(err => {
+      console.error(err);
+    });
   });
 };

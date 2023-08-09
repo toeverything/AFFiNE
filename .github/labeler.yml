@@ -22,8 +22,14 @@ plugin:bookmark-block:
 plugin:copilot:
   - 'plugins/copilot/**/*'
 
-mod:plugin-infra:
-  - 'packages/plugin-infra/**/*'
+mod:infra:
+  - 'packages/infra/**/*'
+
+mod:sdk:
+  - 'packages/sdk/**/*'
+
+mod:plugin-cli:
+  - 'packages/plugin-cli/**/*'
 
 mod:workspace: 'packages/workspace/**/*'
 

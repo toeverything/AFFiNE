@@ -11,8 +11,7 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtom, useAtomValue } from 'jotai';
-import type React from 'react';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -23,13 +22,13 @@ import { filterPage } from '../../../utils/filter';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
-export type BlockSuitePageListProps = {
+export interface BlockSuitePageListProps {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   listType: 'all' | 'trash' | 'shared' | 'public';
-  isPublic?: true;
+  isPublic?: boolean;
   onOpenPage: (pageId: string, newTab?: boolean) => void;
   collection?: Collection;
-};
+}
 
 const filter = {
   all: (pageMeta: PageMeta) => !pageMeta.trash,
@@ -41,13 +40,12 @@ const filter = {
   shared: (pageMeta: PageMeta) => pageMeta.isPublic && !pageMeta.trash,
 };
 
-const PagePreviewInner = ({
-  workspace,
-  pageId,
-}: {
+interface PagePreviewInnerProps {
   workspace: Workspace;
   pageId: string;
-}) => {
+}
+
+const PagePreviewInner = ({ workspace, pageId }: PagePreviewInnerProps) => {
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   assertExists(page);
   const previewAtom = useBlockSuitePagePreview(page);
@@ -55,13 +53,12 @@ const PagePreviewInner = ({
   return preview;
 };
 
-const PagePreview = ({
-  workspace,
-  pageId,
-}: {
+interface PagePreviewProps {
   workspace: Workspace;
   pageId: string;
-}) => {
+}
+
+const PagePreview = ({ workspace, pageId }: PagePreviewProps) => {
   return (
     <Suspense>
       <PagePreviewInner workspace={workspace} pageId={pageId} />
@@ -69,17 +66,23 @@ const PagePreview = ({
   );
 };
 
-const PageListEmpty = (props: {
-  createPage?: () => void;
+interface PageListEmptyProps {
+  createPage?: ReturnType<typeof usePageHelper>['createPage'];
   listType: BlockSuitePageListProps['listType'];
-}) => {
+}
+
+const PageListEmpty = (props: PageListEmptyProps) => {
   const { listType, createPage } = props;
   const t = useAFFiNEI18N();
 
+  const onCreatePage = useCallback(() => {
+    createPage?.();
+  }, [createPage]);
+
   const getEmptyDescription = () => {
     if (listType === 'all') {
-      const CreateNewPageButton = () => (
-        <button className={emptyDescButton} onClick={createPage}>
+      const createNewPageButton = (
+        <button className={emptyDescButton} onClick={onCreatePage}>
           New Page
         </button>
       );
@@ -87,7 +90,7 @@ const PageListEmpty = (props: {
         const shortcut = environment.isMacOs ? '⌘ + N' : 'Ctrl + N';
         return (
           <Trans i18nKey="emptyAllPagesClient">
-            Click on the <CreateNewPageButton /> button Or press
+            Click on the {createNewPageButton} button Or press
             <kbd className={emptyDescKbd}>{{ shortcut } as any}</kbd> to create
             your first page.
           </Trans>
@@ -96,7 +99,7 @@ const PageListEmpty = (props: {
       return (
         <Trans i18nKey="emptyAllPages">
           Click on the
-          <CreateNewPageButton />
+          {createNewPageButton}
           button to create your first page.
         </Trans>
       );
@@ -120,13 +123,13 @@ const PageListEmpty = (props: {
   );
 };
 
-export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
+export const BlockSuitePageList = ({
   blockSuiteWorkspace,
   onOpenPage,
   listType,
   isPublic = false,
   collection,
-}) => {
+}: BlockSuitePageListProps) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
     toggleFavorite,
@@ -258,6 +261,7 @@ export const BlockSuitePageList: React.FC<BlockSuitePageListProps> = ({
       },
     };
   });
+
   return (
     <PageList
       workspaceId={blockSuiteWorkspace.id}

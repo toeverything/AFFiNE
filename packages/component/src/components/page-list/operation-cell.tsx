@@ -8,20 +8,13 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import type React from 'react';
+import { IconButton } from '@toeverything/components/button';
 import { useState } from 'react';
 
-import {
-  Confirm,
-  FlexWrapper,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '../../..';
+import { Confirm, FlexWrapper, Menu, MenuItem, Tooltip } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
-export type OperationCellProps = {
+export interface OperationCellProps {
   title: string;
   favorite: boolean;
   isPublic: boolean;
@@ -29,9 +22,9 @@ export type OperationCellProps = {
   onToggleFavoritePage: () => void;
   onRemoveToTrash: () => void;
   onDisablePublicSharing: () => void;
-};
+}
 
-export const OperationCell: React.FC<OperationCellProps> = ({
+export const OperationCell = ({
   title,
   favorite,
   isPublic,
@@ -39,7 +32,7 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   onToggleFavoritePage,
   onRemoveToTrash,
   onDisablePublicSharing,
-}) => {
+}: OperationCellProps) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
@@ -118,16 +111,16 @@ export const OperationCell: React.FC<OperationCellProps> = ({
   );
 };
 
-export type TrashOperationCellProps = {
+export interface TrashOperationCellProps {
   onPermanentlyDeletePage: () => void;
   onRestorePage: () => void;
   onOpenPage: () => void;
-};
+}
 
-export const TrashOperationCell: React.FC<TrashOperationCellProps> = ({
+export const TrashOperationCell = ({
   onPermanentlyDeletePage,
   onRestorePage,
-}) => {
+}: TrashOperationCellProps) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (

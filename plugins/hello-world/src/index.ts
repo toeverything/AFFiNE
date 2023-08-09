@@ -1,17 +1,15 @@
-import {
-  currentWorkspaceIdAtom,
-  rootStore,
-} from '@toeverything/plugin-infra/atom';
-import type { PluginContext } from '@toeverything/plugin-infra/entry';
+import type { PluginContext } from '@affine/sdk/entry';
 import { createElement } from 'react';
+import { lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { HeaderItem } from './app';
+const HeaderItem = lazy(() =>
+  import('./app').then(({ HeaderItem }) => ({ default: HeaderItem }))
+);
 
 export const entry = (context: PluginContext) => {
   console.log('register');
   console.log('hello, world!');
-  console.log(rootStore.get(currentWorkspaceIdAtom));
   context.register('headerItem', div => {
     const root = createRoot(div);
     root.render(createElement(HeaderItem));

@@ -2,12 +2,12 @@ import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import type { FC } from 'react';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
-import { Button, toast } from '../..';
+import { toast } from '../../ui/toast';
 import { PublicLinkDisableModal } from './disable-public-link';
 import {
   descriptionStyle,
@@ -17,7 +17,7 @@ import {
 import type { ShareMenuProps } from './share-menu';
 import { StyledDisableButton, StyledInput, StyledLinkSpan } from './styles';
 
-export const LocalSharePage: FC<ShareMenuProps> = props => {
+export const LocalSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   return (
     <div className={menuItemStyle}>
@@ -35,7 +35,7 @@ export const LocalSharePage: FC<ShareMenuProps> = props => {
   );
 };
 
-export const AffineSharePage: FC<ShareMenuProps> = props => {
+export const AffineSharePage = (props: ShareMenuProps) => {
   const [isPublic, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(
     props.currentPage
   );
@@ -47,9 +47,15 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
   }, [setIsPublic]);
-  const onClickCopyLink = useCallback(async () => {
-    await navigator.clipboard.writeText(sharingUrl);
-    toast(t['Copied link to clipboard']());
+  const onClickCopyLink = useCallback(() => {
+    navigator.clipboard
+      .writeText(sharingUrl)
+      .then(() => {
+        toast(t['Copied link to clipboard']());
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }, [sharingUrl, t]);
   const onDisablePublic = useCallback(() => {
     setIsPublic(false);
@@ -117,7 +123,7 @@ export const AffineSharePage: FC<ShareMenuProps> = props => {
   );
 };
 
-export const SharePage: FC<ShareMenuProps> = props => {
+export const SharePage = (props: ShareMenuProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {

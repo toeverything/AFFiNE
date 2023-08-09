@@ -5,9 +5,9 @@ import { arrayMove } from '@dnd-kit/sortable';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/atom';
+} from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { FC, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
@@ -58,7 +58,7 @@ const OnboardingModal = lazy(() =>
   }))
 );
 
-export const Setting: FC = () => {
+export const Setting = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [{ open, workspaceId, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
@@ -90,12 +90,23 @@ export const Setting: FC = () => {
   );
 };
 
-export const AuthModal: FC = () => {
-  const [{ open, state }, setOpenAuthModalAtom] = useAtom(openAuthModalAtom);
+export const AuthModal = (): ReactElement => {
+  const [
+    { open, state, email = '', emailType = 'changePassword' },
+    setOpenAuthModalAtom,
+  ] = useAtom(openAuthModalAtom);
   return (
     <Auth
       open={open}
       state={state}
+      email={email}
+      emailType={emailType}
+      setEmailType={useCallback(
+        emailType => {
+          setOpenAuthModalAtom(prev => ({ ...prev, emailType }));
+        },
+        [setOpenAuthModalAtom]
+      )}
       setOpen={useCallback(
         open => {
           setOpenAuthModalAtom(prev => ({ ...prev, open }));
@@ -108,6 +119,12 @@ export const AuthModal: FC = () => {
         },
         [setOpenAuthModalAtom]
       )}
+      setAuthEmail={useCallback(
+        email => {
+          setOpenAuthModalAtom(prev => ({ ...prev, email }));
+        },
+        [setOpenAuthModalAtom]
+      )}
     />
   );
 };
@@ -117,6 +134,7 @@ export function CurrentWorkspaceModals() {
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
+
   return (
     <>
       <Suspense>
@@ -152,7 +170,7 @@ export const AllWorkspaceModals = (): ReactElement => {
     currentWorkspaceIdAtom
   );
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
-  const [transitioning, transition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(
@@ -167,11 +185,12 @@ export const AllWorkspaceModals = (): ReactElement => {
     },
     [setOpenSettingModalAtom, setOpenWorkspacesModal]
   );
+
   return (
     <>
       <Suspense>
         <WorkspaceListModal
-          disabled={transitioning}
+          disabled={isPending}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
           open={
@@ -185,10 +204,10 @@ export const AllWorkspaceModals = (): ReactElement => {
             (activeId, overId) => {
               const oldIndex = workspaces.findIndex(w => w.id === activeId);
               const newIndex = workspaces.findIndex(w => w.id === overId);
-              transition(() => {
+              startTransition(() => {
                 setWorkspaces(workspaces =>
                   arrayMove(workspaces, oldIndex, newIndex)
-                ).catch(console.error);
+                );
               });
             },
             [setWorkspaces, workspaces]
@@ -223,18 +242,16 @@ export const AllWorkspaceModals = (): ReactElement => {
             setOpenCreateWorkspaceModal(false);
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
-            async id => {
+            id => {
               setOpenCreateWorkspaceModal(false);
               setOpenWorkspacesModal(false);
-              setCurrentWorkspaceId(id);
-              return jumpToSubPath(id, WorkspaceSubPath.ALL);
+              // if jumping immediately, the page may stuck in loading state
+              // not sure why yet .. here is a workaround
+              setTimeout(() => {
+                jumpToSubPath(id, WorkspaceSubPath.ALL);
+              });
             },
-            [
-              jumpToSubPath,
-              setCurrentWorkspaceId,
-              setOpenCreateWorkspaceModal,
-              setOpenWorkspacesModal,
-            ]
+            [jumpToSubPath, setOpenCreateWorkspaceModal, setOpenWorkspacesModal]
           )}
         />
       </Suspense>

@@ -2,11 +2,12 @@ import type { ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloDriver } from '@nestjs/apollo';
 import { Global, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
+import { Request, Response } from 'express';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 
 import { Config } from './config';
-import { MetricsPlugin } from './graphql/metrics-plugin';
+import { GQLLoggerPlugin } from './graphql/logger-plugin';
 import { Metrics } from './metrics/metrics';
 
 @Global()
@@ -26,7 +27,11 @@ import { Metrics } from './metrics/metrics';
             '..',
             'schema.gql'
           ),
-          plugins: [new MetricsPlugin(metrics)],
+          context: ({ req, res }: { req: Request; res: Response }) => ({
+            req,
+            res,
+          }),
+          plugins: [new GQLLoggerPlugin(metrics)],
         };
       },
       inject: [Config, Metrics],

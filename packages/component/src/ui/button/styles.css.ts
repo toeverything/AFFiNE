@@ -20,7 +20,7 @@ export const dropdownBtn = style({
   cursor: 'pointer',
   selectors: {
     '&:hover': {
-      background: 'var(--affine-hover-color)',
+      background: 'var(--affine-hover-color-filled)',
     },
   },
 });
@@ -94,7 +94,7 @@ export const radioButtonGroup = style({
   display: 'inline-flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  background: 'var(--affine-hover-color)',
+  background: 'var(--affine-hover-color-filled)',
   borderRadius: '10px',
   padding: '2px',
   // @ts-expect-error - fix electron drag

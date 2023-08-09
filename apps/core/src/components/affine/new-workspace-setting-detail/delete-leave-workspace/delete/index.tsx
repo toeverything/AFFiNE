@@ -1,7 +1,8 @@
-import { Button, Input, Modal, ModalCloseButton } from '@affine/component';
+import { Input, Modal, ModalCloseButton } from '@affine/component';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useState } from 'react';
 
@@ -92,15 +93,15 @@ export const WorkspaceDeleteModal = ({
           />
         </StyledInputContent>
         <StyledButtonContent>
-          <Button shape="circle" onClick={onClose}>
+          <Button onClick={onClose} size="large">
             {t['Cancel']()}
           </Button>
           <Button
             data-testid="delete-workspace-confirm-button"
             disabled={!allowDelete}
             onClick={handleDelete}
+            size="large"
             type="error"
-            shape="circle"
             style={{ marginLeft: '24px' }}
           >
             {t['Delete']()}

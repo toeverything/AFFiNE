@@ -35,7 +35,7 @@ export const getSize = (
 };
 
 export const getButtonColors = (
-  theme: Theme,
+  _theme: Theme,
   type: ButtonProps['type'],
   disabled: boolean,
   extend?: {

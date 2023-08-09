@@ -38,7 +38,7 @@ app.on('second-instance', () => {
   );
 });
 
-app.on('open-url', async (_, _url) => {
+app.on('open-url', (_, _url) => {
   // todo: handle `affine://...` urls
 });
 
@@ -54,7 +54,11 @@ app.on('window-all-closed', () => {
 /**
  * @see https://www.electronjs.org/docs/v14-x-y/api/app#event-activate-macos Event: 'activate'
  */
-app.on('activate', restoreOrCreateWindow);
+app.on('activate', () => {
+  restoreOrCreateWindow().catch(err => {
+    console.error(err);
+  });
+});
 
 /**
  * Create app window when background process will be ready

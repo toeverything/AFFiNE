@@ -25,3 +25,6 @@ export interface Blob {
   size: number;
   data: Buffer;
 }
+
+/** Merge updates in form like `Y.applyUpdate(doc, update)` way and return the result binary. */
+export function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer;

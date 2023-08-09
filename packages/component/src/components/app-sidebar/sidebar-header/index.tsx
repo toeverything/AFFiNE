@@ -1,7 +1,7 @@
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useAtomValue } from 'jotai';
 
-import { IconButton } from '../../..';
 import type { History } from '..';
 import { navHeaderStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';

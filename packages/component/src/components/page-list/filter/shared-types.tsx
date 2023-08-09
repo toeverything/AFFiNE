@@ -5,9 +5,10 @@ import type {
   VariableMap,
 } from '@affine/env/filter';
 import {
-  DateTimeIcon,
-  FavoritedIcon,
-  MultiSelectIcon,
+  CreatedIcon,
+  FavoriteIcon,
+  TagsIcon,
+  UpdatedIcon,
 } from '@blocksuite/icons';
 import type { ReactElement } from 'react';
 
@@ -29,19 +30,19 @@ export type FilterVariable = {
 export const variableDefineMap = {
   Created: {
     type: () => tDate.create(),
-    icon: <DateTimeIcon />,
+    icon: <CreatedIcon />,
   },
   Updated: {
     type: () => tDate.create(),
-    icon: <DateTimeIcon />,
+    icon: <UpdatedIcon />,
   },
   'Is Favourited': {
     type: () => tBoolean.create(),
-    icon: <FavoritedIcon />,
+    icon: <FavoriteIcon />,
   },
   Tags: {
     type: meta => tArray(tTag.create({ tags: meta.tags.options })),
-    icon: <MultiSelectIcon />,
+    icon: <TagsIcon />,
   },
   // Imported: {
   //   type: tBoolean.create(),
