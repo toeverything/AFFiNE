@@ -115,8 +115,10 @@ export const createConfiguration: (
     mode: buildFlags.mode,
 
     devtool:
-      buildFlags.mode === 'production' && buildFlags.distribution === 'browser'
-        ? 'source-map'
+      buildFlags.mode === 'production'
+        ? buildFlags.distribution === 'desktop'
+          ? 'nosources-source-map'
+          : 'source-map'
         : 'eval-cheap-module-source-map',
 
     resolve: {
