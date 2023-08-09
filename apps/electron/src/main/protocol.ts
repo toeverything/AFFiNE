@@ -2,6 +2,8 @@ import { net, protocol, session } from 'electron';
 import { join } from 'path';
 
 import { CLOUD_BASE_URL } from './config';
+import { setCookie } from './main-window';
+import { simpleGet } from './utils';
 
 const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
 const webStaticDir = join(__dirname, '../resources/web-static');
@@ -24,12 +26,17 @@ async function handleHttpRequest(request: Request) {
     // by default in net.fetch, or don't know if there is a way to
     // bypass http request handling to browser instead ...
     if (pathname.startsWith('/api/auth/callback')) {
-      const originResponse = await fetch(request.url, request);
-      const headers = new Headers(originResponse.headers);
-      headers.set('location', originResponse.url);
+      const originResponse = await simpleGet(request.url);
+      // hack: use window.webContents.session.cookies to set cookies
+      // since return set-cookie header in response doesn't work here
+      for (const [, cookie] of originResponse.headers.filter(
+        p => p[0] === 'set-cookie'
+      )) {
+        await setCookie(origin, cookie);
+      }
       return new Response(originResponse.body, {
-        headers,
-        status: 302,
+        headers: originResponse.headers,
+        status: originResponse.statusCode,
       });
     } else {
       // just pass through (proxy)
