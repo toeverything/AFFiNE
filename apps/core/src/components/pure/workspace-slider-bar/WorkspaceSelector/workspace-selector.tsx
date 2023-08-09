@@ -27,7 +27,7 @@ export const WorkspaceSelector = ({
   onClick,
 }: WorkspaceSelectorProps) => {
   const [name] = useBlockSuiteWorkspaceName(
-    currentWorkspace?.blockSuiteWorkspace
+    currentWorkspace.blockSuiteWorkspace
   );
 
   // Open dialog when `Enter` or `Space` pressed
@@ -55,7 +55,7 @@ export const WorkspaceSelector = ({
         data-testid="workspace-avatar"
         className={workspaceAvatarStyle}
         size={40}
-        workspace={currentWorkspace?.blockSuiteWorkspace ?? null}
+        workspace={currentWorkspace.blockSuiteWorkspace}
       />
       <StyledSelectorWrapper>
         <StyledWorkspaceName data-testid="workspace-name">
