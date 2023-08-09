@@ -170,7 +170,13 @@
       "path": "./tests/affine-plugin"
     },
     {
+      "path": "./tests/affine-prototype"
+    },
+    {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
+    },
+    {
+      "path": "./tests/affine-legacy/0.8.0-canary.7"
     }
   ],
   "files": [],

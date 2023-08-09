@@ -1,0 +1,21 @@
+{
+  "name": "prototype",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/prototype/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "apps/prototype/dist"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "apps/prototype/dist",
+        "watch": true
+      }
+    }
+  }
+}

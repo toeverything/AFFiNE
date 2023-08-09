@@ -1,0 +1,13 @@
+{
+  "name": "@affine-test/affine-prototype",
+  "private": true,
+  "scripts": {
+    "e2e": "yarn playwright test"
+  },
+  "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine-test/kit": "workspace:*",
+    "@playwright/test": "^1.36.2"
+  },
+  "version": "0.8.0-canary.14"
+}

@@ -74,6 +74,9 @@ const createDatasource = ({
         const data = await store.get(guid);
 
         if (!data) {
+          changeStatus({
+            type: 'synced',
+          });
           return false;
         }
 
@@ -87,7 +90,6 @@ const createDatasource = ({
         changeStatus({
           type: 'synced',
         });
-
         return diff;
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {

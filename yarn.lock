@@ -73,6 +73,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/affine-prototype@workspace:tests/affine-prototype":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-prototype@workspace:tests/affine-prototype"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": ^1.36.2
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/fixtures@workspace:*, @affine-test/fixtures@workspace:tests/fixtures":
   version: 0.0.0-use.local
   resolution: "@affine-test/fixtures@workspace:tests/fixtures"
@@ -555,6 +565,37 @@ __metadata:
     ts-node: ^10.9.1
   bin:
     af: ./src/af.mjs
+  languageName: unknown
+  linkType: soft
+
+"@affine/prototype@workspace:apps/prototype":
+  version: 0.0.0-use.local
+  resolution: "@affine/prototype@workspace:apps/prototype"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine/component": "workspace:*"
+    "@affine/debug": "workspace:*"
+    "@affine/env": "workspace:*"
+    "@affine/graphql": "workspace:*"
+    "@affine/i18n": "workspace:*"
+    "@affine/jotai": "workspace:*"
+    "@affine/templates": "workspace:*"
+    "@affine/workspace": "workspace:*"
+    "@blocksuite/block-std": 0.0.0-20230809030546-32e6e21d-nightly
+    "@blocksuite/blocks": 0.0.0-20230809030546-32e6e21d-nightly
+    "@blocksuite/editor": 0.0.0-20230809030546-32e6e21d-nightly
+    "@blocksuite/global": 0.0.0-20230809030546-32e6e21d-nightly
+    "@blocksuite/icons": ^2.1.31
+    "@blocksuite/lit": 0.0.0-20230809030546-32e6e21d-nightly
+    "@blocksuite/store": 0.0.0-20230809030546-32e6e21d-nightly
+    "@toeverything/y-indexeddb": "workspace:*"
+    "@types/react": ^18.2.20
+    "@types/react-dom": ^18.2.7
+    "@vitejs/plugin-react-swc": ^3.3.2
+    react: ^18.2.0
+    react-dom: ^18.2.0
+    typescript: ^5.1.6
+    vite: ^4.4.9
   languageName: unknown
   linkType: soft
 
@@ -12158,6 +12199,17 @@ __metadata:
     "@types/scheduler": "*"
     csstype: ^3.0.2
   checksum: 150516b31bd98b635e4a56bcf2af007330b35cccb6e35e902f46a47f0e81e30c46cdacc095e91051bdf2f33e4846e7e62fd51b67e064dc7d15c00e15dfa449d5
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:^18.2.20":
+  version: 18.2.20
+  resolution: "@types/react@npm:18.2.20"
+  dependencies:
+    "@types/prop-types": "*"
+    "@types/scheduler": "*"
+    csstype: ^3.0.2
+  checksum: 30f699c60e5e4bfef273ce64d320651cdd60f5c6a08361c6c7eca8cebcccda1ac953d2ee57c9f321b5ae87f8a62c72b6d35ca42df0e261d337849952daab2141
   languageName: node
   linkType: hard
 
@@ -27553,7 +27605,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:18.2.0":
+"react-dom@npm:18.2.0, react-dom@npm:^18.2.0":
   version: 18.2.0
   resolution: "react-dom@npm:18.2.0"
   dependencies:
