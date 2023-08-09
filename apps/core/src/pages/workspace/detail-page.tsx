@@ -7,12 +7,16 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { currentPageIdAtom, rootStore } from '@toeverything/infra/atom';
+import {
+  currentPageIdAtom,
+  currentWorkspaceAtom,
+  currentWorkspaceIdAtom,
+  rootStore,
+} from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
-import { useAtom } from 'jotai/react';
-import { type ReactElement, useCallback, useEffect } from 'react';
+import { type ReactElement, useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
-import { useLocation, useParams } from 'react-router-dom';
+import { redirect } from 'react-router-dom';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
@@ -32,7 +36,7 @@ const DetailPageImpl = (): ReactElement => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
       const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
-        await jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+        jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
         collectionManager.backToAll();
         collectionManager.setTemporaryFilter([createTagFilter(tagId)]);
       });
@@ -69,50 +73,11 @@ const DetailPageImpl = (): ReactElement => {
 };
 
 export const DetailPage = (): ReactElement => {
-  const { workspaceId, pageId } = useParams();
-  const location = useLocation();
-  const { jumpTo404 } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
+  const currentPageId = useAtomValue(currentPageIdAtom);
   const page = currentPageId
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;
-
-  //#region check if page is valid
-  useEffect(() => {
-    // if the workspace changed, ignore the page check
-    if (currentWorkspace.id !== workspaceId) {
-      return;
-    }
-    if (typeof pageId === 'string' && currentPageId) {
-      if (currentPageId !== pageId) {
-        setCurrentPageId(pageId);
-      } else {
-        const page =
-          currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-        if (!page) {
-          jumpTo404();
-        } else {
-          // fixme: cleanup jumpOnce in the right time
-          if (page.meta.jumpOnce) {
-            currentWorkspace.blockSuiteWorkspace.setPageMeta(currentPageId, {
-              jumpOnce: false,
-            });
-          }
-        }
-      }
-    }
-  }, [
-    currentPageId,
-    currentWorkspace.blockSuiteWorkspace,
-    currentWorkspace.id,
-    jumpTo404,
-    location.pathname,
-    pageId,
-    setCurrentPageId,
-    workspaceId,
-  ]);
-  //#endregion
 
   if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
@@ -120,10 +85,27 @@ export const DetailPage = (): ReactElement => {
   return <DetailPageImpl />;
 };
 
-export const loader: LoaderFunction = args => {
+export const loader: LoaderFunction = async args => {
+  if (args.params.workspaceId) {
+    localStorage.setItem('last_workspace_id', args.params.workspaceId);
+    rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
+  }
   if (args.params.pageId) {
-    localStorage.setItem('last_page_id', args.params.pageId);
-    rootStore.set(currentPageIdAtom, args.params.pageId);
+    const pageId = args.params.pageId;
+    localStorage.setItem('last_page_id', pageId);
+    const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
+    const page = currentWorkspace.getPage(pageId);
+    if (!page) {
+      return redirect('/404');
+    }
+    if (page.meta.jumpOnce) {
+      currentWorkspace.setPageMeta(page.id, {
+        jumpOnce: false,
+      });
+    }
+    rootStore.set(currentPageIdAtom, pageId);
+  } else {
+    return redirect('/404');
   }
   return null;
 };

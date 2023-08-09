@@ -89,15 +89,6 @@ export const QuickSearch = () => {
   );
 };
 
-declare global {
-  // eslint-disable-next-line no-var
-  var HALTING_PROBLEM_TIMEOUT: number;
-}
-
-if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
-  globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
-}
-
 const showList: IslandItemNames[] = environment.isDesktop
   ? ['whatNew', 'contact', 'guide']
   : ['whatNew', 'contact'];

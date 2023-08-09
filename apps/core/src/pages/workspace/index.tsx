@@ -1,5 +1,9 @@
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { currentWorkspaceIdAtom, rootStore } from '@toeverything/infra/atom';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+  rootStore,
+} from '@toeverything/infra/atom';
 import type { ReactElement } from 'react';
 import { type LoaderFunction, Outlet, redirect } from 'react-router-dom';
 
@@ -13,6 +17,9 @@ export const loader: LoaderFunction = async args => {
   if (args.params.workspaceId) {
     localStorage.setItem('last_workspace_id', args.params.workspaceId);
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
+  }
+  if (!args.params.pageId) {
+    rootStore.set(currentPageIdAtom, null);
   }
   return null;
 };

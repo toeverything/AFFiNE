@@ -39,7 +39,7 @@
     "@affine/y-provider": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230808131052-ef3445a9-nightly",
     "@blocksuite/store": "0.0.0-20230808131052-ef3445a9-nightly",
-    "vite": "^4.4.7",
+    "vite": "^4.4.9",
     "vite-plugin-dts": "3.5.1",
     "y-indexeddb": "^9.0.11"
   },

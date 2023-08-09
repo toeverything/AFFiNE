@@ -115,7 +115,7 @@ export const RootAppSidebar = ({
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
-    if (isDesktop && typeof sidebarOpen === 'boolean') {
+    if (isDesktop) {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
