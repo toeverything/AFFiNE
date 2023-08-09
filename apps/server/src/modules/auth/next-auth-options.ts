@@ -257,48 +257,69 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
  * @note We don't add the email address to avoid needing to escape it, if you do, remember to sanitize it!
  */
 function html(params: { url: string; host: string }) {
-  const { url, host } = params;
-
-  const escapedHost = host.replace(/\./g, '&#8203;.');
-
-  const brandColor = '#346df1';
-  const buttonText = '#fff';
-
-  const color = {
-    background: '#f9f9f9',
-    text: '#444',
-    mainBackground: '#fff',
-    buttonBackground: brandColor,
-    buttonBorder: brandColor,
-    buttonText,
-  };
+  const { url } = params;
 
   return `
-<body style="background: ${color.background};">
-  <table width="100%" border="0" cellspacing="20" cellpadding="0"
-    style="background: ${color.mainBackground}; max-width: 600px; margin: auto; border-radius: 10px;">
+  <body style="background: #F6F7FB;">
+  <table width="100%" border="0" cellpadding="24px"
+    style="background: #fff; max-width: 450px; margin: 32px auto 0  auto; border-radius: 16px 16px 0 0;box-shadow: 0px 0px 20px 0px rgba(66, 65, 73, 0.04);">
     <tr>
-      <td align="center"
-        style="padding: 10px 0px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
-        Sign in to <strong>${escapedHost}</strong>
+      <td>
+        <img src="https://cdn.affine.pro/mail/2023-8-9/affine-logo.png" alt="AFFiNE log" height="32px">
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding: 20px 0;">
+      <td 
+        style=" font-size: 20px;font-weight: 600;line-height: 28px; font-family: Inter; color: #444;padding-top: 0;">
+       Verify your new email for AFFiNE
+      </td>
+    </tr>
+    <tr>
+      <td 
+        style=" font-size: 15px;font-weight: 400;line-height: 24px; font-family: Inter; color: #444;padding-top: 0;">
+        You recently requested to change the email address associated with your AFFiNe account. To complete this process, please click on the verification link below. 
+      </td>
+    </tr>
+    <tr>
+      <td style="margin-left: 24px;padding-top: 0;padding-bottom: 64px;">
         <table border="0" cellspacing="0" cellpadding="0">
           <tr>
-            <td align="center" style="border-radius: 5px;" bgcolor="${color.buttonBackground}"><a href="${url}"
+            <td style="border-radius: 8px;" bgcolor="#1E96EB"><a href="${url}"
                 target="_blank"
-                style="font-size: 18px; font-family: Helvetica, Arial, sans-serif; color: ${color.buttonText}; text-decoration: none; border-radius: 5px; padding: 10px 20px; border: 1px solid ${color.buttonBorder}; display: inline-block; font-weight: bold;">Sign
-                in</a></td>
+                style="font-size: 15px; font-family: Inter;font-weight: 600;line-height: 24px; color: #fff; text-decoration: none; border-radius: 8px; padding: 8px 18px; border: 1px solid #1E96EB; display: inline-block; font-weight: bold;">Verify your new email address</a></td>
           </tr>
         </table>
       </td>
     </tr>
-    <tr>
-      <td align="center"
-        style="padding: 0px 0px 10px 0px; font-size: 16px; line-height: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
-        If you did not request this email you can safely ignore it.
+  </table>
+  <table width="100%" border="0"
+    style="background: #FAFAFA; max-width: 450px; margin:0 auto 32px auto; border-radius: 0 0 16px 16px;box-shadow: 0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding: 20px;">
+    <tr align="center">
+      <td>
+      <table cellpadding="0">
+        <tr>
+          <td style="padding: 0 10px;"><a href="https://github.com/toeverything/AFFiNE" target="_blank"><img src="https://cdn.affine.pro/mail/2023-8-9/Github.png" alt="" height="16px"></a></td>
+          <td style="padding: 0 10px;"><a href="https://twitter.com/AffineOfficial" target="_blank">
+            <img src="https://cdn.affine.pro/mail/2023-8-9/Twitter.png" alt="" height="16px">
+          </a></td>
+          <td style="padding: 0 10px;"><a href="https://discord.gg/Arn7TqJBvG" target="_blank"><img src="https://cdn.affine.pro/mail/2023-8-9/Discord.png" alt="" height="16px"></a></td>
+          <td style="padding: 0 10px;"><a href="https://www.youtube.com/@affinepro" target="_blank"><img src="https://cdn.affine.pro/mail/2023-8-9/Youtube.png" alt="" height="16px"></a></td>
+          <td style="padding: 0 10px;"><a href="https://t.me/affineworkos" target="_blank"><img src="https://cdn.affine.pro/mail/2023-8-9/Telegram.png" alt="" height="16px"></a></td>
+          <td style="padding: 0 10px;"><a href="https://www.reddit.com/r/Affine/" target="_blank"><img src="https://cdn.affine.pro/mail/2023-8-9/Reddit.png" alt="" height="16px"></a></td>
+        </tr>
+      </table>
+    </td>
+    </tr>
+    <tr align="center">
+      <td 
+        style=" font-size: 12px;font-weight: 400;line-height: 20px; font-family: Inter; color: #8E8D91;padding-top: 8px">
+        One hyper-fused platform for wildly creative minds
+      </td>
+    </tr>
+    <tr align="center">
+      <td 
+        style=" font-size: 12px;font-weight: 400;line-height: 20px; font-family: Inter; color: #8E8D91;padding-top: 8px;">
+       Copyright<img src="https://cdn.affine.pro/mail/2023-8-9/copyright.png" alt="copyright" height="14px" style="vertical-align: middle;margin: 0 4px;">2023 Toeverything
       </td>
     </tr>
   </table>
