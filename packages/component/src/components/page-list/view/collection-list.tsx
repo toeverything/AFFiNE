@@ -6,13 +6,11 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import clsx from 'clsx';
-import { useAtom } from 'jotai';
 import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
 import { MenuItem, Tooltip } from '../../..';
 import Menu from '../../../ui/menu/menu';
-import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
@@ -106,7 +104,6 @@ export const CollectionList = ({
   propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
-  const [open] = useAtom(appSidebarOpenAtom);
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
@@ -133,15 +130,7 @@ export const CollectionList = ({
     [closeUpdateCollectionModal, setting]
   );
   return (
-    <div
-      className={clsx({
-        [styles.filterButtonCollapse]: !open,
-      })}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
+    <>
       {setting.savedCollections.length > 0 && (
         <Menu
           trigger="click"
@@ -176,8 +165,8 @@ export const CollectionList = ({
           }
         >
           <Button
-            className={clsx(styles.viewButton)}
             data-testid="collection-select"
+            style={{ marginRight: '20px' }}
           >
             <Tooltip
               content={setting.currentCollection.name}
@@ -199,11 +188,7 @@ export const CollectionList = ({
           />
         }
       >
-        <Button
-          icon={<FilteredIcon />}
-          className={clsx(styles.filterButton)}
-          data-testid="create-first-filter"
-        >
+        <Button icon={<FilteredIcon />} data-testid="create-first-filter">
           {t['com.affine.filter']()}
         </Button>
       </Menu>
@@ -215,6 +200,6 @@ export const CollectionList = ({
         onClose={closeUpdateCollectionModal}
         onConfirm={onConfirm}
       ></EditCollectionModel>
-    </div>
+    </>
   );
 };
