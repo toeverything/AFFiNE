@@ -167,7 +167,7 @@ __metadata:
     react-is: ^18.2.0
     rxjs: ^7.8.1
     typescript: ^5.1.6
-    vite: ^4.4.7
+    vite: ^4.4.9
     yjs: ^13.6.7
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -516,7 +516,7 @@ __metadata:
     serve: ^14.2.0
     ts-node: ^10.9.1
     typescript: ^5.1.6
-    vite: ^4.4.7
+    vite: ^4.4.9
     vite-plugin-istanbul: ^5.0.0
     vite-plugin-static-copy: ^0.17.0
     vite-tsconfig-paths: ^4.2.0
@@ -566,7 +566,7 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/store": 0.0.0-20230808131052-ef3445a9-nightly
     jotai: ^2.2.2
-    vite: ^4.4.7
+    vite: ^4.4.9
     vite-plugin-dts: 3.5.1
     zod: ^3.21.4
   languageName: unknown
@@ -11300,7 +11300,7 @@ __metadata:
     electron: "link:../../apps/electron/node_modules/electron"
     jotai: ^2.2.2
     react: ^18.2.0
-    vite: ^4.4.7
+    vite: ^4.4.9
     vite-plugin-dts: 3.5.1
     zod: ^3.21.4
   peerDependencies:
@@ -11336,7 +11336,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230808131052-ef3445a9-nightly
     "@blocksuite/store": 0.0.0-20230808131052-ef3445a9-nightly
     idb: ^7.1.1
-    vite: ^4.4.7
+    vite: ^4.4.9
     vite-plugin-dts: 3.5.1
     y-indexeddb: ^9.0.11
   peerDependencies:
@@ -26768,7 +26768,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.1.10, postcss@npm:^8.1.7, postcss@npm:^8.3.6, postcss@npm:^8.4.21, postcss@npm:^8.4.23, postcss@npm:^8.4.26":
+"postcss@npm:^8.1.10, postcss@npm:^8.1.7, postcss@npm:^8.3.6, postcss@npm:^8.4.21, postcss@npm:^8.4.23, postcss@npm:^8.4.27":
   version: 8.4.27
   resolution: "postcss@npm:8.4.27"
   dependencies:
@@ -28567,7 +28567,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rollup@npm:^2.25.0 || ^3.3.0, rollup@npm:^3.25.2":
+"rollup@npm:^2.25.0 || ^3.3.0":
   version: 3.26.3
   resolution: "rollup@npm:3.26.3"
   dependencies:
@@ -28592,6 +28592,20 @@ __metadata:
   bin:
     rollup: dist/bin/rollup
   checksum: f60c2c288d039dc14e1f6e7fd673b7fcb11928b5a781675791b37a741f63b7af110fc5d040d60d603175b6e03ff978bed83db018dd2ac542ef809fe1a5b32dae
+  languageName: node
+  linkType: hard
+
+"rollup@npm:^3.27.1":
+  version: 3.27.2
+  resolution: "rollup@npm:3.27.2"
+  dependencies:
+    fsevents: ~2.3.2
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    rollup: dist/bin/rollup
+  checksum: 524477e73885bafd2df395c12db330f3893e1f8eca67e811fb1423a4f6318451987e978607c75f8115bd9ce7fa834460969b0c39b797d45da87fa42fef9bafa8
   languageName: node
   linkType: hard
 
@@ -31773,14 +31787,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^3.0.0 || ^4.0.0, vite@npm:^4.1.4, vite@npm:^4.4.7":
-  version: 4.4.7
-  resolution: "vite@npm:4.4.7"
+"vite@npm:^3.0.0 || ^4.0.0, vite@npm:^4.1.4, vite@npm:^4.4.7, vite@npm:^4.4.9":
+  version: 4.4.9
+  resolution: "vite@npm:4.4.9"
   dependencies:
     esbuild: ^0.18.10
     fsevents: ~2.3.2
-    postcss: ^8.4.26
-    rollup: ^3.25.2
+    postcss: ^8.4.27
+    rollup: ^3.27.1
   peerDependencies:
     "@types/node": ">= 14"
     less: "*"
@@ -31809,7 +31823,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 787c4d891da18d0a0545bee07dec73c3201979dcf2b1ea3dc13fdd2d3b9ad76d413bcc0e68502183e309007a612c1f4116adefe0093d95fbbb9cf1c1755f7e41
+  checksum: c511024ceae39c68c7dbf2ac4381ee655cd7bb62cf43867a14798bc835d3320b8fa7867a336143c30825c191c1fb4e9aa3348fce831ab617e96203080d3d2908
   languageName: node
   linkType: hard
 
