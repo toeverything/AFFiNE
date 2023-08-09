@@ -96,7 +96,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.30
+    "@blocksuite/icons": ^2.1.31
     foxact: ^0.2.17
     link-preview-js: ^3.0.4
   languageName: unknown
@@ -129,7 +129,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/editor": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/global": 0.0.0-20230809030546-32e6e21d-nightly
-    "@blocksuite/icons": ^2.1.30
+    "@blocksuite/icons": ^2.1.31
     "@blocksuite/lit": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/store": 0.0.0-20230809030546-32e6e21d-nightly
     "@dnd-kit/core": ^6.0.8
@@ -220,7 +220,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/editor": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/global": 0.0.0-20230809030546-32e6e21d-nightly
-    "@blocksuite/icons": ^2.1.30
+    "@blocksuite/icons": ^2.1.31
     "@blocksuite/lit": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/store": 0.0.0-20230809030546-32e6e21d-nightly
     "@dnd-kit/core": ^6.0.8
@@ -403,7 +403,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.30
+    "@blocksuite/icons": ^2.1.31
     "@toeverything/components": ^0.0.10
   languageName: unknown
   linkType: soft
@@ -429,7 +429,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.30
+    "@blocksuite/icons": ^2.1.31
     "@toeverything/components": ^0.0.10
     "@toeverything/theme": ^0.7.11
     clsx: ^2.0.0
@@ -641,7 +641,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/editor": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/global": 0.0.0-20230809030546-32e6e21d-nightly
-    "@blocksuite/icons": ^2.1.30
+    "@blocksuite/icons": ^2.1.31
     "@blocksuite/lit": 0.0.0-20230809030546-32e6e21d-nightly
     "@blocksuite/store": 0.0.0-20230809030546-32e6e21d-nightly
     "@storybook/addon-actions": ^7.1.1
@@ -3428,6 +3428,16 @@ __metadata:
     "@types/react": ^18.0.25
     react: ^18.2.0
   checksum: 4c1aaf56304f5dfa3f330a6f8c6cc2526393dd5aae06940c7291755515e7051054357943426af519d6144a99e283170fe9f20f575ebd9344c480b4343a690648
+  languageName: node
+  linkType: hard
+
+"@blocksuite/icons@npm:^2.1.31":
+  version: 2.1.31
+  resolution: "@blocksuite/icons@npm:2.1.31"
+  peerDependencies:
+    "@types/react": ^18.0.25
+    react: ^18.2.0
+  checksum: 046dd4195e105bd5d9225571f5b5369e66e0bc2cd68819ee5713a1c55d6d64272c5c99cb4e41fd7b5cc4c80d0c2818068dd04dc8452df2d94b1bfddcc188b3d9
   languageName: node
   linkType: hard
 
