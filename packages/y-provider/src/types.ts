@@ -13,7 +13,12 @@ export type Status =
       error: Error;
     };
 
-export interface DatasourceDocAdapter {
+export interface StatusAdapter {
+  getStatus(): Status;
+  subscribeStatusChange(onStatusChange: () => void): () => void;
+}
+
+export interface DatasourceDocAdapter extends Partial<StatusAdapter> {
   // request diff update from other clients
   queryDocState: (
     guid: string,
@@ -31,8 +36,4 @@ export interface DatasourceDocAdapter {
   onDocUpdate?(
     callback: (guid: string, update: Uint8Array) => void
   ): () => void;
-
-  getStatus?(): Status;
-
-  subscribeStatusChange?(onStatusChange: () => void): () => void;
 }

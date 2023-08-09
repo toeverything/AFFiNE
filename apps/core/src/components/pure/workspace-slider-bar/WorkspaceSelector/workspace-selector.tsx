@@ -1,10 +1,12 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import type { StatusAdapter } from '@affine/y-provider';
 import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useDataSourceStatus } from '@toeverything/hooks/use-data-source-status';
+import type { IndexedDBProvider } from '@toeverything/y-indexeddb';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
-import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type { AllWorkspace } from '../../../../shared';
 import { workspaceAvatarStyle } from './index.css';
 import {
@@ -19,6 +21,36 @@ export interface WorkspaceSelectorProps {
   onClick: () => void;
 }
 
+type WorkspaceStatusBarProps = {
+  currentWorkspace: AllWorkspace;
+};
+
+type WorkspaceStatusBarImplProps = {
+  provider: StatusAdapter;
+};
+
+const WorkspaceStatusBarImpl = ({ provider }: WorkspaceStatusBarImplProps) => {
+  const status = useDataSourceStatus(provider);
+  return <div>{status.type}</div>;
+};
+
+const WorkspaceStatusBar = ({ currentWorkspace }: WorkspaceStatusBarProps) => {
+  const mainProvider = useMemo(
+    () =>
+      currentWorkspace.blockSuiteWorkspace.providers.find(
+        provider => provider.flavour === 'local-indexeddb-background'
+      ) as IndexedDBProvider | undefined,
+    [currentWorkspace.blockSuiteWorkspace.providers]
+  );
+  useEffect(() => {
+    console.log(mainProvider);
+  }, [mainProvider]);
+  if (!mainProvider) {
+    return null;
+  }
+  return <WorkspaceStatusBarImpl provider={mainProvider} />;
+};
+
 /**
  * @todo-Doma Co-locate WorkspaceListModal with {@link WorkspaceSelector},
  *            because it's never used elsewhere.
@@ -30,7 +62,6 @@ export const WorkspaceSelector = ({
   const [name] = useBlockSuiteWorkspaceName(
     currentWorkspace?.blockSuiteWorkspace
   );
-  const [workspace] = useCurrentWorkspace();
 
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
@@ -63,16 +94,15 @@ export const WorkspaceSelector = ({
         <StyledWorkspaceName data-testid="workspace-name">
           {name}
         </StyledWorkspaceName>
-        {workspace && (
-          <StyledWorkspaceStatus>
-            {workspace.flavour === 'local' ? (
-              <LocalWorkspaceIcon />
-            ) : (
-              <CloudWorkspaceIcon />
-            )}
-            {workspace.flavour === 'local' ? 'Local' : 'AFFiNE Cloud'}
-          </StyledWorkspaceStatus>
-        )}
+        <WorkspaceStatusBar currentWorkspace={currentWorkspace} />
+        <StyledWorkspaceStatus>
+          {currentWorkspace.flavour === 'local' ? (
+            <LocalWorkspaceIcon />
+          ) : (
+            <CloudWorkspaceIcon />
+          )}
+          {currentWorkspace.flavour === 'local' ? 'Local' : 'AFFiNE Cloud'}
+        </StyledWorkspaceStatus>
       </StyledSelectorWrapper>
     </StyledSelectorContainer>
   );

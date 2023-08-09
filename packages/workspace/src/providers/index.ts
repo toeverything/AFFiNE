@@ -26,10 +26,13 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   blockSuiteWorkspace
 ): LocalIndexedDBBackgroundProvider => {
   const indexeddbProvider = create(blockSuiteWorkspace);
+
   let connected = false;
   return {
     flavour: 'local-indexeddb-background',
     passive: true,
+    getStatus: indexeddbProvider.getStatus,
+    subscribeStatusChange: indexeddbProvider.subscribeStatusChange,
     get connected() {
       return connected;
     },

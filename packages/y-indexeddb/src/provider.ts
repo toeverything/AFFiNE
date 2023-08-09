@@ -4,6 +4,7 @@ import {
   type Status,
   writeOperation,
 } from '@affine/y-provider';
+import { assertExists } from '@blocksuite/global/utils';
 import { openDB } from 'idb';
 import type { Doc } from 'yjs';
 import { diffUpdate, mergeUpdates } from 'yjs';
@@ -153,6 +154,14 @@ export const createIndexedDBProvider = (
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
   const apis = {
+    getStatus(): Status {
+      assertExists(datasource);
+      return datasource.getStatus();
+    },
+    subscribeStatusChange(onStatusChange) {
+      assertExists(datasource);
+      return datasource.subscribeStatusChange(onStatusChange);
+    },
     connect: () => {
       if (apis.connected) {
         apis.disconnect();
@@ -173,7 +182,7 @@ export const createIndexedDBProvider = (
     get connected() {
       return provider?.connected || false;
     },
-  };
+  } satisfies IndexedDBProvider;
 
   return apis;
 };
