@@ -190,8 +190,6 @@ await build({
       renderChunk(code, chunk) {
         if (chunk.fileName.endsWith('js')) {
           const record = new StaticModuleRecord(code, chunk.fileName);
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-expect-error
           const reexports = record.__reexportMap__ as Record<
             string,
             [localName: string, exportedName: string][]
