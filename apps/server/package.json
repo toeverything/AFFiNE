@@ -30,7 +30,7 @@
     "@node-rs/argon2": "^1.5.2",
     "@node-rs/crc32": "^1.7.2",
     "@node-rs/jsonwebtoken": "^0.2.3",
-    "@prisma/client": "^5.0.0",
+    "@prisma/client": "^5.1.1",
     "@socket.io/redis-adapter": "^8.2.1",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
