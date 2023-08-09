@@ -1,4 +1,4 @@
-import type { Status,StatusAdapter } from '@affine/y-provider';
+import type { Status, StatusAdapter } from '@affine/y-provider';
 import { noop } from 'foxact/noop';
 import { useCallback, useSyncExternalStore } from 'react';
 
