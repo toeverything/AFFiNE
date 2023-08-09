@@ -69,14 +69,14 @@ const OptimizeOptionOptions: (
   },
 });
 
+export const publicPath = process.env.PUBLIC_PATH
+  ? `${process.env.PUBLIC_PATH}/${gitShortHash()}`
+  : '/';
+
 export const createConfiguration: (
   buildFlags: BuildFlags,
   runtimeConfig: RuntimeConfig
 ) => webpack.Configuration = (buildFlags, runtimeConfig) => {
-  const publicPath = process.env.PUBLIC_PATH
-    ? join(process.env.PUBLIC_PATH, gitShortHash())
-    : '/';
-
   const blocksuiteBaseDir = buildFlags.localBlockSuite;
 
   const config = {
