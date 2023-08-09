@@ -6,16 +6,13 @@ import { nanoid } from 'nanoid';
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
 import {
-  createTraceSpan,
   generateRandUTF16Chars,
-  initTraceReport,
-  reportToTraceEndpoint,
   SPAN_ID_BYTES,
-  spansCache,
   toZuluDateFormat,
   TRACE_FLAG,
   TRACE_ID_BYTES,
   TRACE_VERSION,
+  traceReporter,
 } from './utils';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
@@ -244,15 +241,11 @@ export const fetchWithReport = (
 
   return fetch(input, init)
     .then(response => {
-      spansCache.push(createTraceSpan(traceId, spanId, requestId, startTime));
-      initTraceReport();
+      traceReporter.cacheTrace(traceId, spanId, requestId, startTime);
       return response;
     })
     .catch(err => {
-      const postBody = {
-        spans: [createTraceSpan(traceId, spanId, requestId, startTime)],
-      };
-      reportToTraceEndpoint(JSON.stringify(postBody)).catch(console.warn);
+      traceReporter.uploadTrace(traceId, spanId, requestId, startTime);
       return Promise.reject(err);
     });
 };

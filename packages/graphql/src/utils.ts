@@ -5,12 +5,7 @@ export const TRACE_FLAG = '01';
 
 const BytesBuffer = Array(32);
 
-const traceReportEndpoint = runtimeConfig.traceReportEndpoint;
-const reportInterval = 60_000;
-export let spansCache = new Array<TraceSpan>();
-let reportIntervalId: number | undefined | NodeJS.Timeout;
-
-export type TraceSpan = {
+type TraceSpan = {
   name: string;
   spanId: string;
   displayName: {
@@ -70,68 +65,134 @@ export function toZuluDateFormat(date: Date): string {
   );
 }
 
-export function createTraceSpan(
-  traceId: string,
-  spanId: string,
-  requestId: string,
-  startTime: string
-): TraceSpan {
-  return {
-    name: `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
-    spanId,
-    displayName: {
-      value: 'fetch',
-      truncatedByteCount: 0,
-    },
-    startTime,
-    endTime: toZuluDateFormat(new Date()),
-    attributes: {
-      attributeMap: {
-        requestId: {
-          stringValue: {
-            value: requestId,
-            truncatedByteCount: 0,
+export class TraceReporter {
+  static traceReportEndpoint = runtimeConfig.traceReportEndpoint;
+  static shouldReportTrace = runtimeConfig.shouldReportTrace;
+
+  private spansCache = new Array<TraceSpan>();
+  private reportIntervalId: number | undefined | NodeJS.Timeout;
+  private reportInterval = 60_000;
+
+  private static instance: TraceReporter;
+
+  private constructor() {}
+
+  public static getInstance(): TraceReporter {
+    if (!TraceReporter.instance) {
+      const instance = (TraceReporter.instance = new TraceReporter());
+      instance.initTraceReport();
+    }
+
+    return TraceReporter.instance;
+  }
+
+  public cacheTrace(
+    traceId: string,
+    spanId: string,
+    requestId: string,
+    startTime: string
+  ) {
+    const span = TraceReporter.createTraceSpan(
+      traceId,
+      spanId,
+      requestId,
+      startTime
+    );
+    this.spansCache.push(span);
+    if (this.spansCache.length <= 1) {
+      this.initTraceReport();
+    }
+  }
+
+  public uploadTrace(
+    traceId: string,
+    spanId: string,
+    requestId: string,
+    startTime: string
+  ) {
+    const span = TraceReporter.createTraceSpan(
+      traceId,
+      spanId,
+      requestId,
+      startTime
+    );
+    TraceReporter.reportToTraceEndpoint(
+      JSON.stringify({ spans: [span] })
+    ).catch(console.warn);
+  }
+
+  public static reportToTraceEndpoint(payload: string): Promise<Response> {
+    return fetch(TraceReporter.traceReportEndpoint, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: payload,
+    });
+  }
+
+  public static createTraceSpan(
+    traceId: string,
+    spanId: string,
+    requestId: string,
+    startTime: string
+  ): TraceSpan {
+    return {
+      name: `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
+      spanId,
+      displayName: {
+        value: 'fetch',
+        truncatedByteCount: 0,
+      },
+      startTime,
+      endTime: toZuluDateFormat(new Date()),
+      attributes: {
+        attributeMap: {
+          requestId: {
+            stringValue: {
+              value: requestId,
+              truncatedByteCount: 0,
+            },
           },
         },
+        droppedAttributesCount: 0,
       },
-      droppedAttributesCount: 0,
-    },
+    };
+  }
+
+  private initTraceReport = () => {
+    if (!this.reportIntervalId && TraceReporter.shouldReportTrace) {
+      if (typeof window !== 'undefined') {
+        this.reportIntervalId = window.setInterval(
+          this.reportHandler,
+          this.reportInterval
+        );
+      } else {
+        this.reportIntervalId = setInterval(
+          this.reportHandler,
+          this.reportInterval
+        );
+      }
+    }
+  };
+
+  private reportHandler = () => {
+    if (this.spansCache.length <= 0) {
+      if (typeof window !== 'undefined') {
+        window.clearInterval(this.reportIntervalId);
+      } else {
+        clearInterval(this.reportIntervalId);
+      }
+      this.reportIntervalId = undefined;
+      return;
+    }
+    TraceReporter.reportToTraceEndpoint(
+      JSON.stringify({ spans: [...this.spansCache] })
+    ).catch(console.warn);
+    this.spansCache = [];
   };
 }
 
-export function reportToTraceEndpoint(payload: string): Promise<Response> {
-  return fetch(traceReportEndpoint, {
-    method: 'POST',
-    mode: 'cors',
-    cache: 'no-cache',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: payload,
-  });
-}
-
-export const reportHandler = () => {
-  if (spansCache.length <= 0) {
-    if (typeof window !== 'undefined') {
-      window.clearInterval(reportIntervalId);
-    } else {
-      clearInterval(reportIntervalId);
-    }
-    reportIntervalId = undefined;
-  }
-  reportToTraceEndpoint(JSON.stringify({ spans: [...spansCache] })).catch(
-    console.warn
-  );
-  spansCache = [];
-};
-
-export const initTraceReport = () => {
-  if (reportIntervalId === undefined && runtimeConfig.shouldReportTrace) {
-    if (typeof window !== 'undefined') {
-      reportIntervalId = window.setInterval(reportHandler, reportInterval);
-    } else {
-      reportIntervalId = setInterval(reportHandler, reportInterval);
-    }
-  }
-};
+export const traceReporter = TraceReporter.getInstance();
