@@ -35,7 +35,7 @@ const createDatasource = ({
   };
   const callbackSet = new Set<() => void>();
   const changeStatus = async (newStatus: Status) => {
-    await navigator.locks.request(`datasource-${dbName}-update-status`, () => {
+    await navigator.locks.request(`y-indexeddb-${dbName}-change-status`, () => {
       status = newStatus;
       callbackSet.forEach(cb => cb());
     });
