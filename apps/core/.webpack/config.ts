@@ -70,7 +70,7 @@ const OptimizeOptionOptions: (
 });
 
 export const publicPath = process.env.PUBLIC_PATH
-  ? `${process.env.PUBLIC_PATH}/${gitShortHash()}`
+  ? `${process.env.PUBLIC_PATH}/${gitShortHash()}/`
   : '/';
 
 export const createConfiguration: (
