@@ -57,7 +57,7 @@ export const HelpIsland = ({
         inEdgelessPage={mode === 'edgeless'}
       >
         <StyledAnimateWrapper
-          style={{ height: spread ? `${showList.length * 44}px` : 0 }}
+          style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}
         >
           {showList.includes('whatNew') && (
             <Tooltip content={t["Discover what's new!"]()} placement="left-end">
