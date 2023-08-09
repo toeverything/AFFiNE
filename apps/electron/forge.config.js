@@ -130,6 +130,12 @@ module.exports = {
       : undefined,
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
+    protocols: [
+      {
+        name: productName,
+        schemes: [productName.toLowerCase()],
+      },
+    ],
   },
   makers,
   hooks: {

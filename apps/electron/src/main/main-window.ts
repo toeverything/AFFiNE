@@ -5,6 +5,7 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
+import { CLOUD_BASE_URL } from './config';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
@@ -101,7 +102,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
+  const pageUrl = CLOUD_BASE_URL; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 
@@ -113,7 +114,40 @@ async function createWindow() {
 }
 
 // singleton
-let browserWindow: Electron.BrowserWindow | undefined;
+let browserWindow: BrowserWindow | undefined;
+let popup: BrowserWindow | undefined;
+
+function createPopupWindow() {
+  if (!popup || popup?.isDestroyed()) {
+    const mainExposedMeta = getExposedMeta();
+    popup = new BrowserWindow({
+      width: 1200,
+      height: 600,
+      alwaysOnTop: true,
+      resizable: false,
+      webPreferences: {
+        preload: join(__dirname, './preload.js'),
+        additionalArguments: [
+          `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
+          // popup window does not need helper process, right?
+        ],
+      },
+      show: false,
+    });
+    popup.on('close', e => {
+      e.preventDefault();
+      popup?.destroy();
+      popup = undefined;
+    });
+    browserWindow?.webContents.once('did-finish-load', () => {
+      closePopup();
+    });
+    popup.webContents.openDevTools({
+      mode: 'detach',
+    });
+  }
+  return popup;
+}
 
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
@@ -131,4 +165,26 @@ export async function restoreOrCreateWindow() {
   }
 
   return browserWindow;
+}
+
+export async function handleOpenUrlInPopup(url: string) {
+  const popup = createPopupWindow();
+
+  popup.on('ready-to-show', () => {
+    popup.show();
+  });
+
+  await popup.loadURL(url);
+}
+
+export function closePopup() {
+  if (!popup?.isDestroyed()) {
+    popup?.close();
+    popup?.destroy();
+    popup = undefined;
+  }
+}
+
+export function reloadApp() {
+  browserWindow?.reload();
 }
