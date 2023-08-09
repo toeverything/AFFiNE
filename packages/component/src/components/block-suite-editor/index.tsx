@@ -95,32 +95,34 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     if (!container) {
       return;
     }
-    if (page.awarenessStore.getFlag('enable_block_hub')) {
-      editor
-        .createBlockHub()
-        .then(blockHub => {
-          if (blockHubRef.current) {
-            blockHubRef.current.remove();
-          }
-          blockHubRef.current = blockHub;
-          if (setBlockHub) {
-            setBlockHub(blockHub);
-          }
-        })
-        .catch(err => {
-          console.error(err);
-        });
-    }
-
     container.appendChild(editor);
+    return () => {
+      container.removeChild(editor);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    editor
+      .createBlockHub()
+      .then(blockHub => {
+        if (blockHubRef.current) {
+          blockHubRef.current.remove();
+        }
+        blockHubRef.current = blockHub;
+        if (setBlockHub) {
+          setBlockHub(blockHub);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+      });
     return () => {
       if (setBlockHub) {
         setBlockHub(null);
       }
       blockHubRef.current?.remove();
-      container.removeChild(editor);
     };
-  }, [editor, setBlockHub, page]);
+  }, [editor, page.awarenessStore, setBlockHub]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
