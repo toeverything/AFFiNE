@@ -45,6 +45,9 @@ const createDatasource = ({
   const adapter = {
     queryDocState: async (guid, options) => {
       try {
+        changeStatus({
+          type: 'syncing',
+        });
         const db = await dbPromise;
         const store = db
           .transaction('workspace', 'readonly')
@@ -62,9 +65,17 @@ const createDatasource = ({
           ? diffUpdate(update, options?.stateVector)
           : update;
 
+        changeStatus({
+          type: 'synced',
+        });
+
         return diff;
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
+          changeStatus({
+            type: 'error',
+            error: err,
+          });
           throw err;
         }
         return false;
