@@ -31,12 +31,30 @@ const createDatasource = ({
   dbName: string;
   mergeCount?: number;
 }) => {
-  let status: Status = {
+  let currentStatus: Status = {
     type: 'idle',
   };
+  let syncingStack = 0;
   const callbackSet = new Set<() => void>();
   const changeStatus = (newStatus: Status) => {
-    status = newStatus;
+    // simulate a stack, each syncing and synced should be paired
+    if (newStatus.type === 'syncing') {
+      syncingStack++;
+    }
+    if (newStatus.type === 'synced') {
+      syncingStack--;
+    }
+
+    if (syncingStack < 0) {
+      console.error('syncingStatus < 0, this should not happen');
+    }
+
+    if (syncingStack === 0) {
+      currentStatus = newStatus;
+    }
+    if (newStatus.type !== 'synced') {
+      currentStatus = newStatus;
+    }
     callbackSet.forEach(cb => cb());
   };
 
@@ -122,7 +140,7 @@ const createDatasource = ({
       }
     },
     getStatus(): Status {
-      return status;
+      return currentStatus;
     },
     subscribeStatusChange(onStatusChange: () => void): () => void {
       callbackSet.add(onStatusChange);
