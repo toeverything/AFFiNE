@@ -2,6 +2,7 @@ import {
   AuthModal as AuthModalBase,
   type AuthModalProps as AuthModalBaseProps,
 } from '@affine/component/auth-components';
+import { isDesktop } from '@affine/env/constant';
 import { atom, useAtom } from 'jotai';
 import { type FC, useCallback, useEffect, useMemo } from 'react';
 
@@ -81,6 +82,14 @@ export const AuthModal: FC<AuthModalProps> = ({
       setAuthEmail('');
     }
   }, [open, setAuthEmail, setAuthStore]);
+
+  useEffect(() => {
+    if (isDesktop) {
+      return window.events?.ui.onFinishLogin(() => {
+        setOpen(false);
+      });
+    }
+  }, [setOpen]);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>

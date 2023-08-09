@@ -10,7 +10,7 @@
     "tsconfig.json"
   ],
   "dependencies": {
-    "@endo/static-module-record": "^0.7.20",
+    "@endo/static-module-record": "^0.8.1",
     "@swc/core": "^1.3.74",
     "@toeverything/infra": "workspace:^",
     "@vanilla-extract/rollup-plugin": "^1.2.2",

@@ -3,6 +3,7 @@ import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
 import type { app, dialog, shell } from 'electron';
 import { ipcRenderer } from 'electron';
 import { Subject } from 'rxjs';
+import { z } from 'zod';
 
 export interface ExposedMeta {
   handlers: [string, string[]][];
@@ -48,8 +49,17 @@ export function getElectronAPIs() {
   };
 }
 
+// todo: remove duplicated codes
+const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
+const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
+const buildType = ReleaseTypeSchema.parse(envBuildType);
+const isDev = process.env.NODE_ENV === 'development';
+let schema = buildType === 'stable' ? 'affine' : `affine-${envBuildType}`;
+schema = isDev ? 'affine-dev' : schema;
+
 export const appInfo = {
   electron: true,
+  schema,
 };
 
 function getMainAPIs() {
@@ -142,7 +152,7 @@ const createMessagePortChannel = (port: MessagePort): EventBasedChannel => {
 
 function getHelperAPIs() {
   const events$ = new Subject<{ channel: string; args: any[] }>();
-  const meta: ExposedMeta = (() => {
+  const meta: ExposedMeta | null = (() => {
     const val = process.argv
       .find(arg => arg.startsWith('--helper-exposed-meta='))
       ?.split('=')[1];
@@ -211,7 +221,10 @@ function getHelperAPIs() {
     return [helperHandlers, helperEvents];
   };
 
-  const [apis, events] = setup(meta);
-
-  return { apis, events };
+  if (meta) {
+    const [apis, events] = setup(meta);
+    return { apis, events };
+  } else {
+    return { apis: {}, events: {} };
+  }
 }

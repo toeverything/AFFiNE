@@ -1,5 +1,4 @@
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
-import { isDesktop } from '@affine/env/constant';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -11,6 +10,7 @@ import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
 import { emailRegex } from '../../../utils/email-regex';
+import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
@@ -43,7 +43,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     if (res?.user) {
       signIn('email', {
         email: email,
-        callbackUrl: `/auth/signIn?isClient=${isDesktop ? 'true' : 'false'}`,
+        callbackUrl: buildCallbackUrl('signIn'),
         redirect: true,
       }).catch(console.error);
 
@@ -51,7 +51,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     } else {
       signIn('email', {
         email: email,
-        callbackUrl: `/auth/signUp?isClient=${isDesktop ? 'true' : 'false'}`,
+        callbackUrl: buildCallbackUrl('signUp'),
         redirect: true,
       }).catch(console.error);
 
