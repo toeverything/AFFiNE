@@ -4,7 +4,7 @@
     "moduleResolution": "bundler",
     "outDir": "./lib"
   },
-  "include": ["**.ts", "**.tsx", "./src"],
+  "include": ["./src"],
   "references": [
     {
       "path": "../../packages/component"
