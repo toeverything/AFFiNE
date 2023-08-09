@@ -19,6 +19,18 @@ import { getUtcTimestamp, UserClaim } from './service';
 
 export const NextAuthOptionsProvide = Symbol('NextAuthOptions');
 
+function getSchemaFromCallbackUrl(origin: string, callbackUrl: string) {
+  const { searchParams } = new URL(callbackUrl, origin);
+  return searchParams.has('schema') ? searchParams.get('schema') : null;
+}
+
+function wrapUrlWithSchema(url: string, schema: string | null) {
+  if (schema) {
+    return `${schema}://open-url?${url}`;
+  }
+  return url;
+}
+
 export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
   useFactory(config: Config, prisma: PrismaService, mailer: MailService) {
@@ -69,13 +81,20 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           from: config.auth.email.sender,
           async sendVerificationRequest(params: SendVerificationRequestParams) {
             const { identifier, url, provider } = params;
-            const { host } = new URL(url);
+            const { host, searchParams, origin } = new URL(url);
+            const callbackUrl = searchParams.get('callbackUrl') || '';
+            if (!callbackUrl) {
+              throw new Error('callbackUrl is not set');
+            }
+            const schema = getSchemaFromCallbackUrl(origin, callbackUrl);
+            const wrappedUrl = wrapUrlWithSchema(url, schema);
+            // hack: check if link is opened via desktop
             const result = await mailer.sendMail({
               to: identifier,
               from: provider.from,
               subject: `Sign in to ${host}`,
-              text: text({ url, host }),
-              html: html({ url, host }),
+              text: text({ url: wrappedUrl, host }),
+              html: html({ url: wrappedUrl, host }),
             });
             const failed = result.rejected
               .concat(result.pending)
@@ -242,6 +261,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         return session;
       },
+      redirect(params) {
+        return params.url;
+      },
     };
     return nextAuthOptions;
   },
@@ -295,6 +317,14 @@ function html(params: { url: string; host: string }) {
         </table>
       </td>
     </tr>
+    <tr>
+      <td style="padding: 0px 0px 10px 0px; font-size: 16px; line-height: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
+        If the link cannot be clicked, copy and paste the following URL into your browser:<br/>
+        <a href="${url}" target="_blank" style="font-size:14px; word-break: break-all; font-family: monospace;">
+          ${url}
+        </a>
+      </td>
+    </td>
     <tr>
       <td align="center"
         style="padding: 0px 0px 10px 0px; font-size: 16px; line-height: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">

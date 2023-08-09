@@ -5,6 +5,7 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
+import { isDesktop } from '@affine/env/constant';
 import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { SessionProvider } from 'next-auth/react';
@@ -62,9 +63,12 @@ export const AuthPage: FC = () => {
     },
     [changePassword, user.id]
   );
-
   const onOpenAffine = useCallback(() => {
-    jumpToIndex(RouteLogic.REPLACE);
+    if (isDesktop) {
+      window.apis.ui.handleFinishLogin();
+    } else {
+      jumpToIndex(RouteLogic.REPLACE);
+    }
   }, [jumpToIndex]);
 
   if (authType === 'signUp') {
