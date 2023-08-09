@@ -1,40 +1,34 @@
-import { Button } from '@affine/component';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useSetAtom } from 'jotai';
-import type {
-  FC,
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-} from 'react';
+import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
-import { openQuickSearchModalAtom } from '../../../atoms';
-import { QuickSearchButton } from '../../pure/quick-search-button';
 import { EditorModeSwitch } from './editor-mode-switch';
 import type { BaseHeaderProps } from './header';
 import { Header } from './header';
+import { PageMenu } from './header-right-items/editor-option-menu';
 import * as styles from './styles.css';
 
-export type WorkspaceHeaderProps = BaseHeaderProps;
+export interface WorkspaceHeaderProps
+  extends BaseHeaderProps,
+    HTMLAttributes<HTMLDivElement> {
+  children?: ReactNode;
+}
 
-export const BlockSuiteEditorHeader: FC<
-  PropsWithChildren<WorkspaceHeaderProps> & HTMLAttributes<HTMLDivElement>
-> = (props): ReactElement => {
+export const BlockSuiteEditorHeader = (
+  props: WorkspaceHeaderProps
+): ReactElement => {
   const { workspace, currentPage, children, isPublic } = props;
   // fixme(himself65): remove this atom and move it to props
-  const setOpenQuickSearch = useSetAtom(openQuickSearchModalAtom);
   const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
     meta => meta.id === currentPage?.id
   );
   const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
   const [isEditable, setIsEditable] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
   const handleClick = useCallback(() => {
     if (isEditable) {
       setIsEditable(!isEditable);
@@ -46,10 +40,18 @@ export const BlockSuiteEditorHeader: FC<
       setIsEditable(!isEditable);
     }
   }, [currentPage, isEditable, pageMeta?.title, pageTitleMeta]);
-
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        handleClick();
+      }
+    },
+    [handleClick]
+  );
   const headerRef = useRef<HTMLDivElement>(null);
   assertExists(pageMeta);
   const title = pageMeta?.title;
+
   return (
     <Header ref={headerRef} {...props}>
       {children}
@@ -76,16 +78,8 @@ export const BlockSuiteEditorHeader: FC<
                     defaultValue={pageMeta?.title}
                     onBlur={handleClick}
                     ref={inputRef}
+                    onKeyDown={handleKeyDown}
                   />
-                  <Button
-                    onClick={handleClick}
-                    data-testid="save-edit-button"
-                    style={{
-                      marginLeft: '12px',
-                    }}
-                  >
-                    Save
-                  </Button>
                 </div>
               ) : (
                 <span data-testid="title-edit-button" onClick={handleClick}>
@@ -94,11 +88,7 @@ export const BlockSuiteEditorHeader: FC<
               )}
             </div>
             <div className={styles.searchArrowWrapper}>
-              <QuickSearchButton
-                onClick={() => {
-                  setOpenQuickSearch(true);
-                }}
-              />
+              <PageMenu rename={handleClick} />
             </div>
           </div>
         </div>

@@ -1,17 +1,10 @@
-import {
-  Button,
-  FlexWrapper,
-  IconButton,
-  Input,
-  Menu,
-  MenuItem,
-  Tooltip,
-} from '@affine/component';
+import { FlexWrapper, Input, Menu, MenuItem, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
+import { Button, IconButton } from '@toeverything/components/button';
 import type { MouseEvent, ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';

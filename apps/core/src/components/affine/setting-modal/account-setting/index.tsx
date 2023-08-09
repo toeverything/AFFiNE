@@ -1,4 +1,4 @@
-import { Button, FlexWrapper, IconButton, Input } from '@affine/component';
+import { FlexWrapper, Input } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
@@ -8,6 +8,7 @@ import { uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
+import { Button, IconButton } from '@toeverything/components/button';
 import { useAtom } from 'jotai/index';
 import { signOut } from 'next-auth/react';
 import { type FC, useCallback, useState } from 'react';

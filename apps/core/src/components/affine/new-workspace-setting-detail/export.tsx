@@ -1,8 +1,10 @@
-import { Button, toast } from '@affine/component';
+import { toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type FC, useCallback } from 'react';
+import { Button } from '@toeverything/components/button';
+import type { SaveDBFileResult } from '@toeverything/infra/type';
+import { useCallback } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 
@@ -27,20 +29,25 @@ async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
   }
 }
 
-export const ExportPanel: FC<{
+interface ExportPanelProps {
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}
+
+export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
   const onExport = useCallback(async () => {
     await syncBlobsToSqliteDb(workspace);
-    const result = await window.apis?.dialog.saveDBFileAs(workspaceId);
+    const result: SaveDBFileResult = await window.apis?.dialog.saveDBFileAs(
+      workspaceId
+    );
     if (result?.error) {
       toast(result.error);
     } else if (!result?.canceled) {
       toast(t['Export success']());
     }
   }, [t, workspace, workspaceId]);
+
   return (
     <>
       <SettingRow name={t['Export']()} desc={t['Export Description']()}>

@@ -1,7 +1,9 @@
-import type { IconButtonProps } from '@affine/component';
-import { IconButton } from '@affine/component';
 import { styled } from '@affine/component';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import {
+  IconButton,
+  type IconButtonProps,
+} from '@toeverything/components/button';
 
 const StyledIconButtonWithAnimate = styled(IconButton)(() => {
   return {
@@ -12,21 +14,19 @@ const StyledIconButtonWithAnimate = styled(IconButton)(() => {
       svg: {
         transform: 'translateY(3px)',
       },
-      '::after': {
-        background: 'var(--affine-background-primary-color)',
-      },
+      backgroundColor: 'transparent !important',
     },
   };
 });
 
 // fixme(himself65): need to refactor
-export const QuickSearchButton = ({
+export const HeaderDropDownButton = ({
   onClick,
   ...props
 }: Omit<IconButtonProps, 'children'>) => {
   return (
     <StyledIconButtonWithAnimate
-      data-testid="header-quickSearchButton"
+      data-testid="header-dropDownButton"
       {...props}
       onClick={e => {
         onClick?.(e);

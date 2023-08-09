@@ -1,4 +1,6 @@
-import { Button, displayFlex, styled } from '../..';
+import { Button } from '@toeverything/components/button';
+
+import { displayFlex, styled } from '../..';
 
 export const TabItem = styled('li')<{ isActive?: boolean }>(({ isActive }) => {
   {
@@ -21,7 +23,7 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(({ isActive }) => {
         background: 'var(--affine-hover-color)',
         opacity: 1,
         color: isActive
-          ? 'var(--affine-text-primary-color)'
+          ? 'var(--affine-t/ext-primary-color)'
           : 'var(--affine-text-secondary-color)',
         svg: {
           fill: isActive

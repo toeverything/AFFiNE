@@ -1,7 +1,8 @@
-import { Button, Confirm } from '@affine/component';
+import { Confirm } from '@affine/component';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
+import { Button } from '@toeverything/components/button';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';

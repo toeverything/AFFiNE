@@ -1,5 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { registeredPluginAtom, rootStore } from '@toeverything/infra/atom';
+import { loadedPluginNameAtom, rootStore } from '@toeverything/infra/atom';
 import { use } from 'foxact/use';
 import { useAtomValue } from 'jotai';
 import { Provider } from 'jotai/react';
@@ -17,7 +17,7 @@ async function main() {
 
   const App = () => {
     use(pluginRegisterPromise);
-    const plugins = useAtomValue(registeredPluginAtom);
+    const plugins = useAtomValue(loadedPluginNameAtom);
     _pluginNestedImportsMap.forEach(value => {
       const exports = value.get('index.js');
       assertExists(exports);

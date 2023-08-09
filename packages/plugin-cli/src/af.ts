@@ -144,7 +144,7 @@ await build({
   build: {
     watch: isWatch ? {} : undefined,
     minify: false,
-    target: 'es2020',
+    target: 'esnext',
     outDir: coreOutDir,
     emptyOutDir: true,
     lib: {

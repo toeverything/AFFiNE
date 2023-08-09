@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Hello world plugin",
-  "version": "0.8.0-canary.12",
+  "version": "0.8.0-canary.14",
   "scripts": {
     "dev": "af dev",
     "build": "af build"
@@ -17,7 +17,8 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "^2.1.29"
+    "@blocksuite/icons": "^2.1.30",
+    "@toeverything/components": "^0.0.10"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*"

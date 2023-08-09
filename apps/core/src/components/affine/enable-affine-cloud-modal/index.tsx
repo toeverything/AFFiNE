@@ -1,9 +1,9 @@
-import { IconButton, Modal, ModalWrapper } from '@affine/component';
+import { Modal, ModalWrapper, Wrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
-import type React from 'react';
+import { Button, IconButton } from '@toeverything/components/button';
 
-import { Content, ContentTitle, Header, StyleButton, StyleTips } from './style';
+import { Content, ContentTitle, Header, StyleTips } from './style';
 
 interface EnableAffineCloudModalProps {
   open: boolean;
@@ -11,11 +11,11 @@ interface EnableAffineCloudModalProps {
   onClose: () => void;
 }
 
-export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
+export const EnableAffineCloudModal = ({
   onConfirm,
   open,
   onClose,
-}) => {
+}: EnableAffineCloudModalProps) => {
   const t = useAFFiNEI18N();
 
   return (
@@ -30,19 +30,22 @@ export const EnableAffineCloudModal: React.FC<EnableAffineCloudModalProps> = ({
           <ContentTitle>{t['Enable AFFiNE Cloud']()}?</ContentTitle>
           <StyleTips>{t['Enable AFFiNE Cloud Description']()}</StyleTips>
           {/* <StyleTips>{t('Retain cached cloud data')}</StyleTips> */}
-          <div>
-            <StyleButton
+          <Wrapper width={284} margin="auto">
+            <Button
               data-testid="confirm-enable-affine-cloud-button"
-              shape="round"
               type="primary"
+              block
               onClick={onConfirm}
+              style={{
+                marginBottom: '16px',
+              }}
             >
               {t['Sign in and Enable']()}
-            </StyleButton>
-            <StyleButton shape="round" onClick={onClose}>
+            </Button>
+            <Button onClick={onClose} block>
               {t['Not now']()}
-            </StyleButton>
-          </div>
+            </Button>
+          </Wrapper>
         </Content>
       </ModalWrapper>
     </Modal>

@@ -1,7 +1,6 @@
 import { isDesktop } from '@affine/env/constant';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type React from 'react';
 import { useEffect, useState } from 'react';
 
 const minimumChromeVersion = 102;
@@ -23,7 +22,7 @@ export const shouldShowWarning = () => {
   }
 };
 
-export const OSWarningMessage: React.FC = () => {
+export const OSWarningMessage = () => {
   const t = useAFFiNEI18N();
   const [notChrome, setNotChrome] = useState(false);
   const [notGoodVersion, setNotGoodVersion] = useState(false);

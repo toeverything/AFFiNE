@@ -1,8 +1,10 @@
-import { Button, FlexWrapper, toast, Tooltip } from '@affine/component';
+import { FlexWrapper, toast, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
+import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import * as style from './style.css';
@@ -30,9 +32,11 @@ const useDBFileSecondaryPath = (workspaceId: string) => {
   return path;
 };
 
-export const StoragePanel: FC<{
+interface StoragePanelProps {
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}
+
+export const StoragePanel = ({ workspace }: StoragePanelProps) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
   const secondaryPath = useDBFileSecondaryPath(workspaceId);
@@ -51,7 +55,7 @@ export const StoragePanel: FC<{
     setMoveToInProgress(true);
     window.apis?.dialog
       .moveDBFile(workspaceId)
-      .then(result => {
+      .then((result: MoveDBFileResult) => {
         if (!result?.error && !result?.canceled) {
           toast(t['Move folder success']());
         } else if (result?.error) {

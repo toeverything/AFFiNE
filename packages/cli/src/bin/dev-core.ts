@@ -28,6 +28,7 @@ const flags: BuildFlags = {
   mode: 'development',
   channel: 'canary',
   coverage: false,
+  localBlockSuite: undefined,
 };
 
 const buildFlags = await p.group(
@@ -79,6 +80,11 @@ const buildFlags = await p.group(
         message: 'Enable coverage',
         initialValue: process.env.COVERAGE === 'true',
       }),
+    debugBlockSuite: () =>
+      p.confirm({
+        message: 'Debug blocksuite locally?',
+        initialValue: false,
+      }),
   },
   {
     onCancel: () => {
@@ -87,6 +93,27 @@ const buildFlags = await p.group(
     },
   }
 );
+
+if (buildFlags.debugBlockSuite) {
+  const { config } = await import('dotenv');
+  const envLocal = config({
+    path: path.resolve(cwd, '.env.local'),
+  });
+
+  const localBlockSuite = await p.text({
+    message: 'local blocksuite PATH',
+    initialValue: envLocal.error
+      ? undefined
+      : envLocal.parsed?.LOCAL_BLOCK_SUITE,
+  });
+  if (typeof localBlockSuite !== 'string') {
+    throw new Error('local blocksuite PATH is required');
+  }
+  if (!existsSync(localBlockSuite)) {
+    throw new Error(`local blocksuite not found: ${localBlockSuite}`);
+  }
+  flags.localBlockSuite = localBlockSuite;
+}
 
 flags.distribution = buildFlags.distribution as any;
 flags.mode = buildFlags.mode as any;

@@ -1,48 +1,46 @@
-import { IconButton, Tooltip } from '@affine/component';
-import { contentLayoutAtom } from '@affine/sdk/entry';
+import { Tooltip } from '@affine/component';
+import { deleteLayoutAtom, pushLayoutAtom } from '@affine/sdk/entry';
+import { AiIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
-import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import type { ComponentType, PropsWithChildren, ReactElement } from 'react';
+import { useCallback, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 
-export const HeaderItem = (): ReactElement => {
-  const setLayout = useSetAtom(contentLayoutAtom);
+import { DetailContent } from './detail-content';
+
+export const HeaderItem = ({
+  Provider,
+}: {
+  Provider: ComponentType<PropsWithChildren>;
+}): ReactElement => {
+  const [open, setOpen] = useState(false);
+  const pushLayout = useSetAtom(pushLayoutAtom);
+  const deleteLayout = useSetAtom(deleteLayoutAtom);
   return (
     <Tooltip content="Chat with AI" placement="bottom-end">
       <IconButton
-        onClick={useCallback(
-          () =>
-            // todo: abstract a context function to open a new tab
-            setLayout(layout => {
-              if (layout === 'editor') {
-                return {
-                  direction: 'horizontal',
-                  first: 'editor',
-                  second: '@affine/copilot-plugin',
-                  splitPercentage: 70,
-                };
-              } else {
-                return 'editor';
-              }
-            }),
-          [setLayout]
-        )}
+        onClick={useCallback(() => {
+          if (!open) {
+            setOpen(true);
+            pushLayout('@affine/copilot-plugin', div => {
+              const root = createRoot(div);
+              root.render(
+                <Provider>
+                  <DetailContent />
+                </Provider>
+              );
+              return () => {
+                root.unmount();
+              };
+            });
+          } else {
+            setOpen(false);
+            deleteLayout('@affine/copilot-plugin');
+          }
+        }, [Provider, deleteLayout, open, pushLayout])}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="icon icon-tabler icon-tabler-brand-hipchat"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-          stroke="currentColor"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M17.802 17.292s.077 -.055 .2 -.149c1.843 -1.425 3 -3.49 3 -5.789c0 -4.286 -4.03 -7.764 -9 -7.764c-4.97 0 -9 3.478 -9 7.764c0 4.288 4.03 7.646 9 7.646c.424 0 1.12 -.028 2.088 -.084c1.262 .82 3.104 1.493 4.716 1.493c.499 0 .734 -.41 .414 -.828c-.486 -.596 -1.156 -1.551 -1.416 -2.29z"></path>
-          <path d="M7.5 13.5c2.5 2.5 6.5 2.5 9 0"></path>
-        </svg>
+        <AiIcon />
       </IconButton>
     </Tooltip>
   );
