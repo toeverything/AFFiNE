@@ -1,17 +1,16 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"],
   "compilerOptions": {
-    "composite": true,
-    "noEmit": false,
+    "esModuleInterop": true,
     "outDir": "lib"
   },
+  "include": ["e2e"],
   "references": [
     {
-      "path": "../infra"
+      "path": "../kit"
     },
     {
-      "path": "../../tests/fixtures"
+      "path": "../fixtures"
     }
   ]
 }

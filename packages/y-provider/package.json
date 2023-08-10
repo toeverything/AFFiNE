@@ -4,6 +4,10 @@
   "version": "0.8.0-canary.16",
   "description": "Yjs provider utilities for AFFiNE",
   "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "devDependencies": {
     "@blocksuite/store": "0.0.0-20230810005427-25adb757-nightly"
   },

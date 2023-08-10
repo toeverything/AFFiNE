@@ -8,7 +8,7 @@ AFFiNE Developer Documentation using [waku](https://github.com/dai-shi/waku).
 
 ## electron
 
-> `web` needs to be built before electron.
+> `core` needs to be built before electron.
 
 AFFiNE Desktop (macOS, Linux and Windows Distribution) using [Electron](https://www.electronjs.org/).
 
@@ -20,6 +20,10 @@ Server using [Nest.js](https://nestjs.com/).
 
 Storybook using [Storybook](https://storybook.js.org/).
 
-## Core
+## prototype
 
-AFFiNE Core Application using [React.js](https://reactjs.org/).
+AFFiNE Prototype using [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/).
+
+## core
+
+AFFiNE Core Application using [React.js](https://reactjs.org/) + [Webpack](https://webpack.js.org/).
