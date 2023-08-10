@@ -115,5 +115,23 @@
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.1.4"
   },
+  "resolutions": {
+    "array-includes": "npm:@nolyfill/array-includes@latest",
+    "array.prototype.findlastindex": "npm:@nolyfill/array.prototype.findlastindex@latest",
+    "array.prototype.flat": "npm:@nolyfill/array.prototype.flat@latest",
+    "array.prototype.flatmap": "npm:@nolyfill/array.prototype.flatmap@latest",
+    "arraybuffer.prorotype.slice": "npm:@nolyfill/arraybuffer.prorotype.slice@latest",
+    "function.prototype.name": "npm:@nolyfill/function.prototype.name@latest",
+    "has": "npm:@nolyfill/has@latest",
+    "object-keys": "npm:@nolyfill/object-keys@latest",
+    "object.assign": "npm:@nolyfill/object.assign@latest",
+    "object.entries": "npm:@nolyfill/object.entries@latest",
+    "object.fromentries": "npm:@nolyfill/object.fromentries@latest",
+    "object.hasown": "npm:@nolyfill/object.hasown@latest",
+    "object.values": "npm:@nolyfill/object.values@latest",
+    "string.prototype.trim": "npm:@nolyfill/string.prototype.trim@latest",
+    "string.prototype.trimend": "npm:@nolyfill/string.prototype.trimend@latest",
+    "string.prototype.trimstart": "npm:@nolyfill/string.prototype.trimstart@latest"
+  },
   "packageManager": "yarn@3.6.0"
 }
