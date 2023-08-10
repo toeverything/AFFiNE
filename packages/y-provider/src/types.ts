@@ -14,7 +14,7 @@ export type Status =
     };
 
 export interface StatusAdapter {
-  getStatus(): Status;
+  readonly status: Status;
   subscribeStatusChange(onStatusChange: () => void): () => void;
 }
 

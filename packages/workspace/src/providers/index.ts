@@ -31,7 +31,9 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   return {
     flavour: 'local-indexeddb-background',
     passive: true,
-    getStatus: indexeddbProvider.getStatus,
+    get status() {
+      return indexeddbProvider.status;
+    },
     subscribeStatusChange: indexeddbProvider.subscribeStatusChange,
     get connected() {
       return connected;

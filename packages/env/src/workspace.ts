@@ -46,7 +46,7 @@ export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
   flavour: 'local-indexeddb';
 }
 
-export interface SQLiteProvider extends PassiveDocProvider {
+export interface SQLiteProvider extends PassiveDocProvider, StatusAdapter {
   flavour: 'sqlite';
 }
 

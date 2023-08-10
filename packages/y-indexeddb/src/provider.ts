@@ -1,7 +1,6 @@
 import {
   createLazyProvider,
   type DatasourceDocAdapter,
-  type Status,
   writeOperation,
 } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
@@ -31,42 +30,12 @@ const createDatasource = ({
   dbName: string;
   mergeCount?: number;
 }) => {
-  let currentStatus: Status = {
-    type: 'idle',
-  };
-  let syncingStack = 0;
-  const callbackSet = new Set<() => void>();
-  const changeStatus = (newStatus: Status) => {
-    // simulate a stack, each syncing and synced should be paired
-    if (newStatus.type === 'syncing') {
-      syncingStack++;
-    }
-    if (newStatus.type === 'synced') {
-      syncingStack--;
-    }
-
-    if (syncingStack < 0) {
-      console.error('syncingStatus < 0, this should not happen');
-    }
-
-    if (syncingStack === 0) {
-      currentStatus = newStatus;
-    }
-    if (newStatus.type !== 'synced') {
-      currentStatus = newStatus;
-    }
-    callbackSet.forEach(cb => cb());
-  };
-
   const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
     upgrade: upgradeDB,
   });
   const adapter = {
     queryDocState: async (guid, options) => {
       try {
-        changeStatus({
-          type: 'syncing',
-        });
         const db = await dbPromise;
         const store = db
           .transaction('workspace', 'readonly')
@@ -74,9 +43,6 @@ const createDatasource = ({
         const data = await store.get(guid);
 
         if (!data) {
-          changeStatus({
-            type: 'synced',
-          });
           return false;
         }
 
@@ -87,16 +53,9 @@ const createDatasource = ({
           ? diffUpdate(update, options?.stateVector)
           : update;
 
-        changeStatus({
-          type: 'synced',
-        });
         return diff;
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
-          changeStatus({
-            type: 'error',
-            error: err,
-          });
           throw err;
         }
         return false;
@@ -104,9 +63,6 @@ const createDatasource = ({
     },
     sendDocUpdate: async (guid, update) => {
       try {
-        changeStatus({
-          type: 'syncing',
-        });
         const db = await dbPromise;
         const store = db
           .transaction('workspace', 'readwrite')
@@ -128,27 +84,11 @@ const createDatasource = ({
             updates: rows,
           })
         );
-        changeStatus({
-          type: 'synced',
-        });
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
-          changeStatus({
-            type: 'error',
-            error: err,
-          });
           throw err;
         }
       }
-    },
-    getStatus(): Status {
-      return currentStatus;
-    },
-    subscribeStatusChange(onStatusChange: () => void): () => void {
-      callbackSet.add(onStatusChange);
-      return () => {
-        callbackSet.delete(onStatusChange);
-      };
     },
   } satisfies DatasourceDocAdapter;
 
@@ -172,13 +112,13 @@ export const createIndexedDBProvider = (
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
   const apis = {
-    getStatus(): Status {
-      assertExists(datasource);
-      return datasource.getStatus();
+    get status() {
+      assertExists(provider);
+      return provider.status;
     },
     subscribeStatusChange(onStatusChange) {
-      assertExists(datasource);
-      return datasource.subscribeStatusChange(onStatusChange);
+      assertExists(provider);
+      return provider.subscribeStatusChange(onStatusChange);
     },
     connect: () => {
       if (apis.connected) {
