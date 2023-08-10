@@ -11538,10 +11538,15 @@ __metadata:
     vite-plugin-dts: 3.5.1
     zod: ^3.21.4
   peerDependencies:
+    "@affine/templates": "*"
+    "@blocksuite/editor": "*"
+    "@blocksuite/lit": "*"
     async-call-rpc: "*"
     electron: "*"
     react: "*"
   peerDependenciesMeta:
+    "@affine/templates":
+      optional: true
     "@blocksuite/editor":
       optional: true
     "@blocksuite/lit":

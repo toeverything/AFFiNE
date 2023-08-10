@@ -1,0 +1,149 @@
+{
+  "blocks": {
+    "Tz41kDyemg": {
+      "sys:id": "Tz41kDyemg",
+      "sys:flavour": "affine:page",
+      "sys:children": ["PCxQvHuwt1", "PMY4JPuq4o"],
+      "prop:title": [
+        {
+          "insert": "Templates Galleries   "
+        }
+      ]
+    },
+    "PCxQvHuwt1": {
+      "sys:id": "PCxQvHuwt1",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "PMY4JPuq4o": {
+      "sys:id": "PMY4JPuq4o",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "1KJadeDAj-",
+        "_a8e4OM_PP",
+        "ndmUz6zEr1",
+        "yIcapYtWKm",
+        "gPqHv8Whaq",
+        "pp12c2slOV",
+        "VyoH5kUerc",
+        "XvCeZ-f-ib"
+      ],
+      "prop:xywh": "[0,0,800,465]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "pp12c2slOV": {
+      "sys:id": "pp12c2slOV",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "z_v6LOqNpp"
+            }
+          }
+        },
+        {
+          "insert": " "
+        }
+      ]
+    },
+    "XvCeZ-f-ib": {
+      "sys:id": "XvCeZ-f-ib",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "0N0WzwmtK_"
+            }
+          }
+        }
+      ]
+    },
+    "_a8e4OM_PP": {
+      "sys:id": "_a8e4OM_PP",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "No matter you're "
+        },
+        {
+          "insert": "organizing your personal life",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " or "
+        },
+        {
+          "insert": "getting things done at work",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": ", our templates gallery has got you covered! "
+        }
+      ]
+    },
+    "ndmUz6zEr1": {
+      "sys:id": "ndmUz6zEr1",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Here We offer a wide range of resources to meet your unique needs and help you achieve your goals, whether it's in your personal or professional life."
+        }
+      ],
+      "prop:type": "text"
+    },
+    "yIcapYtWKm": {
+      "sys:id": "yIcapYtWKm",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "gPqHv8Whaq": {
+      "sys:id": "gPqHv8Whaq",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Tired of managing your notes or coming up with a effient work plan? Whether you're a student, parent, or have diverse interests, here we provide  few templates to kick off your journey and unlock your true potential with AFFiNE and reap incredible benefits."
+        }
+      ]
+    },
+    "VyoH5kUerc": {
+      "sys:id": "VyoH5kUerc",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Stay organized and efficient in a dynamic work environment is essential for today's working people. AFFiNE elevates productivity for project managers, software engineers, and professionals alike. We're excited to provide insights into how AFFiNE transforms work life. "
+        }
+      ]
+    },
+    "1KJadeDAj-": {
+      "sys:id": "1KJadeDAj-",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    }
+  }
+}

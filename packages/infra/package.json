@@ -10,6 +10,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./blocksuite": {
+      "types": "./dist/src/blocksuite/index.d.ts",
+      "import": "./dist/blocksuite.js",
+      "require": "./dist/blocksuite.cjs"
+    },
     "./core/*": {
       "types": "./dist/src/core/*.d.ts",
       "import": "./dist/core/*.js",
@@ -61,11 +66,17 @@
     "vite-plugin-dts": "3.5.1"
   },
   "peerDependencies": {
+    "@affine/templates": "*",
+    "@blocksuite/editor": "*",
+    "@blocksuite/lit": "*",
     "async-call-rpc": "*",
     "electron": "*",
     "react": "*"
   },
   "peerDependenciesMeta": {
+    "@affine/templates": {
+      "optional": true
+    },
     "@blocksuite/editor": {
       "optional": true
     },
