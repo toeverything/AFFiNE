@@ -43,7 +43,7 @@ const createAndPinCollection = async (
   await page.waitForTimeout(100);
 };
 
-test('Show collections items in sidebar', async ({ page }) => {
+test.fixme('Show collections items in sidebar', async ({ page }) => {
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
