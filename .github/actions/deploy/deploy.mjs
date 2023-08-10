@@ -2,8 +2,12 @@ import { execSync } from 'node:child_process';
 
 const {
   DEPLOY_ENV,
-  DEV_ENV_HOST,
+  DEPLOY_HOST,
   GIT_SHORT_HASH,
+  DATABASE_URL,
+  DATABASE_USERNAME,
+  DATABASE_PASSWORD,
+  DATABASE_NAME,
   R2_ACCOUNT_ID,
   R2_ACCESS_KEY_ID,
   R2_SECRET_ACCESS_KEY,
@@ -13,17 +17,56 @@ const {
   OAUTH_EMAIL_PASSWORD,
   AFFINE_GOOGLE_CLIENT_ID,
   AFFINE_GOOGLE_CLIENT_SECRET,
+  CLOUD_SQL_IAM_ACCOUNT,
+  GCLOUD_CONNECTION_NAME,
+  GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT,
+  REDIS_HOST,
+  REDIS_PASSWORD,
 } = process.env;
 
 const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
+  const staticIpName =
+    DEPLOY_ENV === 'production'
+      ? 'affine-cluster-production'
+      : 'affine-cluster-dev';
+  const redisAndPostgres =
+    DEPLOY_ENV === 'production'
+      ? [
+          `--set-string global.database.url=${DATABASE_URL}`,
+          `--set-string global.database.username=${DATABASE_USERNAME}`,
+          `--set-string global.database.password=${DATABASE_PASSWORD}`,
+          `--set-string global.database.name=${DATABASE_NAME}`,
+          `--set        global.database.gcloud.enabled=true`,
+          `--set-string global.database.gcloud.connectionName="${GCLOUD_CONNECTION_NAME}"`,
+          `--set-string global.database.gcloud.cloudSqlInternal="${GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT}"`,
+          `--set-string global.redis.host="${REDIS_HOST}"`,
+          `--set-string global.redis.password="${REDIS_PASSWORD}"`,
+        ]
+      : [];
+  const serviceAnnotations =
+    DEPLOY_ENV === 'production'
+      ? [
+          `--set-json   web.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
+          `--set-json   graphql.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
+          `--set-json   graphql.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
+          `--set-json   sync.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
+          `--set-json   sync.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
+        ]
+      : [];
+  const webReplicaCount = DEPLOY_ENV === 'production' ? 3 : 1;
+  const graphqlReplicaCount = DEPLOY_ENV === 'production' ? 3 : 1;
+  const syncReplicaCount = DEPLOY_ENV === 'production' ? 6 : 1;
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
     `--namespace  ${DEPLOY_ENV}`,
     `--set        global.ingress.enabled=true`,
-    `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"affine-cluster-dev\\" }\"`,
-    `--set-string global.ingress.host="${DEV_ENV_HOST}"`,
+    `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${staticIpName}\\" }\"`,
+    `--set-string global.ingress.host="${DEPLOY_HOST}"`,
+    ...redisAndPostgres,
+    `--set        web.replicaCount=${webReplicaCount}`,
     `--set-string web.image.tag="${GIT_SHORT_HASH}"`,
+    `--set        graphql.replicaCount=${graphqlReplicaCount}`,
     `--set-string graphql.image.tag="${GIT_SHORT_HASH}"`,
     `--set        graphql.app.objectStorage.r2.enabled=true`,
     `--set-string graphql.app.objectStorage.r2.accountId="${R2_ACCOUNT_ID}"`,
@@ -37,7 +80,9 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.oauth.google.clientId="${AFFINE_GOOGLE_CLIENT_ID}"`,
     `--set-string graphql.app.oauth.google.clientSecret="${AFFINE_GOOGLE_CLIENT_SECRET}"`,
     `--set        graphql.app.experimental.enableJwstCodec=true`,
+    `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${GIT_SHORT_HASH}"`,
+    ...serviceAnnotations,
     `--version "0.0.0-alpha.${GIT_SHORT_HASH}" --timeout 10m`,
     flag,
   ].join(' ');

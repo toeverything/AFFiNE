@@ -19,6 +19,10 @@ export const gitShortHash = once(() => {
   return sha;
 });
 
+export const R2_BUCKET =
+  process.env.R2_BUCKET! ??
+  (process.env.BUILD_TYPE === 'canary' ? 'assets-dev' : 'assets-prod');
+
 export class WebpackS3Plugin implements WebpackPluginInstance {
   private readonly s3 = new S3Client({
     region: 'auto',
@@ -40,7 +44,7 @@ export class WebpackS3Plugin implements WebpackPluginInstance {
         const assetSource = await readFile(assetPath);
         const putObjectCommandOptions: PutObjectCommandInput = {
           Body: assetSource,
-          Bucket: process.env.R2_BUCKET!,
+          Bucket: R2_BUCKET,
           Key: join(gitShortHash(), asset),
         };
         const contentType = lookup(asset);

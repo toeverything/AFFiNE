@@ -69,9 +69,19 @@ const OptimizeOptionOptions: (
   },
 });
 
-export const publicPath = process.env.PUBLIC_PATH
-  ? `${process.env.PUBLIC_PATH}/${gitShortHash()}/`
-  : '/';
+export const publicPath = (function () {
+  const { BUILD_TYPE } = process.env;
+  const publicPath = process.env.PUBLIC_PATH ?? '/';
+  if (process.env.COVERAGE) {
+    return publicPath;
+  }
+  if (BUILD_TYPE === 'canary') {
+    return `https://dev.affineassets.com/${gitShortHash()}/`;
+  } else if (BUILD_TYPE === 'beta' || BUILD_TYPE === 'stable') {
+    return `https://prod.affineassets.com/${gitShortHash()}/`;
+  }
+  return publicPath;
+})();
 
 export const createConfiguration: (
   buildFlags: BuildFlags,
