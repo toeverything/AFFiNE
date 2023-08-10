@@ -116,7 +116,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/cli@workspace:packages/cli"
   dependencies:
-    "@clack/core": ^0.3.2
+    "@clack/core": ^0.3.3
     "@clack/prompts": ^0.6.3
     dotenv: ^16.3.1
     ts-node: ^10.9.1
@@ -316,9 +316,9 @@ __metadata:
     autoprefixer: ^10.4.14
     express: ^4.18.2
     jotai: ^2.2.2
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
-    react-server-dom-webpack: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.3.0-canary-7118f5dd7-20230705
+    react-dom: 18.3.0-canary-7118f5dd7-20230705
+    react-server-dom-webpack: 18.3.0-canary-7118f5dd7-20230705
     tailwindcss: ^3.3.3
     typescript: ^5.1.6
     waku: 0.14.0
@@ -501,7 +501,7 @@ __metadata:
     "@vitest/coverage-istanbul": ^0.33.0
     "@vitest/ui": ^0.33.0
     eslint: ^8.46.0
-    eslint-config-prettier: ^8.8.0
+    eslint-config-prettier: ^9.0.0
     eslint-plugin-i: ^2.27.5-3
     eslint-plugin-prettier: ^5.0.0
     eslint-plugin-react: ^7.33.0
@@ -649,7 +649,7 @@ __metadata:
     lodash-es: ^4.17.21
     next-auth: ^4.22.1
     nodemailer: ^6.9.3
-    nodemon: ^2.0.22
+    nodemon: ^3.0.1
     parse-duration: ^1.1.0
     prisma: ^5.1.1
     reflect-metadata: ^0.1.13
@@ -668,7 +668,7 @@ __metadata:
   resolution: "@affine/storage@workspace:packages/storage"
   dependencies:
     "@napi-rs/cli": ^3.0.0-alpha.4
-    lib0: ^0.2.78
+    lib0: ^0.2.80
     yjs: ^13.6.7
   languageName: unknown
   linkType: soft
@@ -696,7 +696,7 @@ __metadata:
     "@storybook/jest": ^0.1.0
     "@storybook/react": ^7.1.1
     "@storybook/react-vite": ^7.1.1
-    "@storybook/test-runner": ^0.11.0
+    "@storybook/test-runner": ^0.13.0
     "@storybook/testing-library": ^0.2.0
     "@vitejs/plugin-react": ^4.0.4
     concurrently: ^8.2.0
@@ -757,7 +757,7 @@ __metadata:
     jotai: ^2.2.2
     js-base64: ^3.7.5
     ky: ^0.33.3
-    lib0: ^0.2.78
+    lib0: ^0.2.80
     react: 18.2.0
     react-dom: 18.2.0
     ws: ^8.13.0
@@ -3545,13 +3545,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clack/core@npm:^0.3.2":
-  version: 0.3.2
-  resolution: "@clack/core@npm:0.3.2"
+"@clack/core@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "@clack/core@npm:0.3.3"
   dependencies:
     picocolors: ^1.0.0
     sisteransi: ^1.0.5
-  checksum: a4b6708d47b9df9d2899f5ec60e34b4ae7831e951da136dadb690ccc8d21ba5c8465e24fb6d9c2c510ef388774d509dcf44f3d5ff9a1c28b9474a541ac07efce
+  checksum: 3f04afc39194340c83d07deccd57f8c5e1fec43cde10fb3ceb2af4d8738fbaf9b33f4d37f64d66615265c8c1f61d1ad367aac7337695d63a536e1cd20215e49c
   languageName: node
   linkType: hard
 
@@ -3559,7 +3559,7 @@ __metadata:
   version: 0.6.3
   resolution: "@clack/prompts@npm:0.6.3"
   dependencies:
-    "@clack/core": ^0.3.2
+    "@clack/core": ^0.3.3
     is-unicode-supported: "*"
     picocolors: ^1.0.0
     sisteransi: ^1.0.5
@@ -10776,9 +10776,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/test-runner@npm:^0.11.0":
-  version: 0.11.0
-  resolution: "@storybook/test-runner@npm:0.11.0"
+"@storybook/test-runner@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "@storybook/test-runner@npm:0.13.0"
   dependencies:
     "@babel/core": ^7.22.5
     "@babel/generator": ^7.22.5
@@ -10809,7 +10809,7 @@ __metadata:
     ts-dedent: ^2.0.0
   bin:
     test-storybook: dist/test-storybook.js
-  checksum: ced74b8aa60214cc8cdcfaf287c95f65c767d1e925844b4f9cf0cea99e11179a64d4e83cb3369d4c01aa6a3fcb5178479399482e321f8fd479b9ec1c79d1a2c9
+  checksum: 7297577aa02505ff70fb7b245f0ecd96595491665ecd517e06f90ce7c969ebbaea2818333d4b4816bb475e1b08b67c24411fdf50dcac75ec52cb02fa72ac4d81
   languageName: node
   linkType: hard
 
@@ -18177,14 +18177,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^8.8.0":
-  version: 8.8.0
-  resolution: "eslint-config-prettier@npm:8.8.0"
+"eslint-config-prettier@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "eslint-config-prettier@npm:9.0.0"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 1e94c3882c4d5e41e1dcfa2c368dbccbfe3134f6ac7d40101644d3bfbe3eb2f2ffac757f3145910b5eacf20c0e85e02b91293d3126d770cbf3dc390b3564681c
+  checksum: 362e991b6cb343f79362bada2d97c202e5303e6865888918a7445c555fb75e4c078b01278e90be98aa98ae22f8597d8e93d48314bec6824f540f7efcab3ce451
   languageName: node
   linkType: hard
 
@@ -23344,6 +23344,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lib0@npm:^0.2.80":
+  version: 0.2.80
+  resolution: "lib0@npm:0.2.80"
+  dependencies:
+    isomorphic.js: ^0.2.4
+  bin:
+    0gentesthtml: bin/gentesthtml.js
+    0serve: bin/0serve.js
+  checksum: eddb9c6cc23a916e3f6c26b3e729882c1f886de138b2de4055fb51a941acd7dab08eb65c9b9b43f01a5c83e0936169010e0c6e517d30446540019eebcb1ef6f6
+  languageName: node
+  linkType: hard
+
 "lie@npm:~3.3.0":
   version: 3.3.0
   resolution: "lie@npm:3.3.0"
@@ -25178,23 +25190,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nodemon@npm:^2.0.22":
-  version: 2.0.22
-  resolution: "nodemon@npm:2.0.22"
+"nodemon@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "nodemon@npm:3.0.1"
   dependencies:
     chokidar: ^3.5.2
     debug: ^3.2.7
     ignore-by-default: ^1.0.1
     minimatch: ^3.1.2
     pstree.remy: ^1.1.8
-    semver: ^5.7.1
-    simple-update-notifier: ^1.0.7
+    semver: ^7.5.3
+    simple-update-notifier: ^2.0.0
     supports-color: ^5.5.0
     touch: ^3.1.0
     undefsafe: ^2.0.5
   bin:
     nodemon: bin/nodemon.js
-  checksum: 9c987e139748f5b5c480c6c9080bdc97304ee7d29172b7b3da1a7db590b1323ad57b96346304e9b522b0e445c336dc393ccd3f9f45c73b20d476d2347890dcd0
+  checksum: 6a5d81855760d6617049eccce10ccf02bddb482dab13ceea5280ae595ec7004eee13e7b934368e3f46c37fe4d970342a8c38c99cae7e93e4d7a3ed1c1ecb6acf
   languageName: node
   linkType: hard
 
@@ -27622,15 +27634,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:18.3.0-canary-1fdacbefd-20230630":
-  version: 18.3.0-canary-1fdacbefd-20230630
-  resolution: "react-dom@npm:18.3.0-canary-1fdacbefd-20230630"
+"react-dom@npm:18.3.0-canary-7118f5dd7-20230705":
+  version: 18.3.0-canary-7118f5dd7-20230705
+  resolution: "react-dom@npm:18.3.0-canary-7118f5dd7-20230705"
   dependencies:
     loose-envify: ^1.1.0
-    scheduler: 0.24.0-canary-1fdacbefd-20230630
+    scheduler: 0.24.0-canary-7118f5dd7-20230705
   peerDependencies:
-    react: 18.3.0-canary-1fdacbefd-20230630
-  checksum: 777c8eee2b4025f2180058a6032aba762d1d82b1c8500389c35b423f5dd70210a55efd684313833c66ff7b5892825f045b43af92d97fbea68d6cc14b20ed2979
+    react: 18.3.0-canary-7118f5dd7-20230705
+  checksum: a33f49a92df0234358461c2c5fb1fb270267b06e7090b4a7c2c4a5082bb088496b4eec67feb2a1ddf22c797b57004b00017be402d94fcd81e7a08826d1f2155b
   languageName: node
   linkType: hard
 
@@ -27854,18 +27866,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-server-dom-webpack@npm:18.3.0-canary-1fdacbefd-20230630":
-  version: 18.3.0-canary-1fdacbefd-20230630
-  resolution: "react-server-dom-webpack@npm:18.3.0-canary-1fdacbefd-20230630"
+"react-server-dom-webpack@npm:18.3.0-canary-7118f5dd7-20230705":
+  version: 18.3.0-canary-7118f5dd7-20230705
+  resolution: "react-server-dom-webpack@npm:18.3.0-canary-7118f5dd7-20230705"
   dependencies:
     acorn-loose: ^8.3.0
     loose-envify: ^1.1.0
     neo-async: ^2.6.1
   peerDependencies:
-    react: 18.3.0-canary-1fdacbefd-20230630
-    react-dom: 18.3.0-canary-1fdacbefd-20230630
+    react: 18.3.0-canary-7118f5dd7-20230705
+    react-dom: 18.3.0-canary-7118f5dd7-20230705
     webpack: ^5.59.0
-  checksum: e7cd837c0469443a46a355168c27e24c779158f4e49857b4ad4504942a46d482e1b3841517f99c6ef2eca1b4db723a759a94c46e73ad00dc6ff0d817a6b4b0ca
+  checksum: df4b9d5bdc8fb94d6351fb97456e0b7eedbf8915b2fa4ce0f24c0195ee231517561e563138c7411f6b30b616272d2f034e978f87d08359abe0d8577a3f80b9a9
   languageName: node
   linkType: hard
 
@@ -27938,12 +27950,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:18.3.0-canary-1fdacbefd-20230630":
-  version: 18.3.0-canary-1fdacbefd-20230630
-  resolution: "react@npm:18.3.0-canary-1fdacbefd-20230630"
+"react@npm:18.3.0-canary-7118f5dd7-20230705":
+  version: 18.3.0-canary-7118f5dd7-20230705
+  resolution: "react@npm:18.3.0-canary-7118f5dd7-20230705"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: 31956aa660b2369b996d5fdc6f8aa37e8defe4e0075d55c6df1c10fe811adbb09acec3ba8a8ff4ad2fb4f9257fca8c8b52578725f3dd153e7f6be43589313f0e
+  checksum: f8d6c697aa57afbd28faae4c7f82a1b38180fa6e2ac9e45fdd9eedddf65753742eb744e7b9d30a1e173f45510f2b38a29e61786a1d3254a46f39f9172a85ace5
   languageName: node
   linkType: hard
 
@@ -28857,12 +28869,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"scheduler@npm:0.24.0-canary-1fdacbefd-20230630":
-  version: 0.24.0-canary-1fdacbefd-20230630
-  resolution: "scheduler@npm:0.24.0-canary-1fdacbefd-20230630"
+"scheduler@npm:0.24.0-canary-7118f5dd7-20230705":
+  version: 0.24.0-canary-7118f5dd7-20230705
+  resolution: "scheduler@npm:0.24.0-canary-7118f5dd7-20230705"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: c6db74a5fb436862c58c8efee72190b947de6acfa9ba1eb1884f41b96d40b8cdeb8e9eb86f5b6ac161b04d56a36a1e3a64fb62d9342cbd21bd9fed4707800b94
+  checksum: ee56c760d8ae1250d06532fa67c6a24273614924b0d3b6129bc112050b2016f96aaa439f84a4a370f39615e280e888466471eaf7624a304da42ff197d555f844
   languageName: node
   linkType: hard
 
@@ -28928,7 +28940,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:2 || 3 || 4 || 5, semver@npm:^5.5.0, semver@npm:^5.6.0, semver@npm:^5.7.1":
+"semver@npm:2 || 3 || 4 || 5, semver@npm:^5.5.0, semver@npm:^5.6.0":
   version: 5.7.2
   resolution: "semver@npm:5.7.2"
   bin:
@@ -29324,12 +29336,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"simple-update-notifier@npm:^1.0.0, simple-update-notifier@npm:^1.0.7":
+"simple-update-notifier@npm:^1.0.0":
   version: 1.1.0
   resolution: "simple-update-notifier@npm:1.1.0"
   dependencies:
     semver: ~7.0.0
   checksum: 1012e9b6c504e559a948078177b3eedbb9d7e4d15878e2bda56314d08db609ca5da485be4ac9f838759faae8057935ee0246fcdf63f1233c86bd9fecb2a5544b
+  languageName: node
+  linkType: hard
+
+"simple-update-notifier@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "simple-update-notifier@npm:2.0.0"
+  dependencies:
+    semver: ^7.5.3
+  checksum: 9ba00d38ce6a29682f64a46213834e4eb01634c2f52c813a9a7b8873ca49cdbb703696f3290f3b27dc067de6d9418b0b84bef22c3eb074acf352529b2d6c27fd
   languageName: node
   linkType: hard
 
