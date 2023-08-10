@@ -1,0 +1,40 @@
+{
+  "name": "@affine/prototype",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 3003",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host --port 3003"
+  },
+  "dependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine/component": "workspace:*",
+    "@affine/debug": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@affine/graphql": "workspace:*",
+    "@affine/i18n": "workspace:*",
+    "@affine/jotai": "workspace:*",
+    "@affine/templates": "workspace:*",
+    "@affine/workspace": "workspace:*",
+    "@blocksuite/block-std": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/editor": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/global": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/icons": "^2.1.31",
+    "@blocksuite/lit": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/store": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@toeverything/hooks": "workspace:*",
+    "@toeverything/y-indexeddb": "workspace:*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react-swc": "^3.3.2",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.9"
+  }
+}

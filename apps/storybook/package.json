@@ -26,17 +26,17 @@
     "jest-mock": "^29.6.2",
     "serve": "^14.2.0",
     "storybook": "^7.1.1",
-    "storybook-dark-mode": "^3.0.0",
+    "storybook-dark-mode": "^3.0.1",
     "wait-on": "^7.0.1"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/blocks": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/editor": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/global": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/icons": "^2.1.30",
-    "@blocksuite/lit": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/store": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/block-std": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/blocks": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/editor": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/global": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/icons": "^2.1.31",
+    "@blocksuite/lit": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/store": "0.0.0-20230810005427-25adb757-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
@@ -48,5 +48,5 @@
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
   },
-  "version": "0.8.0-canary.14"
+  "version": "0.8.0-canary.16"
 }
