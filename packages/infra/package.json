@@ -45,15 +45,15 @@
   },
   "dependencies": {
     "@affine/sdk": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/global": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/store": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/blocks": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/global": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/store": "0.0.0-20230810005427-25adb757-nightly",
     "jotai": "^2.2.2",
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@blocksuite/editor": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/lit": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/editor": "0.0.0-20230810005427-25adb757-nightly",
+    "@blocksuite/lit": "0.0.0-20230810005427-25adb757-nightly",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../apps/electron/node_modules/electron",
     "react": "^18.2.0",
