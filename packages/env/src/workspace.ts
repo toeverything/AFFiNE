@@ -1,3 +1,4 @@
+import type { StatusAdapter } from '@affine/y-provider';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type {
@@ -35,7 +36,9 @@ export interface BroadCastChannelProvider extends PassiveDocProvider {
 /**
  * Long polling provider with local indexeddb
  */
-export interface LocalIndexedDBBackgroundProvider extends PassiveDocProvider {
+export interface LocalIndexedDBBackgroundProvider
+  extends StatusAdapter,
+    PassiveDocProvider {
   flavour: 'local-indexeddb-background';
 }
 
@@ -43,7 +46,7 @@ export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
   flavour: 'local-indexeddb';
 }
 
-export interface SQLiteProvider extends PassiveDocProvider {
+export interface SQLiteProvider extends PassiveDocProvider, StatusAdapter {
   flavour: 'sqlite';
 }
 
