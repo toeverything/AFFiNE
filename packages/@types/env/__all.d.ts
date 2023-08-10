@@ -52,3 +52,19 @@ declare global {
   // eslint-disable-next-line no-var
   var websocketPrefixUrl: string;
 }
+
+declare module '@blocksuite/store' {
+  interface PageMeta {
+    favorite?: boolean;
+    subpageIds: string[];
+    // If a page remove to trash, and it is a subpage, it will remove from its parent `subpageIds`, 'trashRelate' is use for save it parent
+    trashRelate?: string;
+    trash?: boolean;
+    trashDate?: number;
+    updatedDate?: number;
+    mode?: 'page' | 'edgeless';
+    jumpOnce?: boolean;
+    // todo: support `number` in the future
+    isPublic?: boolean;
+  }
+}
