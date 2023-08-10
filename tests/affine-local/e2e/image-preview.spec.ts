@@ -702,7 +702,7 @@ test('caption should be visible and different styles were applied if image zoome
   await page
     .locator('.embed-editing-state')
     .locator('icon-button')
-    .first()
+    .nth(1)
     .click();
   await page.getByPlaceholder('Write a caption').fill(sampleCaption);
   await page.locator('img').first().dblclick();
