@@ -6,7 +6,7 @@ export const headerTitleContainer = style({
   alignItems: 'center',
   flexGrow: 1,
   position: 'relative',
-  maxWidth: '800px',
+  width: '100%',
 });
 
 export const titleEditButton = style({

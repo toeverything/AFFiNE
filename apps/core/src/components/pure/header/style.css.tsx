@@ -12,7 +12,7 @@ export const header = style({
 });
 
 export const headerItem = style({
-  height: '32px',
+  minHeight: '32px',
   display: 'flex',
   alignItems: 'center',
   flexShrink: 0,
@@ -35,6 +35,18 @@ export const headerCenter = style({
   alignItems: 'center',
   height: '52px',
   flexShrink: 0,
+  maxWidth: '60%',
+
+  selectors: {
+    '&.is-window': {
+      maxWidth: '50%',
+      minWidth: '400px',
+    },
+    '&.is-window.has-min-width': {
+      maxWidth: '50%',
+      minWidth: '400px',
+    },
+  },
 });
 
 export const headerSideContainer = style({

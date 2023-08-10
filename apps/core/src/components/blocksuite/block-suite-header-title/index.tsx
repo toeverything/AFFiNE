@@ -23,8 +23,16 @@ export interface BlockSuiteHeaderTitleProps {
 
 const EditableTitle = ({
   value,
+  onFocus: propsOnFocus,
   ...inputProps
 }: InputHTMLAttributes<HTMLInputElement>) => {
+  const onFocus = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      e.target.select();
+      propsOnFocus?.();
+    },
+    [propsOnFocus]
+  );
   return (
     <div className={styles.headerTitleContainer}>
       <input
@@ -33,6 +41,7 @@ const EditableTitle = ({
         value={value}
         type="text"
         data-testid="title-content"
+        onFocus={onFocus}
         {...inputProps}
       />
       <span className={styles.shadowTitle}>{value}</span>
@@ -83,7 +92,7 @@ const BlockSuiteTitleWithRename = (props: BlockSuiteHeaderTitleProps) => {
   );
   const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
 
-  const [isEditable, setIsEditable] = useState(true);
+  const [isEditable, setIsEditable] = useState(false);
   const [title, setPageTitle] = useState(pageMeta?.title || 'Untitled');
 
   const onRename = useCallback(() => {

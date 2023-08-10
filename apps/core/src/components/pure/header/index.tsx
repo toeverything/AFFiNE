@@ -216,7 +216,11 @@ export const Header = ({ left, center, right }: HeaderPros) => {
           </div>
         </div>
         <div
-          className={center ? style.headerCenter : ''}
+          className={clsx({
+            [style.headerCenter]: center,
+            'is-window': isWindowsDesktop,
+            'has-min-width': !isTinyScreen,
+          })}
           ref={centerSlotRef}
           style={{
             paddingLeft: centerOffset,
