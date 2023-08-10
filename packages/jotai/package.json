@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "@blocksuite/block-std": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/blocks": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/blocks": "0.7.0",
     "@blocksuite/editor": "0.0.0-20230809030546-32e6e21d-nightly",
     "@blocksuite/global": "0.0.0-20230809030546-32e6e21d-nightly",
     "@blocksuite/lit": "0.0.0-20230809030546-32e6e21d-nightly",

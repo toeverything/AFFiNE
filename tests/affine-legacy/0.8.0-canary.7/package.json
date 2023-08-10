@@ -10,7 +10,7 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
     "@blocksuite/block-std": "0.0.0-20230809030546-32e6e21d-nightly",
-    "@blocksuite/blocks": "0.0.0-20230809030546-32e6e21d-nightly",
+    "@blocksuite/blocks": "0.7.0",
     "@blocksuite/global": "0.0.0-20230809030546-32e6e21d-nightly",
     "@blocksuite/store": "0.0.0-20230809030546-32e6e21d-nightly",
     "@playwright/test": "^1.36.2",
