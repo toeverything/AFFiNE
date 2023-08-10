@@ -121,6 +121,7 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
     Y.applyUpdate(newPage.spaceDoc, update);
     setPageMeta(newPage.id, {
       tags: currentPageMeta.tags,
+      favorite: currentPageMeta.favorite,
     });
     setPageMode(newPage.id, mode);
     setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
