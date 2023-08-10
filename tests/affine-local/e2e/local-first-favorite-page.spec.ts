@@ -111,7 +111,7 @@ test('Cancel favorite', async ({ page, workspace }) => {
   //hover table record
   await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
 
-  await page.getByTestId('favorited-icon').click();
+  await page.getByTestId('favorited-icon').nth(0).click();
 
   // expect it not in favorite list
   expect(

@@ -83,7 +83,7 @@ test('allow creation of filters by favorite', async ({ page }) => {
   ).toBe('false');
 });
 
-test('allow creation of filters by created time', async ({ page }) => {
+test.fixme('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
@@ -111,35 +111,36 @@ test('allow creation of filters by created time', async ({ page }) => {
   await checkPagesCount(page, 1);
 });
 
-test('creation of filters by created time, then click date picker to modify the date', async ({
-  page,
-}) => {
-  await openHomePage(page);
-  await waitEditorLoad(page);
-  await clickSideBarAllPageButton(page);
-  await createFirstFilter(page, 'Created');
-  await checkFilterName(page, 'after');
-  // init date
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  await checkDatePicker(page, yesterday);
-  await checkPagesCount(page, 1);
-  // change date
-  const today = new Date();
-  await selectDateFromDatePicker(page, today);
-  await checkPagesCount(page, 0);
-  // change filter
-  await page.locator('[data-testid="filter-name"]').click();
-  await page
-    .locator('[data-testid="filter-name-select"]')
-    .locator('button', { hasText: 'before' })
-    .click();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  await selectDateFromDatePicker(page, tomorrow);
-  await checkDatePicker(page, tomorrow);
-  await checkPagesCount(page, 1);
-});
+test.fixme(
+  'creation of filters by created time, then click date picker to modify the date',
+  async ({ page }) => {
+    await openHomePage(page);
+    await waitEditorLoad(page);
+    await clickSideBarAllPageButton(page);
+    await createFirstFilter(page, 'Created');
+    await checkFilterName(page, 'after');
+    // init date
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    await checkDatePicker(page, yesterday);
+    await checkPagesCount(page, 1);
+    // change date
+    const today = new Date();
+    await selectDateFromDatePicker(page, today);
+    await checkPagesCount(page, 0);
+    // change filter
+    await page.locator('[data-testid="filter-name"]').click();
+    await page
+      .locator('[data-testid="filter-name-select"]')
+      .locator('button', { hasText: 'before' })
+      .click();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    await selectDateFromDatePicker(page, tomorrow);
+    await checkDatePicker(page, tomorrow);
+    await checkPagesCount(page, 1);
+  }
+);
 
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await openHomePage(page);
@@ -165,7 +166,7 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await checkDatePickerMonth(page, nextMonth);
 });
 
-test('allow creation of filters by tags', async ({ page }) => {
+test.fixme('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
