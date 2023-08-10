@@ -15,6 +15,7 @@ import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core'
 import socketIO from '@opentelemetry/instrumentation-socket.io';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node';
 import { PrismaInstrumentation } from '@prisma/instrumentation';
 import cookieParser from 'cookie-parser';
 import { static as staticMiddleware } from 'express';
@@ -28,11 +29,13 @@ import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
 
+const traceExporter = new TraceExporter();
 const tracing = new NodeSDK({
-  traceExporter: new TraceExporter(),
+  traceExporter,
   metricReader: new PeriodicExportingMetricReader({
     exporter: new MetricExporter(),
   }),
+  spanProcessor: new BatchSpanProcessor(traceExporter),
   textMapPropagator: new CompositePropagator({
     propagators: [new W3CBaggagePropagator(), new W3CTraceContextPropagator()],
   }),
