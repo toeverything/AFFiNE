@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.8.0-canary.15",
+  "version": "0.8.0-canary.16",
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
@@ -14,14 +14,15 @@
     "tests/kit",
     "tests/affine-legacy/*",
     "tests/affine-local",
-    "tests/affine-plugin"
+    "tests/affine-plugin",
+    "tests/affine-prototype"
   ],
   "engines": {
     "node": ">=18.16.1 <19.0.0"
   },
   "scripts": {
     "dev": "dev-core",
-    "dev:electron": "yarn workspace @affine/electron dev:app",
+    "dev:electron": "yarn workspace @affine/electron dev",
     "build": "yarn nx build @affine/core",
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",

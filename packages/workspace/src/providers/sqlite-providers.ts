@@ -6,6 +6,7 @@ import {
   createLazyProvider,
   type DatasourceDocAdapter,
 } from '@affine/y-provider';
+import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
@@ -51,6 +52,14 @@ export const createSQLiteProvider: DocProviderCreator = (
   return {
     flavour: 'sqlite',
     passive: true,
+    get status() {
+      assertExists(provider);
+      return provider.status;
+    },
+    subscribeStatusChange(onStatusChange) {
+      assertExists(provider);
+      return provider.subscribeStatusChange(onStatusChange);
+    },
     connect: () => {
       datasource = createDatasource(id);
       provider = createLazyProvider(rootDoc, datasource, { origin: 'sqlite' });

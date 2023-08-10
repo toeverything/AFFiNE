@@ -1,0 +1,40 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "outDir": "./lib"
+  },
+  "include": ["./src"],
+  "references": [
+    {
+      "path": "../../packages/component"
+    },
+    {
+      "path": "../../packages/debug"
+    },
+    {
+      "path": "../../packages/env"
+    },
+    {
+      "path": "../../packages/graphql"
+    },
+    {
+      "path": "../../packages/hooks"
+    },
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/jotai"
+    },
+    {
+      "path": "../../packages/y-indexeddb"
+    },
+    {
+      "path": "../../packages/workspace"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
