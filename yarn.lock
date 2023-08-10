@@ -7421,10 +7421,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nolyfill/shared@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@nolyfill/shared@npm:1.0.3"
-  checksum: 04d334d2c234d875015a2bdb7263a68ac1f8d2317b864deb614689f6bdfca0df9a593221a869add308af65fc9039cd3c5f7b80d84fb190d5f0800008a328501d
+"@nolyfill/is-array-buffer@npm:1.0.6, is-array-buffer@npm:@nolyfill/is-array-buffer@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/is-array-buffer@npm:1.0.6"
+  dependencies:
+    "@nolyfill/shared": 1.0.6
+  checksum: b5af8bff357c267e02c9497a3d882efc604fb0b85c73218f7d1078a76cb0c22812e1c433cfa27bf133de4297bd0362637386f1ea10e90a6bccf1a681172a6f92
+  languageName: node
+  linkType: hard
+
+"@nolyfill/shared@npm:1.0.6":
+  version: 1.0.6
+  resolution: "@nolyfill/shared@npm:1.0.6"
+  checksum: 748b013271741ebdbd7929ed40e02cf0e64463a124bb165c6e813a7149e0228e4a53b622904d2379c5dec0d8b0b96b5615ef642abbe0417d62de4ad4edefbbc9
   languageName: node
   linkType: hard
 
@@ -13807,13 +13816,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"array-buffer-byte-length@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "array-buffer-byte-length@npm:1.0.0"
+"array-buffer-byte-length@npm:@nolyfill/array-buffer-byte-length@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/array-buffer-byte-length@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    is-array-buffer: ^3.0.1
-  checksum: 044e101ce150f4804ad19c51d6c4d4cfa505c5b2577bd179256e4aa3f3f6a0a5e9874c78cd428ee566ac574c8a04d7ce21af9fe52e844abfdccb82b33035a7c3
+    "@nolyfill/is-array-buffer": 1.0.6
+    "@nolyfill/shared": 1.0.6
+  checksum: 0ba9049e0acf5ccd9aad4745bb65b0a9c86d42e4bac67ad1c3b52d0795433c0c7615ef039e4e05151aff3897a8096027ca2da9425c2afcae5151b0ec3b3f75dd
   languageName: node
   linkType: hard
 
@@ -13839,11 +13848,11 @@ __metadata:
   linkType: hard
 
 "array-includes@npm:@nolyfill/array-includes@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/array-includes@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/array-includes@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: 82db7d175fecaa0726c7dd274af14a4a961ae8238fb91fc5ca6efe095778e61294db19cb33020008eaf188636c8fbcefa7ad16424a7a8898792d6c9e4b778111
+    "@nolyfill/shared": 1.0.6
+  checksum: 9abb6ea15797fb0d045744a7be264867e90696f60206ec13d7ca79b8bf15be3e24db02dff257e196f99b3e02a19305d53d3dd884da9fbd8841545c9d0f6e35a4
   languageName: node
   linkType: hard
 
@@ -13855,20 +13864,20 @@ __metadata:
   linkType: hard
 
 "array.prototype.flat@npm:@nolyfill/array.prototype.flat@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/array.prototype.flat@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/array.prototype.flat@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: 1db6bc9632327929b30e95b3a65efb3ddca883ccd0ffcee96658b42df1db13c564fb6c7d66d1b78af325914b7c89f44b28c043043817944bfa84c646df704dec
+    "@nolyfill/shared": 1.0.6
+  checksum: 05626c02431467f0bbde9cf303ebb35049e98c9700c1b605d7c253096ebe3e71d142e2694d67e7602f83d54a3b1a09274e3e7d1742a20a9fce393a5feb7deb56
   languageName: node
   linkType: hard
 
 "array.prototype.flatmap@npm:@nolyfill/array.prototype.flatmap@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/array.prototype.flatmap@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/array.prototype.flatmap@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: 0ec8192420701844a5739f88c7b240554a6336e7814cfb892c732928359a5cd5c1d134f6ccbf7eed6d6a13337b6756f545a5009368e948af0b4e7f95291250f7
+    "@nolyfill/shared": 1.0.6
+  checksum: d38823f91c0f98b02cb8fef716d80aba7934fcbf6ed41965a7e87bd83b712f3ae3e9fa30404f917721a8349ab30427482ea1107f58578be7d3c1fbf35857d650
   languageName: node
   linkType: hard
 
@@ -13885,17 +13894,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"arraybuffer.prototype.slice@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "arraybuffer.prototype.slice@npm:1.0.1"
+"arraybuffer.prototype.slice@npm:@nolyfill/arraybuffer.prototype.slice@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/arraybuffer.prototype.slice@npm:1.0.6"
   dependencies:
-    array-buffer-byte-length: ^1.0.0
-    call-bind: ^1.0.2
-    define-properties: ^1.2.0
-    get-intrinsic: ^1.2.1
-    is-array-buffer: ^3.0.2
-    is-shared-array-buffer: ^1.0.2
-  checksum: e3e9b2a3e988ebfeddce4c7e8f69df730c9e48cb04b0d40ff0874ce3d86b3d1339dd520ffde5e39c02610bc172ecfbd4bc93324b1cabd9554c44a56b131ce0ce
+    "@nolyfill/shared": 1.0.6
+  checksum: 771501d362466a06d0d8f34003a5c416c62348bf140cec810e5f293216e8ea8f1d3ab0ca3f4a9c2ead263e8a604fb2e3e32547835890e1f574b8d93c38ddff64
   languageName: node
   linkType: hard
 
@@ -16612,7 +16616,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"define-properties@npm:^1.1.3, define-properties@npm:^1.1.4, define-properties@npm:^1.2.0":
+"define-properties@npm:^1.1.3, define-properties@npm:^1.1.4":
   version: 1.2.0
   resolution: "define-properties@npm:1.2.0"
   dependencies:
@@ -19567,26 +19571,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"function-bind@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "function-bind@npm:1.1.1"
-  checksum: b32fbaebb3f8ec4969f033073b43f5c8befbb58f1a79e12f1d7490358150359ebd92f49e72ff0144f65f2c48ea2a605bff2d07965f548f6474fd8efd95bf361a
+"function-bind@npm:@nolyfill/function-bind@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/function-bind@npm:1.0.6"
+  checksum: 84eed8a4d0f201423676f3bd78f2a9a31ac1dc983728f7ef8199eb12f567750a23e4f6b228551e5c665f071634a8d7919e56b64659dadc26445fe54aba538a3b
   languageName: node
   linkType: hard
 
 "function.prototype.name@npm:@nolyfill/function.prototype.name@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/function.prototype.name@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/function.prototype.name@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: 8787bc770e2432cd6986a861806d8e3f488aba71dd697af0f13f66e2f0e1db43ade8aa101d7c11c66b3a12b4e671cfb9e5e22556ee4b2b6a9e25584fea388699
-  languageName: node
-  linkType: hard
-
-"functions-have-names@npm:^1.2.3":
-  version: 1.2.3
-  resolution: "functions-have-names@npm:1.2.3"
-  checksum: c3f1f5ba20f4e962efb71344ce0a40722163e85bee2101ce25f88214e78182d2d2476aa85ef37950c579eb6cf6ee811c17b3101bb84004bb75655f3e33f3fdb5
+    "@nolyfill/shared": 1.0.6
+  checksum: fb361698c1cefb88a49e5a0f64b479ca3c7a172225d0572defe64b2695c24dec35cc836e055dff37475ec5950ab5c07ea6cf81c19852f689e16c827f7b636719
   languageName: node
   linkType: hard
 
@@ -19789,13 +19786,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-symbol-description@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "get-symbol-description@npm:1.0.0"
+"get-symbol-description@npm:@nolyfill/get-symbol-description@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/get-symbol-description@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    get-intrinsic: ^1.1.1
-  checksum: 9ceff8fe968f9270a37a1f73bf3f1f7bda69ca80f4f80850670e0e7b9444ff99323f7ac52f96567f8b5f5fbe7ac717a0d81d3407c7313e82810c6199446a5247
+    "@nolyfill/shared": 1.0.6
+  checksum: 98d8109c25ee989a808b748a04e0e5ae49bae557e3506a199e295e934b993b2c037e362f683c8f15cf4efd45c3cf67fe6f2e708f4b15f14764035e1304b5078f
   languageName: node
   linkType: hard
 
@@ -20051,12 +20047,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"globalthis@npm:^1.0.1, globalthis@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "globalthis@npm:1.0.3"
-  dependencies:
-    define-properties: ^1.1.3
-  checksum: fbd7d760dc464c886d0196166d92e5ffb4c84d0730846d6621a39fbbc068aeeb9c8d1421ad330e94b7bca4bb4ea092f5f21f3d36077812af5d098b4dc006c998
+"globalthis@npm:@nolyfill/globalthis@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/globalthis@npm:1.0.6"
+  checksum: 5fed88654de752fa051a6dcbe65857115f2c4ea01f25380536864054b1c9b5ee86c1422604b2cc4cfd5f1076e2d92b1e7daffb245479a41015545119143f696e
   languageName: node
   linkType: hard
 
@@ -20105,12 +20099,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gopd@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "gopd@npm:1.0.1"
-  dependencies:
-    get-intrinsic: ^1.1.3
-  checksum: a5ccfb8806e0917a94e0b3de2af2ea4979c1da920bc381667c260e00e7cafdbe844e2cb9c5bcfef4e5412e8bf73bab837285bc35c7ba73aaaf0134d4583393a6
+"gopd@npm:@nolyfill/gopd@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/gopd@npm:1.0.6"
+  checksum: 12b68951a4e0e528f5ce0f4701b224ba0280a830de4d0425e152e04f68d40ba4405c5f892f1c8c9c4e87f5d00f3a44b9f02c7186779019e63ee656f932de2660
   languageName: node
   linkType: hard
 
@@ -20327,12 +20319,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"has-property-descriptors@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "has-property-descriptors@npm:1.0.0"
-  dependencies:
-    get-intrinsic: ^1.1.1
-  checksum: a6d3f0a266d0294d972e354782e872e2fe1b6495b321e6ef678c9b7a06a40408a6891817350c62e752adced73a94ac903c54734fee05bf65b1905ee1368194bb
+"has-property-descriptors@npm:@nolyfill/has-property-descriptors@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/has-property-descriptors@npm:1.0.6"
+  checksum: 47eeb9b8e7ba62dd5dc1a00cab1a083bafe6c2c2db35706499b2c2e5842813bd2e6ed489fdd81d77cd688dda3051e6bc867d1fbcd96922f0ebf318186dbe5bb0
   languageName: node
   linkType: hard
 
@@ -20367,11 +20357,11 @@ __metadata:
   linkType: hard
 
 "has@npm:@nolyfill/has@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/has@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/has@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: bec434e50d0b0d713825214aa7e4403e933e759fa783e6071144b391c776b3f618fa2f54346b34e5f1d7c733931511a9863c77e3588f59e33940ce9bb4db085f
+    "@nolyfill/shared": 1.0.6
+  checksum: fe71b828d31fc7fc55a7c9a2109e356aa1b1a292d8056342669e12a7bbfc1b29a776454a3e37567c8a95f23fc5c43e6a61a241490e1aaf422c4de420635c1779
   languageName: node
   linkType: hard
 
@@ -21042,7 +21032,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"internal-slot@npm:^1.0.3, internal-slot@npm:^1.0.4, internal-slot@npm:^1.0.5":
+"internal-slot@npm:^1.0.4, internal-slot@npm:^1.0.5":
   version: 1.0.5
   resolution: "internal-slot@npm:1.0.5"
   dependencies:
@@ -21138,17 +21128,6 @@ __metadata:
     call-bind: ^1.0.2
     has-tostringtag: ^1.0.0
   checksum: 7f02700ec2171b691ef3e4d0e3e6c0ba408e8434368504bb593d0d7c891c0dbfda6d19d30808b904a6cb1929bca648c061ba438c39f296c2a8ca083229c49f27
-  languageName: node
-  linkType: hard
-
-"is-array-buffer@npm:^3.0.1, is-array-buffer@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "is-array-buffer@npm:3.0.2"
-  dependencies:
-    call-bind: ^1.0.2
-    get-intrinsic: ^1.2.0
-    is-typed-array: ^1.1.10
-  checksum: dcac9dda66ff17df9cabdc58214172bf41082f956eab30bb0d86bc0fab1e44b690fc8e1f855cf2481245caf4e8a5a006a982a71ddccec84032ed41f9d8da8c14
   languageName: node
   linkType: hard
 
@@ -21513,12 +21492,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-shared-array-buffer@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "is-shared-array-buffer@npm:1.0.2"
+"is-shared-array-buffer@npm:@nolyfill/is-shared-array-buffer@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/is-shared-array-buffer@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-  checksum: 9508929cf14fdc1afc9d61d723c6e8d34f5e117f0bffda4d97e7a5d88c3a8681f633a74f8e3ad1fe92d5113f9b921dc5ca44356492079612f9a247efbce7032a
+    "@nolyfill/shared": 1.0.6
+  checksum: c893f15a1fcfa7a5a65cdce5ecbd7b6a3b867bc078c1ba8678926eb356b0084142bf2803e5a5c8a7b56233abaf25b8f91fa6bbd87cffafcaefe8544357b2ae37
   languageName: node
   linkType: hard
 
@@ -21570,7 +21549,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-typed-array@npm:^1.1.10, is-typed-array@npm:^1.1.3, is-typed-array@npm:^1.1.9":
+"is-typed-array@npm:^1.1.10, is-typed-array@npm:^1.1.3":
   version: 1.1.12
   resolution: "is-typed-array@npm:1.1.12"
   dependencies:
@@ -25455,9 +25434,9 @@ __metadata:
   linkType: hard
 
 "object-keys@npm:@nolyfill/object-keys@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/object-keys@npm:1.0.3"
-  checksum: 35d4a73f22f7fb9fc269b630824f6c23a8fcf6dc76da4ecb6ae093a2835ce23e9f534ea68d4661941ac524026c533660e4e18f84e1374c8ab5877a000dfe9994
+  version: 1.0.6
+  resolution: "@nolyfill/object-keys@npm:1.0.6"
+  checksum: 12f99a43367e36b8a50180ec46d1171ae7c406fdc4491dfd810562c3e8a714434bc02ff7a5a95d4cd30daad4d3a3d70e85c174d0257f8d3f61355398ece7f094
   languageName: node
   linkType: hard
 
@@ -25469,39 +25448,39 @@ __metadata:
   linkType: hard
 
 "object.assign@npm:@nolyfill/object.assign@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/object.assign@npm:1.0.3"
-  checksum: 8f9c84ad448786032aa2dea204e67fe498585f8ceb315ac1bf8da210765476f902467c5a7f14db3659765cba1e14c6cc80551aa9abed6d802544faab696ed4f7
+  version: 1.0.6
+  resolution: "@nolyfill/object.assign@npm:1.0.6"
+  checksum: d881fbdf5df34ed27db5b2d5106796ad1f2178aa3ab9a99495de1a31462a2eca715380a44f17be90520ceb10b8cf1153f6a621bb73b12ab84e9630a9076a8969
   languageName: node
   linkType: hard
 
 "object.entries@npm:@nolyfill/object.entries@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/object.entries@npm:1.0.3"
-  checksum: 0c950ec3a5b23fa6f1082e1cff6d7454a4684b929a0d5f9c42e3b1670e9b7afcb413d37259b2c0da71774949a3b4063e1e47fb7f699b583bec002d9182c8830a
+  version: 1.0.6
+  resolution: "@nolyfill/object.entries@npm:1.0.6"
+  checksum: 9ba445e4730f49c62a09c4dcd9ea6877de69c86ede867a4d473425c4326a68d67a0050ee5db7e1cf4989be5f1ebdf8ebe52cad2fbd6c96cb7d3eefd79fa46efc
   languageName: node
   linkType: hard
 
 "object.fromentries@npm:@nolyfill/object.fromentries@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/object.fromentries@npm:1.0.3"
-  checksum: e6af071d07fe852a8033b6bbad0b457e3c885dc2634436626c6fb0b0d86f5b71b3e544b7d8d8244b02b45626a1bd4d781e152cf5e4271e1f27fb7051d53fa4cf
+  version: 1.0.6
+  resolution: "@nolyfill/object.fromentries@npm:1.0.6"
+  checksum: 5537235277301c38eaf95cffacb5190dbdf2151d0febe3b08fffc4c556b5ac1ff5fd1a188ea2d863e234b5824535d0e8527094509d90004924031d99fa8ba487
   languageName: node
   linkType: hard
 
 "object.hasown@npm:@nolyfill/object.hasown@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/object.hasown@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/object.hasown@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: 865d7101b04cf7972d7d6044ff38dc4bac2017386bcdf8339715e8b24b0eb35b517cbd2904dc45307066fee26f6033db2fc0fd266587426c4b4432f11c1bad52
+    "@nolyfill/shared": 1.0.6
+  checksum: e1e6426dea67a9c6cfbbe548c4a57d6331df8fb79608076ca968e0fe1f15e0433a7a9480816445fb779e751bba225c96220b97468398a647e2782532588e3621
   languageName: node
   linkType: hard
 
 "object.values@npm:@nolyfill/object.values@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/object.values@npm:1.0.3"
-  checksum: d7f87703c1a44982d4f0f1e38180e7c3db938dba456a1f852e7cb00630b84bee18a78083b52dbe0ceeed498a97a2148ead3e48357c6f5fedb4ba9605608bc347
+  version: 1.0.6
+  resolution: "@nolyfill/object.values@npm:1.0.6"
+  checksum: 0bd49c8c299e969b2817f5025ae863e4062c6c234efdfaab5e67171f04c850e55b9a398e33966b075aaaf17a507541df5c134eaf5eaf627f58fd50d56827a2ef
   languageName: node
   linkType: hard
 
@@ -28072,14 +28051,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"regexp.prototype.flags@npm:^1.4.3, regexp.prototype.flags@npm:^1.5.0":
-  version: 1.5.0
-  resolution: "regexp.prototype.flags@npm:1.5.0"
+"regexp.prototype.flags@npm:@nolyfill/regexp.prototype.flags@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/regexp.prototype.flags@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    define-properties: ^1.2.0
-    functions-have-names: ^1.2.3
-  checksum: c541687cdbdfff1b9a07f6e44879f82c66bbf07665f9a7544c5fd16acdb3ec8d1436caab01662d2fbcad403f3499d49ab0b77fbc7ef29ef961d98cc4bc9755b4
+    "@nolyfill/shared": 1.0.6
+  checksum: dc9eb97b5f9cdb76fd695782244d8a596ecb30c76fe7167945ad46a536a3763ce25b29d8b03f9ed878f7f475dbcfb5b92294f90f0eb610fdbf1a3cd392a888ce
   languageName: node
   linkType: hard
 
@@ -29806,46 +29783,39 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string.prototype.matchall@npm:^4.0.8":
-  version: 4.0.8
-  resolution: "string.prototype.matchall@npm:4.0.8"
+"string.prototype.matchall@npm:@nolyfill/string.prototype.matchall@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/string.prototype.matchall@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    define-properties: ^1.1.4
-    es-abstract: ^1.20.4
-    get-intrinsic: ^1.1.3
-    has-symbols: ^1.0.3
-    internal-slot: ^1.0.3
-    regexp.prototype.flags: ^1.4.3
-    side-channel: ^1.0.4
-  checksum: 952da3a818de42ad1c10b576140a5e05b4de7b34b8d9dbf00c3ac8c1293e9c0f533613a39c5cda53e0a8221f2e710bc2150e730b1c2278d60004a8a35726efb6
+    "@nolyfill/shared": 1.0.6
+  checksum: 246fe0840b9bc7e52ad234f81edf59ae14325f8801604216af9e8c887a3c4bc1dbf776f3f850d1e3f26ee533ce7b548ab27b07a696597b777b667362f757a2a3
   languageName: node
   linkType: hard
 
 "string.prototype.trim@npm:@nolyfill/string.prototype.trim@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/string.prototype.trim@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/string.prototype.trim@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: e73abfe21cdb614b9cc8660360b37522e497f66d0f8d3ee3105f2f6c12906fe49badd7cd46acca45ad4b34220bfe3042c499834d1cdb5974eb02a653002f3a92
+    "@nolyfill/shared": 1.0.6
+  checksum: 52c3418c8dd85f57f5d1eb79cd25c9e58b62915e7c10dfe544d062e8702dcd0b5928e7b03ee33e9a59056ead88520320c1d5346518aba19f32f08eed68ac3e3b
   languageName: node
   linkType: hard
 
 "string.prototype.trimend@npm:@nolyfill/string.prototype.trimend@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/string.prototype.trimend@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/string.prototype.trimend@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: caa198c0b95503d87fa3a980c4b95a171fdd16bafdf080c15d9af9fb2d1ebcd410b33538e56246876ad5812e12c4b392ed14740e92339885672dafae0351b0a3
+    "@nolyfill/shared": 1.0.6
+  checksum: ac9941408b9e4d6f5bba6003cc6ca1dcde967ea6179d3f10a7a6d26b5e3111b9713d173c191137a9f23a4df65cf5df9a12096c87ec358120de90d9b13bf2236b
   languageName: node
   linkType: hard
 
 "string.prototype.trimstart@npm:@nolyfill/string.prototype.trimstart@latest":
-  version: 1.0.3
-  resolution: "@nolyfill/string.prototype.trimstart@npm:1.0.3"
+  version: 1.0.6
+  resolution: "@nolyfill/string.prototype.trimstart@npm:1.0.6"
   dependencies:
-    "@nolyfill/shared": 1.0.3
-  checksum: 54121c65e5b0940f29258e6f4c3d08834fa6c0ec53756e879ac9b4af087e0caa70bd0cc50a1a82d252901fbd3fb185197b2e529b40c1c0ceb28200ce2e2508ef
+    "@nolyfill/shared": 1.0.6
+  checksum: 44885b8c8bb846a562c23bffb5cc4637a9f5dc704e082d47202dfcba7fed0aaea41305c3a7fdc57e5f1833d007685f68eb513dd00a947d9e95dbfd8f26488b0e
   languageName: node
   linkType: hard
 
@@ -31035,50 +31005,39 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typed-array-buffer@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "typed-array-buffer@npm:1.0.0"
+"typed-array-buffer@npm:@nolyfill/typed-array-buffer@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/typed-array-buffer@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    get-intrinsic: ^1.2.1
-    is-typed-array: ^1.1.10
-  checksum: 3e0281c79b2a40cd97fe715db803884301993f4e8c18e8d79d75fd18f796e8cd203310fec8c7fdb5e6c09bedf0af4f6ab8b75eb3d3a85da69328f28a80456bd3
+    "@nolyfill/shared": 1.0.6
+  checksum: 5858136e6b7f5e17ac28a996a2201c47456ff04a72feced7716814be37c9ffb30a790037092486ce6aff1ae027f51c71d6938c136e7399339f2b61cd0df5b333
   languageName: node
   linkType: hard
 
-"typed-array-byte-length@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "typed-array-byte-length@npm:1.0.0"
+"typed-array-byte-length@npm:@nolyfill/typed-array-byte-length@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/typed-array-byte-length@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    for-each: ^0.3.3
-    has-proto: ^1.0.1
-    is-typed-array: ^1.1.10
-  checksum: b03db16458322b263d87a702ff25388293f1356326c8a678d7515767ef563ef80e1e67ce648b821ec13178dd628eb2afdc19f97001ceae7a31acf674c849af94
+    "@nolyfill/shared": 1.0.6
+  checksum: ad1da1e0f3f663c6358de9ea7ddfef5cefc37c91bfe833b96fcb6db3c80e68bc46687b5a750081a7a5f839390151cd2c53a39fbfd971e774711dcf63b05b9b44
   languageName: node
   linkType: hard
 
-"typed-array-byte-offset@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "typed-array-byte-offset@npm:1.0.0"
+"typed-array-byte-offset@npm:@nolyfill/typed-array-byte-offset@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/typed-array-byte-offset@npm:1.0.6"
   dependencies:
-    available-typed-arrays: ^1.0.5
-    call-bind: ^1.0.2
-    for-each: ^0.3.3
-    has-proto: ^1.0.1
-    is-typed-array: ^1.1.10
-  checksum: 04f6f02d0e9a948a95fbfe0d5a70b002191fae0b8fe0fe3130a9b2336f043daf7a3dda56a31333c35a067a97e13f539949ab261ca0f3692c41603a46a94e960b
+    "@nolyfill/shared": 1.0.6
+  checksum: 292ccbe0b38b7c3ada37acf958f5e3837b43f8cad69d9d01c512079bc9fcfcecce52154fc13b8140923b5f7090efd1ce5039fc231d3695b210687b9c24bdf8ef
   languageName: node
   linkType: hard
 
-"typed-array-length@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "typed-array-length@npm:1.0.4"
+"typed-array-length@npm:@nolyfill/typed-array-length@latest":
+  version: 1.0.6
+  resolution: "@nolyfill/typed-array-length@npm:1.0.6"
   dependencies:
-    call-bind: ^1.0.2
-    for-each: ^0.3.3
-    is-typed-array: ^1.1.9
-  checksum: 2228febc93c7feff142b8c96a58d4a0d7623ecde6c7a24b2b98eb3170e99f7c7eff8c114f9b283085cd59dcd2bd43aadf20e25bba4b034a53c5bb292f71f8956
+    "@nolyfill/shared": 1.0.6
+  checksum: b8847f1651ba8d1d143f818a8f524d9698dd39e1000171ab177c7825dc3be7b8865633fd3e003c8e154f46cd4e5157373bda6e049bc963fdee890c3dd12e4449
   languageName: node
   linkType: hard
 
