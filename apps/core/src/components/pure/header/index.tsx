@@ -10,12 +10,7 @@ import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import DownloadClientTip from '../../blocksuite/workspace-header/download-tips';

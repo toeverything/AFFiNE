@@ -1,10 +1,15 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { assertExists } from '@blocksuite/global/utils';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useCallback, useRef, useState } from 'react';
+import {
+  type InputHTMLAttributes,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { EditorModeSwitch } from '../block-suite-mode-switch';
@@ -15,38 +20,38 @@ export interface BlockSuiteHeaderTitleProps {
   workspace: AffineOfficialWorkspace;
   pageId: string;
 }
-export const BlockSuiteEditableTitle = ({
+
+const EditableTitle = ({
+  value,
+  ...inputProps
+}: InputHTMLAttributes<HTMLInputElement>) => {
+  return (
+    <div className={styles.headerTitleContainer}>
+      <input
+        className={styles.titleInput}
+        autoFocus={true}
+        value={value}
+        type="text"
+        data-testid="title-content"
+        {...inputProps}
+      />
+      <span className={styles.shadowTitle}>{value}</span>
+    </div>
+  );
+};
+
+const StableTitle = ({
   workspace,
   pageId,
-}: BlockSuiteHeaderTitleProps) => {
+  onRename,
+}: BlockSuiteHeaderTitleProps & {
+  onRename?: () => void;
+}) => {
   const currentPage = workspace.blockSuiteWorkspace.getPage(pageId);
-  // fixme(himself65): remove this atom and move it to props
   const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
     meta => meta.id === currentPage?.id
   );
-  const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
-  const [isEditable, setIsEditable] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const handleClick = useCallback(() => {
-    if (isEditable) {
-      setIsEditable(!isEditable);
-      const value = inputRef.current?.value;
-      if (value !== pageMeta?.title && currentPage) {
-        pageTitleMeta.setPageTitle(currentPage?.id, value || '');
-      }
-    } else {
-      setIsEditable(!isEditable);
-    }
-  }, [currentPage, isEditable, pageMeta?.title, pageTitleMeta]);
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter' || e.key === 'Escape') {
-        handleClick();
-      }
-    },
-    [handleClick]
-  );
-  assertExists(pageMeta);
+
   const title = pageMeta?.title;
 
   return (
@@ -58,32 +63,76 @@ export const BlockSuiteEditableTitle = ({
           marginRight: '12px',
         }}
       />
-      {isEditable ? (
-        <input
-          autoFocus={true}
-          // className={styles.title}
-          type="text"
-          data-testid="title-content"
-          defaultValue={pageMeta?.title}
-          onBlur={handleClick}
-          ref={inputRef}
-          onKeyDown={handleKeyDown}
-        />
-      ) : (
-        <span data-testid="title-edit-button" onClick={handleClick}>
-          {title || 'Untitled'}
-        </span>
-      )}
-      <PageMenu rename={handleClick} pageId={pageId} />
+      <span
+        data-testid="title-edit-button"
+        className={styles.titleEditButton}
+        onClick={onRename}
+      >
+        {title || 'Untitled'}
+      </span>
+      <PageMenu rename={onRename} pageId={pageId} />
     </div>
   );
 };
 
+const BlockSuiteTitleWithRename = (props: BlockSuiteHeaderTitleProps) => {
+  const { workspace, pageId } = props;
+  const currentPage = workspace.blockSuiteWorkspace.getPage(pageId);
+  const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
+    meta => meta.id === currentPage?.id
+  );
+  const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
+
+  const [isEditable, setIsEditable] = useState(true);
+  const [title, setPageTitle] = useState(pageMeta?.title || 'Untitled');
+
+  const onRename = useCallback(() => {
+    setIsEditable(true);
+  }, []);
+
+  const onBlur = useCallback(() => {
+    setIsEditable(false);
+    if (!currentPage?.id) {
+      return;
+    }
+    pageTitleMeta.setPageTitle(currentPage.id, title);
+  }, [currentPage?.id, pageTitleMeta, title]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        onBlur();
+      }
+    },
+    [onBlur]
+  );
+
+  useEffect(() => {
+    setPageTitle(pageMeta?.title || '');
+  }, [pageMeta?.title]);
+
+  if (isEditable) {
+    return (
+      <EditableTitle
+        onBlur={onBlur}
+        value={title}
+        onKeyDown={handleKeyDown}
+        onChange={e => {
+          const value = e.target.value;
+          setPageTitle(value);
+        }}
+      />
+    );
+  }
+
+  return <StableTitle {...props} onRename={onRename} />;
+};
+
 export const BlockSuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.PUBLIC) {
-    return null;
+    return <StableTitle {...props} />;
   }
-  return <BlockSuiteEditableTitle {...props} />;
+  return <BlockSuiteTitleWithRename {...props} />;
 };
 
 BlockSuiteHeaderTitle.displayName = 'BlockSuiteHeaderTitle';
