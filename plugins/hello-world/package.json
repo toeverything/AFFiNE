@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Hello world plugin",
-  "version": "0.8.0-canary.14",
+  "version": "0.8.0-canary.15",
   "scripts": {
     "dev": "af dev",
     "build": "af build"
