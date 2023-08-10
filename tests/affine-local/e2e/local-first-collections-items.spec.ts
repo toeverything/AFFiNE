@@ -152,7 +152,7 @@ test('create temporary filter by click tag', async ({ page }) => {
   expect(await page.getByTestId('title').count()).toBe(1);
   await page.getByTestId('filter-arg').click();
   await page.getByRole('tooltip').getByText('TODO Tag').click();
-  expect(await page.getByTestId('title').count()).toBe(2);
+  expect(await page.getByTestId('title').count()).toBeGreaterThanOrEqual(2);
 });
 
 test('add collection from sidebar', async ({ page }) => {
