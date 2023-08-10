@@ -10,7 +10,7 @@
     "./config": "./src/config/index.ts"
   },
   "devDependencies": {
-    "@clack/core": "^0.3.2",
+    "@clack/core": "^0.3.3",
     "@clack/prompts": "^0.6.3",
     "ts-node": "^10.9.1"
   },

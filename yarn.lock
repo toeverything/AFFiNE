@@ -116,7 +116,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/cli@workspace:packages/cli"
   dependencies:
-    "@clack/core": ^0.3.2
+    "@clack/core": ^0.3.3
     "@clack/prompts": ^0.6.3
     dotenv: ^16.3.1
     ts-node: ^10.9.1
@@ -3680,13 +3680,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clack/core@npm:^0.3.2":
-  version: 0.3.2
-  resolution: "@clack/core@npm:0.3.2"
+"@clack/core@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "@clack/core@npm:0.3.3"
   dependencies:
     picocolors: ^1.0.0
     sisteransi: ^1.0.5
-  checksum: a4b6708d47b9df9d2899f5ec60e34b4ae7831e951da136dadb690ccc8d21ba5c8465e24fb6d9c2c510ef388774d509dcf44f3d5ff9a1c28b9474a541ac07efce
+  checksum: 3f04afc39194340c83d07deccd57f8c5e1fec43cde10fb3ceb2af4d8738fbaf9b33f4d37f64d66615265c8c1f61d1ad367aac7337695d63a536e1cd20215e49c
   languageName: node
   linkType: hard
 
@@ -3694,7 +3694,7 @@ __metadata:
   version: 0.6.3
   resolution: "@clack/prompts@npm:0.6.3"
   dependencies:
-    "@clack/core": ^0.3.2
+    "@clack/core": ^0.3.3
     is-unicode-supported: "*"
     picocolors: ^1.0.0
     sisteransi: ^1.0.5
