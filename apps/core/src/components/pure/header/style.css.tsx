@@ -8,51 +8,60 @@ export const header = style({
   justifyContent: 'space-between',
   position: 'relative',
   padding: '0 16px',
-  height: '52px',
+  minHeight: '52px',
 });
 
-export const headerLeft = style({
+export const headerItem = style({
+  height: '32px',
   display: 'flex',
-  justifyContent: 'center',
   alignItems: 'center',
   flexShrink: 0,
+  selectors: {
+    '&.top-item': {
+      height: '52px',
+    },
+    '&.left': {
+      justifyContent: 'left',
+    },
+    '&.right': {
+      justifyContent: 'right',
+    },
+  },
 });
 
 export const headerCenter = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  flexGrow: 1,
-  // height: '100%',
-  // width: '600px',
-  // position: 'absolute',
-  // left: 0,
-  // right: 0,
-  // top: 0,
-  // margin: 'auto',
+  height: '52px',
+  flexShrink: 0,
 });
 
-export const headerRight = style({
+export const headerSideContainer = style({
   display: 'flex',
   flexShrink: 0,
-  justifyContent: 'center',
   alignItems: 'center',
+  selectors: {
+    '&.right': {
+      flexDirection: 'row-reverse',
+    },
+    '&.block': {
+      display: 'block',
+    },
+  },
 });
 
 export const windowAppControlsWrapper = style({
   display: 'flex',
-  gap: '2px',
-  transform: 'translateX(8px)',
-  height: '100%',
-  position: 'absolute',
-  right: '14px',
+  marginLeft: '20px',
 });
 
 export const windowAppControl = style({
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '51px',
+  width: '52px',
+  height: '52px',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '0',

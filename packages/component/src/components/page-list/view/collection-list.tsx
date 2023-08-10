@@ -1,3 +1,4 @@
+import { FlexWrapper } from '@affine/component';
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
@@ -130,7 +131,7 @@ export const CollectionList = ({
     [closeUpdateCollectionModal, setting]
   );
   return (
-    <>
+    <FlexWrapper alignItems="center">
       {setting.savedCollections.length > 0 && (
         <Menu
           trigger="click"
@@ -200,6 +201,6 @@ export const CollectionList = ({
         onClose={closeUpdateCollectionModal}
         onConfirm={onConfirm}
       ></EditCollectionModel>
-    </>
+    </FlexWrapper>
   );
 };
