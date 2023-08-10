@@ -83,7 +83,7 @@
     "@vitest/coverage-istanbul": "^0.33.0",
     "@vitest/ui": "^0.33.0",
     "eslint": "^8.46.0",
-    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-i": "^2.27.5-3",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-react": "^7.33.0",
