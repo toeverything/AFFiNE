@@ -22,7 +22,7 @@
   },
   "scripts": {
     "dev": "dev-core",
-    "dev:electron": "yarn workspace @affine/electron dev:app",
+    "dev:electron": "yarn workspace @affine/electron dev",
     "build": "yarn nx build @affine/core",
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",
