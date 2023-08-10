@@ -142,9 +142,6 @@ function createPopupWindow() {
     browserWindow?.webContents.once('did-finish-load', () => {
       closePopup();
     });
-    popup.webContents.openDevTools({
-      mode: 'detach',
-    });
   }
   return popup;
 }
