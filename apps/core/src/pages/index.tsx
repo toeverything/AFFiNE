@@ -25,8 +25,9 @@ export const loader: LoaderFunction = async () => {
     const nonTrashPages = targetWorkspace.meta.pageMetas.filter(
       ({ trash }) => !trash
     );
-    const helloWorldPage = nonTrashPages.find(({ id }) =>
-      id.endsWith(DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX)
+    const helloWorldPage = nonTrashPages.find(
+      ({ id, jumpOnce }) =>
+        id.endsWith(DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX) && jumpOnce
     )?.id;
     const pageId =
       nonTrashPages.find(({ id }) => id === lastPageId)?.id ??
