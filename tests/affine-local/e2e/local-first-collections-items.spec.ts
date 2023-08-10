@@ -51,14 +51,14 @@ test('Show collections items in sidebar', async ({ page }) => {
   const first = items.first();
   expect(await first.textContent()).toBe('test collection');
   await first.getByTestId('fav-collapsed-button').click();
-  const collectionPage = collections.getByTestId('collection-page').nth(1);
+  const collectionPage = collections.getByTestId('collection-page').nth(0);
   expect(await collectionPage.textContent()).toBe('test page');
   await collectionPage.getByTestId('collection-page-options').click();
   const deletePage = page
     .getByTestId('collection-page-option')
     .getByText('Delete');
   await deletePage.click();
-  expect(await collections.getByTestId('collection-page').count()).toBe(1);
+  expect(await collections.getByTestId('collection-page').count()).toBe(0);
   await first.getByTestId('collection-options').click();
   const deleteCollection = page
     .getByTestId('collection-option')
