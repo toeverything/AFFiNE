@@ -668,7 +668,7 @@ __metadata:
   resolution: "@affine/storage@workspace:packages/storage"
   dependencies:
     "@napi-rs/cli": ^3.0.0-alpha.4
-    lib0: ^0.2.78
+    lib0: ^0.2.80
     yjs: ^13.6.7
   languageName: unknown
   linkType: soft
@@ -757,7 +757,7 @@ __metadata:
     jotai: ^2.2.2
     js-base64: ^3.7.5
     ky: ^0.33.3
-    lib0: ^0.2.78
+    lib0: ^0.2.80
     react: 18.2.0
     react-dom: 18.2.0
     ws: ^8.13.0
@@ -23471,6 +23471,18 @@ __metadata:
     0gentesthtml: bin/gentesthtml.js
     0serve: bin/0serve.js
   checksum: a9c90a9228e10e581bf416f4ecade967687d67e6ea3e822ef69e2628a77a2a0254ef7e2eb7e555d412f9e9467049b7fb760c079878f9a934dd85d2646a53d172
+  languageName: node
+  linkType: hard
+
+"lib0@npm:^0.2.80":
+  version: 0.2.80
+  resolution: "lib0@npm:0.2.80"
+  dependencies:
+    isomorphic.js: ^0.2.4
+  bin:
+    0gentesthtml: bin/gentesthtml.js
+    0serve: bin/0serve.js
+  checksum: eddb9c6cc23a916e3f6c26b3e729882c1f886de138b2de4055fb51a941acd7dab08eb65c9b9b43f01a5c83e0936169010e0c6e517d30446540019eebcb1ef6f6
   languageName: node
   linkType: hard
 
