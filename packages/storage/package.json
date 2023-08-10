@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.0.0-alpha.4",
-    "lib0": "^0.2.78",
+    "lib0": "^0.2.80",
     "yjs": "^13.6.7"
   }
 }
