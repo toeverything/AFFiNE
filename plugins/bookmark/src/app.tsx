@@ -1,13 +1,9 @@
 import { MenuItem, PureMenu } from '@affine/component';
 import { MuiClickAwayListener } from '@affine/component';
 import type { SerializedBlock } from '@blocksuite/blocks';
-import {
-  getCurrentBlockRange,
-  getCurrentNativeRange,
-  getVirgoByModel,
-} from '@blocksuite/blocks/std';
-import { assertExists } from '@blocksuite/global/utils';
+import type { BaseBlockModel } from '@blocksuite/store';
 import type { Page } from '@blocksuite/store';
+import type { VEditor } from '@blocksuite/virgo';
 import type { FC, ReactElement } from 'react';
 import { StrictMode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,6 +27,19 @@ const menuOptions = [
   },
 ];
 
+function getCurrentNativeRange(selection = window.getSelection()) {
+  if (!selection) {
+    return null;
+  }
+  if (selection.rangeCount === 0) {
+    return null;
+  }
+  if (selection.rangeCount > 1) {
+    console.warn('getCurrentRange may be wrong, rangeCount > 1');
+  }
+  return selection.getRangeAt(0);
+}
+
 const handleEnter = ({
   page,
   selectedOption,
@@ -43,14 +52,22 @@ const handleEnter = ({
   if (selectedOption === 'dismiss') {
     return callback();
   }
-  const blockRange = getCurrentBlockRange(page) as Exclude<
-    ReturnType<typeof getCurrentBlockRange>,
-    null
-  >;
-  const vEditor = getVirgoByModel(blockRange.models[0]);
-  const linkInfo = vEditor
+  const native = getCurrentNativeRange();
+  if (!native) {
+    return callback();
+  }
+  const container = native.startContainer;
+  const element =
+    container instanceof Element ? container : container?.parentElement;
+  const virgo = element?.closest<Element & { virgoEditor: VEditor }>(
+    '[data-virgo-root]'
+  )?.virgoEditor;
+  if (!virgo) {
+    return callback();
+  }
+  const linkInfo = virgo
     ?.getDeltasByVRange({
-      index: blockRange.startOffset,
+      index: native.startOffset,
       length: 0,
     })
     .find(delta => delta[0]?.attributes?.link);
@@ -60,9 +77,16 @@ const handleEnter = ({
   const [, { index, length }] = linkInfo;
   const link = linkInfo[0]?.attributes?.link as string;
 
-  const model = blockRange.models[0];
+  const model = element?.closest<Element & { model: BaseBlockModel }>(
+    '[data-block-id]'
+  )?.model;
+  if (!model) {
+    return callback();
+  }
   const parent = page.getParent(model);
-  assertExists(parent);
+  if (!parent) {
+    return callback();
+  }
   const currentBlockIndex = parent.children.indexOf(model);
   page.addBlock(
     'affine:bookmark',
@@ -71,7 +95,7 @@ const handleEnter = ({
     currentBlockIndex + 1
   );
 
-  vEditor?.deleteText({
+  virgo?.deleteText({
     index,
     length,
   });
