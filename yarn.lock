@@ -3680,16 +3680,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clack/core@npm:^0.3.2":
-  version: 0.3.2
-  resolution: "@clack/core@npm:0.3.2"
-  dependencies:
-    picocolors: ^1.0.0
-    sisteransi: ^1.0.5
-  checksum: a4b6708d47b9df9d2899f5ec60e34b4ae7831e951da136dadb690ccc8d21ba5c8465e24fb6d9c2c510ef388774d509dcf44f3d5ff9a1c28b9474a541ac07efce
-  languageName: node
-  linkType: hard
-
 "@clack/core@npm:^0.3.3":
   version: 0.3.3
   resolution: "@clack/core@npm:0.3.3"
@@ -3704,7 +3694,7 @@ __metadata:
   version: 0.6.3
   resolution: "@clack/prompts@npm:0.6.3"
   dependencies:
-    "@clack/core": ^0.3.2
+    "@clack/core": ^0.3.3
     is-unicode-supported: "*"
     picocolors: ^1.0.0
     sisteransi: ^1.0.5
