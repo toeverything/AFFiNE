@@ -32,6 +32,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: false,
       enableCloud: true,
+      shouldReportTrace: false,
+      traceReportEndpoint: '',
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -50,6 +52,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableNewSettingUnstableApi: false,
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
+      shouldReportTrace: false,
+      traceReportEndpoint: '',
       enableNotificationCenter: true,
       enableCloud: true,
       serverUrlPrefix: 'https://affine.fail',
@@ -103,6 +107,12 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
+    shouldReportTrace: process.env.SHOULD_REPORT_TRACE
+      ? process.env.SHOULD_REPORT_TRACE === 'true'
+      : currentBuildPreset.shouldReportTrace,
+    traceReportEndpoint: process.env.TRACE_REPORT_ENDPOINT
+      ? process.env.TRACE_REPORT_ENDPOINT
+      : currentBuildPreset.traceReportEndpoint,
   };
 
   if (buildFlags.mode === 'development') {

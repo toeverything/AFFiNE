@@ -32,6 +32,8 @@ export const runtimeFlagsSchema = z.object({
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
+  shouldReportTrace: z.boolean(),
+  traceReportEndpoint: z.string(),
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),
   editorVersion: z.string(),

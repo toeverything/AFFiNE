@@ -5,6 +5,15 @@ import { nanoid } from 'nanoid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
+import {
+  generateRandUTF16Chars,
+  SPAN_ID_BYTES,
+  toZuluDateFormat,
+  TRACE_FLAG,
+  TRACE_ID_BYTES,
+  TRACE_VERSION,
+  traceReporter,
+} from './utils';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
 
@@ -173,7 +182,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
     if (!isFormData) {
       headers['content-type'] = 'application/json';
     }
-    const ret = fetchWithRequestId(
+    const ret = fetchWithReport(
       endpoint,
       merge(options.context, {
         method: 'POST',
@@ -206,17 +215,37 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-export const fetchWithRequestId = (
+export const fetchWithReport = (
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> => {
+  const startTime = toZuluDateFormat(new Date());
+  const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
+  const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
+  const traceparent = `${TRACE_VERSION}-${traceId}-${spanId}-${TRACE_FLAG}`;
   init = init || {};
   init.headers = init.headers || new Headers();
+  const requestId = nanoid();
   if (init.headers instanceof Headers) {
-    init.headers.append('x-request-id', nanoid());
+    init.headers.append('x-request-id', requestId);
+    init.headers.append('traceparent', traceparent);
   } else {
-    (init.headers as Record<string, string>)['x-request-id'] = nanoid();
+    const headers = init.headers as Record<string, string>;
+    headers['x-request-id'] = requestId;
+    headers['traceparent'] = traceparent;
   }
 
-  return fetch(input, init);
+  if (!runtimeConfig.shouldReportTrace) {
+    return fetch(input, init);
+  }
+
+  return fetch(input, init)
+    .then(response => {
+      traceReporter.cacheTrace(traceId, spanId, requestId, startTime);
+      return response;
+    })
+    .catch(err => {
+      traceReporter.uploadTrace(traceId, spanId, requestId, startTime);
+      return Promise.reject(err);
+    });
 };

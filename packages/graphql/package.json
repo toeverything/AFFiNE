@@ -22,6 +22,7 @@
     "postinstall": "gql-gen"
   },
   "dependencies": {
+    "@affine/env": "workspace:*",
     "graphql": "^16.7.1",
     "nanoid": "^4.0.2"
   }
