@@ -27,7 +27,6 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
   await Promise.all(
     data.map(async ([id, promise]) => {
       const { default: template } = await promise;
-      console.log(`Importing ${id}...`, template);
       await workspace.importPageSnapshot(template, id);
     })
   );
