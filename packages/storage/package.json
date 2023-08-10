@@ -1,6 +1,6 @@
 {
   "name": "@affine/storage",
-  "version": "0.8.0-canary.15",
+  "version": "0.8.0-canary.16",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },

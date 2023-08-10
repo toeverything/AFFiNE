@@ -1,4 +1,4 @@
-import type { getCurrentBlockRange } from '@blocksuite/blocks';
+import type { BaseSelection } from '@blocksuite/block-std';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type { Workspace } from '@blocksuite/store';
@@ -15,7 +15,7 @@ export type CallbackMap = {
   formatBar: (
     root: HTMLElement,
     page: Page,
-    getBlockRange: () => ReturnType<typeof getCurrentBlockRange>
+    getBlockRange: () => BaseSelection[]
   ) => () => void;
 };
 
