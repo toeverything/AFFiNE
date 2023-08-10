@@ -8,7 +8,7 @@ const Y = Workspace.Y;
 
 const logger = new DebugLogger('affine:cloud');
 
-async function downloadBinaryRecursively(rootGuid: string, doc: Doc) {
+async function downloadBinary(rootGuid: string, doc: Doc) {
   const guid = doc.guid;
   const response = await fetchWithReport(
     runtimeConfig.serverUrlPrefix + `/api/workspaces/${rootGuid}/docs/${guid}`
@@ -16,9 +16,6 @@ async function downloadBinaryRecursively(rootGuid: string, doc: Doc) {
   if (response.ok) {
     const buffer = await response.arrayBuffer();
     Y.applyUpdate(doc, new Uint8Array(buffer));
-    await Promise.all(
-      [...doc.subdocs].map(doc => downloadBinaryRecursively(rootGuid, doc))
-    );
   }
 }
 
@@ -37,7 +34,7 @@ export const createCloudDownloadProvider: DocProviderCreator = (
     flavour: 'affine-cloud-download',
     active: true,
     sync() {
-      downloadBinaryRecursively(id, doc)
+      downloadBinary(id, doc)
         .then(() => {
           logger.info(`Downloaded ${id}`);
           _resolve();
@@ -63,7 +60,7 @@ export const createMergeCloudSnapshotProvider: DocProviderCreator = (
     flavour: 'affine-cloud-merge-snapshot',
     active: true,
     sync() {
-      downloadBinaryRecursively(id, doc)
+      downloadBinary(id, doc)
         .then(() => {
           logger.info(`Downloaded ${id}`);
           _resolve();
