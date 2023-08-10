@@ -1,4 +1,24 @@
-export interface DatasourceDocAdapter {
+export type Status =
+  | {
+      type: 'idle';
+    }
+  | {
+      type: 'syncing';
+    }
+  | {
+      type: 'synced';
+    }
+  | {
+      type: 'error';
+      error: Error;
+    };
+
+export interface StatusAdapter {
+  readonly status: Status;
+  subscribeStatusChange(onStatusChange: () => void): () => void;
+}
+
+export interface DatasourceDocAdapter extends Partial<StatusAdapter> {
   // request diff update from other clients
   queryDocState: (
     guid: string,
