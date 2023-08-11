@@ -125,9 +125,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
 
   return {
     ...currentBuildPreset,
-    // environment preset will overwrite current build preset
-    // this environment variable is for debug proposes only
-    // do not put them into CI
-    ...(process.env.CI ? {} : environmentPreset),
+    // use environment preset overwrite current build preset if needed
+    ...environmentPreset,
   };
 }
