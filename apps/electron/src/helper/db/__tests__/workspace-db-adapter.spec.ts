@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
 import { afterEach, expect, test, vi } from 'vitest';
-import * as Y from 'yjs';
+import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { removeWithRetry } from '../../../../tests/utils';
 import { dbSubjects } from '../subjects';
@@ -21,18 +21,18 @@ afterEach(async () => {
   await removeWithRetry(tmpDir);
 });
 
-let testYDoc: Y.Doc;
-let testYSubDoc: Y.Doc;
+let testYDoc: YDoc;
+let testYSubDoc: YDoc;
 
 function getTestUpdates() {
-  testYDoc = new Y.Doc();
+  testYDoc = new YDoc();
   const yText = testYDoc.getText('test');
   yText.insert(0, 'hello');
 
-  testYSubDoc = new Y.Doc();
+  testYSubDoc = new YDoc();
   testYDoc.getMap('subdocs').set('test-subdoc', testYSubDoc);
 
-  const updates = Y.encodeStateAsUpdate(testYDoc);
+  const updates = encodeStateAsUpdate(testYDoc);
 
   return updates;
 }
@@ -41,7 +41,7 @@ function getTestSubDocUpdates() {
   const yText = testYSubDoc.getText('test');
   yText.insert(0, 'hello');
 
-  const updates = Y.encodeStateAsUpdate(testYSubDoc);
+  const updates = encodeStateAsUpdate(testYSubDoc);
 
   return updates;
 }

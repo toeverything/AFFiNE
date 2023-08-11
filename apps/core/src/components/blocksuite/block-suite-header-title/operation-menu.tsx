@@ -12,7 +12,6 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { Workspace } from '@blocksuite/store';
 import { Divider } from '@toeverything/components/divider';
 import {
   useBlockSuitePageMeta,
@@ -21,6 +20,7 @@ import {
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -29,8 +29,6 @@ import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
 import { HeaderDropDownButton } from '../../pure/header-drop-down-button';
 import { usePageHelper } from '../block-suite-page-list/utils';
-
-const Y = Workspace.Y;
 
 type PageMenuProps = {
   rename?: () => void;
@@ -85,8 +83,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     const currentPageMeta = currentPage.meta;
     const newPage = createPage();
     await newPage.waitForLoaded();
-    const update = Y.encodeStateAsUpdate(currentPage.spaceDoc);
-    Y.applyUpdate(newPage.spaceDoc, update);
+    const update = encodeStateAsUpdate(currentPage.spaceDoc);
+    applyUpdate(newPage.spaceDoc, update);
     setPageMeta(newPage.id, {
       tags: currentPageMeta.tags,
       favorite: currentPageMeta.favorite,

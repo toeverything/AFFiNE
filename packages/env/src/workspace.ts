@@ -6,7 +6,7 @@ import type {
   PassiveDocProvider,
   Workspace as BlockSuiteWorkspace,
 } from '@blocksuite/store';
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 
 import type { Collection } from './filter.js';
 
@@ -27,14 +27,14 @@ export interface AffineDownloadProvider extends PassiveDocProvider {
 }
 
 /**
- * Download the first binary from local indexeddb
+ * Download the first binary from local IndexedDB
  */
 export interface BroadCastChannelProvider extends PassiveDocProvider {
   flavour: 'broadcast-channel';
 }
 
 /**
- * Long polling provider with local indexeddb
+ * Long polling provider with local IndexedDB
  */
 export interface LocalIndexedDBBackgroundProvider
   extends StatusAdapter,
@@ -164,6 +164,10 @@ type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   onOpenPage: (pageId: string, newTab?: boolean) => void;
   collection: Collection;
 };
+
+interface FC<P> {
+  (props: P): ReactNode;
+}
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   Header: FC<WorkspaceHeaderProps<Flavour>>;

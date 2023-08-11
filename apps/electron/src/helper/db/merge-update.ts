@@ -1,11 +1,11 @@
-import * as Y from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate, transact } from 'yjs';
 
 export function mergeUpdate(updates: Uint8Array[]) {
-  const yDoc = new Y.Doc();
-  Y.transact(yDoc, () => {
+  const yDoc = new YDoc();
+  transact(yDoc, () => {
     for (const update of updates) {
-      Y.applyUpdate(yDoc, update);
+      applyUpdate(yDoc, update);
     }
   });
-  return Y.encodeStateAsUpdate(yDoc);
+  return encodeStateAsUpdate(yDoc);
 }

@@ -18,16 +18,16 @@
     "@affine/sdk": "workspace:*",
     "@toeverything/components": "^0.0.10",
     "idb": "^7.1.1",
-    "langchain": "^0.0.118",
-    "marked": "^7.0.1",
-    "marked-gfm-heading-id": "^3.0.4",
-    "marked-mangle": "^1.1.0",
+    "langchain": "^0.0.126",
+    "marked": "^7.0.2",
+    "marked-gfm-heading-id": "^3.0.6",
+    "marked-mangle": "^1.1.2",
     "zod": "^3.21.4"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^5.0.1",
-    "jotai": "^2.2.2",
+    "jotai": "^2.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
