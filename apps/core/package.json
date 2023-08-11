@@ -39,6 +39,7 @@
     "css-spring": "^4.1.0",
     "cssnano": "^6.0.1",
     "graphql": "^16.7.1",
+    "intl-segmenter-polyfill-rs": "^0.1.5",
     "jotai": "^2.2.2",
     "jotai-devtools": "^0.6.1",
     "lit": "^2.7.6",
