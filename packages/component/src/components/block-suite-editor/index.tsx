@@ -184,7 +184,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       )}
     >
       <Suspense fallback={<BlockSuiteFallback />}>
-        <BlockSuiteEditorImpl {...props} />
+        <BlockSuiteEditorImpl key={props.page.id} {...props} />
       </Suspense>
     </ErrorBoundary>
   );
