@@ -9,6 +9,7 @@ export const header = style({
   position: 'relative',
   padding: '0 16px',
   minHeight: '52px',
+  borderBottom: '1px solid var(--affine-border-color)',
 });
 
 export const headerItem = style({
@@ -36,15 +37,19 @@ export const headerCenter = style({
   height: '52px',
   flexShrink: 0,
   maxWidth: '60%',
-
+  position: 'absolute',
+  transform: 'translateX(-50%)',
+  left: '50%',
   selectors: {
     '&.is-window': {
       maxWidth: '50%',
-      minWidth: '400px',
     },
     '&.is-window.has-min-width': {
-      maxWidth: '50%',
       minWidth: '400px',
+    },
+    '&.shadow': {
+      position: 'static',
+      visibility: 'hidden',
     },
   },
 });

@@ -4,6 +4,7 @@ import {
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import {
+  type FocusEvent,
   type InputHTMLAttributes,
   type KeyboardEvent,
   useCallback,
@@ -29,7 +30,7 @@ const EditableTitle = ({
   const onFocus = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       e.target.select();
-      propsOnFocus?.();
+      propsOnFocus?.(e);
     },
     [propsOnFocus]
   );

@@ -6,11 +6,11 @@ import {
   SidebarSwitch,
 } from '@affine/component/app-sidebar';
 import { isDesktop } from '@affine/env/constant';
-import { CloseIcon, MinusIcon, RoundedRectangleIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import throttle from 'lodash.throttle';
+import type { MutableRefObject, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 import DownloadClientTip from '../../blocksuite/workspace-header/download-tips';
@@ -19,6 +19,7 @@ import {
   shouldShowWarning,
 } from '../../blocksuite/workspace-header/utils';
 import * as style from './style.css';
+import { WindowsAppControls } from './windows-app-controls';
 
 interface HeaderPros {
   left?: ReactNode;
@@ -26,100 +27,45 @@ interface HeaderPros {
   center?: ReactNode;
 }
 
-const WindowsAppControls = () => {
-  const handleMinimizeApp = useCallback(() => {
-    window.apis?.ui.handleMinimizeApp().catch(err => {
-      console.error(err);
-    });
-  }, []);
-  const handleMaximizeApp = useCallback(() => {
-    window.apis?.ui.handleMaximizeApp().catch(err => {
-      console.error(err);
-    });
-  }, []);
-  const handleCloseApp = useCallback(() => {
-    window.apis?.ui.handleCloseApp().catch(err => {
-      console.error(err);
-    });
-  }, []);
-
-  return (
-    <div
-      data-platform-target="win32"
-      className={style.windowAppControlsWrapper}
-    >
-      <button
-        data-type="minimize"
-        className={style.windowAppControl}
-        onClick={handleMinimizeApp}
-      >
-        <MinusIcon />
-      </button>
-      <button
-        data-type="maximize"
-        className={style.windowAppControl}
-        onClick={handleMaximizeApp}
-      >
-        <RoundedRectangleIcon />
-      </button>
-      <button
-        data-type="close"
-        className={style.windowAppControl}
-        onClick={handleCloseApp}
-      >
-        <CloseIcon />
-      </button>
-    </div>
-  );
-};
-
-const useIsTinyScreen = (
-  mainContainer: HTMLElement,
-  domRefs: (HTMLElement | null)[]
-) => {
+const useIsTinyScreen = ({
+  mainContainer,
+  leftDoms,
+  centerDom,
+  rightDoms,
+}: {
+  mainContainer: HTMLElement;
+  leftDoms: MutableRefObject<HTMLElement | null>[];
+  centerDom: MutableRefObject<HTMLElement | null>;
+  rightDoms: MutableRefObject<HTMLElement | null>[];
+}) => {
   const [isTinyScreen, setIsTinyScreen] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
-      const containerWidth = mainContainer.clientWidth;
-
-      const totalWidth = domRefs.reduce((accWidth, dom) => {
-        return accWidth + (dom?.clientWidth || 0);
-      }, 0);
-
-      setIsTinyScreen(totalWidth > containerWidth);
-    };
-
-    handleResize();
-
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize();
-    });
-
-    resizeObserver.observe(mainContainer);
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [domRefs, mainContainer]);
-
-  return isTinyScreen;
-};
-
-const useCenterOffset = (
-  mainContainer: HTMLElement,
-  centerDom: HTMLElement | null
-) => {
-  const [centerOffset, setCenterOffset] = useState(0);
-  useEffect(() => {
-    const handleResize = () => {
-      if (!centerDom) {
+    const handleResize = throttle(() => {
+      if (!centerDom.current) {
         return;
       }
-      const containerWidth = mainContainer.clientWidth;
-      const rect = centerDom.getBoundingClientRect();
-      const offset = containerWidth / 2 - rect.width / 2 - rect.left;
-      setCenterOffset(offset < 0 ? 0 : offset);
-    };
+      const leftTotalWidth = leftDoms.reduce((accWidth, dom) => {
+        return accWidth + (dom.current?.clientWidth || 0);
+      }, 0);
+
+      const rightTotalWidth = rightDoms.reduce((accWidth, dom) => {
+        return accWidth + (dom.current?.clientWidth || 0);
+      }, 0);
+
+      const containerRect = mainContainer.getBoundingClientRect();
+      const centerRect = centerDom.current.getBoundingClientRect();
+
+      const offset = isTinyScreen ? 50 : 0;
+      if (
+        leftTotalWidth + containerRect.left >= centerRect.left - offset ||
+        containerRect.right - centerRect.right <= rightTotalWidth + offset
+      ) {
+        setIsTinyScreen(true);
+      } else {
+        setIsTinyScreen(false);
+      }
+    }, 100);
 
     handleResize();
 
@@ -128,12 +74,9 @@ const useCenterOffset = (
     });
 
     resizeObserver.observe(mainContainer);
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [centerDom, mainContainer]);
+  }, [centerDom, isTinyScreen, leftDoms, mainContainer, rightDoms]);
 
-  return centerOffset;
+  return isTinyScreen;
 };
 
 export const Header = ({ left, center, right }: HeaderPros) => {
@@ -148,28 +91,18 @@ export const Header = ({ left, center, right }: HeaderPros) => {
   const rightSlotRef = useRef<HTMLDivElement | null>(null);
   const windowControlsRef = useRef<HTMLDivElement | null>(null);
 
-  const isTinyScreen = useIsTinyScreen(
-    document.querySelector('.main-container') || document.body,
-    [
-      sidebarSwitchRef.current,
-      leftSlotRef.current,
-      centerSlotRef.current,
-      rightSlotRef.current,
-      windowControlsRef.current,
-    ]
-  );
-
-  const centerOffset = useCenterOffset(
-    document.querySelector('.main-container') || document.body,
-    centerSlotRef.current
-  );
+  const isTinyScreen = useIsTinyScreen({
+    mainContainer: document.querySelector('.main-container') || document.body,
+    leftDoms: [sidebarSwitchRef, leftSlotRef],
+    centerDom: centerSlotRef,
+    rightDoms: [rightSlotRef, windowControlsRef],
+  });
 
   useEffect(() => {
     setShowWarning(shouldShowWarning());
   }, []);
 
   const isWindowsDesktop = globalThis.platform === 'win32' && isDesktop;
-  // const isWindowsDesktop = true;
   const open = useAtomValue(appSidebarOpenAtom);
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
   return (
@@ -222,9 +155,6 @@ export const Header = ({ left, center, right }: HeaderPros) => {
             'has-min-width': !isTinyScreen,
           })}
           ref={centerSlotRef}
-          style={{
-            paddingLeft: centerOffset,
-          }}
         >
           {center}
         </div>
