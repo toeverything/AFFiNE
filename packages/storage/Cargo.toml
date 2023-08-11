@@ -26,3 +26,6 @@ napi-build = "2"
 [patch.crates-io]
 lib0 = { git = "https://github.com/toeverything/y-crdt", rev = "a700f09" }
 yrs = { git = "https://github.com/toeverything/y-crdt", rev = "a700f09" }
+
+[profile.release]
+debug = "full"

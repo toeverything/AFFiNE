@@ -34,6 +34,8 @@ spec:
           env:
           - name: NODE_ENV
             value: "{{ .Values.env }}"
+          - name: NO_COLOR
+            value: "1"
           - name: SERVER_FLAVOR
             value: "sync"
           - name: NEXTAUTH_URL
