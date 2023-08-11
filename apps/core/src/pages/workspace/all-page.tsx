@@ -3,9 +3,8 @@ import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
-import { currentPageIdAtom, rootStore } from '@toeverything/infra/atom';
-import { useAtom } from 'jotai/react';
-import { useCallback, useEffect } from 'react';
+import { rootStore } from '@toeverything/infra/atom';
+import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 
@@ -18,21 +17,22 @@ export const loader: LoaderFunction = async args => {
   assertExists(workspaceId);
   const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);
   const workspace = await rootStore.get(workspaceAtom);
-  const page = workspace.getPage(
-    `${workspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
-  );
-  if (page && page.meta.jumpOnce) {
-    workspace.meta.setPageMeta(page.id, {
-      jumpOnce: false,
-    });
-    return redirect(`/workspace/${workspace.id}/${page.id}`);
+  for (const pageId of workspace.pages.keys()) {
+    if (pageId.endsWith(DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX)) {
+      const page = workspace.getPage(pageId);
+      if (page && page.meta.jumpOnce) {
+        workspace.meta.setPageMeta(page.id, {
+          jumpOnce: false,
+        });
+        return redirect(`/workspace/${workspace.id}/${page.id}`);
+      }
+    }
   }
   return null;
 };
 
 export const AllPage = () => {
   const { jumpToPage } = useNavigateHelper();
-  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
   const setting = useCollectionManager(currentWorkspace.id);
   const onClickPage = useCallback(
@@ -46,18 +46,6 @@ export const AllPage = () => {
     },
     [currentWorkspace, jumpToPage]
   );
-  useEffect(() => {
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(
-      `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
-    );
-    if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
-        jumpOnce: false,
-      });
-      setCurrentPageId(currentPageId);
-      jumpToPage(currentWorkspace.id, page.id);
-    }
-  }, [currentPageId, currentWorkspace, jumpToPage, setCurrentPageId]);
   const { PageList, Header } = getUIAdapter(currentWorkspace.flavour);
   return (
     <>

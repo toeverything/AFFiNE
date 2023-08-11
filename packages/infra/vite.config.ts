@@ -11,6 +11,7 @@ export default defineConfig({
     minify: false,
     lib: {
       entry: {
+        blocksuite: resolve(root, 'src/blocksuite/index.ts'),
         index: resolve(root, 'src/index.ts'),
         atom: resolve(root, 'src/atom.ts'),
         type: resolve(root, 'src/type.ts'),
@@ -35,6 +36,7 @@ export default defineConfig({
         'react',
         /^jotai/,
         /^@blocksuite/,
+        /^@affine\/templates/,
       ],
     },
   },
