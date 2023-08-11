@@ -2,12 +2,11 @@ import {
   acceptInviteByInviteIdMutation,
   acceptInviteByWorkspaceIdMutation,
 } from '@affine/graphql';
+import { useMutation } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-
-import { useMutation } from '../shared/gql';
 
 // valid URL: /invite?wsId=xxx&inviteId=xxx
 // valid URL: /invite?wsId=xxx

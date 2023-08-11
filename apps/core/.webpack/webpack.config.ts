@@ -17,21 +17,24 @@ export default async function (cli_env: any, _: any) {
   const config = createConfiguration(flags, runtimeConfig);
   return merge(config, {
     entry: {
+      'polyfill/intl-segmenter': {
+        import: resolve(rootPath, 'src/polyfill/intl-segmenter.ts'),
+      },
       'polyfill/ses': {
         import: resolve(rootPath, 'src/polyfill/ses.ts'),
       },
       plugin: {
-        dependOn: ['polyfill/ses'],
+        dependOn: ['polyfill/intl-segmenter', 'polyfill/ses'],
         import: resolve(rootPath, 'src/bootstrap/register-plugins.ts'),
       },
       app: {
         chunkLoading: 'import',
-        dependOn: ['polyfill/ses', 'plugin'],
+        dependOn: ['polyfill/intl-segmenter', 'polyfill/ses', 'plugin'],
         import: resolve(rootPath, 'src/index.tsx'),
       },
       '_plugin/index.test': {
         chunkLoading: 'import',
-        dependOn: ['polyfill/ses', 'plugin'],
+        dependOn: ['polyfill/intl-segmenter', 'polyfill/ses', 'plugin'],
         import: resolve(rootPath, 'src/_plugin/index.test.tsx'),
       },
     },
@@ -41,7 +44,7 @@ export default async function (cli_env: any, _: any) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
-        chunks: ['app', 'plugin', 'polyfill/ses'],
+        chunks: ['app', 'plugin', 'polyfill/intl-segmenter', 'polyfill/ses'],
         filename: 'index.html',
         templateParameters: {
           GIT_SHORT_SHA: gitShortHash(),
@@ -53,7 +56,12 @@ export default async function (cli_env: any, _: any) {
         scriptLoading: 'module',
         minify: false,
         publicPath,
-        chunks: ['_plugin/index.test', 'plugin', 'polyfill/ses'],
+        chunks: [
+          '_plugin/index.test',
+          'plugin',
+          'polyfill/intl-segmenter',
+          'polyfill/ses',
+        ],
         filename: '_plugin/index.html',
         templateParameters: {
           GIT_SHORT_SHA: gitShortHash(),

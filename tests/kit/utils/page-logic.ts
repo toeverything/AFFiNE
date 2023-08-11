@@ -7,6 +7,13 @@ export async function waitEditorLoad(page: Page) {
   });
 }
 
+export async function waitForAllPagesLoad(page: Page) {
+  // if filters tag is rendered, we believe all_pages is ready
+  await page.waitForSelector('[data-testid="create-first-filter"]', {
+    timeout: 1000,
+  });
+}
+
 export async function newPage(page: Page) {
   // fixme(himself65): if too fast, the page will crash
   await page.getByTestId('new-page-button').click({

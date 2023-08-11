@@ -1,11 +1,19 @@
 import type { IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
-import { mergeUpdates } from 'yjs';
+import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { BlockSuiteBinaryDB, OldYjsDB, UpdateMessage } from './shared';
 import { dbVersion, DEFAULT_DB_NAME, upgradeDB } from './shared';
 
 let allDb: IDBDatabaseInfo[];
+
+export function mergeUpdates(updates: Uint8Array[]) {
+  const doc = new Doc();
+  updates.forEach(update => {
+    applyUpdate(doc, update);
+  });
+  return encodeStateAsUpdate(doc);
+}
 
 async function databaseExists(name: string): Promise<boolean> {
   return new Promise(resolve => {

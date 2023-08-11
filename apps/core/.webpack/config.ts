@@ -86,6 +86,7 @@ export const createConfiguration: (
     experiments: {
       topLevelAwait: true,
       outputModule: false,
+      syncWebAssembly: true,
     },
     output: {
       environment: {

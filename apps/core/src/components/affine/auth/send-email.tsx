@@ -15,7 +15,7 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
-import { useSetAtom } from 'jotai/index';
+import { useSetAtom } from 'jotai/react';
 import { type FC, useCallback } from 'react';
 
 import type { AuthPanelProps } from './index';
@@ -84,7 +84,10 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
       isChangeEmailMutating,
     sendEmail: useCallback(
       (email: string) => {
-        let trigger;
+        let trigger: (args: {
+          email: string;
+          callbackUrl: string;
+        }) => Promise<unknown>;
         let callbackUrl;
         switch (emailType) {
           case 'setPassword':

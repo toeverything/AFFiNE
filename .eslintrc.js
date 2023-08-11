@@ -37,6 +37,11 @@ const createPattern = packageName => [
     // useSession is type unsafe
     importNames: ['useSession'],
   },
+  {
+    group: ['yjs'],
+    message: 'Do not use this API because it has a bug',
+    importNames: ['mergeUpdates'],
+  },
 ];
 
 const allPackages = [
@@ -166,6 +171,11 @@ const config = {
             message: "Import hooks from 'use-current-user.tsx'",
             // useSession is type unsafe
             importNames: ['useSession'],
+          },
+          {
+            group: ['yjs'],
+            message: 'Do not use this API because it has a bug',
+            importNames: ['mergeUpdates'],
           },
         ],
       },
