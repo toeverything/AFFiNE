@@ -1,16 +1,8 @@
 import type { Page } from '@blocksuite/store';
 
-export async function initPageWithPreloading(page: Page) {
-  const workspace = page.workspace;
-  const {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    data,
-  } = await import('@affine/templates/preloading.json');
-  await page.waitForLoaded();
-  await workspace.importPageSnapshot(data['space:hello-world'], page.id);
-}
-
+/**
+ * @deprecated
+ */
 export async function initEmptyPage(page: Page) {
   await page.waitForLoaded();
   const pageBlockId = page.addBlock('affine:page', {

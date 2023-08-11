@@ -1,0 +1,16 @@
+{
+  "name": "prototype",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/prototype/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
+      "options": {
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    }
+  }
+}

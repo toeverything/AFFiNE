@@ -1,0 +1,284 @@
+{
+  "blocks": {
+    "0tJt1nfXpr": {
+      "sys:id": "0tJt1nfXpr",
+      "sys:flavour": "affine:page",
+      "sys:children": ["-SeDPuI6pE", "gjPKqwOdlZ"],
+      "prop:title": [
+        {
+          "insert": "OKR Template"
+        }
+      ]
+    },
+    "-SeDPuI6pE": {
+      "sys:id": "-SeDPuI6pE",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "gjPKqwOdlZ": {
+      "sys:id": "gjPKqwOdlZ",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "B12ua5IVdH",
+        "juvaBV46Dt",
+        "tsqRR7Aqqe",
+        "TzALQTyjsF",
+        "lbLc-rsTQ_",
+        "IbLsSTqZWu",
+        "LfH4-lvRy1"
+      ],
+      "prop:xywh": "[0,0,800,775]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "juvaBV46Dt": {
+      "sys:id": "juvaBV46Dt",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "4HXJrnBZGaGPFpowNawNog0aMg3dgoVaAnNqEMeUxq0=",
+      "prop:caption": "",
+      "prop:width": 0,
+      "prop:height": 0
+    },
+    "B12ua5IVdH": {
+      "sys:id": "B12ua5IVdH",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Using OKR (Objectives and Key Results) allows team members to participate in theformulation and decomposition of qoals, jointly find a way to achieve them. and divefull play to their subjective initiative, The weekly progress alignment allows eachmember to fully understand the goals, contribute ideas, and combine timelyfeedback and correction to complete the goal  better and faster."
+        }
+      ]
+    },
+    "tsqRR7Aqqe": {
+      "sys:id": "tsqRR7Aqqe",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h2",
+      "prop:text": [
+        {
+          "insert": "I. Synchronization of team OKR progress "
+        }
+      ]
+    },
+    "TzALQTyjsF": {
+      "sys:id": "TzALQTyjsF",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "All team members collaboratively fill in the latest progress and next step plan of the person in charge of OKR, and discuss the progress at the meeting e! Team OKR weeklymeeting"
+        }
+      ]
+    },
+    "lbLc-rsTQ_": {
+      "sys:id": "lbLc-rsTQ_",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "O1: Fourth quarter revenue 1 million "
+        }
+      ]
+    },
+    "IbLsSTqZWu": {
+      "sys:id": "IbLsSTqZWu",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "LfH4-lvRy1": {
+      "sys:id": "LfH4-lvRy1",
+      "sys:flavour": "affine:database",
+      "sys:children": ["CLLfj990JA", "iouBY8Zk33", "jRFdpU21Jf"],
+      "prop:views": [
+        {
+          "id": "BjTEwK-3iR",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "3s4GtwNZTH",
+              "width": 108
+            },
+            {
+              "id": "IwZCoBvV9W",
+              "width": 142
+            },
+            {
+              "id": "ftL1qPRgYl",
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:title": [
+        {
+          "insert": "KR setting & reviewing "
+        }
+      ],
+      "prop:cells": {
+        "C75yOBGfeP": {
+          "ftL1qPRgYl": {
+            "columnId": "ftL1qPRgYl",
+            "value": [
+              {
+                "insert": "the planning case has been reviewed, see doc for details "
+              }
+            ]
+          },
+          "IwZCoBvV9W": {
+            "columnId": "IwZCoBvV9W",
+            "value": 85
+          }
+        },
+        "iouBY8Zk33": {
+          "ftL1qPRgYl": {
+            "columnId": "ftL1qPRgYl",
+            "value": [
+              {
+                "insert": "worning on it "
+              }
+            ]
+          },
+          "IwZCoBvV9W": {
+            "columnId": "IwZCoBvV9W",
+            "value": 46
+          },
+          "3s4GtwNZTH": {
+            "columnId": "3s4GtwNZTH",
+            "value": "Qp1kGLAbfE"
+          }
+        },
+        "jRFdpU21Jf": {
+          "ftL1qPRgYl": {
+            "columnId": "ftL1qPRgYl",
+            "value": [
+              {
+                "insert": "waiting "
+              }
+            ]
+          },
+          "IwZCoBvV9W": {
+            "columnId": "IwZCoBvV9W",
+            "value": 3
+          },
+          "3s4GtwNZTH": {
+            "columnId": "3s4GtwNZTH",
+            "value": "yCF1NgLWhh"
+          }
+        },
+        "CLLfj990JA": {
+          "ftL1qPRgYl": {
+            "columnId": "ftL1qPRgYl",
+            "value": [
+              {
+                "insert": "The planning case has been reviewed, see doc for details "
+              }
+            ]
+          },
+          "IwZCoBvV9W": {
+            "columnId": "IwZCoBvV9W",
+            "value": 70
+          },
+          "3s4GtwNZTH": {
+            "columnId": "3s4GtwNZTH",
+            "value": "KHKc4e79W8"
+          }
+        }
+      },
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "LfH4-lvRy1",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "progress",
+          "name": "progress bar ",
+          "data": {},
+          "id": "IwZCoBvV9W"
+        },
+        {
+          "type": "rich-text",
+          "name": "Notes ",
+          "data": {
+            "options": []
+          },
+          "id": "ftL1qPRgYl"
+        },
+        {
+          "type": "select",
+          "name": "priority ",
+          "data": {
+            "options": [
+              {
+                "id": "yCF1NgLWhh",
+                "value": "not urgent",
+                "color": "var(--affine-tag-blue)"
+              },
+              {
+                "id": "Qp1kGLAbfE",
+                "value": "urgent",
+                "color": "var(--affine-tag-red)"
+              },
+              {
+                "id": "KHKc4e79W8",
+                "value": "important",
+                "color": "var(--affine-tag-yellow)"
+              }
+            ]
+          },
+          "id": "3s4GtwNZTH"
+        }
+      ],
+      "prop:titleColumnName": "Key Resluts ",
+      "prop:titleColumnWidth": 246
+    },
+    "iouBY8Zk33": {
+      "sys:id": "iouBY8Zk33",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "describe Key results "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "jRFdpU21Jf": {
+      "sys:id": "jRFdpU21Jf",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "KR1: Describe Key results "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "CLLfj990JA": {
+      "sys:id": "CLLfj990JA",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "The campus activity was successfully released, and the exposure was not less than 1 million people"
+        }
+      ]
+    }
+  }
+}
