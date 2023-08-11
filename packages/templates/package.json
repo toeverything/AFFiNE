@@ -7,5 +7,5 @@
     "./v1/*.json": "./v1/*.json",
     "./preloading.json": "./preloading.json"
   },
-  "version": "0.8.0-canary.17"
+  "version": "0.8.0-canary.18"
 }
