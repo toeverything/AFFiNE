@@ -61,14 +61,14 @@ const AccountMenu = () => {
       <div>Unlimted</div>
       <Divider></Divider>
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
-        {t['Join Workspace']()}
+        {t['com.affine.workspace.cloud.join']()}
       </MenuItem>
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
-        {t['Account Settings']()}
+        {t['com.affine.workspace.cloud.account.settings']()}
       </MenuItem>
       <Divider></Divider>
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
-        {t['Log Out']()}
+        {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
     </div>
   );
@@ -88,7 +88,9 @@ const CloudWorkSpaceList = ({
     <>
       <StyledModalHeader>
         <StyledModalHeaderLeft>
-          <StyledModalTitle>{t['Cloud sync']()}</StyledModalTitle>
+          <StyledModalTitle>
+            {t['com.affine.workspace.cloud.sync']()}
+          </StyledModalTitle>
           <Tooltip
             content={t['Workspace description']()}
             placement="top-start"
@@ -211,7 +213,7 @@ export const WorkspaceListModal = ({
                       </StyledCreateWorkspaceCardPillIcon>
                       <StyledSignInCardPillTextCotainer>
                         <StyledSignInCardPillTextPrimary>
-                          {t['Sign up/ Sign in']()}
+                          {t['com.affine.workspace.cloud.auth']()}
                         </StyledSignInCardPillTextPrimary>
                         <StyledSignInCardPillTextSecondary>
                           Sync with AFFiNE Cloud
@@ -274,7 +276,7 @@ export const WorkspaceListModal = ({
                       <ImportIcon />
                     </StyledCreateWorkspaceCardPillIcon>
                     <div>
-                      <p>{t['Import Workspace']()}</p>
+                      <p>{t['com.affine.workspace.local.import']()}</p>
                     </div>
                   </StyledCreateWorkspaceCardPillContent>
                 </MenuItem>
