@@ -129,7 +129,7 @@ describe('Trace Reporter', () => {
 
   it('should conform to zulu date format', () => {
     expect(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{3}Z$/.test(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(
         toZuluDateFormat(new Date())
       )
     ).toBe(true);
