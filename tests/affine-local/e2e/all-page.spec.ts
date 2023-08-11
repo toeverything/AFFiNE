@@ -18,6 +18,7 @@ import {
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
+  waitForAllPagesLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import type { Page } from '@playwright/test';
@@ -89,7 +90,7 @@ test('allow creation of filters by created time', async ({ page }) => {
   await waitEditorLoad(page);
   await newPage(page);
   await clickSideBarAllPageButton(page);
-  await page.waitForTimeout(100);
+  await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
   const pageCount = pages.length;
   expect(pageCount).not.toBe(0);
@@ -124,7 +125,7 @@ test('creation of filters by created time, then click date picker to modify the 
   await waitEditorLoad(page);
   await newPage(page);
   await clickSideBarAllPageButton(page);
-  await page.waitForTimeout(100);
+  await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
   const pageCount = pages.length;
   expect(pageCount).not.toBe(0);
@@ -180,13 +181,12 @@ test('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
   await clickSideBarAllPageButton(page);
-  await page.waitForTimeout(100);
+  await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
   const pageCount = pages.length;
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
-  await page.waitForTimeout(100);
   const pagesWithTags = await page.locator('[data-testid="title"]').all();
   const pagesWithTagsCount = pagesWithTags.length;
   expect(pagesWithTagsCount).not.toBe(0);
