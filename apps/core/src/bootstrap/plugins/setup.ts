@@ -28,7 +28,7 @@ import { createFetch } from './endowments/fercher';
 import { createTimers } from './endowments/timer';
 import { setupImportsMap } from './setup-imports-map';
 
-const dynamicImportKey = '$h‍_import';
+const dynamicImportKey = '$h_import';
 
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
