@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { rootStore } from '@toeverything/infra/atom';
@@ -24,10 +25,20 @@ export const loader: LoaderFunction = async () => {
     const nonTrashPages = targetWorkspace.meta.pageMetas.filter(
       ({ trash }) => !trash
     );
+    const helloWorldPage = nonTrashPages.find(
+      ({ id, jumpOnce }) =>
+        id.endsWith(DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX) && jumpOnce
+    )?.id;
     const pageId =
       nonTrashPages.find(({ id }) => id === lastPageId)?.id ??
       nonTrashPages.at(0)?.id;
-    if (pageId) {
+    if (helloWorldPage) {
+      logger.debug(
+        'Found target workspace. Jump to hello world page',
+        helloWorldPage
+      );
+      return redirect(`/workspace/${targetWorkspace.id}/${helloWorldPage}`);
+    } else if (pageId) {
       logger.debug('Found target workspace. Jump to page', pageId);
       return redirect(`/workspace/${targetWorkspace.id}/${pageId}`);
     } else {
