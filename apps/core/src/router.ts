@@ -40,6 +40,10 @@ export const router = createBrowserRouter(
       path: '/expired',
       lazy: () => import('./pages/expired'),
     },
+    {
+      path: '*',
+      lazy: () => import('./pages/404'),
+    },
   ],
   {
     future: {

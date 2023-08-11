@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.0-canary.16",
+  "version": "0.8.0-canary.18",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -83,7 +83,7 @@
     "@types/supertest": "^2.0.12",
     "@types/ws": "^8.5.5",
     "c8": "^8.0.1",
-    "nodemon": "^2.0.22",
+    "nodemon": "^3.0.1",
     "sinon": "^15.2.0",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
