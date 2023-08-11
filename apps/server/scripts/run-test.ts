@@ -24,6 +24,7 @@ const env = {
   PATH: process.env.PATH,
   NODE_ENV: 'test',
   DATABASE_URL: process.env.DATABASE_URL,
+  NODE_NO_WARNINGS: '1',
 };
 
 if (process.argv[2] === 'all') {

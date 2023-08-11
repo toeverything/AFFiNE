@@ -1,20 +1,20 @@
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { useCompositionInput } from 'foxact/use-composition-input';
 import type {
+  ChangeEvent,
   CSSProperties,
+  FocusEvent,
   FocusEventHandler,
   ForwardedRef,
   HTMLAttributes,
   KeyboardEventHandler,
+  ReactNode,
 } from 'react';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 
-import { heightVar, inputStyle, widthVar } from './index.css';
+import { input, inputWrapper, widthVar } from './index.css';
 
-type InputProps = {
-  // We don't have `value` props here,
-  //  see https://foxact.skk.moe/use-composition-input
+export type InputProps = {
   defaultValue?: string | undefined;
   placeholder?: string;
   disabled?: boolean;
@@ -26,13 +26,16 @@ type InputProps = {
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   noBorder?: boolean;
+  status?: 'error' | 'success' | 'warning' | 'default';
+  size?: 'default' | 'large' | 'extraLarge';
+  preFix?: ReactNode;
+  endFix?: ReactNode;
+  value?: string;
+  type?: HTMLInputElement['type'];
+  inputStyle?: CSSProperties;
 } & Omit<
   HTMLAttributes<HTMLInputElement>,
-  | 'onChange'
-  | 'value'
-  | 'defaultValue'
-  | 'onCompositionStart'
-  | 'onCompositionEnd'
+  'onChange' | 'onCompositionStart' | 'onCompositionEnd'
 >;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -44,41 +47,81 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     minLength,
     height,
     width,
-    onChange,
+    onChange: propsOnChange,
     noBorder = false,
     className,
+    status = 'default',
+    style = {},
+    inputStyle = {},
+    size = 'default',
+    onFocus,
+    onBlur,
+    preFix,
+    endFix,
     ...otherProps
   }: InputProps,
   ref: ForwardedRef<HTMLInputElement>
 ) {
-  const inputProps = useCompositionInput(
-    useCallback(
-      (value: string) => {
-        onChange && onChange(value);
-      },
-      [onChange]
-    )
-  );
+  const [isFocus, setIsFocus] = useState(false);
 
   return (
-    <input
-      className={clsx(inputStyle, className)}
-      style={assignInlineVars({
-        [widthVar]: width ? `${width}px` : '100%',
-        [heightVar]: height ? `${height}px` : 'unset',
+    <div
+      className={clsx(inputWrapper, className, {
+        // status
+        disabled: disabled,
+        'no-border': noBorder,
+        focus: isFocus,
+        // color
+        error: status === 'error',
+        success: status === 'success',
+        warning: status === 'warning',
+        default: status === 'default',
+        // size
+        large: size === 'large',
+        'extra-large': size === 'extraLarge',
       })}
-      data-no-border={noBorder}
-      data-disabled={disabled}
-      ref={ref}
-      defaultValue={defaultValue}
-      disabled={disabled}
-      placeholder={placeholder}
-      width={width}
-      maxLength={maxLength}
-      minLength={minLength}
-      height={height}
-      {...otherProps}
-      {...inputProps}
-    />
+      style={{
+        ...assignInlineVars({
+          [widthVar]: width ? `${width}px` : '100%',
+        }),
+        ...style,
+      }}
+    >
+      {preFix}
+      <input
+        className={clsx(input)}
+        ref={ref}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        placeholder={placeholder}
+        width={width}
+        maxLength={maxLength}
+        minLength={minLength}
+        height={height}
+        style={inputStyle}
+        onFocus={useCallback(
+          (e: FocusEvent<HTMLInputElement>) => {
+            setIsFocus(true);
+            onFocus?.(e);
+          },
+          [onFocus]
+        )}
+        onBlur={useCallback(
+          (e: FocusEvent<HTMLInputElement>) => {
+            setIsFocus(false);
+            onBlur?.(e);
+          },
+          [onBlur]
+        )}
+        onChange={useCallback(
+          (e: ChangeEvent<HTMLInputElement>) => {
+            propsOnChange?.(e.target.value);
+          },
+          [propsOnChange]
+        )}
+        {...otherProps}
+      />
+      {endFix}
+    </div>
   );
 });

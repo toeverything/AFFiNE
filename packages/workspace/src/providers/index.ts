@@ -1,8 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 import type {
+  AffineSocketIOProvider,
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
+import { createLazyProvider } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
@@ -13,6 +15,11 @@ import {
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 
+import { createAffineDataSource } from '../affine';
+import {
+  createCloudDownloadProvider,
+  createMergeCloudSnapshotProvider,
+} from './cloud';
 import {
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
@@ -21,15 +28,32 @@ import {
 const Y = Workspace.Y;
 const logger = new DebugLogger('indexeddb-provider');
 
+const createAffineSocketIOProvider: DocProviderCreator = (
+  id,
+  doc,
+  { awareness }
+): AffineSocketIOProvider => {
+  const dataSource = createAffineDataSource(id, doc, awareness);
+  return {
+    flavour: 'affine-socket-io',
+    ...createLazyProvider(doc, dataSource),
+  };
+};
+
 const createIndexedDBBackgroundProvider: DocProviderCreator = (
   id,
   blockSuiteWorkspace
 ): LocalIndexedDBBackgroundProvider => {
   const indexeddbProvider = create(blockSuiteWorkspace);
+
   let connected = false;
   return {
     flavour: 'local-indexeddb-background',
     passive: true,
+    get status() {
+      return indexeddbProvider.status;
+    },
+    subscribeStatusChange: indexeddbProvider.subscribeStatusChange,
     get connected() {
       return connected;
     },
@@ -67,6 +91,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
       Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
     }
   }
+
   return {
     flavour: 'local-indexeddb',
     active: true,
@@ -84,6 +109,7 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
 };
 
 export {
+  createAffineSocketIOProvider,
   createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
   createIndexedDBDownloadProvider,
@@ -111,9 +137,16 @@ export const createLocalProviders = (): DocProviderCreator[] => {
 export const createAffineProviders = (): DocProviderCreator[] => {
   return (
     [
+      ...createLocalProviders(),
       runtimeConfig.enableBroadcastChannelProvider &&
         createBroadcastChannelProvider,
+      runtimeConfig.enableCloud && createAffineSocketIOProvider,
+      runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
       createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));
+};
+
+export const createAffinePublicProviders = (): DocProviderCreator[] => {
+  return [createCloudDownloadProvider];
 };

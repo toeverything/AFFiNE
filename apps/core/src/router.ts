@@ -7,6 +7,10 @@ export const router = createBrowserRouter(
       lazy: () => import('./pages/index'),
     },
     {
+      path: '/invite',
+      lazy: () => import('./pages/invite'),
+    },
+    {
       path: '/workspace/:workspaceId',
       lazy: () => import('./pages/workspace/index'),
       children: [
@@ -25,7 +29,19 @@ export const router = createBrowserRouter(
       ],
     },
     {
+      path: '/auth/:authType',
+      lazy: () => import('./pages/auth'),
+    },
+    {
       path: '/404',
+      lazy: () => import('./pages/404'),
+    },
+    {
+      path: '/expired',
+      lazy: () => import('./pages/expired'),
+    },
+    {
+      path: '*',
       lazy: () => import('./pages/404'),
     },
   ],

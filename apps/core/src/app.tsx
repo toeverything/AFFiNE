@@ -6,6 +6,7 @@ import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { CacheProvider } from '@emotion/react';
 import { use } from 'foxact/use';
+import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -46,16 +47,20 @@ const languageLoadingPromise = loadLanguage().catch(console.error);
 export const App = memo(function App() {
   use(languageLoadingPromise);
   return (
-    <CacheProvider value={cache}>
-      <AffineContext>
-        <DebugProvider>
-          <RouterProvider
-            fallbackElement={<WorkspaceFallback key="RouterFallback" />}
-            router={router}
-            future={future}
-          />
-        </DebugProvider>
-      </AffineContext>
-    </CacheProvider>
+    <SessionProvider refetchOnWindowFocus>
+      <CacheProvider value={cache}>
+        <AffineContext>
+          <DebugProvider>
+            <Suspense fallback={<WorkspaceFallback key="RootPageLoading" />}>
+              <RouterProvider
+                fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+                router={router}
+                future={future}
+              />
+            </Suspense>
+          </DebugProvider>
+        </AffineContext>
+      </CacheProvider>
+    </SessionProvider>
   );
 });

@@ -31,6 +31,12 @@ const createPattern = packageName => [
     message: 'Use `useNavigateHelper` instead',
     importNames: ['useNavigate'],
   },
+  {
+    group: ['next-auth/react'],
+    message: "Import hooks from 'use-current-user.tsx'",
+    // useSession is type unsafe
+    importNames: ['useSession'],
+  },
 ];
 
 const allPackages = [
@@ -154,6 +160,12 @@ const config = {
             group: ['react-router-dom'],
             message: 'Use `useNavigateHelper` instead',
             importNames: ['useNavigate'],
+          },
+          {
+            group: ['next-auth/react'],
+            message: "Import hooks from 'use-current-user.tsx'",
+            // useSession is type unsafe
+            importNames: ['useSession'],
           },
         ],
       },

@@ -19,7 +19,7 @@ const editorFlags: BlockSuiteFeatureFlags = {
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<string, RuntimeConfig> = {
     stable: {
-      enablePlugin: false,
+      enablePlugin: true,
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
@@ -31,8 +31,10 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
       enableNotificationCenter: false,
-      enableCloud: false,
-      serverAPI: 'https://localhost:3010',
+      enableCloud: true,
+      shouldReportTrace: false,
+      traceReportEndpoint: '',
+      serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
@@ -50,9 +52,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableNewSettingUnstableApi: false,
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
+      shouldReportTrace: false,
+      traceReportEndpoint: '',
       enableNotificationCenter: true,
-      enableCloud: false,
-      serverAPI: 'https://localhost:3010',
+      enableCloud: true,
+      serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
@@ -103,7 +107,21 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
+    shouldReportTrace: process.env.SHOULD_REPORT_TRACE
+      ? process.env.SHOULD_REPORT_TRACE === 'true'
+      : currentBuildPreset.shouldReportTrace,
+    traceReportEndpoint: process.env.TRACE_REPORT_ENDPOINT
+      ? process.env.TRACE_REPORT_ENDPOINT
+      : currentBuildPreset.traceReportEndpoint,
   };
+
+  if (buildFlags.mode === 'development') {
+    if (buildFlags.distribution === 'browser')
+      currentBuildPreset.serverUrlPrefix = '';
+    else if (buildFlags.distribution === 'desktop') {
+      currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+    }
+  }
 
   return {
     ...currentBuildPreset,

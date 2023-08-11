@@ -15,7 +15,9 @@ import type {
 } from 'swr/mutation';
 import useSWRMutation from 'swr/mutation';
 
-const fetcher = gqlFetcherFactory(prefixUrl + '/graphql');
+export const fetcher = gqlFetcherFactory(
+  runtimeConfig.serverUrlPrefix + '/graphql'
+);
 
 /**
  * A `useSWR` wrapper for sending graphql queries
@@ -37,7 +39,13 @@ const fetcher = gqlFetcherFactory(prefixUrl + '/graphql');
  */
 export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>
-): SWRResponse<QueryResponse<Query>, GraphQLError | GraphQLError[]>;
+): SWRResponse<
+  QueryResponse<Query>,
+  GraphQLError | GraphQLError[],
+  {
+    suspense: true;
+  }
+>;
 export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>,
   config: Omit<
@@ -48,13 +56,19 @@ export function useQuery<Query extends GraphQLQuery>(
     >,
     'fetcher'
   >
-): SWRResponse<QueryResponse<Query>, GraphQLError | GraphQLError[]>;
+): SWRResponse<
+  QueryResponse<Query>,
+  GraphQLError | GraphQLError[],
+  {
+    suspense: true;
+  }
+>;
 export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>,
   config?: any
 ) {
   return useSWR(
-    () => [options.query.id, options.variables],
+    () => ['cloud', options.query.id, options.variables],
     () => fetcher(options),
     config
   );
@@ -101,8 +115,8 @@ export function useMutation(
   config?: any
 ) {
   return useSWRMutation(
-    options.mutation.id,
-    (_: string, { arg }: { arg: any }) =>
+    () => ['cloud', options.mutation.id],
+    (_: unknown[], { arg }: { arg: any }) =>
       fetcher({ ...options, query: options.mutation, variables: arg }),
     config
   );

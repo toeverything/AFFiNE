@@ -167,6 +167,28 @@ export interface AFFiNEConfig {
       path: string;
     };
   };
+  /**
+   * Redis Config
+   *
+   * whether to use redis as Socket.IO adapter
+   */
+  redis: {
+    /**
+     * if not enabled, use in-memory adapter by default
+     */
+    enabled: boolean;
+    /**
+     * url of redis host
+     */
+    host: string;
+    /**
+     * port of redis
+     */
+    port: number;
+    username: string;
+    password: string;
+    database: number;
+  };
 
   /**
    * authentication config
@@ -236,8 +258,30 @@ export interface AFFiNEConfig {
     email: {
       server: string;
       port: number;
+      login: string;
       sender: string;
       password: string;
+    };
+  };
+
+  doc: {
+    manager: {
+      /**
+       * How often the [DocManager] will start a new turn of merging pending updates into doc snapshot.
+       *
+       * This is not the latency a new joint client will take to see the latest doc,
+       * but the buffer time we introduced to reduce the load of our service.
+       *
+       * in {ms}
+       */
+      updatePollInterval: number;
+
+      /**
+       * Use JwstCodec to merge updates at the same time when merging using Yjs.
+       *
+       * This is an experimental feature, and aimed to check the correctness of JwstCodec.
+       */
+      experimentalMergeWithJwstCodec: boolean;
     };
   };
 }

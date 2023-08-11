@@ -7,7 +7,11 @@ import type {
   LocalIndexedDBDownloadProvider,
   WorkspaceAdapter,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import {
+  type LocalWorkspace,
+  WorkspaceFlavour,
+  WorkspaceVersion,
+} from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   type RootWorkspaceMetadataV2,
@@ -16,7 +20,7 @@ import {
 } from '@affine/workspace/atom';
 import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import {
-  migrateLocalBlobStorage,
+  moveLocalBlobStorage,
   upgradeV1ToV2,
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
@@ -41,7 +45,9 @@ async function tryMigration() {
               console.warn('not supported');
               return;
             }
-            const workspace = await adapter.CRUD.get(oldMeta.id);
+            const workspace = (await adapter.CRUD.get(
+              oldMeta.id
+            )) as LocalWorkspace | null;
             if (!workspace) {
               console.warn('cannot find workspace', oldMeta.id);
               return;
@@ -80,7 +86,7 @@ async function tryMigration() {
               id: newId,
               version: WorkspaceVersion.DatabaseV3,
             };
-            await migrateLocalBlobStorage(workspace.id, newId);
+            await moveLocalBlobStorage(workspace.id, newId);
             console.log('migrate to v2');
           };
 

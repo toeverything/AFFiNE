@@ -39,6 +39,8 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
+  color: 'var(--affine-white)',
+  fontSize: 'var(--affine-font-h-4)',
 });
 
 export const urlButton = style({
@@ -70,4 +72,56 @@ export const fakeWrapper = style({
       cursor: 'not-allowed',
     },
   },
+});
+
+export const membersList = style({
+  marginTop: '24px',
+  padding: '12px 6px',
+  borderRadius: '12px',
+  background: 'var(--affine-background-primary-color)',
+  gap: '2px',
+});
+
+export const listItem = style({
+  padding: '0 16px',
+  height: '40px',
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  gap: '12px',
+  ':hover': {
+    background: 'var(--affine-hover-color)',
+    borderRadius: '8px',
+  },
+});
+export const memberContainer = style({
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+});
+export const permissionContainer = style({
+  width: '100%',
+  textAlign: 'center',
+});
+export const memberName = style({
+  width: '100%',
+  fontSize: 'var(--affine-font-sm)',
+  color: 'var(--affine-text-primary-color)',
+});
+export const memberEmail = style({
+  width: '100%',
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-secondary-color)',
+});
+export const iconButton = style({
+  opacity: 0,
+  pointerEvents: 'none',
+});
+export const displayNone = style({
+  opacity: 0,
+  pointerEvents: 'none',
+});
+globalStyle(`${listItem}:hover ${iconButton}`, {
+  opacity: 1,
+  pointerEvents: 'all',
 });

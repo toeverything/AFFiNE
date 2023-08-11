@@ -3,9 +3,9 @@ import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
 import type { AtomFamily } from 'jotai/vanilla/utils/atomFamily';
 
+import type { AuthModalProps } from '../components/affine/auth';
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import type { SettingProps } from '../components/affine/setting-modal';
-
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
@@ -20,6 +20,20 @@ export const openSettingModalAtom = atom<SettingAtom>({
   activeTab: 'appearance',
   workspaceId: null,
   open: false,
+});
+
+export type AuthAtom = {
+  open: boolean;
+  state: AuthModalProps['state'];
+  email?: string;
+  emailType?: AuthModalProps['emailType'];
+};
+
+export const openAuthModalAtom = atom<AuthAtom>({
+  open: false,
+  state: 'signIn',
+  email: '',
+  emailType: 'changeEmail',
 });
 
 export const openDisableCloudAlertModalAtom = atom(false);

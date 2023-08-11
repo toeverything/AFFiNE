@@ -1,3 +1,4 @@
+import type { StatusAdapter } from '@affine/y-provider';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type {
@@ -35,7 +36,9 @@ export interface BroadCastChannelProvider extends PassiveDocProvider {
 /**
  * Long polling provider with local indexeddb
  */
-export interface LocalIndexedDBBackgroundProvider extends PassiveDocProvider {
+export interface LocalIndexedDBBackgroundProvider
+  extends StatusAdapter,
+    PassiveDocProvider {
   flavour: 'local-indexeddb-background';
 }
 
@@ -43,12 +46,16 @@ export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
   flavour: 'local-indexeddb';
 }
 
-export interface SQLiteProvider extends PassiveDocProvider {
+export interface SQLiteProvider extends PassiveDocProvider, StatusAdapter {
   flavour: 'sqlite';
 }
 
 export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
+}
+
+export interface AffineSocketIOProvider extends PassiveDocProvider {
+  flavour: 'affine-socket-io';
 }
 
 type BaseWorkspace = {
@@ -70,7 +77,7 @@ export interface LocalWorkspace extends BaseWorkspace {
 }
 
 export interface AffinePublicWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.PUBLIC;
+  flavour: WorkspaceFlavour.AFFINE_PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
@@ -93,7 +100,7 @@ export enum WorkspaceFlavour {
    */
   AFFINE_CLOUD = 'affine-cloud',
   LOCAL = 'local',
-  PUBLIC = 'affine-public',
+  AFFINE_PUBLIC = 'affine-public',
 }
 
 export const settingPanel = {
@@ -109,7 +116,7 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 // built-in workspaces
 export interface WorkspaceRegistry {
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-  [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
+  [WorkspaceFlavour.AFFINE_PUBLIC]: AffinePublicWorkspace;
   [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
 }
 
@@ -168,16 +175,15 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   PageList: FC<PageListProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
+  LoginCard?: FC;
 }
 
 export interface AppEvents {
   // event there is no workspace
-  // usually used to initialize workspace plugin
+  // usually used to initialize workspace adapter
   'app:init': () => string[];
-  // request to gain access to workspace plugin
-  'workspace:access': () => Promise<void>;
-  // request to revoke access to workspace plugin
-  'workspace:revoke': () => Promise<void>;
+  // event if you have access to workspace adapter
+  'app:access': () => Promise<boolean>;
 }
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {

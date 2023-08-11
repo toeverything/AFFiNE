@@ -12,6 +12,7 @@ on:
       - '!.github/workflows/build.yml'
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
+      - '!.github/actions/deploy/action.yml'
   pull_request:
   merge_group:
     branches:
@@ -58,6 +59,25 @@ jobs:
         run: yarn circular
       - name: Run Type Check
         run: yarn typecheck
+
+  build-prototype:
+    name: Build Prototype
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - name: Build Prototype
+        run: yarn nx build prototype
+      - name: Upload prototype artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: prototype
+          path: ./apps/prototype/dist
+          if-no-files-found: error
 
   build-server:
     name: Build Server
@@ -117,6 +137,9 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
+    env:
+      SHOULD_REPORT_TRACE: true
+      TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
     environment: development
 
     steps:
@@ -216,6 +239,86 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
+  server-e2e-test:
+    name: Server E2E Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: [build-storage, build-core]
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+      - name: Initialize database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+        env:
+          PGPASSWORD: affine
+      - name: Generate prisma client
+        run: |
+          yarn exec prisma generate
+          yarn exec prisma db push
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Run init-db script
+        run: yarn exec ts-node-esm ./scripts/init-db.ts
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Download core artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
+
+      - name: Run playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: tests/affine-cloud
+        env:
+          COVERAGE: true
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+
+      - name: Collect code coverage report
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: server-e2etest
+          name: affine
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-${{ matrix.shard }}
+          path: ./tests/affine-cloud/test-results
+          if-no-files-found: ignore
+
   storybook-test:
     name: Storybook Test
     runs-on: ubuntu-latest
@@ -277,6 +380,49 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: test-results-e2e-plugin
+          path: ./test-results
+          if-no-files-found: ignore
+
+  e2e-prototype-test:
+    name: E2E Prototype Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-prototype
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+      - name: Download prototype artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: prototype
+          path: ./apps/prototype/dist
+      - name: Run playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: tests/affine-prototype
+        env:
+          COVERAGE: true
+
+      #      - name: Collect code coverage report
+      #        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      #      - name: Upload e2e test coverage results
+      #        uses: codecov/codecov-action@v3
+      #        with:
+      #          token: ${{ secrets.CODECOV_TOKEN }}
+      #          files: ./.coverage/lcov.info
+      #          flags: e2etest-prototype
+      #          name: affine
+      #          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-prototype
           path: ./test-results
           if-no-files-found: ignore
 
@@ -512,79 +658,3 @@ jobs:
           flags: unittest
           name: affine
           fail_ci_if_error: false
-
-  build-docker:
-    if: github.ref == 'refs/heads/master'
-    name: Build Docker
-    runs-on: ubuntu-latest
-    needs:
-      - build-server
-      - build-core
-      - build-storage
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
-      - name: Download server dist
-        uses: actions/download-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
-      - name: Download storage.node
-        uses: actions/download-artifact@v3
-        with:
-          name: storage.node
-          path: ./apps/server
-      - name: Setup Git short hash
-        run: |
-          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          logout: false
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build front Dockerfile
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
-
-      # setup node without cache configuration
-      # Prisma cache is not compatible with docker build cache
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          registry-url: https://npm.pkg.github.com
-          scope: '@toeverything'
-
-      - name: Install Node.js dependencies
-        run: yarn workspaces focus @affine/server --production
-
-      - name: Generate Prisma client
-        run: yarn workspace @affine/server prisma generate
-
-      - name: Build graphql Dockerfile
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:latest

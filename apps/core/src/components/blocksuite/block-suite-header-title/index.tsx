@@ -139,7 +139,7 @@ const BlockSuiteTitleWithRename = (props: BlockSuiteHeaderTitleProps) => {
 };
 
 export const BlockSuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
-  if (props.workspace.flavour === WorkspaceFlavour.PUBLIC) {
+  if (props.workspace.flavour === WorkspaceFlavour.AFFINE_PUBLIC) {
     return <StableTitle {...props} />;
   }
   return <BlockSuiteTitleWithRename {...props} />;

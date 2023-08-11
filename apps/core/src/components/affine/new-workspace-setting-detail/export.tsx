@@ -42,7 +42,7 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
       workspaceId
     );
     if (result?.error) {
-      toast(t[result.error]());
+      toast(result.error);
     } else if (!result?.canceled) {
       toast(t['Export success']());
     }
