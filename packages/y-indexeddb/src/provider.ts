@@ -6,7 +6,7 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import { openDB } from 'idb';
 import type { Doc } from 'yjs';
-import { diffUpdate, mergeUpdates } from 'yjs';
+import { diffUpdate } from 'yjs';
 
 import {
   type BlockSuiteBinaryDB,
@@ -16,6 +16,7 @@ import {
   type UpdateMessage,
   upgradeDB,
 } from './shared';
+import { mergeUpdates } from './utils';
 
 let mergeCount = 500;
 
