@@ -8,7 +8,20 @@ export const header = style({
   padding: '0 16px',
   minHeight: '52px',
   borderBottom: '1px solid var(--affine-border-color)',
-});
+  selectors: {
+    '&[data-sidebar-floating="false"]': {
+      WebkitAppRegion: 'drag',
+    },
+  },
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
+  ':has([data-popper-placement])': {
+    WebkitAppRegion: 'no-drag',
+  },
+} as ComplexStyleRule);
 
 export const headerItem = style({
   minHeight: '32px',
@@ -38,6 +51,7 @@ export const headerCenter = style({
   position: 'absolute',
   transform: 'translateX(-50%)',
   left: '50%',
+  zIndex: 1,
   selectors: {
     '&.is-window': {
       maxWidth: '50%',
