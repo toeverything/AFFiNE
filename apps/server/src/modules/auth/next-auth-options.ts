@@ -282,7 +282,7 @@ function html(params: { url: string; host: string }) {
   const { url } = params;
 
   return `
-  <body style="background: #f6f7fb">
+  <body style="background: #f6f7fb;overflow:hidden">
     <table
       width="100%"
       border="0"
