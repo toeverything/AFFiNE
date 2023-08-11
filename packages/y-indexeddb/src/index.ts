@@ -239,8 +239,7 @@ export const createIndexedDBProvider = (
       return destroyHandlerMap.get(doc)!;
     }
     const fn = async function handleDestroy() {
-      const db = await dbPromise;
-      db.close();
+      unTrackDoc(doc.guid, doc);
     };
     destroyHandlerMap.set(doc, fn);
     return fn;
