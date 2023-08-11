@@ -52,7 +52,7 @@
     "react-resizable-panels": "^0.0.54",
     "react-router-dom": "^6.14.2",
     "rxjs": "^7.8.1",
-    "ses": "^0.18.5",
+    "ses": "^0.18.7",
     "swr": "2.1.5",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",

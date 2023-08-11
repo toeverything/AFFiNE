@@ -271,7 +271,7 @@ __metadata:
     react-resizable-panels: ^0.0.54
     react-router-dom: ^6.14.2
     rxjs: ^7.8.1
-    ses: ^0.18.5
+    ses: ^0.18.7
     source-map-loader: ^4.0.1
     style-loader: ^3.3.3
     swc-loader: ^0.2.3
@@ -4403,13 +4403,6 @@ __metadata:
   version: 0.3.1
   resolution: "@emotion/weak-memoize@npm:0.3.1"
   checksum: b2be47caa24a8122622ea18cd2d650dbb4f8ad37b636dc41ed420c2e082f7f1e564ecdea68122b546df7f305b159bf5ab9ffee872abd0f052e687428459af594
-  languageName: node
-  linkType: hard
-
-"@endo/env-options@npm:^0.1.1":
-  version: 0.1.1
-  resolution: "@endo/env-options@npm:0.1.1"
-  checksum: c721db3e2d3f9a52a5c391dc8e6d473ffc44cf2bb252fad3048551e35aac52484d612753211116ff9a7157a0768d7c61352c494f491e3463e78fef438beb1d42
   languageName: node
   linkType: hard
 
@@ -29131,15 +29124,6 @@ __metadata:
   version: 0.0.1
   resolution: "server-only@npm:0.0.1"
   checksum: c432348956641ea3f460af8dc3765f3a1bdbcf7a1e0205b0756d868e6e6fe8934cdee6bff68401a1dd49ba4a831c75916517a877446d54b334f7de36fa273e53
-  languageName: node
-  linkType: hard
-
-"ses@npm:^0.18.5":
-  version: 0.18.5
-  resolution: "ses@npm:0.18.5"
-  dependencies:
-    "@endo/env-options": ^0.1.1
-  checksum: b41faaf28efc97c09b0322de5c12603e015238e4b2cf5195c8fc3f5fb9bc66169dd394c63bcdb30d8fa36a55d03eeda3df64857ab724b2297fb6b60c4f5dc0e2
   languageName: node
   linkType: hard
 
