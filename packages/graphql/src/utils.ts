@@ -42,29 +42,6 @@ export function generateRandUTF16Chars(bytes: number) {
   return String.fromCharCode(...BytesBuffer.slice(0, bytes * 2));
 }
 
-// refers: https://cloud.google.com/trace/docs/reference/v2/rest/v2/projects.traces/batchWrite#:~:text=01%3A23.045123456Z%22.-,endTime,-string%20(Timestamp
-export function toZuluDateFormat(date: Date): string {
-  const pad = (num: number): string => {
-    return ('0' + num).slice(-2);
-  };
-
-  date.getUTCMilliseconds();
-  return (
-    date.getUTCFullYear() +
-    '-' +
-    pad(date.getUTCMonth() + 1) +
-    '-' +
-    pad(date.getUTCDate()) +
-    'T' +
-    pad(date.getUTCHours()) +
-    ':' +
-    pad(date.getUTCMinutes()) +
-    ':' +
-    pad(date.getUTCMilliseconds()) +
-    'Z'
-  );
-}
-
 export class TraceReporter {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   static traceReportEndpoint = process.env.TRACE_REPORT_ENDPOINT!;
@@ -148,7 +125,7 @@ export class TraceReporter {
         truncatedByteCount: 0,
       },
       startTime,
-      endTime: toZuluDateFormat(new Date()),
+      endTime: new Date().toISOString(),
       attributes: {
         attributeMap: {
           requestId: {
