@@ -1,6 +1,6 @@
 {
   "name": "@affine/storage",
-  "version": "0.8.0-canary.16",
+  "version": "0.8.0-canary.18",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.0.0-alpha.4",
-    "lib0": "^0.2.78",
+    "lib0": "^0.2.80",
     "yjs": "^13.6.7"
   }
 }
