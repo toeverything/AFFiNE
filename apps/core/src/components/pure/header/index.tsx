@@ -72,6 +72,9 @@ const useIsTinyScreen = ({
   return isTinyScreen;
 };
 
+// The Header component is used to solve the following problems
+// 1. Manage layout issues independently of page or business logic
+// 2. Dynamic centered middle element (relative to the main-container), when the middle element is detected to collide with the two elements, the line wrapping process is performed
 export const Header = ({ left, center, right }: HeaderPros) => {
   const sidebarSwitchRef = useRef<HTMLDivElement | null>(null);
   const leftSlotRef = useRef<HTMLDivElement | null>(null);
