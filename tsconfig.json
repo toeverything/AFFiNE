@@ -21,7 +21,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-
+    "types": ["affine__env"],
     // Emit
     "declaration": true,
     "declarationMap": true,

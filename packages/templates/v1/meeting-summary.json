@@ -1,0 +1,194 @@
+{
+  "blocks": {
+    "EYboj1it1i": {
+      "sys:id": "EYboj1it1i",
+      "sys:flavour": "affine:page",
+      "sys:children": ["86K_nlhKXG", "q7fYMX90uJ"],
+      "prop:title": [
+        {
+          "insert": "Meeting Summary "
+        }
+      ]
+    },
+    "86K_nlhKXG": {
+      "sys:id": "86K_nlhKXG",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "q7fYMX90uJ": {
+      "sys:id": "q7fYMX90uJ",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "YuOqeDHzoe",
+        "NPJSzQaJZ_",
+        "jPGxHHA_QX",
+        "sCk70nT5eX",
+        "iKwcxVFpCH",
+        "RPED0t8fSj",
+        "D3Y93H8WvU",
+        "BfO7S4Gkfm",
+        "Stcz30R0Ad",
+        "YKIkBUmv01",
+        "JzAgpzljrp",
+        "FSkrwB-T33",
+        "abGz-82vvA"
+      ],
+      "prop:xywh": "[0,0,800,937]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "YuOqeDHzoe": {
+      "sys:id": "YuOqeDHzoe",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Project: alink the project plan\nAttendees: @mention teammates\nDate & time: type /today"
+        }
+      ]
+    },
+    "D3Y93H8WvU": {
+      "sys:id": "D3Y93H8WvU",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "Notes"
+        }
+      ]
+    },
+    "BfO7S4Gkfm": {
+      "sys:id": "BfO7S4Gkfm",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Cover any key information discussed in the meeting."
+        }
+      ]
+    },
+    "Stcz30R0Ad": {
+      "sys:id": "Stcz30R0Ad",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "Outcomes"
+        }
+      ]
+    },
+    "YKIkBUmv01": {
+      "sys:id": "YKIkBUmv01",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Summarize key decisions in a tidy paragraph and communicate them to the team."
+        }
+      ]
+    },
+    "JzAgpzljrp": {
+      "sys:id": "JzAgpzljrp",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "Action items"
+        }
+      ]
+    },
+    "sCk70nT5eX": {
+      "sys:id": "sCk70nT5eX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Write down the main topic to discuss."
+        }
+      ],
+      "prop:type": "text"
+    },
+    "jPGxHHA_QX": {
+      "sys:id": "jPGxHHA_QX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "Agenda"
+        }
+      ]
+    },
+    "iKwcxVFpCH": {
+      "sys:id": "iKwcxVFpCH",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "E.q.content roadmap",
+          "attributes": {
+            "underline": true
+          }
+        }
+      ],
+      "prop:checked": false
+    },
+    "RPED0t8fSj": {
+      "sys:id": "RPED0t8fSj",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "Get aligned on the main upcoming topics",
+          "attributes": {
+            "underline": true
+          }
+        }
+      ],
+      "prop:checked": false
+    },
+    "FSkrwB-T33": {
+      "sys:id": "FSkrwB-T33",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "todo",
+      "prop:text": [
+        {
+          "insert": "E.g. @jess review the content roadmap"
+        }
+      ],
+      "prop:checked": false
+    },
+    "abGz-82vvA": {
+      "sys:id": "abGz-82vvA",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "todo",
+      "prop:text": [
+        {
+          "insert": "E.g. @mike contact copywriter freelancers"
+        }
+      ],
+      "prop:checked": false
+    },
+    "NPJSzQaJZ_": {
+      "sys:id": "NPJSzQaJZ_",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "i39ZQ24NlUfWI0MhkbtvHTzGnWMVdr-aC2aOjvHPVg4=",
+      "prop:caption": "",
+      "prop:width": 260,
+      "prop:height": 260
+    }
+  }
+}

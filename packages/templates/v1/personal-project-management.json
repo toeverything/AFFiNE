@@ -1,0 +1,119 @@
+{
+  "blocks": {
+    "LvRIWQ1EAT": {
+      "sys:id": "LvRIWQ1EAT",
+      "sys:flavour": "affine:page",
+      "sys:children": ["9eBKQxt8ax", "2nHeyqzDMf"],
+      "prop:title": [
+        {
+          "insert": "AFFiNE's Personal project management"
+        }
+      ]
+    },
+    "9eBKQxt8ax": {
+      "sys:id": "9eBKQxt8ax",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "2nHeyqzDMf": {
+      "sys:id": "2nHeyqzDMf",
+      "sys:flavour": "affine:note",
+      "sys:children": ["g0M-Toj8iK", "JpcfJa6HqU", "w9Oyl2J6bd"],
+      "prop:xywh": "[0,0,800,361]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "g0M-Toj8iK": {
+      "sys:id": "g0M-Toj8iK",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "To-do-list "
+        }
+      ]
+    },
+    "w9Oyl2J6bd": {
+      "sys:id": "w9Oyl2J6bd",
+      "sys:flavour": "affine:database",
+      "sys:children": ["yP88q8kMa_", "xo7ok9TmO7", "dOQULUJfK6"],
+      "prop:views": [
+        {
+          "id": "zp1yuVbPHH",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "uSHvJhR2FN",
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:title": [
+        {
+          "insert": "Database"
+        }
+      ],
+      "prop:cells": {},
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "w9Oyl2J6bd",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "multi-select",
+          "name": "Tag",
+          "data": {
+            "options": []
+          },
+          "id": "uSHvJhR2FN"
+        }
+      ],
+      "prop:titleColumnName": "Title",
+      "prop:titleColumnWidth": 185
+    },
+    "yP88q8kMa_": {
+      "sys:id": "yP88q8kMa_",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [],
+      "prop:type": "text"
+    },
+    "xo7ok9TmO7": {
+      "sys:id": "xo7ok9TmO7",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [],
+      "prop:type": "text"
+    },
+    "dOQULUJfK6": {
+      "sys:id": "dOQULUJfK6",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [],
+      "prop:type": "text"
+    },
+    "JpcfJa6HqU": {
+      "sys:id": "JpcfJa6HqU",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "/"
+        }
+      ]
+    }
+  }
+}

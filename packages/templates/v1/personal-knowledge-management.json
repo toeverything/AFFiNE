@@ -1,0 +1,619 @@
+{
+  "blocks": {
+    "qyCHSngWfV": {
+      "sys:id": "qyCHSngWfV",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Write your motto here, for example:"
+        },
+        {
+          "insert": " It always seems impossible until it’s done. You can do it.",
+          "attributes": {
+            "italic": true
+          }
+        }
+      ]
+    },
+    "z3JCtDKEnH": {
+      "sys:id": "z3JCtDKEnH",
+      "sys:flavour": "affine:database",
+      "sys:children": ["VCBzCpQ4Pj", "8SmLofa6Sa", "z38CbkWI85"],
+      "prop:title": [
+        {
+          "insert": "Study Plan"
+        }
+      ],
+      "prop:titleColumnName": "Task",
+      "prop:titleColumnWidth": 200,
+      "prop:views": [
+        {
+          "id": "chavucKtj6",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "XdrUZWMCAy",
+              "width": 200
+            },
+            {
+              "id": "MZ4j6XeWN2",
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:cells": {
+        "VCBzCpQ4Pj": {
+          "XdrUZWMCAy": {
+            "columnId": "XdrUZWMCAy",
+            "value": ["UzOiUYq0f5"]
+          },
+          "MZ4j6XeWN2": {
+            "columnId": "MZ4j6XeWN2",
+            "value": 76
+          }
+        },
+        "8SmLofa6Sa": {
+          "XdrUZWMCAy": {
+            "columnId": "XdrUZWMCAy",
+            "value": ["s28YFoSwsn"]
+          },
+          "MZ4j6XeWN2": {
+            "columnId": "MZ4j6XeWN2",
+            "value": 100
+          }
+        },
+        "z38CbkWI85": {
+          "XdrUZWMCAy": {
+            "columnId": "XdrUZWMCAy",
+            "value": ["7MeJP6tYbY"]
+          }
+        }
+      },
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "z3JCtDKEnH",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "multi-select",
+          "name": "Tag",
+          "data": {
+            "options": [
+              {
+                "id": "7MeJP6tYbY",
+                "value": "not started",
+                "color": "var(--affine-tag-purple)"
+              },
+              {
+                "id": "s28YFoSwsn",
+                "value": "finished",
+                "color": "var(--affine-tag-gray)"
+              },
+              {
+                "id": "UzOiUYq0f5",
+                "value": "in-progress",
+                "color": "var(--affine-tag-white)"
+              }
+            ]
+          },
+          "id": "XdrUZWMCAy"
+        },
+        {
+          "type": "progress",
+          "name": "Progress",
+          "data": {},
+          "id": "MZ4j6XeWN2"
+        }
+      ]
+    },
+    "VCBzCpQ4Pj": {
+      "sys:id": "VCBzCpQ4Pj",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Task 1"
+        }
+      ]
+    },
+    "8SmLofa6Sa": {
+      "sys:id": "8SmLofa6Sa",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Task 2"
+        }
+      ]
+    },
+    "z38CbkWI85": {
+      "sys:id": "z38CbkWI85",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Task 3"
+        }
+      ]
+    },
+    "QQcLzkXuC8": {
+      "sys:id": "QQcLzkXuC8",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h6",
+      "prop:text": [
+        {
+          "insert": "Reading list"
+        }
+      ]
+    },
+    "ck64DLwqW_": {
+      "sys:id": "ck64DLwqW_",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "F19ZttSiUA": {
+      "sys:id": "F19ZttSiUA",
+      "sys:flavour": "affine:page",
+      "sys:children": ["OzSHckdEQ6", "f6Owaa00aK"],
+      "prop:title": [
+        {
+          "insert": "Personal-Knowledge Management "
+        }
+      ]
+    },
+    "OzSHckdEQ6": {
+      "sys:id": "OzSHckdEQ6",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "f6Owaa00aK": {
+      "sys:id": "f6Owaa00aK",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "qyCHSngWfV",
+        "n1kvV428zI",
+        "z3JCtDKEnH",
+        "QQcLzkXuC8",
+        "ufWf2CW9Hv",
+        "AdnfXJuEnD",
+        "L0wkiKeVji",
+        "ODbeT24gNt",
+        "tTTi-Au4mw",
+        "7enGUyfuBc",
+        "kMY3ZLkWoq",
+        "Nyg_qtK7hp",
+        "ck64DLwqW_"
+      ],
+      "prop:xywh": "[0,0,800,1239]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "n1kvV428zI": {
+      "sys:id": "n1kvV428zI",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "fb0SNPtMpQlzBQ90_PB7vCu34WpiSUJbNKocFkL2vIo=",
+      "prop:caption": "",
+      "prop:width": 0,
+      "prop:height": 0
+    },
+    "Nyg_qtK7hp": {
+      "sys:id": "Nyg_qtK7hp",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "kMY3ZLkWoq": {
+      "sys:id": "kMY3ZLkWoq",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "lMu_xf4xVF": {
+      "sys:id": "lMu_xf4xVF",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "THE CANDY HOUSE",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Jennifer Egan",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": ". "
+        }
+      ]
+    },
+    "WrMjzOnJH3": {
+      "sys:id": "WrMjzOnJH3",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "AN IMMENSE WORLD",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Ed Yong",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": ". "
+        }
+      ]
+    },
+    "vFgr3oyqOJ": {
+      "sys:id": "vFgr3oyqOJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "CHECKOUT 19",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Claire-Louise Bennett",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": "."
+        }
+      ],
+      "prop:type": "text"
+    },
+    "1TYjc-QdZj": {
+      "sys:id": "1TYjc-QdZj",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": " "
+        },
+        {
+          "insert": "DEMON COPPERHEAD",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Barbara Kingsolver",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": ". "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "ROpYva-V1J": {
+      "sys:id": "ROpYva-V1J",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "THE FURROWS",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Namwali Serpell",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": ". "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "CXTh8uALzr": {
+      "sys:id": "CXTh8uALzr",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "TRUST",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Hernan Diaz",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": "."
+        }
+      ],
+      "prop:type": "text"
+    },
+    "R__nq8e75I": {
+      "sys:id": "R__nq8e75I",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "STAY TRUE",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Hua Hsu",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": ". "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "XeJ1gW0QDw": {
+      "sys:id": "XeJ1gW0QDw",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "STRANGERS TO OURSELVES",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "By Rachel Aviv",
+          "attributes": {
+            "italic": true
+          }
+        },
+        {
+          "insert": ". "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "7enGUyfuBc": {
+      "sys:id": "7enGUyfuBc",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [],
+      "prop:type": "text"
+    },
+    "ODbeT24gNt": {
+      "sys:id": "ODbeT24gNt",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "tTTi-Au4mw": {
+      "sys:id": "tTTi-Au4mw",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "L0wkiKeVji": {
+      "sys:id": "L0wkiKeVji",
+      "sys:flavour": "affine:database",
+      "sys:children": [
+        "lMu_xf4xVF",
+        "vFgr3oyqOJ",
+        "1TYjc-QdZj",
+        "ROpYva-V1J",
+        "CXTh8uALzr",
+        "WrMjzOnJH3",
+        "R__nq8e75I",
+        "XeJ1gW0QDw"
+      ],
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "L0wkiKeVji",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "progress",
+          "name": "progress ",
+          "data": {},
+          "id": "QmfyAdToer"
+        },
+        {
+          "type": "link",
+          "name": "Additional information ",
+          "data": {},
+          "id": "ppQS-BaKNB"
+        }
+      ],
+      "prop:titleColumnName": "Readlist ",
+      "prop:views": [
+        {
+          "id": "yYzkaFTs41",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "QmfyAdToer",
+              "width": 169
+            },
+            {
+              "id": "ppQS-BaKNB",
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:title": [
+        {
+          "insert": " 8 books I should finished  "
+        }
+      ],
+      "prop:cells": {
+        "lMu_xf4xVF": {
+          "QmfyAdToer": {
+            "columnId": "QmfyAdToer",
+            "value": 87
+          },
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": ""
+          }
+        },
+        "vFgr3oyqOJ": {
+          "QmfyAdToer": {
+            "columnId": "QmfyAdToer",
+            "value": 100
+          },
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        },
+        "1TYjc-QdZj": {
+          "QmfyAdToer": {
+            "columnId": "QmfyAdToer",
+            "value": 83
+          },
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        },
+        "ROpYva-V1J": {
+          "QmfyAdToer": {
+            "columnId": "QmfyAdToer",
+            "value": 60
+          },
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        },
+        "CXTh8uALzr": {
+          "QmfyAdToer": {
+            "columnId": "QmfyAdToer",
+            "value": 21
+          },
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        },
+        "WrMjzOnJH3": {
+          "QmfyAdToer": {
+            "columnId": "QmfyAdToer",
+            "value": 100
+          },
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        },
+        "R__nq8e75I": {
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        },
+        "XeJ1gW0QDw": {
+          "ppQS-BaKNB": {
+            "columnId": "ppQS-BaKNB",
+            "value": null
+          }
+        }
+      },
+      "prop:titleColumnWidth": 361
+    },
+    "AdnfXJuEnD": {
+      "sys:id": "AdnfXJuEnD",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "ufWf2CW9Hv": {
+      "sys:id": "ufWf2CW9Hv",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "sNVNYDBzUDN2J9OFVJdLJlryBLzRZBLl-4MTNoPF1tA=",
+      "prop:caption": "",
+      "prop:width": 0,
+      "prop:height": 0
+    }
+  }
+}

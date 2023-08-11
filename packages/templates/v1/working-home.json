@@ -1,0 +1,203 @@
+{
+  "blocks": {
+    "TBjwPij8cJ": {
+      "sys:id": "TBjwPij8cJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Maximize your team's performance and drive goal-oriented success with our extensive collection of "
+        },
+        {
+          "insert": "OKR templates",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": ", specifically crafted to facilitate effective objective setting, key result tracking, and overall performance improvement."
+        }
+      ]
+    },
+    "qsMt8nCetT": {
+      "sys:id": "qsMt8nCetT",
+      "sys:flavour": "affine:page",
+      "sys:children": ["yC-F6Rj9bA", "pk_Cjkpyd4"],
+      "prop:title": [
+        {
+          "insert": "Working Home"
+        }
+      ]
+    },
+    "yC-F6Rj9bA": {
+      "sys:id": "yC-F6Rj9bA",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "pk_Cjkpyd4": {
+      "sys:id": "pk_Cjkpyd4",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "koPFC7j_R7",
+        "5hR-BR03ms",
+        "zVgCQKWH-c",
+        "1EUiH1t60b",
+        "HmzMXKFaci",
+        "uXdWxSSWgl",
+        "TBjwPij8cJ",
+        "mjgDUguqmV",
+        "LnERZXy0xj",
+        "oi0BxPtiit",
+        "DuRxwNJe2w"
+      ],
+      "prop:xywh": "[0,0,800,643]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "5hR-BR03ms": {
+      "sys:id": "5hR-BR03ms",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "fFoDX2J1Z5"
+            }
+          }
+        }
+      ]
+    },
+    "zVgCQKWH-c": {
+      "sys:id": "zVgCQKWH-c",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "This "
+        },
+        {
+          "insert": "Annual Performance Review template",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " is ideal for businesses seeking a structured and comprehensive approach to evaluating employee performance. By utilizing this template, you will gain clarity on individual strengths and areas for improvement, fostering effective communication and driving professional growth within your organization."
+        }
+      ]
+    },
+    "1EUiH1t60b": {
+      "sys:id": "1EUiH1t60b",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "A4wBRdQZN0"
+            }
+          }
+        }
+      ]
+    },
+    "HmzMXKFaci": {
+      "sys:id": "HmzMXKFaci",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Meeting minutes are an official record of a meeting",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " for its participants. They're also sources of information for teammates who were unable to attend."
+        }
+      ]
+    },
+    "uXdWxSSWgl": {
+      "sys:id": "uXdWxSSWgl",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "kBB4lzhm7C"
+            }
+          }
+        }
+      ]
+    },
+    "koPFC7j_R7": {
+      "sys:id": "koPFC7j_R7",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "rY96Bunn-69CnNe5X_e5CJLwgCJnN6rcbUisecs8kkQ=",
+      "prop:caption": "",
+      "prop:width": 0,
+      "prop:height": 0
+    },
+    "mjgDUguqmV": {
+      "sys:id": "mjgDUguqmV",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "LnERZXy0xj": {
+      "sys:id": "LnERZXy0xj",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "🔔Reminder: Click the "
+        },
+        {
+          "insert": "+New page ",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": "to start your journey in AFFiNE "
+        }
+      ]
+    },
+    "DuRxwNJe2w": {
+      "sys:id": "DuRxwNJe2w",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "oi0BxPtiit": {
+      "sys:id": "oi0BxPtiit",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "✏Unleash your creativity and elevate your work efficiency to new heights by customizing templates that perfectly align with your unique needs and objectives."
+        }
+      ]
+    }
+  }
+}
