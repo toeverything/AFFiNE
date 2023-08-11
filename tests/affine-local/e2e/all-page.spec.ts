@@ -16,7 +16,9 @@ import {
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   getBlockSuiteEditorTitle,
+  newPage,
   waitEditorLoad,
+  waitForAllPagesLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import type { Page } from '@playwright/test';
@@ -86,7 +88,12 @@ test('allow creation of filters by favorite', async ({ page }) => {
 test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
+  await newPage(page);
   await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+  const pages = await page.locator('[data-testid="title"]').all();
+  const pageCount = pages.length;
+  expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
   // init date
@@ -108,7 +115,7 @@ test('allow creation of filters by created time', async ({ page }) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   await fillDatePicker(page, tomorrow);
   await checkDatePicker(page, tomorrow);
-  await checkPagesCount(page, 1);
+  await checkPagesCount(page, pageCount);
 });
 
 test('creation of filters by created time, then click date picker to modify the date', async ({
@@ -116,7 +123,12 @@ test('creation of filters by created time, then click date picker to modify the 
 }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
+  await newPage(page);
   await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+  const pages = await page.locator('[data-testid="title"]').all();
+  const pageCount = pages.length;
+  expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
   // init date
@@ -138,7 +150,7 @@ test('creation of filters by created time, then click date picker to modify the 
   tomorrow.setDate(tomorrow.getDate() + 1);
   await selectDateFromDatePicker(page, tomorrow);
   await checkDatePicker(page, tomorrow);
-  await checkPagesCount(page, 1);
+  await checkPagesCount(page, pageCount);
 });
 
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {
@@ -168,17 +180,27 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
 test('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+  const pages = await page.locator('[data-testid="title"]').all();
+  const pageCount = pages.length;
+  expect(pageCount).not.toBe(0);
+  await createFirstFilter(page, 'Tags');
+  await checkFilterName(page, 'is not empty');
+  const pagesWithTags = await page.locator('[data-testid="title"]').all();
+  const pagesWithTagsCount = pagesWithTags.length;
+  expect(pagesWithTagsCount).not.toBe(0);
   await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
   await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
   await clickSideBarAllPageButton(page);
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
-  await checkPagesCount(page, 2);
+  await checkPagesCount(page, pagesWithTagsCount + 2);
   await changeFilter(page, /^contains all/);
-  await checkPagesCount(page, 3);
+  await checkPagesCount(page, pageCount + 2);
   await selectTag(page, 'A');
   await checkPagesCount(page, 1);
   await changeFilter(page, /^does not contains all/);
   await selectTag(page, 'B');
-  await checkPagesCount(page, 2);
+  await checkPagesCount(page, pageCount + 1);
 });
