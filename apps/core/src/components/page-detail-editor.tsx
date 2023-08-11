@@ -23,9 +23,9 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { TrashButtonGroup } from './blocksuite/workspace-header/header-right-items/trash-button-group';
 import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
+import { TrashButtonGroup } from './pure/trash-button-group';
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;

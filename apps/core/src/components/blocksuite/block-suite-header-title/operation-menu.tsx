@@ -1,4 +1,3 @@
-// fixme(himself65): refactor this file
 import { FlexWrapper, Menu, MenuItem } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -10,75 +9,41 @@ import {
   FavoritedIcon,
   FavoriteIcon,
   ImportIcon,
-  MoreVerticalIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
+import type { PageMeta } from '@blocksuite/store';
 import { Divider } from '@toeverything/components/divider';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { currentPageIdAtom } from '@toeverything/infra/atom';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import { pageSettingFamily, setPageModeAtom } from '../../../../atoms';
-import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
-import { toast } from '../../../../utils';
-import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
-import { usePageHelper } from '../../block-suite-page-list/utils';
-import { LanguageMenu } from './language-menu';
-import { MenuThemeModeSwitch } from './theme-mode-switch';
-
-const CommonMenu = () => {
-  const content = (
-    <div
-      onClick={e => {
-        e.stopPropagation();
-      }}
-    >
-      <MenuThemeModeSwitch />
-      <LanguageMenu />
-    </div>
-  );
-  return (
-    <FlexWrapper alignItems="center" justifyContent="center">
-      <Menu
-        content={content}
-        placement="bottom"
-        disablePortal={true}
-        trigger="click"
-      >
-        <IconButton data-testid="editor-option-menu">
-          <MoreVerticalIcon />
-        </IconButton>
-      </Menu>
-    </FlexWrapper>
-  );
-};
+import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
+import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { toast } from '../../../utils';
+import { HeaderDropDownButton } from '../../pure/header-drop-down-button';
+import { usePageHelper } from '../block-suite-page-list/utils';
 
 type PageMenuProps = {
   rename?: () => void;
+  pageId: string;
 };
 
-export const PageMenu = ({ rename }: PageMenuProps) => {
+export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
-  const pageId = useAtomValue(currentPageIdAtom);
-  assertExists(workspace);
-  assertExists(pageId);
+
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
-  );
-  assertExists(pageMeta);
+  ) as PageMeta;
   const [setting, setSetting] = useAtom(pageSettingFamily(pageId));
   const mode = setting?.mode ?? 'page';
 
@@ -102,10 +67,10 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
     );
   }, [mode, setSetting, t]);
   const handleOnConfirm = useCallback(() => {
-    removeToTrash(pageMeta.id);
+    removeToTrash(pageId);
     toast(t['Moved to Trash']());
     setOpenConfirm(false);
-  }, [pageMeta.id, removeToTrash, t]);
+  }, [pageId, removeToTrash, t]);
   const menuItemStyle = {
     padding: '4px 12px',
   };
@@ -236,8 +201,4 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
       </FlexWrapper>
     </>
   );
-};
-export const EditorOptionMenu = () => {
-  const { pageId } = useParams();
-  return pageId ? <PageMenu /> : <CommonMenu />;
 };
