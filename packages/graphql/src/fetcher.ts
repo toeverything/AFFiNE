@@ -8,7 +8,6 @@ import type { Mutations, Queries } from './schema';
 import {
   generateRandUTF16Chars,
   SPAN_ID_BYTES,
-  toZuluDateFormat,
   TRACE_FLAG,
   TRACE_ID_BYTES,
   TRACE_VERSION,
@@ -219,7 +218,7 @@ export const fetchWithReport = (
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> => {
-  const startTime = toZuluDateFormat(new Date());
+  const startTime = new Date().toISOString();
   const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
   const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
   const traceparent = `${TRACE_VERSION}-${traceId}-${spanId}-${TRACE_FLAG}`;
