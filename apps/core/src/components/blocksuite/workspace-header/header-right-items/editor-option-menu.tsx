@@ -24,7 +24,7 @@ import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import * as Y from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { pageSettingFamily, setPageModeAtom } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
@@ -35,6 +35,7 @@ import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
 import { usePageHelper } from '../../block-suite-page-list/utils';
 import { LanguageMenu } from './language-menu';
 import { MenuThemeModeSwitch } from './theme-mode-switch';
+
 const CommonMenu = () => {
   const content = (
     <div
@@ -117,8 +118,8 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
     const currentPageMeta = currentPage.meta;
     const newPage = createPage();
     await newPage.waitForLoaded();
-    const update = Y.encodeStateAsUpdate(currentPage.spaceDoc);
-    Y.applyUpdate(newPage.spaceDoc, update);
+    const update = encodeStateAsUpdate(currentPage.spaceDoc);
+    applyUpdate(newPage.spaceDoc, update);
     setPageMeta(newPage.id, {
       tags: currentPageMeta.tags,
       favorite: currentPageMeta.favorite,
