@@ -25,7 +25,7 @@
     "@toeverything/infra": "workspace:*"
   },
   "dependencies": {
-    "lit": "^2.7.6"
+    "lit": "^2.8.0"
   },
   "version": "0.8.0-canary.18"
 }
