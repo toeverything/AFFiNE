@@ -66,8 +66,9 @@ export function toZuluDateFormat(date: Date): string {
 }
 
 export class TraceReporter {
-  static traceReportEndpoint = runtimeConfig.traceReportEndpoint;
-  static shouldReportTrace = runtimeConfig.shouldReportTrace;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  static traceReportEndpoint = process.env.TRACE_REPORT_ENDPOINT!;
+  static shouldReportTrace = process.env.SHOULD_REPORT_TRACE;
 
   private spansCache = new Array<TraceSpan>();
   private reportIntervalId: number | undefined | NodeJS.Timeout;
@@ -191,4 +192,6 @@ export class TraceReporter {
   };
 }
 
-export const traceReporter = TraceReporter.getInstance();
+export const traceReporter = !process.env.SHOULD_REPORT_TRACE
+  ? null
+  : TraceReporter.getInstance();

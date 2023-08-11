@@ -235,17 +235,19 @@ export const fetchWithReport = (
     headers['traceparent'] = traceparent;
   }
 
-  if (!runtimeConfig.shouldReportTrace) {
+  if (!traceReporter) {
     return fetch(input, init);
   }
 
   return fetch(input, init)
     .then(response => {
-      traceReporter.cacheTrace(traceId, spanId, requestId, startTime);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      traceReporter!.cacheTrace(traceId, spanId, requestId, startTime);
       return response;
     })
     .catch(err => {
-      traceReporter.uploadTrace(traceId, spanId, requestId, startTime);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      traceReporter!.uploadTrace(traceId, spanId, requestId, startTime);
       return Promise.reject(err);
     });
 };
