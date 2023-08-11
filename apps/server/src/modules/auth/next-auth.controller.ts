@@ -13,8 +13,6 @@ import {
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import type { NextFunction, Request, Response } from 'express';
 import type { AuthAction, AuthOptions } from 'next-auth';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import { AuthHandler } from 'next-auth/core';
 import Email from 'next-auth/providers/email';
 import Github from 'next-auth/providers/github';
