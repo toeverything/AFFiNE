@@ -9,6 +9,7 @@ import { CLOUD_BASE_URL } from './config';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
+import { parseCookie } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
@@ -132,7 +133,6 @@ function createPopupWindow() {
           // popup window does not need helper process, right?
         ],
       },
-      show: false,
     });
     popup.on('close', e => {
       e.preventDefault();
@@ -142,9 +142,6 @@ function createPopupWindow() {
     browserWindow?.webContents.once('did-finish-load', () => {
       closePopup();
     });
-    popup.webContents.openDevTools({
-      mode: 'detach',
-    });
   }
   return popup;
 }
@@ -153,7 +150,8 @@ function createPopupWindow() {
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  browserWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+  browserWindow =
+    browserWindow || BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
 
   if (browserWindow === undefined) {
     browserWindow = await createWindow();
@@ -169,11 +167,6 @@ export async function restoreOrCreateWindow() {
 
 export async function handleOpenUrlInPopup(url: string) {
   const popup = createPopupWindow();
-
-  popup.on('ready-to-show', () => {
-    popup.show();
-  });
-
   await popup.loadURL(url);
 }
 
@@ -187,4 +180,9 @@ export function closePopup() {
 
 export function reloadApp() {
   browserWindow?.reload();
+}
+
+export async function setCookie(origin: string, cookie: string) {
+  const window = await restoreOrCreateWindow();
+  await window.webContents.session.cookies.set(parseCookie(cookie, origin));
 }

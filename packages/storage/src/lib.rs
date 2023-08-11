@@ -150,7 +150,7 @@ impl Storage {
 }
 
 /// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the result binary.
-#[napi]
+#[napi(catch_unwind)]
 pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
   let mut doc = Doc::default();
   for update in updates {

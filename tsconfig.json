@@ -21,7 +21,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-
+    "types": ["affine__env"],
     // Emit
     "declaration": true,
     "declarationMap": true,
@@ -171,10 +171,16 @@
       "path": "./tests/affine-plugin"
     },
     {
+      "path": "./tests/affine-prototype"
+    },
+    {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
     },
     {
       "path": "./tests/affine-cloud"
+    },
+    {
+      "path": "./tests/affine-legacy/0.8.0-canary.7"
     }
   ],
   "files": [],
