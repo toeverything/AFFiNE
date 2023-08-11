@@ -435,15 +435,13 @@ describe('utils', () => {
   });
 
   test('overwrite binary', async () => {
-    await overwriteBinary('test', new Uint8Array([1, 2, 3]));
+    const doc = new Doc();
+    const map = doc.getMap();
+    map.set('1', 1);
+    await overwriteBinary('test', new Uint8Array(encodeStateAsUpdate(doc)));
     {
       const binary = await downloadBinary('test');
-      expect(binary).toEqual(new Uint8Array([1, 2, 3]));
-    }
-    await overwriteBinary('test', new Uint8Array([0, 0]));
-    {
-      const binary = await downloadBinary('test');
-      expect(binary).toEqual(new Uint8Array([0, 0]));
+      expect(binary).toEqual(new Uint8Array(encodeStateAsUpdate(doc)));
     }
   });
 });
