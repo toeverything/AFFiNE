@@ -48,6 +48,7 @@
     "react-dom": "18.2.0",
     "react-error-boundary": "^4.0.10",
     "react-is": "^18.2.0",
+    "react-window": "^1.8.9",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
@@ -61,6 +62,7 @@
     "@types/react-datepicker": "^4.15.0",
     "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "^18.2.7",
+    "@types/react-window": "^1.8.5",
     "@vanilla-extract/css": "^1.12.0",
     "typescript": "^5.1.6",
     "vite": "^4.4.9",
