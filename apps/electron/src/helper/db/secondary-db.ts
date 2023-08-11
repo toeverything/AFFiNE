@@ -2,7 +2,7 @@ import assert from 'node:assert';
 
 import type { InsertRow } from '@affine/native';
 import { debounce } from 'lodash-es';
-import * as Y from 'yjs';
+import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
@@ -16,7 +16,7 @@ const FLUSH_MAX_WAIT_TIME = 10000;
 // todo: trim db when it is too big
 export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'secondary';
-  yDoc = new Y.Doc();
+  yDoc = new YDoc();
   firstConnected = false;
   destroyed = false;
 
@@ -165,7 +165,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       }
     };
 
-    const onSubdocs = ({ added }: { added: Set<Y.Doc> }) => {
+    const onSubdocs = ({ added }: { added: Set<YDoc> }) => {
       added.forEach(subdoc => {
         this.setupListener(subdoc.guid);
       });
@@ -214,7 +214,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   ) => {
     const doc = this.getDoc(docId);
     if (doc) {
-      Y.applyUpdate(this.yDoc, data, origin);
+      applyUpdate(this.yDoc, data, origin);
     } else {
       logger.warn(
         '[SecondaryWorkspaceSQLiteDB] applyUpdate: doc not found',

@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as Y from 'yjs';
+import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { removeWithRetry } from '../../../../tests/utils';
 import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../migration';
@@ -41,14 +41,14 @@ describe('migrateToSubdocAndReplaceDatabase', () => {
     expect(subdocUpdate).toBeDefined();
 
     // apply updates
-    const rootDoc = new Y.Doc();
-    Y.applyUpdate(rootDoc, rootUpdate);
+    const rootDoc = new YDoc();
+    applyUpdate(rootDoc, rootUpdate);
 
     // check if root doc has one subdoc
     expect(rootDoc.subdocs.size).toBe(1);
 
     // populates subdoc
-    Y.applyUpdate(rootDoc.subdocs.values().next().value, subdocUpdate);
+    applyUpdate(rootDoc.subdocs.values().next().value, subdocUpdate);
 
     // check if root doc's meta is correct
     const meta = rootDoc.getMap('meta').toJSON();
@@ -59,9 +59,7 @@ describe('migrateToSubdocAndReplaceDatabase', () => {
     expect(pageMeta.title).toBe('Welcome to AFFiNEd');
 
     // get the subdoc through id
-    const subDoc = rootDoc
-      .getMap('spaces')
-      .get(`space:${pageMeta.id}`) as Y.Doc;
+    const subDoc = rootDoc.getMap('spaces').get(`space:${pageMeta.id}`) as YDoc;
     expect(subDoc).toEqual(rootDoc.subdocs.values().next().value);
 
     await db.close();

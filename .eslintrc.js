@@ -31,6 +31,11 @@ const createPattern = packageName => [
     message: 'Use `useNavigateHelper` instead',
     importNames: ['useNavigate'],
   },
+  {
+    group: ['yjs'],
+    message: 'Do not use this API because it has a bug',
+    importNames: ['mergeUpdates'],
+  },
 ];
 
 const allPackages = [
@@ -154,6 +159,11 @@ const config = {
             group: ['react-router-dom'],
             message: 'Use `useNavigateHelper` instead',
             importNames: ['useNavigate'],
+          },
+          {
+            group: ['yjs'],
+            message: 'Do not use this API because it has a bug',
+            importNames: ['mergeUpdates'],
           },
         ],
       },
