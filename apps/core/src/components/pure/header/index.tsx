@@ -1,5 +1,4 @@
 import { Wrapper } from '@affine/component';
-import { BrowserWarning } from '@affine/component/affine-banner';
 import {
   appSidebarFloatingAtom,
   appSidebarOpenAtom,
@@ -7,20 +6,14 @@ import {
 } from '@affine/component/app-sidebar';
 import { isDesktop } from '@affine/env/constant';
 import clsx from 'clsx';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import throttle from 'lodash.throttle';
 import type { MutableRefObject, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-import { guideDownloadClientTipAtom } from '../../../atoms/guide';
-import DownloadClientTip from '../../blocksuite/workspace-header/download-tips';
-import {
-  OSWarningMessage,
-  shouldShowWarning,
-} from '../../blocksuite/workspace-header/utils';
 import * as style from './style.css';
+import { TopTip } from './top-tip';
 import { WindowsAppControls } from './windows-app-controls';
-
 interface HeaderPros {
   left?: ReactNode;
   right?: ReactNode;
@@ -80,11 +73,6 @@ const useIsTinyScreen = ({
 };
 
 export const Header = ({ left, center, right }: HeaderPros) => {
-  const [showWarning, setShowWarning] = useState(false);
-  const [showDownloadTip, setShowDownloadTip] = useAtom(
-    guideDownloadClientTipAtom
-  );
-
   const sidebarSwitchRef = useRef<HTMLDivElement | null>(null);
   const leftSlotRef = useRef<HTMLDivElement | null>(null);
   const centerSlotRef = useRef<HTMLDivElement | null>(null);
@@ -98,35 +86,15 @@ export const Header = ({ left, center, right }: HeaderPros) => {
     rightDoms: [rightSlotRef, windowControlsRef],
   });
 
-  useEffect(() => {
-    setShowWarning(shouldShowWarning());
-  }, []);
-
   const isWindowsDesktop = globalThis.platform === 'win32' && isDesktop;
   const open = useAtomValue(appSidebarOpenAtom);
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
   return (
     <>
-      {showDownloadTip ? (
-        <DownloadClientTip
-          show={showDownloadTip}
-          onClose={() => {
-            setShowDownloadTip(false);
-            localStorage.setItem('affine-is-dt-hide', '1');
-          }}
-        />
-      ) : (
-        <BrowserWarning
-          show={showWarning}
-          message={<OSWarningMessage />}
-          onClose={() => {
-            setShowWarning(false);
-          }}
-        />
-      )}
+      <TopTip />
       <div
         className={style.header}
-        data-has-warning={showWarning}
+        // data-has-warning={showWarning}
         data-open={open}
         data-sidebar-floating={appSidebarFloating}
       >

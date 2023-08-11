@@ -5,7 +5,7 @@ import {
 import { useAtomValue } from 'jotai';
 import { startTransition, useCallback, useRef } from 'react';
 
-import * as styles from '../../blocksuite/workspace-header/styles.css';
+import * as styles from './styles.css';
 export const PluginHeader = () => {
   const headerItem = useAtomValue(pluginHeaderItemAtom);
   const pluginsRef = useRef<string[]>([]);

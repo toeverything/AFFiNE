@@ -1,8 +1,6 @@
 import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { style } from '@vanilla-extract/css';
 
-import { headerVanillaContainer } from '../../blocksuite/workspace-header/styles.css';
-
 export const header = style({
   display: 'flex',
   justifyContent: 'space-between',
@@ -94,12 +92,6 @@ export const windowAppControl = style({
     },
     '&:hover': {
       background: 'var(--affine-hover-color)',
-    },
-  },
-  '@container': {
-    [`${headerVanillaContainer} (max-width: 900px)`]: {
-      height: '50px',
-      paddingTop: '0',
     },
   },
 } as ComplexStyleRule);
