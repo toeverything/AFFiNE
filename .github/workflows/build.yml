@@ -137,9 +137,6 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-    env:
-      SHOULD_REPORT_TRACE: true
-      TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
     environment: development
 
     steps:
