@@ -144,6 +144,23 @@ export async function downloadBinary(
   }
 }
 
+export async function downloadBinaries(
+  guid: string,
+  dbName = DEFAULT_DB_NAME
+): Promise<UpdateMessage['update'][] | false> {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
+  const db = await dbPromise;
+  const t = db.transaction('workspace', 'readonly').objectStore('workspace');
+  const doc = await t.get(guid);
+  if (!doc) {
+    return false;
+  } else {
+    return doc.updates.map(({ update }) => update);
+  }
+}
+
 export async function overwriteBinary(
   guid: string,
   update: UpdateMessage['update'],

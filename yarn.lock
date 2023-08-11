@@ -145,7 +145,7 @@ __metadata:
     rxjs: ^7.8.1
     typescript: ^5.1.6
     vite: ^4.3.9
-    yjs: ^13.6.6
+    yjs: ^13.6.7
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
@@ -258,7 +258,7 @@ __metadata:
     undici: ^5.22.1
     uuid: ^9.0.0
     which: ^3.0.1
-    yjs: ^13.6.6
+    yjs: ^13.6.7
     zx: ^7.2.2
   peerDependencies:
     ts-node: "*"
@@ -461,8 +461,8 @@ __metadata:
   resolution: "@affine/storage@workspace:packages/storage"
   dependencies:
     "@napi-rs/cli": ^3.0.0-alpha.4
-    lib0: ^0.2.78
-    yjs: ^13.6.6
+    lib0: ^0.2.80
+    yjs: ^13.6.7
   languageName: unknown
   linkType: soft
 
@@ -590,7 +590,7 @@ __metadata:
     typescript: ^5.1.6
     webpack: ^5.88.1
     y-protocols: ^1.0.5
-    yjs: ^13.6.6
+    yjs: ^13.6.7
     zod: ^3.21.4
   languageName: unknown
   linkType: soft
@@ -610,13 +610,13 @@ __metadata:
     jotai: ^2.2.2
     js-base64: ^3.7.5
     ky: ^0.33.3
-    lib0: ^0.2.78
+    lib0: ^0.2.80
     next: =13.4.2
     react: 18.2.0
     react-dom: 18.2.0
     ws: ^8.13.0
     y-protocols: ^1.0.5
-    yjs: ^13.6.6
+    yjs: ^13.6.7
     zod: ^3.21.4
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -22707,7 +22707,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.42, lib0@npm:^0.2.74, lib0@npm:^0.2.78":
+"lib0@npm:^0.2.42, lib0@npm:^0.2.74":
   version: 0.2.78
   resolution: "lib0@npm:0.2.78"
   dependencies:
@@ -22716,6 +22716,18 @@ __metadata:
     0gentesthtml: bin/gentesthtml.js
     0serve: bin/0serve.js
   checksum: a9c90a9228e10e581bf416f4ecade967687d67e6ea3e822ef69e2628a77a2a0254ef7e2eb7e555d412f9e9467049b7fb760c079878f9a934dd85d2646a53d172
+  languageName: node
+  linkType: hard
+
+"lib0@npm:^0.2.80":
+  version: 0.2.80
+  resolution: "lib0@npm:0.2.80"
+  dependencies:
+    isomorphic.js: ^0.2.4
+  bin:
+    0gentesthtml: bin/gentesthtml.js
+    0serve: bin/0serve.js
+  checksum: eddb9c6cc23a916e3f6c26b3e729882c1f886de138b2de4055fb51a941acd7dab08eb65c9b9b43f01a5c83e0936169010e0c6e517d30446540019eebcb1ef6f6
   languageName: node
   linkType: hard
 
@@ -31509,12 +31521,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yjs@npm:^13.6.6":
-  version: 13.6.6
-  resolution: "yjs@npm:13.6.6"
+"yjs@npm:^13.6.7":
+  version: 13.6.7
+  resolution: "yjs@npm:13.6.7"
   dependencies:
     lib0: ^0.2.74
-  checksum: c69cb9a084aa433e813f6d0a191ebad5800a9a7098f7c6715952e4f8e5fc23270e3b8d7d747e1b0d0f1adca5f6efe01019654389eddb3977006814c4e2ff7ce6
+  checksum: 8e89257c8b565ab97cf3354fca2ce0b6bc3d1abe90b9d45a218a94b35da372c88d2411b353ed8ca03a6619004c4da76c96f7c203c38506c3758c9f8c1a730ca4
   languageName: node
   linkType: hard
 

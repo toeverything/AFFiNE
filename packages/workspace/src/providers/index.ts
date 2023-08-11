@@ -9,7 +9,7 @@ import { Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
   createIndexedDBProvider as create,
-  downloadBinary,
+  downloadBinaries,
   EarlyDisconnectError,
 } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
@@ -61,7 +61,7 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   };
 };
 
-const cache: WeakMap<Doc, Uint8Array> = new WeakMap();
+const cache: WeakMap<Doc, Uint8Array[]> = new WeakMap();
 
 const createIndexedDBDownloadProvider: DocProviderCreator = (
   id,
@@ -75,15 +75,20 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
   });
   async function downloadBinaryRecursively(doc: Doc) {
     if (cache.has(doc)) {
-      const binary = cache.get(doc) as Uint8Array;
-      Y.applyUpdate(doc, binary);
-    } else {
-      const binary = await downloadBinary(doc.guid);
-      if (binary) {
+      const binaries = cache.get(doc) as Uint8Array[];
+      binaries.forEach(binary => {
         Y.applyUpdate(doc, binary);
-        cache.set(doc, binary);
-      }
+      });
+      return;
     }
+    const binaries = await downloadBinaries(doc.guid);
+    if (!binaries) {
+      return;
+    }
+    cache.set(doc, binaries);
+    binaries.forEach(binary => {
+      Y.applyUpdate(doc, binary);
+    });
     await Promise.all([...doc.subdocs].map(downloadBinaryRecursively));
   }
   return {
