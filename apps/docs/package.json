@@ -17,14 +17,14 @@
     "@blocksuite/lit": "0.0.0-20230811080927-c830f4d4-nightly",
     "@blocksuite/store": "0.0.0-20230811080927-c830f4d4-nightly",
     "express": "^4.18.2",
-    "jotai": "^2.2.2",
+    "jotai": "^2.3.1",
     "react": "18.3.0-canary-7118f5dd7-20230705",
     "react-dom": "18.3.0-canary-7118f5dd7-20230705",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
     "waku": "0.14.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.17",
+    "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@vanilla-extract/css": "^1.12.0",
     "@vanilla-extract/vite-plugin": "^3.8.2",

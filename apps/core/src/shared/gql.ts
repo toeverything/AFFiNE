@@ -79,6 +79,7 @@ export function useMutation<Mutation extends GraphQLQuery>(
 ): SWRMutationResponse<
   QueryResponse<Mutation>,
   GraphQLError | GraphQLError[],
+  string,
   QueryVariables<Mutation>
 >;
 export function useMutation<Mutation extends GraphQLQuery>(
@@ -87,6 +88,7 @@ export function useMutation<Mutation extends GraphQLQuery>(
     SWRMutationConfiguration<
       QueryResponse<Mutation>,
       GraphQLError | GraphQLError[],
+      string,
       QueryVariables<Mutation>
     >,
     'fetcher'
@@ -94,6 +96,7 @@ export function useMutation<Mutation extends GraphQLQuery>(
 ): SWRMutationResponse<
   QueryResponse<Mutation>,
   GraphQLError | GraphQLError[],
+  string,
   QueryVariables<Mutation>
 >;
 export function useMutation(

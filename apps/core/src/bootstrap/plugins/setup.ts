@@ -194,6 +194,7 @@ const timer = createTimers(abortController.signal);
 const sharedGlobalThis = Object.assign(Object.create(null), timer, {
   Object: globalThis.Object,
   fetch: pluginFetch,
+  ReadableStream: globalThis.ReadableStream,
   Symbol: globalThis.Symbol,
   Error: globalThis.Error,
   TypeError: globalThis.TypeError,
