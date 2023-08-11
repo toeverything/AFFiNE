@@ -257,6 +257,7 @@ __metadata:
     express: ^4.18.2
     graphql: ^16.7.1
     html-webpack-plugin: ^5.5.3
+    intl-segmenter-polyfill-rs: ^0.1.5
     jotai: ^2.2.2
     jotai-devtools: ^0.6.1
     lit: ^2.7.6
@@ -21132,6 +21133,13 @@ __metadata:
   version: 3.1.1
   resolution: "interpret@npm:3.1.1"
   checksum: 35cebcf48c7351130437596d9ab8c8fe131ce4038da4561e6d665f25640e0034702a031cf7e3a5cea60ac7ac548bf17465e0571ede126f3d3a6933152171ac82
+  languageName: node
+  linkType: hard
+
+"intl-segmenter-polyfill-rs@npm:^0.1.5":
+  version: 0.1.5
+  resolution: "intl-segmenter-polyfill-rs@npm:0.1.5"
+  checksum: 9cb27151a366d96eb26aa00d41fb2cb116500927eeaefb099161e328cf2fe18c68e9ed84310ad85c688f5600325ee7e925203f58f81773377997f596eec5dc5b
   languageName: node
   linkType: hard
 
