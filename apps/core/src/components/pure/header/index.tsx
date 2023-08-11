@@ -97,6 +97,7 @@ export const Header = ({ left, center, right }: HeaderPros) => {
         // data-has-warning={showWarning}
         data-open={open}
         data-sidebar-floating={appSidebarFloating}
+        data-testid="header"
       >
         <div
           className={clsx(style.headerSideContainer, {
