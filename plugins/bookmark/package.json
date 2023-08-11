@@ -1,7 +1,7 @@
 {
   "name": "@affine/bookmark-plugin",
   "type": "module",
-  "version": "0.8.0-canary.18",
+  "version": "0.8.0-canary.19",
   "description": "Bookmark Plugin",
   "affinePlugin": {
     "release": true,
