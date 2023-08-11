@@ -45,8 +45,7 @@ test('create one workspace in the workspace list', async ({
   expect(workspaceCards.length).toBe(2);
 
   //check page list length
-  const closeWorkspaceModal = page.getByTestId('close-workspace-modal');
-  await closeWorkspaceModal.click();
+  await page.keyboard.press('Escape');
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(1000);
   const pageList = page.locator('[data-testid=page-list-item]');

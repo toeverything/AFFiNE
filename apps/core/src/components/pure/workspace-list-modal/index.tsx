@@ -203,7 +203,7 @@ export const WorkspaceListModal = ({
                         setOpen(true);
                       }
                     }}
-                    data-testid="new-workspace"
+                    data-testid="cloud-signin-button"
                   >
                     <StyledCreateWorkspaceCardPillContent>
                       <StyledCreateWorkspaceCardPillIcon>
