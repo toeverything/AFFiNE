@@ -4,7 +4,7 @@ import type { Page } from '@blocksuite/store';
 import type { Workspace } from '@blocksuite/store';
 import type { Atom, getDefaultStore } from 'jotai/vanilla';
 import type { WritableAtom } from 'jotai/vanilla/atom';
-import type { FC } from 'react';
+import type { FunctionComponent } from 'react';
 
 export type Part = 'headerItem' | 'editor' | 'setting' | 'formatBar';
 
@@ -22,7 +22,7 @@ export type CallbackMap = {
 export interface PluginContext {
   register: <T extends Part>(part: T, callback: CallbackMap[T]) => void;
   utils: {
-    PluginProvider: FC;
+    PluginProvider: FunctionComponent; // make more clear
   };
 }
 
