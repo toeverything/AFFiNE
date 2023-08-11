@@ -1,7 +1,7 @@
 import type { InsertRow } from '@affine/native';
 import { debounce } from 'lodash-es';
 import { Subject } from 'rxjs';
-import * as Y from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
@@ -13,7 +13,7 @@ const TRIM_SIZE = 500;
 
 export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'primary';
-  yDoc = new Y.Doc();
+  yDoc = new YDoc();
   firstConnected = false;
 
   update$ = new Subject<void>();
@@ -78,7 +78,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
       doc.subdocs.forEach(subdoc => {
         this.setupListener(subdoc.guid);
       });
-      const onSubdocs = ({ added }: { added: Set<Y.Doc> }) => {
+      const onSubdocs = ({ added }: { added: Set<YDoc> }) => {
         logger.info('onSubdocs', this.workspaceId, docId, added);
         added.forEach(subdoc => {
           this.setupListener(subdoc.guid);
@@ -126,7 +126,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
   getDocAsUpdates = (docId?: string) => {
     const doc = docId ? this.getDoc(docId) : this.yDoc;
     if (doc) {
-      return Y.encodeStateAsUpdate(doc);
+      return encodeStateAsUpdate(doc);
     }
     return null;
   };
@@ -144,7 +144,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     // yjs-idb will always trim the db for the first time after DB is loaded
     const doc = this.getDoc(docId);
     if (doc) {
-      Y.applyUpdate(doc, data, origin);
+      applyUpdate(doc, data, origin);
     } else {
       logger.warn('[WorkspaceSQLiteDB] applyUpdate: doc not found', docId);
     }

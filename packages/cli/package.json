@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@clack/core": "^0.3.3",
-    "@clack/prompts": "^0.6.3",
+    "@clack/prompts": "^0.7.0",
     "ts-node": "^10.9.1"
   },
   "dependencies": {

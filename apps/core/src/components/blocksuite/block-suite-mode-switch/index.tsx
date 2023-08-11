@@ -6,9 +6,9 @@ import { useAtom } from 'jotai';
 import type { CSSProperties } from 'react';
 import { useEffect } from 'react';
 
-import { pageSettingFamily } from '../../../../atoms';
-import type { BlockSuiteWorkspace } from '../../../../shared';
-import { toast } from '../../../../utils';
+import { pageSettingFamily } from '../../../atoms';
+import type { BlockSuiteWorkspace } from '../../../shared';
+import { toast } from '../../../utils';
 import { StyledEditorModeSwitch, StyledKeyboardItem } from './style';
 import { EdgelessSwitchItem, PageSwitchItem } from './switch-items';
 
