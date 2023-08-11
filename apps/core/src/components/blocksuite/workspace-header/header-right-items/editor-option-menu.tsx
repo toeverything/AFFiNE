@@ -4,6 +4,7 @@ import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
+  DuplicateIcon,
   EdgelessIcon,
   EditIcon,
   FavoritedIcon,
@@ -18,14 +19,17 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { currentPageIdAtom } from '@toeverything/infra/atom';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import * as Y from 'yjs';
 
-import { pageSettingFamily } from '../../../../atoms';
+import { pageSettingFamily, setPageModeAtom } from '../../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { toast } from '../../../../utils';
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
 import { usePageHelper } from '../../block-suite-page-list/utils';
@@ -78,7 +82,7 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
   const mode = setting?.mode ?? 'page';
 
   const favorite = pageMeta.favorite ?? false;
-  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const { setPageMeta, setPageTitle } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
@@ -104,6 +108,34 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
   const menuItemStyle = {
     padding: '4px 12px',
   };
+  const { openPage } = useNavigateHelper();
+  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const setPageMode = useSetAtom(setPageModeAtom);
+  const duplicate = useCallback(async () => {
+    const currentPage = blockSuiteWorkspace.getPage(pageId);
+    assertExists(currentPage);
+    const currentPageMeta = currentPage.meta;
+    const newPage = createPage();
+    await newPage.waitForLoaded();
+    const update = Y.encodeStateAsUpdate(currentPage.spaceDoc);
+    Y.applyUpdate(newPage.spaceDoc, update);
+    setPageMeta(newPage.id, {
+      tags: currentPageMeta.tags,
+      favorite: currentPageMeta.favorite,
+    });
+    setPageMode(newPage.id, mode);
+    setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
+    openPage(blockSuiteWorkspace.id, newPage.id);
+  }, [
+    blockSuiteWorkspace,
+    createPage,
+    mode,
+    openPage,
+    pageId,
+    setPageMeta,
+    setPageMode,
+    setPageTitle,
+  ]);
   const EditMenu = (
     <>
       <MenuItem
@@ -147,14 +179,14 @@ export const PageMenu = ({ rename }: PageMenuProps) => {
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
       <Divider />
-      {/* <MenuItem
+      <MenuItem
         icon={<DuplicateIcon />}
         data-testid="editor-option-menu-duplicate"
-        onClick={() => {}}
+        onClick={duplicate}
         style={menuItemStyle}
       >
         {t['com.affine.header.option.duplicate']()}
-      </MenuItem> */}
+      </MenuItem>
       <MenuItem
         icon={<ImportIcon />}
         data-testid="editor-option-menu-import"
