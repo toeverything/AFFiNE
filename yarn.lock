@@ -624,6 +624,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/y-provider@workspace:*, @affine/y-provider@workspace:packages/y-provider":
+  version: 0.0.0-use.local
+  resolution: "@affine/y-provider@workspace:packages/y-provider"
+  dependencies:
+    "@blocksuite/store": 0.0.0-20230810154852-8a8eccea-nightly
+  peerDependencies:
+    yjs: ^13.5.51
+  languageName: unknown
+  linkType: soft
+
 "@alloc/quick-lru@npm:^5.2.0":
   version: 5.2.0
   resolution: "@alloc/quick-lru@npm:5.2.0"
@@ -3622,6 +3632,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/global@npm:0.0.0-20230810154852-8a8eccea-nightly":
+  version: 0.0.0-20230810154852-8a8eccea-nightly
+  resolution: "@blocksuite/global@npm:0.0.0-20230810154852-8a8eccea-nightly"
+  dependencies:
+    ansi-colors: ^4.1.3
+    zod: ^3.21.4
+  peerDependencies:
+    lit: ^2.7
+  peerDependenciesMeta:
+    lit:
+      optional: true
+  checksum: e623e98b3c9534a61f894e94dd6f36ab44c5af188fa1471c55574fdee574fa04166ffcfbd165dc2998ff0e8f767635a3b5b247d3f2bfea248672d1d5d2001b76
+  languageName: node
+  linkType: hard
+
 "@blocksuite/icons@npm:^2.1.25":
   version: 2.1.25
   resolution: "@blocksuite/icons@npm:2.1.25"
@@ -3682,6 +3707,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/store@npm:0.0.0-20230810154852-8a8eccea-nightly":
+  version: 0.0.0-20230810154852-8a8eccea-nightly
+  resolution: "@blocksuite/store@npm:0.0.0-20230810154852-8a8eccea-nightly"
+  dependencies:
+    "@blocksuite/global": 0.0.0-20230810154852-8a8eccea-nightly
+    "@blocksuite/virgo": 0.0.0-20230810154852-8a8eccea-nightly
+    "@types/flexsearch": ^0.7.3
+    buffer: ^6.0.3
+    flexsearch: 0.7.21
+    idb-keyval: ^6.2.1
+    ky: ^0.33.3
+    lib0: ^0.2.78
+    merge: ^2.1.1
+    minimatch: ^9.0.3
+    nanoid: ^4.0.2
+    y-protocols: ^1.0.5
+    zod: ^3.21.4
+  peerDependencies:
+    async-call-rpc: ^6
+    yjs: ^13
+  checksum: 63a833c12aa47991efad1057887b1b10d82760d22ce96a744fe7e92fcfc0a29a192f3649a071401d63f413ad0443f403c4e5dfc547d2777c2d0dffc3ed10eaa9
+  languageName: node
+  linkType: hard
+
 "@blocksuite/virgo@npm:0.0.0-20230717055529-79180930-nightly":
   version: 0.0.0-20230717055529-79180930-nightly
   resolution: "@blocksuite/virgo@npm:0.0.0-20230717055529-79180930-nightly"
@@ -3692,6 +3741,19 @@ __metadata:
     lit: ^2.7
     yjs: ^13
   checksum: 81a65cc7441c9516a007f399dbce36aa547ed41beba4c53c77a11ace37e9f061983cb7adbd0681781fe17f9adb6382bc62ca35d80649971f6dbb0c97a084dfec
+  languageName: node
+  linkType: hard
+
+"@blocksuite/virgo@npm:0.0.0-20230810154852-8a8eccea-nightly":
+  version: 0.0.0-20230810154852-8a8eccea-nightly
+  resolution: "@blocksuite/virgo@npm:0.0.0-20230810154852-8a8eccea-nightly"
+  dependencies:
+    "@blocksuite/global": 0.0.0-20230810154852-8a8eccea-nightly
+    zod: ^3.21.4
+  peerDependencies:
+    lit: ^2.7
+    yjs: ^13
+  checksum: 7ce540aeb9873e3f6a6be2c359dc9839bb6fc68dc1fb6095ab88b1281ea8229b0e31e6e164ad2d6365407117c13840aef483148746bc0dab98fa9405beadc919
   languageName: node
   linkType: hard
 
@@ -11300,6 +11362,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
+    "@affine/y-provider": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230717055529-79180930-nightly
     "@blocksuite/store": 0.0.0-20230717055529-79180930-nightly
     idb: ^7.1.1
@@ -20260,7 +20323,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"idb-keyval@npm:^6.2.0":
+"idb-keyval@npm:^6.2.0, idb-keyval@npm:^6.2.1":
   version: 6.2.1
   resolution: "idb-keyval@npm:6.2.1"
   checksum: 7c0836f832096086e99258167740181132a71dd2694c8b8454a4f5ec69114ba6d70983115153306f0b6de1c8d3bad04f67eed3dff8f50c96815b9985d6d78470
@@ -23767,6 +23830,15 @@ __metadata:
   dependencies:
     brace-expansion: ^2.0.1
   checksum: 97f5f5284bb57dc65b9415dec7f17a0f6531a33572193991c60ff18450dcfad5c2dad24ffeaf60b5261dccd63aae58cc3306e2209d57e7f88c51295a532d8ec3
+  languageName: node
+  linkType: hard
+
+"minimatch@npm:^9.0.3":
+  version: 9.0.3
+  resolution: "minimatch@npm:9.0.3"
+  dependencies:
+    brace-expansion: ^2.0.1
+  checksum: 253487976bf485b612f16bf57463520a14f512662e592e95c571afdab1442a6a6864b6c88f248ce6fc4ff0b6de04ac7aa6c8bb51e868e99d1d65eb0658a708b5
   languageName: node
   linkType: hard
 
