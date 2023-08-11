@@ -16,6 +16,8 @@ import {
   StyledTitleLink,
 } from './styles';
 import type { ListData } from './type';
+import { useVirtualTableHeight } from './use-virtual-table-height';
+import { VirtualTable } from './virtual-table';
 
 const MobileHead = ({
   isPublicWorkspace,
@@ -68,6 +70,8 @@ export const AllPageListMobileView = ({
   createNewEdgeless: () => void;
   importFile: () => void;
 }) => {
+  const virtualTableHeight = useVirtualTableHeight();
+
   return (
     <StyledTableContainer>
       <Table>
@@ -77,13 +81,16 @@ export const AllPageListMobileView = ({
           createNewEdgeless={createNewEdgeless}
           importFile={importFile}
         />
-        <AllPagesBody
-          isPublicWorkspace={isPublicWorkspace}
-          data={list}
-          // update groupKey after support sort by create date
-          groupKey="updatedDate"
-        />
       </Table>
+      <VirtualTable
+        width={'100%'}
+        height={virtualTableHeight}
+        itemSize={() => 52}
+        itemCount={list.length}
+        itemData={{ isPublicWorkspace, data: list, groupKey: 'updatedDate' }}
+      >
+        {AllPagesBody}
+      </VirtualTable>
     </StyledTableContainer>
   );
 };

@@ -172,7 +172,7 @@ export const Header = forwardRef<HTMLDivElement, HeaderProps>((props, ref) => {
 
   return (
     <div
-      className={styles.headerContainer}
+      className={(styles.headerContainer, 'header-container')}
       ref={ref}
       data-has-warning={showWarning}
       data-open={open}

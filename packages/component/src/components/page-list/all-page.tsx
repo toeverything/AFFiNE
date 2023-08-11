@@ -26,7 +26,9 @@ import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
+import { useVirtualTableHeight } from './use-virtual-table-height';
 import { formatDate, useIsSmallDevices } from './utils';
+import { VirtualTable } from './virtual-table';
 
 interface AllPagesHeadProps {
   isPublicWorkspace: boolean;
@@ -167,12 +169,12 @@ export const PageList = ({
   getPageInfo,
   propertiesMeta,
 }: PageListProps) => {
+  const virtualTableHeight = useVirtualTableHeight();
   const sorter = useSorter<ListData>({
     data: list,
     key: DEFAULT_SORT_KEY,
     order: 'desc',
   });
-  const [hasScrollTop, ref] = useHasScrollTop();
   const isSmallDevices = useIsSmallDevices();
   if (isSmallDevices) {
     return (
@@ -200,8 +202,8 @@ export const PageList = ({
     <StyledTableContainer>{fallback}</StyledTableContainer>
   ) : (
     <ScrollableContainer inTableView>
-      <StyledTableContainer ref={ref}>
-        <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
+      <StyledTableContainer>
+        <Table>
           <AllPagesHead
             workspaceId={workspaceId}
             propertiesMeta={propertiesMeta}
@@ -212,12 +214,16 @@ export const PageList = ({
             importFile={onImportFile}
             getPageInfo={getPageInfo}
           />
-          <AllPagesBody
-            isPublicWorkspace={isPublicWorkspace}
-            groupKey={groupKey}
-            data={sorter.data}
-          />
         </Table>
+        <VirtualTable
+          width={'100%'}
+          height={virtualTableHeight}
+          itemSize={() => 52}
+          itemCount={sorter.data.length}
+          itemData={{ isPublicWorkspace, data: sorter.data, groupKey }}
+        >
+          {AllPagesBody}
+        </VirtualTable>
       </StyledTableContainer>
     </ScrollableContainer>
   );
