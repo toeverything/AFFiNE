@@ -1,5 +1,4 @@
-import type { StatusAdapter } from '@affine/y-provider';
-import type { DBSchema, IDBPDatabase } from 'idb';
+import type { DBSchema, IDBPDatabase } from 'idb/build/entry';
 
 export const dbVersion = 1;
 export const DEFAULT_DB_NAME = 'affine-local';
@@ -9,10 +8,11 @@ export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
   db.createObjectStore('milestone', { keyPath: 'id' });
 }
 
-export interface IndexedDBProvider extends StatusAdapter {
+export interface IndexedDBProvider {
   connect: () => void;
   disconnect: () => void;
   cleanup: () => Promise<void>;
+  whenSynced: Promise<void>;
   readonly connected: boolean;
 }
 

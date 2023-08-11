@@ -3,18 +3,18 @@
  */
 import 'fake-indexeddb/auto';
 
-import { setTimeout } from 'node:timers/promises';
-
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import { uuidv4, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { IndexeddbPersistence } from 'y-indexeddb';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { WorkspacePersist } from '../index';
 import {
+  CleanupWhenConnectingError,
   createIndexedDBProvider,
   dbVersion,
   DEFAULT_DB_NAME,
@@ -43,7 +43,7 @@ function initEmptyPage(page: Page) {
 
 async function getUpdates(id: string): Promise<Uint8Array[]> {
   const db = await openDB(rootDBName, dbVersion);
-  const store = db
+  const store = await db
     .transaction('workspace', 'readonly')
     .objectStore('workspace');
   const data = (await store.get(id)) as WorkspacePersist | undefined;
@@ -62,6 +62,7 @@ beforeEach(() => {
     id,
     isSSR: true,
   });
+  workspace.register(AffineSchemas).register(__unstableSchemas);
 });
 
 afterEach(() => {
@@ -73,10 +74,7 @@ describe('indexeddb provider', () => {
   test('connect', async () => {
     const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
-
-    // todo: has a better way to know when data is synced
-    await setTimeout(200);
-
+    await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
     {
       const store = db
@@ -98,9 +96,9 @@ describe('indexeddb provider', () => {
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
     }
-    await setTimeout(200);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     {
-      const store = db
+      const store = await db
         .transaction('workspace', 'readonly')
         .objectStore('workspace');
       const data = (await store.get(id)) as WorkspacePersist | undefined;
@@ -132,11 +130,22 @@ describe('indexeddb provider', () => {
     }
   });
 
+  test('disconnect suddenly', async () => {
+    const provider = createIndexedDBProvider(workspace.doc, rootDBName);
+    const fn = vi.fn();
+    provider.connect();
+    provider.disconnect();
+    expect(fn).toBeCalledTimes(0);
+    await provider.whenSynced.catch(fn);
+    expect(fn).toBeCalledTimes(1);
+  });
+
   test('connect and disconnect', async () => {
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     expect(provider.connected).toBe(true);
-    await setTimeout(200);
+    const p1 = provider.whenSynced;
+    await p1;
     const snapshot = encodeStateAsUpdate(workspace.doc);
     provider.disconnect();
     expect(provider.connected).toBe(false);
@@ -155,7 +164,8 @@ describe('indexeddb provider', () => {
     expect(provider.connected).toBe(false);
     provider.connect();
     expect(provider.connected).toBe(true);
-    await setTimeout(200);
+    const p2 = provider.whenSynced;
+    await p2;
     {
       const updates = await getUpdates(workspace.id);
       expect(updates).not.toEqual([]);
@@ -163,12 +173,13 @@ describe('indexeddb provider', () => {
     expect(provider.connected).toBe(true);
     provider.disconnect();
     expect(provider.connected).toBe(false);
+    expect(p1).not.toBe(p2);
   });
 
   test('cleanup', async () => {
     const provider = createIndexedDBProvider(workspace.doc);
     provider.connect();
-    await setTimeout(200);
+    await provider.whenSynced;
     const db = await openDB(rootDBName, dbVersion);
 
     {
@@ -179,8 +190,8 @@ describe('indexeddb provider', () => {
       expect(keys).contain(workspace.id);
     }
 
-    await provider.cleanup();
     provider.disconnect();
+    await provider.cleanup();
 
     {
       const store = db
@@ -189,6 +200,17 @@ describe('indexeddb provider', () => {
       const keys = await store.getAllKeys();
       expect(keys).not.contain(workspace.id);
     }
+  });
+
+  test('cleanup when connecting', async () => {
+    const provider = createIndexedDBProvider(workspace.doc);
+    provider.connect();
+    await expect(() => provider.cleanup()).rejects.toThrowError(
+      CleanupWhenConnectingError
+    );
+    await provider.whenSynced;
+    provider.disconnect();
+    await provider.cleanup();
   });
 
   test('merge', async () => {
@@ -204,7 +226,7 @@ describe('indexeddb provider', () => {
         page.addBlock('affine:paragraph', {}, frameId);
       }
     }
-    await setTimeout(200);
+    await provider.whenSynced;
     {
       const updates = await getUpdates(id);
       expect(updates.length).lessThanOrEqual(5);
@@ -220,16 +242,54 @@ describe('indexeddb provider', () => {
     {
       const provider = createIndexedDBProvider(doc, rootDBName);
       provider.connect();
+      await provider.whenSynced;
       provider.disconnect();
     }
     {
       const newDoc = new Workspace.Y.Doc();
       const provider = createIndexedDBProvider(newDoc, rootDBName);
       provider.connect();
+      await provider.whenSynced;
       provider.disconnect();
       newDoc.getMap('map').forEach((value, key) => {
         expect(value).toBe(parseInt(key));
       });
+    }
+  });
+
+  test('migration', async () => {
+    {
+      const yDoc = new Doc();
+      yDoc.getMap().set('foo', 'bar');
+      const persistence = new IndexeddbPersistence('test', yDoc);
+      await persistence.whenSynced;
+      await persistence.destroy();
+    }
+    {
+      const yDoc = new Doc({
+        guid: 'test',
+      });
+      const provider = createIndexedDBProvider(yDoc);
+      provider.connect();
+      await provider.whenSynced;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(yDoc.getMap().get('foo')).toBe('bar');
+    }
+    localStorage.clear();
+    {
+      indexedDB.databases = vi.fn(async () => {
+        throw new Error('not supported');
+      });
+      await expect(indexedDB.databases).rejects.toThrow('not supported');
+      const yDoc = new Doc({
+        guid: 'test',
+      });
+      expect(indexedDB.databases).toBeCalledTimes(1);
+      const provider = createIndexedDBProvider(yDoc);
+      provider.connect();
+      await provider.whenSynced;
+      expect(indexedDB.databases).toBeCalledTimes(2);
+      expect(yDoc.getMap().get('foo')).toBe('bar');
     }
   });
 
@@ -251,8 +311,7 @@ describe('indexeddb provider', () => {
     const map = doc.getMap('map');
     map.set('1', 1);
     provider.connect();
-
-    await setTimeout(200);
+    await provider.whenSynced;
 
     expect(window.addEventListener).toBeCalledTimes(1);
     expect(window.removeEventListener).toBeCalledTimes(1);
@@ -337,7 +396,7 @@ describe('subDoc', () => {
       map.set('2', 'test');
       const provider = createIndexedDBProvider(doc);
       provider.connect();
-      await setTimeout(200);
+      await provider.whenSynced;
       provider.disconnect();
       json1 = doc.toJSON();
     }
@@ -347,7 +406,7 @@ describe('subDoc', () => {
       });
       const provider = createIndexedDBProvider(doc);
       provider.connect();
-      await setTimeout(200);
+      await provider.whenSynced;
       const map = doc.getMap();
       const subDoc = map.get('1') as Doc;
       subDoc.load();
@@ -372,7 +431,7 @@ describe('subDoc', () => {
     });
     await page1.waitForLoaded();
     const { paragraphBlockId: paragraphBlockIdPage2 } = initEmptyPage(page1);
-    await setTimeout(200);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     provider.disconnect();
     {
       const newWorkspace = new Workspace({
@@ -382,17 +441,15 @@ describe('subDoc', () => {
       newWorkspace.register(AffineSchemas).register(__unstableSchemas);
       const provider = createIndexedDBProvider(newWorkspace.doc, rootDBName);
       provider.connect();
-      await setTimeout(200);
+      await provider.whenSynced;
       const page0 = newWorkspace.getPage('page0') as Page;
       await page0.waitForLoaded();
-      await setTimeout(200);
       {
         const block = page0.getBlockById(paragraphBlockIdPage1);
         assertExists(block);
       }
       const page1 = newWorkspace.getPage('page1') as Page;
       await page1.waitForLoaded();
-      await setTimeout(200);
       {
         const block = page1.getBlockById(paragraphBlockIdPage2);
         assertExists(block);
@@ -408,7 +465,7 @@ describe('utils', () => {
     initEmptyPage(page);
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
-    await setTimeout(200);
+    await provider.whenSynced;
     provider.disconnect();
     const update = (await downloadBinary(
       workspace.id,
@@ -421,12 +478,16 @@ describe('utils', () => {
     });
     newWorkspace.register(AffineSchemas).register(__unstableSchemas);
     applyUpdate(newWorkspace.doc, update);
-    await setTimeout();
-    expect(workspace.doc.toJSON()['meta']).toEqual(
-      newWorkspace.doc.toJSON()['meta']
-    );
-    expect(Object.keys(workspace.doc.toJSON()['spaces'])).toEqual(
-      Object.keys(newWorkspace.doc.toJSON()['spaces'])
+    await new Promise<void>(resolve =>
+      setTimeout(() => {
+        expect(workspace.doc.toJSON()['meta']).toEqual(
+          newWorkspace.doc.toJSON()['meta']
+        );
+        expect(Object.keys(workspace.doc.toJSON()['spaces'])).toEqual(
+          Object.keys(newWorkspace.doc.toJSON()['spaces'])
+        );
+        resolve();
+      }, 0)
     );
   });
 

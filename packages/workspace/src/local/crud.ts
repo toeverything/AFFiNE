@@ -2,6 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
@@ -75,7 +76,11 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
       });
     });
 
-    // todo: do we need to persist doc to persistence datasource?
+    const persistence = createIndexedDBProvider(blockSuiteWorkspace.doc);
+    persistence.connect();
+    await persistence.whenSynced.then(() => {
+      persistence.disconnect();
+    });
     saveWorkspaceToLocalStorage(id);
     return id;
   },
