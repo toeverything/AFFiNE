@@ -70,12 +70,16 @@ export const guideOnboardingAtom = atom<
     }));
   }
 );
+
 export const guideDownloadClientTipAtom = atom<
   Guide['downloadClientTip'],
   [open: boolean],
   void
 >(
   get => {
+    if (environment.isDesktop) {
+      return false;
+    }
     return get(guidePrimitiveAtom).downloadClientTip;
   },
   (_, set, open) => {
