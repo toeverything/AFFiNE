@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 
-export function useVirtualTableHeight() {
+export function useVirtualTableHeight(
+  mainSelectors: string,
+  headSelectors: string
+) {
   const [virtualTableHeight, setVirtualTableHeight] = useState(0);
   useEffect(() => {
-    const mainEl = document.querySelector('.main-container') as HTMLElement;
-    const headEl = document.querySelector('.header-container') as HTMLElement;
+    const mainEl = document.querySelector(mainSelectors) as HTMLElement;
+    const headEl = document.querySelector(headSelectors) as HTMLElement;
 
     const resizeObserver = new ResizeObserver(entries => {
       if (entries.length === 0) return;
@@ -22,7 +25,7 @@ export function useVirtualTableHeight() {
       resizeObserver.unobserve(mainEl);
       resizeObserver.unobserve(headEl);
     };
-  }, []);
+  }, [mainSelectors, headSelectors]);
 
   return virtualTableHeight;
 }

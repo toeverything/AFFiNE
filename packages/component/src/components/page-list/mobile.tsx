@@ -70,7 +70,10 @@ export const AllPageListMobileView = ({
   createNewEdgeless: () => void;
   importFile: () => void;
 }) => {
-  const virtualTableHeight = useVirtualTableHeight();
+  const virtualTableHeight = useVirtualTableHeight(
+    '.main-container',
+    '.header-container'
+  );
 
   return (
     <StyledTableContainer>

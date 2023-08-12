@@ -169,7 +169,10 @@ export const PageList = ({
   getPageInfo,
   propertiesMeta,
 }: PageListProps) => {
-  const virtualTableHeight = useVirtualTableHeight();
+  const virtualTableHeight = useVirtualTableHeight(
+    '.main-container',
+    '.header-container'
+  );
   const sorter = useSorter<ListData>({
     data: list,
     key: DEFAULT_SORT_KEY,
