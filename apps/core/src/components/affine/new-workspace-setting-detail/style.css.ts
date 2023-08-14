@@ -99,10 +99,7 @@ export const memberEmail = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
 });
-export const iconButton = style({
-  opacity: 0,
-  pointerEvents: 'none',
-});
+export const iconButton = style({});
 export const displayNone = style({
   opacity: 0,
   pointerEvents: 'none',

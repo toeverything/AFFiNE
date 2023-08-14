@@ -1,4 +1,13 @@
-import { FlexWrapper, Input, Menu, MenuItem, Tooltip } from '@affine/component';
+import {
+  FlexWrapper,
+  Input,
+  Menu,
+  MenuItem,
+  Modal,
+  ModalCloseButton,
+  ModalWrapper,
+  Tooltip,
+} from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
@@ -12,7 +21,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
-import { useMembers } from '../../../hooks/affine/use-members';
+import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -20,7 +29,7 @@ import { WorkspaceAvatar } from '../../pure/footer';
 import { AnyErrorBoundary } from '../any-error-boundary';
 import { PermissionSelect } from './permission-select';
 import * as style from './style.css';
-
+import { InviteMemberButton } from './members/invite-button';
 export type MembersPanelProps = {
   workspace: AffineOfficialWorkspace;
 };
@@ -46,12 +55,58 @@ export const CloudWorkspaceMembersPanel = (
   const workspaceId = props.workspace.id;
   const members = useMembers(workspaceId);
   const t = useAFFiNEI18N();
-  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
   const currentUser = useCurrentUser();
   const isOwner = useIsWorkspaceOwner(workspaceId);
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
   const invite = useInviteMember(workspaceId);
+
+  const memberCount = members.length;
+
+  return (
+    <>
+      <SettingRow
+        name={`${t['Members']()} (${memberCount})`}
+        desc={t['Members hint']()}
+      >
+        {isOwner && <InviteMemberButton />}
+      </SettingRow>
+      {/*{isOwner && (*/}
+      {/*  <FlexWrapper justifyContent="space-between" alignItems="center">*/}
+      {/*    <Input*/}
+      {/*      // className={style.urlButton}*/}
+      {/*      data-testid="invite-by-email-input"*/}
+      {/*      placeholder="Invite by email"*/}
+      {/*      onChange={setInviteEmail}*/}
+      {/*    />*/}
+      {/*    <PermissionSelect value={permission} onChange={setPermission} />*/}
+      {/*  </FlexWrapper>*/}
+      {/*)}*/}
+      <FlexWrapper flexDirection="column" className={style.membersList}>
+        {members.map(member => (
+          <Member
+            key={member.id}
+            member={member}
+            workspaceId={workspaceId}
+            showOperationButton={isOwner}
+          />
+        ))}
+      </FlexWrapper>
+    </>
+  );
+};
+
+const Member = ({
+  member,
+  showOperationButton,
+  workspaceId,
+}: {
+  member: Member;
+  showOperationButton: boolean;
+  workspaceId: string;
+}) => {
+  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
+
   const onClickRevoke = useCallback(
     async (event: MouseEvent<HTMLButtonElement>) => {
       const button = event.target;
@@ -68,93 +123,38 @@ export const CloudWorkspaceMembersPanel = (
     },
     [revokeMemberPermission]
   );
-  const onClickInvite = useCallback(async () => {
-    const emailRegex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-    if (!emailRegex.test(inviteEmail)) {
-      toast('Invalid email');
-      return;
-    }
-
-    await invite(
-      inviteEmail,
-      permission,
-      // send invite email
-      true
-    );
-  }, [inviteEmail, invite, permission]);
-
-  const memberCount = members.length;
-  const memberPanel =
-    memberCount > 0 ? (
-      members.map(member => (
-        <div key={member.id} className={style.listItem}>
-          <div>
-            <WorkspaceAvatar
-              size={24}
-              name={undefined}
-              avatar={member.avatarUrl as string}
-            />
-          </div>
-          <div className={style.memberContainer}>
-            <div className={style.memberName}>{member.name}</div>
-            <div className={style.memberEmail}>{member.email}</div>
-          </div>
-          <div className={style.permissionContainer}>{member.permission}</div>
-          {isOwner && (
-            <Menu
-              content={
-                <MenuItem>
-                  <button data-member-id={member.id} onClick={onClickRevoke}>
-                    Remove from Workspace
-                  </button>
-                </MenuItem>
-              }
-              placement="bottom"
-              disablePortal={true}
-              trigger="click"
-            >
-              <IconButton
-                className={`${style.displayNone} ${
-                  currentUser.email !== member.email ? style.iconButton : ''
-                }`}
-              >
-                <MoreVerticalIcon />
-              </IconButton>
-            </Menu>
-          )}
-        </div>
-      ))
-    ) : (
-      <div>No Members</div>
-    );
-
   return (
-    <>
-      <SettingRow
-        name={`${t['Members']()} (${memberCount})`}
-        desc={t['Members hint']()}
+    <div key={member.id} className={style.listItem}>
+      <div>
+        <WorkspaceAvatar
+          size={24}
+          name={undefined}
+          avatar={member.avatarUrl as string}
+        />
+      </div>
+      <div className={style.memberContainer}>
+        <div className={style.memberName}>{member.name}</div>
+        <div className={style.memberEmail}>{member.email}</div>
+      </div>
+      <div className={style.permissionContainer}>{member.permission}</div>
+      <Menu
+        content={
+          <MenuItem>
+            Remove from Workspace
+            {/*<button data-member-id={member.id} onClick={onClickRevoke}>*/}
+            {/*  Remove from Workspace*/}
+            {/*</button>*/}
+          </MenuItem>
+        }
+        placement="bottom"
+        disablePortal={true}
+        trigger="click"
       >
-        {isOwner && (
-          <Button size="large" onClick={onClickInvite}>
-            {t['Invite Members']()}
-          </Button>
-        )}
-      </SettingRow>
-      {isOwner && (
-        <FlexWrapper justifyContent="space-between" alignItems="center">
-          <Input
-            // className={style.urlButton}
-            data-testid="invite-by-email-input"
-            placeholder="Invite by email"
-            onChange={setInviteEmail}
-          />
-          <PermissionSelect value={permission} onChange={setPermission} />
-        </FlexWrapper>
-      )}
-      <FlexWrapper flexDirection="column" className={style.membersList}>
-        {memberPanel}
-      </FlexWrapper>
-    </>
+        <IconButton>
+          <MoreVerticalIcon />
+        </IconButton>
+      </Menu>
+    </div>
   );
 };
 
