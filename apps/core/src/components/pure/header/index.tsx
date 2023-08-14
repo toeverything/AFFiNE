@@ -7,7 +7,7 @@ import {
 import { isDesktop } from '@affine/env/constant';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import throttle from 'lodash.throttle';
+import debounce from 'lodash.debounce';
 import type { MutableRefObject, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -22,37 +22,52 @@ interface HeaderPros {
 
 const useIsTinyScreen = ({
   mainContainer,
-  leftDoms,
+  leftStatic,
+  leftSlot,
   centerDom,
-  rightDoms,
+  rightStatic,
+  rightSlot,
 }: {
   mainContainer: HTMLElement;
-  leftDoms: MutableRefObject<HTMLElement | null>[];
+  leftStatic: MutableRefObject<HTMLElement | null>;
+  leftSlot: MutableRefObject<HTMLElement | null>[];
   centerDom: MutableRefObject<HTMLElement | null>;
-  rightDoms: MutableRefObject<HTMLElement | null>[];
+  rightStatic: MutableRefObject<HTMLElement | null>;
+  rightSlot: MutableRefObject<HTMLElement | null>[];
 }) => {
   const [isTinyScreen, setIsTinyScreen] = useState(false);
 
   useEffect(() => {
-    const handleResize = throttle(() => {
+    const handleResize = debounce(() => {
       if (!centerDom.current) {
         return;
       }
-      const leftTotalWidth = leftDoms.reduce((accWidth, dom) => {
+      const leftStaticWidth = leftStatic.current?.clientWidth || 0;
+      const leftSlotWidth = leftSlot.reduce((accWidth, dom) => {
         return accWidth + (dom.current?.clientWidth || 0);
       }, 0);
 
-      const rightTotalWidth = rightDoms.reduce((accWidth, dom) => {
+      const rightStaticWidth = rightStatic.current?.clientWidth || 0;
+
+      const rightSlotWidth = rightSlot.reduce((accWidth, dom) => {
         return accWidth + (dom.current?.clientWidth || 0);
       }, 0);
+
+      if (!leftSlotWidth && !rightSlotWidth) {
+        if (isTinyScreen) {
+          setIsTinyScreen(false);
+        }
+        return;
+      }
 
       const containerRect = mainContainer.getBoundingClientRect();
       const centerRect = centerDom.current.getBoundingClientRect();
 
-      const offset = isTinyScreen ? 50 : 0;
       if (
-        leftTotalWidth + containerRect.left >= centerRect.left - offset ||
-        containerRect.right - centerRect.right <= rightTotalWidth + offset
+        leftStaticWidth + leftSlotWidth + containerRect.left >=
+          centerRect.left ||
+        containerRect.right - centerRect.right <=
+          rightSlotWidth + rightStaticWidth
       ) {
         setIsTinyScreen(true);
       } else {
@@ -67,7 +82,19 @@ const useIsTinyScreen = ({
     });
 
     resizeObserver.observe(mainContainer);
-  }, [centerDom, isTinyScreen, leftDoms, mainContainer, rightDoms]);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [
+    centerDom,
+    isTinyScreen,
+    leftSlot,
+    leftStatic,
+    mainContainer,
+    rightSlot,
+    rightStatic,
+  ]);
 
   return isTinyScreen;
 };
@@ -84,9 +111,11 @@ export const Header = ({ left, center, right }: HeaderPros) => {
 
   const isTinyScreen = useIsTinyScreen({
     mainContainer: document.querySelector('.main-container') || document.body,
-    leftDoms: [sidebarSwitchRef, leftSlotRef],
+    leftStatic: sidebarSwitchRef,
+    leftSlot: [leftSlotRef],
     centerDom: centerSlotRef,
-    rightDoms: [rightSlotRef, windowControlsRef],
+    rightSlot: [rightSlotRef],
+    rightStatic: windowControlsRef,
   });
 
   const isWindowsDesktop = globalThis.platform === 'win32' && isDesktop;
@@ -124,7 +153,6 @@ export const Header = ({ left, center, right }: HeaderPros) => {
           className={clsx({
             [style.headerCenter]: center,
             'is-window': isWindowsDesktop,
-            'has-min-width': !isTinyScreen,
           })}
           ref={centerSlotRef}
         >

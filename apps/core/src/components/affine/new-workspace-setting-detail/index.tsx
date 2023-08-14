@@ -59,14 +59,12 @@ export const WorkspaceSettingDetail = ({
     <>
       <SettingHeader
         title={t[`Workspace Settings with name`]({ name })}
-        subtitle={t['You can customize your workspace here.']()}
+        subtitle={t['com.affine.settings.workspace.description']()}
       />
       <SettingWrapper title={t['Info']()}>
         <SettingRow
           name={t['Workspace Profile']()}
-          desc={t[
-            'Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.'
-          ]()}
+          desc={t['com.affine.settings.workspace.not-owner']()}
           spreadCol={false}
         >
           <ProfilePanel workspace={workspace} />

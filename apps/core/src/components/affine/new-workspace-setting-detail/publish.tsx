@@ -94,7 +94,7 @@ const FakePublishPanelAffine = (_props: FakePublishPanelAffineProps) => {
 
   return (
     <Tooltip
-      content={t['com.affine.settings.workspace.publish.local-tooltip']()}
+      content={t['com.affine.settings.workspace.publish-tooltip']()}
       placement="top"
     >
       <div className={style.fakeWrapper}>

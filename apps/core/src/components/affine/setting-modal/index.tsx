@@ -93,9 +93,7 @@ export const SettingModal = ({
               target="_blank"
               rel="noreferrer"
             >
-              {t[
-                'Need more customization options? You can suggest them to us in the community.'
-              ]()}
+              {t['com.affine.settings.suggestion']()}
             </a>
           </div>
         </div>
