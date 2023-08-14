@@ -45,7 +45,7 @@
     "lottie-web": "^5.12.2",
     "react": "18.2.0",
     "react-datepicker": "^4.16.0",
-    "react-dom": "18.2.0",
+    "react-dom": "18.3.0-next-992911981-20220718",
     "react-error-boundary": "^4.0.11",
     "react-is": "^18.2.0",
     "rxjs": "^7.8.1"

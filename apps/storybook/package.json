@@ -38,7 +38,7 @@
     "@blocksuite/lit": "0.0.0-20230811201552-f37162ea-nightly",
     "@blocksuite/store": "0.0.0-20230811201552-f37162ea-nightly",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.3.0-next-992911981-20220718"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",

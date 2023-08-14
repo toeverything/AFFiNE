@@ -19,7 +19,7 @@
     "express": "^4.18.2",
     "jotai": "^2.3.1",
     "react": "18.3.0-canary-7118f5dd7-20230705",
-    "react-dom": "18.3.0-canary-7118f5dd7-20230705",
+    "react-dom": "18.3.0-next-992911981-20220718",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
     "waku": "0.14.0"
   },

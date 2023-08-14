@@ -172,7 +172,7 @@ __metadata:
     lottie-web: ^5.12.2
     react: 18.2.0
     react-datepicker: ^4.16.0
-    react-dom: 18.2.0
+    react-dom: 18.3.0-next-992911981-20220718
     react-error-boundary: ^4.0.11
     react-is: ^18.2.0
     rxjs: ^7.8.1
@@ -205,7 +205,7 @@ __metadata:
     marked-gfm-heading-id: ^3.0.6
     marked-mangle: ^1.1.2
     react: 18.2.0
-    react-dom: 18.2.0
+    react-dom: 18.3.0-next-992911981-20220718
     zod: ^3.21.4
   peerDependencies:
     react: "*"
@@ -269,7 +269,7 @@ __metadata:
     postcss-loader: ^7.3.3
     raw-loader: ^4.0.2
     react: 18.2.0
-    react-dom: 18.2.0
+    react-dom: 18.3.0-next-992911981-20220718
     react-is: 18.2.0
     react-resizable-panels: ^0.0.54
     react-router-dom: ^6.15.0
@@ -320,7 +320,7 @@ __metadata:
     express: ^4.18.2
     jotai: ^2.3.1
     react: 18.3.0-canary-7118f5dd7-20230705
-    react-dom: 18.3.0-canary-7118f5dd7-20230705
+    react-dom: 18.3.0-next-992911981-20220718
     react-server-dom-webpack: 18.3.0-canary-7118f5dd7-20230705
     tailwindcss: ^3.3.3
     typescript: ^5.1.6
@@ -385,7 +385,7 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230811201552-f37162ea-nightly
     lit: ^2.8.0
     react: 18.2.0
-    react-dom: 18.2.0
+    react-dom: 18.3.0-next-992911981-20220718
     zod: ^3.21.4
   peerDependencies:
     "@affine/templates": "workspace:*"
@@ -597,7 +597,7 @@ __metadata:
     "@types/react-dom": ^18.2.7
     "@vitejs/plugin-react-swc": ^3.3.2
     react: ^18.2.0
-    react-dom: ^18.2.0
+    react-dom: ^18.3.0-next-992911981-20220718
     typescript: ^5.1.6
     vite: ^4.4.9
   languageName: unknown
@@ -705,7 +705,7 @@ __metadata:
     concurrently: ^8.2.0
     jest-mock: ^29.6.2
     react: 18.2.0
-    react-dom: 18.2.0
+    react-dom: 18.3.0-next-992911981-20220718
     serve: ^14.2.0
     storybook: ^7.2.3
     storybook-dark-mode: ^3.0.1
@@ -762,7 +762,7 @@ __metadata:
     ky: ^0.33.3
     lib0: ^0.2.80
     react: 18.2.0
-    react-dom: 18.2.0
+    react-dom: 18.3.0-next-992911981-20220718
     ws: ^8.13.0
     y-protocols: ^1.0.5
     yjs: ^13.6.7
@@ -27645,27 +27645,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:18.2.0, react-dom@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react-dom@npm:18.2.0"
+"react-dom@npm:18.3.0-next-992911981-20220718":
+  version: 18.3.0-next-992911981-20220718
+  resolution: "react-dom@npm:18.3.0-next-992911981-20220718"
   dependencies:
     loose-envify: ^1.1.0
-    scheduler: ^0.23.0
+    scheduler: 0.24.0-next-992911981-20220718
   peerDependencies:
-    react: ^18.2.0
-  checksum: 7d323310bea3a91be2965f9468d552f201b1c27891e45ddc2d6b8f717680c95a75ae0bc1e3f5cf41472446a2589a75aed4483aee8169287909fcd59ad149e8cc
+    react: 18.3.0-next-992911981-20220718
+  checksum: d4beaf6882e75468a2ec1b8b688462486ed41a80f273039536d69dca44c89be6a616e3f26e57461db995d17d628e1b08ebb23be477509dd648be15f2aefa241b
   languageName: node
   linkType: hard
 
-"react-dom@npm:18.3.0-canary-7118f5dd7-20230705":
-  version: 18.3.0-canary-7118f5dd7-20230705
-  resolution: "react-dom@npm:18.3.0-canary-7118f5dd7-20230705"
+"react-dom@npm:^18.3.0-next-992911981-20220718":
+  version: 18.3.0-next-fecc288b7-20221025
+  resolution: "react-dom@npm:18.3.0-next-fecc288b7-20221025"
   dependencies:
     loose-envify: ^1.1.0
-    scheduler: 0.24.0-canary-7118f5dd7-20230705
+    scheduler: 0.24.0-next-fecc288b7-20221025
   peerDependencies:
-    react: 18.3.0-canary-7118f5dd7-20230705
-  checksum: a33f49a92df0234358461c2c5fb1fb270267b06e7090b4a7c2c4a5082bb088496b4eec67feb2a1ddf22c797b57004b00017be402d94fcd81e7a08826d1f2155b
+    react: 18.3.0-next-fecc288b7-20221025
+  checksum: bee2c161c37498974816abaf191767186473422d7642f7b333c039a046a0c1d724bc7a1482d714a9fff0f95287ee62909f2e903837a966a2fde1bca50fbf0c45
   languageName: node
   linkType: hard
 
@@ -28883,21 +28883,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"scheduler@npm:0.24.0-canary-7118f5dd7-20230705":
-  version: 0.24.0-canary-7118f5dd7-20230705
-  resolution: "scheduler@npm:0.24.0-canary-7118f5dd7-20230705"
+"scheduler@npm:0.24.0-next-992911981-20220718":
+  version: 0.24.0-next-992911981-20220718
+  resolution: "scheduler@npm:0.24.0-next-992911981-20220718"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: ee56c760d8ae1250d06532fa67c6a24273614924b0d3b6129bc112050b2016f96aaa439f84a4a370f39615e280e888466471eaf7624a304da42ff197d555f844
+  checksum: 96c9631e7d0f7f67b22a96e681b888b48b876dd9d2408d5247ef8cd2d6fcb52b15ab460b0876253b01fca9d78d5c2aa4de83cd9a5f54cba6ff23885ca2f56d1b
   languageName: node
   linkType: hard
 
-"scheduler@npm:^0.23.0":
-  version: 0.23.0
-  resolution: "scheduler@npm:0.23.0"
+"scheduler@npm:0.24.0-next-fecc288b7-20221025":
+  version: 0.24.0-next-fecc288b7-20221025
+  resolution: "scheduler@npm:0.24.0-next-fecc288b7-20221025"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: d79192eeaa12abef860c195ea45d37cbf2bbf5f66e3c4dcd16f54a7da53b17788a70d109ee3d3dde1a0fd50e6a8fc171f4300356c5aee4fc0171de526bf35f8a
+  checksum: c51ecea03ce23c2cb27bfd6c0bb350722a6d7d9d692e43d195f0397fe29ce19f87e9f1a58939eab89b2535f1b87f45c52b898f3cfe2b5eeb1c78a6a97d53c117
   languageName: node
   linkType: hard
 
