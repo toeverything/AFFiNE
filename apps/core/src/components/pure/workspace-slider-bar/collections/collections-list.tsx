@@ -257,6 +257,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
     () => savedCollections.filter(v => v.pinned),
     [savedCollections]
   );
+  const t = useAFFiNEI18N();
   if (pinedCollections.length === 0) {
     return (
       <MenuItem
@@ -264,7 +265,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
         icon={<InformationIcon />}
         disabled
       >
-        <span>Create a collection</span>
+        <span>{t['Create a collection']()}</span>
       </MenuItem>
     );
   }

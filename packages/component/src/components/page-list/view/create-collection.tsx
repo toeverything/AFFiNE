@@ -219,7 +219,7 @@ export const EditCollection = ({
             minHeight: '200px',
           }}
         >
-          <div className={styles.filterTitle}>Filters</div>
+          <div className={styles.filterTitle}>{t['Filters']()}</div>
           <FilterList
             propertiesMeta={propertiesMeta}
             value={value.filterList}
@@ -251,7 +251,7 @@ export const EditCollection = ({
         <div style={{ marginTop: 20 }}>
           <Input
             data-testid="input-collection-title"
-            placeholder="Untitled Collection"
+            placeholder={t['Untitled Collection']()}
             defaultValue={value.name}
             onChange={text =>
               onChange({
@@ -316,7 +316,7 @@ export const SaveCollectionButton = ({
         size="large"
         style={{ padding: '7px 8px' }}
       >
-        Save As Collection
+        {t['Save As New Collection']()}
       </Button>
       <EditCollectionModel
         title={t['Save As New Collection']()}
