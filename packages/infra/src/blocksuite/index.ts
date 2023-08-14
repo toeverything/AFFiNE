@@ -67,18 +67,18 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
   };
   workspace.meta.setProperties(prototypes);
   const pageMetas = {
-    'F1SX6cgNxy-hello-world': {
-      createDate: 1691548220794,
-      tags: [],
-      jumpOnce: true,
-      updatedDate: 1691676775642,
-      favorite: false,
-    },
-    gc5FeppNDv: {
+    'gc5FeppNDv-hello-world': {
       createDate: 1691548231530,
       tags: ['ZHBa2NtdSo', 'QYFD_HeQc-', 'wg-fBtd2eI'],
       updatedDate: 1691676331623,
       favorite: true,
+      jumpOnce: true,
+    },
+    F1SX6cgNxy: {
+      createDate: 1691548220794,
+      tags: [],
+      updatedDate: 1691676775642,
+      favorite: false,
     },
     '3R9X-gMh3m': {
       createDate: 1691551731225,
@@ -137,8 +137,11 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
     },
   } satisfies Record<string, Partial<PageMeta>>;
   const data = [
-    ['F1SX6cgNxy-hello-world', import('@affine/templates/v1/preloading.json')],
-    ['gc5FeppNDv', import('@affine/templates/v1/getting-started.json')],
+    [
+      'gc5FeppNDv-hello-world',
+      import('@affine/templates/v1/getting-started.json'),
+    ],
+    ['F1SX6cgNxy', import('@affine/templates/v1/preloading.json')],
     ['3R9X-gMh3m', import('@affine/templates/v1/template-galleries.json')],
     ['z_v6LOqNpp', import('@affine/templates/v1/personal-home.json')],
     ['0N0WzwmtK_', import('@affine/templates/v1/working-home.json')],
