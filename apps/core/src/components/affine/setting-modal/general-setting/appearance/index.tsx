@@ -35,10 +35,10 @@ export const ThemeSettings = () => {
       <RadioButton value="system" data-testid="system-theme-trigger">
         {t['system']()}
       </RadioButton>
-      <RadioButton bold={true} value="light" data-testid="light-theme-trigger">
+      <RadioButton value="light" data-testid="light-theme-trigger">
         {t['light']()}
       </RadioButton>
-      <RadioButton bold={true} value="dark" data-testid="dark-theme-trigger">
+      <RadioButton value="dark" data-testid="dark-theme-trigger">
         {t['dark']()}
       </RadioButton>
     </RadioButtonGroup>
@@ -63,7 +63,6 @@ const FontFamilySettings = () => {
         return (
           <RadioButton
             key={key}
-            bold={true}
             value={key}
             data-testid="system-font-style-trigger"
             style={{

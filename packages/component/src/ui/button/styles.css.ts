@@ -55,6 +55,11 @@ export const dropdownIcon = style({
 
 export const radioButton = style({
   flexGrow: 1,
+  selectors: {
+    '&:not(:last-of-type)': {
+      marginRight: '4px',
+    },
+  },
 });
 export const radioButtonContent = style({
   fontSize: 'var(--affine-font-xs)',
@@ -67,6 +72,7 @@ export const radioButtonContent = style({
   whiteSpace: 'nowrap',
   userSelect: 'none',
   fontWeight: 600,
+
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
