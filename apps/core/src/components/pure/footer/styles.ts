@@ -1,10 +1,4 @@
-import {
-  displayFlex,
-  displayInlineFlex,
-  styled,
-  textEllipsis,
-} from '@affine/component';
-import { Button } from '@toeverything/components/button';
+import { displayFlex, styled, textEllipsis } from '@affine/component';
 export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
@@ -114,23 +108,5 @@ export const StyledModalHeader = styled('div')(() => {
     borderRadius: '24px 24px 0 0',
     padding: '0 40px',
     ...displayFlex('space-between', 'center'),
-  };
-});
-
-export const StyledSignInButton = styled(Button)(() => {
-  return {
-    fontWeight: 600,
-    paddingLeft: 0,
-    '.circle': {
-      width: '40px',
-      height: '40px',
-      borderRadius: '20px',
-      backgroundColor: 'var(--affine-hover-color)',
-      color: 'var(--affine-primary-color)',
-      fontSize: '24px',
-      flexShrink: 0,
-      marginRight: '16px',
-      ...displayInlineFlex('center', 'center'),
-    },
   };
 });

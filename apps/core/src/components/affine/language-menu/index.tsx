@@ -1,4 +1,10 @@
-import { Menu, MenuItem, MenuTrigger, styled } from '@affine/component';
+import {
+  Menu,
+  MenuItem,
+  type MenuProps,
+  MenuTrigger,
+  styled,
+} from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
 import type { ButtonProps } from '@toeverything/components/button';
@@ -46,11 +52,14 @@ const LanguageMenuContent = ({ currentLanguage }: LanguageMenuContentProps) => {
   );
 };
 
-interface LanguageMenuProps {
+interface LanguageMenuProps extends Omit<MenuProps, 'children'> {
   triggerProps?: ButtonProps;
 }
 
-export const LanguageMenu = ({ triggerProps }: LanguageMenuProps) => {
+export const LanguageMenu = ({
+  triggerProps,
+  ...menuProps
+}: LanguageMenuProps) => {
   const i18n = useI18N();
 
   const currentLanguage = LOCALES.find(item => item.tag === i18n.language);
@@ -67,6 +76,7 @@ export const LanguageMenu = ({ triggerProps }: LanguageMenuProps) => {
       placement="bottom-end"
       trigger="click"
       disablePortal={true}
+      {...menuProps}
     >
       <MenuTrigger
         data-testid="language-menu-button"

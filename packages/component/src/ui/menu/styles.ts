@@ -13,6 +13,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer, {
   return {
     width,
     height,
+    minWidth: '200px',
     background: 'var(--affine-white)',
     padding: '8px 4px',
     fontSize: '14px',
@@ -63,7 +64,7 @@ export const StyledMenuItem = styled('button')<{
     width: '100%',
     borderRadius: '5px',
     padding: '0 14px',
-    fontSize: 'var(--affine-font-base)',
+    fontSize: 'var(--affine-font-sm)',
     height: '32px',
     ...displayFlex('flex-start', 'center'),
     cursor: isDir ? 'pointer' : '',

@@ -14,7 +14,7 @@ export const switchStyle = style({
   position: 'relative',
   width: '46px',
   height: '26px',
-  background: 'var(--affine-toggle-disable-background-color)',
+  background: 'var(--affine-icon-color)',
   borderRadius: '37px',
   transition: '200ms all',
   border: '1px solid var(--affine-black-10)',
