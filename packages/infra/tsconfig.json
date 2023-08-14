@@ -1,15 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["./src"],
+  "exclude": ["**/__tests__"],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
     "moduleResolution": "Node16",
     "outDir": "lib"
-  },
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+  }
 }

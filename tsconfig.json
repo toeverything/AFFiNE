@@ -104,7 +104,7 @@
     },
     // Top level packages
     {
-      "path": "./packages/infra"
+      "path": "./packages/infra/tsconfig.node.json"
     },
     {
       "path": "./packages/graphql"

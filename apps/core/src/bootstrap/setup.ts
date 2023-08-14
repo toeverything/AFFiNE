@@ -1,7 +1,3 @@
-import {
-  migrateDatabaseBlockTo3,
-  migrateToSubdoc,
-} from '@affine/env/blocksuite';
 import { setupGlobal } from '@affine/env/global';
 import type {
   LocalIndexedDBDownloadProvider,
@@ -22,6 +18,10 @@ import {
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
 import { rootStore } from '@toeverything/infra/atom';
+import {
+  migrateDatabaseBlockTo3,
+  migrateToSubdoc,
+} from '@toeverything/infra/blocksuite';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 

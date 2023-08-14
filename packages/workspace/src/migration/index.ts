@@ -1,9 +1,9 @@
-import { migrateToSubdoc } from '@affine/env/blocksuite';
 import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { nanoid, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
+import { migrateToSubdoc } from '@toeverything/infra/blocksuite';
 const Y = Workspace.Y;
 
 export function upgradeV1ToV2(oldWorkspace: LocalWorkspace): LocalWorkspace {
