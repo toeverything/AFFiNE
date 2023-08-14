@@ -1,5 +1,6 @@
 import type { Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { IconButton } from '@toeverything/components/button';
@@ -18,6 +19,7 @@ export const FilterList = ({
   onChange: (value: Filter[]) => void;
   propertiesMeta: PropertiesMeta;
 }) => {
+  const t = useAFFiNEI18N();
   return (
     <div
       style={{
@@ -66,7 +68,7 @@ export const FilterList = ({
             iconPosition="end"
             style={{ fontSize: 'var(--affine-font-xs)', padding: '0 8px' }}
           >
-            Add Filters
+            {t['Add Filter']()}
           </Button>
         ) : (
           <IconButton size="small">

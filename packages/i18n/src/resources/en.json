@@ -420,5 +420,9 @@
   "system": "System",
   "upgradeBrowser": "Please upgrade to the latest version of Chrome for the best experience.",
   "will be moved to Trash": "{{title}} will be moved to Trash",
-  "will delete member": "will delete member"
+  "will delete member": "will delete member",
+  "Create a collection": "Create a collection",
+  "Filters": "Filters",
+  "Untitled Collection": "Untitled Collection",
+  "Add Filter": "Add Filter"
 }
