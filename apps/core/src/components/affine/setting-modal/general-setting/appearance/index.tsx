@@ -113,7 +113,15 @@ export const AppearanceSettings = () => {
           desc={t['Select the language for the interface.']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu />
+            <LanguageMenu
+              triggerContainerStyle={{ width: '100%' }}
+              triggerProps={{
+                style: {
+                  width: '100%',
+                  justifyContent: 'space-between',
+                },
+              }}
+            />
           </div>
         </SettingRow>
         {environment.isDesktop ? (
