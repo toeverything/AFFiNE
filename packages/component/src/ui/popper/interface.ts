@@ -60,4 +60,5 @@ export type PopperProps = {
   popperHandlerRef?: Ref<PopperHandler>;
 
   onClickAway?: () => void;
+  triggerContainerStyle?: CSSProperties;
 } & Omit<PopperUnstyledProps, 'open' | 'content'>;

@@ -6,7 +6,7 @@ export const MenuTrigger = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ children, ...props }, ref) => {
     return (
       <Button
-        type="plain"
+        // type="plain"
         ref={ref}
         icon={<ArrowDownSmallIcon />}
         iconPosition="end"
