@@ -182,7 +182,7 @@ See [docs/contributing/tutorial.md](./docs/contributing/tutorial.md) for details
 
 See [LICENSE] for details.
 
-[all-contributors-badge]: https://img.shields.io/github/all-contributors/toeverything/AFFiNE/master?color=orange
+[all-contributors-badge]: https://img.shields.io/github/contributors/toeverything/AFFiNE
 [license]: ./LICENSE
 [building.md]: ./docs/BUILDING.md
 [update page]: https://affine.pro/blog?tag=Release%20Note
