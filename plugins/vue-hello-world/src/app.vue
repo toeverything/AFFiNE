@@ -10,4 +10,8 @@ const count = ref(0);
   </el-button>
 </template>
 
-<style scoped></style>
+<style scoped>
+.el-button {
+  font-size: 30px;
+}
+</style>
