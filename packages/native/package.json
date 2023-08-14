@@ -18,7 +18,7 @@
   },
   "license": "MPL-2.0",
   "devDependencies": {
-    "@napi-rs/cli": "^2.16.2",
+    "@napi-rs/cli": "^3.0.0-alpha.5",
     "@types/node": "^18.17.4",
     "@types/uuid": "^9.0.2",
     "cross-env": "^7.0.3",

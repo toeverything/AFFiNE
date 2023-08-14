@@ -543,7 +543,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/native@workspace:packages/native"
   dependencies:
-    "@napi-rs/cli": ^2.16.2
+    "@napi-rs/cli": ^3.0.0-alpha.5
     "@types/node": ^18.17.4
     "@types/uuid": ^9.0.2
     cross-env: ^7.0.3
@@ -6475,15 +6475,6 @@ __metadata:
   peerDependencies:
     react: ^17.0.0 || ^18.0.0
   checksum: b0084c55dc15c304e93832a23c567e41f2b152242dee3dc2578ce4b3d5177d604994abe1fd39b38a23d049592126a71ecf5ac9fe9f141155aeb4cce06241df92
-  languageName: node
-  linkType: hard
-
-"@napi-rs/cli@npm:^2.16.2":
-  version: 2.16.2
-  resolution: "@napi-rs/cli@npm:2.16.2"
-  bin:
-    napi: scripts/index.js
-  checksum: 98f2905fbc2dbd84417899b12917d1e3b7b02041f8f0ed90138eaf0461a883646c157bd6192c1f6bc8ced6f122b06186183b72d3833810c4df3d7904fe01fc6b
   languageName: node
   linkType: hard
 
