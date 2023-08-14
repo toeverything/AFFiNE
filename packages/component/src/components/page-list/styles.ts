@@ -5,6 +5,7 @@ import { TableBodyRow } from '../../ui/table/table-row';
 export const StyledTableContainer = styled('div')(({ theme }) => {
   return {
     height: '100%',
+    minHeight: '600px',
     padding: '0 32px 180px 32px',
     maxWidth: '100%',
     [theme.breakpoints.down('sm')]: {
