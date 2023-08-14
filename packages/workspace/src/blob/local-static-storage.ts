@@ -19,8 +19,9 @@ const predefinedStaticFiles = [
   '5Cfem_137WmzR35ZeIC76oTkq5SQt-eHlZwJiLy0hgU=',
 ];
 
-export const createStaticStorage = (): BlobStorage => {
+export const createStaticStorage = (): BlobStorage & { type: string } => {
   return {
+    type: 'Static',
     crud: {
       get: async (key: string) => {
         if (key.startsWith('/static/')) {
