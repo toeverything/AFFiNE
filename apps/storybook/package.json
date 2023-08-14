@@ -32,7 +32,7 @@
   "devDependencies": {
     "@blocksuite/block-std": "0.0.0-20230811201552-f37162ea-nightly",
     "@blocksuite/blocks": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/editor": "0.0.0-20230811201552-f37162ea-nightly",
+    "@blocksuite/editor": "0.7.0",
     "@blocksuite/global": "0.0.0-20230811201552-f37162ea-nightly",
     "@blocksuite/icons": "^2.1.31",
     "@blocksuite/lit": "0.0.0-20230811201552-f37162ea-nightly",
