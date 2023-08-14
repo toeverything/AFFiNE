@@ -18,7 +18,7 @@ export const BackButton: FC<ButtonProps> = props => {
       icon={<ArrowLeftSmallIcon />}
       {...props}
     >
-      {t['Back']()}
+      {t['Back Home']()}
     </Button>
   );
 };

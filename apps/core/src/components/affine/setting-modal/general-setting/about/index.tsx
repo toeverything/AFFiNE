@@ -58,7 +58,7 @@ export const AboutAffine = () => {
             </SettingRow>
             <SettingRow
               name={t[`Discover what's new`]()}
-              desc={t['View the AFFiNE Changelog.']()}
+              desc={t['Changelog description']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
                 window.open(runtimeConfig.changelogUrl, '_blank');
