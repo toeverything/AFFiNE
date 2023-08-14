@@ -13,7 +13,7 @@ import {
   useGeneralSettingList,
 } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
-import { settingContent, footerIconWrapper } from './style.css';
+import { footerIconWrapper, settingContent } from './style.css';
 import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
