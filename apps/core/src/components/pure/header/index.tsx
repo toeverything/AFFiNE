@@ -82,6 +82,10 @@ const useIsTinyScreen = ({
     });
 
     resizeObserver.observe(mainContainer);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [
     centerDom,
     isTinyScreen,
