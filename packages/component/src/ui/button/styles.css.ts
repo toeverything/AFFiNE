@@ -66,15 +66,13 @@ export const radioButtonContent = style({
   filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
   whiteSpace: 'nowrap',
   userSelect: 'none',
+  fontWeight: 600,
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
     },
     '&[data-state="checked"]': {
       background: 'var(--affine-white)',
-    },
-    '&.bold': {
-      fontWeight: 600,
     },
   },
 });

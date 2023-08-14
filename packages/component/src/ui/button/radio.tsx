@@ -18,12 +18,8 @@ export const RadioButton = forwardRef<
       {...props}
       className={clsx(styles.radioButton, className)}
     >
-      <span className={clsx(styles.radioUncheckedButton, { bold })}>
-        {children}
-      </span>
-      <RadioGroup.Indicator
-        className={clsx(styles.radioButtonContent, { bold })}
-      >
+      <span className={styles.radioUncheckedButton}>{children}</span>
+      <RadioGroup.Indicator className={styles.radioButtonContent}>
         {children}
       </RadioGroup.Indicator>
     </RadioGroup.Item>
@@ -41,7 +37,7 @@ export const RadioButtonGroup = forwardRef<
       className={clsx(styles.radioButtonGroup, className)}
       style={{ width, ...style }}
       {...props}
-    ></RadioGroup.Root>
+    />
   );
 });
 RadioButtonGroup.displayName = 'RadioButtonGroup';
