@@ -74,6 +74,7 @@ export const headerSideContainer = style({
     },
     '&.block': {
       display: 'block',
+      paddingBottom: '10px',
     },
   },
 });
