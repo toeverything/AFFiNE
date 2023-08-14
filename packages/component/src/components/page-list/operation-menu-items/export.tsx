@@ -233,7 +233,7 @@ export const Export = ({
   return (
     <Menu
       width={248}
-      trigger="click"
+      trigger="hover"
       placement="right-start"
       content={
         <>

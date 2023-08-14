@@ -13,6 +13,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer, {
   return {
     width,
     height,
+    minWidth: '200px',
     background: 'var(--affine-white)',
     padding: '8px 4px',
     fontSize: '14px',
