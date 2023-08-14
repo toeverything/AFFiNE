@@ -119,6 +119,8 @@ export const AppearanceSettings = () => {
                 style: {
                   width: '100%',
                   justifyContent: 'space-between',
+                  fontWeight: 600,
+                  padding: '0 10px',
                 },
               }}
             />
