@@ -48,6 +48,7 @@ export const headerCenter = style({
   height: '52px',
   flexShrink: 0,
   maxWidth: '60%',
+  minWidth: '300px',
   position: 'absolute',
   transform: 'translateX(-50%)',
   left: '50%',
@@ -55,9 +56,6 @@ export const headerCenter = style({
   selectors: {
     '&.is-window': {
       maxWidth: '50%',
-    },
-    '&.is-window.has-min-width': {
-      minWidth: '400px',
     },
     '&.shadow': {
       position: 'static',
@@ -83,6 +81,8 @@ export const headerSideContainer = style({
 export const windowAppControlsWrapper = style({
   display: 'flex',
   marginLeft: '20px',
+  // header padding right
+  transform: 'translateX(16px)',
 });
 
 export const windowAppControl = style({
@@ -98,7 +98,6 @@ export const windowAppControl = style({
     '&[data-type="close"]': {
       width: '56px',
       paddingRight: '5px',
-      marginRight: '-12px',
     },
     '&[data-type="close"]:hover': {
       background: 'var(--affine-windows-close-button)',
