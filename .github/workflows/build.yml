@@ -126,6 +126,10 @@ jobs:
       - run: yarn nx build @affine/storybook
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - run: yarn chromatic
+        working-directory: apps/storybook
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
       - name: Upload storybook artifact
         uses: actions/upload-artifact@v3
         with:

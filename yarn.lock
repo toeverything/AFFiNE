@@ -702,6 +702,7 @@ __metadata:
     "@storybook/test-runner": ^0.13.0
     "@storybook/testing-library": ^0.2.0
     "@vitejs/plugin-react": ^4.0.4
+    chromatic: ^6.22.0
     concurrently: ^8.2.0
     jest-mock: ^29.6.2
     react: 18.2.0
@@ -15386,6 +15387,17 @@ __metadata:
   version: 2.0.0
   resolution: "chownr@npm:2.0.0"
   checksum: c57cf9dd0791e2f18a5ee9c1a299ae6e801ff58fee96dc8bfd0dcb4738a6ce58dd252a3605b1c93c6418fe4f9d5093b28ffbf4d66648cb2a9c67eaef9679be2f
+  languageName: node
+  linkType: hard
+
+"chromatic@npm:^6.22.0":
+  version: 6.22.0
+  resolution: "chromatic@npm:6.22.0"
+  bin:
+    chroma: dist/bin.js
+    chromatic: dist/bin.js
+    chromatic-cli: dist/bin.js
+  checksum: 8d28d0e4c8a0093bd3a77545257fb99868763d4abb70e895b66ff0811840c97512926ae3def3e5c5317c9e91b84d14d4b84f6ac7dc1fd88304143834158bca85
   languageName: node
   linkType: hard
 
