@@ -4015,6 +4015,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/global@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@blocksuite/global@npm:0.6.0"
+  dependencies:
+    ansi-colors: ^4.1.3
+    zod: ^3.21.4
+  peerDependencies:
+    lit: ^2.7
+  peerDependenciesMeta:
+    lit:
+      optional: true
+  checksum: d3f73e7061694537f6dff548d3a9954507bb73e8b3516025ddee7ef0e07685683fd711cf620d2482a484d6d8f3208a4c9879e50f2cf16df3ddab543d19aafaad
+  languageName: node
+  linkType: hard
+
 "@blocksuite/icons@npm:^2.1.30":
   version: 2.1.30
   resolution: "@blocksuite/icons@npm:2.1.30"
@@ -4085,6 +4100,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/store@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@blocksuite/store@npm:0.6.0"
+  dependencies:
+    "@blocksuite/global": 0.6.0
+    "@blocksuite/virgo": 0.6.0
+    "@types/flexsearch": ^0.7.3
+    buffer: ^6.0.3
+    flexsearch: 0.7.21
+    idb-keyval: ^6.2.0
+    ky: ^0.33.3
+    lib0: ^0.2.74
+    merge: ^2.1.1
+    minimatch: ^9.0.0
+    nanoid: ^4.0.1
+    y-protocols: ^1.0.5
+    y-webrtc: ^10.2.5
+    zod: ^3.21.4
+  peerDependencies:
+    yjs: ^13
+  checksum: e7d92e4700f466075e8c5ade82398b899030df583cd3ed1d5b82dfbeb12acc913061bbb54bafe50a3f8547e9a4046f02512d73f4e1dd6de5c819fa55144945f9
+  languageName: node
+  linkType: hard
+
 "@blocksuite/virgo@npm:0.0.0-20230811080927-c830f4d4-nightly":
   version: 0.0.0-20230811080927-c830f4d4-nightly
   resolution: "@blocksuite/virgo@npm:0.0.0-20230811080927-c830f4d4-nightly"
@@ -4095,6 +4134,19 @@ __metadata:
     lit: ^2.7
     yjs: ^13
   checksum: e90346dd1f7cbbac64266df779c3d3c31e95b38f3814965951caf1b9a8e38f1316a89cef50f7759e3085a84a449777f04279bc0500b0bb23669ca1d14d7dadcb
+  languageName: node
+  linkType: hard
+
+"@blocksuite/virgo@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@blocksuite/virgo@npm:0.6.0"
+  dependencies:
+    "@blocksuite/global": 0.6.0
+    zod: ^3.21.4
+  peerDependencies:
+    lit: ^2.7
+    yjs: ^13
+  checksum: 9beac7e75e462045e319cf959b2e6c727109874a4a7bf532f4bd41f7edec291a77fa87c6bba29feb530498d15ca81fa43a404e9d34defc364383f35801de8b81
   languageName: node
   linkType: hard
 
@@ -19415,6 +19467,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"doc-migration@workspace:packages/doc-migration":
+  version: 0.0.0-use.local
+  resolution: "doc-migration@workspace:packages/doc-migration"
+  dependencies:
+    "@affine/env": "workspace:*"
+    "@blocksuite/store": 0.6.0
+    "@types/fs-extra": ^11.0.1
+    fs-extra: ^11.1.1
+    nodemon: ^3.0.1
+    yjs: ^13.6.7
+  languageName: unknown
+  linkType: soft
+
 "doctrine@npm:^2.1.0":
   version: 2.1.0
   resolution: "doctrine@npm:2.1.0"
@@ -20032,6 +20097,13 @@ __metadata:
   version: 2.0.3
   resolution: "err-code@npm:2.0.3"
   checksum: 8b7b1be20d2de12d2255c0bc2ca638b7af5171142693299416e6a9339bd7d88fc8d7707d913d78e0993176005405a236b066b45666b27b797252c771156ace54
+  languageName: node
+  linkType: hard
+
+"err-code@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "err-code@npm:3.0.1"
+  checksum: aede1f1d5ebe6d6b30b5e3175e3cc13e67de2e2e1ad99ce4917e957d7b59e8451ed10ee37dbc6493521920a47082c479b9097e5c39438d4aff4cc84438568a5a
   languageName: node
   linkType: hard
 
@@ -22203,6 +22275,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"get-browser-rtc@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "get-browser-rtc@npm:1.1.0"
+  checksum: 90dd17ca3ba2a61aaa57b7497efea49afa718b5d048cac155a7f84ac850c921006946893e6a5d981c66c5ca69d19f6aadc5c773ffdf2e860896781a8e7e0a2e0
+  languageName: node
+  linkType: hard
+
 "get-caller-file@npm:^2.0.1, get-caller-file@npm:^2.0.5":
   version: 2.0.5
   resolution: "get-caller-file@npm:2.0.5"
@@ -23489,7 +23568,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"idb-keyval@npm:^6.2.1":
+"idb-keyval@npm:^6.2.0, idb-keyval@npm:^6.2.1":
   version: 6.2.1
   resolution: "idb-keyval@npm:6.2.1"
   checksum: 7c0836f832096086e99258167740181132a71dd2694c8b8454a4f5ec69114ba6d70983115153306f0b6de1c8d3bad04f67eed3dff8f50c96815b9985d6d78470
@@ -27610,7 +27689,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^4.0.2":
+"nanoid@npm:^4.0.1, nanoid@npm:^4.0.2":
   version: 4.0.2
   resolution: "nanoid@npm:4.0.2"
   bin:
@@ -30247,7 +30326,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"queue-microtask@npm:^1.2.2":
+"queue-microtask@npm:^1.2.2, queue-microtask@npm:^1.2.3":
   version: 1.2.3
   resolution: "queue-microtask@npm:1.2.3"
   checksum: b676f8c040cdc5b12723ad2f91414d267605b26419d5c821ff03befa817ddd10e238d22b25d604920340fd73efd8ba795465a0377c4adf45a4a41e4234e42dc4
@@ -32223,6 +32302,21 @@ __metadata:
     "@kwsites/promise-deferred": ^1.1.1
     debug: ^4.3.4
   checksum: ab7c6901130eadd5758c5f1b0d957573b13cd981549cb5853e757cf13f8cb53b79a50e1acde8eaceba88da814d252f90cf7feab9bd67c64db903250adc51b02f
+  languageName: node
+  linkType: hard
+
+"simple-peer@npm:^9.11.0":
+  version: 9.11.1
+  resolution: "simple-peer@npm:9.11.1"
+  dependencies:
+    buffer: ^6.0.3
+    debug: ^4.3.2
+    err-code: ^3.0.1
+    get-browser-rtc: ^1.1.0
+    queue-microtask: ^1.2.3
+    randombytes: ^2.1.0
+    readable-stream: ^3.6.0
+  checksum: 1d9950851f86ff827cfd6646620503143b840c751eb6bfffffbee6e69ebc065dd5b7cfa629010f9a3e1a98312549a6411ef15ce3652a523c8cc042052192fa55
   languageName: node
   linkType: hard
 
@@ -35909,7 +36003,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^5.2.0 || ^6.0.0 || ^7.0.0":
+"ws@npm:^5.2.0 || ^6.0.0 || ^7.0.0, ws@npm:^7.2.0":
   version: 7.5.9
   resolution: "ws@npm:7.5.9"
   peerDependencies:
@@ -36035,6 +36129,23 @@ __metadata:
   dependencies:
     lib0: ^0.2.42
   checksum: d19404a4ebafcf3761c28b881abe8c32ab6e457db0e5ffc7dbb749cbc2c3bb98e003a43f3e8eba7f245b2698c76f2c4cdd1c2db869f8ec0c6ef94736d9a88652
+  languageName: node
+  linkType: hard
+
+"y-webrtc@npm:^10.2.5":
+  version: 10.2.5
+  resolution: "y-webrtc@npm:10.2.5"
+  dependencies:
+    lib0: ^0.2.42
+    simple-peer: ^9.11.0
+    ws: ^7.2.0
+    y-protocols: ^1.0.5
+  dependenciesMeta:
+    ws:
+      optional: true
+  bin:
+    y-webrtc-signaling: bin/server.js
+  checksum: 9ad2662082fccd448d4b986bb1be875a79f17f414921eeac440945a443be8e4bf739ad284e8767db97e6d3a59d13e81f7daed1374cf21db53d52364b8bf4bcbb
   languageName: node
   linkType: hard
 
