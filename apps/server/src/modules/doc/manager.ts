@@ -5,7 +5,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import * as Y from 'yjs';
+import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
@@ -13,13 +13,13 @@ import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
 
 function yjsMergeUpdates(updates: Buffer[]): Buffer {
-  const doc = new Y.Doc();
+  const doc = new Doc();
 
   updates.forEach(update => {
-    Y.applyUpdate(doc, update);
+    applyUpdate(doc, update);
   });
 
-  return Buffer.from(Y.encodeStateAsUpdate(doc));
+  return Buffer.from(encodeStateAsUpdate(doc));
 }
 
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
@@ -31,10 +31,10 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
     return false;
   }
 
-  const doc = new Y.Doc();
-  Y.applyUpdate(doc, jwstBinary);
+  const doc = new Doc();
+  applyUpdate(doc, jwstBinary);
 
-  const yBinary2 = Buffer.from(Y.encodeStateAsUpdate(doc));
+  const yBinary2 = Buffer.from(encodeStateAsUpdate(doc));
 
   return compare(yBinary, yBinary2, true);
 }

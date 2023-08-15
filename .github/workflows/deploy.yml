@@ -72,6 +72,8 @@ jobs:
         with:
           target: 'x86_64-unknown-linux-gnu'
       - name: Build Storage
+        env:
+          RUSTFLAGS: '-C debuginfo=1'
         run: yarn build:storage
       - name: Upload storage.node
         uses: actions/upload-artifact@v3
