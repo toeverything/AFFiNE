@@ -4,8 +4,7 @@
   "scripts": {
     "dev": "storybook dev -p 6006",
     "build": "storybook build",
-    "test": "test-storybook",
-    "chromatic": "npx chromatic --build-script-name build --only-story-names Preview/Core"
+    "test": "test-storybook"
   },
   "dependencies": {
     "@affine/component": "workspace:*",

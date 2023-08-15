@@ -147,10 +147,13 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-      - run: yarn chromatic
-        working-directory: apps/storybook
-        env:
-          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+      - name: Publish to Chromatic
+        uses: chromaui/action@v1
+        with:
+          workingDir: apps/storybook
+          buildScriptName: build
+          onlyStoryNames: Preview/Core
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
 
   build-core:
     name: Build @affine/core
