@@ -1,6 +1,19 @@
 import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { createStore, WritableAtom } from 'jotai/vanilla';
 
-export async function buildShowcaseWorkspace(workspace: Workspace) {
+export async function buildShowcaseWorkspace(
+  workspace: Workspace,
+  options: {
+    atoms: {
+      pageMode: WritableAtom<
+        undefined,
+        [pageId: string, mode: 'page' | 'edgeless'],
+        void
+      >;
+    };
+    store: ReturnType<typeof createStore>;
+  }
+) {
   const showcaseWorkspaceVersions = {
     'affine:code': 1,
     'affine:paragraph': 1,
@@ -66,6 +79,11 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
     },
   };
   workspace.meta.setProperties(prototypes);
+  const { store, atoms } = options;
+  ['F1SX6cgNxy', 'nQd2Bdvoqz'].forEach(pageId => {
+    store.set(atoms.pageMode, pageId, 'edgeless');
+  });
+
   const pageMetas = {
     'gc5FeppNDv-hello-world': {
       createDate: 1691548231530,
