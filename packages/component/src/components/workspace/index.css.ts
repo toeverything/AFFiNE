@@ -4,7 +4,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 import { breakpoints } from '../../styles/mui-theme';
 export const appStyle = style({
-  width: '99%',
+  width: '100%',
   position: 'relative',
   height: '100vh',
   transition: 'background-color .5s',
