@@ -94,7 +94,7 @@ export type DBHandlers = {
   getDocAsUpdates: (
     workspaceId: string,
     subdocId?: string
-  ) => Promise<Uint8Array>;
+  ) => Promise<Uint8Array | false>;
   applyDocUpdate: (
     id: string,
     update: Uint8Array,
@@ -164,7 +164,7 @@ export type DialogHandlers = {
     dbFileLocation?: string
   ) => Promise<MoveDBFileResult>;
   selectDBFileLocation: () => Promise<SelectDBFileLocationResult>;
-  setFakeDialogResult: (result: any) => Promise<FakeDialogResult>;
+  setFakeDialogResult: (result: any) => Promise<void>;
 };
 
 export type UIHandlers = {
@@ -204,6 +204,16 @@ export type EventMap = DBHandlers &
   ExportHandlers &
   UpdaterHandlers &
   WorkspaceHandlers;
+
+export type WrapHandlerToServerSide<
+  Handlers extends Record<string, PrimitiveHandlers>,
+> = {
+  [K in keyof Handlers]: Handlers[K] extends (
+    ...args: infer Args
+  ) => Promise<infer R>
+    ? (event: Electron.IpcMainInvokeEvent, ...args: Args) => Promise<R>
+    : never;
+};
 
 export type UnwrapManagerHandlerToServerSide<
   ElectronEvent extends {
