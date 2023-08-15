@@ -50,7 +50,5 @@
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
   },
-  "version": "0.8.0-canary.22",
-  "readme": "ERROR: No README data found!",
-  "_id": "@affine/storybook@0.8.0-canary.22"
+  "version": "0.8.0-canary.22"
 }
