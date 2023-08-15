@@ -284,25 +284,16 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Click \""
+          "insert": "Click the drop-down menu"
         },
         {
-          "insert": "⋮\" on the top right ",
+          "insert": " \"v\" next to the title for more advanced options",
           "attributes": {
             "bold": true
           }
         },
         {
-          "insert": "to easily "
-        },
-        {
-          "insert": "export your work ",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": "in PDF/HTML/Markdown/PDF format. "
+          "insert": ", such as the ability to one-click export your work into PDF/HTML/Markdown formats."
         }
       ],
       "prop:checked": false
