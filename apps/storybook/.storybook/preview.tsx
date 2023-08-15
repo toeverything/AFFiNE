@@ -1,12 +1,17 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
+import '@toeverything/components/style.css';
 import { LOCALES, createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { setupGlobal } from '@affine/env/global';
 import type { ComponentType } from 'react';
 import { useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
+import { setup } from '@affine/core/bootstrap/setup';
+import { AffineContext } from '@affine/component/context';
+import { use } from 'foxact/use';
 
+const setupPromise = setup();
 setupGlobal();
 
 export const parameters = {
@@ -59,10 +64,13 @@ const Component = () => {
 
 export const decorators = [
   (Story: ComponentType) => {
+    use(setupPromise);
     return (
       <ThemeProvider>
-        <Component />
-        <Story />
+        <AffineContext>
+          <Component />
+          <Story />
+        </AffineContext>
       </ThemeProvider>
     );
   },
