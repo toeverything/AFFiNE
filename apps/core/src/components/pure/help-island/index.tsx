@@ -60,7 +60,11 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t["Discover what's new!"]()} placement="left-end">
+            <Tooltip
+              content={t["Discover what's new!"]()}
+              placement="left-end"
+              showArrow={true}
+            >
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
@@ -72,7 +76,11 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('contact') && (
-            <Tooltip content={t['Contact Us']()} placement="left-end">
+            <Tooltip
+              content={t['Contact Us']()}
+              placement="left-end"
+              showArrow={true}
+            >
               <StyledIconWrapper
                 data-testid="right-bottom-contact-us-icon"
                 onClick={openAbout}
@@ -82,7 +90,11 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('shortcuts') && (
-            <Tooltip content={t['Keyboard Shortcuts']()} placement="left-end">
+            <Tooltip
+              content={t['Keyboard Shortcuts']()}
+              placement="left-end"
+              showArrow={true}
+            >
               <StyledIconWrapper
                 data-testid="shortcuts-icon"
                 onClick={() => {
@@ -98,6 +110,7 @@ export const HelpIsland = ({
             <Tooltip
               content={t['com.affine.helpIsland.gettingStarted']()}
               placement="left-end"
+              showArrow={true}
             >
               <StyledIconWrapper
                 data-testid="easy-guide"
@@ -112,7 +125,11 @@ export const HelpIsland = ({
           )}
         </StyledAnimateWrapper>
 
-        <Tooltip content={t['Help and Feedback']()} placement="left-end">
+        <Tooltip
+          content={t['Help and Feedback']()}
+          placement={'left-end'}
+          showArrow={true}
+        >
           <MuiFade in={!spread} data-testid="faq-icon">
             <StyledTriggerWrapper>
               <HelpIcon />
