@@ -119,9 +119,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          # This is required to fetch all branches for chromatic
-          fetch-depth: 0
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -129,16 +126,31 @@ jobs:
       - run: yarn nx build @affine/storybook
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - run: yarn chromatic
-        working-directory: apps/storybook
-        env:
-          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
       - name: Upload storybook artifact
         uses: actions/upload-artifact@v3
         with:
           name: storybook
           path: ./apps/storybook/storybook-static
           if-no-files-found: error
+
+  publish-storybook:
+    name: Publish Storybook
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # This is required to fetch all branches for chromatic
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - run: yarn chromatic --auto-accept-changes --exit-zero-on-changes
+        working-directory: apps/storybook
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
 
   build-core:
     name: Build @affine/core
