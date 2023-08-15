@@ -113,6 +113,7 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
   swr: import('swr'),
   '@affine/component': import('@affine/component'),
   '@blocksuite/icons': import('@blocksuite/icons'),
+  '@blocksuite/blocks': import('@blocksuite/blocks'),
   '@affine/sdk/entry': {
     rootStore: rootStore,
     currentWorkspaceAtom: currentWorkspaceAtom,

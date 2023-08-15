@@ -1,16 +1,25 @@
 import type { PluginContext } from '@affine/sdk/entry';
+import { registerTOCComponents } from '@blocksuite/blocks';
 import { createElement } from 'react';
-import { lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 
-const HeaderItem = lazy(() =>
-  import('./app').then(({ HeaderItem }) => ({ default: HeaderItem }))
-);
+import { HeaderItem } from './app';
 
 export const entry = (context: PluginContext) => {
-  console.log('register');
-  console.log('hello, world!');
+  console.log('register outline');
+
   context.register('headerItem', div => {
+    registerTOCComponents(components => {
+      for (const compName in components) {
+        window.customElements.define(
+          compName,
+          components[compName as keyof typeof components]
+        );
+      }
+    });
+
+    div.style.height = '100%';
+
     const root = createRoot(div);
     root.render(
       createElement(

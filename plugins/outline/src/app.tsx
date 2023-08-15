@@ -1,17 +1,50 @@
 import { Tooltip } from '@affine/component';
 import { deleteLayoutAtom, pushLayoutAtom } from '@affine/sdk/entry';
-import { AlignTopIcon } from '@blocksuite/icons';
+import { TOCNotesPanel } from '@blocksuite/blocks';
+import { RightSidebarIcon } from '@blocksuite/icons';
+import type { Page } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
-import { useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import type { ComponentType, PropsWithChildren } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { blocksuiteRootAtom } from './atom';
+
 const Outline = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const tocPanelRef = useRef<TOCNotesPanel | null>(null);
+  const [blocksuite] = useAtom(blocksuiteRootAtom);
+
+  if (!tocPanelRef.current) {
+    tocPanelRef.current = new TOCNotesPanel();
+  }
+
+  if (blocksuite?.page !== tocPanelRef.current?.page) {
+    (tocPanelRef.current as TOCNotesPanel).page = blocksuite?.page as Page;
+  }
+
+  useEffect(() => {
+    if (!ref.current || !tocPanelRef.current) return;
+
+    const container = ref.current;
+    const tocPanel = tocPanelRef.current as TOCNotesPanel;
+
+    container.appendChild(tocPanel);
+
+    return () => {
+      container.removeChild(tocPanel);
+    };
+  }, []);
+
   return (
-    <div>
-      <h1>Outline</h1>
-    </div>
+    <div
+      className={`outline-wrapper`}
+      style={{
+        height: '100%',
+      }}
+      ref={ref}
+    />
   );
 };
 
@@ -31,6 +64,9 @@ export const HeaderItem = ({
             setOpen(true);
             pushLayout('@affine/outline-plugin', div => {
               const root = createRoot(div);
+
+              div.style.height = '100%';
+
               root.render(
                 <Provider>
                   <Outline />
@@ -46,7 +82,7 @@ export const HeaderItem = ({
           }
         }, [Provider, deleteLayout, open, pushLayout])}
       >
-        <AlignTopIcon />
+        <RightSidebarIcon />
       </IconButton>
     </Tooltip>
   );
