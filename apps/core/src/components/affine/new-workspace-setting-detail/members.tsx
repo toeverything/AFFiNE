@@ -28,7 +28,7 @@ const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
   return (
     <Tooltip
-      content={t['com.affine.settings.workspace.member.local-tooltip']()}
+      content={t['com.affine.settings.member-tooltip']()}
       placement="top"
     >
       <div className={style.fakeWrapper}>
