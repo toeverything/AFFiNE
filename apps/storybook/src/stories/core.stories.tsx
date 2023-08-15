@@ -2,6 +2,7 @@ import { routes } from '@affine/core/router';
 import { expect } from '@storybook/jest';
 import type { StoryContext, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
+import { waitFor } from '@testing-library/react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,
@@ -38,11 +39,19 @@ export const SettingPage: StoryFn = () => {
   return <FakeApp />;
 };
 SettingPage.play = async ({ canvasElement }) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await waitFor(
+    () => {
+      expect(
+        canvasElement.querySelector('[data-testid="settings-modal-trigger"]')
+      ).not.toBeNull();
+    },
+    {
+      timeout: 5000,
+    }
+  );
   const settingModalBtn = canvasElement.querySelector(
     '[data-testid="settings-modal-trigger"]'
   ) as Element;
-  expect(settingModalBtn).not.toBeNull();
   await userEvent.click(settingModalBtn);
 };
 SettingPage.decorators = [withRouter, withCleanLocalStorage];
