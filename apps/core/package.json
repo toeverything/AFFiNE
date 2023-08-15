@@ -11,7 +11,8 @@
   "exports": {
     "./app": "./src/app.tsx",
     "./router": "./src/router.ts",
-    "./bootstrap/setup": "./src/bootstrap/setup.ts"
+    "./bootstrap/setup": "./src/bootstrap/setup.ts",
+    "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
