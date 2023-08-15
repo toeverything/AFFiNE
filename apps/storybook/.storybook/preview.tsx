@@ -1,13 +1,16 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
-import { LOCALES, createI18n } from '@affine/i18n';
+import '@toeverything/components/style.css';
+import { createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
-import { setupGlobal } from '@affine/env/global';
 import type { ComponentType } from 'react';
 import { useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
+import { setup } from '@affine/core/bootstrap/setup';
+import { AffineContext } from '@affine/component/context';
+import { use } from 'foxact/use';
 
-setupGlobal();
+const setupPromise = setup();
 
 export const parameters = {
   backgrounds: { disable: true },
@@ -16,22 +19,6 @@ export const parameters = {
     matchers: {
       color: /(background|color)$/i,
       date: /Date$/,
-    },
-  },
-};
-
-export const globalTypes = {
-  locale: {
-    name: 'Locale',
-    description: 'Internationalization locale',
-    defaultValue: 'en',
-    toolbar: {
-      icon: 'globe',
-      items: LOCALES.map(locale => ({
-        title: locale.originalName,
-        value: locale.tag,
-        right: locale.flagEmoji,
-      })),
     },
   },
 };
@@ -59,10 +46,13 @@ const Component = () => {
 
 export const decorators = [
   (Story: ComponentType) => {
+    use(setupPromise);
     return (
       <ThemeProvider>
-        <Component />
-        <Story />
+        <AffineContext>
+          <Component />
+          <Story />
+        </AffineContext>
       </ThemeProvider>
     );
   },

@@ -4,8 +4,7 @@
   "scripts": {
     "dev": "storybook dev -p 6006",
     "build": "storybook build",
-    "test": "test-storybook",
-    "chromatic": "npx chromatic --build-script-name build"
+    "test": "test-storybook"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -40,7 +39,8 @@
     "@blocksuite/store": "0.0.0-20230814155455-ceb5d5d8-nightly",
     "chromatic": "^6.22.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "storybook-addon-react-router-v6": "^2.0.4"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
