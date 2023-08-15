@@ -11,6 +11,8 @@ export const entry = (context: PluginContext) => {
   context.register('headerItem', div => {
     registerTOCComponents(components => {
       for (const compName in components) {
+        if (window.customElements.get(compName)) continue;
+
         window.customElements.define(
           compName,
           components[compName as keyof typeof components]

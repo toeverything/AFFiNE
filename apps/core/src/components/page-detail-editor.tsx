@@ -183,7 +183,12 @@ const LayoutPanel = memo(function LayoutPanel(
         }}
         direction={node.direction}
       >
-        <Panel defaultSize={node.splitPercentage}>
+        <Panel
+          defaultSize={node.splitPercentage}
+          style={{
+            maxWidth: node.maxWidth?.[0],
+          }}
+        >
           <Suspense>
             <LayoutPanel node={node.first} editorProps={props.editorProps} />
           </Suspense>
@@ -193,6 +198,7 @@ const LayoutPanel = memo(function LayoutPanel(
           defaultSize={100 - node.splitPercentage}
           style={{
             overflow: 'scroll',
+            maxWidth: node.maxWidth?.[1],
           }}
         >
           <Suspense>

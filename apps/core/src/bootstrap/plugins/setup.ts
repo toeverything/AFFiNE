@@ -36,9 +36,13 @@ const importLogger = new DebugLogger('plugins:import');
 const pushLayoutAtom = atom<
   null,
   // fixme: check plugin name here
-  [pluginName: string, create: (root: HTMLElement) => () => void],
+  [
+    pluginName: string,
+    create: (root: HTMLElement) => () => void,
+    options: { maxWidth: (number | undefined)[] } | undefined,
+  ],
   void
->(null, (_, set, pluginName, callback) => {
+>(null, (_, set, pluginName, callback, options) => {
   set(pluginWindowAtom, items => ({
     ...items,
     [pluginName]: callback,
@@ -50,6 +54,7 @@ const pushLayoutAtom = atom<
         first: 'editor',
         second: pluginName,
         splitPercentage: 70,
+        maxWidth: options?.maxWidth,
       };
     } else {
       return {

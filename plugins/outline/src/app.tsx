@@ -42,6 +42,7 @@ const Outline = () => {
       className={`outline-wrapper`}
       style={{
         height: '100%',
+        borderLeft: `1px solid var(--affine-border-color)`,
       }}
       ref={ref}
     />
@@ -62,20 +63,26 @@ export const HeaderItem = ({
         onClick={useCallback(() => {
           if (!open) {
             setOpen(true);
-            pushLayout('@affine/outline-plugin', div => {
-              const root = createRoot(div);
+            pushLayout(
+              '@affine/outline-plugin',
+              div => {
+                const root = createRoot(div);
 
-              div.style.height = '100%';
+                div.style.height = '100%';
 
-              root.render(
-                <Provider>
-                  <Outline />
-                </Provider>
-              );
-              return () => {
-                root.unmount();
-              };
-            });
+                root.render(
+                  <Provider>
+                    <Outline />
+                  </Provider>
+                );
+                return () => {
+                  root.unmount();
+                };
+              },
+              {
+                maxWidth: [undefined, 300],
+              }
+            );
           } else {
             setOpen(false);
             deleteLayout('@affine/outline-plugin');
