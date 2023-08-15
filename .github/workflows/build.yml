@@ -147,7 +147,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-      - run: yarn chromatic --auto-accept-changes --exit-zero-on-changes
+      - run: yarn chromatic
         working-directory: apps/storybook
         env:
           CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
