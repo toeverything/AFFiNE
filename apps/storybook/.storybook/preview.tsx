@@ -1,9 +1,8 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import '@toeverything/components/style.css';
-import { LOCALES, createI18n } from '@affine/i18n';
+import { createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
-import { setupGlobal } from '@affine/env/global';
 import type { ComponentType } from 'react';
 import { useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
@@ -12,7 +11,6 @@ import { AffineContext } from '@affine/component/context';
 import { use } from 'foxact/use';
 
 const setupPromise = setup();
-setupGlobal();
 
 export const parameters = {
   backgrounds: { disable: true },
@@ -21,22 +19,6 @@ export const parameters = {
     matchers: {
       color: /(background|color)$/i,
       date: /Date$/,
-    },
-  },
-};
-
-export const globalTypes = {
-  locale: {
-    name: 'Locale',
-    description: 'Internationalization locale',
-    defaultValue: 'en',
-    toolbar: {
-      icon: 'globe',
-      items: LOCALES.map(locale => ({
-        title: locale.originalName,
-        value: locale.tag,
-        right: locale.flagEmoji,
-      })),
     },
   },
 };
