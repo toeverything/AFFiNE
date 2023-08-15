@@ -133,6 +133,25 @@ jobs:
           path: ./apps/storybook/storybook-static
           if-no-files-found: error
 
+  publish-storybook:
+    name: Publish Storybook
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # This is required to fetch all commits for chromatic
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - run: yarn chromatic
+        working-directory: apps/storybook
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest

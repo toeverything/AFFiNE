@@ -3,8 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "storybook dev -p 6006",
-    "build": "NODE_OPTIONS=--max_old_space_size=4096 storybook build",
-    "test": "test-storybook"
+    "build": "storybook build",
+    "test": "test-storybook",
+    "chromatic": "npx chromatic --build-script-name build"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -37,6 +38,7 @@
     "@blocksuite/icons": "^2.1.31",
     "@blocksuite/lit": "0.0.0-20230814155455-ceb5d5d8-nightly",
     "@blocksuite/store": "0.0.0-20230814155455-ceb5d5d8-nightly",
+    "chromatic": "^6.22.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
