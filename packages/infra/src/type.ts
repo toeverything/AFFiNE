@@ -205,16 +205,6 @@ export type EventMap = DBHandlers &
   UpdaterHandlers &
   WorkspaceHandlers;
 
-export type WrapHandlerToServerSide<
-  Handlers extends Record<string, PrimitiveHandlers>,
-> = {
-  [K in keyof Handlers]: Handlers[K] extends (
-    ...args: infer Args
-  ) => Promise<infer R>
-    ? (event: Electron.IpcMainInvokeEvent, ...args: Args) => Promise<R>
-    : never;
-};
-
 export type UnwrapManagerHandlerToServerSide<
   ElectronEvent extends {
     frameId: number;
