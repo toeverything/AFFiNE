@@ -7,7 +7,7 @@ import {
 } from 'storybook-addon-react-router-v6';
 
 export default {
-  title: 'App/Main',
+  title: 'Preview/Core',
 };
 
 export const Index = () => {
