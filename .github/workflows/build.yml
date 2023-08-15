@@ -152,7 +152,7 @@ jobs:
         with:
           workingDir: apps/storybook
           buildScriptName: build
-          onlyStoryNames: Preview/Core
+          onlyStoryNames: 'Preview/**'
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
 
   build-core:
