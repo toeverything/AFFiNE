@@ -1,5 +1,5 @@
 import { routes } from '@affine/core/router';
-import { expect } from '@storybook/jest';
+import { assertExists } from '@blocksuite/global/utils';
 import type { StoryContext, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
 import { waitFor } from '@testing-library/react';
@@ -41,9 +41,9 @@ export const SettingPage: StoryFn = () => {
 SettingPage.play = async ({ canvasElement }) => {
   await waitFor(
     () => {
-      expect(
+      assertExists(
         canvasElement.querySelector('[data-testid="settings-modal-trigger"]')
-      ).not.toBeNull();
+      );
     },
     {
       timeout: 5000,
