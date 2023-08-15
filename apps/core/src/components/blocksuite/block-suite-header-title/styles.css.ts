@@ -10,7 +10,6 @@ export const headerTitleContainer = style({
 });
 
 export const titleEditButton = style({
-  // flexGrow: 1,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
