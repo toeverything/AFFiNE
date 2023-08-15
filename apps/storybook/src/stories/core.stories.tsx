@@ -27,7 +27,6 @@ export default {
 export const Index: StoryFn = () => {
   return <FakeApp />;
 };
-
 Index.decorators = [withRouter, withCleanLocalStorage];
 Index.parameters = {
   reactRouter: reactRouterParameters({
@@ -38,7 +37,6 @@ Index.parameters = {
 export const SettingPage: StoryFn = () => {
   return <FakeApp />;
 };
-
 SettingPage.play = async ({ canvasElement }) => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   const settingModalBtn = canvasElement.querySelector(
@@ -51,5 +49,18 @@ SettingPage.decorators = [withRouter, withCleanLocalStorage];
 SettingPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
+  }),
+};
+
+export const NotFoundPage: StoryFn = () => {
+  return <FakeApp />;
+};
+NotFoundPage.decorators = [withRouter, withCleanLocalStorage];
+NotFoundPage.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/404',
+    },
   }),
 };
