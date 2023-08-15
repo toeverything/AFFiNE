@@ -3,6 +3,8 @@ import type { HTMLAttributes } from 'react';
 import type React from 'react';
 import { cloneElement, useState } from 'react';
 
+import edgelessHover from './animation-data/edgeless-hover.json';
+import pageHover from './animation-data/page-hover.json';
 import { StyledSwitchItem } from './style';
 
 type HoverAnimateControllerProps = {
@@ -52,7 +54,7 @@ export const PageSwitchItem = (
         options={{
           loop: false,
           autoplay: false,
-          animationData: require('./animation-data/page-hover.json'),
+          animationData: pageHover,
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid slice',
           },
@@ -71,7 +73,7 @@ export const EdgelessSwitchItem = (
         options={{
           loop: false,
           autoplay: false,
-          animationData: require('./animation-data/edgeless-hover.json'),
+          animationData: edgelessHover,
           rendererSettings: {
             preserveAspectRatio: 'xMidYMid slice',
           },

@@ -34,7 +34,7 @@ AffineOperationCell.play = async ({ canvasElement }) => {
       '[data-testid="page-list-operation-button"]'
     ) as HTMLButtonElement;
     expect(button).not.toBeNull();
-    userEvent.click(button);
+    await userEvent.click(button);
   }
 };
 
@@ -51,7 +51,7 @@ AffineNewPageButton.play = async ({ canvasElement }) => {
   expect(button).not.toBeNull();
   const dropdown = button.querySelector('svg') as SVGSVGElement;
   expect(dropdown).not.toBeNull();
-  userEvent.click(dropdown);
+  await userEvent.click(dropdown);
 };
 
 export const AffineAllPageList: StoryFn<typeof PageList> = ({ ...props }) => (
@@ -69,11 +69,11 @@ AffineAllPageList.args = {
       favorite: false,
       icon: <PageIcon />,
       isPublicPage: true,
-      title: 'Today Page',
+      title: 'Last Page',
       tags: [],
       preview: 'this is page preview',
-      createDate: new Date(),
-      updatedDate: new Date(),
+      createDate: new Date('2021-01-01'),
+      updatedDate: new Date('2023-08-15'),
       bookmarkPage: () => toast('Bookmark page'),
       onClickPage: () => toast('Click page'),
       onDisablePublicSharing: () => toast('Disable public sharing'),

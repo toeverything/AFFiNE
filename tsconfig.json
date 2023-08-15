@@ -55,6 +55,7 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
 
     "paths": {
+      "@affine/core/*": ["./packages/core/src/*"],
       "@affine/cli/*": ["./packages/cli/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [

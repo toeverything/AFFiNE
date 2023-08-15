@@ -709,6 +709,7 @@ __metadata:
     react-dom: 18.2.0
     serve: ^14.2.0
     storybook: ^7.2.3
+    storybook-addon-react-router-v6: ^2.0.4
     storybook-dark-mode: ^3.0.1
     wait-on: ^7.0.1
   peerDependencies:
@@ -15874,6 +15875,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"compare-versions@npm:^6.0.0":
+  version: 6.1.0
+  resolution: "compare-versions@npm:6.1.0"
+  checksum: d4e2a45706a023d8d0b6680338b66b79e20bd02d1947f0ac6531dab634cbed89fa373b3f03d503c5e489761194258d6e1bae67a07f88b1efc61648454f2d47e7
+  languageName: node
+  linkType: hard
+
 "component-emitter@npm:^1.3.0":
   version: 1.3.0
   resolution: "component-emitter@npm:1.3.0"
@@ -27724,7 +27732,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-inspector@npm:^6.0.0":
+"react-inspector@npm:6.0.2, react-inspector@npm:^6.0.0":
   version: 6.0.2
   resolution: "react-inspector@npm:6.0.2"
   peerDependencies:
@@ -29772,6 +29780,33 @@ __metadata:
   version: 2.14.2
   resolution: "store2@npm:2.14.2"
   checksum: 6f270fc5bab99b63f45fcc7bd8b99c2714b4adf880f557ed7ffb5ed3987131251165bccde425a00928aaf044870aee79ddeef548576d093c68703ed2edec45d7
+  languageName: node
+  linkType: hard
+
+"storybook-addon-react-router-v6@npm:^2.0.4":
+  version: 2.0.4
+  resolution: "storybook-addon-react-router-v6@npm:2.0.4"
+  dependencies:
+    compare-versions: ^6.0.0
+    react-inspector: 6.0.2
+  peerDependencies:
+    "@storybook/blocks": ^7.0.0
+    "@storybook/channels": ^7.0.0
+    "@storybook/components": ^7.0.0
+    "@storybook/core-events": ^7.0.0
+    "@storybook/manager-api": ^7.0.0
+    "@storybook/preview-api": ^7.0.0
+    "@storybook/theming": ^7.0.0
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    react-router: ^6.4.0
+    react-router-dom: ^6.4.0
+  peerDependenciesMeta:
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 2920eff2f15b84bc57c0260286d656373130dfdd25c4299319da94e427e2dcf45bf8a73221b47818d470e029d2588d60d498b0163b50b7d6db17253ffa36d11f
   languageName: node
   linkType: hard
 

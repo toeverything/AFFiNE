@@ -28,6 +28,7 @@ export default {
     '@storybook/addon-interactions',
     '@storybook/addon-storysource',
     'storybook-dark-mode',
+    'storybook-addon-react-router-v6',
   ],
   framework: {
     name: '@storybook/react-vite',

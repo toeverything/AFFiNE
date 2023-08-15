@@ -8,6 +8,11 @@
     "dev": "yarn -T run dev-core",
     "static-server": "ts-node-esm ./server.mts"
   },
+  "exports": {
+    "./app": "./src/app.tsx",
+    "./router": "./src/router.ts",
+    "./bootstrap/setup": "./src/bootstrap/setup.ts"
+  },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/component": "workspace:*",
