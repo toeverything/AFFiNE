@@ -1,0 +1,440 @@
+{
+  "blocks": {
+    "mMBWzZtpvM": {
+      "sys:id": "mMBWzZtpvM",
+      "sys:flavour": "affine:page",
+      "sys:children": ["XSMCxudQf4", "2xxenQgE1-", "ca2-VFQV45"],
+      "prop:title": [
+        {
+          "insert": "Annual Performance Review"
+        }
+      ]
+    },
+    "XSMCxudQf4": {
+      "sys:id": "XSMCxudQf4",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {}
+    },
+    "2xxenQgE1-": {
+      "sys:id": "2xxenQgE1-",
+      "sys:flavour": "affine:note",
+      "sys:children": ["P0VHAddqSh", "XPiPjHYnvE"],
+      "prop:xywh": "[0,0,800,176]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "ca2-VFQV45": {
+      "sys:id": "ca2-VFQV45",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "AwVOuNCAOQ",
+        "NpbigpLTNh",
+        "e1ax4lVFjW",
+        "rEKXjYtGDR",
+        "gYcGYxQ88e",
+        "OyFSyuWbzw",
+        "VcUt-bpjIK",
+        "a0xWifxvFi",
+        "YiQINiDM6W",
+        "ZMfsmg_5oZ",
+        "0LF9mjFcX9",
+        "d2IrxHbD5D",
+        "IdLESwrZ-U",
+        "6YwnA2HHQM"
+      ],
+      "prop:xywh": "[0,0,800,922]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "AwVOuNCAOQ": {
+      "sys:id": "AwVOuNCAOQ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Name:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " [Employee Name]"
+        }
+      ]
+    },
+    "NpbigpLTNh": {
+      "sys:id": "NpbigpLTNh",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Department:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " [Department Name]"
+        }
+      ]
+    },
+    "e1ax4lVFjW": {
+      "sys:id": "e1ax4lVFjW",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Job Title:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " [Job Title]"
+        }
+      ]
+    },
+    "rEKXjYtGDR": {
+      "sys:id": "rEKXjYtGDR",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Date of Joining:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " [Date of Joining]"
+        }
+      ]
+    },
+    "gYcGYxQ88e": {
+      "sys:id": "gYcGYxQ88e",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Review Date:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " [Review Date]"
+        }
+      ]
+    },
+    "VwZ3681tdd": {
+      "sys:id": "VwZ3681tdd",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 1]"
+        }
+      ]
+    },
+    "jT3Oo2XSeJ": {
+      "sys:id": "jT3Oo2XSeJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 2]"
+        }
+      ]
+    },
+    "RviIfLJUPX": {
+      "sys:id": "RviIfLJUPX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 3]"
+        }
+      ]
+    },
+    "ZEi_-9SS-Y": {
+      "sys:id": "ZEi_-9SS-Y",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 1]"
+        }
+      ]
+    },
+    "8LPVaagwtP": {
+      "sys:id": "8LPVaagwtP",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 2]"
+        }
+      ]
+    },
+    "lYnANRxW0A": {
+      "sys:id": "lYnANRxW0A",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 3]"
+        }
+      ]
+    },
+    "YiQINiDM6W": {
+      "sys:id": "YiQINiDM6W",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Employee's Signature: ____________________________Date: ____________________________"
+        }
+      ]
+    },
+    "ZMfsmg_5oZ": {
+      "sys:id": "ZMfsmg_5oZ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Manager's Signature: ____________________________Date: ____________________________"
+        }
+      ]
+    },
+    "0LF9mjFcX9": {
+      "sys:id": "0LF9mjFcX9",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Company Name]"
+        }
+      ]
+    },
+    "d2IrxHbD5D": {
+      "sys:id": "d2IrxHbD5D",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Address]"
+        }
+      ]
+    },
+    "IdLESwrZ-U": {
+      "sys:id": "IdLESwrZ-U",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Phone Number]"
+        }
+      ]
+    },
+    "6YwnA2HHQM": {
+      "sys:id": "6YwnA2HHQM",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Email]"
+        }
+      ]
+    },
+    "VcUt-bpjIK": {
+      "sys:id": "VcUt-bpjIK",
+      "sys:flavour": "affine:database",
+      "sys:children": ["VwZ3681tdd", "jT3Oo2XSeJ", "RviIfLJUPX"],
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "VcUt-bpjIK",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "multi-select",
+          "name": "score ",
+          "data": {
+            "options": [
+              {
+                "id": "rwjdYVF3jd",
+                "value": "awsome",
+                "color": "var(--affine-tag-yellow)"
+              },
+              {
+                "id": "4dHxaZ8cKk",
+                "value": "well",
+                "color": "var(--affine-tag-purple)"
+              },
+              {
+                "id": "wgvB2fzMu6",
+                "value": "good",
+                "color": "var(--affine-tag-green)"
+              },
+              {
+                "id": "YGPLhMJkni",
+                "value": "done",
+                "color": "var(--affine-tag-pink)"
+              },
+              {
+                "id": "Q1-TuffR-9",
+                "value": "in progress",
+                "color": "var(--affine-tag-white)"
+              }
+            ]
+          },
+          "id": "teyC7JgUni"
+        }
+      ],
+      "prop:titleColumnName": "Title",
+      "prop:views": [
+        {
+          "id": "bIFdicaEON",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "teyC7JgUni",
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:title": [
+        {
+          "insert": "Employee's performance "
+        }
+      ],
+      "prop:cells": {
+        "VwZ3681tdd": {
+          "teyC7JgUni": {
+            "columnId": "teyC7JgUni",
+            "value": ["rwjdYVF3jd"]
+          }
+        },
+        "jT3Oo2XSeJ": {
+          "teyC7JgUni": {
+            "columnId": "teyC7JgUni",
+            "value": ["4dHxaZ8cKk"]
+          }
+        },
+        "RviIfLJUPX": {
+          "teyC7JgUni": {
+            "columnId": "teyC7JgUni",
+            "value": ["wgvB2fzMu6"]
+          }
+        }
+      },
+      "prop:titleColumnWidth": 343
+    },
+    "a0xWifxvFi": {
+      "sys:id": "a0xWifxvFi",
+      "sys:flavour": "affine:database",
+      "sys:children": ["ZEi_-9SS-Y", "8LPVaagwtP", "lYnANRxW0A"],
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "a0xWifxvFi",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "multi-select",
+          "name": "Tag",
+          "data": {
+            "options": []
+          },
+          "id": "ZdTyvkjQwz"
+        }
+      ],
+      "prop:titleColumnName": "Title",
+      "prop:views": [
+        {
+          "id": "MvodpC_iAj",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "ZdTyvkjQwz",
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:title": [
+        {
+          "insert": "Job responsibility "
+        }
+      ],
+      "prop:cells": {},
+      "prop:titleColumnWidth": 354
+    },
+    "OyFSyuWbzw": {
+      "sys:id": "OyFSyuWbzw",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "XPiPjHYnvE": {
+      "sys:id": "XPiPjHYnvE",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Employee Information:",
+          "attributes": {
+            "underline": true,
+            "bold": true
+          }
+        }
+      ],
+      "prop:type": "text"
+    },
+    "P0VHAddqSh": {
+      "sys:id": "P0VHAddqSh",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "qezoK6du9n3PF4dl4aq5r7LeXz_sV3xOVpFzVVgjNsE=",
+      "prop:caption": "",
+      "prop:width": 0,
+      "prop:height": 0
+    }
+  }
+}

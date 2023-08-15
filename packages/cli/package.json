@@ -10,8 +10,8 @@
     "./config": "./src/config/index.ts"
   },
   "devDependencies": {
-    "@clack/core": "^0.3.2",
-    "@clack/prompts": "^0.6.3",
+    "@clack/core": "^0.3.3",
+    "@clack/prompts": "^0.7.0",
     "ts-node": "^10.9.1"
   },
   "dependencies": {
@@ -20,5 +20,5 @@
   "peerDependencies": {
     "ts-node": "*"
   },
-  "version": "0.8.0-canary.14"
+  "version": "0.8.0-canary.22"
 }

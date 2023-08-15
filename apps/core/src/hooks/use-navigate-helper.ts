@@ -1,9 +1,4 @@
 import type { WorkspaceSubPath } from '@affine/env/workspace';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/infra/atom';
-import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -16,8 +11,6 @@ export enum RouteLogic {
 export function useNavigateHelper() {
   const location = useLocation();
   const navigate = useNavigate();
-  const setWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
-  const setCurrentPageId = useSetAtom(currentPageIdAtom);
 
   const jumpToPage = useCallback(
     (
@@ -25,13 +18,11 @@ export function useNavigateHelper() {
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      setWorkspaceId(workspaceId);
-      setCurrentPageId(pageId);
       return navigate(`/workspace/${workspaceId}/${pageId}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    [navigate, setCurrentPageId, setWorkspaceId]
+    [navigate]
   );
   const jumpToPublicWorkspacePage = useCallback(
     (
@@ -39,13 +30,11 @@ export function useNavigateHelper() {
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      setWorkspaceId(workspaceId);
-      setCurrentPageId(pageId);
       return navigate(`/public-workspace/${workspaceId}/${pageId}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    [navigate, setCurrentPageId, setWorkspaceId]
+    [navigate]
   );
   const jumpToSubPath = useCallback(
     (
@@ -53,18 +42,14 @@ export function useNavigateHelper() {
       subPath: WorkspaceSubPath,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      setWorkspaceId(workspaceId);
-      setCurrentPageId(null);
       return navigate(`/workspace/${workspaceId}/${subPath}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    [navigate, setCurrentPageId, setWorkspaceId]
+    [navigate]
   );
   const openPage = useCallback(
     (workspaceId: string, pageId: string) => {
-      setWorkspaceId(workspaceId);
-      setCurrentPageId(pageId);
       const isPublicWorkspace =
         location.pathname.indexOf('/public-workspace') === 0;
       if (isPublicWorkspace) {
@@ -73,35 +58,25 @@ export function useNavigateHelper() {
         return jumpToPage(workspaceId, pageId);
       }
     },
-    [
-      jumpToPage,
-      jumpToPublicWorkspacePage,
-      location.pathname,
-      setCurrentPageId,
-      setWorkspaceId,
-    ]
+    [jumpToPage, jumpToPublicWorkspacePage, location.pathname]
   );
 
   const jumpToIndex = useCallback(
     (logic: RouteLogic = RouteLogic.PUSH) => {
-      setWorkspaceId(null);
-      setCurrentPageId(null);
       return navigate('/', {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    [navigate, setCurrentPageId, setWorkspaceId]
+    [navigate]
   );
 
   const jumpTo404 = useCallback(
     (logic: RouteLogic = RouteLogic.PUSH) => {
-      setWorkspaceId(null);
-      setCurrentPageId(null);
       return navigate('/404', {
         replace: logic === RouteLogic.REPLACE,
       });
     },
-    [navigate, setCurrentPageId, setWorkspaceId]
+    [navigate]
   );
 
   return {

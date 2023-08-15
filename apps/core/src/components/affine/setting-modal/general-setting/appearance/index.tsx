@@ -35,10 +35,10 @@ export const ThemeSettings = () => {
       <RadioButton value="system" data-testid="system-theme-trigger">
         {t['system']()}
       </RadioButton>
-      <RadioButton bold={true} value="light" data-testid="light-theme-trigger">
+      <RadioButton value="light" data-testid="light-theme-trigger">
         {t['light']()}
       </RadioButton>
-      <RadioButton bold={true} value="dark" data-testid="dark-theme-trigger">
+      <RadioButton value="dark" data-testid="dark-theme-trigger">
         {t['dark']()}
       </RadioButton>
     </RadioButtonGroup>
@@ -63,7 +63,6 @@ const FontFamilySettings = () => {
         return (
           <RadioButton
             key={key}
-            bold={true}
             value={key}
             data-testid="system-font-style-trigger"
             style={{
@@ -110,16 +109,28 @@ export const AppearanceSettings = () => {
         </SettingRow>
         <SettingRow
           name={t['Display Language']()}
-          desc={t['Select the language for the interface.']()}
+          desc={t['com.affine.settings.appearance.language-description']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu />
+            <LanguageMenu
+              triggerContainerStyle={{ width: '100%' }}
+              triggerProps={{
+                style: {
+                  width: '100%',
+                  justifyContent: 'space-between',
+                  fontWeight: 600,
+                  padding: '0 10px',
+                },
+              }}
+            />
           </div>
         </SettingRow>
         {environment.isDesktop ? (
           <SettingRow
             name={t['Client Border Style']()}
-            desc={t['Customize the appearance of the client.']()}
+            desc={t[
+              'com.affine.settings.appearance.border-style-description'
+            ]()}
           >
             <Switch
               checked={appSettings.clientBorder}
@@ -130,7 +141,7 @@ export const AppearanceSettings = () => {
 
         <SettingRow
           name={t['Full width Layout']()}
-          desc={t['Maximum display of content within a page.']()}
+          desc={t['com.affine.settings.appearance.full-width-description']()}
         >
           <Switch
             data-testid="full-width-layout-trigger"
@@ -141,7 +152,9 @@ export const AppearanceSettings = () => {
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
             name={t['Window frame style']()}
-            desc={t['Customize appearance of Windows Client.']()}
+            desc={t[
+              'com.affine.settings.appearance.window-frame-description'
+            ]()}
           >
             <RadioButtonGroup
               className={settingWrapper}
@@ -166,7 +179,7 @@ export const AppearanceSettings = () => {
         <SettingWrapper title={t['Date']()}>
           <SettingRow
             name={t['Date Format']()}
-            desc={t['Customize your date style.']()}
+            desc={t['com.affine.settings.appearance.date-format-description']()}
           >
             <div className={settingWrapper}>
               <DateFormatSetting />
@@ -174,7 +187,7 @@ export const AppearanceSettings = () => {
           </SettingRow>
           <SettingRow
             name={t['Start Week On Monday']()}
-            desc={t['By default, the week starts on Sunday.']()}
+            desc={t['com.affine.settings.appearance.start-week-description']()}
           >
             <Switch
               checked={appSettings.startWeekOnMonday}
@@ -187,8 +200,8 @@ export const AppearanceSettings = () => {
       {environment.isDesktop ? (
         <SettingWrapper title={t['Sidebar']()}>
           <SettingRow
-            name={t['com.affine.settings.appearance.sidebar.noise']()}
-            desc={t['com.affine.settings.appearance.sidebar.noise.message']()}
+            name={t['com.affine.settings.noise-style']()}
+            desc={t['com.affine.settings.noise-style-description']()}
           >
             <Switch
               checked={appSettings.enableNoisyBackground}
@@ -198,10 +211,8 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
           <SettingRow
-            name={t['com.affine.settings.appearance.sidebar.translucent']()}
-            desc={t[
-              'com.affine.settings.appearance.sidebar.translucent.message'
-            ]()}
+            name={t['com.affine.settings.translucent-style']()}
+            desc={t['com.affine.settings.translucent-style-description']()}
           >
             <Switch
               checked={appSettings.enableBlurBackground}

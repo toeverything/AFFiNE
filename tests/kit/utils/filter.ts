@@ -20,7 +20,7 @@ const monthNames = [
 
 export const createFirstFilter = async (page: Page, name: string) => {
   await page
-    .locator('[data-testid="editor-header-items"]')
+    .locator('[data-testid="header"]')
     .locator('button', { hasText: 'Filter' })
     .click();
   await page
@@ -213,7 +213,7 @@ export async function selectTag(page: Page, name: string | RegExp) {
   await page
     .getByTestId('multi-select')
     .getByTestId('select-option')
-    .getByText(name)
+    .getByText(name, { exact: true })
     .click();
   await page.getByTestId('filter-arg').click();
 }

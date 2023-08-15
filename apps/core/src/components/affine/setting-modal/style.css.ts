@@ -34,10 +34,11 @@ globalStyle(`${settingContent} .footer a`, {
   color: 'var(--affine-text-primary-color)',
   lineHeight: 'normal',
 });
-
-globalStyle(`${settingContent} .footer > svg`, {
+export const footerIconWrapper = style({
   fontSize: 'var(--affine-font-base)',
   color: 'var(--affine-icon-color)',
   marginRight: '12px',
-  marginTop: '1px',
+  height: '19px',
+  display: 'flex',
+  alignItems: 'center',
 });

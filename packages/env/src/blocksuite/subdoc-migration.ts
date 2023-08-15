@@ -1,5 +1,5 @@
 import type { Schema } from '@blocksuite/store';
-import * as Y from 'yjs';
+import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 type XYWH = [number, number, number, number];
 
@@ -7,10 +7,10 @@ function deserializeXYWH(xywh: string): XYWH {
   return JSON.parse(xywh) as XYWH;
 }
 
-function migrateDatabase(data: Y.Map<unknown>) {
+function migrateDatabase(data: YMap<unknown>) {
   data.delete('prop:mode');
-  data.set('prop:views', new Y.Array());
-  const columns = (data.get('prop:columns') as Y.Array<unknown>).toJSON() as {
+  data.set('prop:views', new YArray());
+  const columns = (data.get('prop:columns') as YArray<unknown>).toJSON() as {
     id: string;
     name: string;
     hide: boolean;
@@ -31,7 +31,7 @@ function migrateDatabase(data: Y.Map<unknown>) {
       mode: 'table',
     },
   ];
-  const cells = (data.get('prop:cells') as Y.Map<unknown>).toJSON() as Record<
+  const cells = (data.get('prop:cells') as YMap<unknown>).toJSON() as Record<
     string,
     Record<
       string,
@@ -90,7 +90,7 @@ function migrateDatabase(data: Y.Map<unknown>) {
 
 function runBlockMigration(
   flavour: string,
-  data: Y.Map<unknown>,
+  data: YMap<unknown>,
   version: number
 ) {
   if (flavour === 'affine:frame') {
@@ -99,12 +99,12 @@ function runBlockMigration(
   }
   if (flavour === 'affine:surface' && version <= 3) {
     if (data.has('elements')) {
-      const elements = data.get('elements') as Y.Map<unknown>;
+      const elements = data.get('elements') as YMap<unknown>;
       migrateSurface(elements);
       data.set('prop:elements', elements.clone());
       data.delete('elements');
     } else {
-      data.set('prop:elements', new Y.Map());
+      data.set('prop:elements', new YMap());
     }
   }
   if (flavour === 'affine:embed') {
@@ -116,8 +116,8 @@ function runBlockMigration(
   }
 }
 
-function migrateSurface(data: Y.Map<unknown>) {
-  for (const [, value] of <IterableIterator<[string, Y.Map<unknown>]>>(
+function migrateSurface(data: YMap<unknown>) {
+  for (const [, value] of <IterableIterator<[string, YMap<unknown>]>>(
     data.entries()
   )) {
     if (value.get('type') === 'connector') {
@@ -126,7 +126,7 @@ function migrateSurface(data: Y.Map<unknown>) {
   }
 }
 
-function migrateSurfaceConnector(data: Y.Map<any>) {
+function migrateSurfaceConnector(data: YMap<any>) {
   let id = data.get('startElement')?.id;
   const controllers = data.get('controllers');
   const length = controllers.length;
@@ -164,7 +164,7 @@ function migrateSurfaceConnector(data: Y.Map<any>) {
   data.delete('xywh');
 }
 
-function updateBlockVersions(versions: Y.Map<number>) {
+function updateBlockVersions(versions: YMap<number>) {
   const frameVersion = versions.get('affine:frame');
   if (frameVersion !== undefined) {
     versions.set('affine:note', frameVersion);
@@ -181,12 +181,12 @@ function updateBlockVersions(versions: Y.Map<number>) {
   }
 }
 
-function migrateMeta(oldDoc: Y.Doc, newDoc: Y.Doc) {
+function migrateMeta(oldDoc: YDoc, newDoc: YDoc) {
   const originalMeta = oldDoc.getMap('space:meta');
-  const originalVersions = originalMeta.get('versions') as Y.Map<number>;
-  const originalPages = originalMeta.get('pages') as Y.Array<Y.Map<unknown>>;
+  const originalVersions = originalMeta.get('versions') as YMap<number>;
+  const originalPages = originalMeta.get('pages') as YArray<YMap<unknown>>;
   const meta = newDoc.getMap('meta');
-  const pages = new Y.Array();
+  const pages = new YArray();
   const blockVersions = originalVersions.clone();
 
   meta.set('workspaceVersion', 1);
@@ -196,7 +196,7 @@ function migrateMeta(oldDoc: Y.Doc, newDoc: Y.Doc) {
 
   updateBlockVersions(blockVersions);
   const mapList = originalPages.map(page => {
-    const map = new Y.Map();
+    const map = new YMap();
     Array.from(page.entries())
       .filter(([key]) => key !== 'subpageIds')
       .forEach(([key, value]) => {
@@ -207,16 +207,16 @@ function migrateMeta(oldDoc: Y.Doc, newDoc: Y.Doc) {
   pages.push(mapList);
 }
 
-function migrateBlocks(oldDoc: Y.Doc, newDoc: Y.Doc) {
+function migrateBlocks(oldDoc: YDoc, newDoc: YDoc) {
   const spaces = newDoc.getMap('spaces');
   const originalMeta = oldDoc.getMap('space:meta');
-  const originalVersions = originalMeta.get('versions') as Y.Map<number>;
-  const originalPages = originalMeta.get('pages') as Y.Array<Y.Map<unknown>>;
+  const originalVersions = originalMeta.get('versions') as YMap<number>;
+  const originalPages = originalMeta.get('pages') as YArray<YMap<unknown>>;
   originalPages.forEach(page => {
     const id = page.get('id') as string;
     const spaceId = id.startsWith('space:') ? id : `space:${id}`;
-    const originalBlocks = oldDoc.getMap(spaceId) as Y.Map<unknown>;
-    const subdoc = new Y.Doc();
+    const originalBlocks = oldDoc.getMap(spaceId) as YMap<unknown>;
+    const subdoc = new YDoc();
     spaces.set(spaceId, subdoc);
     const blocks = subdoc.getMap('blocks');
     Array.from(originalBlocks.entries()).forEach(([key, value]) => {
@@ -231,19 +231,19 @@ function migrateBlocks(oldDoc: Y.Doc, newDoc: Y.Doc) {
   });
 }
 
-export function migrateToSubdoc(doc: Y.Doc): Y.Doc {
+export function migrateToSubdoc(doc: YDoc): YDoc {
   const needMigration = Array.from(doc.getMap('space:meta').keys()).length > 0;
   if (!needMigration) {
     return doc;
   }
-  const output = new Y.Doc();
+  const output = new YDoc();
   migrateMeta(doc, output);
   migrateBlocks(doc, output);
   return output;
 }
 
-export async function migrateDatabaseBlockTo3(rootDoc: Y.Doc, schema: Schema) {
-  const spaces = rootDoc.getMap('spaces') as Y.Map<any>;
+export async function migrateDatabaseBlockTo3(rootDoc: YDoc, schema: Schema) {
+  const spaces = rootDoc.getMap('spaces') as YMap<any>;
   spaces.forEach(space => {
     schema.upgradePage(
       {
@@ -261,7 +261,7 @@ export async function migrateDatabaseBlockTo3(rootDoc: Y.Doc, schema: Schema) {
       space
     );
   });
-  const meta = rootDoc.getMap('meta') as Y.Map<unknown>;
-  const versions = meta.get('blockVersions') as Y.Map<number>;
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+  const versions = meta.get('blockVersions') as YMap<number>;
   versions.set('affine:database', 3);
 }

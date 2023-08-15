@@ -28,7 +28,7 @@ import { createFetch } from './endowments/fercher';
 import { createTimers } from './endowments/timer';
 import { setupImportsMap } from './setup-imports-map';
 
-const dynamicImportKey = '$h‍_import';
+const dynamicImportKey = '$h_import';
 
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
@@ -120,7 +120,6 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
     pushLayoutAtom: pushLayoutAtom,
     deleteLayoutAtom: deleteLayoutAtom,
   },
-  '@blocksuite/blocks/std': import('@blocksuite/blocks/std'),
   '@blocksuite/global/utils': import('@blocksuite/global/utils'),
   '@toeverything/infra/atom': import('@toeverything/infra/atom'),
   '@toeverything/components/button': import('@toeverything/components/button'),
@@ -185,6 +184,7 @@ const timer = createTimers(abortController.signal);
 const sharedGlobalThis = Object.assign(Object.create(null), timer, {
   Object: globalThis.Object,
   fetch: pluginFetch,
+  ReadableStream: globalThis.ReadableStream,
   Symbol: globalThis.Symbol,
   Error: globalThis.Error,
   TypeError: globalThis.TypeError,

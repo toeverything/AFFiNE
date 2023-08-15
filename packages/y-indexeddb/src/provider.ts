@@ -3,9 +3,10 @@ import {
   type DatasourceDocAdapter,
   writeOperation,
 } from '@affine/y-provider';
+import { assertExists } from '@blocksuite/global/utils';
 import { openDB } from 'idb';
 import type { Doc } from 'yjs';
-import { diffUpdate, mergeUpdates } from 'yjs';
+import { diffUpdate } from 'yjs';
 
 import {
   type BlockSuiteBinaryDB,
@@ -15,6 +16,7 @@ import {
   type UpdateMessage,
   upgradeDB,
 } from './shared';
+import { mergeUpdates } from './utils';
 
 let mergeCount = 500;
 
@@ -77,7 +79,6 @@ const createDatasource = ({
           const merged = mergeUpdates(rows.map(({ update }) => update));
           rows = [{ timestamp: Date.now(), update: merged }];
         }
-
         await writeOperation(
           store.put({
             id: guid,
@@ -112,6 +113,14 @@ export const createIndexedDBProvider = (
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
   const apis = {
+    get status() {
+      assertExists(provider);
+      return provider.status;
+    },
+    subscribeStatusChange(onStatusChange) {
+      assertExists(provider);
+      return provider.subscribeStatusChange(onStatusChange);
+    },
     connect: () => {
       if (apis.connected) {
         apis.disconnect();
@@ -132,7 +141,7 @@ export const createIndexedDBProvider = (
     get connected() {
       return provider?.connected || false;
     },
-  };
+  } satisfies IndexedDBProvider;
 
   return apis;
 };

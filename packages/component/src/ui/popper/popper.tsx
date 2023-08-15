@@ -1,5 +1,5 @@
-import ClickAwayListener from '@mui/base/ClickAwayListener';
-import PopperUnstyled from '@mui/base/Popper';
+import { ClickAwayListener } from '@mui/base/ClickAwayListener';
+import { Popper as PopperUnstyled } from '@mui/base/Popper';
 import Grow from '@mui/material/Grow';
 import type { CSSProperties, PointerEvent } from 'react';
 import {
@@ -36,6 +36,7 @@ export const Popper = ({
   onClickAway,
   onPointerEnter,
   onPointerLeave,
+  triggerContainerStyle = {},
   ...popperProps
 }: PopperProps) => {
   const [anchorEl, setAnchorEl] = useState<VirtualElement>();
@@ -111,7 +112,7 @@ export const Popper = ({
         }
       }}
     >
-      <Container>
+      <Container style={triggerContainerStyle}>
         {cloneElement(children, {
           ref: (dom: HTMLDivElement) => setAnchorEl(dom),
           onClick: (e: MouseEvent) => {
