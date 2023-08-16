@@ -1,0 +1,29 @@
+on:
+  pull_request_target:
+    branches:
+      - master
+    paths-ignore:
+      - README.md
+      - .github/**
+      - '!.github/workflows/publish-storybook.yml'
+
+jobs:
+  publish-storybook:
+    name: Publish Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # This is required to fetch all commits for chromatic
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - name: Publish to Chromatic
+        uses: chromaui/action@v1
+        with:
+          workingDir: apps/storybook
+          buildScriptName: build
+          onlyStoryNames: 'Preview/**'
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
