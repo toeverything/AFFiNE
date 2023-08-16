@@ -127,7 +127,7 @@ If you have questions, you are welcome to contact us. One of the best places to 
 | [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing |
 | [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         |
 
-## Thanks
+## Upstreams
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
