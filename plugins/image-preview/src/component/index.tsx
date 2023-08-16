@@ -336,7 +336,7 @@ const ImagePreviewModalImpl = (
         ) : null}
         <div className={imagePreviewActionBarStyle}>
           <div>
-            <Tooltip content={'Previous'} disablePortal={false}>
+            <Tooltip content={'Previous'} placement={'top'} showArrow={true}>
               <IconButton
                 data-testid="previous-image-button"
                 icon={<ArrowLeftSmallIcon />}
@@ -348,7 +348,7 @@ const ImagePreviewModalImpl = (
                 }}
               />
             </Tooltip>
-            <Tooltip content={'Next'} disablePortal={false}>
+            <Tooltip content={'Next'} placement={'top'} showArrow={true}>
               <IconButton
                 data-testid="next-image-button"
                 icon={<ArrowRightSmallIcon />}
@@ -362,11 +362,7 @@ const ImagePreviewModalImpl = (
             </Tooltip>
           </div>
           <div className={groupStyle}></div>
-          <Tooltip
-            content={'Fit to Screen'}
-            disablePortal={true}
-            showArrow={false}
-          >
+          <Tooltip content={'Fit to Screen'} placement={'top'} showArrow={true}>
             <IconButton
               data-testid="fit-to-screen-button"
               icon={<ViewBarIcon />}
@@ -375,7 +371,7 @@ const ImagePreviewModalImpl = (
               onClick={() => resetZoom()}
             />
           </Tooltip>
-          <Tooltip content={'Zoom out'} disablePortal={false}>
+          <Tooltip content={'Zoom out'} placement={'top'} showArrow={true}>
             <IconButton
               data-testid="zoom-out-button"
               icon={<MinusIcon />}
@@ -384,7 +380,7 @@ const ImagePreviewModalImpl = (
               onClick={zoomOut}
             />
           </Tooltip>
-          <Tooltip content={'Reset Scale'} disablePortal={false}>
+          <Tooltip content={'Reset Scale'} placement={'top'} showArrow={true}>
             <Button
               data-testid="reset-scale-button"
               type="plain"
@@ -395,7 +391,7 @@ const ImagePreviewModalImpl = (
               {`${(currentScale * 100).toFixed(0)}%`}
             </Button>
           </Tooltip>
-          <Tooltip content={'Zoom in'} disablePortal={false}>
+          <Tooltip content={'Zoom in'} placement={'top'} showArrow={true}>
             <IconButton
               data-testid="zoom-in-button"
               icon={<PlusIcon />}
@@ -405,7 +401,7 @@ const ImagePreviewModalImpl = (
             />
           </Tooltip>
           <div className={groupStyle}></div>
-          <Tooltip content={'Download'} disablePortal={false}>
+          <Tooltip content={'Download'} placement={'top'} showArrow={true}>
             <IconButton
               data-testid="download-button"
               icon={<DownloadIcon />}
@@ -419,7 +415,11 @@ const ImagePreviewModalImpl = (
               }}
             />
           </Tooltip>
-          <Tooltip content={'Copy to clipboard'} disablePortal={false}>
+          <Tooltip
+            content={'Copy to clipboard'}
+            placement={'top'}
+            showArrow={true}
+          >
             <IconButton
               data-testid="copy-to-clipboard-button"
               icon={<CopyIcon />}
@@ -444,7 +444,7 @@ const ImagePreviewModalImpl = (
                     return;
                   }
                   const dataUrl = URL.createObjectURL(blob);
-                  navigator.clipboard
+                  global.navigator.clipboard
                     .write([new ClipboardItem({ 'image/png': blob })])
                     .then(() => {
                       console.log('Image copied to clipboard');
@@ -460,7 +460,7 @@ const ImagePreviewModalImpl = (
             />
           </Tooltip>
           <div className={groupStyle}></div>
-          <Tooltip content={'Delete'} disablePortal={false}>
+          <Tooltip content={'Delete'} placement={'top'} showArrow={true}>
             <IconButton
               data-testid="delete-button"
               icon={<DeleteIcon />}
