@@ -1,3 +1,5 @@
+name: Publish Storybook
+
 on:
   push:
     branches:
