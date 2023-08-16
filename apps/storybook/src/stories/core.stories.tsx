@@ -1,9 +1,7 @@
-import { pluginRegisterPromise } from '@affine/core/bootstrap/register-plugins';
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Decorator, StoryFn } from '@storybook/react';
 import { userEvent, waitFor } from '@storybook/testing-library';
-import { use } from 'foxact/use';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,
@@ -30,7 +28,6 @@ export default {
 };
 
 export const Index: StoryFn = () => {
-  use(pluginRegisterPromise);
   return <FakeApp />;
 };
 Index.decorators = [withRouter, withCleanLocalStorage];

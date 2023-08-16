@@ -1,5 +1,8 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { loadedPluginNameAtom, rootStore } from '@toeverything/infra/atom';
+import {
+  getCurrentStore,
+  loadedPluginNameAtom,
+} from '@toeverything/infra/atom';
 import { use } from 'foxact/use';
 import { useAtomValue } from 'jotai';
 import { Provider } from 'jotai/react';
@@ -7,11 +10,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { _pluginNestedImportsMap } from '../bootstrap/plugins/setup';
-import { pluginRegisterPromise } from '../bootstrap/register-plugins';
+import { bootstrapPluginSystem } from '../bootstrap/register-plugins';
 
 async function main() {
   const { setup } = await import('../bootstrap/setup');
-  await setup();
+  const rootStore = getCurrentStore();
+  await setup(rootStore);
+  const pluginRegisterPromise = bootstrapPluginSystem(rootStore);
   const root = document.getElementById('app');
   assertExists(root);
 

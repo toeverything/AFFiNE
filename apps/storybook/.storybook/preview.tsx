@@ -5,13 +5,13 @@ import '@toeverything/components/style.css';
 import { createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { useDarkMode } from 'storybook-dark-mode';
-import { setup } from '@affine/core/bootstrap/setup';
 import { AffineContext } from '@affine/component/context';
-import { use } from 'foxact/use';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
-
-const setupPromise = setup();
+import { createStore } from 'jotai/vanilla';
+import { setup } from '@affine/core/bootstrap/setup';
+import { _setCurrentStore } from '@toeverything/infra/atom';
+import { bootstrapPluginSystem } from '@affine/core/bootstrap/register-plugins';
 
 export const parameters = {
   backgrounds: { disable: true },
@@ -51,10 +51,22 @@ const ThemeChange = () => {
 };
 
 const withContextDecorator: Decorator = (Story, context) => {
-  use(setupPromise);
+  const { data: store } = useSWR(
+    context.id,
+    async () => {
+      const store = createStore();
+      _setCurrentStore(store);
+      await setup(store);
+      await bootstrapPluginSystem(store);
+      return store;
+    },
+    {
+      suspense: true,
+    }
+  );
   return (
     <ThemeProvider>
-      <AffineContext>
+      <AffineContext store={store}>
         <ThemeChange />
         <Story {...context} />
       </AffineContext>

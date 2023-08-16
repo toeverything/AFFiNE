@@ -11,7 +11,7 @@ import {
   currentPageIdAtom,
   currentWorkspaceAtom,
   currentWorkspaceIdAtom,
-  rootStore,
+  getCurrentStore,
 } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { type ReactElement, useCallback } from 'react';
@@ -86,6 +86,7 @@ export const DetailPage = (): ReactElement => {
 };
 
 export const loader: LoaderFunction = async args => {
+  const rootStore = getCurrentStore();
   if (args.params.workspaceId) {
     localStorage.setItem('last_workspace_id', args.params.workspaceId);
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);

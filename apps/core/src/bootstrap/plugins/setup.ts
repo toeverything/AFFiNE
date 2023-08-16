@@ -18,7 +18,7 @@ import {
   contentLayoutAtom,
   currentPageAtom,
   currentWorkspaceAtom,
-  rootStore,
+  getCurrentStore,
 } from '@toeverything/infra/atom';
 import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
@@ -120,7 +120,7 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
   '@blocksuite/icons': import('@blocksuite/icons'),
   '@blocksuite/blocks': import('@blocksuite/blocks'),
   '@affine/sdk/entry': {
-    rootStore: rootStore,
+    rootStore: getCurrentStore(),
     currentWorkspaceAtom: currentWorkspaceAtom,
     currentPageAtom: currentPageAtom,
     pushLayoutAtom: pushLayoutAtom,
@@ -458,7 +458,7 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
   createElement(
     Provider,
     {
-      store: rootStore,
+      store: getCurrentStore(),
     },
     children
   );
@@ -466,6 +466,7 @@ const PluginProvider = ({ children }: PropsWithChildren) =>
 const entryLogger = new DebugLogger('plugin:entry');
 
 export const evaluatePluginEntry = (pluginName: string) => {
+  const rootStore = getCurrentStore();
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const currentImportMap = _pluginNestedImportsMap.get(pluginName)!;
   const pluginExports = currentImportMap.get('index.js');

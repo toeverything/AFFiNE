@@ -20,7 +20,7 @@ import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
-import { rootStore } from '@toeverything/infra/atom';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
 
 import { setPageModeAtom } from '../../atoms';
@@ -46,7 +46,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       if (runtimeConfig.enablePreloading) {
         buildShowcaseWorkspace(blockSuiteWorkspace, {
-          store: rootStore,
+          store: getCurrentStore(),
           atoms: {
             pageMode: setPageModeAtom,
           },
