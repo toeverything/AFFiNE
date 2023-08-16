@@ -30,11 +30,11 @@ export const DeleteLeaveWorkspace = ({
         name={
           <span style={{ color: 'var(--affine-error-color)' }}>
             {isOwner
-              ? t['com.affine.settings.workspace.remove']()
+              ? t['com.affine.settings.remove-workspace']()
               : t['Leave Workspace']()}
           </span>
         }
-        desc={t['com.affine.settings.workspace.remove.message']()}
+        desc={t['com.affine.settings.remove-workspace-description']()}
         style={{ cursor: 'pointer' }}
         onClick={() => {
           setShowDelete(true);

@@ -85,12 +85,13 @@ export const pluginRegisterPromise = Promise.all(
           if (assets.length > 0) {
             await Promise.all(
               assets.map(async (asset: string) => {
+                const loadedAssetName = `${pluginName}_${asset}`;
                 // todo(himself65): add assets into shadow dom
-                if (loadedAssets.has(asset)) {
+                if (loadedAssets.has(loadedAssetName)) {
                   return Promise.resolve();
                 }
                 if (asset.endsWith('.css')) {
-                  loadedAssets.add(asset);
+                  loadedAssets.add(loadedAssetName);
                   const res = await fetch(`${baseURL}/${asset}`);
                   if (res.ok) {
                     // todo: how to put css file into sandbox?

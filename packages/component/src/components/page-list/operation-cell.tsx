@@ -145,7 +145,7 @@ export const TrashOperationCell = ({
         </IconButton>
       </Tooltip>
       <Confirm
-        title={t['Delete permanently?']()}
+        title={`${t['Delete permanently']()}?`}
         content={t['TrashButtonGroupDescription']()}
         confirmText={t['Delete']()}
         confirmType="error"

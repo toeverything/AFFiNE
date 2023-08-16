@@ -20,8 +20,10 @@ import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
+import { rootStore } from '@toeverything/infra/atom';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
 
+import { setPageModeAtom } from '../../atoms';
 import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
@@ -43,7 +45,12 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       if (runtimeConfig.enablePreloading) {
-        buildShowcaseWorkspace(blockSuiteWorkspace).catch(err => {
+        buildShowcaseWorkspace(blockSuiteWorkspace, {
+          store: rootStore,
+          atoms: {
+            pageMode: setPageModeAtom,
+          },
+        }).catch(err => {
           logger.error('init page with preloading failed', err);
         });
       } else {

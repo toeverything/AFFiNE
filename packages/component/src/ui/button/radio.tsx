@@ -8,27 +8,22 @@ import { type CSSProperties, forwardRef } from 'react';
 
 import * as styles from './styles.css';
 
-export const RadioButton = forwardRef<
-  HTMLButtonElement,
-  RadioGroupItemProps & { bold?: boolean }
->(({ children, bold, className, ...props }, ref) => {
-  return (
-    <RadioGroup.Item
-      ref={ref}
-      {...props}
-      className={clsx(styles.radioButton, className)}
-    >
-      <span className={clsx(styles.radioUncheckedButton, { bold })}>
-        {children}
-      </span>
-      <RadioGroup.Indicator
-        className={clsx(styles.radioButtonContent, { bold })}
+export const RadioButton = forwardRef<HTMLButtonElement, RadioGroupItemProps>(
+  ({ children, className, ...props }, ref) => {
+    return (
+      <RadioGroup.Item
+        ref={ref}
+        {...props}
+        className={clsx(styles.radioButton, className)}
       >
-        {children}
-      </RadioGroup.Indicator>
-    </RadioGroup.Item>
-  );
-});
+        <span className={styles.radioUncheckedButton}>{children}</span>
+        <RadioGroup.Indicator className={styles.radioButtonContent}>
+          {children}
+        </RadioGroup.Indicator>
+      </RadioGroup.Item>
+    );
+  }
+);
 RadioButton.displayName = 'RadioButton';
 
 export const RadioButtonGroup = forwardRef<

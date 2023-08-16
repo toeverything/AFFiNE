@@ -82,7 +82,7 @@ const makers = [
   !process.env.SKIP_BUNDLE && {
     name: '@electron-forge/maker-squirrel',
     config: {
-      name: 'AFFiNE',
+      name: productName,
       setupIcon: icoPath,
       iconUrl: windowsIconUrl,
       loadingGif: './resources/icons/affine_installing.gif',
@@ -130,6 +130,7 @@ module.exports = {
       : undefined,
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
+    ignore: ['src', 'e2e', 'tests'],
   },
   makers,
   hooks: {

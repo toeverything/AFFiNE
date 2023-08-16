@@ -5,12 +5,14 @@ import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
+import { rootStore } from '@toeverything/infra/atom';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { LocalAdapter } from '../adapters/local';
 import { WorkspaceAdapters } from '../adapters/workspace';
+import { setPageModeAtom } from '../atoms';
 
 const logger = new DebugLogger('use-workspaces');
 
@@ -52,7 +54,12 @@ export function useAppHelper() {
             id,
             WorkspaceFlavour.LOCAL
           );
-          await buildShowcaseWorkspace(blockSuiteWorkspace);
+          await buildShowcaseWorkspace(blockSuiteWorkspace, {
+            store: rootStore,
+            atoms: {
+              pageMode: setPageModeAtom,
+            },
+          });
         }
         set(workspaces => [
           ...workspaces,

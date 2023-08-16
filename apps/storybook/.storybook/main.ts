@@ -5,6 +5,7 @@ import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
+import turbosnap from 'vite-plugin-turbosnap';
 
 runCli(
   {
@@ -28,11 +29,12 @@ export default {
     '@storybook/addon-interactions',
     '@storybook/addon-storysource',
     'storybook-dark-mode',
+    'storybook-addon-react-router-v6',
   ],
   framework: {
     name: '@storybook/react-vite',
   },
-  async viteFinal(config, _) {
+  async viteFinal(config, { configType }) {
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
       plugins: [
@@ -40,6 +42,9 @@ export default {
         tsconfigPaths({
           root: fileURLToPath(new URL('../../../', import.meta.url)),
         }),
+        configType === 'PRODUCTION'
+          ? turbosnap({ rootDir: config.root ?? process.cwd() })
+          : null,
       ],
       define: {
         'process.env': {},

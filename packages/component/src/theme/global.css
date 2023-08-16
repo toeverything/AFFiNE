@@ -190,11 +190,11 @@ input[type='number']::-webkit-outer-spin-button {
   width: 0; /* Chrome Safari */
   height: 0;
 }
-.affine-default-viewport::-webkit-scrollbar {
+.affine-doc-viewport::-webkit-scrollbar {
   width: 20px; /* Chrome Safari */
   height: 20px;
 }
-.affine-default-viewport::-webkit-scrollbar-thumb {
+.affine-doc-viewport::-webkit-scrollbar-thumb {
   border-radius: 12px;
   background-clip: padding-box;
   border-style: solid;
@@ -202,10 +202,10 @@ input[type='number']::-webkit-outer-spin-button {
   border-color: transparent;
   transition: all 0.2s;
 }
-.affine-default-viewport:hover::-webkit-scrollbar-thumb {
+.affine-doc-viewport:hover::-webkit-scrollbar-thumb {
   background-color: var(--affine-divider-color);
 }
-.affine-default-viewport:hover::-webkit-scrollbar-thumb:hover {
+.affine-doc-viewport:hover::-webkit-scrollbar-thumb:hover {
   background-color: var(--affine-icon-color);
   border-width: 5px;
 }
