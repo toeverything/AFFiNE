@@ -22,9 +22,6 @@ export const parameters = {
       date: /Date$/,
     },
   },
-  parameters: {
-    chromatic: { disableSnapshot: true },
-  },
 };
 
 const i18n = createI18n();
