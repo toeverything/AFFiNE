@@ -3,15 +3,19 @@ import {
   InviteModal,
   type InviteModalProps,
 } from '@affine/component/member-components';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
-import type { MouseEvent, ReactElement } from 'react';
+import { useSetAtom } from 'jotai/index';
+import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import type { CheckedUser } from '../../../hooks/affine/use-current-user';
+import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
@@ -20,8 +24,6 @@ import type { AffineOfficialWorkspace } from '../../../shared';
 import { WorkspaceAvatar } from '../../pure/footer';
 import { AnyErrorBoundary } from '../any-error-boundary';
 import * as style from './style.css';
-import { useSetAtom } from 'jotai/index';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 
 export type MembersPanelProps = {
   workspace: AffineOfficialWorkspace;
@@ -49,6 +51,8 @@ export const CloudWorkspaceMembersPanel = (
   const members = useMembers(workspaceId);
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(workspaceId);
+  const currentUser = useCurrentUser();
+
   const invite = useInviteMember(workspaceId);
   const [open, setOpen] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
@@ -102,7 +106,8 @@ export const CloudWorkspaceMembersPanel = (
             key={member.id}
             member={member}
             workspaceId={workspaceId}
-            showOperationButton={isOwner}
+            isOwner={isOwner}
+            currentUser={currentUser}
           />
         ))}
       </FlexWrapper>
@@ -112,31 +117,25 @@ export const CloudWorkspaceMembersPanel = (
 
 const Member = ({
   member,
-  showOperationButton,
+  isOwner,
+  currentUser,
   workspaceId,
 }: {
   member: Member;
-  showOperationButton: boolean;
   workspaceId: string;
+  isOwner: boolean;
+  currentUser: CheckedUser;
 }) => {
   const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
 
-  const onClickRevoke = useCallback(
-    async (event: MouseEvent<HTMLButtonElement>) => {
-      const button = event.target;
-      if (button instanceof HTMLButtonElement) {
-        const memberId = button.getAttribute('data-member-id');
-        if (memberId) {
-          await revokeMemberPermission(memberId);
-        } else {
-          throw new Error('Unexpected event target, missing data-member-id');
-        }
-      } else {
-        throw new Error('Unexpected event target');
-      }
+  const handleRevoke = useCallback(
+    async (memberId: string) => {
+      await revokeMemberPermission(memberId);
     },
     [revokeMemberPermission]
   );
+
+  const showOperationButton = isOwner && currentUser.email !== member.email;
   return (
     <div key={member.id} className={style.listItem}>
       <div>
@@ -153,18 +152,25 @@ const Member = ({
       <div className={style.permissionContainer}>{member.permission}</div>
       <Menu
         content={
-          <MenuItem>
+          <MenuItem
+            data-member-id={member.id}
+            onClick={useCallback(() => {
+              handleRevoke(member.id);
+            }, [handleRevoke, member.id])}
+          >
             Remove from Workspace
-            {/*<button data-member-id={member.id} onClick={onClickRevoke}>*/}
-            {/*  Remove from Workspace*/}
-            {/*</button>*/}
           </MenuItem>
         }
         placement="bottom"
         disablePortal={true}
         trigger="click"
       >
-        <IconButton>
+        <IconButton
+          disabled={!showOperationButton}
+          style={{
+            visibility: showOperationButton ? 'visible' : 'hidden',
+          }}
+        >
           <MoreVerticalIcon />
         </IconButton>
       </Menu>

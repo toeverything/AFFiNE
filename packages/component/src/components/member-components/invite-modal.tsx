@@ -32,7 +32,7 @@ const PermissionMenu = ({
               <MenuItem
                 key={permission}
                 onClick={() => {
-                  onChange(permission);
+                  onChange(permission as Permission);
                 }}
               >
                 {permission}
