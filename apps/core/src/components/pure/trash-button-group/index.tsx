@@ -8,10 +8,11 @@ import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 
-import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
+import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { buttonContainer, group } from './styles.css';
+
 export const TrashButtonGroup = () => {
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -33,7 +34,7 @@ export const TrashButtonGroup = () => {
     <div className={group}>
       <div className={buttonContainer}>
         <Button
-          type="processing"
+          type="primary"
           onClick={() => {
             restoreFromTrash(pageId);
           }}

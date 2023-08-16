@@ -5,12 +5,6 @@ export const profileWrapper = style({
   alignItems: 'flex-end',
   marginTop: '12px',
 });
-export const profileHandlerWrapper = style({
-  flexGrow: '1',
-  display: 'flex',
-  alignItems: 'center',
-  marginLeft: '20px',
-});
 
 export const avatarWrapper = style({
   width: '56px',
@@ -39,6 +33,8 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   alignItems: 'center',
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
+  color: 'var(--affine-white)',
+  fontSize: '24px',
 });
 
 export const urlButton = style({
@@ -70,4 +66,10 @@ export const fakeWrapper = style({
       cursor: 'not-allowed',
     },
   },
+});
+
+export const label = style({
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-secondary-color)',
+  marginBottom: '5px',
 });

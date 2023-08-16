@@ -52,7 +52,7 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
 
 export async function clickPageMoreActions(page: Page) {
   return page
-    .getByTestId('editor-header-items')
+    .getByTestId('header')
     .getByTestId('header-dropDownButton')
     .click();
 }

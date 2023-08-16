@@ -1,11 +1,12 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 import { type CSSProperties, forwardRef } from 'react';
 
 import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
-import { StyledFooter, StyledSignInButton } from './styles';
+import { StyledFooter } from './styles';
 
 export const Footer = () => {
   const t = useAFFiNEI18N();
@@ -13,13 +14,13 @@ export const Footer = () => {
 
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      <StyledSignInButton
+      <Button
         data-testid="sign-in-button"
         type="plain"
         icon={
-          <div className="circle">
-            <CloudWorkspaceIcon />
-          </div>
+          <CloudWorkspaceIcon
+            style={{ color: 'var(--affine-primary-color)' }}
+          />
         }
         onClick={async () => {
           if (!runtimeConfig.enableCloud) {
@@ -28,7 +29,7 @@ export const Footer = () => {
         }}
       >
         {t['Sign in']()}
-      </StyledSignInButton>
+      </Button>
     </StyledFooter>
   );
 };
