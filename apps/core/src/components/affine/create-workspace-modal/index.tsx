@@ -81,11 +81,7 @@ const NameWorkspaceContent = ({
         onChange={setWorkspaceName}
       />
       <div className={style.buttonGroup}>
-        <Button
-          data-testid="create-workspace-close-button"
-          type="primary"
-          onClick={onClose}
-        >
+        <Button data-testid="create-workspace-close-button" onClick={onClose}>
           {t.Cancel()}
         </Button>
         <Button

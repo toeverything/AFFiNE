@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Doc } from 'yjs';
-import * as Y from 'yjs';
+import { applyUpdate, Doc } from 'yjs';
 
 import { DocManager } from '../../doc';
 import { assertExists } from '../utils';
@@ -37,7 +36,7 @@ export class WorkspaceService {
       });
 
       const doc = new Doc({ guid });
-      Y.applyUpdate(doc, buf);
+      applyUpdate(doc, buf);
 
       for (const { guid } of doc.subdocs) {
         const subDoc = await this.docManager.getLatest(workspaceId, guid);

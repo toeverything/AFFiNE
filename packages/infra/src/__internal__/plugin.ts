@@ -11,6 +11,7 @@ export const builtinPluginPaths = new Set([
   '/plugins/hello-world',
   '/plugins/image-preview',
   '/plugins/vue-hello-world',
+  '/plugins/outline',
 ]);
 
 const pluginCleanupMap = new Map<string, (() => void)[]>();
@@ -34,6 +35,7 @@ export const pluginPackageJson = atom<
 export const enabledPluginAtom = atomWithStorage('affine-enabled-plugin', [
   '@affine/bookmark-plugin',
   '@affine/image-preview-plugin',
+  '@affine/outline-plugin',
 ]);
 
 export const pluginHeaderItemAtom = atom<

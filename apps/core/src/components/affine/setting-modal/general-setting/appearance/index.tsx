@@ -35,10 +35,10 @@ export const ThemeSettings = () => {
       <RadioButton value="system" data-testid="system-theme-trigger">
         {t['system']()}
       </RadioButton>
-      <RadioButton bold={true} value="light" data-testid="light-theme-trigger">
+      <RadioButton value="light" data-testid="light-theme-trigger">
         {t['light']()}
       </RadioButton>
-      <RadioButton bold={true} value="dark" data-testid="dark-theme-trigger">
+      <RadioButton value="dark" data-testid="dark-theme-trigger">
         {t['dark']()}
       </RadioButton>
     </RadioButtonGroup>
@@ -63,7 +63,6 @@ const FontFamilySettings = () => {
         return (
           <RadioButton
             key={key}
-            bold={true}
             value={key}
             data-testid="system-font-style-trigger"
             style={{
@@ -113,7 +112,17 @@ export const AppearanceSettings = () => {
           desc={t['com.affine.settings.appearance.language-description']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu />
+            <LanguageMenu
+              triggerContainerStyle={{ width: '100%' }}
+              triggerProps={{
+                style: {
+                  width: '100%',
+                  justifyContent: 'space-between',
+                  fontWeight: 600,
+                  padding: '0 10px',
+                },
+              }}
+            />
           </div>
         </SettingRow>
         {environment.isDesktop ? (

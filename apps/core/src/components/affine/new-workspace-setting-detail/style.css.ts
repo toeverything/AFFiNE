@@ -108,3 +108,9 @@ globalStyle(`${listItem}:hover ${iconButton}`, {
   opacity: 1,
   pointerEvents: 'all',
 });
+
+export const label = style({
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-secondary-color)',
+  marginBottom: '5px',
+});
