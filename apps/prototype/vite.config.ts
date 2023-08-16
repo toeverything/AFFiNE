@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
 
+import { getRuntimeConfig } from '../core/.webpack/runtime-config';
+
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
@@ -17,6 +19,20 @@ export default defineConfig({
         ),
       },
     },
+  },
+  define: {
+    'process.env': {},
+    'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
+    'process.env.SHOULD_REPORT_TRACE': `${Boolean(
+      process.env.SHOULD_REPORT_TRACE
+    )}`,
+    'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
+    runtimeConfig: getRuntimeConfig({
+      distribution: 'browser',
+      mode: 'development',
+      channel: 'canary',
+      coverage: false,
+    }),
   },
   plugins: [react()],
 });
