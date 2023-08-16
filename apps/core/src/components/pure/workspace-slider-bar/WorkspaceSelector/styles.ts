@@ -6,7 +6,6 @@ export const StyledSelectorContainer = styled('div')(() => {
     display: 'flex',
     alignItems: 'center',
     padding: '0 6px',
-    margin: '0 -6px',
     borderRadius: '8px',
     color: 'var(--affine-text-primary-color)',
     ':hover': {

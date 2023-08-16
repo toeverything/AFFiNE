@@ -4,7 +4,6 @@ export const baseContainer = style({
   padding: '4px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
-  rowGap: '4px',
 });
 
 export const scrollableContainerRoot = style({
