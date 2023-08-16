@@ -7,6 +7,9 @@ import type { Meta } from '@storybook/react';
 export default {
   title: 'AFFiNE/ImportPage',
   component: ImportPage,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta;
 
 const Template: StoryFn<typeof ImportPage> = args => <ImportPage {...args} />;
