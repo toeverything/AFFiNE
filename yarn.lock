@@ -554,6 +554,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/outline-plugin@workspace:plugins/outline":
+  version: 0.0.0-use.local
+  resolution: "@affine/outline-plugin@workspace:plugins/outline"
+  dependencies:
+    "@affine/component": "workspace:*"
+    "@affine/plugin-cli": "workspace:*"
+    "@affine/sdk": "workspace:*"
+    "@blocksuite/icons": ^2.1.29
+    "@toeverything/components": ^0.0.8
+    jotai: ^2.2.2
+    react: 18.2.0
+    react-dom: 18.2.0
+  languageName: unknown
+  linkType: soft
+
 "@affine/plugin-cli@workspace:*, @affine/plugin-cli@workspace:packages/plugin-cli":
   version: 0.0.0-use.local
   resolution: "@affine/plugin-cli@workspace:packages/plugin-cli"
@@ -3441,7 +3456,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:^2.1.30, @blocksuite/icons@npm:^2.1.31":
+"@blocksuite/icons@npm:^2.1.26, @blocksuite/icons@npm:^2.1.29, @blocksuite/icons@npm:^2.1.30, @blocksuite/icons@npm:^2.1.31":
   version: 2.1.31
   resolution: "@blocksuite/icons@npm:2.1.31"
   peerDependencies:
@@ -11421,6 +11436,20 @@ __metadata:
     react: ^18
     react-dom: ^18
   checksum: 6c610c780ac68f59e1251dd8a6aa196bde28a485cd18de2c0b7c0c2ab6330c1863e22846d83c5b39cba073bb045cddd207f6c0a079e7d155cd0d12eda21504c9
+  languageName: node
+  linkType: hard
+
+"@toeverything/components@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@toeverything/components@npm:0.0.8"
+  dependencies:
+    "@blocksuite/icons": ^2.1.26
+  peerDependencies:
+    "@radix-ui/react-avatar": ^1
+    clsx: ^2
+    react: ^18
+    react-dom: ^18
+  checksum: 9c955d3c46729397e92031cc6a5ba0f15eb8a67893862b4c6c017c87fff2ab8e9ee8505695b0da571f2af35ad6545f643fc34f657f1c9d1913648796971540d9
   languageName: node
   linkType: hard
 
@@ -22753,7 +22782,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.3.1":
+"jotai@npm:^2.2.2, jotai@npm:^2.3.1":
   version: 2.3.1
   resolution: "jotai@npm:2.3.1"
   peerDependencies:

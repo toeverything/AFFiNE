@@ -36,9 +36,13 @@ const importLogger = new DebugLogger('plugins:import');
 const pushLayoutAtom = atom<
   null,
   // fixme: check plugin name here
-  [pluginName: string, create: (root: HTMLElement) => () => void],
+  [
+    pluginName: string,
+    create: (root: HTMLElement) => () => void,
+    options: { maxWidth: (number | undefined)[] } | undefined,
+  ],
   void
->(null, (_, set, pluginName, callback) => {
+>(null, (_, set, pluginName, callback, options) => {
   set(pluginWindowAtom, items => ({
     ...items,
     [pluginName]: callback,
@@ -50,20 +54,20 @@ const pushLayoutAtom = atom<
         first: 'editor',
         second: pluginName,
         splitPercentage: 70,
+        maxWidth: options?.maxWidth,
       };
     } else {
       return {
-        ...layout,
         direction: 'horizontal',
         first: 'editor',
+        splitPercentage: 70,
         second: {
           direction: 'horizontal',
-          // fixme: incorrect type here
-          first: layout.second,
-          second: pluginName,
-          splitPercentage: 70,
+          first: pluginName,
+          second: layout.second,
+          splitPercentage: 50,
         },
-      } as ExpectedLayout;
+      } satisfies ExpectedLayout;
     }
   });
   addCleanup(pluginName, () => {
@@ -77,36 +81,27 @@ const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
     delete newItems[id];
     return newItems;
   });
-  const removeLayout = (layout: LayoutNode): LayoutNode => {
-    if (layout === 'editor') {
-      return 'editor';
+  const removeLayout = (layout: LayoutNode): LayoutNode | string => {
+    if (typeof layout === 'string') {
+      return layout;
+    }
+    if (layout.first === id) {
+      return layout.second;
+    } else if (layout.second === id) {
+      return layout.first;
     } else {
-      if (typeof layout === 'string') {
-        return layout as ExpectedLayout;
-      }
-      if (layout.first === id) {
-        return layout.second;
-      } else if (layout.second === id) {
-        return layout.first;
-      } else {
-        return removeLayout(layout.second);
-      }
+      return {
+        ...layout,
+        second: removeLayout(layout.second),
+      };
     }
   };
+
   set(contentLayoutAtom, layout => {
     if (layout === 'editor') {
       return 'editor';
     } else {
-      if (typeof layout === 'string') {
-        return layout as ExpectedLayout;
-      }
-      if (layout.first === id) {
-        return layout.second as ExpectedLayout;
-      } else if (layout.second === id) {
-        return layout.first as ExpectedLayout;
-      } else {
-        return removeLayout(layout.second) as ExpectedLayout;
-      }
+      return removeLayout(layout) as ExpectedLayout;
     }
   });
 });
@@ -123,6 +118,7 @@ const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
   swr: import('swr'),
   '@affine/component': import('@affine/component'),
   '@blocksuite/icons': import('@blocksuite/icons'),
+  '@blocksuite/blocks': import('@blocksuite/blocks'),
   '@affine/sdk/entry': {
     rootStore: rootStore,
     currentWorkspaceAtom: currentWorkspaceAtom,

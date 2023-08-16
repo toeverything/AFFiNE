@@ -1,0 +1,26 @@
+{
+  "name": "@affine/outline-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "{workspaceRoot}/packages/plugin-cli/src/**/*",
+      "sharedGlobals"
+    ]
+  },
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "build"
+      },
+      "dependsOn": ["^build"],
+      "inputs": ["default"],
+      "outputs": [
+        "{workspaceRoot}/apps/core/public/plugins/outline",
+        "{workspaceRoot}/apps/electron/dist/plugins/outline"
+      ]
+    }
+  },
+  "tags": ["plugin"]
+}
