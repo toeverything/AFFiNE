@@ -252,3 +252,11 @@ affine-block-hub {
     padding: 0;
   }
 }
+
+button,
+input,
+select,
+textarea,
+[role='button'] {
+  -webkit-app-region: no-drag;
+}
