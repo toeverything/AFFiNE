@@ -625,7 +625,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   }
 
   await locator.getByTestId('download-button').hover();
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
   {
     const element = await page.getByRole('tooltip');
     const downloadTooltip = await element.getByText('Download').count();

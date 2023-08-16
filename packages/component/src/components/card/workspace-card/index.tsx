@@ -5,7 +5,6 @@ import { SettingsIcon } from '@blocksuite/icons';
 import {
   CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
   CollaborationIcon as DefaultJoinedWorkspaceIcon,
-  LocalDataIcon as DefaultLocalDataIcon,
   LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
 } from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -16,8 +15,8 @@ import { WorkspaceAvatar } from '../../workspace-avatar';
 import {
   StyledCard,
   StyledSettingLink,
-  StyleWorkspaceInfo,
-  StyleWorkspaceTitle,
+  StyledWorkspaceInfo,
+  StyledWorkspaceTitle,
 } from './styles';
 
 const JoinedWorkspaceIcon = () => {
@@ -31,9 +30,9 @@ const CloudWorkspaceIcon = () => {
   return <DefaultCloudWorkspaceIcon style={{ color: '#60A5FA' }} />;
 };
 
-const LocalDataIcon = () => {
-  return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
-};
+// const LocalDataIcon = () => {
+//   return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
+// };
 
 export interface WorkspaceTypeProps {
   flavour: WorkspaceFlavour;
@@ -46,7 +45,7 @@ const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
 
   if (flavour === WorkspaceFlavour.LOCAL) {
     return (
-      <p title={t['Local Workspace']()}>
+      <p style={{ fontSize: '10px' }} title={t['Local Workspace']()}>
         <LocalWorkspaceIcon />
         <span>{t['Local Workspace']()}</span>
       </p>
@@ -54,12 +53,12 @@ const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
   }
 
   return isOwner ? (
-    <p title={t['Cloud Workspace']()}>
+    <p style={{ fontSize: '10px' }} title={t['Cloud Workspace']()}>
       <CloudWorkspaceIcon />
       <span>{t['Cloud Workspace']()}</span>
     </p>
   ) : (
-    <p title={t['Joined Workspace']()}>
+    <p style={{ fontSize: '10px' }} title={t['Joined Workspace']()}>
       <JoinedWorkspaceIcon />
       <span>{t['Joined Workspace']()}</span>
     </p>
@@ -79,7 +78,7 @@ export const WorkspaceCard = ({
   currentWorkspaceId,
   meta,
 }: WorkspaceCardProps) => {
-  const t = useAFFiNEI18N();
+  // const t = useAFFiNEI18N();
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [name] = useBlockSuiteWorkspaceName(workspace);
 
@@ -91,18 +90,18 @@ export const WorkspaceCard = ({
       }, [onClick, meta.id])}
       active={workspace.id === currentWorkspaceId}
     >
-      <WorkspaceAvatar size={58} workspace={workspace} />
+      <WorkspaceAvatar size={28} workspace={workspace} />
 
-      <StyleWorkspaceInfo>
-        <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
+      <StyledWorkspaceInfo>
+        <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>
         <WorkspaceType flavour={meta.flavour} />
-        {meta.flavour === WorkspaceFlavour.LOCAL && (
+        {/* {meta.flavour === WorkspaceFlavour.LOCAL && (
           <p title={t['Available Offline']()}>
             <LocalDataIcon />
             <span>{t['Available Offline']()}</span>
           </p>
-        )}
-      </StyleWorkspaceInfo>
+        )} */}
+      </StyledWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"
         onClick={e => {
