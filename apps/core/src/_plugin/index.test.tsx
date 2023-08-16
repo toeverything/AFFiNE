@@ -9,13 +9,14 @@ import { Provider } from 'jotai/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { _pluginNestedImportsMap } from '../bootstrap/plugins/setup';
+import { createSetup } from '../bootstrap/plugins/setup';
 import { bootstrapPluginSystem } from '../bootstrap/register-plugins';
 
 async function main() {
   const { setup } = await import('../bootstrap/setup');
   const rootStore = getCurrentStore();
   await setup(rootStore);
+  const { _pluginNestedImportsMap } = createSetup(rootStore);
   const pluginRegisterPromise = bootstrapPluginSystem(rootStore);
   const root = document.getElementById('app');
   assertExists(root);

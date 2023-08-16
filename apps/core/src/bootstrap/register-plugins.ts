@@ -12,7 +12,7 @@ import {
 import { packageJsonOutputSchema } from '@toeverything/infra/type';
 import type { z } from 'zod';
 
-import { evaluatePluginEntry, setupPluginCode } from './plugins/setup';
+import { createSetup } from './plugins/setup';
 
 const logger = new DebugLogger('register-plugins');
 
@@ -30,6 +30,7 @@ Object.defineProperty(globalThis, '__pluginPackageJson__', {
 export async function bootstrapPluginSystem(
   rootStore: ReturnType<typeof getCurrentStore>
 ) {
+  const { evaluatePluginEntry, setupPluginCode } = createSetup(rootStore);
   rootStore.sub(enabledPluginAtom, () => {
     const added = new Set<string>();
     const removed = new Set<string>();
