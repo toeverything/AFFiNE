@@ -4,7 +4,13 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useCallback, useState } from 'react';
+import {
+  type ComponentPropsWithoutRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../../../shared';
 import { toast } from '../../../../../utils';
@@ -16,6 +22,21 @@ import {
   StyledTextContent,
   StyledWorkspaceName,
 } from './style';
+
+const DeleteWorkspaceInput = (
+  props: ComponentPropsWithoutRef<typeof Input>
+) => {
+  // I tried to use 'autoFocus' and ref callback wrapped by useCallback
+  // Only this way works
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const currentRef = inputRef.current;
+    if (!currentRef) return;
+    currentRef.focus();
+  }, []);
+
+  return <Input ref={inputRef} {...props} />;
+};
 
 interface WorkspaceDeleteProps {
   open: boolean;
@@ -79,12 +100,7 @@ export const WorkspaceDeleteModal = ({
           </StyledTextContent>
         )}
         <StyledInputContent>
-          <Input
-            ref={ref => {
-              if (ref) {
-                setTimeout(() => ref.focus(), 0);
-              }
-            }}
+          <DeleteWorkspaceInput
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
             placeholder={t['Placeholder of delete workspace']()}
