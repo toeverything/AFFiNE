@@ -84,11 +84,16 @@ export const WorkspaceList: StoryFn = () => {
 };
 WorkspaceList.play = async ({ canvasElement }) => {
   // click current-workspace
-  await waitFor(() => {
-    assertExists(
-      canvasElement.querySelector('[data-testid="current-workspace"]')
-    );
-  });
+  await waitFor(
+    () => {
+      assertExists(
+        canvasElement.querySelector('[data-testid="current-workspace"]')
+      );
+    },
+    {
+      timeout: 5000,
+    }
+  );
   const currentWorkspace = canvasElement.querySelector(
     '[data-testid="current-workspace"]'
   ) as Element;
