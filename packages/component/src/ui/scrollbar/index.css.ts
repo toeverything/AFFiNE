@@ -70,6 +70,7 @@ export const scrollbarThumb = style({
   position: 'relative',
   background: 'var(--affine-divider-color)',
   width: '50%',
+  overflow: 'hidden',
   borderRadius: '4px',
   ':hover': {
     background: 'var(--affine-icon-color)',
