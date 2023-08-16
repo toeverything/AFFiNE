@@ -12,7 +12,6 @@ import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 
 export const StyledListItem = styled(MenuItem)(() => ({
-  width: '132px',
   height: '38px',
   textTransform: 'capitalize',
 }));

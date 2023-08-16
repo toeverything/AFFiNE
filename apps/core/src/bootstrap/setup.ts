@@ -169,7 +169,14 @@ function createFirstAppData() {
   rootStore.set(rootWorkspacesMetadataAtom, result);
 }
 
+let isSetup = false;
+
 export async function setup() {
+  if (isSetup) {
+    console.warn('already setup');
+    return;
+  }
+  isSetup = true;
   rootStore.set(
     workspaceAdaptersAtom,
     WorkspaceAdapters as Record<
