@@ -18,7 +18,7 @@ export function AffineContext(props: AffineContextProps) {
             <Provider key="JotaiProvider" store={props.store} />,
             <ThemeProvider key="ThemeProvider" />,
           ].filter(Boolean),
-        []
+        [props.store]
       )}
     >
       {props.children}
