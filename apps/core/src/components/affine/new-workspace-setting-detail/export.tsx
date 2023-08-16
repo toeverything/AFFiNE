@@ -38,9 +38,8 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   const t = useAFFiNEI18N();
   const onExport = useCallback(async () => {
     await syncBlobsToSqliteDb(workspace);
-    const result: SaveDBFileResult = await window.apis?.dialog.saveDBFileAs(
-      workspaceId
-    );
+    const result: SaveDBFileResult =
+      await window.apis?.dialog.saveDBFileAs(workspaceId);
     if (result?.error) {
       toast(t[result.error]());
     } else if (!result?.canceled) {

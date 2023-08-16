@@ -13,7 +13,6 @@ import {
 
 import { styled } from '../../styles';
 import type { PopperProps, VirtualElement } from './interface';
-import { PopperArrow } from './popover-arrow';
 export const Popper = ({
   children,
   content,
@@ -41,7 +40,8 @@ export const Popper = ({
 }: PopperProps) => {
   const [anchorEl, setAnchorEl] = useState<VirtualElement>();
   const [visible, setVisible] = useState(defaultVisible);
-  const [arrowRef, setArrowRef] = useState<HTMLElement>();
+  //const [arrowRef, setArrowRef] = useState<HTMLElement>();
+  const arrowRef = null;
   const pointerLeaveTimer = useRef<number>();
   const pointerEnterTimer = useRef<number>();
 
@@ -170,12 +170,111 @@ export const Popper = ({
                     }
                   }}
                 >
-                  {showArrow && (
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-ignore
-                    <PopperArrow placement={placement} ref={setArrowRef} />
+                  {showArrow ? (
+                    <>
+                      {placement.indexOf('bottom') === 0 ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="11"
+                            height="6"
+                            viewBox="0 0 11 6"
+                            fill="none"
+                          >
+                            <path
+                              d="M6.38889 0.45C5.94444 -0.15 5.05555 -0.150001 4.61111 0.449999L0.499999 6L10.5 6L6.38889 0.45Z"
+                              style={{ fill: 'var(--affine-tooltip)' }}
+                            />
+                          </svg>
+                          {content}
+                        </div>
+                      ) : placement.indexOf('top') === 0 ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {content}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="11"
+                            height="6"
+                            viewBox="0 0 11 6"
+                            fill="none"
+                          >
+                            <path
+                              d="M4.61111 5.55C5.05556 6.15 5.94445 6.15 6.38889 5.55L10.5 -4.76837e-07H0.5L4.61111 5.55Z"
+                              style={{ fill: 'var(--affine-tooltip)' }}
+                            />
+                          </svg>
+                        </div>
+                      ) : placement.indexOf('left') === 0 ? (
+                        <>
+                          {content}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="6"
+                            height="10"
+                            viewBox="0 0 6 10"
+                            fill="none"
+                          >
+                            <path
+                              d="M5.55 5.88889C6.15 5.44444 6.15 4.55555 5.55 4.11111L-4.76837e-07 0L-4.76837e-07 10L5.55 5.88889Z"
+                              style={{ fill: 'var(--affine-tooltip)' }}
+                            />
+                          </svg>
+                        </>
+                      ) : placement.indexOf('right') === 0 ? (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="6"
+                            height="10"
+                            viewBox="0 0 6 10"
+                            style={{ fill: 'var(--affine-tooltip)' }}
+                          >
+                            <path
+                              d="M0.45 4.11111C-0.15 4.55556 -0.15 5.44445 0.45 5.88889L6 10V0L0.45 4.11111Z"
+                              style={{ fill: 'var(--affine-tooltip)' }}
+                            />
+                          </svg>
+                          {content}
+                        </>
+                      ) : (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {content}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="11"
+                            height="6"
+                            viewBox="0 0 11 6"
+                            fill="none"
+                          >
+                            <path
+                              d="M4.61111 5.55C5.05556 6.15 5.94445 6.15 6.38889 5.55L10.5 -4.76837e-07H0.5L4.61111 5.55Z"
+                              style={{ fill: 'var(--affine-tooltip)' }}
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>{content}</>
                   )}
-                  {content}
                 </div>
               </Grow>
             )}

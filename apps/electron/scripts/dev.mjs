@@ -1,12 +1,10 @@
 /* eslint-disable no-async-promise-executor */
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
-import { config, electronDir } from './common.mjs';
+import { config } from './common.mjs';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -18,20 +16,6 @@ const stderrFilterPatterns = [
   // https://github.com/MarshallOfSound/electron-devtools-installer/issues/143
   /ExtensionLoadWarning/,
 ];
-
-// these are set before calling `config`, so we have a chance to override them
-try {
-  const devJson = readFileSync(
-    path.resolve(electronDir, './dev.json'),
-    'utf-8'
-  );
-  const devEnv = JSON.parse(devJson);
-  Object.assign(process.env, devEnv);
-} catch (err) {
-  console.warn(
-    `Could not read dev.json. Some functions may not work as expected.`
-  );
-}
 
 /** @type {ChildProcessWithoutNullStreams | null} */
 let spawnProcess = null;
