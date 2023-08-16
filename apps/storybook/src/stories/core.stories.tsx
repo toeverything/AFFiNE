@@ -1,7 +1,7 @@
 import { pluginRegisterPromise } from '@affine/core/bootstrap/register-plugins';
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
-import type { StoryContext, StoryFn } from '@storybook/react';
+import type { Decorator, StoryFn } from '@storybook/react';
 import { userEvent, waitFor } from '@storybook/testing-library';
 import { use } from 'foxact/use';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -11,9 +11,9 @@ import {
   withRouter,
 } from 'storybook-addon-react-router-v6';
 
-const withCleanLocalStorage = (Story: StoryFn, context: StoryContext) => {
+const withCleanLocalStorage: Decorator = (Story, context) => {
   localStorage.clear();
-  return <Story {...context.args} />;
+  return <Story {...context} />;
 };
 
 const FakeApp = () => {
@@ -75,6 +75,36 @@ NotFoundPage.parameters = {
     routing: reactRouterOutlets(routes),
     location: {
       path: '/404',
+    },
+  }),
+};
+
+export const WorkspaceList: StoryFn = () => {
+  return <FakeApp />;
+};
+WorkspaceList.play = async ({ canvasElement }) => {
+  // click current-workspace
+  await waitFor(
+    () => {
+      assertExists(
+        canvasElement.querySelector('[data-testid="current-workspace"]')
+      );
+    },
+    {
+      timeout: 5000,
+    }
+  );
+  const currentWorkspace = canvasElement.querySelector(
+    '[data-testid="current-workspace"]'
+  ) as Element;
+  await userEvent.click(currentWorkspace);
+};
+WorkspaceList.decorators = [withRouter, withCleanLocalStorage];
+WorkspaceList.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/',
     },
   }),
 };
