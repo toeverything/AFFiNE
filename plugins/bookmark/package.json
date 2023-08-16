@@ -21,8 +21,8 @@
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/icons": "^2.1.31",
-    "foxact": "^0.2.17",
-    "link-preview-js": "^3.0.4"
+    "foxact": "^0.2.20",
+    "link-preview-js": "^3.0.5"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*"

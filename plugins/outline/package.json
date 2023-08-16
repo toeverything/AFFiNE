@@ -17,12 +17,12 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "^2.1.29",
-    "@toeverything/components": "^0.0.8"
+    "@blocksuite/icons": "^2.1.31",
+    "@toeverything/components": "^0.0.11"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
-    "jotai": "^2.2.2",
+    "jotai": "^2.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   }

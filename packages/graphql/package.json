@@ -16,12 +16,12 @@
     "@graphql-codegen/typescript-operations": "^4.0.1",
     "@types/lodash-es": "^4.17.8",
     "lodash-es": "^4.17.21",
-    "prettier": "^3.0.1"
+    "prettier": "^3.0.2"
   },
   "scripts": {
     "postinstall": "gql-gen"
   },
   "dependencies": {
-    "graphql": "^16.7.1"
+    "graphql": "^16.8.0"
   }
 }

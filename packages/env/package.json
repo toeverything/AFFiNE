@@ -8,7 +8,7 @@
     "@blocksuite/global": "0.0.0-20230816084758-3be96d22-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zod": "^3.21.4"
+    "zod": "^3.22.1"
   },
   "exports": {
     "./automation": "./src/automation.ts",
