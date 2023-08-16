@@ -1,4 +1,3 @@
-/// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
 import { z } from 'zod';
 
