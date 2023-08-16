@@ -82,10 +82,32 @@ export const StyledCreateWorkspaceCardPillContainer = styled('div')(() => {
 
 export const StyledCreateWorkspaceCardPill = styled('div')(() => {
   return {
+    borderRadius: '8px',
+    display: 'flex',
+    width: '100%',
+    height: '58px',
+    background: 'var(--affine-background-primary-color)',
+    border: `1px solid var(--affine-border-color)`,
+  };
+});
+
+export const StyledSignInCardPill = styled('div')(() => {
+  return {
+    borderRadius: '8px',
+    display: 'flex',
+    width: '100%',
+    height: '58px',
+    marginBottom: '6px',
+    background: 'var(--affine-background-primary-color)',
+  };
+});
+
+export const StyledImportWorkspaceCardPill = styled('div')(() => {
+  return {
     borderRadius: '5px',
     display: 'flex',
-    boxShadow: '0px 0px 6px 0px rgba(0, 0, 0, 0.1)',
-    background: 'var(--affine-background-primary-color)',
+    width: '100%',
+    marginBottom: '12px',
   };
 });
 
@@ -94,7 +116,6 @@ export const StyledCreateWorkspaceCardPillContent = styled('div')(() => {
     display: 'flex',
     gap: '12px',
     alignItems: 'center',
-    justifyContent: 'space-between',
   };
 });
 
@@ -106,10 +127,27 @@ export const StyledCreateWorkspaceCardPillIcon = styled('div')(() => {
   };
 });
 
-export const StyledCreateWorkspaceCardPillTextSecondary = styled('div')(() => {
+export const StyledSignInCardPillTextCotainer = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+  };
+});
+
+export const StyledSignInCardPillTextSecondary = styled('div')(() => {
   return {
     fontSize: '12px',
     color: 'var(--affine-text-secondary-color)',
+  };
+});
+
+export const StyledSignInCardPillTextPrimary = styled('div')(() => {
+  return {
+    fontSize: 'var(--affine-font-base)',
+    fontWeight: 600,
+    lineHeight: '24px',
+    maxWidth: '200px',
+    ...textEllipsis(1),
   };
 });
 
@@ -120,6 +158,7 @@ export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
     fontSize: 'var(--affine-font-h6)',
+    color: 'var(--affine-text-primary-color)',
   };
 });
 
@@ -134,10 +173,9 @@ export const StyledHelperContainer = styled('div')(() => {
 });
 
 export const StyledModalContent = styled('div')({
-  height: '540px',
-  padding: '8px 40px',
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
+  flexDirection: 'column',
 });
 export const StyledOperationWrapper = styled('div')(() => {
   return {
@@ -162,11 +200,22 @@ export const StyleWorkspaceAdd = styled('div')(() => {
 export const StyledModalHeader = styled('div')(() => {
   return {
     width: '100%',
-    marginTop: '10px',
     left: 0,
     top: 0,
     borderRadius: '24px 24px 0 0',
-    padding: '10px 40px',
+    padding: '12px 14px',
     ...displayFlex('space-between', 'center'),
+  };
+});
+
+export const StyledModalBody = styled('div')(() => {
+  return {
+    borderRadius: '8px',
+    padding: '12px',
+    display: 'inline-flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '12px',
+    background: 'var(--affine-white)',
   };
 });

@@ -67,7 +67,6 @@ export const mainContainerStyle = style({
   width: 0,
   flex: 1,
   maxWidth: '100%',
-  zIndex: 2,
   backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
