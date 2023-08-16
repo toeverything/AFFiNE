@@ -37,8 +37,6 @@ export const root = style({
     //     'linear-gradient(0deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04)), rgba(0, 0, 0, 0.04)',
     // },
     '&[data-collapsible="true"]': {
-      width: 'calc(100% + 16px)',
-      transform: 'translateX(-8px)',
       paddingLeft: '4px',
       paddingRight: '4px',
     },

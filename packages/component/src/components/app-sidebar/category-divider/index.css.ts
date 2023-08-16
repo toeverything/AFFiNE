@@ -9,6 +9,7 @@ export const root = style({
   alignItems: 'center',
   justifyContent: 'space-between',
   marginBottom: '4px',
+  padding: '0 8px',
   selectors: {
     '&:not(:first-of-type)': {
       marginTop: '16px',
