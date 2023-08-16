@@ -16,8 +16,9 @@ import {
   PlusIcon,
 } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { Divider, Popover } from '@mui/material';
+import { Popover } from '@mui/material';
 import { IconButton } from '@toeverything/components/button';
+import { Divider } from '@toeverything/components/divider';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

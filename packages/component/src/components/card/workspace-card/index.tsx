@@ -15,8 +15,8 @@ import { WorkspaceAvatar } from '../../workspace-avatar';
 import {
   StyledCard,
   StyledSettingLink,
-  StyleWorkspaceInfo,
-  StyleWorkspaceTitle,
+  StyledWorkspaceInfo,
+  StyledWorkspaceTitle,
 } from './styles';
 
 const JoinedWorkspaceIcon = () => {
@@ -92,8 +92,8 @@ export const WorkspaceCard = ({
     >
       <WorkspaceAvatar size={28} workspace={workspace} />
 
-      <StyleWorkspaceInfo>
-        <StyleWorkspaceTitle>{name}</StyleWorkspaceTitle>
+      <StyledWorkspaceInfo>
+        <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>
         <WorkspaceType flavour={meta.flavour} />
         {/* {meta.flavour === WorkspaceFlavour.LOCAL && (
           <p title={t['Available Offline']()}>
@@ -101,7 +101,7 @@ export const WorkspaceCard = ({
             <span>{t['Available Offline']()}</span>
           </p>
         )} */}
-      </StyleWorkspaceInfo>
+      </StyledWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"
         onClick={e => {
