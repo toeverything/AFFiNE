@@ -188,7 +188,7 @@ export const Popper = ({
                           >
                             <path
                               d="M6.38889 0.45C5.94444 -0.15 5.05555 -0.150001 4.61111 0.449999L0.499999 6L10.5 6L6.38889 0.45Z"
-                              fill="#424149"
+                              style={{ fill: 'var(--affine-tooltip)' }}
                             />
                           </svg>
                           {content}
@@ -211,7 +211,7 @@ export const Popper = ({
                           >
                             <path
                               d="M4.61111 5.55C5.05556 6.15 5.94445 6.15 6.38889 5.55L10.5 -4.76837e-07H0.5L4.61111 5.55Z"
-                              fill="#424149"
+                              style={{ fill: 'var(--affine-tooltip)' }}
                             />
                           </svg>
                         </div>
@@ -227,7 +227,7 @@ export const Popper = ({
                           >
                             <path
                               d="M5.55 5.88889C6.15 5.44444 6.15 4.55555 5.55 4.11111L-4.76837e-07 0L-4.76837e-07 10L5.55 5.88889Z"
-                              fill="#424149"
+                              style={{ fill: 'var(--affine-tooltip)' }}
                             />
                           </svg>
                         </>
@@ -238,11 +238,11 @@ export const Popper = ({
                             width="6"
                             height="10"
                             viewBox="0 0 6 10"
-                            fill="none"
+                            style={{ fill: 'var(--affine-tooltip)' }}
                           >
                             <path
                               d="M0.45 4.11111C-0.15 4.55556 -0.15 5.44445 0.45 5.88889L6 10V0L0.45 4.11111Z"
-                              fill="#424149"
+                              style={{ fill: 'var(--affine-tooltip)' }}
                             />
                           </svg>
                           {content}
@@ -265,7 +265,7 @@ export const Popper = ({
                           >
                             <path
                               d="M4.61111 5.55C5.05556 6.15 5.94445 6.15 6.38889 5.55L10.5 -4.76837e-07H0.5L4.61111 5.55Z"
-                              fill="#424149"
+                              style={{ fill: 'var(--affine-tooltip)' }}
                             />
                           </svg>
                         </div>
