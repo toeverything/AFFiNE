@@ -158,6 +158,7 @@ export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
     fontSize: 'var(--affine-font-h6)',
+    color: 'var(--affine-text-primary-color)',
   };
 });
 

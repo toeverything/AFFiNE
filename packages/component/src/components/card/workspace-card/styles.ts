@@ -2,7 +2,7 @@ import { IconButton } from '@toeverything/components/button';
 
 import { displayFlex, styled, textEllipsis } from '../../../styles';
 
-export const StyleWorkspaceInfo = styled('div')(() => {
+export const StyledWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -23,12 +23,13 @@ export const StyleWorkspaceInfo = styled('div')(() => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(() => {
+export const StyledWorkspaceTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
     maxWidth: '200px',
+    color: 'var(--affine-text-primary-color)',
     ...textEllipsis(1),
   };
 });
@@ -50,6 +51,7 @@ export const StyledCard = styled('div')<{
     transition: 'background .2s',
     alignItems: 'center',
     position: 'relative',
+    color: 'var(--affine-text-secondary-color)',
     background: backgroundColor,
     ':hover': {
       background: 'var(--affine-hover-color)',
