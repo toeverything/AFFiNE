@@ -78,3 +78,28 @@ NotFoundPage.parameters = {
     },
   }),
 };
+
+export const WorkspaceList: StoryFn = () => {
+  return <FakeApp />;
+};
+WorkspaceList.play = async ({ canvasElement }) => {
+  // click current-workspace
+  await waitFor(() => {
+    assertExists(
+      canvasElement.querySelector('[data-testid="current-workspace"]')
+    );
+  });
+  const currentWorkspace = canvasElement.querySelector(
+    '[data-testid="current-workspace"]'
+  ) as Element;
+  await userEvent.click(currentWorkspace);
+};
+WorkspaceList.decorators = [withRouter, withCleanLocalStorage];
+WorkspaceList.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/',
+    },
+  }),
+};
