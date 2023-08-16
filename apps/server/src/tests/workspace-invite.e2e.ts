@@ -249,6 +249,7 @@ test('should send email', async t => {
 });
 
 test('should support pagination for member', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
   const u3 = await signUp(app, 'u3', 'u3@affine.pro', '1');
