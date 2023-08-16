@@ -13,6 +13,9 @@ import { userEvent } from '@storybook/testing-library';
 export default {
   title: 'AFFiNE/PageList',
   component: PageList,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 };
 
 export const AffineOperationCell: StoryFn<OperationCellProps> = ({

@@ -4,12 +4,12 @@ import '@affine/component/theme/theme.css';
 import '@toeverything/components/style.css';
 import { createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
-import type { ComponentType } from 'react';
-import { useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
 import { setup } from '@affine/core/bootstrap/setup';
 import { AffineContext } from '@affine/component/context';
 import { use } from 'foxact/use';
+import useSWR from 'swr';
+import type { Decorator } from '@storybook/react';
 
 const setupPromise = setup();
 
@@ -24,38 +24,42 @@ export const parameters = {
   },
 };
 
-const createI18nDecorator = () => {
-  const i18n = createI18n();
-  const withI18n = (Story: any, context: any) => {
-    const locale = context.globals.locale;
-    useEffect(() => {
-      i18n.changeLanguage(locale);
-    }, [locale]);
-    return <Story {...context} />;
-  };
-  return withI18n;
+const i18n = createI18n();
+const withI18n: Decorator = (Story, context) => {
+  const locale = context.globals.locale;
+  useSWR(
+    locale,
+    async () => {
+      await i18n.changeLanguage(locale);
+    },
+    {
+      suspense: true,
+    }
+  );
+  return <Story {...context} />;
 };
 
-const Component = () => {
+const ThemeChange = () => {
   const isDark = useDarkMode();
   const theme = useTheme();
-  useEffect(() => {
-    theme.setTheme(isDark ? 'dark' : 'light');
-  }, [isDark]);
+  if (theme.resolvedTheme === 'dark' && !isDark) {
+    theme.setTheme('light');
+  } else if (theme.resolvedTheme === 'light' && isDark) {
+    theme.setTheme('dark');
+  }
   return null;
 };
 
-export const decorators = [
-  (Story: ComponentType) => {
-    use(setupPromise);
-    return (
-      <ThemeProvider>
-        <AffineContext>
-          <Component />
-          <Story />
-        </AffineContext>
-      </ThemeProvider>
-    );
-  },
-  createI18nDecorator(),
-];
+const withContextDecorator: Decorator = (Story, context) => {
+  use(setupPromise);
+  return (
+    <ThemeProvider>
+      <AffineContext>
+        <ThemeChange />
+        <Story {...context} />
+      </AffineContext>
+    </ThemeProvider>
+  );
+};
+
+export const decorators = [withContextDecorator, withI18n];

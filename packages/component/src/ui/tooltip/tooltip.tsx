@@ -7,15 +7,16 @@ import StyledPopperContainer from '../shared/container';
 
 const StyledTooltip = styled(StyledPopperContainer)(() => {
   return {
-    maxWidth: '320px',
-    boxShadow: 'var(--affine-float-button-shadow)',
-    padding: '4px 12px',
+    display: 'inline-flex',
+    height: '38px',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
     backgroundColor: 'var(--affine-tooltip)',
+    borderRadius: '4px',
     color: 'var(--affine-white)',
-    fontSize: 'var(--affine-font-sm)',
-    borderRadius: '8px',
-    marginBottom: '12px',
-    overflowWrap: 'break-word',
+    padding: '5px 12px',
   };
 });
 

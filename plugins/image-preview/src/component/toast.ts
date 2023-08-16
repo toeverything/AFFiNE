@@ -3,7 +3,7 @@ import { toast as basicToast } from '@affine/component';
 
 export const toast = (message: string, options?: ToastOptions) => {
   const mainContainer = document.querySelector(
-    '[data-testid="image-preview-modal"]'
+    '[plugin-id="@affine/image-preview-plugin"]'
   ) as HTMLElement;
   return basicToast(message, {
     portal: mainContainer || document.body,
