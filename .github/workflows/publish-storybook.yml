@@ -26,6 +26,8 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
+      - name: Build Plugins
+        run: yarn run build:plugins
       - name: Publish to Chromatic
         uses: chromaui/action@v1
         with:
