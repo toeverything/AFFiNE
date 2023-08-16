@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           # This is required to fetch all commits for chromatic
           fetch-depth: 0
       - name: Setup Node.js
