@@ -723,6 +723,7 @@ __metadata:
     react: 18.2.0
     react-dom: 18.2.0
     serve: ^14.2.0
+    ses: ^0.18.7
     storybook: ^7.2.3
     storybook-addon-react-router-v6: ^2.0.4
     storybook-dark-mode: ^3.0.1
