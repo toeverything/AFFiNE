@@ -7,7 +7,6 @@ import type { GraphQLQuery } from '../graphql';
 import {
   generateRandUTF16Chars,
   SPAN_ID_BYTES,
-  toZuluDateFormat,
   TRACE_ID_BYTES,
   TraceReporter,
 } from '../utils';
@@ -122,18 +121,10 @@ describe('GraphQL fetcher', () => {
 });
 
 describe('Trace Reporter', () => {
-  const startTime = toZuluDateFormat(new Date());
+  const startTime = new Date().toISOString();
   const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
   const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
   const requestId = nanoid();
-
-  it('should conform to zulu date format', () => {
-    expect(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{3}Z$/.test(
-        toZuluDateFormat(new Date())
-      )
-    ).toBe(true);
-  });
 
   it('spanId, traceId should be right format', () => {
     expect(

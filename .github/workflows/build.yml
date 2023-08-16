@@ -137,9 +137,6 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-    env:
-      SHOULD_REPORT_TRACE: true
-      TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
     environment: development
 
     steps:
@@ -171,6 +168,8 @@ jobs:
         with:
           target: 'x86_64-unknown-linux-gnu'
       - name: Build Storage
+        env:
+          RUSTFLAGS: '-C debuginfo=1'
         run: yarn build:storage
       - name: Upload storage.node
         uses: actions/upload-artifact@v3

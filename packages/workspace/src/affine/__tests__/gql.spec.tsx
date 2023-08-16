@@ -107,14 +107,7 @@ describe('GraphQL wrapper for SWR', () => {
 
       return (
         <div>
-          <button
-            onClick={() =>
-              // @ts-expect-error forgive the fake variables
-              trigger()
-            }
-          >
-            click
-          </button>
+          <button onClick={() => trigger()}>click</button>
         </div>
       );
     };

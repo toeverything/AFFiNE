@@ -49,6 +49,8 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: 'assets-dev'
           PUBLIC_PATH: 'https://dev.affineassets.com'
+          SHOULD_REPORT_TRACE: true
+          TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
@@ -70,6 +72,8 @@ jobs:
         with:
           target: 'x86_64-unknown-linux-gnu'
       - name: Build Storage
+        env:
+          RUSTFLAGS: '-C debuginfo=1'
         run: yarn build:storage
       - name: Upload storage.node
         uses: actions/upload-artifact@v3

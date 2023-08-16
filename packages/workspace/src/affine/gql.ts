@@ -8,7 +8,7 @@ import type {
 } from '@affine/graphql';
 import { gqlFetcherFactory } from '@affine/graphql';
 import type { GraphQLError } from 'graphql';
-import type { SWRConfiguration, SWRResponse } from 'swr';
+import type { Key, SWRConfiguration, SWRResponse } from 'swr';
 import useSWR from 'swr';
 import type {
   SWRMutationConfiguration,
@@ -91,19 +91,21 @@ export function useQuery<Query extends GraphQLQuery>(
  *
  * trigger({ name: 'John Doe' })
  */
-export function useMutation<Mutation extends GraphQLQuery>(
+export function useMutation<Mutation extends GraphQLQuery, K extends Key = Key>(
   options: Omit<MutationOptions<Mutation>, 'variables'>
 ): SWRMutationResponse<
   QueryResponse<Mutation>,
   GraphQLError | GraphQLError[],
+  K,
   QueryVariables<Mutation>
 >;
-export function useMutation<Mutation extends GraphQLQuery>(
+export function useMutation<Mutation extends GraphQLQuery, K extends Key = Key>(
   options: Omit<MutationOptions<Mutation>, 'variables'>,
   config: Omit<
     SWRMutationConfiguration<
       QueryResponse<Mutation>,
       GraphQLError | GraphQLError[],
+      K,
       QueryVariables<Mutation>
     >,
     'fetcher'
@@ -111,6 +113,7 @@ export function useMutation<Mutation extends GraphQLQuery>(
 ): SWRMutationResponse<
   QueryResponse<Mutation>,
   GraphQLError | GraphQLError[],
+  K,
   QueryVariables<Mutation>
 >;
 export function useMutation(

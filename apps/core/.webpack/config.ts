@@ -86,6 +86,7 @@ export const createConfiguration: (
     experiments: {
       topLevelAwait: true,
       outputModule: false,
+      syncWebAssembly: true,
     },
     output: {
       environment: {
@@ -330,6 +331,10 @@ export const createConfiguration: (
         'process.env': JSON.stringify({}),
         'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
+        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
+          process.env.SHOULD_REPORT_TRACE
+        )}`,
+        'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({

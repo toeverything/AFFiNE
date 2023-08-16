@@ -4,7 +4,7 @@ import { migrateToSubdoc } from '@affine/env/blocksuite';
 import { SqliteConnection } from '@affine/native';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
-import * as Y from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { mainRPC } from '../main-rpc';
 
@@ -13,11 +13,11 @@ export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
   await db.connect();
 
   const rows = await db.getAllUpdates();
-  const originalDoc = new Y.Doc();
+  const originalDoc = new YDoc();
 
   // 1. apply all updates to the root doc
   rows.forEach(row => {
-    Y.applyUpdate(originalDoc, row.data);
+    applyUpdate(originalDoc, row.data);
   });
 
   // 2. migrate using migrateToSubdoc
@@ -40,10 +40,10 @@ export const copyToTemp = async (path: string) => {
 
 async function replaceRows(
   db: SqliteConnection,
-  doc: Y.Doc,
+  doc: YDoc,
   isRoot: boolean
 ): Promise<void> {
-  const migratedUpdates = Y.encodeStateAsUpdate(doc);
+  const migratedUpdates = encodeStateAsUpdate(doc);
   const docId = isRoot ? undefined : doc.guid;
   const rows = [{ data: migratedUpdates, docId: docId }];
   await db.replaceUpdates(docId, rows);
