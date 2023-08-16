@@ -103,6 +103,9 @@ export const toolStyle = style({
   right: '30px',
   bottom: '30px',
   zIndex: 'var(--affine-z-index-popover)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
   '@media': {
     [breakpoints.down('md', true)]: {
       right: 'calc((100vw - 640px) * 3 / 19 + 14px)',
