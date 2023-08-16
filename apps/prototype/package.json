@@ -1,7 +1,7 @@
 {
   "name": "@affine/prototype",
   "private": true,
-  "version": "0.8.0-canary.23",
+  "version": "0.8.0-canary.24",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 3003",
