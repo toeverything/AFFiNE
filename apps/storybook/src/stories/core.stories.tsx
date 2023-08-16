@@ -1,8 +1,8 @@
 import { pluginRegisterPromise } from '@affine/core/bootstrap/register-plugins';
 import { routes } from '@affine/core/router';
-import { expect } from '@storybook/jest';
+import { assertExists } from '@blocksuite/global/utils';
 import type { StoryContext, StoryFn } from '@storybook/react';
-import { userEvent } from '@storybook/testing-library';
+import { userEvent, waitFor } from '@storybook/testing-library';
 import { use } from 'foxact/use';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
@@ -30,7 +30,6 @@ export const Index: StoryFn = () => {
   use(pluginRegisterPromise);
   return <FakeApp />;
 };
-
 Index.decorators = [withRouter, withCleanLocalStorage];
 Index.parameters = {
   reactRouter: reactRouterParameters({
@@ -41,18 +40,38 @@ Index.parameters = {
 export const SettingPage: StoryFn = () => {
   return <FakeApp />;
 };
-
 SettingPage.play = async ({ canvasElement }) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await waitFor(
+    () => {
+      assertExists(
+        canvasElement.querySelector('[data-testid="settings-modal-trigger"]')
+      );
+    },
+    {
+      timeout: 5000,
+    }
+  );
   const settingModalBtn = canvasElement.querySelector(
     '[data-testid="settings-modal-trigger"]'
   ) as Element;
-  expect(settingModalBtn).not.toBeNull();
   await userEvent.click(settingModalBtn);
 };
 SettingPage.decorators = [withRouter, withCleanLocalStorage];
 SettingPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
+  }),
+};
+
+export const NotFoundPage: StoryFn = () => {
+  return <FakeApp />;
+};
+NotFoundPage.decorators = [withRouter, withCleanLocalStorage];
+NotFoundPage.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/404',
+    },
   }),
 };

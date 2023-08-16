@@ -1,0 +1,29 @@
+{
+  "name": "@affine/outline-plugin",
+  "type": "module",
+  "private": true,
+  "description": "Outline plugin",
+  "version": "0.8.0-canary.13",
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
+  "affinePlugin": {
+    "release": "development",
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
+    "@blocksuite/icons": "^2.1.29",
+    "@toeverything/components": "^0.0.8"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*",
+    "jotai": "^2.2.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  }
+}

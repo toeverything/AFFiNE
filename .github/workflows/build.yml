@@ -112,29 +112,26 @@ jobs:
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
-  publish-storybook:
-    name: Publish Storybook
+  build-storybook:
+    name: Build Storybook
     runs-on: ubuntu-latest
     environment: development
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          # This is required to fetch all commits for chromatic
-          fetch-depth: 0
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-      - name: Build Plugins
-        run: yarn run build:plugins
-      - name: Publish to Chromatic
-        uses: chromaui/action@v1
+      - run: yarn nx build @affine/storybook
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Upload storybook artifact
+        uses: actions/upload-artifact@v3
         with:
-          workingDir: apps/storybook
-          buildScriptName: build
-          onlyStoryNames: Preview/Core
-          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          name: storybook
+          path: ./apps/storybook/storybook-static
+          if-no-files-found: error
 
   build-core:
     name: Build @affine/core

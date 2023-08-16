@@ -28,6 +28,7 @@ globalStyle(`${settingContent} .footer`, {
   marginTop: '-80px',
   fontSize: 'var(--affine-font-sm)',
   display: 'flex',
+  minHeight: '100px',
 });
 
 globalStyle(`${settingContent} .footer a`, {
