@@ -126,6 +126,7 @@ export const AllWorkspaceModals = (): ReactElement => {
   );
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
   const [isPending, startTransition] = useTransition();
+  const [, startCloseTransition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
   const handleOpenSettingModal = useCallback(
@@ -153,7 +154,9 @@ export const AllWorkspaceModals = (): ReactElement => {
             isOpenCreateWorkspaceModal === false
           }
           onClose={useCallback(() => {
-            setOpenWorkspacesModal(false);
+            startCloseTransition(() => {
+              setOpenWorkspacesModal(false);
+            });
           }, [setOpenWorkspacesModal])}
           onMoveWorkspace={useCallback(
             (activeId, overId) => {
@@ -169,10 +172,12 @@ export const AllWorkspaceModals = (): ReactElement => {
           )}
           onClickWorkspace={useCallback(
             workspaceId => {
-              setOpenWorkspacesModal(false);
-              setCurrentWorkspaceId(workspaceId);
-              setCurrentPageId(null);
-              jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
+              startCloseTransition(() => {
+                setOpenWorkspacesModal(false);
+                setCurrentWorkspaceId(workspaceId);
+                setCurrentPageId(null);
+                jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
+              });
             },
             [
               jumpToSubPath,
