@@ -8,7 +8,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import * as Y from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
 import { DocManager } from '../../doc';
@@ -18,6 +18,7 @@ import { DocManager } from '../../doc';
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private connectionCount = 0;
+
   constructor(
     private readonly docManager: DocManager,
     private readonly metric: Metrics
@@ -103,9 +104,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       : null;
 
     if (update && stateVector) {
-      const doc = new Y.Doc({ guid: message.guid });
-      Y.applyUpdate(doc, update);
-      update = Buffer.from(Y.encodeStateAsUpdate(doc, stateVector));
+      const doc = new YDoc({ guid: message.guid });
+      applyUpdate(doc, update);
+      update = Buffer.from(encodeStateAsUpdate(doc, stateVector));
     }
 
     endTimer();

@@ -6,8 +6,8 @@ import {
   applyAwarenessUpdate,
   encodeAwarenessUpdate,
 } from 'y-protocols/awareness';
-import type { Doc } from 'yjs';
-import * as Y from 'yjs';
+import type { Doc as YDoc } from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type {
   AwarenessChanges,
@@ -22,13 +22,13 @@ export class SocketIOProvider extends Observable<string> {
   updateHandlerMap = new Map<string, UpdateHandler>();
   subdocsHandlerMap = new Map<string, SubdocsHandler>();
   destroyHandlerMap = new Map<string, DestroyHandler>();
-  docMap = new Map<string, Doc>();
+  docMap = new Map<string, YDoc>();
   updateCache = new Map<string, Uint8Array[]>();
   intervalId: number | null = null;
   cacheClearingInterval = 1000;
   socket: Socket;
   awareness: awarenessProtocol.Awareness;
-  rootDoc: Doc;
+  rootDoc: YDoc;
   startedConnecting = false;
   _connected: boolean;
   synced: boolean;
@@ -43,7 +43,7 @@ export class SocketIOProvider extends Observable<string> {
   constructor(
     serverUrl: string,
     roomName: string,
-    doc: Y.Doc,
+    doc: YDoc,
     { awareness = new awarenessProtocol.Awareness(doc) } = {}
   ) {
     super();
@@ -77,7 +77,7 @@ export class SocketIOProvider extends Observable<string> {
     }
 
     // sending missing update for server
-    const diffUpdate = Y.encodeStateAsUpdate(doc, update);
+    const diffUpdate = encodeStateAsUpdate(doc, update);
     uint8ArrayToBase64(diffUpdate)
       .then(encodedUpdate => {
         this.socket.emit('client-update', {
@@ -94,16 +94,16 @@ export class SocketIOProvider extends Observable<string> {
     }
 
     // apply update from server
-    Y.applyUpdate(doc, update, 'server');
+    applyUpdate(doc, update, 'server');
     doc.emit('load', []);
     this.syncResolve();
     this.synced = true;
   };
 
-  subDocsHandshake = (workspaceId: string, subDocs: Set<Doc>) => {
+  subDocsHandshake = (workspaceId: string, subDocs: Set<YDoc>) => {
     if (!subDocs) return;
     subDocs.forEach(doc => {
-      const update = Y.encodeStateAsUpdate(doc);
+      const update = encodeStateAsUpdate(doc);
       uint8ArrayToBase64(update)
         .then(encodedUpdate => {
           this.socket.emit('client-update', {
@@ -124,7 +124,7 @@ export class SocketIOProvider extends Observable<string> {
     if (!doc) {
       this.cacheUnloadDocUpdate(message.guid, update);
     } else {
-      Y.applyUpdate(doc, update, 'server');
+      applyUpdate(doc, update, 'server');
     }
   };
 
@@ -198,7 +198,7 @@ export class SocketIOProvider extends Observable<string> {
       .catch(err => console.error(err));
   };
 
-  initDocMap = (doc: Doc) => {
+  initDocMap = (doc: YDoc) => {
     if (this.docMap.has(doc.guid)) {
       return;
     }
@@ -215,7 +215,7 @@ export class SocketIOProvider extends Observable<string> {
         const doc = this.docMap.get(guid);
         if (doc) {
           for (const update of updates) {
-            Y.applyUpdate(doc, update, 'server');
+            applyUpdate(doc, update, 'server');
           }
         }
       }
@@ -228,7 +228,7 @@ export class SocketIOProvider extends Observable<string> {
     }
   };
 
-  createOrGetUpdateHandler = (doc: Doc): UpdateHandler => {
+  createOrGetUpdateHandler = (doc: YDoc): UpdateHandler => {
     if (this.updateHandlerMap.has(doc.guid)) {
       return this.updateHandlerMap.get(doc.guid) as UpdateHandler;
     }
@@ -250,7 +250,7 @@ export class SocketIOProvider extends Observable<string> {
     return handler;
   };
 
-  createOrGetSubdocsHandler = (doc: Doc): SubdocsHandler => {
+  createOrGetSubdocsHandler = (doc: YDoc): SubdocsHandler => {
     if (this.subdocsHandlerMap.has(doc.guid)) {
       return this.subdocsHandlerMap.get(doc.guid) as SubdocsHandler;
     }
@@ -269,7 +269,7 @@ export class SocketIOProvider extends Observable<string> {
     return handler;
   };
 
-  createOrGetDestroyHandler = (doc: Doc): DestroyHandler => {
+  createOrGetDestroyHandler = (doc: YDoc): DestroyHandler => {
     if (this.destroyHandlerMap.has(doc.guid)) {
       return this.destroyHandlerMap.get(doc.guid) as DestroyHandler;
     }
@@ -282,7 +282,7 @@ export class SocketIOProvider extends Observable<string> {
     return handler;
   };
 
-  registerDoc = (doc: Doc) => {
+  registerDoc = (doc: YDoc) => {
     this.initDocMap(doc);
     // register subdocs
     doc.on('subdocs', this.createOrGetSubdocsHandler(doc));
@@ -292,7 +292,7 @@ export class SocketIOProvider extends Observable<string> {
     doc.on('destroy', this.createOrGetDestroyHandler(doc));
   };
 
-  unregisterDoc = (doc: Doc) => {
+  unregisterDoc = (doc: YDoc) => {
     this.docMap.delete(doc.guid);
     doc.subdocs.forEach(this.unregisterDoc);
     doc.off('update', this.createOrGetUpdateHandler(doc));
