@@ -26,7 +26,6 @@ export const AuthInput: FC<AuthInputProps> = ({
     >
       {label ? <label>{label}</label> : null}
       <Input
-        {...inputProps}
         size="extraLarge"
         status={error ? 'error' : 'default'}
         onKeyDown={e => {
@@ -34,6 +33,7 @@ export const AuthInput: FC<AuthInputProps> = ({
             onEnter?.();
           }
         }}
+        {...inputProps}
       />
       {error && errorHint && !withoutHint ? (
         <div

@@ -1,16 +1,10 @@
+import { FlexWrapper, Menu, MenuItem, Tooltip } from '@affine/component';
 import {
-  FlexWrapper,
-  Input,
-  Menu,
-  MenuItem,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-  Tooltip,
-} from '@affine/component';
+  InviteModal,
+  type InviteModalProps,
+} from '@affine/component/member-components';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
@@ -18,18 +12,17 @@ import type { MouseEvent, ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { toast } from '../../../utils';
 import { WorkspaceAvatar } from '../../pure/footer';
 import { AnyErrorBoundary } from '../any-error-boundary';
-import { PermissionSelect } from './permission-select';
 import * as style from './style.css';
-import { InviteMemberButton } from './members/invite-button';
+import { useSetAtom } from 'jotai/index';
+import { pushNotificationAtom } from '@affine/component/notification-center';
+
 export type MembersPanelProps = {
   workspace: AffineOfficialWorkspace;
 };
@@ -55,13 +48,36 @@ export const CloudWorkspaceMembersPanel = (
   const workspaceId = props.workspace.id;
   const members = useMembers(workspaceId);
   const t = useAFFiNEI18N();
-  const currentUser = useCurrentUser();
   const isOwner = useIsWorkspaceOwner(workspaceId);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [permission, setPermission] = useState(Permission.Write);
   const invite = useInviteMember(workspaceId);
+  const [open, setOpen] = useState(false);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const memberCount = members.length;
+
+  const openModal = useCallback(() => {
+    setOpen(true);
+  }, []);
+
+  const onInviteConfirm = useCallback<InviteModalProps['onConfirm']>(
+    async ({ email, permission }) => {
+      const success = await invite(
+        email,
+        permission,
+        // send invite email
+        true
+      );
+      if (success) {
+        pushNotification({
+          title: t['Invitation sent'](),
+          message: t['Invitation sent hint'](),
+          type: 'success',
+        });
+        setOpen(false);
+      }
+    },
+    [invite, pushNotification, t]
+  );
 
   return (
     <>
@@ -69,19 +85,17 @@ export const CloudWorkspaceMembersPanel = (
         name={`${t['Members']()} (${memberCount})`}
         desc={t['Members hint']()}
       >
-        {isOwner && <InviteMemberButton />}
+        {isOwner ? (
+          <>
+            <Button onClick={openModal}>{t['Invite Members']()}</Button>
+            <InviteModal
+              open={open}
+              setOpen={setOpen}
+              onConfirm={onInviteConfirm}
+            />
+          </>
+        ) : null}
       </SettingRow>
-      {/*{isOwner && (*/}
-      {/*  <FlexWrapper justifyContent="space-between" alignItems="center">*/}
-      {/*    <Input*/}
-      {/*      // className={style.urlButton}*/}
-      {/*      data-testid="invite-by-email-input"*/}
-      {/*      placeholder="Invite by email"*/}
-      {/*      onChange={setInviteEmail}*/}
-      {/*    />*/}
-      {/*    <PermissionSelect value={permission} onChange={setPermission} />*/}
-      {/*  </FlexWrapper>*/}
-      {/*)}*/}
       <FlexWrapper flexDirection="column" className={style.membersList}>
         {members.map(member => (
           <Member

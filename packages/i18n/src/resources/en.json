@@ -239,6 +239,8 @@
   "Invite Members": "Invite Members",
   "Invite Members Message": "Invited members will collaborate with you in current Workspace",
   "Invite placeholder": "Search mail (Gmail support only)",
+  "Invitation sent": "Invitation sent",
+  "Invited sent hint": "Invited members have been notified with email to join this Workspace.",
   "Non-Gmail": "Non-Gmail is not supported",
   "Invite": "Invite",
   "Loading": "Loading...",

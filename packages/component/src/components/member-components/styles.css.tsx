@@ -7,10 +7,11 @@ export const inviteModalTitle = style({
 });
 
 export const inviteModalContent = style({
-  marginBottom: '40px',
+  marginBottom: '10px',
 });
 
 export const inviteModalButtonContainer = style({
   display: 'flex',
   justifyContent: 'flex-end',
+  // marginTop: 10,
 });
