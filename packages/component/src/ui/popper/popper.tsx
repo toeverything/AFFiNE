@@ -36,6 +36,7 @@ export const Popper = ({
   onClickAway,
   onPointerEnter,
   onPointerLeave,
+  triggerContainerStyle = {},
   ...popperProps
 }: PopperProps) => {
   const [anchorEl, setAnchorEl] = useState<VirtualElement>();
@@ -111,7 +112,7 @@ export const Popper = ({
         }
       }}
     >
-      <Container>
+      <Container style={triggerContainerStyle}>
         {cloneElement(children, {
           ref: (dom: HTMLDivElement) => setAnchorEl(dom),
           onClick: (e: MouseEvent) => {

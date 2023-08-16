@@ -1,8 +1,8 @@
 {
-  "name": "@affine/vue-hello-world-plugin",
+  "name": "@affine/outline-plugin",
   "type": "module",
   "private": true,
-  "description": "Vue hello world plugin",
+  "description": "Outline plugin",
   "version": "0.8.0-canary.23",
   "scripts": {
     "dev": "af dev",
@@ -17,10 +17,13 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "element-plus": "^2.3.9",
-    "vue": "^3.3.4"
+    "@blocksuite/icons": "^2.1.29",
+    "@toeverything/components": "^0.0.8"
   },
   "devDependencies": {
-    "@affine/plugin-cli": "workspace:*"
+    "@affine/plugin-cli": "workspace:*",
+    "jotai": "^2.2.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   }
 }

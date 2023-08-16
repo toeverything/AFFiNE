@@ -128,7 +128,7 @@ export class WorkspaceSQLiteDB extends BaseSQLiteAdapter {
     if (doc) {
       return encodeStateAsUpdate(doc);
     }
-    return null;
+    return false;
   };
 
   // non-blocking and use yDoc to validate the update

@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "storybook dev -p 6006",
-    "build": "NODE_OPTIONS=--max_old_space_size=4096 storybook build",
+    "build": "storybook build",
     "test": "test-storybook"
   },
   "dependencies": {
@@ -25,20 +25,23 @@
     "concurrently": "^8.2.0",
     "jest-mock": "^29.6.2",
     "serve": "^14.2.0",
+    "ses": "^0.18.7",
     "storybook": "^7.2.3",
     "storybook-dark-mode": "^3.0.1",
     "wait-on": "^7.0.1"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/blocks": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/editor": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/global": "0.0.0-20230811201552-f37162ea-nightly",
+    "@blocksuite/block-std": "0.0.0-20230814155455-ceb5d5d8-nightly",
+    "@blocksuite/blocks": "0.0.0-20230814155455-ceb5d5d8-nightly",
+    "@blocksuite/editor": "0.0.0-20230814155455-ceb5d5d8-nightly",
+    "@blocksuite/global": "0.0.0-20230814155455-ceb5d5d8-nightly",
     "@blocksuite/icons": "^2.1.31",
-    "@blocksuite/lit": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/store": "0.0.0-20230811201552-f37162ea-nightly",
+    "@blocksuite/lit": "0.0.0-20230814155455-ceb5d5d8-nightly",
+    "@blocksuite/store": "0.0.0-20230814155455-ceb5d5d8-nightly",
+    "chromatic": "^6.22.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "storybook-addon-react-router-v6": "^2.0.4"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
@@ -48,5 +51,5 @@
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
   },
-  "version": "0.8.0-canary.21"
+  "version": "0.8.0-canary.23"
 }

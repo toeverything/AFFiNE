@@ -94,7 +94,7 @@ export type DBHandlers = {
   getDocAsUpdates: (
     workspaceId: string,
     subdocId?: string
-  ) => Promise<Uint8Array>;
+  ) => Promise<Uint8Array | false>;
   applyDocUpdate: (
     id: string,
     update: Uint8Array,
@@ -164,7 +164,7 @@ export type DialogHandlers = {
     dbFileLocation?: string
   ) => Promise<MoveDBFileResult>;
   selectDBFileLocation: () => Promise<SelectDBFileLocationResult>;
-  setFakeDialogResult: (result: any) => Promise<FakeDialogResult>;
+  setFakeDialogResult: (result: any) => Promise<void>;
 };
 
 export type UIHandlers = {

@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { type ComplexStyleRule, style } from '@vanilla-extract/css';
 
 export const headerTitleContainer = style({
   display: 'flex',
@@ -10,11 +10,11 @@ export const headerTitleContainer = style({
 });
 
 export const titleEditButton = style({
-  flexGrow: 1,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-});
+  WebkitAppRegion: 'no-drag',
+} as ComplexStyleRule);
 
 export const titleInput = style({
   position: 'absolute',
