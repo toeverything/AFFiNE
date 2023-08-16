@@ -14,7 +14,7 @@ import {
   useGeneralSettingList,
 } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
-import { settingContent } from './style.css';
+import { footerIconWrapper, settingContent } from './style.css';
 import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
@@ -89,7 +89,9 @@ export const SettingModal = ({
             ) : null}
           </div>
           <div className="footer">
-            <ContactWithUsIcon />
+            <div className={footerIconWrapper}>
+              <ContactWithUsIcon />
+            </div>
             <a
               href="https://community.affine.pro/home"
               target="_blank"

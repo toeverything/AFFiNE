@@ -5,7 +5,7 @@
     "typeRoots": ["../../node_modules", "../../node_modules/@types"],
     "types": ["webpack-env", "ses", "affine__env"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
   "exclude": ["node_modules"],
   "references": [
     {

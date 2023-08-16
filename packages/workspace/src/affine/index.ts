@@ -14,9 +14,17 @@ import {
   uint8ArrayToBase64,
 } from './sync-socket-io/utils';
 
-const ioManager = new Manager(runtimeConfig.serverUrlPrefix + '/', {
-  autoConnect: false,
-});
+let ioManager: Manager | null = null;
+// use lazy initialization to avoid global side effect
+function getIoManager(): Manager {
+  if (ioManager) {
+    return ioManager;
+  }
+  ioManager = new Manager(runtimeConfig.serverUrlPrefix + '/', {
+    autoConnect: false,
+  });
+  return ioManager;
+}
 
 export const createAffineDataSource = (
   id: string,
@@ -27,7 +35,7 @@ export const createAffineDataSource = (
     console.warn('important!! please use doc.guid as roomName');
   }
 
-  const socket = ioManager.socket('/');
+  const socket = getIoManager().socket('/');
 
   return {
     get socket() {

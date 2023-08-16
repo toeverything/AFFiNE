@@ -52,12 +52,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/editor": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/global": "0.0.0-20230811201552-f37162ea-nightly",
+    "@blocksuite/blocks": "0.0.0-20230816084758-3be96d22-nightly",
+    "@blocksuite/editor": "0.0.0-20230816084758-3be96d22-nightly",
+    "@blocksuite/global": "0.0.0-20230816084758-3be96d22-nightly",
     "@blocksuite/icons": "^2.1.31",
-    "@blocksuite/lit": "0.0.0-20230811201552-f37162ea-nightly",
-    "@blocksuite/store": "0.0.0-20230811201552-f37162ea-nightly",
+    "@blocksuite/lit": "0.0.0-20230816084758-3be96d22-nightly",
+    "@blocksuite/store": "0.0.0-20230816084758-3be96d22-nightly",
     "@types/react": "^18.2.20",
     "@types/react-datepicker": "^4.15.0",
     "@types/react-dnd": "^3.0.2",
@@ -67,5 +67,5 @@
     "vite": "^4.4.9",
     "yjs": "^13.6.7"
   },
-  "version": "0.8.0-canary.21"
+  "version": "0.8.0-canary.23"
 }

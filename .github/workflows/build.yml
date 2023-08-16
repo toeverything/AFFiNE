@@ -12,7 +12,6 @@ on:
       - '!.github/workflows/build.yml'
       - '!.github/actions/build-rust/action.yml'
       - '!.github/actions/setup-node/action.yml'
-      - '!.github/actions/deploy/action.yml'
   pull_request:
   merge_group:
     branches:
@@ -157,6 +156,8 @@ jobs:
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: '-C debuginfo=1'
     environment: development
 
     steps:
@@ -168,8 +169,6 @@ jobs:
         with:
           target: 'x86_64-unknown-linux-gnu'
       - name: Build Storage
-        env:
-          RUSTFLAGS: '-C debuginfo=1'
         run: yarn build:storage
       - name: Upload storage.node
         uses: actions/upload-artifact@v3
@@ -317,28 +316,6 @@ jobs:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./tests/affine-cloud/test-results
           if-no-files-found: ignore
-
-  storybook-test:
-    name: Storybook Test
-    runs-on: ubuntu-latest
-    environment: development
-    needs: [build-storybook]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          playwright-install: true
-          electron-install: false
-      - name: Download storybook artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
-      - name: Run storybook tests
-        working-directory: ./apps/storybook
-        run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
 
   e2e-plugin-test:
     name: E2E Plugin Test
@@ -657,3 +634,79 @@ jobs:
           flags: unittest
           name: affine
           fail_ci_if_error: false
+
+  build-docker:
+    if: github.ref == 'refs/heads/master'
+    name: Build Docker
+    runs-on: ubuntu-latest
+    needs:
+      - build-server
+      - build-core
+      - build-storage
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download core artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+      - name: Download server dist
+        uses: actions/download-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
+      - name: Setup Git short hash
+        run: |
+          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          logout: false
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build front Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/front/Dockerfile
+          tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
+
+      # setup node without cache configuration
+      # Prisma cache is not compatible with docker build cache
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+
+      - name: Install Node.js dependencies
+        run: yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
+
+      - name: Build graphql Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/node/Dockerfile
+          tags: ghcr.io/toeverything/affine-graphql:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:latest

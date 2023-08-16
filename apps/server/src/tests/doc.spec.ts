@@ -5,7 +5,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { register } from 'prom-client';
 import * as Sinon from 'sinon';
-import * as Y from 'yjs';
+import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { Config, ConfigModule } from '../config';
 import { MetricsModule } from '../metrics';
@@ -103,10 +103,10 @@ test('Doc Module', async t => {
     const db = m.get(PrismaService);
     const manager = m.get(DocManager);
 
-    const doc = new Y.Doc();
+    const doc = new YDoc();
     const text = doc.getText('content');
     text.insert(0, 'hello');
-    const update = Y.encodeStateAsUpdate(doc);
+    const update = encodeStateAsUpdate(doc);
 
     const ws = await db.workspace.create({
       data: {
@@ -150,6 +150,6 @@ test('Doc Module', async t => {
 
     await manager.apply();
 
-    deepEqual(await manager.getLatest(ws.id, '1'), Y.encodeStateAsUpdate(doc));
+    deepEqual(await manager.getLatest(ws.id, '1'), encodeStateAsUpdate(doc));
   });
 });

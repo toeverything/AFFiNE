@@ -33,6 +33,7 @@ export type LayoutParentNode = {
   splitPercentage: number; // 0 - 100
   first: string;
   second: LayoutNode;
+  maxWidth?: (number | undefined)[];
 };
 
 export type ExpectedLayout =
@@ -48,7 +49,14 @@ export type ExpectedLayout =
 
 export declare const pushLayoutAtom: WritableAtom<
   null,
-  [string, (div: HTMLDivElement) => () => void],
+  | [
+      string,
+      (div: HTMLDivElement) => () => void,
+      {
+        maxWidth: (number | undefined)[];
+      },
+    ]
+  | [string, (div: HTMLDivElement) => () => void],
   void
 >;
 export declare const deleteLayoutAtom: WritableAtom<null, [string], void>;
