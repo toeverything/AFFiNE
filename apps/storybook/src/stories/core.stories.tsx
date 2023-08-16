@@ -24,6 +24,9 @@ const FakeApp = () => {
 
 export default {
   title: 'Preview/Core',
+  parameters: {
+    chromatic: { disableSnapshot: false },
+  },
 };
 
 export const Index: StoryFn = () => {
