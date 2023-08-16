@@ -213,7 +213,7 @@ export const RootAppSidebar = ({
         </SidebarScrollableContainer>
         <SidebarContainer>
           {isDesktop && <AppUpdaterButton />}
-          <div />
+          <div style={{ height: '4px' }} />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>
