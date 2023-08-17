@@ -1,6 +1,6 @@
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Decorator, StoryFn } from '@storybook/react';
+import type { StoryFn } from '@storybook/react';
 import { userEvent, waitFor } from '@storybook/testing-library';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
@@ -8,11 +8,6 @@ import {
   reactRouterParameters,
   withRouter,
 } from 'storybook-addon-react-router-v6';
-
-const withCleanLocalStorage: Decorator = (Story, context) => {
-  localStorage.clear();
-  return <Story {...context} />;
-};
 
 const FakeApp = () => {
   const location = useLocation();
@@ -30,7 +25,7 @@ export default {
 export const Index: StoryFn = () => {
   return <FakeApp />;
 };
-Index.decorators = [withRouter, withCleanLocalStorage];
+Index.decorators = [withRouter];
 Index.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
@@ -56,7 +51,7 @@ SettingPage.play = async ({ canvasElement }) => {
   ) as Element;
   await userEvent.click(settingModalBtn);
 };
-SettingPage.decorators = [withRouter, withCleanLocalStorage];
+SettingPage.decorators = [withRouter];
 SettingPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
@@ -66,7 +61,7 @@ SettingPage.parameters = {
 export const NotFoundPage: StoryFn = () => {
   return <FakeApp />;
 };
-NotFoundPage.decorators = [withRouter, withCleanLocalStorage];
+NotFoundPage.decorators = [withRouter];
 NotFoundPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
@@ -96,7 +91,7 @@ WorkspaceList.play = async ({ canvasElement }) => {
   ) as Element;
   await userEvent.click(currentWorkspace);
 };
-WorkspaceList.decorators = [withRouter, withCleanLocalStorage];
+WorkspaceList.decorators = [withRouter];
 WorkspaceList.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),

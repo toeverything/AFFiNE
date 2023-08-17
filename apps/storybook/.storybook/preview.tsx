@@ -56,6 +56,7 @@ const withContextDecorator: Decorator = (Story, context) => {
   const { data: store } = useSWR(
     context.id,
     async () => {
+      localStorage.clear();
       const store = createStore();
       _setCurrentStore(store);
       await setup(store);
