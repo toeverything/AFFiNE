@@ -130,7 +130,7 @@ module.exports = {
       : undefined,
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
-    ignore: ['src', 'e2e', 'tests'],
+    ignore: ['e2e', 'tests'],
   },
   makers,
   hooks: {

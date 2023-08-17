@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Outline plugin",
-  "version": "0.8.0-canary.23",
+  "version": "0.8.0-canary.24",
   "scripts": {
     "dev": "af dev",
     "build": "af build"
