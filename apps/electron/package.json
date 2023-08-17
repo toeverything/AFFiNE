@@ -17,7 +17,8 @@
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "test": "DEBUG=pw:browser yarn -T run playwright test -c ./playwright.config.ts"
+    "test": "DEBUG=pw:browser yarn -T run playwright test -c ./playwright.config.ts",
+    "make-squirrel": "yarn ts-node-esm -T scripts/make-squirrel.mts"
   },
   "config": {
     "forge": "./forge.config.js"
