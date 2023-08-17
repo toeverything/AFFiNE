@@ -6,22 +6,18 @@ import type {
   FocusEvent,
   FocusEventHandler,
   ForwardedRef,
-  HTMLAttributes,
+  InputHTMLAttributes,
+  KeyboardEvent,
   KeyboardEventHandler,
   ReactNode,
 } from 'react';
 import { forwardRef, useCallback, useState } from 'react';
 
-import { input, inputWrapper, widthVar } from './index.css';
+import { input, inputWrapper, widthVar } from './style.css';
 
 export type InputProps = {
-  defaultValue?: string | undefined;
-  placeholder?: string;
   disabled?: boolean;
   width?: CSSProperties['width'];
-  height?: CSSProperties['height'];
-  maxLength?: number;
-  minLength?: number;
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
@@ -30,22 +26,14 @@ export type InputProps = {
   size?: 'default' | 'large' | 'extraLarge';
   preFix?: ReactNode;
   endFix?: ReactNode;
-  value?: string;
   type?: HTMLInputElement['type'];
   inputStyle?: CSSProperties;
-} & Omit<
-  HTMLAttributes<HTMLInputElement>,
-  'onChange' | 'onCompositionStart' | 'onCompositionEnd'
->;
+  onEnter?: () => void;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'>;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     disabled,
-    defaultValue,
-    placeholder,
-    maxLength,
-    minLength,
-    height,
     width,
     onChange: propsOnChange,
     noBorder = false,
@@ -58,6 +46,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     onBlur,
     preFix,
     endFix,
+    onEnter,
+    onKeyDown,
     ...otherProps
   }: InputProps,
   ref: ForwardedRef<HTMLInputElement>
@@ -91,13 +81,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <input
         className={clsx(input)}
         ref={ref}
-        defaultValue={defaultValue}
         disabled={disabled}
-        placeholder={placeholder}
-        width={width}
-        maxLength={maxLength}
-        minLength={minLength}
-        height={height}
         style={inputStyle}
         onFocus={useCallback(
           (e: FocusEvent<HTMLInputElement>) => {
@@ -118,6 +102,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             propsOnChange?.(e.target.value);
           },
           [propsOnChange]
+        )}
+        onKeyDown={useCallback(
+          (e: KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
+              onEnter?.();
+            }
+            onKeyDown?.(e);
+          },
+          [onKeyDown, onEnter]
         )}
         {...otherProps}
       />

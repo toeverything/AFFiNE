@@ -1,24 +1,28 @@
-import { FlexWrapper, Input, Menu, MenuItem, Tooltip } from '@affine/component';
+import { FlexWrapper, Menu, MenuItem, Tooltip } from '@affine/component';
+import {
+  InviteModal,
+  type InviteModalProps,
+} from '@affine/component/member-components';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
-import type { MouseEvent, ReactElement } from 'react';
+import { useSetAtom } from 'jotai/index';
+import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import type { CheckedUser } from '../../../hooks/affine/use-current-user';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
-import { useMembers } from '../../../hooks/affine/use-members';
+import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { toast } from '../../../utils';
 import { WorkspaceAvatar } from '../../pure/footer';
 import { AnyErrorBoundary } from '../any-error-boundary';
-import { PermissionSelect } from './permission-select';
 import * as style from './style.css';
 
 export type MembersPanelProps = {
@@ -46,87 +50,38 @@ export const CloudWorkspaceMembersPanel = (
   const workspaceId = props.workspace.id;
   const members = useMembers(workspaceId);
   const t = useAFFiNEI18N();
-  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
-  const currentUser = useCurrentUser();
   const isOwner = useIsWorkspaceOwner(workspaceId);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [permission, setPermission] = useState(Permission.Write);
-  const invite = useInviteMember(workspaceId);
-  const onClickRevoke = useCallback(
-    async (event: MouseEvent<HTMLButtonElement>) => {
-      const button = event.target;
-      if (button instanceof HTMLButtonElement) {
-        const memberId = button.getAttribute('data-member-id');
-        if (memberId) {
-          await revokeMemberPermission(memberId);
-        } else {
-          throw new Error('Unexpected event target, missing data-member-id');
-        }
-      } else {
-        throw new Error('Unexpected event target');
-      }
-    },
-    [revokeMemberPermission]
-  );
-  const onClickInvite = useCallback(async () => {
-    const emailRegex = new RegExp(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-    if (!emailRegex.test(inviteEmail)) {
-      toast('Invalid email');
-      return;
-    }
+  const currentUser = useCurrentUser();
 
-    await invite(
-      inviteEmail,
-      permission,
-      // send invite email
-      true
-    );
-  }, [inviteEmail, invite, permission]);
+  const invite = useInviteMember(workspaceId);
+  const [open, setOpen] = useState(false);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const memberCount = members.length;
-  const memberPanel =
-    memberCount > 0 ? (
-      members.map(member => (
-        <div key={member.id} className={style.listItem}>
-          <div>
-            <WorkspaceAvatar
-              size={24}
-              name={undefined}
-              avatar={member.avatarUrl as string}
-            />
-          </div>
-          <div className={style.memberContainer}>
-            <div className={style.memberName}>{member.name}</div>
-            <div className={style.memberEmail}>{member.email}</div>
-          </div>
-          <div className={style.permissionContainer}>{member.permission}</div>
-          {isOwner && (
-            <Menu
-              content={
-                <MenuItem>
-                  <button data-member-id={member.id} onClick={onClickRevoke}>
-                    Remove from Workspace
-                  </button>
-                </MenuItem>
-              }
-              placement="bottom"
-              disablePortal={true}
-              trigger="click"
-            >
-              <IconButton
-                className={`${style.displayNone} ${
-                  currentUser.email !== member.email ? style.iconButton : ''
-                }`}
-              >
-                <MoreVerticalIcon />
-              </IconButton>
-            </Menu>
-          )}
-        </div>
-      ))
-    ) : (
-      <div>No Members</div>
-    );
+
+  const openModal = useCallback(() => {
+    setOpen(true);
+  }, []);
+
+  const onInviteConfirm = useCallback<InviteModalProps['onConfirm']>(
+    async ({ email, permission }) => {
+      const success = await invite(
+        email,
+        permission,
+        // send invite email
+        true
+      );
+      if (success) {
+        pushNotification({
+          title: t['Invitation sent'](),
+          message: t['Invitation sent hint'](),
+          type: 'success',
+        });
+        setOpen(false);
+      }
+    },
+    [invite, pushNotification, t]
+  );
 
   return (
     <>
@@ -134,27 +89,92 @@ export const CloudWorkspaceMembersPanel = (
         name={`${t['Members']()} (${memberCount})`}
         desc={t['Members hint']()}
       >
-        {isOwner && (
-          <Button size="large" onClick={onClickInvite}>
-            {t['Invite Members']()}
-          </Button>
-        )}
+        {isOwner ? (
+          <>
+            <Button onClick={openModal}>{t['Invite Members']()}</Button>
+            <InviteModal
+              open={open}
+              setOpen={setOpen}
+              onConfirm={onInviteConfirm}
+            />
+          </>
+        ) : null}
       </SettingRow>
-      {isOwner && (
-        <FlexWrapper justifyContent="space-between" alignItems="center">
-          <Input
-            className={style.urlButton}
-            data-testid="invite-by-email-input"
-            placeholder="Invite by email"
-            onChange={setInviteEmail}
-          />
-          <PermissionSelect value={permission} onChange={setPermission} />
-        </FlexWrapper>
-      )}
       <FlexWrapper flexDirection="column" className={style.membersList}>
-        {memberPanel}
+        {members.map(member => (
+          <MemberItem
+            key={member.id}
+            member={member}
+            workspaceId={workspaceId}
+            isOwner={isOwner}
+            currentUser={currentUser}
+          />
+        ))}
       </FlexWrapper>
     </>
+  );
+};
+
+const MemberItem = ({
+  member,
+  isOwner,
+  currentUser,
+  workspaceId,
+}: {
+  member: Member;
+  workspaceId: string;
+  isOwner: boolean;
+  currentUser: CheckedUser;
+}) => {
+  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
+
+  const handleRevoke = useCallback(
+    async (memberId: string) => {
+      await revokeMemberPermission(memberId);
+    },
+    [revokeMemberPermission]
+  );
+
+  const showOperationButton = isOwner && currentUser.email !== member.email;
+  return (
+    <div key={member.id} className={style.listItem}>
+      <div>
+        <WorkspaceAvatar
+          size={24}
+          name={undefined}
+          avatar={member.avatarUrl as string}
+        />
+      </div>
+      <div className={style.memberContainer}>
+        <div className={style.memberName}>{member.name}</div>
+        <div className={style.memberEmail}>{member.email}</div>
+      </div>
+      <div className={style.permissionContainer}>{member.permission}</div>
+      <Menu
+        content={
+          <MenuItem
+            data-member-id={member.id}
+            onClick={useCallback(() => {
+              handleRevoke(member.id);
+            }, [handleRevoke, member.id])}
+          >
+            Remove from Workspace
+          </MenuItem>
+        }
+        placement="bottom"
+        disablePortal={true}
+        trigger="click"
+      >
+        <IconButton
+          disabled={!showOperationButton}
+          style={{
+            visibility: showOperationButton ? 'visible' : 'hidden',
+          }}
+        >
+          <MoreVerticalIcon />
+        </IconButton>
+      </Menu>
+    </div>
   );
 };
 

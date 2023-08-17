@@ -158,6 +158,7 @@ globalStyle(`${authPageContainer} .wrapper`, {
 });
 globalStyle(`${authPageContainer} .content`, {
   maxWidth: '700px',
+  minWidth: '550px',
 });
 
 globalStyle(`${authPageContainer} .title`, {

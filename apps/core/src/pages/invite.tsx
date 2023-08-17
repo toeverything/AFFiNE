@@ -1,40 +1,51 @@
+import { AcceptInvitePage } from '@affine/component/member-components';
+import { isDesktop } from '@affine/env/constant';
 import {
   acceptInviteByInviteIdMutation,
   acceptInviteByWorkspaceIdMutation,
 } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
-import { Button } from '@toeverything/components/button';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 // valid URL: /invite?wsId=xxx&inviteId=xxx
 // valid URL: /invite?wsId=xxx
 export const Component = (): ReactElement => {
   const [searchParams] = useSearchParams();
   const workspaceId = searchParams.get('id');
   const inviteId = searchParams.get('invite');
+  const { jumpToIndex } = useNavigateHelper();
+
   const { trigger: triggerByWorkspaceId } = useMutation({
     mutation: acceptInviteByWorkspaceIdMutation,
   });
   const { trigger: triggerByInviteId } = useMutation({
     mutation: acceptInviteByInviteIdMutation,
   });
-  const onClickAccept = useCallback(async () => {
+
+  const onOpenAffine = useCallback(() => {
+    if (isDesktop) {
+      window.apis.ui.handleFinishLogin();
+    } else {
+      jumpToIndex(RouteLogic.REPLACE);
+    }
+  }, [jumpToIndex]);
+
+  useEffect(() => {
+    // User accepts the invitation when enters the page
     if (inviteId && workspaceId) {
-      await triggerByInviteId({
+      triggerByInviteId({
         workspaceId,
         inviteId,
-      });
+      }).catch(console.error);
     } else if (workspaceId) {
-      await triggerByWorkspaceId({
+      triggerByWorkspaceId({
         workspaceId,
-      });
+      }).catch(console.error);
     }
   }, [inviteId, triggerByWorkspaceId, triggerByInviteId, workspaceId]);
-  return (
-    <div>
-      <Button onClick={onClickAccept}>Accept Invitation</Button>
-    </div>
-  );
+
+  return <AcceptInvitePage onOpenAffine={onOpenAffine} />;
 };

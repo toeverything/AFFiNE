@@ -1,6 +1,5 @@
 import { createVar, style } from '@vanilla-extract/css';
 
-export const heightVar = createVar('heightVar');
 export const widthVar = createVar('widthVar');
 
 export const inputWrapper = style({
@@ -19,6 +18,7 @@ export const inputWrapper = style({
   justifyContent: 'center',
   alignItems: 'center',
   fontSize: 'var(--affine-font-base)',
+
   selectors: {
     '&.no-border': {
       border: 'unset',
@@ -32,6 +32,9 @@ export const inputWrapper = style({
       fontWeight: 600,
     },
     // color
+    '&.disabled': {
+      background: 'var(--affine-hover-color)',
+    },
     '&.error': {
       borderColor: 'var(--affine-error-color)',
     },
@@ -55,6 +58,13 @@ export const input = style({
   height: '100%',
   width: '0',
   flex: 1,
+  boxSizing: 'border-box',
+  // prevent default style
+  WebkitAppearance: 'none',
+  WebkitTapHighlightColor: 'transparent',
+  outline: 'none',
+  border: 'none',
+
   selectors: {
     '&::placeholder': {
       color: 'var(--affine-placeholder-color)',

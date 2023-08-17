@@ -43,20 +43,6 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   fontSize: 'var(--affine-font-h-4)',
 });
 
-export const urlButton = style({
-  width: 'calc(100% - 64px - 15px)',
-  justifyContent: 'left',
-  textAlign: 'left',
-});
-globalStyle(`${urlButton} span`, {
-  width: '100%',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  color: 'var(--affine-placeholder-color)',
-  fontWeight: '500',
-});
-
 export const fakeWrapper = style({
   position: 'relative',
   opacity: 0.4,
@@ -113,10 +99,7 @@ export const memberEmail = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
 });
-export const iconButton = style({
-  opacity: 0,
-  pointerEvents: 'none',
-});
+export const iconButton = style({});
 export const displayNone = style({
   opacity: 0,
   pointerEvents: 'none',
