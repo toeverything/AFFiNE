@@ -1,41 +1,29 @@
 import { Tooltip } from '@affine/component';
-import { deleteLayoutAtom, pushLayoutAtom } from '@affine/sdk/entry';
+import {
+  currentPageAtom,
+  deleteLayoutAtom,
+  pushLayoutAtom,
+} from '@affine/sdk/entry';
 import { TOCNotesPanel } from '@blocksuite/blocks';
+import { assertExists } from '@blocksuite/global/utils';
 import { RightSidebarIcon } from '@blocksuite/icons';
-import type { Page } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { ComponentType, PropsWithChildren } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { blocksuiteRootAtom } from './atom';
-
 const Outline = () => {
-  const ref = useRef<HTMLDivElement>(null);
   const tocPanelRef = useRef<TOCNotesPanel | null>(null);
-  const [blocksuite] = useAtom(blocksuiteRootAtom);
+  const currentPage = useAtomValue(currentPageAtom);
 
   if (!tocPanelRef.current) {
     tocPanelRef.current = new TOCNotesPanel();
   }
 
-  if (blocksuite?.page !== tocPanelRef.current?.page) {
-    (tocPanelRef.current as TOCNotesPanel).page = blocksuite?.page as Page;
+  if (currentPage !== tocPanelRef.current?.page) {
+    (tocPanelRef.current as TOCNotesPanel).page = currentPage;
   }
-
-  useEffect(() => {
-    if (!ref.current || !tocPanelRef.current) return;
-
-    const container = ref.current;
-    const tocPanel = tocPanelRef.current as TOCNotesPanel;
-
-    container.appendChild(tocPanel);
-
-    return () => {
-      container.removeChild(tocPanel);
-    };
-  }, []);
 
   return (
     <div
@@ -44,7 +32,12 @@ const Outline = () => {
         height: '100%',
         borderLeft: `1px solid var(--affine-border-color)`,
       }}
-      ref={ref}
+      ref={useCallback((container: HTMLDivElement | null) => {
+        if (container) {
+          assertExists(tocPanelRef.current);
+          container.appendChild(tocPanelRef.current);
+        }
+      }, [])}
     />
   );
 };

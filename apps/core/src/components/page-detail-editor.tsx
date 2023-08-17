@@ -17,7 +17,15 @@ import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, startTransition, Suspense, useCallback, useMemo } from 'react';
+import {
+  memo,
+  startTransition,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
@@ -134,27 +142,42 @@ interface PluginContentAdapterProps {
 
 const PluginContentAdapter = memo<PluginContentAdapterProps>(
   function PluginContentAdapter({ windowItem, pluginName }) {
-    return (
-      <div
-        className={pluginContainer}
-        ref={useCallback(
-          (ref: HTMLDivElement | null) => {
-            if (ref) {
-              startTransition(() => {
-                const div = document.createElement('div');
-                const cleanup = windowItem(div);
-                ref.appendChild(div);
-                addCleanup(pluginName, () => {
-                  cleanup();
-                  ref.removeChild(div);
-                });
+    const rootRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+      const abortController = new AbortController();
+      const root = rootRef.current;
+      if (root) {
+        startTransition(() => {
+          if (abortController.signal.aborted) {
+            return;
+          }
+          const div = document.createElement('div');
+          const cleanup = windowItem(div);
+          root.appendChild(div);
+          if (abortController.signal.aborted) {
+            cleanup();
+            root.removeChild(div);
+          } else {
+            const cl = () => {
+              cleanup();
+              root.removeChild(div);
+            };
+            const dispose = addCleanup(pluginName, cl);
+            abortController.signal.addEventListener('abort', () => {
+              setTimeout(() => {
+                dispose();
+                cl();
               });
-            }
-          },
-          [pluginName, windowItem]
-        )}
-      />
-    );
+            });
+          }
+        });
+        return () => {
+          abortController.abort();
+        };
+      }
+      return;
+    }, [pluginName, windowItem]);
+    return <div className={pluginContainer} ref={rootRef} />;
   }
 );
 
