@@ -29,28 +29,33 @@ import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
 const { AFFINE_ENV } = process.env;
 
-const traceExporter = new TraceExporter();
-const tracing = new NodeSDK({
-  traceExporter,
-  metricReader: new PeriodicExportingMetricReader({
-    exporter: new MetricExporter(),
-  }),
-  spanProcessor: new BatchSpanProcessor(traceExporter),
-  textMapPropagator: new CompositePropagator({
-    propagators: [new W3CBaggagePropagator(), new W3CTraceContextPropagator()],
-  }),
-  instrumentations: [
-    new NestInstrumentation(),
-    new ioredis.IORedisInstrumentation(),
-    new socketIO.SocketIoInstrumentation({ traceReserved: true }),
-    new gql.GraphQLInstrumentation({ mergeItems: true }),
-    new HttpInstrumentation(),
-    new PrismaInstrumentation(),
-  ],
-  serviceName: 'affine-cloud',
-});
+if (AFFINE_ENV === 'production') {
+  const traceExporter = new TraceExporter();
+  const tracing = new NodeSDK({
+    traceExporter,
+    metricReader: new PeriodicExportingMetricReader({
+      exporter: new MetricExporter(),
+    }),
+    spanProcessor: new BatchSpanProcessor(traceExporter),
+    textMapPropagator: new CompositePropagator({
+      propagators: [
+        new W3CBaggagePropagator(),
+        new W3CTraceContextPropagator(),
+      ],
+    }),
+    instrumentations: [
+      new NestInstrumentation(),
+      new ioredis.IORedisInstrumentation(),
+      new socketIO.SocketIoInstrumentation({ traceReserved: true }),
+      new gql.GraphQLInstrumentation({ mergeItems: true }),
+      new HttpInstrumentation(),
+      new PrismaInstrumentation(),
+    ],
+    serviceName: 'affine-cloud',
+  });
 
-tracing.start();
+  tracing.start();
+}
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
