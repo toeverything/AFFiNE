@@ -42,7 +42,7 @@ jobs:
     runs-on: [self-hosted, win-signer]
     steps:
       - name: hello
-        run: echo "hello"
+        run: wmic os get Caption
   before-make:
     runs-on: ubuntu-latest
     environment: production
@@ -99,9 +99,7 @@ jobs:
           #   platform: linux
           #   arch: x64
           #   target: x86_64-unknown-linux-gnu
-          - runner:
-              labels: [self-hosted, win-signer]
-              group: signer
+          - runner: [self-hosted, win-signer]
             platform: win32
             arch: x64
             target: x86_64-pc-windows-msvc
