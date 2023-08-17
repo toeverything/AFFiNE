@@ -59,6 +59,7 @@ test('Show collections items in sidebar', async ({ page }) => {
     .getByText('Delete');
   await deletePage.click();
   expect(await collections.getByTestId('collection-page').count()).toBe(0);
+  await first.hover();
   await first.getByTestId('collection-options').click();
   const deleteCollection = page
     .getByTestId('collection-option')
@@ -76,6 +77,7 @@ test('pin and unpin collection', async ({ page }) => {
   await page.waitForTimeout(50);
   expect(await items.count()).toBe(1);
   const first = items.first();
+  await first.hover();
   await first.getByTestId('collection-options').click();
   const deleteCollection = page
     .getByTestId('collection-option')
@@ -99,6 +101,7 @@ test('edit collection', async ({ page }) => {
   const items = collections.getByTestId('collection-item');
   expect(await items.count()).toBe(1);
   const first = items.first();
+  await first.hover();
   await first.getByTestId('collection-options').click();
   const editCollection = page
     .getByTestId('collection-option')
@@ -117,6 +120,7 @@ test('edit collection and change filter date', async ({ page }) => {
   const items = collections.getByTestId('collection-item');
   expect(await items.count()).toBe(1);
   const first = items.first();
+  await first.hover();
   await first.getByTestId('collection-options').click();
   const editCollection = page
     .getByTestId('collection-option')
