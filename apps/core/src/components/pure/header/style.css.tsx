@@ -8,7 +8,7 @@ export const header = style({
   padding: '0 16px',
   minHeight: '52px',
   borderBottom: '1px solid var(--affine-border-color)',
-  zIndex: 'var(--affine-z-index-modal)',
+  zIndex: 2,
   selectors: {
     '&[data-sidebar-floating="false"]': {
       WebkitAppRegion: 'drag',
