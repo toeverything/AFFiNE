@@ -10,7 +10,10 @@ import {
   WorkspaceFlavour,
 } from '@affine/env/workspace';
 
+import { CRUD as CloudCRUD } from './cloud/crud';
+import { UI as CloudUI } from './cloud/ui';
 import { LocalAdapter } from './local';
+import { UI as PublicCloudUI } from './public-cloud/ui';
 
 const unimplemented = () => {
   throw new Error('Not implemented');
@@ -26,26 +29,24 @@ export const WorkspaceAdapters = {
     releaseType: ReleaseType.UNRELEASED,
     flavour: WorkspaceFlavour.AFFINE_CLOUD,
     loadPriority: LoadPriority.HIGH,
-    Events: {} as Partial<AppEvents>,
-    // todo: implement this
-    CRUD: {
-      get: unimplemented,
-      list: bypassList,
-      delete: unimplemented,
-      create: unimplemented,
-    },
-    // todo: implement this
-    UI: {
-      Provider: unimplemented,
-      Header: unimplemented,
-      PageDetail: unimplemented,
-      PageList: unimplemented,
-      NewSettingsDetail: unimplemented,
-    },
+    Events: {
+      'app:access': async () => {
+        try {
+          const { getSession } = await import('next-auth/react');
+          const session = await getSession();
+          return !!session;
+        } catch (e) {
+          console.error('failed to get session', e);
+          return false;
+        }
+      },
+    } as Partial<AppEvents>,
+    CRUD: CloudCRUD,
+    UI: CloudUI,
   },
-  [WorkspaceFlavour.PUBLIC]: {
+  [WorkspaceFlavour.AFFINE_PUBLIC]: {
     releaseType: ReleaseType.UNRELEASED,
-    flavour: WorkspaceFlavour.PUBLIC,
+    flavour: WorkspaceFlavour.AFFINE_PUBLIC,
     loadPriority: LoadPriority.LOW,
     Events: {} as Partial<AppEvents>,
     // todo: implement this
@@ -55,14 +56,7 @@ export const WorkspaceAdapters = {
       delete: unimplemented,
       create: unimplemented,
     },
-    // todo: implement this
-    UI: {
-      Provider: unimplemented,
-      Header: unimplemented,
-      PageDetail: unimplemented,
-      PageList: unimplemented,
-      NewSettingsDetail: unimplemented,
-    },
+    UI: PublicCloudUI,
   },
 } satisfies {
   [Key in WorkspaceFlavour]: WorkspaceAdapter<Key>;

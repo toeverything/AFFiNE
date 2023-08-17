@@ -1,9 +1,18 @@
 import type { ExecutionResult } from 'graphql';
 import { GraphQLError } from 'graphql';
 import { isNil, isObject, merge } from 'lodash-es';
+import { nanoid } from 'nanoid';
 
 import type { GraphQLQuery } from './graphql';
 import type { Mutations, Queries } from './schema';
+import {
+  generateRandUTF16Chars,
+  SPAN_ID_BYTES,
+  TRACE_FLAG,
+  TRACE_ID_BYTES,
+  TRACE_VERSION,
+  traceReporter,
+} from './utils';
 
 export type NotArray<T> = T extends Array<unknown> ? never : T;
 
@@ -116,19 +125,24 @@ export function transformToForm(body: RequestBody) {
   if (body.operationName) {
     gqlBody.name = body.operationName;
   }
-
+  const map: Record<string, [string]> = {};
+  const files: File[] = [];
   if (body.variables) {
     let i = 0;
     Object.entries(body.variables).forEach(([key, value]) => {
       if (value instanceof File) {
-        gqlBody.map['0'] = [`variables.${key}`];
-        form.append(`${i}`, value);
+        map['0'] = [`variables.${key}`];
+        files[i] = value;
         i++;
       }
     });
   }
 
-  form.append('operations', JSON.stringify(gqlBody));
+  form.set('operations', JSON.stringify(gqlBody));
+  form.set('map', JSON.stringify(map));
+  for (const [i, file] of files.entries()) {
+    form.set(`${i}`, file);
+  }
   return form;
 }
 
@@ -159,20 +173,25 @@ export const gqlFetcherFactory = (endpoint: string) => {
   ): Promise<QueryResponse<Query>> => {
     const body = formatRequestBody(options);
 
-    const ret = fetch(
+    const isFormData = body instanceof FormData;
+    const headers: Record<string, string> = {
+      'x-operation-name': options.query.operationName,
+      'x-definition-name': options.query.definitionName,
+    };
+    if (!isFormData) {
+      headers['content-type'] = 'application/json';
+    }
+    const ret = fetchWithReport(
       endpoint,
       merge(options.context, {
         method: 'POST',
-        headers: {
-          'x-operation-name': options.query.operationName,
-          'x-definition-name': options.query.definitionName,
-        },
-        body: body instanceof FormData ? body : JSON.stringify(body),
+        headers,
+        body: isFormData ? body : JSON.stringify(body),
       })
     ).then(async res => {
-      if (res.headers.get('content-type') === 'application/json') {
+      if (res.headers.get('content-type')?.startsWith('application/json')) {
         const result = (await res.json()) as ExecutionResult;
-        if (res.status >= 400) {
+        if (res.status >= 400 || result.errors) {
           if (result.errors && result.errors.length > 0) {
             throw result.errors.map(
               error => new GraphQLError(error.message, error)
@@ -193,4 +212,41 @@ export const gqlFetcherFactory = (endpoint: string) => {
   };
 
   return gqlFetch;
+};
+
+export const fetchWithReport = (
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> => {
+  const startTime = new Date().toISOString();
+  const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
+  const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
+  const traceparent = `${TRACE_VERSION}-${traceId}-${spanId}-${TRACE_FLAG}`;
+  init = init || {};
+  init.headers = init.headers || new Headers();
+  const requestId = nanoid();
+  if (init.headers instanceof Headers) {
+    init.headers.append('x-request-id', requestId);
+    init.headers.append('traceparent', traceparent);
+  } else {
+    const headers = init.headers as Record<string, string>;
+    headers['x-request-id'] = requestId;
+    headers['traceparent'] = traceparent;
+  }
+
+  if (!traceReporter) {
+    return fetch(input, init);
+  }
+
+  return fetch(input, init)
+    .then(response => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      traceReporter!.cacheTrace(traceId, spanId, requestId, startTime);
+      return response;
+    })
+    .catch(err => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      traceReporter!.uploadTrace(traceId, spanId, requestId, startTime);
+      return Promise.reject(err);
+    });
 };

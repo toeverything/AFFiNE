@@ -30,16 +30,16 @@ import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/reac
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useCallback } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 
-import { WorkspaceAdapters } from '../adapters/workspace';
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAppSetting } from '../atoms/settings';
+import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import type { IslandItemNames } from '../components/pure/help-island';
@@ -64,10 +64,6 @@ const QuickSearchModal = lazy(() =>
     default: module.QuickSearchModal,
   }))
 );
-
-function DefaultProvider({ children }: PropsWithChildren) {
-  return <>{children}</>;
-}
 
 export const QuickSearch = () => {
   const [currentWorkspace] = useCurrentWorkspace();
@@ -114,34 +110,19 @@ export const CurrentWorkspaceContext = ({
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
 }: PropsWithChildren) {
-  const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-  const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
-  const meta = useMemo(
-    () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
-    [currentWorkspaceId, jotaiWorkspaces]
-  );
-
-  const Provider =
-    (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
-
   return (
-    <>
-      {/* load all workspaces is costly, do not block the whole UI */}
-      <Suspense fallback={null}>
-        <AllWorkspaceModals />
-        <CurrentWorkspaceContext>
-          {/* fixme(himself65): don't re-render whole modals */}
-          <CurrentWorkspaceModals key={currentWorkspaceId} />
-        </CurrentWorkspaceContext>
-      </Suspense>
+    <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
+        {/* load all workspaces is costly, do not block the whole UI */}
+        <Suspense fallback={null}>
+          <AllWorkspaceModals />
+          <CurrentWorkspaceModals />
+        </Suspense>
         <Suspense fallback={<WorkspaceFallback />}>
-          <Provider>
-            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-          </Provider>
+          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
         </Suspense>
       </CurrentWorkspaceContext>
-    </>
+    </AdapterProviderWrapper>
   );
 };
 

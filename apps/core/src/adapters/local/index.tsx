@@ -28,6 +28,7 @@ import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
+  Provider,
   WorkspaceHeader,
 } from '../shared';
 
@@ -38,6 +39,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
+    'app:access': async () => true,
     'app:init': () => {
       const blockSuiteWorkspace = getOrCreateWorkspace(
         nanoid(),
@@ -78,9 +80,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   CRUD,
   UI: {
     Header: WorkspaceHeader,
-    Provider: ({ children }) => {
-      return <>{children}</>;
-    },
+    Provider,
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
       const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
       const page = workspace.getPage(currentPageId);

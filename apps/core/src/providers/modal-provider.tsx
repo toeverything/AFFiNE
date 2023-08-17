@@ -12,6 +12,7 @@ import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
+  openAuthModalAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
@@ -23,6 +24,11 @@ import { useNavigateHelper } from '../hooks/use-navigate-helper';
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
     default: module.SettingModal,
+  }))
+);
+const Auth = lazy(() =>
+  import('../components/affine/auth').then(module => ({
+    default: module.AuthModal,
   }))
 );
 
@@ -79,6 +85,45 @@ export const Setting = () => {
           setOpenSettingModalAtom(prev => ({ ...prev, open }));
         },
         [setOpenSettingModalAtom]
+      )}
+    />
+  );
+};
+
+export const AuthModal = (): ReactElement => {
+  const [
+    { open, state, email = '', emailType = 'changePassword' },
+    setOpenAuthModalAtom,
+  ] = useAtom(openAuthModalAtom);
+  return (
+    <Auth
+      open={open}
+      state={state}
+      email={email}
+      emailType={emailType}
+      setEmailType={useCallback(
+        emailType => {
+          setOpenAuthModalAtom(prev => ({ ...prev, emailType }));
+        },
+        [setOpenAuthModalAtom]
+      )}
+      setOpen={useCallback(
+        open => {
+          setOpenAuthModalAtom(prev => ({ ...prev, open }));
+        },
+        [setOpenAuthModalAtom]
+      )}
+      setAuthState={useCallback(
+        state => {
+          setOpenAuthModalAtom(prev => ({ ...prev, state }));
+        },
+        [setOpenAuthModalAtom]
+      )}
+      setAuthEmail={useCallback(
+        email => {
+          setOpenAuthModalAtom(prev => ({ ...prev, email }));
+        },
+        [setOpenAuthModalAtom]
       )}
     />
   );
@@ -203,21 +248,20 @@ export const AllWorkspaceModals = (): ReactElement => {
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
             id => {
-              startTransition(() => {
-                setOpenCreateWorkspaceModal(false);
-                setOpenWorkspacesModal(false);
-                setCurrentWorkspaceId(id);
+              setOpenCreateWorkspaceModal(false);
+              setOpenWorkspacesModal(false);
+              // if jumping immediately, the page may stuck in loading state
+              // not sure why yet .. here is a workaround
+              setTimeout(() => {
                 jumpToSubPath(id, WorkspaceSubPath.ALL);
               });
             },
-            [
-              jumpToSubPath,
-              setCurrentWorkspaceId,
-              setOpenCreateWorkspaceModal,
-              setOpenWorkspacesModal,
-            ]
+            [jumpToSubPath, setOpenCreateWorkspaceModal, setOpenWorkspacesModal]
           )}
         />
+      </Suspense>
+      <Suspense>
+        <AuthModal />
       </Suspense>
     </>
   );

@@ -18,7 +18,7 @@ export function useWorkspace(workspaceId: string): AffineOfficialWorkspace {
     const baseAtom = atom(async get => {
       const metadata = await get(rootWorkspacesMetadataAtom);
       const flavour = metadata.find(({ id }) => id === workspaceId)?.flavour;
-      assertExists(flavour);
+      assertExists(flavour, 'workspace flavour not found');
       return {
         id: workspaceId,
         flavour,

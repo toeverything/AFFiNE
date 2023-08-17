@@ -7,5 +7,10 @@
     "outDir": "./lib",
     "allowSyntheticDefaultImports": true
   },
+  "references": [
+    {
+      "path": "../../apps/core"
+    }
+  ],
   "include": ["vite.config.ts"]
 }

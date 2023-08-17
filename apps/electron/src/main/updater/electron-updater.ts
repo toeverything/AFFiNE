@@ -1,24 +1,10 @@
 import { app } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import { z } from 'zod';
 
 import { isMacOS } from '../../shared/utils';
+import { buildType, isDev } from '../config';
 import { logger } from '../logger';
 import { updaterSubjects } from './event';
-
-export const ReleaseTypeSchema = z.enum([
-  'stable',
-  'beta',
-  'canary',
-  'internal',
-]);
-
-export const envBuildType = (process.env.BUILD_TYPE || 'canary')
-  .trim()
-  .toLowerCase();
-export const buildType = ReleaseTypeSchema.parse(envBuildType);
-const mode = process.env.NODE_ENV;
-const isDev = mode === 'development';
 
 export const quitAndInstall = async () => {
   autoUpdater.quitAndInstall();

@@ -2,11 +2,13 @@ import { app, BrowserWindow } from 'electron';
 
 import { applicationMenuEvents } from './application-menu';
 import { logger } from './logger';
+import { uiEvents } from './ui';
 import { updaterEvents } from './updater/event';
 
 export const allEvents = {
   applicationMenu: applicationMenuEvents,
   updater: updaterEvents,
+  ui: uiEvents,
 };
 
 function getActiveWindows() {

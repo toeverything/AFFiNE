@@ -8,9 +8,11 @@
   "references": [
     { "path": "../../tests/fixtures" },
     { "path": "../y-indexeddb" },
+    { "path": "../y-provider" },
     { "path": "../env" },
     { "path": "../debug" },
     { "path": "../hooks" },
-    { "path": "../infra" }
+    { "path": "../infra" },
+    { "path": "../graphql" }
   ]
 }

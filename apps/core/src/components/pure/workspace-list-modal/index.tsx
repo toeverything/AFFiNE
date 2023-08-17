@@ -123,7 +123,7 @@ const CloudWorkSpaceList = ({
           disabled={disabled}
           items={
             workspaces.filter(
-              ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
+              ({ flavour }) => flavour !== WorkspaceFlavour.AFFINE_PUBLIC
             ) as (AffineCloudWorkspace | LocalWorkspace)[]
           }
           currentWorkspaceId={currentWorkspaceId}
@@ -244,7 +244,7 @@ export const WorkspaceListModal = ({
               disabled={disabled}
               items={
                 workspaces.filter(
-                  ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
+                  ({ flavour }) => flavour !== WorkspaceFlavour.AFFINE_PUBLIC
                 ) as (AffineCloudWorkspace | LocalWorkspace)[]
               }
               currentWorkspaceId={currentWorkspaceId}

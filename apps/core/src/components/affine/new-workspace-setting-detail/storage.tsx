@@ -7,7 +7,6 @@ import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
-import * as style from './style.css';
 
 const useDBFileSecondaryPath = (workspaceId: string) => {
   const [path, setPath] = useState<string | undefined>(undefined);
@@ -81,7 +80,7 @@ export const StoragePanel = ({ workspace }: StoragePanelProps) => {
           >
             <Button
               data-testid="move-folder"
-              className={style.urlButton}
+              // className={style.urlButton}
               size="large"
               onClick={handleMoveTo}
             >

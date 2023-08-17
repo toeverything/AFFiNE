@@ -19,7 +19,7 @@ const editorFlags: BlockSuiteFeatureFlags = {
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<string, RuntimeConfig> = {
     stable: {
-      enablePlugin: false,
+      enablePlugin: true,
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
@@ -31,8 +31,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
       enableNotificationCenter: false,
-      enableCloud: false,
-      serverAPI: 'https://localhost:3010',
+      enableCloud: true,
+      serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
@@ -51,8 +51,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
       enableNotificationCenter: true,
-      enableCloud: false,
-      serverAPI: 'https://localhost:3010',
+      enableCloud: true,
+      serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
@@ -104,6 +104,14 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
   };
+
+  if (buildFlags.mode === 'development') {
+    if (buildFlags.distribution === 'browser')
+      currentBuildPreset.serverUrlPrefix = '';
+    else if (buildFlags.distribution === 'desktop') {
+      currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
+    }
+  }
 
   return {
     ...currentBuildPreset,

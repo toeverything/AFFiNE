@@ -3,14 +3,15 @@ import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 
 import { settingRow } from './share.css';
 
-interface SettingRowProps {
+export type SettingRowProps = PropsWithChildren<{
   name: ReactNode;
   desc: ReactNode;
   style?: CSSProperties;
   onClick?: () => void;
   spreadCol?: boolean;
   testId?: string;
-}
+  disabled?: boolean;
+}>;
 
 export const SettingRow = ({
   name,
@@ -20,11 +21,13 @@ export const SettingRow = ({
   style,
   spreadCol = true,
   testId = '',
-}: PropsWithChildren<SettingRowProps>) => {
+  disabled = false,
+}: SettingRowProps) => {
   return (
     <div
       className={clsx(settingRow, {
         'two-col': spreadCol,
+        disabled,
       })}
       style={style}
       onClick={onClick}

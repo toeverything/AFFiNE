@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
+import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
@@ -76,6 +77,7 @@ export const WorkspaceSettingDetail = ({
           onDeleteWorkspace={onDeleteWorkspace}
           {...props}
         />
+        <MembersPanel workspace={workspace} />
       </SettingWrapper>
       {storageAndExportSetting}
       <SettingWrapper>

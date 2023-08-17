@@ -13,7 +13,6 @@ export const DebugContent = (): ReactElement => {
       <FlexWrapper justifyContent="space-between">
         <Input
           width={280}
-          height={32}
           defaultValue={key ?? undefined}
           onChange={useCallback(
             (newValue: string) => {

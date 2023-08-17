@@ -3,15 +3,13 @@ name = "affine_storage"
 version = "1.0.0"
 edition = "2021"
 
-# used to avoid sys dep conflict sqlx -> libsqlite-sys
-[workspace]
-
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-jwst = { git = "https://github.com/toeverything/OctoBase.git", branch = "master" }
-jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", branch = "master" }
+jwst = { git = "https://github.com/toeverything/OctoBase.git" }
+jwst-codec = { git = "https://github.com/toeverything/OctoBase.git" }
+jwst-storage = { git = "https://github.com/toeverything/OctoBase.git" }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",
@@ -21,7 +19,3 @@ yrs = { version = "0.16.5" }
 
 [build-dependencies]
 napi-build = "2"
-
-[patch.crates-io]
-lib0 = { git = "https://github.com/toeverything/y-crdt", rev = "a700f09" }
-yrs = { git = "https://github.com/toeverything/y-crdt", rev = "a700f09" }

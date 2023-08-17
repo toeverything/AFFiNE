@@ -252,3 +252,7 @@ affine-block-hub {
     padding: 0;
   }
 }
+
+#webpack-dev-server-client-overlay {
+  -webkit-app-region: no-drag;
+}

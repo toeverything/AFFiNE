@@ -78,6 +78,14 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToExpired = useCallback(
+    (logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate('/expired', {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
 
   return {
     jumpToPage,
@@ -86,5 +94,6 @@ export function useNavigateHelper() {
     jumpToIndex,
     jumpTo404,
     openPage,
+    jumpToExpired,
   };
 }

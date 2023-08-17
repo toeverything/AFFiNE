@@ -52,6 +52,7 @@ export const Confirm = ({
         {buttonDirection === 'row' ? (
           <StyledRowButtonWrapper>
             <Button
+              shape="round"
               onClick={() => {
                 onCancel?.();
               }}
@@ -63,6 +64,7 @@ export const Confirm = ({
             </Button>
             <Button
               type={confirmType}
+              shape="round"
               onClick={() => {
                 onConfirm?.();
               }}
@@ -76,6 +78,7 @@ export const Confirm = ({
           <StyledColumnButtonWrapper>
             <Button
               type={confirmType}
+              shape="round"
               onClick={() => {
                 onConfirm?.();
               }}
@@ -85,6 +88,7 @@ export const Confirm = ({
               {confirmText}
             </Button>
             <Button
+              shape="round"
               onClick={() => {
                 onCancel?.();
               }}

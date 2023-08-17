@@ -14,7 +14,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma/service';
 import type { FileUpload } from '../../types';
-import { Auth } from '../auth/guard';
+import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 
 @ObjectType()
@@ -31,8 +31,20 @@ export class UserType implements Partial<User> {
   @Field({ description: 'User avatar url', nullable: true })
   avatarUrl!: string;
 
+  @Field({ description: 'User email verified', nullable: true })
+  emailVerified!: Date;
+
   @Field({ description: 'User created date', nullable: true })
   createdAt!: Date;
+
+  @Field({ description: 'User password has been set', nullable: true })
+  hasPassword!: boolean;
+}
+
+@ObjectType()
+export class DeleteAccount {
+  @Field()
+  success!: boolean;
 }
 
 @Auth()
@@ -44,13 +56,36 @@ export class UserResolver {
   ) {}
 
   @Query(() => UserType, {
+    name: 'currentUser',
+    description: 'Get current user',
+  })
+  async currentUser(@CurrentUser() user: User) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      hasPassword: !!user.password,
+    };
+  }
+
+  @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
+    nullable: true,
   })
+  @Public()
   async user(@Args('email') email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
+    // TODO: need to limit a user can only get another user witch is in the same workspace
+    return this.prisma.user
+      .findUnique({
+        where: { email },
+      })
+      .catch(() => {
+        return null;
+      });
   }
 
   @Mutation(() => UserType, {
@@ -71,5 +106,22 @@ export class UserResolver {
       where: { id },
       data: { avatarUrl: url },
     });
+  }
+
+  @Mutation(() => DeleteAccount)
+  async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
+    await this.prisma.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
+    await this.prisma.session.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+    return {
+      success: true,
+    };
   }
 }

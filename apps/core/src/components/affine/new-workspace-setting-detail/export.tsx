@@ -41,7 +41,7 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
     const result: SaveDBFileResult =
       await window.apis?.dialog.saveDBFileAs(workspaceId);
     if (result?.error) {
-      toast(t[result.error]());
+      toast(result.error);
     } else if (!result?.canceled) {
       toast(t['Export success']());
     }

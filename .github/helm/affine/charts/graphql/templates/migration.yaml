@@ -19,13 +19,13 @@ spec:
         env:
           - name: NODE_ENV
             value: "{{ .Values.env }}"
-          - name: DATABSE_PASSWORD
+          - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: pg-postgresql
                 key: postgres-password
           - name: DATABASE_URL
-            value: postgres://{{ .Values.database.user }}:$(DATABSE_PASSWORD)@{{ .Values.database.url }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
         resources:
           requests:
             cpu: '100m'
