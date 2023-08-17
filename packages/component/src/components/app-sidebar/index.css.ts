@@ -13,6 +13,7 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
+  zIndex: 1,
   paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
