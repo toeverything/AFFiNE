@@ -177,12 +177,7 @@ const LayoutPanel = memo(function LayoutPanel(
     }
   } else {
     return (
-      <PanelGroup
-        style={{
-          height: 'calc(100% - 52px)',
-        }}
-        direction={node.direction}
-      >
+      <PanelGroup direction={node.direction}>
         <Panel
           defaultSize={node.splitPercentage}
           style={{
@@ -218,6 +213,18 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   }
 
   const layout = useAtomValue(contentLayoutAtom);
+
+  if (layout === 'editor') {
+    return (
+      <Suspense>
+        <PanelGroup direction="horizontal">
+          <Panel>
+            <EditorWrapper {...props} />
+          </Panel>
+        </PanelGroup>
+      </Suspense>
+    );
+  }
 
   return (
     <>
