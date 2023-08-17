@@ -104,6 +104,7 @@ export const WorkspaceCard = ({
       </StyledWorkspaceInfo>
       <StyledSettingLink
         className="setting-entry"
+        data-testid="workspace-card-setting-button"
         onClick={e => {
           e.stopPropagation();
           onSettingClick(meta.id);
