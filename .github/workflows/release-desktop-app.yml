@@ -162,7 +162,7 @@ jobs:
   #         name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
   #         path: builds
 
-  make-distribution-windows:
+  package-distribution-windows:
     environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
@@ -209,18 +209,32 @@ jobs:
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: |
-            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.exe
-            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.nupkg
-            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.msi
-            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.dll
-            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.bin
-            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.node
+            apps/electron/out
 
-      - name: signing using Windows Signer workflow (packaged artifacts)
-        uses: ./.github/workflows/windows-signer.yml
-        with:
-          artifact-name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+  sign-packaged-artifacts-windows:
+    needs: package-distribution-windows
+    uses: ./.github/workflows/windows-signer.yml
+    with:
+      artifact-name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
 
+  make-artifacts-windows:
+    environment: production
+    needs: sign-packaged-artifacts-windows
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # For windows, we need a separate approach
+      matrix:
+        spec:
+          - runner: windows-latest
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.spec.runner }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        timeout-minutes: 10
+        uses: ./.github/actions/setup-node
       - name: Download and overwrite packaged artifacts
         uses: actions/download-artifact@v3
         with:
@@ -236,11 +250,26 @@ jobs:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: apps/electron/make/${{ env.BUILD_TYPE }}/squirrel.windows
 
-      - name: signing using Windows Signer workflow
-        uses: ./.github/workflows/windows-signer.yml
-        with:
-          artifact-name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+  sign-installer-artifacts-windows:
+    needs: make-artifacts-windows
+    uses: ./.github/workflows/windows-signer.yml
+    with:
+      artifact-name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
 
+  finalize-installer-windows:
+    environment: production
+    needs: sign-packaged-artifacts-windows
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # For windows, we need a separate approach
+      matrix:
+        spec:
+          - runner: windows-latest
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.spec.runner }}
+    steps:
       - name: Download and overwrite installer artifacts
         uses: actions/download-artifact@v3
         with:
