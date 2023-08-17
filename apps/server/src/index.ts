@@ -27,9 +27,9 @@ import { Config } from './config';
 import { serverTimingAndCache } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
-const { AFFINE_ENV } = process.env;
+const { NODE_ENV } = process.env;
 
-if (AFFINE_ENV === 'production') {
+if (NODE_ENV === 'production') {
   const traceExporter = new TraceExporter();
   const tracing = new NodeSDK({
     traceExporter,
@@ -60,7 +60,7 @@ if (AFFINE_ENV === 'production') {
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
   bodyParser: true,
-  logger: AFFINE_ENV === 'production' ? ['warn'] : ['verbose'],
+  logger: NODE_ENV === 'production' ? ['warn'] : ['verbose'],
 });
 
 app.use(serverTimingAndCache);
