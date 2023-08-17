@@ -8,7 +8,7 @@ import StyledPopperContainer from '../shared/container';
 const StyledTooltip = styled(StyledPopperContainer)(() => {
   return {
     display: 'inline-flex',
-    height: '38px',
+    minHeight: '38px',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',

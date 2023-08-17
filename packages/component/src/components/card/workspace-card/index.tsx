@@ -2,11 +2,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { SettingsIcon } from '@blocksuite/icons';
-import {
-  CloudWorkspaceIcon as DefaultCloudWorkspaceIcon,
-  CollaborationIcon as DefaultJoinedWorkspaceIcon,
-  LocalWorkspaceIcon as DefaultLocalWorkspaceIcon,
-} from '@blocksuite/icons';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { useCallback } from 'react';
@@ -18,21 +13,6 @@ import {
   StyledWorkspaceInfo,
   StyledWorkspaceTitle,
 } from './styles';
-
-const JoinedWorkspaceIcon = () => {
-  return <DefaultJoinedWorkspaceIcon style={{ color: '#FF646B' }} />;
-};
-const LocalWorkspaceIcon = () => {
-  return <DefaultLocalWorkspaceIcon style={{ color: '#FDBD32' }} />;
-};
-
-const CloudWorkspaceIcon = () => {
-  return <DefaultCloudWorkspaceIcon style={{ color: '#60A5FA' }} />;
-};
-
-// const LocalDataIcon = () => {
-//   return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
-// };
 
 export interface WorkspaceTypeProps {
   flavour: WorkspaceFlavour;
@@ -46,7 +26,6 @@ const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
   if (flavour === WorkspaceFlavour.LOCAL) {
     return (
       <p style={{ fontSize: '10px' }} title={t['Local Workspace']()}>
-        <LocalWorkspaceIcon />
         <span>{t['Local Workspace']()}</span>
       </p>
     );
@@ -54,12 +33,10 @@ const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
 
   return isOwner ? (
     <p style={{ fontSize: '10px' }} title={t['Cloud Workspace']()}>
-      <CloudWorkspaceIcon />
       <span>{t['Cloud Workspace']()}</span>
     </p>
   ) : (
     <p style={{ fontSize: '10px' }} title={t['Joined Workspace']()}>
-      <JoinedWorkspaceIcon />
       <span>{t['Joined Workspace']()}</span>
     </p>
   );
