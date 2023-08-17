@@ -50,8 +50,9 @@ export const HeaderItem = ({
   const [open, setOpen] = useState(false);
   const pushLayout = useSetAtom(pushLayoutAtom);
   const deleteLayout = useSetAtom(deleteLayoutAtom);
+
   return (
-    <Tooltip content="Plugin Enabled">
+    <Tooltip content={`${open ? 'Collapse' : 'Expand'} table of contents`}>
       <IconButton
         onClick={useCallback(() => {
           if (!open) {
