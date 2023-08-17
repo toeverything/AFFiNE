@@ -38,6 +38,11 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
+  test:
+    runs-on: [self-hosted, win-signer]
+    steps:
+      - name: hello
+        run: echo "hello"
   before-make:
     runs-on: ubuntu-latest
     environment: production
@@ -95,6 +100,7 @@ jobs:
           #   arch: x64
           #   target: x86_64-unknown-linux-gnu
           - runner:
+              labels: [self-hosted, win-signer]
               group: signer
             platform: win32
             arch: x64
