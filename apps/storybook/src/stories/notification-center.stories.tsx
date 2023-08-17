@@ -9,6 +9,9 @@ import { useAtomValue, useSetAtom } from 'jotai';
 export default {
   title: 'AFFiNE/NotificationCenter',
   component: NotificationCenter,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<typeof NotificationCenter>;
 
 let id = 0;

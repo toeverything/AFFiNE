@@ -9,11 +9,15 @@ import {
   HelpIcon,
   PageIcon,
 } from '@blocksuite/icons';
+import type { Meta } from '@storybook/react';
 
 export default {
   title: 'AFFiNE/Card',
   component: WorkspaceCard,
-};
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
+} satisfies Meta;
 
 const blockSuiteWorkspace = getOrCreateWorkspace(
   'blocksuite-local',

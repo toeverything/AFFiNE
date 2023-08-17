@@ -16,6 +16,9 @@ export default {
       },
     },
   },
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<WorkspaceAvatarProps>;
 
 const schema = new Schema();
