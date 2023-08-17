@@ -19,6 +19,7 @@ export class Metrics implements OnModuleDestroy {
   gqlError = metricsCreator.counter('gql_error', ['operation']);
   gqlTimer = metricsCreator.timer('gql_timer', ['operation']);
 
+  jwstCodecMerge = metricsCreator.counter('jwst_codec_merge');
   jwstCodecDidnotMatch = metricsCreator.counter('jwst_codec_didnot_match');
   jwstCodecFail = metricsCreator.counter('jwst_codec_fail');
 }

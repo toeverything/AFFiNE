@@ -76,6 +76,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
   protected mergeUpdates(guid: string, ...updates: Buffer[]): Buffer {
     const yjsResult = yjsMergeUpdates(updates);
+    this.metrics.jwstCodecMerge(1, {});
+    let log = false;
     if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
       try {
         const jwstResult = jwstMergeUpdates(updates);
@@ -84,19 +86,23 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           this.logger.warn(
             `jwst codec result doesn't match yjs codec result for: ${guid}`
           );
-          this.logger.warn(
-            'Updates:',
-            updates.map(u => u.toString('hex'))
-          );
-
+          log = true;
           if (this.config.dev) {
             this.logger.warn(`Expected:\n  ${yjsResult.toString('hex')}`);
+            this.logger.warn(`Result:\n  ${jwstResult.toString('hex')}`);
           }
-          this.logger.warn(`Result:\n  ${jwstResult.toString('hex')}`);
         }
       } catch (e) {
         this.metrics.jwstCodecFail(1, {});
-        this.logger.error('jwst apply update failed', e);
+        this.logger.error(`jwst apply update failed for :${guid}`, e);
+        log = true;
+      } finally {
+        if (log) {
+          this.logger.verbose(
+            'Updates:',
+            updates.map(u => u.toString('hex'))
+          );
+        }
       }
     }
 
