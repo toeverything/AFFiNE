@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
 export const shortcutRow = style({
   height: '32px',
@@ -14,8 +14,25 @@ export const shortcutRow = style({
   },
 });
 
-globalStyle(`${shortcutRow} .shortcut`, {
+export const shortcutKeyContainer = style({
+  display: 'flex',
+});
+export const shortcutKey = style({
+  minWidth: '24px',
+  height: '20px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 6px',
   border: '1px solid var(--affine-border-color)',
-  borderRadius: '8px',
-  padding: '4px 18px',
+  borderRadius: '4px',
+  background: 'var(--affine-background-tertiary-color)',
+  boxShadow:
+    '0px 6px 4px 0px rgba(255, 255, 255, 0.24) inset, 0px 0px 0px 0.5px rgba(0, 0, 0, 0.10) inset',
+  fontSize: 'var(--affine-font-xs)',
+  selectors: {
+    '&:not(:last-of-type)': {
+      marginRight: '2px',
+    },
+  },
 });
