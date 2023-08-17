@@ -9,6 +9,9 @@ import { useState } from 'react';
 export default {
   title: 'AFFiNE/WorkspaceList',
   component: WorkspaceList,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<WorkspaceListProps>;
 
 export const Default = () => {

@@ -8,5 +8,5 @@
   "devDependencies": {
     "@types/debug": "^4.1.8"
   },
-  "version": "0.8.0-canary.24"
+  "version": "0.8.0-canary.25"
 }

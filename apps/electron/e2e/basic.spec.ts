@@ -117,7 +117,7 @@ test('affine cloud disabled', async ({ page }) => {
   });
   await page.waitForSelector('v-line');
   await page.getByTestId('current-workspace').click();
-  await page.getByTestId('sign-in-button').click();
+  await page.getByTestId('cloud-signin-button').click();
   await page.getByTestId('disable-affine-cloud-modal').waitFor({
     state: 'visible',
   });
@@ -153,13 +153,23 @@ test('windows only check', async ({ page }) => {
 
 test('delete workspace', async ({ page }) => {
   await page.getByTestId('current-workspace').click();
-  await page.getByTestId('add-or-new-workspace').click();
   await page.getByTestId('new-workspace').click();
-  await page.getByTestId('create-workspace-default-location-button').click();
-  await page.getByTestId('create-workspace-input').type('Delete Me');
-  await page.getByTestId('create-workspace-create-button').click();
-  await page.getByTestId('create-workspace-continue-button').click();
-  await page.getByTestId('slider-bar-workspace-setting-button').click();
+  await page.getByTestId('create-workspace-default-location-button').click({
+    delay: 100,
+  });
+  await page.getByTestId('create-workspace-input').type('Delete Me', {
+    delay: 100,
+  });
+  await page.getByTestId('create-workspace-create-button').click({
+    delay: 100,
+  });
+  await page.getByTestId('create-workspace-continue-button').click({
+    delay: 100,
+  });
+  await page.waitForTimeout(1000);
+  await page.getByTestId('current-workspace').click();
+  await page.getByTestId('workspace-card').nth(1).hover();
+  await page.getByTestId('workspace-card-setting-button').nth(1).click();
   await page.getByTestId('current-workspace-label').click();
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
     'Delete Me'
