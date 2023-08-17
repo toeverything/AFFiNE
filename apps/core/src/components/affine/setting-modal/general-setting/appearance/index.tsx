@@ -81,6 +81,12 @@ export const AppearanceSettings = () => {
   const t = useAFFiNEI18N();
 
   const [appSettings, setAppSettings] = useAppSetting();
+
+  const defaultAppSettings = {
+    clientBorder: false,
+  };
+ 
+
   const changeSwitch = useCallback(
     (key: keyof AppSetting, checked: boolean) => {
       setAppSettings({ [key]: checked });
@@ -133,7 +139,7 @@ export const AppearanceSettings = () => {
             ]()}
           >
             <Switch
-              checked={appSettings.clientBorder}
+              checked={defaultAppSettings.clientBorder}
               onChange={checked => changeSwitch('clientBorder', checked)}
             />
           </SettingRow>
