@@ -52,7 +52,6 @@ export const navStyle = style({
   display: 'flex',
   flexDirection: 'column',
   zIndex: parseInt(baseTheme.zIndexModal),
-  borderRight: '1px solid transparent',
 });
 
 export const navHeaderStyle = style({
@@ -76,6 +75,7 @@ export const navBodyStyle = style({
   height: 'calc(100% - 52px)',
   display: 'flex',
   flexDirection: 'column',
+  rowGap: '4px',
 });
 
 export const sidebarFloatMaskStyle = style({
