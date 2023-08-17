@@ -1,5 +1,4 @@
 import { Menu, MenuItem, Tooltip } from '@affine/component';
-import { ScrollableContainer } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
   AffineCloudWorkspace,
@@ -32,7 +31,9 @@ import {
   StyledImportWorkspaceCardPill,
   StyledModalBody,
   StyledModalContent,
+  StyledModalFooterContent,
   StyledModalHeader,
+  StyledModalHeaderContent,
   StyledModalHeaderLeft,
   StyledModalTitle,
   StyledOperationWrapper,
@@ -170,141 +171,140 @@ export const WorkspaceListModal = ({
         zIndex: 999,
         '& .MuiPopover-paper': {
           borderRadius: '8px',
-          boxShadow: 'var(--affine-shadow-1)',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: 'var(--affine-shadow-2)',
+          backgroundColor: 'var(--affine-background-overlay-panel-color)',
         },
+        maxHeight: '90vh',
       }}
       open={open}
       anchorEl={anchorEl}
       onClose={onClose}
     >
-      <StyledModalBody>
-        <ScrollableContainer>
-          {isLoggedIn ? (
-            <CloudWorkSpaceList
-              disabled={disabled}
-              open={open}
-              onClose={onClose}
-              workspaces={workspaces}
-              onClickWorkspace={onClickWorkspace}
-              onClickWorkspaceSetting={onClickWorkspaceSetting}
-              onNewWorkspace={onNewWorkspace}
-              onAddWorkspace={onAddWorkspace}
-              currentWorkspaceId={currentWorkspaceId}
-              onMoveWorkspace={onMoveWorkspace}
-            />
-          ) : (
-            <>
-              <StyledModalContent>
-                <StyledSignInCardPill>
-                  <MenuItem
-                    style={{
-                      height: 'auto',
-                      padding: '8px 12px',
-                    }}
-                    onClick={async () => {
-                      if (!runtimeConfig.enableCloud) {
-                        setOpen(true);
-                      }
-                    }}
-                    data-testid="cloud-signin-button"
-                  >
-                    <StyledCreateWorkspaceCardPillContent>
-                      <StyledCreateWorkspaceCardPillIcon>
-                        <CloudWorkspaceIcon />
-                      </StyledCreateWorkspaceCardPillIcon>
-                      <StyledSignInCardPillTextCotainer>
-                        <StyledSignInCardPillTextPrimary>
-                          {t['com.affine.workspace.cloud.auth']()}
-                        </StyledSignInCardPillTextPrimary>
-                        <StyledSignInCardPillTextSecondary>
-                          Sync with AFFiNE Cloud
-                        </StyledSignInCardPillTextSecondary>
-                      </StyledSignInCardPillTextCotainer>
-                    </StyledCreateWorkspaceCardPillContent>
-                  </MenuItem>
-                </StyledSignInCardPill>
-                <Divider />
-              </StyledModalContent>
-            </>
-          )}
-          <StyledModalHeader>
-            <StyledModalTitle>{t['Local Workspace']()}</StyledModalTitle>
-            <Tooltip
-              content={t['Workspace description']()}
-              placement="top-start"
-              disablePortal={true}
-            >
-              <StyledHelperContainer>
-                <HelpIcon />
-              </StyledHelperContainer>
-            </Tooltip>
-          </StyledModalHeader>
-          <StyledModalContent>
-            <WorkspaceList
-              disabled={disabled}
-              items={
-                workspaces.filter(
-                  ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
-                ) as (AffineCloudWorkspace | LocalWorkspace)[]
+      <StyledModalHeaderContent>
+        <StyledSignInCardPill>
+          <MenuItem
+            style={{
+              height: 'auto',
+              padding: '8px 12px',
+            }}
+            onClick={async () => {
+              if (!runtimeConfig.enableCloud) {
+                setOpen(true);
               }
-              currentWorkspaceId={currentWorkspaceId}
-              onClick={onClickWorkspace}
-              onSettingClick={onClickWorkspaceSetting}
-              onDragEnd={useCallback(
-                (event: DragEndEvent) => {
-                  const { active, over } = event;
-                  if (active.id !== over?.id) {
-                    onMoveWorkspace(active.id as string, over?.id as string);
-                  }
-                },
-                [onMoveWorkspace]
-              )}
-            />
-          </StyledModalContent>
-          <StyledModalContent>
-            {runtimeConfig.enableSQLiteProvider && environment.isDesktop ? (
-              <StyledImportWorkspaceCardPill>
-                <MenuItem
-                  onClick={onAddWorkspace}
-                  data-testid="add-workspace"
-                  style={{
-                    height: 'auto',
-                    padding: '8px 12px',
-                  }}
-                >
-                  <StyledCreateWorkspaceCardPillContent>
-                    <StyledCreateWorkspaceCardPillIcon>
-                      <ImportIcon />
-                    </StyledCreateWorkspaceCardPillIcon>
-                    <div>
-                      <p>{t['com.affine.workspace.local.import']()}</p>
-                    </div>
-                  </StyledCreateWorkspaceCardPillContent>
-                </MenuItem>
-              </StyledImportWorkspaceCardPill>
-            ) : null}
-            <StyledCreateWorkspaceCardPill>
-              <MenuItem
-                style={{
-                  height: 'auto',
-                  padding: '8px 12px',
-                }}
-                onClick={onNewWorkspace}
-                data-testid="new-workspace"
-              >
-                <StyledCreateWorkspaceCardPillContent>
-                  <StyledCreateWorkspaceCardPillIcon>
-                    <PlusIcon />
-                  </StyledCreateWorkspaceCardPillIcon>
-                  <div>
-                    <p>{t['New Workspace']()}</p>
-                  </div>
-                </StyledCreateWorkspaceCardPillContent>
-              </MenuItem>
-            </StyledCreateWorkspaceCardPill>
-          </StyledModalContent>
-        </ScrollableContainer>
+            }}
+            data-testid="cloud-signin-button"
+          >
+            <StyledCreateWorkspaceCardPillContent>
+              <StyledCreateWorkspaceCardPillIcon>
+                <CloudWorkspaceIcon />
+              </StyledCreateWorkspaceCardPillIcon>
+              <StyledSignInCardPillTextCotainer>
+                <StyledSignInCardPillTextPrimary>
+                  {t['com.affine.workspace.cloud.auth']()}
+                </StyledSignInCardPillTextPrimary>
+                <StyledSignInCardPillTextSecondary>
+                  Sync with AFFiNE Cloud
+                </StyledSignInCardPillTextSecondary>
+              </StyledSignInCardPillTextCotainer>
+            </StyledCreateWorkspaceCardPillContent>
+          </MenuItem>
+        </StyledSignInCardPill>
+        <Divider />
+      </StyledModalHeaderContent>
+      <StyledModalBody>
+        {isLoggedIn ? (
+          <CloudWorkSpaceList
+            disabled={disabled}
+            open={open}
+            onClose={onClose}
+            workspaces={workspaces}
+            onClickWorkspace={onClickWorkspace}
+            onClickWorkspaceSetting={onClickWorkspaceSetting}
+            onNewWorkspace={onNewWorkspace}
+            onAddWorkspace={onAddWorkspace}
+            currentWorkspaceId={currentWorkspaceId}
+            onMoveWorkspace={onMoveWorkspace}
+          />
+        ) : null}
+        <StyledModalHeader>
+          <StyledModalTitle>{t['Local Workspace']()}</StyledModalTitle>
+          <Tooltip
+            content={t['Workspace description']()}
+            placement="top-start"
+            disablePortal={true}
+          >
+            <StyledHelperContainer>
+              <HelpIcon />
+            </StyledHelperContainer>
+          </Tooltip>
+        </StyledModalHeader>
+        <StyledModalContent>
+          <WorkspaceList
+            disabled={disabled}
+            items={
+              workspaces.filter(
+                ({ flavour }) => flavour !== WorkspaceFlavour.PUBLIC
+              ) as (AffineCloudWorkspace | LocalWorkspace)[]
+            }
+            currentWorkspaceId={currentWorkspaceId}
+            onClick={onClickWorkspace}
+            onSettingClick={onClickWorkspaceSetting}
+            onDragEnd={useCallback(
+              (event: DragEndEvent) => {
+                const { active, over } = event;
+                if (active.id !== over?.id) {
+                  onMoveWorkspace(active.id as string, over?.id as string);
+                }
+              },
+              [onMoveWorkspace]
+            )}
+          />
+        </StyledModalContent>
+        {runtimeConfig.enableSQLiteProvider && environment.isDesktop ? (
+          <StyledImportWorkspaceCardPill>
+            <MenuItem
+              onClick={onAddWorkspace}
+              data-testid="add-workspace"
+              style={{
+                height: 'auto',
+                padding: '8px 12px',
+              }}
+            >
+              <StyledCreateWorkspaceCardPillContent>
+                <StyledCreateWorkspaceCardPillIcon>
+                  <ImportIcon />
+                </StyledCreateWorkspaceCardPillIcon>
+                <div>
+                  <p>{t['com.affine.workspace.local.import']()}</p>
+                </div>
+              </StyledCreateWorkspaceCardPillContent>
+            </MenuItem>
+          </StyledImportWorkspaceCardPill>
+        ) : null}
       </StyledModalBody>
+      <StyledModalFooterContent>
+        <StyledCreateWorkspaceCardPill>
+          <MenuItem
+            style={{
+              height: 'auto',
+              padding: '8px 12px',
+            }}
+            onClick={onNewWorkspace}
+            data-testid="new-workspace"
+          >
+            <StyledCreateWorkspaceCardPillContent>
+              <StyledCreateWorkspaceCardPillIcon>
+                <PlusIcon />
+              </StyledCreateWorkspaceCardPillIcon>
+              <div>
+                <p>{t['New Workspace']()}</p>
+              </div>
+            </StyledCreateWorkspaceCardPillContent>
+          </MenuItem>
+        </StyledCreateWorkspaceCardPill>
+      </StyledModalFooterContent>
     </Popover>
   );
 };
