@@ -8,6 +8,7 @@ export const group = style({
   display: 'flex',
   gap: '24px',
   justifyContent: 'center',
+  zIndex: 'var(--affine-z-index-popover)',
 });
 export const buttonContainer = style({
   boxShadow: 'var(--affine-float-button-shadow-2)',

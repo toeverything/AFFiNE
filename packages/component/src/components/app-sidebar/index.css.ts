@@ -26,7 +26,7 @@ export const navWrapperStyle = style({
     '&[data-is-floating="true"]': {
       position: 'absolute',
       width: `calc(${navWidthVar})`,
-      zIndex: 4,
+      zIndex: 'calc(var(--affine-z-index-modal) + 1)',
       backgroundColor: 'var(--affine-background-primary-color)',
     },
     '&[data-open="false"]': {
