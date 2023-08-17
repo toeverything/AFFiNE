@@ -97,7 +97,6 @@ export const StyledSignInCardPill = styled('div')(() => {
     display: 'flex',
     width: '100%',
     height: '58px',
-    marginBottom: '6px',
     background: 'var(--affine-background-primary-color)',
   };
 });
@@ -107,7 +106,6 @@ export const StyledImportWorkspaceCardPill = styled('div')(() => {
     borderRadius: '5px',
     display: 'flex',
     width: '100%',
-    marginBottom: '12px',
   };
 });
 
@@ -176,7 +174,25 @@ export const StyledModalContent = styled('div')({
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
   flexDirection: 'column',
+  width: '100%',
 });
+
+export const StyledModalFooterContent = styled('div')({
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
+  flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  padding: '12px',
+});
+
+export const StyledModalHeaderContent = styled('div')({
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
+  flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  padding: '12px 12px 0px 12px',
+});
+
 export const StyledOperationWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-end', 'center'),
@@ -210,12 +226,13 @@ export const StyledModalHeader = styled('div')(() => {
 
 export const StyledModalBody = styled('div')(() => {
   return {
-    borderRadius: '8px',
-    padding: '12px',
+    padding: '0px 12px',
     display: 'inline-flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: '12px',
     background: 'var(--affine-white)',
+    flex: 1,
+    overflowY: 'auto',
   };
 });
