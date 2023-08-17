@@ -102,7 +102,7 @@ export const CloudWorkspaceMembersPanel = (
       </SettingRow>
       <FlexWrapper flexDirection="column" className={style.membersList}>
         {members.map(member => (
-          <Member
+          <MemberItem
             key={member.id}
             member={member}
             workspaceId={workspaceId}
@@ -115,7 +115,7 @@ export const CloudWorkspaceMembersPanel = (
   );
 };
 
-const Member = ({
+const MemberItem = ({
   member,
   isOwner,
   currentUser,
