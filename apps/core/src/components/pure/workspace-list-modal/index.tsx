@@ -174,6 +174,7 @@ export const WorkspaceListModal = ({
           display: 'flex',
           flexDirection: 'column',
           boxShadow: 'var(--affine-shadow-2)',
+          backgroundColor: 'var(--affine-background-overlay-panel-color)',
         },
         maxHeight: '90vh',
       }}
