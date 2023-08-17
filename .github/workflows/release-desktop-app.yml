@@ -74,93 +74,93 @@ jobs:
           name: core
           path: apps/electron/resources/web-static
 
-  make-distribution:
-    environment: production
-    strategy:
-      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
-      # For windows, we need a separate approach
-      matrix:
-        spec:
-          - runner: macos-latest
-            platform: darwin
-            arch: x64
-            target: x86_64-apple-darwin
-          - runner: macos-latest
-            platform: darwin
-            arch: arm64
-            target: aarch64-apple-darwin
-          - runner: ubuntu-latest
-            platform: linux
-            arch: x64
-            target: x86_64-unknown-linux-gnu
-    runs-on: ${{ matrix.spec.runner }}
-    needs: before-make
-    env:
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      SKIP_GENERATE_ASSETS: 1
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-node
-      - name: Setup Maker
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-maker
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: apps/electron/resources/web-static
+  # make-distribution:
+  #   environment: production
+  #   strategy:
+  #     # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+  #     # For windows, we need a separate approach
+  #     matrix:
+  #       spec:
+  #         - runner: macos-latest
+  #           platform: darwin
+  #           arch: x64
+  #           target: x86_64-apple-darwin
+  #         - runner: macos-latest
+  #           platform: darwin
+  #           arch: arm64
+  #           target: aarch64-apple-darwin
+  #         - runner: ubuntu-latest
+  #           platform: linux
+  #           arch: x64
+  #           target: x86_64-unknown-linux-gnu
+  #   runs-on: ${{ matrix.spec.runner }}
+  #   needs: before-make
+  #   env:
+  #     APPLE_ID: ${{ secrets.APPLE_ID }}
+  #     APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+  #     APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+  #     SKIP_GENERATE_ASSETS: 1
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Setup Node.js
+  #       timeout-minutes: 10
+  #       uses: ./.github/actions/setup-node
+  #     - name: Setup Maker
+  #       timeout-minutes: 10
+  #       uses: ./.github/actions/setup-maker
+  #     - name: Build AFFiNE native
+  #       uses: ./.github/actions/build-rust
+  #       with:
+  #         target: ${{ matrix.spec.target }}
+  #         nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: core
+  #         path: apps/electron/resources/web-static
 
-      - name: Build Plugins
-        run: yarn run build:plugins
+  #     - name: Build Plugins
+  #       run: yarn run build:plugins
 
-      - name: Build Desktop Layers
-        run: yarn workspace @affine/electron build
+  #     - name: Build Desktop Layers
+  #       run: yarn workspace @affine/electron build
 
-      - name: Signing By Apple Developer ID
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+  #     - name: Signing By Apple Developer ID
+  #       if: ${{ matrix.spec.platform == 'darwin' }}
+  #       uses: apple-actions/import-codesign-certs@v2
+  #       with:
+  #         p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+  #         p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
-      - name: make
-        run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+  #     - name: make
+  #       run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
-      - name: Save artifacts (mac)
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        run: |
-          mkdir -p builds
-          mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-          mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-      - name: Save artifacts (windows)
-        if: ${{ matrix.spec.platform == 'win32' }}
-        run: |
-          mkdir -p builds
-          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
+  #     - name: Save artifacts (mac)
+  #       if: ${{ matrix.spec.platform == 'darwin' }}
+  #       run: |
+  #         mkdir -p builds
+  #         mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+  #         mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+  #     - name: Save artifacts (windows)
+  #       if: ${{ matrix.spec.platform == 'win32' }}
+  #       run: |
+  #         mkdir -p builds
+  #         mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+  #         mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+  #         mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
+  #         mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
 
-      - name: Save artifacts (linux)
-        if: ${{ matrix.spec.platform == 'linux' }}
-        run: |
-          mkdir -p builds
-          mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
-          mv apps/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
+  #     - name: Save artifacts (linux)
+  #       if: ${{ matrix.spec.platform == 'linux' }}
+  #       run: |
+  #         mkdir -p builds
+  #         mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
+  #         mv apps/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
-          path: builds
+  #     - name: Upload Artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
+  #         path: builds
 
   make-distribution-windows:
     environment: production
@@ -215,6 +215,11 @@ jobs:
             apps/electron/out/${{ env.BUILD_TYPE }}/**/*.dll
             apps/electron/out/${{ env.BUILD_TYPE }}/**/*.bin
             apps/electron/out/${{ env.BUILD_TYPE }}/**/*.node
+
+      - name: signing using Windows Signer workflow (packaged artifacts)
+        uses: ./.github/workflows/windows-signer.yml
+        with:
+          artifact-name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
 
       - name: Download and overwrite packaged artifacts
         uses: actions/download-artifact@v3
