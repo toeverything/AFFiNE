@@ -53,6 +53,7 @@ test('Show collections items in sidebar', async ({ page }) => {
   await first.getByTestId('fav-collapsed-button').click();
   const collectionPage = collections.getByTestId('collection-page').nth(0);
   expect(await collectionPage.textContent()).toBe('test page');
+  await collectionPage.hover();
   await collectionPage.getByTestId('collection-page-options').click();
   const deletePage = page
     .getByTestId('collection-page-option')
