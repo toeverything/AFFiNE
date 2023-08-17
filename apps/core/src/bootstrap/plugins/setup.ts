@@ -106,6 +106,11 @@ const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
   });
 });
 
+// clean up plugin windows when switching to other pages
+rootStore.sub(currentPageAtom, () => {
+  rootStore.set(contentLayoutAtom, 'editor');
+});
+
 // module -> importName -> updater[]
 export const _rootImportsMap = new Map<string, Map<string, any>>();
 const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
