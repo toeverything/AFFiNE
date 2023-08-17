@@ -3,15 +3,27 @@ name: Windows Signer
 on:
   workflow_call:
     inputs:
-      config-path:
+      artifact-name:
         required: true
         type: string
 
 jobs:
-  triage:
-    runs-on: ubuntu-latest
+  sign:
+    runs-on: [self-hosted, win-signer]
     steps:
-      - uses: actions/labeler@v4
+      - uses: actions/download-artifact@v3
         with:
-          repo-token: ${{ secrets.token }}
-          configuration-path: ${{ inputs.config-path }}
+          name: ${{ github.event.inputs.artifact-name }}
+          path: app-dir
+      - name: sign
+        run: |
+          # list all binary files
+          $files = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".bin", ".nupkg", ".etc") } | ForEach-Object { $_.FullName }) -join ' '
+          # sign all binary files
+          signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a $files
+
+      - name: upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: signed-${{ github.event.inputs.artifact-name }}
+          path: app-dir
