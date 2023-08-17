@@ -82,30 +82,24 @@ jobs:
       # we have win-signer that is dedicated to signing windows builds (a local dev machine)
       matrix:
         spec:
-          # - {
-          #     runner: macos-latest,
-          #     platform: darwin,
-          #     arch: x64,
-          #     target: x86_64-apple-darwin,
-          #   }
-          # - {
-          #     runner: macos-latest,
-          #     platform: darwin,
-          #     arch: arm64,
-          #     target: aarch64-apple-darwin,
-          #   }
-          # - {
-          #     runner: ubuntu-latest,
-          #     platform: linux,
-          #     arch: x64,
-          #     target: x86_64-unknown-linux-gnu,
-          #   }
-          - {
-              runner: win-signer,
-              platform: win32,
-              arch: x64,
-              target: x86_64-pc-windows-msvc,
-            }
+          - runner: macos-latest
+            platform: darwin
+            arch: x64
+            target: x86_64-apple-darwin
+          - runner: macos-latest
+            platform: darwin
+            arch: arm64
+            target: aarch64-apple-darwin
+          - runner: ubuntu-latest
+            platform: linux
+            arch: x64
+            target: x86_64-unknown-linux-gnu
+          - runner:
+              group: signer
+              labels: win-signer
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.spec.runner }}
     needs: before-make
     env:
