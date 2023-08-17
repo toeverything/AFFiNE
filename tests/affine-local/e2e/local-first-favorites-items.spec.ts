@@ -122,7 +122,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
     '[data-testid="fav-collapsed-button"]'
   );
 
-  await expect(collapseButton).not.toBeVisible();
+  expect(collapseButton).toHaveAttribute('data-disabled', 'true');
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.flavour).toContain('local');
