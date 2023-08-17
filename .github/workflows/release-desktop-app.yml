@@ -96,7 +96,7 @@ jobs:
           #   target: x86_64-unknown-linux-gnu
           - runner:
               group: signer
-              labels: [self-hosted, win-signer, Windows, X64]
+              labels: [self-hosted, Windows]
             platform: win32
             arch: x64
             target: x86_64-pc-windows-msvc
