@@ -3,8 +3,8 @@ name: Deploy
 on:
   push:
     branches:
-      # change this to production when we merge to the main branch
-      - himself65/0629-login
+      # change this to `master` when we merge to the main branch
+      - v0.9.x-staging
 
 env:
   BUILD_TYPE: stable
