@@ -54,7 +54,7 @@ export const MenuItem = React.forwardRef<HTMLButtonElement, MenuItemProps>(
         {icon && (
           <div className={styles.iconsContainer} data-collapsible={collapsible}>
             {collapsible && (
-              <button
+              <div
                 data-disabled={collapsed === undefined ? true : undefined}
                 onClick={e => {
                   e.stopPropagation();
@@ -68,7 +68,7 @@ export const MenuItem = React.forwardRef<HTMLButtonElement, MenuItemProps>(
                   className={styles.collapsedIcon}
                   data-collapsed={collapsed !== false}
                 />
-              </button>
+              </div>
             )}
             {React.cloneElement(icon, {
               className: clsx([styles.icon, icon.props.className]),
