@@ -11,11 +11,13 @@ export const label = style({
 export const favItemWrapper = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
   selectors: {
     '&[data-nested="true"]': {
-      marginLeft: '12px',
-      width: 'calc(100% - 12px)',
+      marginLeft: '20px',
+      width: 'calc(100% - 20px)',
+    },
+    '&:not(:first-of-type)': {
+      marginTop: '4px',
     },
   },
 });
@@ -40,6 +42,7 @@ const slideUp = keyframes({
 
 export const collapsibleContent = style({
   overflow: 'hidden',
+  marginTop: '4px',
   selectors: {
     '&[data-state="open"]': {
       animation: `${slideDown} 0.2s ease-out`,
@@ -53,5 +56,4 @@ export const collapsibleContent = style({
 export const collapsibleContentInner = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
 });
