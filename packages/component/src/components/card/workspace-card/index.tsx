@@ -14,21 +14,6 @@ import {
   StyledWorkspaceTitle,
 } from './styles';
 
-// const JoinedWorkspaceIcon = () => {
-//   return <DefaultJoinedWorkspaceIcon style={{ color: '#FF646B' }} />;
-// };
-// const LocalWorkspaceIcon = () => {
-//   return <DefaultLocalWorkspaceIcon style={{ color: '#FDBD32' }} />;
-// };
-
-// const CloudWorkspaceIcon = () => {
-//   return <DefaultCloudWorkspaceIcon style={{ color: '#60A5FA' }} />;
-// };
-
-// const LocalDataIcon = () => {
-//   return <DefaultLocalDataIcon style={{ color: '#62CD80' }} />;
-// };
-
 export interface WorkspaceTypeProps {
   flavour: WorkspaceFlavour;
 }
