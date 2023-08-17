@@ -9,8 +9,6 @@ export const baseContainer = style({
 export const scrollableContainerRoot = style({
   flex: '1 1 auto',
   overflowY: 'hidden',
-  width: 'calc(100% + 16px)',
-  transform: 'translateX(-8px)',
   vars: {
     '--scrollbar-width': '10px',
   },
@@ -46,6 +44,7 @@ export const scrollableContainer = style([
   baseContainer,
   {
     height: '100%',
+    padding: '4px 8px',
   },
 ]);
 
