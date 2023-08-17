@@ -38,11 +38,6 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
-  test:
-    runs-on: [self-hosted, win-signer]
-    steps:
-      - name: hello
-        run: wmic os get Caption
   before-make:
     runs-on: ubuntu-latest
     environment: production
@@ -213,7 +208,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: apps/electron/out/${{ env.BUILD_TYPE }}
+          path: |
+            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.exe
+            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.nupkg
+            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.msi
+            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.dll
+            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.bin
+            apps/electron/out/${{ env.BUILD_TYPE }}/**/*.node
 
       - name: Download and overwrite packaged artifacts
         uses: actions/download-artifact@v3

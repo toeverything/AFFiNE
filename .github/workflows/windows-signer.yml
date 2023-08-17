@@ -18,7 +18,7 @@ jobs:
       - name: sign
         run: |
           # list all binary files
-          $files = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".bin", ".nupkg", ".etc") } | ForEach-Object { $_.FullName }) -join ' '
+          $files = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".bin", ".nupkg", ".msi") } | ForEach-Object { $_.FullName }) -join ' '
           # sign all binary files
           signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a $files
 
