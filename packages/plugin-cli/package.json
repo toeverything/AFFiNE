@@ -1,7 +1,7 @@
 {
   "name": "@affine/plugin-cli",
   "type": "module",
-  "version": "0.8.0-canary.23",
+  "version": "0.8.0-canary.25",
   "bin": {
     "af": "./src/af.mjs"
   },
@@ -11,7 +11,7 @@
   ],
   "dependencies": {
     "@endo/static-module-record": "^0.8.1",
-    "@swc/core": "^1.3.76",
+    "@swc/core": "^1.3.77",
     "@toeverything/infra": "workspace:^",
     "@vanilla-extract/rollup-plugin": "^1.2.2",
     "@vitejs/plugin-vue": "^4.2.3",

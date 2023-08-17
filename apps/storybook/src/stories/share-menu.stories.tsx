@@ -12,14 +12,17 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
-import type { StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { use } from 'foxact/use';
 import { useState } from 'react';
 
 export default {
   title: 'AFFiNE/ShareMenu',
   component: ShareMenu,
-};
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
+} satisfies Meta;
 
 async function initPage(page: Page) {
   await page.waitForLoaded();

@@ -1,13 +1,10 @@
+import type { RouteObject } from 'react-router-dom';
 import { createBrowserRouter } from 'react-router-dom';
 
 export const routes = [
   {
     path: '/',
     lazy: () => import('./pages/index'),
-  },
-  {
-    path: '/invite',
-    lazy: () => import('./pages/invite'),
   },
   {
     path: '/workspace/:workspaceId',
@@ -28,22 +25,14 @@ export const routes = [
     ],
   },
   {
-    path: '/auth/:authType',
-    lazy: () => import('./pages/auth'),
-  },
-  {
     path: '/404',
     lazy: () => import('./pages/404'),
-  },
-  {
-    path: '/expired',
-    lazy: () => import('./pages/expired'),
   },
   {
     path: '*',
     lazy: () => import('./pages/404'),
   },
-];
+] satisfies [RouteObject, ...RouteObject[]];
 
 export const router = createBrowserRouter(routes, {
   future: {

@@ -1,6 +1,6 @@
 {
   "name": "@affine/docs",
-  "version": "0.8.0-canary.23",
+  "version": "0.8.0-canary.25",
   "type": "module",
   "private": true,
   "scripts": {
@@ -10,12 +10,12 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230816084758-3be96d22-nightly",
-    "@blocksuite/blocks": "0.0.0-20230816084758-3be96d22-nightly",
-    "@blocksuite/editor": "0.0.0-20230816084758-3be96d22-nightly",
-    "@blocksuite/global": "0.0.0-20230816084758-3be96d22-nightly",
-    "@blocksuite/lit": "0.0.0-20230816084758-3be96d22-nightly",
-    "@blocksuite/store": "0.0.0-20230816084758-3be96d22-nightly",
+    "@blocksuite/block-std": "0.0.0-20230817030423-20f3821a-nightly",
+    "@blocksuite/blocks": "0.0.0-20230817030423-20f3821a-nightly",
+    "@blocksuite/editor": "0.0.0-20230817030423-20f3821a-nightly",
+    "@blocksuite/global": "0.0.0-20230817030423-20f3821a-nightly",
+    "@blocksuite/lit": "0.0.0-20230817030423-20f3821a-nightly",
+    "@blocksuite/store": "0.0.0-20230817030423-20f3821a-nightly",
     "express": "^4.18.2",
     "jotai": "^2.3.1",
     "react": "18.3.0-canary-7118f5dd7-20230705",
@@ -28,7 +28,7 @@
     "@types/react-dom": "^18.2.7",
     "@vanilla-extract/css": "^1.12.0",
     "@vanilla-extract/vite-plugin": "^3.8.2",
-    "autoprefixer": "^10.4.14",
+    "autoprefixer": "^10.4.15",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.1.6"
   }

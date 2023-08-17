@@ -25,9 +25,8 @@ afterEach(async () => {
 
 test('should be able to increment counter', async () => {
   metrics.socketIOEventCounter(1, { event: 'client-handshake' });
-  const socketIOCounterMetric = await register.getSingleMetric(
-    'socket_io_counter'
-  );
+  const socketIOCounterMetric =
+    await register.getSingleMetric('socket_io_counter');
   ok(socketIOCounterMetric);
 
   ok(

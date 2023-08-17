@@ -40,7 +40,21 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   backgroundColor: 'rgba(60, 61, 63, 0.5)',
   zIndex: '1',
   color: 'var(--affine-white)',
-  fontSize: 'var(--affine-font-h-4)',
+  fontSize: '24px',
+});
+
+export const urlButton = style({
+  width: 'calc(100% - 64px - 15px)',
+  justifyContent: 'left',
+  textAlign: 'left',
+});
+globalStyle(`${urlButton} span`, {
+  width: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  color: 'var(--affine-placeholder-color)',
+  fontWeight: '500',
 });
 
 export const fakeWrapper = style({

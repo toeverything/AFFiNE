@@ -1,10 +1,11 @@
 import {
   SettingModal as SettingModalBase,
   type SettingModalProps as SettingModalBaseProps,
+  WorkspaceDetailSkeleton,
 } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import { useCurrenLoginStatus } from '../../../hooks/affine/use-curren-login-status';
 import { AccountSetting } from './account-setting';
@@ -79,7 +80,9 @@ export const SettingModal = ({
         <div className="wrapper">
           <div className="content">
             {activeTab === 'workspace' && workspaceId ? (
-              <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+              <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+              </Suspense>
             ) : null}
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />

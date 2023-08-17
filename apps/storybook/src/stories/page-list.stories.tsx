@@ -7,13 +7,16 @@ import { NewPageButton } from '@affine/component/page-list';
 import { OperationCell } from '@affine/component/page-list';
 import { PageIcon } from '@blocksuite/icons';
 import { expect } from '@storybook/jest';
-import type { StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
 
 export default {
   title: 'AFFiNE/PageList',
   component: PageList,
-};
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
+} satisfies Meta;
 
 export const AffineOperationCell: StoryFn<OperationCellProps> = ({
   ...props
