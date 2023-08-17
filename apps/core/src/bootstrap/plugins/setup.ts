@@ -127,6 +127,11 @@ export function createSetup(rootStore: ReturnType<typeof createStore>) {
 }
 
 function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
+  // clean up plugin windows when switching to other pages
+  rootStore.sub(currentPageAtom, () => {
+    rootStore.set(contentLayoutAtom, 'editor');
+  });
+
   // module -> importName -> updater[]
   const _rootImportsMap = new Map<string, Map<string, any>>();
   const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {

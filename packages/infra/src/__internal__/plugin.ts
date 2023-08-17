@@ -1,4 +1,5 @@
 import type { CallbackMap } from '@affine/sdk/entry';
+import { assertExists } from '@blocksuite/global/utils';
 import { atomWithStorage } from 'jotai/utils';
 import { atom } from 'jotai/vanilla';
 import type { z } from 'zod';
@@ -14,13 +15,21 @@ export const builtinPluginPaths = new Set([
   '/plugins/outline',
 ]);
 
-const pluginCleanupMap = new Map<string, (() => void)[]>();
+const pluginCleanupMap = new Map<string, Set<() => void>>();
 
-export function addCleanup(pluginName: string, cleanup: () => void) {
+export function addCleanup(
+  pluginName: string,
+  cleanup: () => void
+): () => void {
   if (!pluginCleanupMap.has(pluginName)) {
-    pluginCleanupMap.set(pluginName, []);
+    pluginCleanupMap.set(pluginName, new Set());
   }
-  pluginCleanupMap.get(pluginName)?.push(cleanup);
+  const cleanupSet = pluginCleanupMap.get(pluginName);
+  assertExists(cleanupSet);
+  cleanupSet.add(cleanup);
+  return () => {
+    cleanupSet.delete(cleanup);
+  };
 }
 
 export function invokeCleanup(pluginName: string) {
