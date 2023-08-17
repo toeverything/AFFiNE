@@ -258,7 +258,7 @@ jobs:
 
   finalize-installer-windows:
     environment: production
-    needs: sign-packaged-artifacts-windows
+    needs: sign-installer-artifacts-windows
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
       # For windows, we need a separate approach
