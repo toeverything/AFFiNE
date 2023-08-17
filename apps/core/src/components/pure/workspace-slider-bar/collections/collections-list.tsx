@@ -229,7 +229,7 @@ const CollectionRenderer = ({
         </div>
       </MenuItem>
       <Collapsible.Content className={styles.collapsibleContent}>
-        <div style={{ marginLeft: 20 }}>
+        <div style={{ marginLeft: 20, marginTop: -4 }}>
           {pagesToRender.map(page => {
             return (
               <Page

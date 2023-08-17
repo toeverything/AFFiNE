@@ -62,6 +62,12 @@ export const content = style({
 
 export const postfix = style({
   justifySelf: 'flex-end',
+  display: 'none',
+  selectors: {
+    [`${root}:hover &`]: {
+      display: 'flex',
+    },
+  },
 });
 
 export const icon = style({
@@ -83,7 +89,7 @@ export const collapsedIconContainer = style({
       transform: 'rotate(-90deg)',
     },
     '&[data-disabled="true"]': {
-      color: 'var(--affine-text-disable-color)',
+      opacity: 0.3,
       pointerEvents: 'none',
     },
     '&:hover': {
