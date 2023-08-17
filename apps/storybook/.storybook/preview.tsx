@@ -12,7 +12,9 @@ import { createStore } from 'jotai/vanilla';
 import { setup } from '@affine/core/bootstrap/setup';
 import { _setCurrentStore } from '@toeverything/infra/atom';
 import { bootstrapPluginSystem } from '@affine/core/bootstrap/register-plugins';
+import { setupGlobal } from '@affine/env/global';
 
+setupGlobal();
 export const parameters = {
   backgrounds: { disable: true },
   actions: { argTypesRegex: '^on[A-Z].*' },
