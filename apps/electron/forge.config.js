@@ -86,6 +86,10 @@ const makers = [
       setupIcon: icoPath,
       iconUrl: windowsIconUrl,
       loadingGif: './resources/icons/affine_installing.gif',
+      // following only works for windows machines that have signtool.exe installed & configured
+      // /a means auto select the cert
+      signWithParams:
+        '/tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a',
     },
   },
   !process.env.SKIP_BUNDLE && {

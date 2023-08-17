@@ -78,33 +78,35 @@ jobs:
     environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      # matrix.runner === run.on label(s)
+      # we have win-signer that is dedicated to signing windows builds (a local dev machine)
       matrix:
         spec:
+          # - {
+          #     runner: macos-latest,
+          #     platform: darwin,
+          #     arch: x64,
+          #     target: x86_64-apple-darwin,
+          #   }
+          # - {
+          #     runner: macos-latest,
+          #     platform: darwin,
+          #     arch: arm64,
+          #     target: aarch64-apple-darwin,
+          #   }
+          # - {
+          #     runner: ubuntu-latest,
+          #     platform: linux,
+          #     arch: x64,
+          #     target: x86_64-unknown-linux-gnu,
+          #   }
           - {
-              os: macos-latest,
-              platform: darwin,
-              arch: x64,
-              target: x86_64-apple-darwin,
-            }
-          - {
-              os: macos-latest,
-              platform: darwin,
-              arch: arm64,
-              target: aarch64-apple-darwin,
-            }
-          - {
-              os: ubuntu-latest,
-              platform: linux,
-              arch: x64,
-              target: x86_64-unknown-linux-gnu,
-            }
-          - {
-              os: windows-latest,
+              runner: win-signer,
               platform: win32,
               arch: x64,
               target: x86_64-pc-windows-msvc,
             }
-    runs-on: ${{ matrix.spec.os }}
+    runs-on: ${{ matrix.spec.runner }}
     needs: before-make
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -173,57 +175,57 @@ jobs:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
 
-  release:
-    needs: [before-make, make-distribution]
-    runs-on: ubuntu-latest
+  # release:
+  #   needs: [before-make, make-distribution]
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download Artifacts (macos-x64)
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-darwin-x64-builds
-          path: ./
-      - name: Download Artifacts (macos-arm64)
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-darwin-arm64-builds
-          path: ./
-      - name: Download Artifacts (windows-x64)
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-win32-x64-builds
-          path: ./
-      - name: Download Artifacts (linux-x64)
-        uses: actions/download-artifact@v3
-        with:
-          name: affine-linux-x64-builds
-          path: ./
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Generate Release yml
-        run: |
-          cp ./apps/electron/scripts/generate-yml.js .
-          node generate-yml.js
-        env:
-          RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
-      - name: Create Release Draft
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          name: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
-          body: ''
-          draft: ${{ github.event.inputs.is-draft || true }}
-          prerelease: ${{ github.event.inputs.is-pre-release || needs.before-make.outputs.version }}
-          files: |
-            ./VERSION
-            ./*.zip
-            ./*.dmg
-            ./*.exe
-            ./*.nupkg
-            ./RELEASES
-            ./*.AppImage
-            ./*.apk
-            ./*.yml
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Download Artifacts (macos-x64)
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: affine-darwin-x64-builds
+  #         path: ./
+  #     - name: Download Artifacts (macos-arm64)
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: affine-darwin-arm64-builds
+  #         path: ./
+  #     - name: Download Artifacts (windows-x64)
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: affine-win32-x64-builds
+  #         path: ./
+  #     - name: Download Artifacts (linux-x64)
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: affine-linux-x64-builds
+  #         path: ./
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - name: Generate Release yml
+  #       run: |
+  #         cp ./apps/electron/scripts/generate-yml.js .
+  #         node generate-yml.js
+  #       env:
+  #         RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
+  #     - name: Create Release Draft
+  #       uses: softprops/action-gh-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+  #       with:
+  #         name: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
+  #         body: ''
+  #         draft: ${{ github.event.inputs.is-draft || true }}
+  #         prerelease: ${{ github.event.inputs.is-pre-release || needs.before-make.outputs.version }}
+  #         files: |
+  #           ./VERSION
+  #           ./*.zip
+  #           ./*.dmg
+  #           ./*.exe
+  #           ./*.nupkg
+  #           ./RELEASES
+  #           ./*.AppImage
+  #           ./*.apk
+  #           ./*.yml
