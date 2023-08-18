@@ -174,7 +174,7 @@ jobs:
     runs-on: ${{ matrix.spec.runner }}
     needs: before-make
     outputs:
-      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.FILES_TO_BE_SIGNED }}
+      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
     env:
       SKIP_GENERATE_ASSETS: 1
     steps:
@@ -249,7 +249,7 @@ jobs:
             target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.spec.runner }}
     outputs:
-      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.FILES_TO_BE_SIGNED }}
+      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
