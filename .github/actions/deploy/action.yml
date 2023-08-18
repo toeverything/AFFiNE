@@ -2,7 +2,7 @@ name: 'Deploy to Cluster'
 description: 'Deploy AFFiNE Cloud to cluster'
 inputs:
   env:
-    description: 'Environment to deploy, dev|beta|prod'
+    description: 'Environment to deploy, dev|beta|stable'
     required: true
   gcp-project-number:
     description: 'GCP project number'

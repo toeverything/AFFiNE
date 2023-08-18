@@ -5,13 +5,14 @@ metadata:
   labels:
     {{- include "graphql.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation
 
 spec:
   template:
     spec:
+      serviceAccountName: {{ include "graphql.serviceAccountName" . }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -25,7 +26,7 @@ spec:
                 name: pg-postgresql
                 key: postgres-password
           - name: DATABASE_URL
-            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.gcloud.cloudSqlInternal }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
         resources:
           requests:
             cpu: '100m'

@@ -61,11 +61,11 @@ podSecurityContext:
 
 resources:
   limits:
-    cpu: '2000m'
-    memory: 4Gi
+    cpu: '4'
+    memory: 8Gi
   requests:
-    cpu: '1000m'
-    memory: 2Gi
+    cpu: '2'
+    memory: 4Gi
 
 probe:
   initialDelaySeconds: 20

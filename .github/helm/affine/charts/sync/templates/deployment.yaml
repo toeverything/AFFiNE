@@ -80,6 +80,20 @@ spec:
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        {{ if .Values.global.database.gcloud.enabled }}
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0
+          args:
+            - "--structured-logs"
+            - "--auto-iam-authn"
+            - "{{ .Values.global.database.gcloud.connectionName }}"
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu:    "1"
+        {{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
