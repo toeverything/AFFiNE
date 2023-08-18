@@ -8,6 +8,7 @@ import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import {
+  contentLayoutAtom,
   currentPageIdAtom,
   currentWorkspaceAtom,
   currentWorkspaceIdAtom,
@@ -86,6 +87,7 @@ export const DetailPage = (): ReactElement => {
 };
 
 export const loader: LoaderFunction = async args => {
+  rootStore.set(contentLayoutAtom, 'editor');
   if (args.params.workspaceId) {
     localStorage.setItem('last_workspace_id', args.params.workspaceId);
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
