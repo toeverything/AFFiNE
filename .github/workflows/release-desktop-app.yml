@@ -47,14 +47,14 @@ jobs:
         run: |
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".js") } | ForEach-Object { $_.FullName }) -join ' ')
           "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
-      - run: echo ${{ steps.foobar.outputs.FILES_TO_BE_SIGNED }}
+      - run: echo "${{ steps.foobar.outputs.FILES_TO_BE_SIGNED }}"
 
   test2:
     runs-on: windows-latest
     environment: production
     needs: test1
     steps:
-      - run: echo ${{ needs.test1.outputs.FILES_TO_BE_SIGNED }}
+      - run: echo "${{ needs.test1.outputs.FILES_TO_BE_SIGNED }}"
 
   before-make:
     runs-on: ubuntu-latest
