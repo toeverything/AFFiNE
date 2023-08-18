@@ -15,17 +15,18 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: ${{ inputs.artifact-name }}
-          path: app-dir
+          path: .
       - name: unzip file
         shell: cmd
-        run: 7za x app-dir/archive.zip app-dir/out
+        run: 7za x archive.zip ./out
       - name: sign
         shell: cmd
         run: |
+          cd ./out
           signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a ${{ inputs.files }}
       - name: zip file
         shell: cmd
-        run: Compress-Archive -Path app-dir -DestinationPath signed.zip
+        run: Compress-Archive -Path ./out -DestinationPath signed.zip
       - name: upload
         uses: actions/upload-artifact@v3
         with:
