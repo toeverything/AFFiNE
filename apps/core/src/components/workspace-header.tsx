@@ -100,7 +100,6 @@ export function WorkspaceHeader({
             />
           }
           center={<WorkspaceModeFilterTab />}
-          right={<PluginHeader />}
         />
         {<FilterContainer workspaceId={currentWorkspaceId} />}
       </>
