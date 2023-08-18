@@ -61,14 +61,14 @@ const AccountMenu = () => {
   return (
     <div>
       <div>Unlimted</div>
-      <Divider></Divider>
+      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
         {t['com.affine.workspace.cloud.join']()}
       </MenuItem>
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
         {t['com.affine.workspace.cloud.account.settings']()}
       </MenuItem>
-      <Divider></Divider>
+      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
@@ -140,7 +140,7 @@ const CloudWorkSpaceList = ({
             [onMoveWorkspace]
           )}
         />
-        <Divider />
+        <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       </StyledModalContent>
     </>
   );
@@ -211,7 +211,7 @@ export const WorkspaceListModal = ({
             </StyledCreateWorkspaceCardPillContent>
           </MenuItem>
         </StyledSignInCardPill>
-        <Divider />
+        <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       </StyledModalHeaderContent>
       <StyledModalBody>
         {isLoggedIn ? (
