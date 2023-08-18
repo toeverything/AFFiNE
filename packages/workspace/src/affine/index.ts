@@ -12,7 +12,7 @@ import {
   type AwarenessChanges,
   base64ToUint8Array,
   uint8ArrayToBase64,
-} from './sync-socket-io/utils';
+} from './utils';
 
 let ioManager: Manager | null = null;
 // use lazy initialization to avoid global side effect
@@ -26,6 +26,13 @@ function getIoManager(): Manager {
   return ioManager;
 }
 
+function trimGuid(ws: string, guid: string) {
+  if (guid.startsWith(`${ws}:space:`)) {
+    return guid.substring(ws.length + 1);
+  }
+
+  return guid;
+}
 export const createAffineDataSource = (
   id: string,
   rootDoc: Doc,
@@ -51,7 +58,7 @@ export const createAffineDataSource = (
           'doc-load',
           {
             workspaceId: rootDoc.guid,
-            guid,
+            guid: trimGuid(rootDoc.guid, guid),
             stateVector,
           },
           (update: Error | string | null) => {
@@ -68,15 +75,16 @@ export const createAffineDataSource = (
     sendDocUpdate: async (guid: string, update: Uint8Array) => {
       socket.emit('client-update', {
         workspaceId: rootDoc.guid,
-        guid,
+        guid: trimGuid(rootDoc.guid, guid),
         update: await uint8ArrayToBase64(update),
       });
 
       return Promise.resolve();
     },
     onDocUpdate: callback => {
-      socket.connect();
-      socket.emit('client-handshake', rootDoc.guid);
+      socket.on('connect', () => {
+        socket.emit('client-handshake', rootDoc.guid);
+      });
       const onUpdate = async (message: {
         workspaceId: string;
         guid: string;
@@ -89,6 +97,7 @@ export const createAffineDataSource = (
       socket.on('server-update', onUpdate);
       const destroyAwareness = setupAffineAwareness(socket, rootDoc, awareness);
 
+      socket.connect();
       return () => {
         socket.emit('client-leave', rootDoc.guid);
         socket.off('server-update', onUpdate);
@@ -161,7 +170,9 @@ function setupAffineAwareness(
   conn.on('new-client-awareness-init', newClientAwarenessInitHandler);
   awareness.on('update', awarenessUpdate);
 
-  conn.emit('awareness-init', rootDoc.guid);
+  conn.on('connect', () => {
+    conn.emit('awareness-init', rootDoc.guid);
+  });
 
   return () => {
     awareness.off('update', awarenessUpdate);
