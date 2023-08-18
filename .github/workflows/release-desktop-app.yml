@@ -214,7 +214,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          files: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
           path: |
             archive.zip
             !**/*.map
@@ -223,6 +222,7 @@ jobs:
     needs: package-distribution-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
+      files: ${{ needs.package-distribution-windows.steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
       artifact-name: packaged-win32-x64
 
   make-windows-installer:
@@ -266,13 +266,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          files: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
           path: archive.zip
 
   sign-installer-artifacts-windows:
     needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
+      files: ${{ needs.make-windows-installer.steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
       artifact-name: installer-win32-x64
 
   finalize-installer-windows:
