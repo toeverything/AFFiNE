@@ -147,8 +147,6 @@ jobs:
   #         mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
   #         mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
   #         mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
-  #         mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
-
   #     - name: Save artifacts (linux)
   #       if: ${{ matrix.spec.platform == 'linux' }}
   #       run: |
@@ -204,6 +202,11 @@ jobs:
       - name: package
         run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
+      - name: get all files to be signed
+        id: get_files_to_be_signed
+        run: |
+          echo "FILES_TO_BE_SIGNED = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' '" >> $Env:GITHUB_OUTPUT
+
       - name: Zip artifacts for faster upload (windows)
         run: Compress-Archive -Path apps/electron/out -DestinationPath archive.zip
 
@@ -211,8 +214,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          files: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
           path: |
             archive.zip
+            !**/*.map
 
   sign-packaged-artifacts-windows:
     needs: package-distribution-windows
@@ -252,10 +257,16 @@ jobs:
       - name: Zip artifacts for faster upload
         run: Compress-Archive -Path apps/electron/out/make -DestinationPath archive.zip
 
+      - name: get all files to be signed
+        id: get_files_to_be_signed
+        run: |
+          echo "FILES_TO_BE_SIGNED = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' '" >> $Env:GITHUB_OUTPUT
+
       - name: Save installer for signing
         uses: actions/upload-artifact@v3
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          files: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
           path: archive.zip
 
   sign-installer-artifacts-windows:
@@ -292,7 +303,6 @@ jobs:
           mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
           mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
           mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
@@ -349,7 +359,6 @@ jobs:
   #           ./*.zip
   #           ./*.dmg
   #           ./*.exe
-  #           ./*.nupkg
   #           ./RELEASES
   #           ./*.AppImage
   #           ./*.apk
