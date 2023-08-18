@@ -204,6 +204,9 @@ jobs:
       - name: package
         run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
+      # - name: Zip artifact for deployment
+      #   run: zip packaged.zip apps/electron/out -r
+
       - name: Save packaged artifacts for signing
         uses: actions/upload-artifact@v3
         with:
@@ -215,7 +218,7 @@ jobs:
     needs: package-distribution-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
-      artifact-name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+      artifact-name: packaged-win32-x64
 
   make-artifacts-windows:
     environment: production
@@ -254,7 +257,7 @@ jobs:
     needs: make-artifacts-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
-      artifact-name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+      artifact-name: installer-win32-x64
 
   finalize-installer-windows:
     environment: production
