@@ -24,8 +24,11 @@ const {
   REDIS_PASSWORD,
 } = process.env;
 
-const isProduction = BUILD_TYPE === 'stable';
-const isBeta = BUILD_TYPE === 'beta';
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const buildType = BUILD_TYPE || 'canary';
+
+const isProduction = buildType === 'stable';
+const isBeta = buildType === 'beta';
 
 const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
