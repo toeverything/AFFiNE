@@ -22,7 +22,6 @@ jobs:
       - name: sign
         shell: cmd
         run: |
-          # sign all binary files
           signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a ${{ inputs.files }}
       - name: zip file
         shell: cmd
