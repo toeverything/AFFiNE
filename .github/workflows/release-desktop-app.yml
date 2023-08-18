@@ -38,6 +38,24 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
+  test1:
+    runs-on: windows-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - id: foobar
+        run: |
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".js") } | ForEach-Object { $_.FullName }) -join ' ')
+          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+      - run: echo ${{ steps.foobar.outputs.FILES_TO_BE_SIGNED }}
+
+  test2:
+    runs-on: windows-latest
+    environment: production
+    needs: test1
+    steps:
+      - run: echo ${{ needs.test1.outputs.FILES_TO_BE_SIGNED }}
+
   before-make:
     runs-on: ubuntu-latest
     environment: production
@@ -205,8 +223,8 @@ jobs:
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          $FILES_TO_BE_SIGNED = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' '
-          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $Env:GITHUB_OUTPUT
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' ')
+          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
 
       - name: Zip artifacts for faster upload (windows)
         run: Compress-Archive -Path apps/electron/out -DestinationPath archive.zip
@@ -223,7 +241,7 @@ jobs:
     needs: package-distribution-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
-      files: ${{ needs.package-distribution-windows.steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
+      files: ${{ needs.package-distribution-windows.outputs.FILES_TO_BE_SIGNED }}
       artifact-name: packaged-win32-x64
 
   make-windows-installer:
@@ -261,8 +279,8 @@ jobs:
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          $FILES_TO_BE_SIGNED = (Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' '
-          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $Env:GITHUB_OUTPUT
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' ')
+          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
 
       - name: Save installer for signing
         uses: actions/upload-artifact@v3
@@ -274,7 +292,7 @@ jobs:
     needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
-      files: ${{ needs.make-windows-installer.steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
+      files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED }}
       artifact-name: installer-win32-x64
 
   finalize-installer-windows:
