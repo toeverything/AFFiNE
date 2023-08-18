@@ -4,7 +4,6 @@ export const baseContainer = style({
   padding: '4px 16px',
   display: 'flex',
   flexFlow: 'column nowrap',
-  rowGap: '4px',
 });
 
 export const scrollableContainerRoot = style({
@@ -45,6 +44,7 @@ export const scrollableContainer = style([
   baseContainer,
   {
     height: '100%',
+    padding: '4px 8px',
   },
 ]);
 
@@ -69,6 +69,7 @@ export const scrollbarThumb = style({
   position: 'relative',
   background: 'var(--affine-black-30)',
   borderRadius: '4px',
+  overflow: 'hidden',
   selectors: {
     '&::before': {
       content: '""',

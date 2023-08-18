@@ -20,7 +20,7 @@ const monthNames = [
 
 export const createFirstFilter = async (page: Page, name: string) => {
   await page
-    .locator('[data-testid="editor-header-items"]')
+    .locator('[data-testid="header"]')
     .locator('button', { hasText: 'Filter' })
     .click();
   await page

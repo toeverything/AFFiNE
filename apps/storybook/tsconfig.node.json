@@ -4,7 +4,7 @@
     "composite": true,
     "module": "ESNext",
     "jsx": "react-jsx",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "noEmit": false,
@@ -13,6 +13,7 @@
   "include": [".storybook/**/*"],
   "exclude": ["lib"],
   "references": [
+    { "path": "../../apps/core" },
     { "path": "../../packages/i18n" },
     {
       "path": "../../packages/env"

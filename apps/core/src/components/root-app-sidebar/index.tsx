@@ -51,14 +51,14 @@ export type RootAppSidebarProps = {
 };
 
 const RouteMenuLinkItem = React.forwardRef<
-  HTMLDivElement,
+  HTMLButtonElement,
   {
     currentPath: string; // todo: pass through useRouter?
     path: string;
     icon: ReactElement;
     children?: ReactElement;
     isDraggedOver?: boolean;
-  } & React.HTMLAttributes<HTMLDivElement>
+  } & React.HTMLAttributes<HTMLButtonElement>
 >(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
   // Force active style when a page is dragged over
   const active = isDraggedOver || currentPath === path;
@@ -196,6 +196,8 @@ export const RootAppSidebar = ({
           </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['others']()} />
+          {/* fixme: remove the following spacer */}
+          <div style={{ height: '4px' }} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
             isDraggedOver={trashDroppable.isOver}
@@ -211,7 +213,7 @@ export const RootAppSidebar = ({
         </SidebarScrollableContainer>
         <SidebarContainer>
           {isDesktop && <AppUpdaterButton />}
-          <div />
+          <div style={{ height: '4px' }} />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>

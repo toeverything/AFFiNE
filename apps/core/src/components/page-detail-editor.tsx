@@ -17,15 +17,23 @@ import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useMemo } from 'react';
+import {
+  memo,
+  startTransition,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { TrashButtonGroup } from './blocksuite/workspace-header/header-right-items/trash-button-group';
 import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
+import { TrashButtonGroup } from './pure/trash-button-group';
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;
@@ -134,25 +142,42 @@ interface PluginContentAdapterProps {
 
 const PluginContentAdapter = memo<PluginContentAdapterProps>(
   function PluginContentAdapter({ windowItem, pluginName }) {
-    return (
-      <div
-        className={pluginContainer}
-        ref={useCallback(
-          (ref: HTMLDivElement | null) => {
-            if (ref) {
-              const div = document.createElement('div');
-              const cleanup = windowItem(div);
-              ref.appendChild(div);
-              addCleanup(pluginName, () => {
-                cleanup();
-                ref.removeChild(div);
+    const rootRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+      const abortController = new AbortController();
+      const root = rootRef.current;
+      if (root) {
+        startTransition(() => {
+          if (abortController.signal.aborted) {
+            return;
+          }
+          const div = document.createElement('div');
+          const cleanup = windowItem(div);
+          root.appendChild(div);
+          if (abortController.signal.aborted) {
+            cleanup();
+            root.removeChild(div);
+          } else {
+            const cl = () => {
+              cleanup();
+              root.removeChild(div);
+            };
+            const dispose = addCleanup(pluginName, cl);
+            abortController.signal.addEventListener('abort', () => {
+              setTimeout(() => {
+                dispose();
+                cl();
               });
-            }
-          },
-          [pluginName, windowItem]
-        )}
-      />
-    );
+            });
+          }
+        });
+        return () => {
+          abortController.abort();
+        };
+      }
+      return;
+    }, [pluginName, windowItem]);
+    return <div className={pluginContainer} ref={rootRef} />;
   }
 );
 
@@ -175,13 +200,13 @@ const LayoutPanel = memo(function LayoutPanel(
     }
   } else {
     return (
-      <PanelGroup
-        style={{
-          height: 'calc(100% - 52px)',
-        }}
-        direction={node.direction}
-      >
-        <Panel defaultSize={node.splitPercentage}>
+      <PanelGroup direction={node.direction}>
+        <Panel
+          defaultSize={node.splitPercentage}
+          style={{
+            maxWidth: node.maxWidth?.[0],
+          }}
+        >
           <Suspense>
             <LayoutPanel node={node.first} editorProps={props.editorProps} />
           </Suspense>
@@ -191,6 +216,7 @@ const LayoutPanel = memo(function LayoutPanel(
           defaultSize={100 - node.splitPercentage}
           style={{
             overflow: 'scroll',
+            maxWidth: node.maxWidth?.[1],
           }}
         >
           <Suspense>
@@ -210,6 +236,18 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   }
 
   const layout = useAtomValue(contentLayoutAtom);
+
+  if (layout === 'editor') {
+    return (
+      <Suspense>
+        <PanelGroup direction="horizontal">
+          <Panel>
+            <EditorWrapper {...props} />
+          </Panel>
+        </PanelGroup>
+      </Suspense>
+    );
+  }
 
   return (
     <>

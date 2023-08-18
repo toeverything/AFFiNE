@@ -1,13 +1,17 @@
+import 'ses';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
-import { LOCALES, createI18n } from '@affine/i18n';
+import '@toeverything/components/style.css';
+import { createI18n } from '@affine/i18n';
 import { ThemeProvider, useTheme } from 'next-themes';
-import { setupGlobal } from '@affine/env/global';
-import type { ComponentType } from 'react';
-import { useEffect } from 'react';
 import { useDarkMode } from 'storybook-dark-mode';
+import { setup } from '@affine/core/bootstrap/setup';
+import { AffineContext } from '@affine/component/context';
+import { use } from 'foxact/use';
+import useSWR from 'swr';
+import type { Decorator } from '@storybook/react';
 
-setupGlobal();
+const setupPromise = setup();
 
 export const parameters = {
   backgrounds: { disable: true },
@@ -20,51 +24,42 @@ export const parameters = {
   },
 };
 
-export const globalTypes = {
-  locale: {
-    name: 'Locale',
-    description: 'Internationalization locale',
-    defaultValue: 'en',
-    toolbar: {
-      icon: 'globe',
-      items: LOCALES.map(locale => ({
-        title: locale.originalName,
-        value: locale.tag,
-        right: locale.flagEmoji,
-      })),
+const i18n = createI18n();
+const withI18n: Decorator = (Story, context) => {
+  const locale = context.globals.locale;
+  useSWR(
+    locale,
+    async () => {
+      await i18n.changeLanguage(locale);
     },
-  },
+    {
+      suspense: true,
+    }
+  );
+  return <Story {...context} />;
 };
 
-const createI18nDecorator = () => {
-  const i18n = createI18n();
-  const withI18n = (Story: any, context: any) => {
-    const locale = context.globals.locale;
-    useEffect(() => {
-      i18n.changeLanguage(locale);
-    }, [locale]);
-    return <Story {...context} />;
-  };
-  return withI18n;
-};
-
-const Component = () => {
+const ThemeChange = () => {
   const isDark = useDarkMode();
   const theme = useTheme();
-  useEffect(() => {
-    theme.setTheme(isDark ? 'dark' : 'light');
-  }, [isDark]);
+  if (theme.resolvedTheme === 'dark' && !isDark) {
+    theme.setTheme('light');
+  } else if (theme.resolvedTheme === 'light' && isDark) {
+    theme.setTheme('dark');
+  }
   return null;
 };
 
-export const decorators = [
-  (Story: ComponentType) => {
-    return (
-      <ThemeProvider>
-        <Component />
-        <Story />
-      </ThemeProvider>
-    );
-  },
-  createI18nDecorator(),
-];
+const withContextDecorator: Decorator = (Story, context) => {
+  use(setupPromise);
+  return (
+    <ThemeProvider>
+      <AffineContext>
+        <ThemeChange />
+        <Story {...context} />
+      </AffineContext>
+    </ThemeProvider>
+  );
+};
+
+export const decorators = [withContextDecorator, withI18n];

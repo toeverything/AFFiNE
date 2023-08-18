@@ -1,6 +1,19 @@
 import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { createStore, WritableAtom } from 'jotai/vanilla';
 
-export async function buildShowcaseWorkspace(workspace: Workspace) {
+export async function buildShowcaseWorkspace(
+  workspace: Workspace,
+  options: {
+    atoms: {
+      pageMode: WritableAtom<
+        undefined,
+        [pageId: string, mode: 'page' | 'edgeless'],
+        void
+      >;
+    };
+    store: ReturnType<typeof createStore>;
+  }
+) {
   const showcaseWorkspaceVersions = {
     'affine:code': 1,
     'affine:paragraph': 1,
@@ -19,12 +32,12 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
       options: [
         {
           id: 'icg1n5UdkP',
-          value: 'Travle',
+          value: 'Travel',
           color: 'var(--affine-tag-gray)',
         },
         {
           id: 'Oe5dSe1DDJ',
-          value: 'quick dummary',
+          value: 'Quick summary',
           color: 'var(--affine-tag-green)',
         },
         {
@@ -34,17 +47,17 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
         },
         {
           id: 'q3mceOl_zi',
-          value: 'streamline your workflow',
+          value: 'Streamline your workflow',
           color: 'var(--affine-tag-teal)',
         },
         {
           id: 'ze07JVwBu4',
-          value: 'plan',
+          value: 'Plan',
           color: 'var(--affine-tag-teal)',
         },
         {
           id: '8qcYPCTK0h',
-          value: 'review',
+          value: 'Review',
           color: 'var(--affine-tag-orange)',
         },
         {
@@ -66,19 +79,24 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
     },
   };
   workspace.meta.setProperties(prototypes);
+  const { store, atoms } = options;
+  ['F1SX6cgNxy', 'nQd2Bdvoqz'].forEach(pageId => {
+    store.set(atoms.pageMode, pageId, 'edgeless');
+  });
+
   const pageMetas = {
-    'F1SX6cgNxy-hello-world': {
-      createDate: 1691548220794,
-      tags: [],
-      jumpOnce: true,
-      updatedDate: 1691676775642,
-      favorite: false,
-    },
-    gc5FeppNDv: {
+    'gc5FeppNDv-hello-world': {
       createDate: 1691548231530,
       tags: ['ZHBa2NtdSo', 'QYFD_HeQc-', 'wg-fBtd2eI'],
       updatedDate: 1691676331623,
       favorite: true,
+      jumpOnce: true,
+    },
+    F1SX6cgNxy: {
+      createDate: 1691548220794,
+      tags: [],
+      updatedDate: 1691676775642,
+      favorite: false,
     },
     '3R9X-gMh3m': {
       createDate: 1691551731225,
@@ -137,8 +155,11 @@ export async function buildShowcaseWorkspace(workspace: Workspace) {
     },
   } satisfies Record<string, Partial<PageMeta>>;
   const data = [
-    ['F1SX6cgNxy-hello-world', import('@affine/templates/v1/preloading.json')],
-    ['gc5FeppNDv', import('@affine/templates/v1/getting-started.json')],
+    [
+      'gc5FeppNDv-hello-world',
+      import('@affine/templates/v1/getting-started.json'),
+    ],
+    ['F1SX6cgNxy', import('@affine/templates/v1/preloading.json')],
     ['3R9X-gMh3m', import('@affine/templates/v1/template-galleries.json')],
     ['z_v6LOqNpp', import('@affine/templates/v1/personal-home.json')],
     ['0N0WzwmtK_', import('@affine/templates/v1/working-home.json')],

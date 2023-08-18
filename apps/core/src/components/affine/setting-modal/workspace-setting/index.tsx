@@ -1,7 +1,6 @@
-import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback } from 'react';
+import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
 import { openSettingModalAtom } from '../../../../atoms';
@@ -33,12 +32,10 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   const onTransformWorkspace = useOnTransformWorkspace();
 
   return (
-    <Suspense fallback={<WorkspaceDetailSkeleton />}>
-      <NewSettingsDetail
-        onTransformWorkspace={onTransformWorkspace}
-        onDeleteWorkspace={onDeleteWorkspace}
-        currentWorkspaceId={workspaceId}
-      />
-    </Suspense>
+    <NewSettingsDetail
+      onTransformWorkspace={onTransformWorkspace}
+      onDeleteWorkspace={onDeleteWorkspace}
+      currentWorkspaceId={workspaceId}
+    />
   );
 };

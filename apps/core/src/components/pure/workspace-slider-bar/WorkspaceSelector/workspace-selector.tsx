@@ -32,6 +32,7 @@ export const WorkspaceSelector = ({
 
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
+  // TODO: Delete this?
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -50,6 +51,7 @@ export const WorkspaceSelector = ({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       data-testid="current-workspace"
+      id="current-workspace"
     >
       <WorkspaceAvatar
         data-testid="workspace-avatar"

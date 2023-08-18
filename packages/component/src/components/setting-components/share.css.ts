@@ -57,7 +57,7 @@ export const settingRow = style({
 });
 
 globalStyle(`${settingRow} .left-col`, {
-  flexShrink: 0,
+  flex: 1,
   maxWidth: '100%',
 });
 globalStyle(`${settingRow}.two-col .left-col`, {
@@ -74,7 +74,7 @@ globalStyle(`${settingRow} .desc`, {
   color: 'var(--affine-text-secondary-color)',
 });
 globalStyle(`${settingRow} .right-col`, {
-  flexGrow: 1,
+  width: '250px',
   display: 'flex',
   justifyContent: 'flex-end',
   paddingLeft: '15px',

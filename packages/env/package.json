@@ -5,10 +5,10 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230811012734-9620bf0b-nightly",
+    "@blocksuite/global": "0.0.0-20230818053411-bc330b35-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zod": "^3.21.4"
+    "zod": "^3.22.1"
   },
   "exports": {
     "./automation": "./src/automation.ts",
@@ -25,7 +25,7 @@
     "@toeverything/infra": "workspace:*"
   },
   "dependencies": {
-    "lit": "^2.7.6"
+    "lit": "^2.8.0"
   },
-  "version": "0.8.0-canary.18"
+  "version": "0.8.0-canary.26"
 }

@@ -34,7 +34,7 @@ async function createWindow() {
       : isWindows()
       ? 'hidden'
       : 'default',
-    trafficLightPosition: { x: 24, y: 18 },
+    trafficLightPosition: { x: 20, y: 18 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
@@ -96,6 +96,13 @@ async function createWindow() {
     browserWindow.destroy();
     helperConnectionUnsub?.();
     // TODO: gracefully close the app, for example, ask user to save unsaved changes
+  });
+
+  browserWindow.on('leave-full-screen', () => {
+    // FIXME: workaround for theme bug in full screen mode
+    const size = browserWindow.getSize();
+    browserWindow.setSize(size[0] + 1, size[1] + 1);
+    browserWindow.setSize(size[0], size[1]);
   });
 
   /**

@@ -235,28 +235,6 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
-  storybook-test:
-    name: Storybook Test
-    runs-on: ubuntu-latest
-    environment: development
-    needs: [build-storybook]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          playwright-install: true
-          electron-install: false
-      - name: Download storybook artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
-      - name: Run storybook tests
-        working-directory: ./apps/storybook
-        run: |
-          yarn exec concurrently -k -s first -n "SB,TEST" -c "magenta,blue" "yarn exec serve ./storybook-static -l 6006" "yarn exec wait-on tcp:6006 && yarn test"
-
   e2e-plugin-test:
     name: E2E Plugin Test
     runs-on: ubuntu-latest

@@ -4,7 +4,7 @@ import type { SerializedBlock } from '@blocksuite/blocks';
 import type { BaseBlockModel } from '@blocksuite/store';
 import type { Page } from '@blocksuite/store';
 import type { VEditor } from '@blocksuite/virgo';
-import type { FC, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { StrictMode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -106,11 +106,11 @@ const handleEnter = ({
   return callback();
 };
 
-const shouldShowBookmarkMenu = (pastedBlocks: SerializedBlock[]) => {
+const shouldShowBookmarkMenu = (pastedBlocks: Record<string, unknown>[]) => {
   if (!pastedBlocks.length || pastedBlocks.length > 1) {
     return;
   }
-  const [firstBlock] = pastedBlocks;
+  const [firstBlock] = pastedBlocks as [SerializedBlock];
   if (
     !firstBlock.text ||
     !firstBlock.text.length ||
@@ -121,7 +121,7 @@ const shouldShowBookmarkMenu = (pastedBlocks: SerializedBlock[]) => {
   return !!firstBlock.text[0].attributes?.link;
 };
 
-const BookMarkUI: FC<BookMarkProps> = ({ page }) => {
+const BookMarkUI = ({ page }: BookMarkProps) => {
   const [anchor, setAnchor] = useState<Range | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>(
     menuOptions[0].id

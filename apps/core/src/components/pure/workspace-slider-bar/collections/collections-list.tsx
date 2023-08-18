@@ -211,7 +211,7 @@ const CollectionRenderer = ({
             }
           >
             <div data-testid="collection-options" className={styles.more}>
-              <MoreHorizontalIcon></MoreHorizontalIcon>
+              <MoreHorizontalIcon />
             </div>
           </Menu>
         }
@@ -228,8 +228,8 @@ const CollectionRenderer = ({
           <div>{collection.name}</div>
         </div>
       </MenuItem>
-      <Collapsible.Content>
-        <div style={{ marginLeft: 8 }}>
+      <Collapsible.Content className={styles.collapsibleContent}>
+        <div style={{ marginLeft: 20, marginTop: -4 }}>
           {pagesToRender.map(page => {
             return (
               <Page
@@ -257,6 +257,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
     () => savedCollections.filter(v => v.pinned),
     [savedCollections]
   );
+  const t = useAFFiNEI18N();
   if (pinedCollections.length === 0) {
     return (
       <MenuItem
@@ -264,7 +265,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
         icon={<InformationIcon />}
         disabled
       >
-        <span>Create a collection</span>
+        <span>{t['Create a collection']()}</span>
       </MenuItem>
     );
   }

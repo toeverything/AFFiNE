@@ -1,12 +1,24 @@
+import type {
+  DBHandlers,
+  DialogHandlers,
+  WorkspaceHandlers,
+} from '@toeverything/infra/type';
+
 import { dbEvents, dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
 import { workspaceEvents, workspaceHandlers } from './workspace';
+
+type AllHandlers = {
+  db: DBHandlers;
+  workspace: WorkspaceHandlers;
+  dialog: DialogHandlers;
+};
 
 export const handlers = {
   db: dbHandlers,
   workspace: workspaceHandlers,
   dialog: dialogHandlers,
-};
+} satisfies AllHandlers;
 
 export const events = {
   db: dbEvents,

@@ -1,10 +1,11 @@
 import {
   SettingModal as SettingModalBase,
   type SettingModalProps as SettingModalBaseProps,
+  WorkspaceDetailSkeleton,
 } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import { AccountSetting } from './account-setting';
 import {
@@ -13,7 +14,7 @@ import {
   useGeneralSettingList,
 } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
-import { settingContent } from './style.css';
+import { footerIconWrapper, settingContent } from './style.css';
 import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
@@ -77,7 +78,9 @@ export const SettingModal = ({
         <div className="wrapper">
           <div className="content">
             {activeTab === 'workspace' && workspaceId ? (
-              <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+              <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+              </Suspense>
             ) : null}
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
@@ -85,15 +88,15 @@ export const SettingModal = ({
             {activeTab === 'account' ? <AccountSetting /> : null}
           </div>
           <div className="footer">
-            <ContactWithUsIcon />
+            <div className={footerIconWrapper}>
+              <ContactWithUsIcon />
+            </div>
             <a
               href="https://community.affine.pro/home"
               target="_blank"
               rel="noreferrer"
             >
-              {t[
-                'Need more customization options? You can suggest them to us in the community.'
-              ]()}
+              {t['com.affine.settings.suggestion']()}
             </a>
           </div>
         </div>

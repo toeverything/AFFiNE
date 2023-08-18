@@ -2,13 +2,44 @@ import assert from 'node:assert';
 import { beforeEach, describe, test } from 'node:test';
 
 import { encoding } from 'lib0';
-import * as Y from 'yjs';
+import { applyUpdate, Doc } from 'yjs';
 
 import { Storage } from '../index.js';
 
 // update binary by y.doc.text('content').insert('hello world')
 // prettier-ignore
-let init = Buffer.from([1,1,160,238,169,240,10,0,4,1,7,99,111,110,116,101,110,116,11,104,101,108,108,111,32,119,111,114,108,100,0])
+let init = Buffer.from([
+  1,
+  1,
+  160,
+  238,
+  169,
+  240,
+  10,
+  0,
+  4,
+  1,
+  7,
+  99,
+  111,
+  110,
+  116,
+  101,
+  110,
+  116,
+  11,
+  104,
+  101,
+  108,
+  108,
+  111,
+  32,
+  119,
+  111,
+  114,
+  108,
+  100,
+  0])
 describe('Test jwst storage binding', () => {
   /** @type { Storage } */
   let storage;
@@ -48,8 +79,8 @@ describe('Test jwst storage binding', () => {
     const update = await storage.load(workspace.doc.guid);
     assert(update !== null);
 
-    const doc = new Y.Doc();
-    Y.applyUpdate(doc, update);
+    const doc = new Doc();
+    applyUpdate(doc, update);
 
     let text = doc.getText('content');
     assert.equal(text.toJSON(), 'hello world');
@@ -67,8 +98,8 @@ describe('Test jwst storage binding', () => {
     }
 
     const update2 = await storage.load(workspace.doc.guid);
-    const doc2 = new Y.Doc();
-    Y.applyUpdate(doc2, update2);
+    const doc2 = new Doc();
+    applyUpdate(doc2, update2);
 
     text = doc2.getText('content');
     assert.equal(text.toJSON(), 'hello my world!');
@@ -80,8 +111,8 @@ describe('Test jwst storage binding', () => {
     const update = await storage.load(workspace.doc.guid);
     assert(update !== null);
 
-    const doc = new Y.Doc();
-    Y.applyUpdate(doc, update);
+    const doc = new Doc();
+    applyUpdate(doc, update);
 
     let text = doc.getText('content');
     assert.equal(text.toJSON(), 'hello world');
@@ -103,8 +134,8 @@ describe('Test jwst storage binding', () => {
     }
 
     const update2 = await storage.load(workspace.doc.guid);
-    const doc2 = new Y.Doc();
-    Y.applyUpdate(doc2, update2);
+    const doc2 = new Doc();
+    applyUpdate(doc2, update2);
 
     text = doc2.getText('content');
     assert.equal(text.toJSON(), 'hello my world!');

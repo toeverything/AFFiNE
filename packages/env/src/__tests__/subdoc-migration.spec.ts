@@ -2,7 +2,8 @@ import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
-import * as Y from 'yjs';
+import type { Array as YArray, Map as YMap } from 'yjs';
+import { applyUpdate, Doc } from 'yjs';
 
 import { migrateToSubdoc } from '../blocksuite/index.js';
 
@@ -11,8 +12,8 @@ const fixturePath = resolve(
   'workspace.ydoc'
 );
 const yDocBuffer = readFileSync(fixturePath);
-const doc = new Y.Doc();
-Y.applyUpdate(doc, new Uint8Array(yDocBuffer));
+const doc = new Doc();
+applyUpdate(doc, new Uint8Array(yDocBuffer));
 const migratedDoc = migrateToSubdoc(doc);
 
 describe('subdoc', () => {
@@ -23,8 +24,8 @@ describe('subdoc', () => {
     for (let i = 0; i < length; i++) {
       binary[i] = (json as any)[i];
     }
-    const doc = new Y.Doc();
-    Y.applyUpdate(doc, binary);
+    const doc = new Doc();
+    applyUpdate(doc, binary);
     {
       // invoke data
       doc.getMap('space:hello-world');
@@ -32,7 +33,7 @@ describe('subdoc', () => {
     }
     const blocks = doc.getMap('space:hello-world').toJSON();
     const newDoc = migrateToSubdoc(doc);
-    const subDoc = newDoc.getMap('spaces').get('space:hello-world') as Y.Doc;
+    const subDoc = newDoc.getMap('spaces').get('space:hello-world') as Doc;
     const data = (subDoc.toJSON() as any).blocks;
     Object.keys(data).forEach(id => {
       if (id === 'xyWNqindHH') {
@@ -50,23 +51,23 @@ describe('subdoc', () => {
 
   test('Test fixture should be set correctly', () => {
     const meta = doc.getMap('space:meta');
-    const versions = meta.get('versions') as Y.Map<unknown>;
+    const versions = meta.get('versions') as YMap<unknown>;
     expect(versions.get('affine:code')).toBeTypeOf('number');
   });
 
   test('Meta data should be migrated correctly', () => {
     const originalMeta = doc.getMap('space:meta');
-    const originalVersions = originalMeta.get('versions') as Y.Map<unknown>;
+    const originalVersions = originalMeta.get('versions') as YMap<unknown>;
 
     const meta = migratedDoc.getMap('meta');
-    const blockVersions = meta.get('blockVersions') as Y.Map<unknown>;
+    const blockVersions = meta.get('blockVersions') as YMap<unknown>;
 
     expect(meta.get('workspaceVersion')).toBe(1);
     expect(blockVersions.get('affine:code')).toBe(
       originalVersions.get('affine:code')
     );
-    expect((meta.get('pages') as Y.Array<unknown>).length).toBe(
-      (originalMeta.get('pages') as Y.Array<unknown>).length
+    expect((meta.get('pages') as YArray<unknown>).length).toBe(
+      (originalMeta.get('pages') as YArray<unknown>).length
     );
 
     expect(blockVersions.get('affine:embed')).toBeUndefined();
