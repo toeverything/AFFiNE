@@ -112,35 +112,9 @@ const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
   });
 });
 
-// module -> importName -> updater[]
-export const _rootImportsMap = new Map<string, Map<string, any>>();
-const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
-  react: import('react'),
-  'react/jsx-runtime': import('react/jsx-runtime'),
-  'react-dom': import('react-dom'),
-  'react-dom/client': import('react-dom/client'),
-  jotai: import('jotai'),
-  'jotai/utils': import('jotai/utils'),
-  swr: import('swr'),
-  '@affine/component': import('@affine/component'),
-  '@blocksuite/icons': import('@blocksuite/icons'),
-  '@blocksuite/blocks': import('@blocksuite/blocks'),
-  '@affine/sdk/entry': {
-    rootStore: rootStore,
-    currentWorkspaceAtom: currentWorkspaceAtom,
-    currentPageAtom: currentPageAtom,
-    pushLayoutAtom: pushLayoutAtom,
-    deleteLayoutAtom: deleteLayoutAtom,
-  },
-  '@blocksuite/global/utils': import('@blocksuite/global/utils'),
-  '@toeverything/infra/atom': import('@toeverything/infra/atom'),
-  '@toeverything/components/button': import('@toeverything/components/button'),
-});
-
-// pluginName -> module -> importName -> updater[]
-export const _pluginNestedImportsMap = new Map<
-  string,
-  Map<string, Map<string, any>>
+const setupWeakMap = new WeakMap<
+  ReturnType<typeof createStore>,
+  ReturnType<typeof createSetupImpl>
 >();
 
 export function createSetup(rootStore: ReturnType<typeof createStore>) {

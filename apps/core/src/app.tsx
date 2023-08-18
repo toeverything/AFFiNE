@@ -48,18 +48,16 @@ const languageLoadingPromise = loadLanguage().catch(console.error);
 export const App = memo(function App() {
   use(languageLoadingPromise);
   return (
-    <SessionProvider refetchOnWindowFocus>
-      <CacheProvider value={cache}>
-        <AffineContext store={getCurrentStore()}>
-          <DebugProvider>
-            <RouterProvider
-              fallbackElement={<WorkspaceFallback key="RouterFallback" />}
-              router={router}
-              future={future}
-            />
-          </DebugProvider>
-        </AffineContext>
-      </CacheProvider>
-    </SessionProvider>
+    <CacheProvider value={cache}>
+      <AffineContext store={getCurrentStore()}>
+        <DebugProvider>
+          <RouterProvider
+            fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+            router={router}
+            future={future}
+          />
+        </DebugProvider>
+      </AffineContext>
+    </CacheProvider>
   );
 });

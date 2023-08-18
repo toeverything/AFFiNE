@@ -1,7 +1,7 @@
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
-import { userEvent, waitFor, within } from '@storybook/testing-library';
+import { userEvent, waitFor } from '@storybook/testing-library';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,

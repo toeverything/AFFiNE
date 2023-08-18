@@ -87,6 +87,7 @@ export const DetailPage = (): ReactElement => {
 };
 
 export const loader: LoaderFunction = async args => {
+  const rootStore = getCurrentStore();
   rootStore.set(contentLayoutAtom, 'editor');
   if (args.params.workspaceId) {
     localStorage.setItem('last_workspace_id', args.params.workspaceId);
