@@ -35,8 +35,8 @@ export const checkForUpdates = async (force = true) => {
 };
 
 export const registerUpdater = async () => {
-  // skip auto update in dev mode
-  if (isDev) {
+  // skip auto update in dev mode & internal
+  if (isDev || buildType === 'internal') {
     return;
   }
 
@@ -52,6 +52,7 @@ export const registerUpdater = async () => {
   const feedUrl: Parameters<typeof autoUpdater.setFeedURL>[0] = {
     channel: buildType,
     provider: 'github',
+    // @ts-expect-error - just ignore for now
     repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
