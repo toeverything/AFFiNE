@@ -16,7 +16,7 @@ const getChannel = () => {
       return process.env.BUILD_TYPE;
     default: {
       throw new Error(
-        'BUILD_TYPE must be one of canary, beta, stable, internal'
+        `BUILD_TYPE must be one of canary, beta, stable, internal, received [${process.env.BUILD_TYPE}]`
       );
     }
   }
