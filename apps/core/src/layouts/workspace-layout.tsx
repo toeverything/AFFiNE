@@ -116,14 +116,9 @@ export const WorkspaceLayout = function WorkspacesSuspense({
   return (
     <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
-        {/* load all workspaces is costly, do not block the whole UI */}
-        <Suspense>
-          <AllWorkspaceModals />
-          <CurrentWorkspaceModals />
-        </Suspense>
-        <Suspense fallback={<WorkspaceFallback />}>
+        <Provider>
           <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-        </Suspense>
+        </Provider>
       </CurrentWorkspaceContext>
     </AdapterProviderWrapper>
   );
