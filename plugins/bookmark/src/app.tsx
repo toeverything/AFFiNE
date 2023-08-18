@@ -106,11 +106,11 @@ const handleEnter = ({
   return callback();
 };
 
-const shouldShowBookmarkMenu = (pastedBlocks: SerializedBlock[]) => {
+const shouldShowBookmarkMenu = (pastedBlocks: Record<string, unknown>[]) => {
   if (!pastedBlocks.length || pastedBlocks.length > 1) {
     return;
   }
-  const [firstBlock] = pastedBlocks;
+  const [firstBlock] = pastedBlocks as [SerializedBlock];
   if (
     !firstBlock.text ||
     !firstBlock.text.length ||
