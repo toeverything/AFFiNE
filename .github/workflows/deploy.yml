@@ -10,7 +10,6 @@ on:
       build-type:
         description: 'Build type (canary, beta, internal or stable)'
         type: string
-        required: true
         default: canary
 
 env:
@@ -186,6 +185,7 @@ jobs:
           cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
