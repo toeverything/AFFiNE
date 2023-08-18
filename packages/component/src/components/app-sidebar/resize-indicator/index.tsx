@@ -1,6 +1,7 @@
+import { assertExists } from '@blocksuite/global/utils';
 import { useAtom, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback } from 'react';
 
 import {
   appSidebarOpenAtom,
@@ -18,16 +19,10 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   const [isResizing, setIsResizing] = useAtom(appSidebarResizingAtom);
 
-  const [anchorLeft, setAnchorLeft] = useState(0);
-
-  useLayoutEffect(() => {
-    if (!props.targetElement) return;
-    const { left } = props.targetElement.getBoundingClientRect();
-    setAnchorLeft(left);
-  }, [props.targetElement]);
-
   const onResizeStart = useCallback(() => {
     let resized = false;
+    assertExists(props.targetElement);
+    const { left: anchorLeft } = props.targetElement.getBoundingClientRect();
 
     function onMouseMove(e: MouseEvent) {
       e.preventDefault();
@@ -51,13 +46,7 @@ export const ResizeIndicator = (props: ResizeIndicatorProps): ReactElement => {
       },
       { once: true }
     );
-  }, [
-    anchorLeft,
-    props.targetElement,
-    setIsResizing,
-    setSidebarOpen,
-    setWidth,
-  ]);
+  }, [props.targetElement, setIsResizing, setSidebarOpen, setWidth]);
 
   return (
     <div

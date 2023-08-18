@@ -6,11 +6,13 @@ import { Link } from 'react-router-dom';
 
 import * as styles from './index.css';
 
-export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface MenuItemProps extends React.HTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactElement;
   active?: boolean;
   disabled?: boolean;
-  collapsed?: boolean; // true, false, undefined. undefined means no collapse
+  // true, false, undefined. undefined means no collapse
+  collapsed?: boolean;
+  // if onCollapsedChange is given, but collapsed is undefined, then we will render the collapse button as disabled
   onCollapsedChange?: (collapsed: boolean) => void;
   postfix?: React.ReactElement;
 }
@@ -23,7 +25,7 @@ const stopPropagation: React.MouseEventHandler = e => {
   e.stopPropagation();
 };
 
-export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
+export const MenuItem = React.forwardRef<HTMLButtonElement, MenuItemProps>(
   (
     {
       onClick,
@@ -38,14 +40,9 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
     },
     ref
   ) => {
-    const collapsible = collapsed !== undefined;
-    if (collapsible && !onCollapsedChange) {
-      throw new Error(
-        'onCollapsedChange is required when collapsed is defined'
-      );
-    }
+    const collapsible = onCollapsedChange !== undefined;
     return (
-      <div
+      <button
         ref={ref}
         {...props}
         onClick={onClick}
@@ -58,6 +55,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
           <div className={styles.iconsContainer} data-collapsible={collapsible}>
             {collapsible && (
               <div
+                data-disabled={collapsed === undefined ? true : undefined}
                 onClick={e => {
                   e.stopPropagation();
                   e.preventDefault(); // for links
@@ -68,7 +66,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
               >
                 <ArrowDownSmallIcon
                   className={styles.collapsedIcon}
-                  data-collapsed={collapsed}
+                  data-collapsed={collapsed !== false}
                 />
               </div>
             )}
@@ -84,21 +82,22 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
             {postfix}
           </div>
         ) : null}
-      </div>
+      </button>
     );
   }
 );
 MenuItem.displayName = 'MenuItem';
 
-export const MenuLinkItem = React.forwardRef<HTMLDivElement, MenuLinkItemProps>(
-  ({ to, ...props }, ref) => {
-    return (
-      <Link to={to} className={styles.linkItemRoot}>
-        {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
-        {/* Thus ref is passed to MenuItem instead of Link */}
-        <MenuItem ref={ref} {...props}></MenuItem>
-      </Link>
-    );
-  }
-);
+export const MenuLinkItem = React.forwardRef<
+  HTMLButtonElement,
+  MenuLinkItemProps
+>(({ to, ...props }, ref) => {
+  return (
+    <Link to={to} className={styles.linkItemRoot}>
+      {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
+      {/* Thus ref is passed to MenuItem instead of Link */}
+      <MenuItem ref={ref} {...props}></MenuItem>
+    </Link>
+  );
+});
 MenuLinkItem.displayName = 'MenuLinkItem';

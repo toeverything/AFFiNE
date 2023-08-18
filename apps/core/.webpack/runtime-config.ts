@@ -6,14 +6,21 @@ const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
 const editorFlags: BlockSuiteFeatureFlags = {
-  enable_database: true,
-  enable_slash_menu: true,
-  enable_edgeless_toolbar: true,
-  enable_block_hub: true,
   enable_drag_handle: true,
+  enable_block_hub: true,
   enable_surface: true,
+  enable_edgeless_toolbar: true,
+  enable_slash_menu: true,
+  enable_database: true,
+  enable_database_filter: false,
+  enable_data_view: false,
+  enable_page_tags: false,
+  enable_toggle_block: false,
   enable_linked_page: true,
   enable_bookmark_operation: false,
+  enable_note_index: false,
+
+  enable_attachment_block: true,
 };
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {

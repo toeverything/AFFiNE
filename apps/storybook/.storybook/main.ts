@@ -43,7 +43,9 @@ export default {
           root: fileURLToPath(new URL('../../../', import.meta.url)),
         }),
         configType === 'PRODUCTION'
-          ? turbosnap({ rootDir: config.root ?? process.cwd() })
+          ? turbosnap({
+              rootDir: fileURLToPath(new URL('../../../', import.meta.url)),
+            })
           : null,
       ],
       define: {

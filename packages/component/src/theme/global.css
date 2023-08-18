@@ -253,6 +253,14 @@ affine-block-hub {
   }
 }
 
+button,
+input,
+select,
+textarea,
+[role='button'] {
+  -webkit-app-region: no-drag;
+}
+
 #webpack-dev-server-client-overlay {
   -webkit-app-region: no-drag;
 }
