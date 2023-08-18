@@ -5,15 +5,22 @@ import { z } from 'zod';
 import { isBrowser, isDesktop, isServer } from './constant.js';
 import { isValidIPAddress } from './is-valid-ip-address.js';
 import { UaHelper } from './ua-helper.js';
+
 export const blockSuiteFeatureFlags = z.object({
   enable_database: z.boolean(),
+  enable_database_filter: z.boolean(),
+  enable_data_view: z.boolean(),
+  enable_page_tags: z.boolean(),
   enable_drag_handle: z.boolean(),
   enable_surface: z.boolean(),
   enable_block_hub: z.boolean(),
   enable_slash_menu: z.boolean(),
+  enable_toggle_block: z.boolean(),
   enable_edgeless_toolbar: z.boolean(),
   enable_linked_page: z.boolean(),
   enable_bookmark_operation: z.boolean(),
+  enable_note_index: z.boolean(),
+  enable_attachment_block: z.boolean(),
 });
 
 export const runtimeFlagsSchema = z.object({

@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { globalStyle, keyframes, style } from '@vanilla-extract/css';
 
 export const wrapper = style({
   userSelect: 'none',
@@ -29,8 +29,9 @@ export const more = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: 4,
-  padding: 4,
+  borderRadius: 2,
+  fontSize: 16,
+  color: 'var(--affine-icon-color)',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },
@@ -51,4 +52,35 @@ export const menuDividerStyle = style({
   marginRight: '8px',
   height: '1px',
   background: 'var(--affine-border-color)',
+});
+
+const slideDown = keyframes({
+  '0%': {
+    height: '0px',
+  },
+  '100%': {
+    height: 'var(--radix-collapsible-content-height)',
+  },
+});
+
+const slideUp = keyframes({
+  '0%': {
+    height: 'var(--radix-collapsible-content-height)',
+  },
+  '100%': {
+    height: '0px',
+  },
+});
+
+export const collapsibleContent = style({
+  overflow: 'hidden',
+  marginTop: '4px',
+  selectors: {
+    '&[data-state="open"]': {
+      animation: `${slideDown} 0.2s ease-out`,
+    },
+    '&[data-state="closed"]': {
+      animation: `${slideUp} 0.2s ease-out`,
+    },
+  },
 });

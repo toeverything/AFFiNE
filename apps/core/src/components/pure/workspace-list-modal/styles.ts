@@ -86,7 +86,6 @@ export const StyledCreateWorkspaceCardPill = styled('div')(() => {
     display: 'flex',
     width: '100%',
     height: '58px',
-    background: 'var(--affine-background-primary-color)',
     border: `1px solid var(--affine-border-color)`,
   };
 });
@@ -97,8 +96,6 @@ export const StyledSignInCardPill = styled('div')(() => {
     display: 'flex',
     width: '100%',
     height: '58px',
-    marginBottom: '6px',
-    background: 'var(--affine-background-primary-color)',
   };
 });
 
@@ -107,7 +104,6 @@ export const StyledImportWorkspaceCardPill = styled('div')(() => {
     borderRadius: '5px',
     display: 'flex',
     width: '100%',
-    marginBottom: '12px',
   };
 });
 
@@ -176,7 +172,27 @@ export const StyledModalContent = styled('div')({
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
   flexDirection: 'column',
+  width: '100%',
 });
+
+export const StyledModalFooterContent = styled('div')({
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
+  flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  padding: '12px',
+  backgroundColor: 'var(--affine-background-overlay-panel-color)',
+});
+
+export const StyledModalHeaderContent = styled('div')({
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
+  flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  padding: '12px 12px 0px 12px',
+  backgroundColor: 'var(--affine-background-overlay-panel-color)',
+});
+
 export const StyledOperationWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-end', 'center'),
@@ -188,13 +204,13 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     width: '58px',
     height: '58px',
     borderRadius: '100%',
-    background: 'var(--affine-white-80)',
+    background: 'var(--affine-background-overlay-panel-color)',
     border: '1.5px dashed #f4f5fa',
     transition: 'background .2s',
     fontSize: '24px',
     ...displayFlex('center', 'center'),
     borderColor: 'var(--affine-white)',
-    color: 'var(--affine-primary-color)',
+    color: 'var(--affine-background-overlay-panel-color)',
   };
 });
 export const StyledModalHeader = styled('div')(() => {
@@ -210,12 +226,12 @@ export const StyledModalHeader = styled('div')(() => {
 
 export const StyledModalBody = styled('div')(() => {
   return {
-    borderRadius: '8px',
-    padding: '12px',
+    padding: '0px 12px',
     display: 'inline-flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: '12px',
-    background: 'var(--affine-white)',
+    flex: 1,
+    overflowY: 'auto',
   };
 });

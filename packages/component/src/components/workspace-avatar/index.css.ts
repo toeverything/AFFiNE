@@ -14,6 +14,7 @@ export const avatarImageStyle = style({
   height: '100%',
   objectFit: 'cover',
   objectPosition: 'center',
+  display: 'block',
 });
 
 const bottomAnimation = keyframes({

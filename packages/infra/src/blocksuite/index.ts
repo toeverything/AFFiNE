@@ -32,12 +32,12 @@ export async function buildShowcaseWorkspace(
       options: [
         {
           id: 'icg1n5UdkP',
-          value: 'Travle',
+          value: 'Travel',
           color: 'var(--affine-tag-gray)',
         },
         {
           id: 'Oe5dSe1DDJ',
-          value: 'quick dummary',
+          value: 'Quick summary',
           color: 'var(--affine-tag-green)',
         },
         {
@@ -47,17 +47,17 @@ export async function buildShowcaseWorkspace(
         },
         {
           id: 'q3mceOl_zi',
-          value: 'streamline your workflow',
+          value: 'Streamline your workflow',
           color: 'var(--affine-tag-teal)',
         },
         {
           id: 'ze07JVwBu4',
-          value: 'plan',
+          value: 'Plan',
           color: 'var(--affine-tag-teal)',
         },
         {
           id: '8qcYPCTK0h',
-          value: 'review',
+          value: 'Review',
           color: 'var(--affine-tag-orange)',
         },
         {
