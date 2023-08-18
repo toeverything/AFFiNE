@@ -71,7 +71,8 @@ const createHelmCommand = ({ isDryRun }) => {
     `--namespace  ${namespace}`,
     `--set        global.ingress.enabled=true`,
     `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${staticIpName}\\" }\"`,
-    `--set-string global.ingress.host="${DEPLOY_HOST ?? CANARY_DEPLOY_HOST}"`,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    `--set-string global.ingress.host="${DEPLOY_HOST || CANARY_DEPLOY_HOST}"`,
     ...redisAndPostgres,
     `--set        web.replicaCount=${webReplicaCount}`,
     `--set-string web.image.tag="${GIT_SHORT_HASH}"`,
