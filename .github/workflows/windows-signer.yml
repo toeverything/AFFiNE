@@ -27,7 +27,7 @@ jobs:
         shell: cmd
         run: Compress-Archive -Path app-dir -DestinationPath signed.zip
       - name: upload
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: signed-${{ github.event.inputs.artifact-name }}
           path: signed.zip
