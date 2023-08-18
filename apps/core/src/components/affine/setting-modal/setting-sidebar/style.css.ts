@@ -92,6 +92,8 @@ export const currentWorkspaceLabel = style({
   },
 });
 
+export const sidebarFooter = style({ padding: '0 16px' });
+
 export const accountButton = style({
   height: '42px',
   padding: '4px 8px',

@@ -32,6 +32,7 @@ import {
   accountButton,
   currentWorkspaceLabel,
   settingSlideBar,
+  sidebarFooter,
   sidebarItemsWrapper,
   sidebarSelectItem,
   sidebarSubtitle,
@@ -151,13 +152,15 @@ export const SettingSidebar = ({
         </Suspense>
       </div>
 
-      {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
-        <SignInButton />
-      ) : null}
+      <div className={sidebarFooter}>
+        {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
+          <SignInButton />
+        ) : null}
 
-      {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
-        <UserInfo onAccountSettingClick={onAccountSettingClick} />
-      ) : null}
+        {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+          <UserInfo onAccountSettingClick={onAccountSettingClick} />
+        ) : null}
+      </div>
     </div>
   );
 };
