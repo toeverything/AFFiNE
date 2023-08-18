@@ -44,7 +44,7 @@ const OSWarningMessage = () => {
     return (
       <span>
         <Trans i18nKey="recommendBrowser">
-          We recommend the <strong>Chrome</strong> browser for optimal
+          We recommend the <strong>Chrome</strong> browser for an optimal
           experience.
         </Trans>
       </span>
