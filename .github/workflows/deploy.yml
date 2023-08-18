@@ -7,14 +7,14 @@ on:
       - v0.9.x-staging
   workflow_dispatch:
     inputs:
-      deploy-env:
-        description: 'Deploy env (dev, beta or production)'
+      build-type:
+        description: 'Build type (canary, beta, internal or stable)'
         type: string
         required: true
-        default: dev
+        default: canary
 
 env:
-  BUILD_TYPE: stable
+  BUILD_TYPE: canary
   APP_NAME: affine
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
@@ -22,7 +22,7 @@ jobs:
   build-server:
     name: Build Server
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.deploy-env }}
+    environment: ${{ github.event.inputs.build-type }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -54,7 +54,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          BUILD_TYPE: ${{ github.event.inputs.deploy-env }}
+          BUILD_TYPE: ${{ github.event.inputs.build-type }}
           SHOULD_REPORT_TRACE: true
           TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
       - name: Upload core artifact
@@ -67,7 +67,7 @@ jobs:
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.deploy-env }}
+    environment: ${{ github.event.inputs.build-type }}
 
     steps:
       - uses: actions/checkout@v3
@@ -91,7 +91,7 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.deploy-env }}
+    environment: ${{ github.event.inputs.build-type }}
     needs:
       - build-server
       - build-core
@@ -166,7 +166,7 @@ jobs:
 
   deploy:
     name: Deploy to cluster
-    environment: ${{ github.event.inputs.deploy-env }}
+    environment: ${{ github.event.inputs.build-type }}
     permissions:
       contents: 'write'
       id-token: 'write'
@@ -178,7 +178,7 @@ jobs:
       - name: Deploy to dev
         uses: ./.github/actions/deploy
         with:
-          env: ${{ github.event.inputs.deploy-env }}
+          build-type: ${{ github.event.inputs.build-type }}
           gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
           gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
           service-account: ${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}
@@ -196,3 +196,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
           AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          GCLOUD_CONNECTION_NAME: ${{ secrets.GCLOUD_CONNECTION_NAME }}
+          GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT: ${{ secrets.GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}

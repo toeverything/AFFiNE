@@ -1,8 +1,8 @@
 name: 'Deploy to Cluster'
 description: 'Deploy AFFiNE Cloud to cluster'
 inputs:
-  env:
-    description: 'Environment to deploy, dev|beta|stable'
+  build-type:
+    description: 'Align with App build type, canary|beta|stable|internal'
     required: true
   gcp-project-number:
     description: 'GCP project number'
@@ -47,4 +47,4 @@ runs:
       shell: bash
       run: node ./.github/actions/deploy/deploy.mjs
       env:
-        DEPLOY_ENV: '${{ inputs.env }}'
+        BUILD_TYPE: '${{ inputs.env }}'

@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 
 const {
-  DEPLOY_ENV,
+  BUILD_TYPE,
   DEPLOY_HOST,
   GIT_SHORT_HASH,
   DATABASE_URL,
@@ -24,14 +24,18 @@ const {
   REDIS_PASSWORD,
 } = process.env;
 
+const isProduction = BUILD_TYPE === 'stable';
+const isBeta = BUILD_TYPE === 'beta';
+
 const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
-  const staticIpName =
-    DEPLOY_ENV === 'production'
-      ? 'affine-cluster-production'
-      : 'affine-cluster-dev';
+  const staticIpName = isProduction
+    ? 'affine-cluster-production'
+    : isBeta
+    ? 'affine-cluster-beta'
+    : 'affine-cluster-dev';
   const redisAndPostgres =
-    DEPLOY_ENV === 'production'
+    isProduction || isBeta
       ? [
           `--set-string global.database.url=${DATABASE_URL}`,
           `--set-string global.database.username=${DATABASE_USERNAME}`,
@@ -45,7 +49,7 @@ const createHelmCommand = ({ isDryRun }) => {
         ]
       : [];
   const serviceAnnotations =
-    DEPLOY_ENV === 'production'
+    isProduction || isBeta
       ? [
           `--set-json   web.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
           `--set-json   graphql.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
@@ -54,12 +58,13 @@ const createHelmCommand = ({ isDryRun }) => {
           `--set-json   sync.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
         ]
       : [];
-  const webReplicaCount = DEPLOY_ENV === 'production' ? 3 : 1;
-  const graphqlReplicaCount = DEPLOY_ENV === 'production' ? 3 : 1;
-  const syncReplicaCount = DEPLOY_ENV === 'production' ? 6 : 1;
+  const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 1;
+  const graphqlReplicaCount = isProduction ? 3 : isBeta ? 2 : 1;
+  const syncReplicaCount = isProduction ? 6 : isBeta ? 3 : 1;
+  const namespace = isProduction ? 'production' : isBeta ? 'beta' : 'dev';
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
-    `--namespace  ${DEPLOY_ENV}`,
+    `--namespace  ${namespace}`,
     `--set        global.ingress.enabled=true`,
     `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${staticIpName}\\" }\"`,
     `--set-string global.ingress.host="${DEPLOY_HOST}"`,
