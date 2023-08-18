@@ -46,7 +46,7 @@ jobs:
       - id: foobar
         run: |
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".js") } | ForEach-Object { $_.FullName }) -join ' ')
-          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
       - run: echo ${{ steps.foobar.outputs.FILES_TO_BE_SIGNED }}
 
   test2:
@@ -224,7 +224,7 @@ jobs:
         id: get_files_to_be_signed
         run: |
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' ')
-          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
 
       - name: Zip artifacts for faster upload (windows)
         run: Compress-Archive -Path apps/electron/out -DestinationPath archive.zip
@@ -280,7 +280,7 @@ jobs:
         id: get_files_to_be_signed
         run: |
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName }) -join ' ')
-          echo "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          "FILES_TO_BE_SIGNED = $FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
 
       - name: Save installer for signing
         uses: actions/upload-artifact@v3
