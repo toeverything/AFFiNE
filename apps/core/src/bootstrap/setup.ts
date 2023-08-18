@@ -21,7 +21,7 @@ import {
 } from '@affine/workspace/migration';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
-import { rootStore } from '@toeverything/infra/atom';
+import type { createStore } from 'jotai/vanilla';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -143,7 +143,7 @@ async function tryMigration() {
   }
 }
 
-function createFirstAppData() {
+function createFirstAppData(store: ReturnType<typeof createStore>) {
   const createFirst = (): RootWorkspaceMetadataV2[] => {
     const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
@@ -166,18 +166,11 @@ function createFirstAppData() {
   const result = createFirst();
   console.info('create first workspace', result);
   localStorage.setItem('is-first-open', 'false');
-  rootStore.set(rootWorkspacesMetadataAtom, result);
+  store.set(rootWorkspacesMetadataAtom, result);
 }
 
-let isSetup = false;
-
-export async function setup() {
-  if (isSetup) {
-    console.warn('already setup');
-    return;
-  }
-  isSetup = true;
-  rootStore.set(
+export async function setup(store: ReturnType<typeof createStore>) {
+  store.set(
     workspaceAdaptersAtom,
     WorkspaceAdapters as Record<
       WorkspaceFlavour,
@@ -188,8 +181,8 @@ export async function setup() {
   console.log('setup global');
   setupGlobal();
 
-  createFirstAppData();
+  createFirstAppData(store);
   await tryMigration();
-  await rootStore.get(rootWorkspacesMetadataAtom);
+  await store.get(rootWorkspacesMetadataAtom);
   console.log('setup done');
 }

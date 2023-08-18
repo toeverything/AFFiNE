@@ -5,6 +5,7 @@ import '@toeverything/components/style.css';
 import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { CacheProvider } from '@emotion/react';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import { use } from 'foxact/use';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
@@ -47,7 +48,7 @@ export const App = memo(function App() {
   use(languageLoadingPromise);
   return (
     <CacheProvider value={cache}>
-      <AffineContext>
+      <AffineContext store={getCurrentStore()}>
         <DebugProvider>
           <RouterProvider
             fallbackElement={<WorkspaceFallback key="RouterFallback" />}
