@@ -204,15 +204,15 @@ jobs:
       - name: package
         run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
-      # - name: Zip artifact for deployment
-      #   run: zip packaged.zip apps/electron/out -r
+      - name: Zip artifacts for faster upload (windows)
+        run: Compress-Archive -Path apps/electron/out -DestinationPath archive.zip
 
       - name: Save packaged artifacts for signing
         uses: actions/upload-artifact@v3
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: |
-            apps/electron/out
+            archive.zip
 
   sign-packaged-artifacts-windows:
     needs: package-distribution-windows
@@ -220,7 +220,7 @@ jobs:
     with:
       artifact-name: packaged-win32-x64
 
-  make-artifacts-windows:
+  make-windows-installer:
     environment: production
     needs: sign-packaged-artifacts-windows
     strategy:
@@ -242,19 +242,24 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: apps/electron/out/${{ env.BUILD_TYPE }}
+          path: .
+      - name: unzip file
+        run: Expand-Archive -Path signed.zip -DestinationPath apps/electron/out
 
       - name: Make squirrel.windows installer
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
+      - name: Zip artifacts for faster upload
+        run: Compress-Archive -Path apps/electron/out/make -DestinationPath archive.zip
 
       - name: Save installer for signing
         uses: actions/upload-artifact@v3
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: apps/electron/make/${{ env.BUILD_TYPE }}/squirrel.windows
+          path: archive.zip
 
   sign-installer-artifacts-windows:
-    needs: make-artifacts-windows
+    needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
       artifact-name: installer-win32-x64
@@ -277,7 +282,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: apps/electron/make/${{ env.BUILD_TYPE }}/squirrel.windows
+          path: .
+      - name: unzip file
+        run: Expand-Archive -Path signed.zip -DestinationPath apps/electron/out/make
 
       - name: Save artifacts
         run: |

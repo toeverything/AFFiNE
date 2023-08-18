@@ -15,6 +15,8 @@ jobs:
         with:
           name: ${{ inputs.artifact-name }}
           path: app-dir
+      - name: unzip file
+        run: Expand-Archive -Path archive.zip -DestinationPath app-dir
       - name: sign
         run: |
           # list all binary files
@@ -22,8 +24,11 @@ jobs:
           # sign all binary files
           signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a $files
 
+      - name: zip file
+        run: Compress-Archive -Path app-dir -DestinationPath signed.zip
+
       - name: upload
         uses: actions/upload-artifact@v2
         with:
           name: signed-${{ github.event.inputs.artifact-name }}
-          path: app-dir
+          path: signed.zip
