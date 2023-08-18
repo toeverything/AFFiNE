@@ -94,11 +94,11 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         }
       } catch (e) {
         this.metrics.jwstCodecFail(1, {});
-        this.logger.error(`jwst apply update failed for :${guid}`, e);
+        this.logger.warn(`jwst apply update failed for :${guid}`, e);
         log = true;
       } finally {
         if (log) {
-          this.logger.verbose(
+          this.logger.warn(
             'Updates:',
             updates.map(u => u.toString('hex'))
           );
