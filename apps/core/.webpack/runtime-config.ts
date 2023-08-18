@@ -16,7 +16,7 @@ const editorFlags: BlockSuiteFeatureFlags = {
   enable_data_view: false,
   enable_page_tags: false,
   enable_toggle_block: false,
-  enable_linked_page: false,
+  enable_linked_page: true,
   enable_bookmark_operation: false,
   enable_note_index: false,
 
