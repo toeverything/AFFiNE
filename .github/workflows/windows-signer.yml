@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: ${{ github.event.inputs.artifact-name }}
+          name: ${{ inputs.artifact-name }}
           path: app-dir
       - name: sign
         run: |
