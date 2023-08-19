@@ -58,11 +58,15 @@ const withContextDecorator: Decorator = (Story, context) => {
   const { data: store } = useSWR(
     context.id,
     async () => {
+      if (storeMap.has(context.id)) {
+        return storeMap.get(context.id);
+      }
       localStorage.clear();
       const store = createStore();
       _setCurrentStore(store);
       await setup(store);
       await bootstrapPluginSystem(store);
+      storeMap.set(context.id, store);
       return store;
     },
     {
