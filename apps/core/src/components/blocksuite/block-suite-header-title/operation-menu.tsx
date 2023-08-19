@@ -54,7 +54,11 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const handleFavorite = useCallback(() => {
     setPageMeta(pageId, { favorite: !favorite });
-    toast(favorite ? t['Removed from Favorites']() : t['Added to Favorites']());
+    toast(
+      favorite
+        ? t['Removed from Favorites']()
+        : t['com.affine.core.toastMessage.favorite.added']()
+    );
   }, [favorite, pageId, setPageMeta, t]);
   const handleSwitchMode = useCallback(() => {
     setSetting(setting => ({
@@ -119,7 +123,9 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         style={menuItemStyle}
       >
         {t['Convert to ']()}
-        {mode === 'page' ? t['Edgeless']() : t['Page']()}
+        {mode === 'page'
+          ? t['com.affine.core.pageMode.edgeless']()
+          : t['com.affine.core.pageMode.page']()}
       </MenuItem>
       <MenuItem
         data-testid="editor-option-menu-favorite"
@@ -133,7 +139,9 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           )
         }
       >
-        {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
+        {favorite
+          ? t['Remove from favorites']()
+          : t['com.affine.component.operationMenu.favorite.add']()}
       </MenuItem>
       {/* {TODO: add tag and duplicate function support} */}
       {/* <MenuItem

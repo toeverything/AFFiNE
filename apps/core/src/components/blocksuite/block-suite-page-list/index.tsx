@@ -253,7 +253,9 @@ export const BlockSuitePageList = ({
         const status = pageMeta.favorite;
         toggleFavorite(pageMeta.id);
         toast(
-          status ? t['Removed from Favorites']() : t['Added to Favorites']()
+          status
+            ? t['Removed from Favorites']()
+            : t['com.affine.core.toastMessage.favorite.added']()
         );
       },
       onDisablePublicSharing: () => {

@@ -21,10 +21,14 @@ export const WorkspaceModeFilterTab = () => {
       onValueChange={handleValueChange}
     >
       <RadioButton value="all" style={{ textTransform: 'capitalize' }}>
-        {t['all']()}
+        {t['com.affine.core.pageMode.all']()}
       </RadioButton>
-      <RadioButton value="page">{t['Page']()}</RadioButton>
-      <RadioButton value="edgeless">{t['Edgeless']()}</RadioButton>
+      <RadioButton value="page">
+        {t['com.affine.core.pageMode.page']()}
+      </RadioButton>
+      <RadioButton value="edgeless">
+        {t['com.affine.core.pageMode.edgeless']()}
+      </RadioButton>
     </RadioButtonGroup>
   );
 };

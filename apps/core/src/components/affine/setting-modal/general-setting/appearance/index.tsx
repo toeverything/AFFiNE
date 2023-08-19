@@ -33,13 +33,13 @@ export const ThemeSettings = () => {
       )}
     >
       <RadioButton value="system" data-testid="system-theme-trigger">
-        {t['system']()}
+        {t['com.affine.core.themeSettings.system']()}
       </RadioButton>
       <RadioButton value="light" data-testid="light-theme-trigger">
-        {t['light']()}
+        {t['com.affine.core.themeSettings.light']()}
       </RadioButton>
       <RadioButton value="dark" data-testid="dark-theme-trigger">
-        {t['dark']()}
+        {t['com.affine.core.themeSettings.dark']()}
       </RadioButton>
     </RadioButtonGroup>
   );
@@ -91,26 +91,28 @@ export const AppearanceSettings = () => {
   return (
     <>
       <SettingHeader
-        title={t['Appearance Settings']()}
-        subtitle={t['Customize your  AFFiNE Appearance']()}
+        title={t['com.affine.core.appearanceSettings.title']()}
+        subtitle={t['com.affine.core.appearanceSettings.subtitle']()}
       />
 
-      <SettingWrapper title={t['Theme']()}>
+      <SettingWrapper
+        title={t['com.affine.core.appearanceSettings.theme.title']()}
+      >
         <SettingRow
-          name={t['Color Scheme']()}
-          desc={t['Choose your color scheme']()}
+          name={t['com.affine.core.appearanceSettings.color.title']()}
+          desc={t['com.affine.core.appearanceSettings.color.description']()}
         >
           <ThemeSettings />
         </SettingRow>
         <SettingRow
-          name={t['Font Style']()}
-          desc={t['Choose your font style']()}
+          name={t['com.affine.core.appearanceSettings.font.title']()}
+          desc={t['com.affine.core.appearanceSettings.font.description']()}
         >
           <FontFamilySettings />
         </SettingRow>
         <SettingRow
-          name={t['Display Language']()}
-          desc={t['com.affine.settings.appearance.language-description']()}
+          name={t['com.affine.core.appearanceSettings.language.title']()}
+          desc={t['com.affine.core.appearanceSettings.language.description']()}
         >
           <div className={settingWrapper}>
             <LanguageMenu

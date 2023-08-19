@@ -73,7 +73,7 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
           <LabelsPanel workspace={workspace} {...props} />
         </SettingRow>
       </SettingWrapper>
-      <SettingWrapper title={t['AFFiNE Cloud']()}>
+      <SettingWrapper title={t['com.affine.core.workspace.cloud']()}>
         <PublishPanel workspace={workspace} {...props} />
         <MembersPanel workspace={workspace} {...props} />
       </SettingWrapper>

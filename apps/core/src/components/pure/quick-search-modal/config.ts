@@ -34,7 +34,7 @@ export const useSwitchToConfig = (workspaceId: string): Config[] => {
   return useMemo(
     () => [
       {
-        title: t['All pages'](),
+        title: t['com.affine.core.workspaceSubPath.all'](),
         subPath: WorkspaceSubPath.ALL,
         icon: FolderIcon,
       },
@@ -50,7 +50,7 @@ export const useSwitchToConfig = (workspaceId: string): Config[] => {
         icon: SettingsIcon,
       },
       {
-        title: t['Trash'](),
+        title: t['com.affine.core.workspaceSubPath.trash'](),
         subPath: WorkspaceSubPath.TRASH,
         icon: DeleteTemporarilyIcon,
       },

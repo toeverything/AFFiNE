@@ -51,7 +51,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     },
     {
       key: 'about',
-      title: t['About AFFiNE'](),
+      title: t['com.affine.core.aboutAFFiNE.title'](),
       icon: InformationIcon,
       testId: 'about-panel-trigger',
     },

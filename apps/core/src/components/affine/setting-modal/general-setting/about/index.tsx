@@ -22,25 +22,30 @@ export const AboutAffine = () => {
   return (
     <>
       <SettingHeader
-        title={t['About AFFiNE']()}
-        subtitle={t['com.affine.settings.about.message']()}
+        title={t['com.affine.core.aboutAFFiNE.title']()}
+        subtitle={t['com.affine.core.aboutAFFiNE.subtitle']()}
         data-testid="about-title"
       />
-      <SettingWrapper title={t['Version']()}>
-        <SettingRow name={t['App Version']()} desc={runtimeConfig.appVersion} />
+      <SettingWrapper title={t['com.affine.core.aboutAFFiNE.version.title']()}>
         <SettingRow
-          name={t['Editor Version']()}
+          name={t['com.affine.core.aboutAFFiNE.version.app']()}
+          desc={runtimeConfig.appVersion}
+        />
+        <SettingRow
+          name={t['com.affine.core.aboutAFFiNE.version.editor.title']()}
           desc={runtimeConfig.editorVersion}
         />
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <>
             <SettingRow
-              name={t['Check for updates']()}
-              desc={t['New version is ready']()}
-            ></SettingRow>
+              name={t['com.affine.core.aboutAFFiNE.checkUpdate.title']()}
+              desc={t['com.affine.core.aboutAFFiNE.checkUpdate.description']()}
+            />
             <SettingRow
-              name={t['Check for updates automatically']()}
-              desc={t['com.affine.settings.about.update.check.message']()}
+              name={t['com.affine.core.aboutAFFiNE.autoCheckUpdate.title']()}
+              desc={t[
+                'com.affine.core.aboutAFFiNE.autoCheckUpdate.description'
+              ]()}
             >
               <Switch
                 checked={appSettings.autoCheckUpdate}
@@ -48,8 +53,10 @@ export const AboutAffine = () => {
               />
             </SettingRow>
             <SettingRow
-              name={t['Download updates automatically']()}
-              desc={t['com.affine.settings.about.update.download.message']()}
+              name={t['com.affine.core.aboutAFFiNE.autoDownloadUpdate.title']()}
+              desc={t[
+                'com.affine.core.aboutAFFiNE.autoDownloadUpdate.description'
+              ]()}
             >
               <Switch
                 checked={appSettings.autoCheckUpdate}
@@ -57,8 +64,8 @@ export const AboutAffine = () => {
               />
             </SettingRow>
             <SettingRow
-              name={t[`Discover what's new`]()}
-              desc={t['Changelog description']()}
+              name={t['com.affine.core.aboutAFFiNE.changelog.title']()}
+              desc={t['com.affine.core.aboutAFFiNE.changelog.description']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
                 window.open(runtimeConfig.changelogUrl, '_blank');
@@ -69,14 +76,14 @@ export const AboutAffine = () => {
           </>
         ) : null}
       </SettingWrapper>
-      <SettingWrapper title={t['Contact with us']()}>
+      <SettingWrapper title={t['com.affine.core.aboutAFFiNE.contact.title']()}>
         <a
           className={link}
           rel="noreferrer"
           href="https://affine.pro"
           target="_blank"
         >
-          {t['Official Website']()}
+          {t['com.affine.core.aboutAFFiNE.contact.website']()}
           <OpenInNewIcon className="icon" />
         </a>
         <a
@@ -85,11 +92,13 @@ export const AboutAffine = () => {
           href="https://community.affine.pro"
           target="_blank"
         >
-          {t['AFFiNE Community']()}
+          {t['com.affine.core.aboutAFFiNE.contact.community']()}
           <OpenInNewIcon className="icon" />
         </a>
       </SettingWrapper>
-      <SettingWrapper title={t['Communities']()}>
+      <SettingWrapper
+        title={t['com.affine.core.aboutAFFiNE.community.title']()}
+      >
         <div className={communityWrapper}>
           {relatedLinks.map(({ icon, title, link }) => {
             return (
@@ -107,14 +116,14 @@ export const AboutAffine = () => {
           })}
         </div>
       </SettingWrapper>
-      <SettingWrapper title={t['Info of legal']()}>
+      <SettingWrapper title={t['com.affine.core.aboutAFFiNE.legal.title']()}>
         <a
           className={link}
           rel="noreferrer"
           href="https://affine.pro/privacy"
           target="_blank"
         >
-          {t['Privacy']()}
+          {t['com.affine.core.aboutAFFiNE.legal.privacy']()}
           <OpenInNewIcon className="icon" />
         </a>
         <a
@@ -123,7 +132,7 @@ export const AboutAffine = () => {
           href="https://affine.pro/terms"
           target="_blank"
         >
-          {t['Terms of Use']()}
+          {t['com.affine.core.aboutAFFiNE.legal.tos']()}
           <OpenInNewIcon className="icon" />
         </a>
       </SettingWrapper>

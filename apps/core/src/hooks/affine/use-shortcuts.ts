@@ -231,7 +231,7 @@ export const usePageShortcuts = (): ShortcutsInfo => {
   const winPageShortcuts = useWinPageKeyboardShortcuts();
   const isMac = environment.isBrowser && environment.isMacOs;
   return {
-    title: t['Page'](),
+    title: t['com.affine.core.pageMode.page'](),
     shortcuts: isMac ? macPageShortcuts : winPageShortcuts,
   };
 };
@@ -243,7 +243,7 @@ export const useEdgelessShortcuts = (): ShortcutsInfo => {
   const winEdgelessShortcuts = useWinEdgelessKeyboardShortcuts();
   const isMac = environment.isBrowser && environment.isMacOs;
   return {
-    title: t['Edgeless'](),
+    title: t['com.affine.core.pageMode.edgeless'](),
     shortcuts: isMac ? macEdgelessShortcuts : winEdgelessShortcuts,
   };
 };

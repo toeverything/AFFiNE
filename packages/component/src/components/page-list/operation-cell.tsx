@@ -58,7 +58,9 @@ export const OperationCell = ({
           )
         }
       >
-        {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
+        {favorite
+          ? t['Remove from favorites']()
+          : t['com.affine.component.operationMenu.favorite.add']()}
       </MenuItem>
       {!isDesktop && (
         <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>

@@ -180,7 +180,9 @@ export const RootAppSidebar = ({
             path={paths.all(currentWorkspaceId)}
             onClick={backToAll}
           >
-            <span data-testid="all-pages">{t['All pages']()}</span>
+            <span data-testid="all-pages">
+              {t['com.affine.core.workspaceSubPath.all']()}
+            </span>
           </RouteMenuLinkItem>
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem
@@ -212,7 +214,9 @@ export const RootAppSidebar = ({
             currentPath={currentPath}
             path={paths.trash(currentWorkspaceId)}
           >
-            <span data-testid="trash-page">{t['Trash']()}</span>
+            <span data-testid="trash-page">
+              {t['com.affine.core.workspaceSubPath.trash']()}
+            </span>
           </RouteMenuLinkItem>
           {blockSuiteWorkspace && (
             <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
