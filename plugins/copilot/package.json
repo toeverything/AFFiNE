@@ -18,11 +18,11 @@
     "@affine/sdk": "workspace:*",
     "@toeverything/components": "^0.0.12",
     "idb": "^7.1.1",
-    "langchain": "^0.0.129",
+    "langchain": "^0.0.131",
     "marked": "^7.0.3",
     "marked-gfm-heading-id": "^3.0.6",
     "marked-mangle": "^1.1.2",
-    "zod": "^3.22.1"
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
