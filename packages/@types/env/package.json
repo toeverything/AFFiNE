@@ -7,5 +7,5 @@
     "@affine/env": "workspace:*",
     "@toeverything/infra": "workspace:*"
   },
-  "version": "0.8.0-canary.26"
+  "version": "0.8.0-canary.27"
 }
