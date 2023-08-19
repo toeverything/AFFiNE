@@ -8,5 +8,6 @@
     "module": "NodeNext",
     "resolveJsonModule": true
   },
-  "include": [".", "./*.json"]
+  "include": [".", "./*.json"],
+  "exclude": ["./tsconfig.json"]
 }
