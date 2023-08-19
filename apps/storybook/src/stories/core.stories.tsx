@@ -1,7 +1,7 @@
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
-import { userEvent, waitFor } from '@storybook/testing-library';
+import { userEvent, waitFor, within } from '@storybook/testing-library';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,
@@ -35,21 +35,26 @@ Index.parameters = {
 export const SettingPage: StoryFn = () => {
   return <FakeApp />;
 };
-SettingPage.play = async ({ canvasElement }) => {
-  await waitFor(
-    () => {
-      assertExists(
-        canvasElement.querySelector('[data-testid="settings-modal-trigger"]')
-      );
-    },
-    {
-      timeout: 5000,
-    }
-  );
-  const settingModalBtn = canvasElement.querySelector(
-    '[data-testid="settings-modal-trigger"]'
-  ) as Element;
-  await userEvent.click(settingModalBtn);
+SettingPage.play = async ({ canvasElement, step }) => {
+  const canvas = within(canvasElement);
+  await waitFor(async () => {
+    assertExists(canvasElement.querySelector('v-line'));
+  });
+  await step('click setting modal button', async () => {
+    await userEvent.click(canvas.getByTestId('settings-modal-trigger'));
+  });
+  await waitFor(async () => {
+    assertExists(
+      document.body.querySelector('[data-testid="language-menu-button"]')
+    );
+  });
+  await step('click language menu button', async () => {
+    await userEvent.click(
+      document.body.querySelector(
+        '[data-testid="language-menu-button"]'
+      ) as HTMLElement
+    );
+  });
 };
 SettingPage.decorators = [withRouter];
 SettingPage.parameters = {
