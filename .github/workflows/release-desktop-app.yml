@@ -209,6 +209,7 @@ jobs:
         run: |
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          echo $FILES_TO_BE_SIGNED
 
       - name: Zip artifacts for faster upload
         run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out -DestinationPath archive.zip
@@ -267,6 +268,7 @@ jobs:
         run: |
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          echo $FILES_TO_BE_SIGNED
 
       - name: Save installer for signing
         uses: actions/upload-artifact@v3
