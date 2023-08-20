@@ -55,9 +55,12 @@ const DetailPageImpl = (): ReactElement => {
     [
       blockSuiteWorkspace.id,
       collectionManager,
+      currentPageId,
       currentWorkspace.id,
       jumpToSubPath,
+      mode,
       openPage,
+      setPageMode,
     ]
   );
 
