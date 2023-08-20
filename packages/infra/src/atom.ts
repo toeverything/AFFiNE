@@ -6,7 +6,19 @@ import { atom, createStore } from 'jotai/vanilla';
 import { getWorkspace, waitForWorkspace } from './__internal__/workspace.js';
 
 // global store
-export const rootStore = createStore();
+let rootStore = createStore();
+
+export function getCurrentStore() {
+  return rootStore;
+}
+
+/**
+ * @internal do not use this function unless you know what you are doing
+ */
+export function _setCurrentStore(store: ReturnType<typeof createStore>) {
+  rootStore = store;
+}
+
 export const loadedPluginNameAtom = atom<string[]>([]);
 
 export const currentWorkspaceIdAtom = atom<string | null>(null);

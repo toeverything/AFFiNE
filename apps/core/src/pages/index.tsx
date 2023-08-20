@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
-import { rootStore } from '@toeverything/infra/atom';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import { lazy } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
@@ -16,6 +16,7 @@ const AllWorkspaceModals = lazy(() =>
 const logger = new DebugLogger('index-page');
 
 export const loader: LoaderFunction = async () => {
+  const rootStore = getCurrentStore();
   const meta = await rootStore.get(rootWorkspacesMetadataAtom);
   const lastId = localStorage.getItem('last_workspace_id');
   const lastPageId = localStorage.getItem('last_page_id');

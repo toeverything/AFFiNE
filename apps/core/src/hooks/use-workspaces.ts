@@ -5,7 +5,7 @@ import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
-import { rootStore } from '@toeverything/infra/atom';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
@@ -55,7 +55,7 @@ export function useAppHelper() {
             WorkspaceFlavour.LOCAL
           );
           await buildShowcaseWorkspace(blockSuiteWorkspace, {
-            store: rootStore,
+            store: getCurrentStore(),
             atoms: {
               pageMode: setPageModeAtom,
             },
