@@ -207,7 +207,7 @@ jobs:
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out', '') }) -join ' ')
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 
@@ -266,7 +266,7 @@ jobs:
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\make', '') }) -join ' ')
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\make\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 
