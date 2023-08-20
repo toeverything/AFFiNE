@@ -21,7 +21,7 @@ export const AuthModal: FC<PropsWithChildren<AuthModalProps>> = ({
       open={open}
       onClose={handleClose}
       wrapperPosition={['center', 'center']}
-      data-testid="setting-modal"
+      data-testid="auth-modal"
     >
       <ModalWrapper
         width={1080}
