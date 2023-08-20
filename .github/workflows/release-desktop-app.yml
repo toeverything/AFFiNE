@@ -38,24 +38,6 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
-  test-a:
-    runs-on: windows-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v3
-      - run: Compress-Archive -CompressionLevel Fastest -Path apps/electron -DestinationPath archive.zip
-      - uses: actions/upload-artifact@v3
-        with:
-          name: test-a
-          path: archive.zip
-
-  sign-test-a:
-    needs: test-a
-    uses: ./.github/workflows/windows-signer.yml
-    with:
-      files: forge.config.js
-      artifact-name: test-a
-
   before-make:
     runs-on: ubuntu-latest
     environment: production
