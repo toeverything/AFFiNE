@@ -42,7 +42,7 @@ const createHelmCommand = ({ isDryRun }) => {
     isProduction || isBeta
       ? [
           `--set-string global.database.url=${DATABASE_URL}`,
-          `--set-string global.database.username=${DATABASE_USERNAME}`,
+          `--set-string global.database.user=${DATABASE_USERNAME}`,
           `--set-string global.database.password=${DATABASE_PASSWORD}`,
           `--set-string global.database.name=${DATABASE_NAME}`,
           `--set        global.database.gcloud.enabled=true`,
