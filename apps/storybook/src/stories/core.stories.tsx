@@ -1,20 +1,13 @@
-import { pluginRegisterPromise } from '@affine/core/bootstrap/register-plugins';
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Decorator, StoryFn } from '@storybook/react';
-import { userEvent, waitFor } from '@storybook/testing-library';
-import { use } from 'foxact/use';
+import type { StoryFn } from '@storybook/react';
+import { userEvent, waitFor, within } from '@storybook/testing-library';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,
   reactRouterParameters,
   withRouter,
 } from 'storybook-addon-react-router-v6';
-
-const withCleanLocalStorage: Decorator = (Story, context) => {
-  localStorage.clear();
-  return <Story {...context} />;
-};
 
 const FakeApp = () => {
   const location = useLocation();
@@ -30,10 +23,9 @@ export default {
 };
 
 export const Index: StoryFn = () => {
-  use(pluginRegisterPromise);
   return <FakeApp />;
 };
-Index.decorators = [withRouter, withCleanLocalStorage];
+Index.decorators = [withRouter];
 Index.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
@@ -43,23 +35,28 @@ Index.parameters = {
 export const SettingPage: StoryFn = () => {
   return <FakeApp />;
 };
-SettingPage.play = async ({ canvasElement }) => {
-  await waitFor(
-    () => {
-      assertExists(
-        canvasElement.querySelector('[data-testid="settings-modal-trigger"]')
-      );
-    },
-    {
-      timeout: 5000,
-    }
-  );
-  const settingModalBtn = canvasElement.querySelector(
-    '[data-testid="settings-modal-trigger"]'
-  ) as Element;
-  await userEvent.click(settingModalBtn);
+SettingPage.play = async ({ canvasElement, step }) => {
+  const canvas = within(canvasElement);
+  await waitFor(async () => {
+    assertExists(canvasElement.querySelector('v-line'));
+  });
+  await step('click setting modal button', async () => {
+    await userEvent.click(canvas.getByTestId('settings-modal-trigger'));
+  });
+  await waitFor(async () => {
+    assertExists(
+      document.body.querySelector('[data-testid="language-menu-button"]')
+    );
+  });
+  await step('click language menu button', async () => {
+    await userEvent.click(
+      document.body.querySelector(
+        '[data-testid="language-menu-button"]'
+      ) as HTMLElement
+    );
+  });
 };
-SettingPage.decorators = [withRouter, withCleanLocalStorage];
+SettingPage.decorators = [withRouter];
 SettingPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
@@ -69,7 +66,7 @@ SettingPage.parameters = {
 export const NotFoundPage: StoryFn = () => {
   return <FakeApp />;
 };
-NotFoundPage.decorators = [withRouter, withCleanLocalStorage];
+NotFoundPage.decorators = [withRouter];
 NotFoundPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
@@ -99,7 +96,7 @@ WorkspaceList.play = async ({ canvasElement }) => {
   ) as Element;
   await userEvent.click(currentWorkspace);
 };
-WorkspaceList.decorators = [withRouter, withCleanLocalStorage];
+WorkspaceList.decorators = [withRouter];
 WorkspaceList.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),

@@ -9,7 +9,8 @@ import { isDesktop } from '@affine/env/constant';
 import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { SessionProvider } from 'next-auth/react';
-import { type FC, useEffect } from 'react';
+import type { ReactElement } from 'react';
+import { useEffect } from 'react';
 import { useCallback } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
@@ -31,7 +32,7 @@ const authTypes: AuthType[] = [
   'changeEmail',
 ];
 
-export const AuthPage: FC = () => {
+export const AuthPage = (): ReactElement | null => {
   const user = useCurrentUser();
   const { authType } = useParams();
   const { trigger: changePassword } = useMutation({

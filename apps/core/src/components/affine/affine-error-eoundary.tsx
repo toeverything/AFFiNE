@@ -8,7 +8,7 @@ import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-  rootStore,
+  getCurrentStore,
 } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai/react';
 import { Provider } from 'jotai/react';
@@ -102,7 +102,7 @@ export class AffineErrorBoundary extends Component<
       return (
         <>
           {errorDetail}
-          <Provider key="JotaiProvider" store={rootStore}>
+          <Provider key="JotaiProvider" store={getCurrentStore()}>
             <DumpInfo />
           </Provider>
         </>
