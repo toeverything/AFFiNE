@@ -21,7 +21,7 @@ jobs:
         # 7za is pre-installed on the signer machine
         run: |
           md out
-          7za x archive.zip -o./out
+          7za x archive.zip -oout
           dir ./out
       - name: sign
         shell: cmd
