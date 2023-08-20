@@ -20,7 +20,8 @@ jobs:
         shell: cmd
         # 7za is pre-installed on the signer machine
         run: |
-          7za x archive.zip -o ./out
+          md out
+          7za x archive.zip -o./out
           dir ./out
       - name: sign
         shell: cmd
@@ -29,7 +30,7 @@ jobs:
           signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a ${{ inputs.files }}
       - name: zip file
         shell: cmd
-        run: Compress-Archive -Path ./out -DestinationPath signed.zip
+        run: 7za a ./out signed.zip
       - name: upload
         uses: actions/upload-artifact@v3
         with:
