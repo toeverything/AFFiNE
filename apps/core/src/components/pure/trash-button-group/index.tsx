@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { toast } from '../../../utils';
 import { buttonContainer, group } from './styles.css';
 
 export const TrashButtonGroup = () => {
@@ -37,6 +38,7 @@ export const TrashButtonGroup = () => {
           type="primary"
           onClick={() => {
             restoreFromTrash(pageId);
+            toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
           }}
           size="large"
         >
@@ -63,6 +65,7 @@ export const TrashButtonGroup = () => {
         onConfirm={useCallback(() => {
           jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           blockSuiteWorkspace.removePage(pageId);
+          toast(t['Permanently deleted']());
         }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id])}
         onCancel={() => {
           setOpen(false);
