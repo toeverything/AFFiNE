@@ -38,6 +38,24 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 jobs:
+  test-a:
+    runs-on: windows-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - run: Compress-Archive -CompressionLevel Fastest -Path apps/electron -DestinationPath archive.zip
+      - uses: actions/upload-artifact@v3
+        with:
+          name: test-a
+          path: archive.zip
+
+  sign-test-a:
+    needs: package-distribution-windows
+    uses: ./.github/workflows/windows-signer.yml
+    with:
+      files: forge.config.js
+      artifact-name: test-a
+
   before-make:
     runs-on: ubuntu-latest
     environment: production
@@ -210,8 +228,8 @@ jobs:
           Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
 
-      - name: Zip artifacts for faster upload (windows)
-        run: Compress-Archive -Path apps/electron/out -DestinationPath archive.zip
+      - name: Zip artifacts for faster upload
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out -DestinationPath archive.zip
 
       - name: Save packaged artifacts for signing
         uses: actions/upload-artifact@v3
@@ -220,12 +238,6 @@ jobs:
           path: |
             archive.zip
             !**/*.map
-
-  check-output:
-    needs: package-distribution-windows
-    runs-on: windows-latest
-    steps:
-      - run: echo "${{ needs.package-distribution-windows.outputs.FILES_TO_BE_SIGNED }}"
 
   sign-packaged-artifacts-windows:
     needs: package-distribution-windows
@@ -266,7 +278,7 @@ jobs:
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Zip artifacts for faster upload
-        run: Compress-Archive -Path apps/electron/out/make -DestinationPath archive.zip
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/make -DestinationPath archive.zip
 
       - name: get all files to be signed
         id: get_files_to_be_signed

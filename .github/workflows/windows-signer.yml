@@ -18,7 +18,10 @@ jobs:
           path: .
       - name: unzip file
         shell: cmd
-        run: 7za x archive.zip ./out
+        # 7za is pre-installed on the signer machine
+        run: |
+          7za x archive.zip -o ./out
+          dir ./out
       - name: sign
         shell: cmd
         run: |
