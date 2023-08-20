@@ -164,7 +164,6 @@ export const WorkspaceListModal = ({
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   const setOpenAuthModal = useSetAtom(openAuthModalAtom);
-  // TODO: AFFiNE Cloud support
   const isLoggedIn = false;
   const anchorEl = document.getElementById('current-workspace');
 
