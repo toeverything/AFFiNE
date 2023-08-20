@@ -21,7 +21,10 @@ import { Divider } from '@toeverything/components/divider';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { openDisableCloudAlertModalAtom } from '../../../atoms';
+import {
+  openAuthModalAtom,
+  openDisableCloudAlertModalAtom,
+} from '../../../atoms';
 import type { AllWorkspace } from '../../../shared';
 import {
   StyledCreateWorkspaceCardPill,
@@ -160,6 +163,7 @@ export const WorkspaceListModal = ({
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
+  const setOpenAuthModal = useSetAtom(openAuthModalAtom);
   // TODO: AFFiNE Cloud support
   const isLoggedIn = false;
   const anchorEl = document.getElementById('current-workspace');
@@ -192,6 +196,11 @@ export const WorkspaceListModal = ({
             onClick={async () => {
               if (!runtimeConfig.enableCloud) {
                 setOpen(true);
+              } else {
+                setOpenAuthModal(state => ({
+                  ...state,
+                  open: true,
+                }));
               }
             }}
             data-testid="cloud-signin-button"
