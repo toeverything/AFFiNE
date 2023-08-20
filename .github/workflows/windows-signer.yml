@@ -20,8 +20,9 @@ jobs:
         shell: cmd
         # 7za is pre-installed on the signer machine
         run: |
+          dir
           md out
-          7za x ../archive.zip -y -oout
+          7za x archive.zip -y -oout
       - name: sign
         shell: cmd
         run: |
