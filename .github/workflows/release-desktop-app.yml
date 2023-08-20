@@ -50,7 +50,7 @@ jobs:
           path: archive.zip
 
   sign-test-a:
-    needs: package-distribution-windows
+    needs: test-a
     uses: ./.github/workflows/windows-signer.yml
     with:
       files: forge.config.js
