@@ -103,6 +103,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
+    "@node-rs/argon2": ^1.5.2
     "@playwright/test": ^1.37.0
   peerDependencies:
     "@playwright/test": "*"

@@ -47,6 +47,7 @@ export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
           If you haven&apos;t received the email, please check your spam folder.
           Or <span
             className="link"
+            data-testid='sign-in-with-password'
             onClick={useCallback(() => {
               setAuthState('signInWithPassword');
             }, [setAuthState])}
