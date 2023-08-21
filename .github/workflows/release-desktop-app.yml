@@ -312,7 +312,7 @@ jobs:
           path: builds
 
   release:
-    needs: [before-make, make-distribution, make-distribution-windows]
+    needs: [before-make, make-distribution, finalize-installer-windows]
     runs-on: ubuntu-latest
 
     steps:
