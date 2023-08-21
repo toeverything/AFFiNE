@@ -711,7 +711,7 @@ __metadata:
     "@storybook/addon-storysource": ^7.3.1
     "@storybook/blocks": ^7.3.1
     "@storybook/builder-vite": ^7.3.1
-    "@storybook/jest": ^0.1.0
+    "@storybook/jest": ^0.2.1
     "@storybook/react": ^7.3.1
     "@storybook/react-vite": ^7.3.1
     "@storybook/test-runner": ^0.13.0
@@ -10945,7 +10945,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/instrumenter@npm:7.3.1, @storybook/instrumenter@npm:^7.0.0-beta.0 || ^7.0.0-rc.0 || ^7.0.0":
+"@storybook/instrumenter@npm:7.3.1":
   version: 7.3.1
   resolution: "@storybook/instrumenter@npm:7.3.1"
   dependencies:
@@ -10958,15 +10958,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/jest@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@storybook/jest@npm:0.1.0"
+"@storybook/jest@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@storybook/jest@npm:0.2.1"
   dependencies:
     "@storybook/expect": storybook-jest
-    "@storybook/instrumenter": ^7.0.0-beta.0 || ^7.0.0-rc.0 || ^7.0.0
     "@testing-library/jest-dom": ^5.16.2
+    "@types/jest": 28.1.3
     jest-mock: ^27.3.0
-  checksum: 74a4b9dc0ce921f72c2f4fbba053e4a4c84a6a16d07406492a26733f55438229197e547364d0848ac3df38ab5ce9e20829029196d376a267033d8e75904ab611
+  checksum: a242f9ba71e185b30cd86d8012ee09bac55ed6318e1e2adb338fa248561427819b32affe2e57d427d0d24066ed7f04dbc6e848890526db20cb200a01d8b13afd
   languageName: node
   linkType: hard
 
@@ -12289,6 +12289,16 @@ __metadata:
     expect: ^29.0.0
     pretty-format: ^29.0.0
   checksum: e36bb92e0b9e5ea7d6f8832baa42f087fc1697f6cd30ec309a07ea4c268e06ec460f1f0cfd2581daf5eff5763475190ec1ad8ac6520c49ccfe4f5c0a48bfa676
+  languageName: node
+  linkType: hard
+
+"@types/jest@npm:28.1.3":
+  version: 28.1.3
+  resolution: "@types/jest@npm:28.1.3"
+  dependencies:
+    jest-matcher-utils: ^28.0.0
+    pretty-format: ^28.0.0
+  checksum: 28141f2d5b3bafd063362de9790cb8f219488d9b0ad47524a84bef1142a4f0d9d35be0c56988d9f922205225cc83c986acd4be424bd8653b38dc27ab672455e2
   languageName: node
   linkType: hard
 
@@ -22805,7 +22815,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-matcher-utils@npm:^28.1.3":
+"jest-matcher-utils@npm:^28.0.0, jest-matcher-utils@npm:^28.1.3":
   version: 28.1.3
   resolution: "jest-matcher-utils@npm:28.1.3"
   dependencies:
@@ -27691,7 +27701,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pretty-format@npm:^28.1.3":
+"pretty-format@npm:^28.0.0, pretty-format@npm:^28.1.3":
   version: 28.1.3
   resolution: "pretty-format@npm:28.1.3"
   dependencies:
