@@ -34,7 +34,6 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
       redirect: false,
       email,
       password,
-      callbackUrl: '/',
     }).catch(console.error);
 
     if (!res?.ok) {
@@ -71,6 +70,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           value={email}
         />
         <AuthInput
+          data-testid="password-input"
           label={t['com.affine.auth.password']()}
           value={password}
           type="password"
@@ -92,6 +92,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
         </button>
       </Wrapper>
       <Button
+        data-testid="sign-in-button"
         type="primary"
         size="extraLarge"
         style={{ width: '100%' }}
