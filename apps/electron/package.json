@@ -35,7 +35,7 @@
     "@electron-forge/cli": "^6.3.0",
     "@electron-forge/core": "^6.3.0",
     "@electron-forge/core-utils": "^6.3.0",
-    "@electron-forge/maker-deb": "^6.3.0",
+    "@electron-forge/maker-deb": "^6.4.0",
     "@electron-forge/maker-squirrel": "^6.3.0",
     "@electron-forge/maker-zip": "^6.3.0",
     "@electron-forge/shared-types": "^6.3.0",
