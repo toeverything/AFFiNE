@@ -38,5 +38,5 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v3
         with:
-          name: signed-${{ github.event.inputs.artifact-name }}
+          name: signed-${{ inputs.artifact-name }}
           path: ${{ env.ARCHIVE_DIR }}/signed.zip
