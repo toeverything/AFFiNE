@@ -14,12 +14,14 @@ import {
   currentWorkspaceIdAtom,
   getCurrentStore,
 } from '@toeverything/infra/atom';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { type ReactElement, useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 
 import { getUIAdapter } from '../../adapters/workspace';
+import { setPageModeAtom } from '../../atoms';
+import { currentModeAtom } from '../../atoms/mode';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 
@@ -31,8 +33,12 @@ const DetailPageImpl = (): ReactElement => {
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const collectionManager = useCollectionManager(currentWorkspace.id);
+  const mode = useAtomValue(currentModeAtom);
+  const setPageMode = useSetAtom(setPageModeAtom);
+
   const onLoad = useCallback(
     (_: Page, editor: EditorContainer) => {
+      setPageMode(currentPageId, mode);
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
@@ -49,9 +55,12 @@ const DetailPageImpl = (): ReactElement => {
     [
       blockSuiteWorkspace.id,
       collectionManager,
+      currentPageId,
       currentWorkspace.id,
       jumpToSubPath,
+      mode,
       openPage,
+      setPageMode,
     ]
   );
 
