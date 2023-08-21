@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.8.0-canary.27",
+  "version": "0.8.0-canary.28",
   "private": true,
   "author": "toeverything",
   "license": "MPL-2.0",
@@ -14,9 +14,9 @@
     "tests/kit",
     "tests/affine-legacy/*",
     "tests/affine-local",
-    "tests/affine-cloud",
     "tests/affine-plugin",
-    "tests/affine-prototype"
+    "tests/affine-prototype",
+    "tests/affine-cloud"
   ],
   "engines": {
     "node": ">=18.16.1 <19.0.0"
