@@ -22,9 +22,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     (id?: string, mode?: 'page' | 'edgeless') => {
       const page = createPage(id);
       initEmptyPage(page); // we don't need to wait it to be loaded right?
-      if (mode) {
-        setPageMode(page.id, mode);
-      }
+      setPageMode(page.id, mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
