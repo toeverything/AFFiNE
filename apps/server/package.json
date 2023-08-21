@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.0-canary.27",
+  "version": "0.8.0-canary.28",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -64,6 +64,7 @@
     "prom-client": "^14.2.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
+    "semver": "^7.5.4",
     "socket.io": "^4.7.1",
     "ws": "^8.13.0",
     "yjs": "^13.6.6"
