@@ -8,10 +8,12 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
+  AccountIcon,
   CloudWorkspaceIcon,
   ImportIcon,
   MoreHorizontalIcon,
   PlusIcon,
+  SignOutIcon,
 } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { Popover } from '@mui/material';
@@ -61,13 +63,13 @@ const AccountMenu = () => {
   const setOpen = useSetAtom(openSettingModalAtom);
   return (
     <div>
-      <div>Unlimted</div>
+      {/* <div>Unlimted</div>
       <Divider />
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
         {t['com.affine.workspace.cloud.join']()}
-      </MenuItem>
+      </MenuItem> */}
       <MenuItem
-        icon={<ImportIcon />}
+        icon={<AccountIcon />}
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
           setOpen(prev => ({ ...prev, open: true, activeTab: 'account' }));
@@ -77,7 +79,7 @@ const AccountMenu = () => {
       </MenuItem>
       <Divider />
       <MenuItem
-        icon={<ImportIcon />}
+        icon={<SignOutIcon />}
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
           signOut().catch(console.error);
