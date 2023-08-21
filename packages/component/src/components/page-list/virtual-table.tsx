@@ -1,6 +1,8 @@
-import React, { type ComponentType, useContext, useRef, useState } from 'react';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import React, { type ComponentType, useCallback, useRef } from 'react';
 import type {
   ListChildComponentProps,
+  ListOnItemsRenderedProps,
   VariableSizeList,
   VariableSizeListProps,
 } from 'react-window';
@@ -8,21 +10,17 @@ import { VariableSizeList as List } from 'react-window';
 
 import { Table, TableBody } from '../..';
 
-const VirtualTableContext = React.createContext<{
-  header: React.ReactNode;
-  footer: React.ReactNode;
-  top: number;
-}>({
-  header: <></>,
-  footer: <></>,
-  top: 0,
-});
+const headerAtom = atom<React.ReactNode>(null);
+const footerAtom = atom<React.ReactNode>(null);
+const topAtom = atom<number>(0);
 
 const InnerElement = React.forwardRef<
   HTMLDivElement,
   React.HTMLProps<HTMLDivElement>
 >(function Inner({ children, ...rest }, ref) {
-  const { header, footer, top } = useContext(VirtualTableContext);
+  const [header] = useAtom(headerAtom);
+  const [footer] = useAtom(footerAtom);
+  const top = useAtomValue(topAtom);
 
   return (
     <div {...rest} ref={ref}>
@@ -44,47 +42,61 @@ const InnerElement = React.forwardRef<
   );
 });
 
+type VirtualTableProps<T> = {
+  header?: React.ReactNode;
+  footer?: React.ReactNode;
+  children: ComponentType<ListChildComponentProps<T>>;
+} & Omit<VariableSizeListProps<T>, 'children' | 'innerElementType'>;
+
 export function VirtualTable<T>({
   children,
   header,
   footer,
   ...rest
-}: {
-  header?: React.ReactNode;
-  footer?: React.ReactNode;
-  children: ComponentType<ListChildComponentProps<T>>;
-} & Omit<VariableSizeListProps<T>, 'children' | 'innerElementType'>) {
-  const [top, setTop] = useState(0);
+}: VirtualTableProps<T>) {
   const listRef = useRef<VariableSizeList | null>();
+  const setTop = useSetAtom(topAtom);
+  const setHeader = useSetAtom(headerAtom);
+  const setFooter = useSetAtom(footerAtom);
+  setHeader(header);
+  setFooter(footer);
 
-  return (
-    <VirtualTableContext.Provider value={{ header, footer, top }}>
-      <List
-        {...rest}
-        innerElementType={InnerElement}
-        onItemsRendered={({
+  const onItemsRendered = useCallback(
+    ({
+      overscanStartIndex,
+      overscanStopIndex,
+      visibleStartIndex,
+      visibleStopIndex,
+    }: ListOnItemsRenderedProps) => {
+      if (!listRef.current) return;
+
+      const getItemStyle = (
+        listRef.current as unknown as {
+          _getItemStyle: (index: number) => { top: number };
+        }
+      )._getItemStyle;
+
+      const { top } = getItemStyle(overscanStartIndex);
+      setTop(top);
+      if (rest.onItemsRendered)
+        rest.onItemsRendered({
           overscanStartIndex,
           overscanStopIndex,
           visibleStartIndex,
           visibleStopIndex,
-        }) => {
-          if (!listRef.current) return;
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          const { top } = listRef.current._getItemStyle(overscanStartIndex);
-          setTop(top);
-          rest.onItemsRendered &&
-            rest.onItemsRendered({
-              overscanStartIndex,
-              overscanStopIndex,
-              visibleStartIndex,
-              visibleStopIndex,
-            });
-        }}
-        ref={el => (listRef.current = el)}
-      >
-        {children}
-      </List>
-    </VirtualTableContext.Provider>
+        });
+    },
+    [rest, setTop]
+  );
+
+  return (
+    <List
+      {...rest}
+      innerElementType={InnerElement}
+      onItemsRendered={onItemsRendered}
+      ref={el => (listRef.current = el)}
+    >
+      {children}
+    </List>
   );
 }
