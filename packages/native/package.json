@@ -38,5 +38,5 @@
     "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 TS_NODE_PROJECT=./tsconfig.json node --test --loader ts-node/esm --experimental-specifier-resolution=node ./__tests__/**/*.mts",
     "version": "napi version"
   },
-  "version": "0.8.0-beta.0"
+  "version": "0.8.0-beta.1"
 }
