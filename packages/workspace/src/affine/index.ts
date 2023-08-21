@@ -26,13 +26,6 @@ function getIoManager(): Manager {
   return ioManager;
 }
 
-function trimGuid(ws: string, guid: string) {
-  if (guid.startsWith(`${ws}:space:`)) {
-    return guid.substring(ws.length + 1);
-  }
-
-  return guid;
-}
 export const createAffineDataSource = (
   id: string,
   rootDoc: Doc,
@@ -58,7 +51,7 @@ export const createAffineDataSource = (
           'doc-load',
           {
             workspaceId: rootDoc.guid,
-            guid: trimGuid(rootDoc.guid, guid),
+            guid,
             stateVector,
           },
           (update: Error | string | null) => {
@@ -75,7 +68,7 @@ export const createAffineDataSource = (
     sendDocUpdate: async (guid: string, update: Uint8Array) => {
       socket.emit('client-update', {
         workspaceId: rootDoc.guid,
-        guid: trimGuid(rootDoc.guid, guid),
+        guid,
         update: await uint8ArrayToBase64(update),
       });
 

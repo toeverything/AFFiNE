@@ -47,4 +47,4 @@ runs:
       shell: bash
       run: node ./.github/actions/deploy/deploy.mjs
       env:
-        BUILD_TYPE: '${{ inputs.env }}'
+        BUILD_TYPE: '${{ inputs.build-type }}'

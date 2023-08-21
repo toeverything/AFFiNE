@@ -7,10 +7,9 @@ on:
       - v0.9.x-staging
   workflow_dispatch:
     inputs:
-      build-type:
+      flavor:
         description: 'Build type (canary, beta, internal or stable)'
         type: string
-        required: true
         default: canary
 
 env:
@@ -22,7 +21,7 @@ jobs:
   build-server:
     name: Build Server
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.build-type }}
+    environment: ${{ github.event.inputs.flavor }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -54,7 +53,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.build-type }}
+          BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: true
           TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
       - name: Upload core artifact
@@ -67,7 +66,7 @@ jobs:
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.build-type }}
+    environment: ${{ github.event.inputs.flavor }}
 
     steps:
       - uses: actions/checkout@v3
@@ -91,7 +90,7 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.build-type }}
+    environment: ${{ github.event.inputs.flavor }}
     needs:
       - build-server
       - build-core
@@ -166,7 +165,7 @@ jobs:
 
   deploy:
     name: Deploy to cluster
-    environment: ${{ github.event.inputs.build-type }}
+    environment: ${{ github.event.inputs.flavor }}
     permissions:
       contents: 'write'
       id-token: 'write'
@@ -178,7 +177,7 @@ jobs:
       - name: Deploy to dev
         uses: ./.github/actions/deploy
         with:
-          build-type: ${{ github.event.inputs.build-type }}
+          build-type: ${{ github.event.inputs.flavor }}
           gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
           gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
           service-account: ${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}
@@ -186,6 +185,7 @@ jobs:
           cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

@@ -24,7 +24,11 @@ import { useSetAtom } from 'jotai';
 import { signOut, useSession } from 'next-auth/react';
 import { useCallback } from 'react';
 
-import { openAuthModalAtom, openSettingModalAtom } from '../../../atoms';
+import {
+  openAuthModalAtom,
+  openDisableCloudAlertModalAtom,
+  openSettingModalAtom,
+} from '../../../atoms';
 import type { AllWorkspace } from '../../../shared';
 import {
   StyledCreateWorkspaceCardPill,
@@ -64,7 +68,7 @@ const AccountMenu = () => {
   return (
     <div>
       {/* <div>Unlimted</div>
-      <Divider />
+      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
         {t['com.affine.workspace.cloud.join']()}
       </MenuItem> */}
@@ -148,6 +152,7 @@ export const WorkspaceListModal = ({
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openAuthModalAtom);
+  const setDisableCloudOpen =  useSetAtom(openDisableCloudAlertModalAtom);
   // TODO: AFFiNE Cloud support
   const { data: session, status } = useSession();
   const isLoggedIn = status === 'authenticated' ? true : false;
@@ -186,10 +191,15 @@ export const WorkspaceListModal = ({
                 padding: '0px 12px',
               }}
               onClick={async () => {
-                if (runtimeConfig.enableCloud) {
-                  setOpen(prev => ({ ...prev, open: true }));
-                }
-              }}
+              if (!runtimeConfig.enableCloud) {
+                setDisableCloudOpen(true);
+              } else {
+                setOpen(state=> ({
+                  ...state,
+                  open: true,
+                }));
+              }
+            }}
               data-testid="cloud-signin-button"
             >
               <StyledCreateWorkspaceCardPillContent>

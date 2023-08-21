@@ -144,7 +144,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
-      <Divider />
+      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       <MenuItem
         icon={<DuplicateIcon />}
         data-testid="editor-option-menu-duplicate"
@@ -162,7 +162,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         {t['Import']()}
       </MenuItem>
       <Export />
-      <Divider />
+      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
       <MoveToTrash
         data-testid="editor-option-menu-delete"
         onItemClick={() => {

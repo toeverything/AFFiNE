@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { type Atom, atom, useAtomValue } from 'jotai';
 
@@ -14,7 +13,11 @@ function getPageReferences(page: Page): string[] {
     .filter(Boolean);
 }
 
-const getPageReferencesAtom = (page: Page) => {
+const getPageReferencesAtom = (page: Page | null) => {
+  if (!page) {
+    return atom([]);
+  }
+
   if (!weakMap.has(page)) {
     const baseAtom = atom<string[]>(getPageReferences(page));
     baseAtom.onMount = set => {
@@ -35,6 +38,5 @@ export function useBlockSuitePageReferences(
   pageId: string
 ): string[] {
   const page = useBlockSuiteWorkspacePage(blockSuiteWorkspace, pageId);
-  assertExists(page);
   return useAtomValue(getPageReferencesAtom(page));
 }
