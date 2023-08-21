@@ -213,6 +213,8 @@ function migrateBlocks(oldDoc: YDoc, newDoc: YDoc) {
   const originalVersions = originalMeta.get('versions') as YMap<number>;
   const originalPages = originalMeta.get('pages') as YArray<YMap<unknown>>;
   originalPages.forEach(page => {
+    let pageBlock: YMap<unknown> | undefined;
+    const surfaceBlocks: YMap<unknown>[] = [];
     const id = page.get('id') as string;
     const spaceId = id.startsWith('space:') ? id : `space:${id}`;
     const originalBlocks = oldDoc.getMap(spaceId) as YMap<unknown>;
@@ -223,10 +225,27 @@ function migrateBlocks(oldDoc: YDoc, newDoc: YDoc) {
       const blockData = value.clone();
       blocks.set(key, blockData);
       const flavour = blockData.get('sys:flavour') as string;
+      if (flavour === 'affine:page') {
+        pageBlock = blockData;
+      } else if (flavour === 'affine:surface') {
+        surfaceBlocks.push(blockData);
+      }
       const version = originalVersions.get(flavour);
       if (version !== undefined) {
         runBlockMigration(flavour, blockData, version);
       }
+    });
+
+    if (!pageBlock) {
+      console.warn('No page block fount');
+      return;
+    }
+
+    surfaceBlocks.forEach(surfaceBlock => {
+      const id = surfaceBlock.get('sys:id');
+      (
+        (pageBlock as YMap<unknown>).get('sys:children') as YArray<unknown>
+      ).push([id]);
     });
   });
 }

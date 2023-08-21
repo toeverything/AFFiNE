@@ -1,0 +1,566 @@
+{
+  "meta": {
+    "workspaceVersion": 2,
+    "blockVersions": {
+      "affine:code": 1,
+      "affine:paragraph": 1,
+      "affine:page": 2,
+      "affine:list": 1,
+      "affine:divider": 1,
+      "affine:surface": 4,
+      "affine:database": 3,
+      "affine:note": 1,
+      "affine:image": 1
+    },
+    "pages": [
+      {
+        "id": "hello-world",
+        "title": "Welcome to AFFiNE",
+        "createDate": 1692599488750,
+        "init": false,
+        "demoTitle": "Welcome to AFFiNE",
+        "jumpOnce": false,
+        "favorite": false
+      },
+      {
+        "id": "V6UKOEiFPp",
+        "title": "Demo Workspace's Pinboard",
+        "createDate": 1692599488766,
+        "isRootPinboard": true
+      },
+      {
+        "id": "KnEQRZEM-f",
+        "title": "only shape",
+        "createDate": 1692599528579
+      },
+      {
+        "id": "7R-WHACBvc",
+        "title": "only brush",
+        "createDate": 1692599542032
+      },
+      {
+        "id": "IEZqYvhesI",
+        "title": "only connector",
+        "createDate": 1692599552958
+      }
+    ],
+    "name": "Demo Workspace",
+    "pageVersion": 1
+  },
+  "spaces": {
+    "space:hello-world": {
+      "blocks": {
+        "zzayakZsYj": {
+          "sys:id": "zzayakZsYj",
+          "sys:flavour": "affine:page",
+          "sys:children": ["p6syvXbNdb", "6R25cpgFZm", "ypHgcZ8NM1"],
+          "prop:title": "Welcome to AFFiNE"
+        },
+        "ypHgcZ8NM1": {
+          "sys:id": "ypHgcZ8NM1",
+          "sys:flavour": "affine:surface",
+          "sys:children": [],
+          "prop:elements": {
+            "_bxYckf8gY": {
+              "id": "_bxYckf8gY",
+              "index": "a1",
+              "type": "shape",
+              "xywh": "[-365,389.5,223,211]",
+              "shapeType": "rect",
+              "radius": 0,
+              "filled": false,
+              "fillColor": "--affine-palette-transparent",
+              "strokeWidth": 4,
+              "strokeColor": "--affine-palette-line-black",
+              "strokeStyle": "solid"
+            },
+            "Nef8h__a-z": {
+              "id": "Nef8h__a-z",
+              "index": "a2",
+              "type": "shape",
+              "xywh": "[-117,650.5,134,190]",
+              "shapeType": "diamond",
+              "radius": 0,
+              "filled": false,
+              "fillColor": "--affine-palette-transparent",
+              "strokeWidth": 4,
+              "strokeColor": "--affine-palette-line-black",
+              "strokeStyle": "solid"
+            },
+            "jN9jTiSD-u": {
+              "id": "jN9jTiSD-u",
+              "index": "a3",
+              "type": "shape",
+              "xywh": "[-342,794.5,164,137]",
+              "shapeType": "ellipse",
+              "radius": 0,
+              "filled": false,
+              "fillColor": "--affine-palette-transparent",
+              "strokeWidth": 4,
+              "strokeColor": "--affine-palette-line-black",
+              "strokeStyle": "solid"
+            },
+            "FZJ66Ro89f": {
+              "id": "FZJ66Ro89f",
+              "index": "a4",
+              "type": "connector",
+              "mode": 1,
+              "source": {
+                "id": "Nef8h__a-z"
+              },
+              "target": {
+                "id": "_bxYckf8gY"
+              },
+              "strokeWidth": 2,
+              "stroke": "--affine-palette-line-black"
+            },
+            "Rf0StA3BrU": {
+              "id": "Rf0StA3BrU",
+              "index": "a4",
+              "type": "connector",
+              "mode": 1,
+              "source": {
+                "id": "jN9jTiSD-u"
+              },
+              "target": {
+                "id": "Nef8h__a-z"
+              },
+              "strokeWidth": 2,
+              "stroke": "--affine-palette-line-black"
+            },
+            "hbMpGqmNvE": {
+              "id": "hbMpGqmNvE",
+              "index": "a4",
+              "type": "brush",
+              "xywh": "[619,404.5,428,132]",
+              "color": "--affine-palette-line-black",
+              "lineWidth": 4,
+              "points": "[[0,0],[7,1],[20,13],[50,50],[72,75],[92,94],[101,100],[106,102],[114,98],[122,85],[129,73],[137,60],[145,54],[150,56],[154,63],[160,77],[164,90],[169,102],[169,103],[169,103],[169,93],[172,71],[178,42],[184,33],[187,31],[189,33],[194,49],[198,71],[201,81],[203,86],[205,88],[208,83],[213,71],[224,45],[235,27],[249,16],[252,18],[257,30],[263,54],[275,98],[284,119],[288,124],[290,123],[293,117],[304,95],[311,83],[314,78],[315,78],[316,82],[319,90],[323,97],[325,100],[326,100],[331,90],[338,70],[346,50],[351,43],[353,43],[364,67],[375,97],[385,119],[389,127],[392,128],[396,124],[401,114],[406,105],[411,102],[413,104],[416,111],[420,118],[424,121]]"
+            }
+          }
+        },
+        "p6syvXbNdb": {
+          "sys:id": "p6syvXbNdb",
+          "sys:flavour": "affine:note",
+          "sys:children": [
+            "Ai5_v-l_TJ",
+            "8gR4XNNjGM",
+            "37NTMpB1tE",
+            "hs_PHh5_uH",
+            "LNaSdc0MYo",
+            "ogHrx0NGZ0",
+            "Bh5rMaGkfq",
+            "ta8q5L6FWE",
+            "SU0ooTDuho",
+            "HH3QzjPHpj",
+            "Zz5kucpCus",
+            "m7F2qe2sn7",
+            "5g0gFGG3mH",
+            "3MfS9_a6I6",
+            "hB9Pv6FAOn",
+            "sLeiE91ahx"
+          ],
+          "prop:xywh": "[0,0,720,947]",
+          "prop:background": "--affine-background-secondary-color"
+        },
+        "sLeiE91ahx": {
+          "sys:id": "sLeiE91ahx",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        },
+        "Ai5_v-l_TJ": {
+          "sys:id": "Ai5_v-l_TJ",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "h1",
+          "prop:text": "👋 Quick Start"
+        },
+        "8gR4XNNjGM": {
+          "sys:id": "8gR4XNNjGM",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "quote",
+          "prop:text": "Your content should be as feature-rich as you like. We offer you an easy and simple approach to writing your content, with advanced tools that stay out of the way when you don't need them."
+        },
+        "37NTMpB1tE": {
+          "sys:id": "37NTMpB1tE",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "h2",
+          "prop:text": "AFFiNE - not just a note taking app"
+        },
+        "hs_PHh5_uH": {
+          "sys:id": "hs_PHh5_uH",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "There are lots of apps out there, so why choose AFFiNE?"
+        },
+        "LNaSdc0MYo": {
+          "sys:id": "LNaSdc0MYo",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "AFFiNE is easy - create a workspace, collaborate with others and share it online"
+        },
+        "ogHrx0NGZ0": {
+          "sys:id": "ogHrx0NGZ0",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "AFFiNE is feature-rich - offering a wide-range of blocks that empower your docs"
+        },
+        "Bh5rMaGkfq": {
+          "sys:id": "Bh5rMaGkfq",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "AFFiNE is privacy focused - with a local-first approach, keep control of your data"
+        },
+        "ta8q5L6FWE": {
+          "sys:id": "ta8q5L6FWE",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "AFFiNE is open source - you can check us out on GitHub: toeverything/AFFiNE"
+        },
+        "SU0ooTDuho": {
+          "sys:id": "SU0ooTDuho",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "h2",
+          "prop:text": "Let's get started!"
+        },
+        "HH3QzjPHpj": {
+          "sys:id": "HH3QzjPHpj",
+          "sys:flavour": "affine:list",
+          "sys:children": [],
+          "prop:type": "bulleted",
+          "prop:text": "Create a new page and begin editing - in Paper or Edgeless",
+          "prop:checked": false
+        },
+        "Zz5kucpCus": {
+          "sys:id": "Zz5kucpCus",
+          "sys:flavour": "affine:image",
+          "sys:children": [],
+          "prop:sourceId": "DbAXkALE1HDK0LNRAtrbfxkDeTa2le7hwo6mC9BUUeY=",
+          "prop:caption": "",
+          "prop:width": 0,
+          "prop:height": 0
+        },
+        "m7F2qe2sn7": {
+          "sys:id": "m7F2qe2sn7",
+          "sys:flavour": "affine:list",
+          "sys:children": [],
+          "prop:type": "bulleted",
+          "prop:text": "Head over to Workspace Settings to find your General settings, enable multiplayer with Collaboration, share your docs with Publish and download your data with Export",
+          "prop:checked": false
+        },
+        "5g0gFGG3mH": {
+          "sys:id": "5g0gFGG3mH",
+          "sys:flavour": "affine:image",
+          "sys:children": [],
+          "prop:sourceId": "9g3XQXX9DfF_n5N3LGWuUCz2tQQxfvsUI_q1UbGU42I=",
+          "prop:caption": "",
+          "prop:width": 0,
+          "prop:height": 0
+        },
+        "3MfS9_a6I6": {
+          "sys:id": "3MfS9_a6I6",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "h2",
+          "prop:text": "Looking for more support?"
+        },
+        "hB9Pv6FAOn": {
+          "sys:id": "hB9Pv6FAOn",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "Why not come and join the awesome AFFiNE Community? Whether you want to share new ideas or interact with other like minded individuals - we look forward to having you."
+        },
+        "6R25cpgFZm": {
+          "sys:id": "6R25cpgFZm",
+          "sys:flavour": "affine:note",
+          "sys:children": ["Foto2nQMm9"],
+          "prop:xywh": "[1124,302.5,448,72]",
+          "prop:background": "--affine-background-secondary-color"
+        },
+        "Foto2nQMm9": {
+          "sys:id": "Foto2nQMm9",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "aaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    "space:V6UKOEiFPp": {
+      "blocks": {
+        "l2vQaTPqm7": {
+          "sys:id": "l2vQaTPqm7",
+          "sys:flavour": "affine:page",
+          "sys:children": ["iCxXEpr8N3", "2KzQHhFTM4"],
+          "prop:title": "Demo Workspace's Pinboard"
+        },
+        "2KzQHhFTM4": {
+          "sys:id": "2KzQHhFTM4",
+          "sys:flavour": "affine:surface",
+          "sys:children": [],
+          "prop:elements": {}
+        },
+        "iCxXEpr8N3": {
+          "sys:id": "iCxXEpr8N3",
+          "sys:flavour": "affine:note",
+          "sys:children": [
+            "XeYOKMiixH",
+            "Ujcg3tNpzH",
+            "b3IywnmYoX",
+            "JFEcC5ZZ4m",
+            "zUcXAycTnv",
+            "x9koIYpW6w",
+            "6xf-uZlrKA",
+            "Z7QaEIORaQ",
+            "cJJkZkVfte",
+            "HRv5ugeyxc",
+            "hCoNZ0ltaV"
+          ],
+          "prop:xywh": "[0,0,720,514]",
+          "prop:background": "--affine-background-secondary-color"
+        },
+        "XeYOKMiixH": {
+          "sys:id": "XeYOKMiixH",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "a"
+        },
+        "Ujcg3tNpzH": {
+          "sys:id": "Ujcg3tNpzH",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "b"
+        },
+        "b3IywnmYoX": {
+          "sys:id": "b3IywnmYoX",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "c"
+        },
+        "JFEcC5ZZ4m": {
+          "sys:id": "JFEcC5ZZ4m",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "sd"
+        },
+        "zUcXAycTnv": {
+          "sys:id": "zUcXAycTnv",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": "d"
+        },
+        "x9koIYpW6w": {
+          "sys:id": "x9koIYpW6w",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        },
+        "6xf-uZlrKA": {
+          "sys:id": "6xf-uZlrKA",
+          "sys:flavour": "affine:code",
+          "sys:children": [],
+          "prop:text": "\nsdaf",
+          "prop:language": "Plain Text"
+        },
+        "Z7QaEIORaQ": {
+          "sys:id": "Z7QaEIORaQ",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        },
+        "cJJkZkVfte": {
+          "sys:id": "cJJkZkVfte",
+          "sys:flavour": "affine:divider",
+          "sys:children": []
+        },
+        "HRv5ugeyxc": {
+          "sys:id": "HRv5ugeyxc",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        },
+        "hCoNZ0ltaV": {
+          "sys:id": "hCoNZ0ltaV",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "quote",
+          "prop:text": "alksdfjlkasdf"
+        }
+      }
+    },
+    "space:KnEQRZEM-f": {
+      "blocks": {
+        "F0IehK2xo_": {
+          "sys:id": "F0IehK2xo_",
+          "sys:flavour": "affine:page",
+          "sys:children": ["9svbEw3jqY", "_5P0wgaAYv"],
+          "prop:title": "only shape"
+        },
+        "_5P0wgaAYv": {
+          "sys:id": "_5P0wgaAYv",
+          "sys:flavour": "affine:surface",
+          "sys:children": [],
+          "prop:elements": {
+            "Lxc4SRMMvM": {
+              "id": "Lxc4SRMMvM",
+              "index": "a1",
+              "type": "shape",
+              "xywh": "[-72,257,240,255]",
+              "shapeType": "rect",
+              "radius": 0,
+              "filled": false,
+              "fillColor": "--affine-palette-transparent",
+              "strokeWidth": 4,
+              "strokeColor": "--affine-palette-line-black",
+              "strokeStyle": "solid"
+            },
+            "Qpw7WZJabC": {
+              "id": "Qpw7WZJabC",
+              "index": "a2",
+              "type": "shape",
+              "xywh": "[273,189,230,236]",
+              "shapeType": "diamond",
+              "radius": 0,
+              "filled": false,
+              "fillColor": "--affine-palette-transparent",
+              "strokeWidth": 4,
+              "strokeColor": "--affine-palette-line-black",
+              "strokeStyle": "solid"
+            },
+            "Nq5e7T8cCF": {
+              "id": "Nq5e7T8cCF",
+              "index": "a3",
+              "type": "shape",
+              "xywh": "[-43,-230,252,374]",
+              "shapeType": "triangle",
+              "radius": 0,
+              "filled": false,
+              "fillColor": "--affine-palette-transparent",
+              "strokeWidth": 4,
+              "strokeColor": "--affine-palette-line-black",
+              "strokeStyle": "solid"
+            }
+          }
+        },
+        "9svbEw3jqY": {
+          "sys:id": "9svbEw3jqY",
+          "sys:flavour": "affine:note",
+          "sys:children": ["23AUUmTIG6"],
+          "prop:xywh": "[0,0,720,72]",
+          "prop:background": "--affine-background-secondary-color"
+        },
+        "23AUUmTIG6": {
+          "sys:id": "23AUUmTIG6",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        }
+      }
+    },
+    "space:7R-WHACBvc": {
+      "blocks": {
+        "Z1ZvYDXO2P": {
+          "sys:id": "Z1ZvYDXO2P",
+          "sys:flavour": "affine:page",
+          "sys:children": ["38qjPiJ8T3", "PaUYJYUCqy"],
+          "prop:title": "only brush"
+        },
+        "PaUYJYUCqy": {
+          "sys:id": "PaUYJYUCqy",
+          "sys:flavour": "affine:surface",
+          "sys:children": [],
+          "prop:elements": {
+            "IO1pY9x4DQ": {
+              "id": "IO1pY9x4DQ",
+              "index": "a1",
+              "type": "brush",
+              "xywh": "[213,37,789,233]",
+              "color": "--affine-palette-line-black",
+              "lineWidth": 4,
+              "points": "[[0,229],[66,172],[92,165],[120,168],[140,190],[142,197],[144,203],[148,206],[156,204],[175,190],[215,160],[240,142],[257,131],[265,130],[268,136],[269,146],[269,158],[269,163],[270,164],[275,157],[284,140],[295,120],[307,107],[312,106],[319,120],[324,138],[328,157],[336,173],[340,176],[342,176],[350,169],[380,132],[396,120],[406,120],[411,124],[418,133],[423,142],[428,150],[432,151],[436,150],[474,116],[493,96],[512,78],[522,73],[524,75],[529,92],[535,110],[541,123],[544,126],[547,127],[556,112],[562,95],[567,82],[570,78],[570,78],[572,94],[575,110],[580,124],[584,130],[589,129],[596,115],[605,90],[612,66],[617,53],[621,53],[624,63],[629,83],[639,110],[648,117],[661,116],[680,103],[714,68],[741,37],[773,6],[781,1],[785,0],[785,0]]"
+            }
+          }
+        },
+        "38qjPiJ8T3": {
+          "sys:id": "38qjPiJ8T3",
+          "sys:flavour": "affine:note",
+          "sys:children": ["Yve0CPSXi0"],
+          "prop:xywh": "[0,0,720,72]",
+          "prop:background": "--affine-background-secondary-color"
+        },
+        "Yve0CPSXi0": {
+          "sys:id": "Yve0CPSXi0",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        }
+      }
+    },
+    "space:IEZqYvhesI": {
+      "blocks": {
+        "o8syyFmV_0": {
+          "sys:id": "o8syyFmV_0",
+          "sys:flavour": "affine:page",
+          "sys:children": ["tU7bTWznq5", "aaQEYQERL3"],
+          "prop:title": "only connector"
+        },
+        "aaQEYQERL3": {
+          "sys:id": "aaQEYQERL3",
+          "sys:flavour": "affine:surface",
+          "sys:children": [],
+          "prop:elements": {
+            "w6B_tYlspK": {
+              "id": "w6B_tYlspK",
+              "index": "a1",
+              "type": "connector",
+              "mode": 1,
+              "source": {
+                "position": [null, null]
+              },
+              "target": {
+                "position": [null, null]
+              },
+              "strokeWidth": 2,
+              "stroke": "--affine-palette-line-black"
+            }
+          }
+        },
+        "tU7bTWznq5": {
+          "sys:id": "tU7bTWznq5",
+          "sys:flavour": "affine:note",
+          "sys:children": ["-67UDqy4Es"],
+          "prop:xywh": "[0,0,720,72]",
+          "prop:background": "--affine-background-secondary-color"
+        },
+        "-67UDqy4Es": {
+          "sys:id": "-67UDqy4Es",
+          "sys:flavour": "affine:paragraph",
+          "sys:children": [],
+          "prop:type": "text",
+          "prop:text": ""
+        }
+      }
+    }
+  }
+}
