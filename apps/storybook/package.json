@@ -16,7 +16,7 @@
     "@storybook/addon-storysource": "^7.3.1",
     "@storybook/blocks": "^7.3.1",
     "@storybook/builder-vite": "^7.3.1",
-    "@storybook/jest": "^0.1.0",
+    "@storybook/jest": "^0.2.1",
     "@storybook/react": "^7.3.1",
     "@storybook/react-vite": "^7.3.1",
     "@storybook/test-runner": "^0.13.0",
