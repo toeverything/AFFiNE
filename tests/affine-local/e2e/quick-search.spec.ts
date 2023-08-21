@@ -174,3 +174,50 @@ test('Not show navigation path if page is not a subpage or current page is not i
   await openQuickSearchByShortcut(page);
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
 });
+
+test('Assert the recent browse pages are on the recent list', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+
+  // create first page
+  await newPage(page);
+  await page.keyboard.insertText('sgtokidoki');
+  await page.waitForTimeout(300);
+
+  // create second page
+  await openQuickSearchByShortcut(page);
+  const addNewPage = page.getByTestId('quick-search-add-new-page');
+  await addNewPage.click();
+  await page.keyboard.insertText('theliquidhorse');
+  await page.waitForTimeout(300);
+
+  // create thrid page
+  await openQuickSearchByShortcut(page);
+  await addNewPage.click();
+  await page.keyboard.insertText('battlekot');
+  await page.waitForTimeout(300);
+
+  await openQuickSearchByShortcut(page);
+  // check does all 3 pages exists on recent page list
+  await expect(page.getByRole('button', { name: 'battlekot' })).toHaveCount(1);
+  await expect(
+    page.getByRole('button', { name: 'theliquidhorse' })
+  ).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'sgtokidoki' })).toHaveCount(1);
+
+  // create forth page, and check does the recent page list only contains 3 pages
+  await openHomePage(page);
+  await page.waitForTimeout(1000);
+  await openQuickSearchByShortcut(page);
+  await addNewPage.click();
+  await page.waitForTimeout(300);
+  await page.keyboard.insertText('affine is the best');
+  await page.waitForTimeout(300);
+  await openQuickSearchByShortcut(page);
+  await expect(
+    page.getByRole('button', { name: 'affine is the best' })
+  ).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'sgtokidoki' })).toHaveCount(0);
+});
