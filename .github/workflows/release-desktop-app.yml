@@ -207,12 +207,12 @@ jobs:
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\', '') }) -join ' ')
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 
       - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out -DestinationPath archive.zip
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/* -DestinationPath archive.zip
 
       - name: Save packaged artifacts for signing
         uses: actions/upload-artifact@v3
@@ -261,12 +261,12 @@ jobs:
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/make -DestinationPath archive.zip
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/make/* -DestinationPath archive.zip
 
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\', '') }) -join ' ')
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\make\', '') }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 

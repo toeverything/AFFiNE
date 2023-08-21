@@ -34,7 +34,7 @@ jobs:
         shell: cmd
         run: |
           cd ${{ env.ARCHIVE_DIR }}
-          7za a ./out signed.zip
+          7za a signed.zip out\*
       - name: upload
         uses: actions/upload-artifact@v3
         with:
