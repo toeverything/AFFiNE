@@ -29,7 +29,7 @@ export const DefaultAvatar = ({ name: propsName }: { name: string }) => {
     return colorsSchema[index % colorsSchema.length];
   }, [name]);
 
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<number>();
 
   const [topColor, middleColor, bottomColor] = colors;
   const [isHover, setIsHover] = useState(false);
@@ -38,7 +38,7 @@ export const DefaultAvatar = ({ name: propsName }: { name: string }) => {
     <div
       className={DefaultAvatarContainerStyle}
       onMouseEnter={() => {
-        timer.current = setTimeout(() => {
+        timer.current = window.setTimeout(() => {
           setIsHover(true);
         }, 300);
       }}
