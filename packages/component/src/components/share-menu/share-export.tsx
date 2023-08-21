@@ -1,3 +1,5 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+
 import {
   ExportToHtmlMenuItem,
   ExportToMarkdownMenuItem,
@@ -8,10 +10,11 @@ import * as styles from './index.css';
 // import type { ShareMenuProps } from './share-menu';
 
 export const ShareExport = () => {
+  const t = useAFFiNEI18N();
   return (
     <>
       <div className={styles.titleContainerStyle} style={{ fontWeight: '500' }}>
-        Share via Export
+        {t['com.affine.share-menu.ShareViaExport']()}
       </div>
       <div>
         <ExportToPdfMenuItem
@@ -37,7 +40,7 @@ export const ShareExport = () => {
       </div>
       <div className={styles.rowContainerStyle}>
         <div className={styles.descriptionStyle}>
-          Download a static copy of your page to share with others.
+          {t['com.affine.share-menu.ShareViaExportDescription']()}
         </div>
       </div>
     </>

@@ -501,5 +501,12 @@
   "Create a collection": "Create a collection",
   "Filters": "Filters",
   "Untitled Collection": "Untitled Collection",
-  "Add Filter": "Add Filter"
+  "Add Filter": "Add Filter",
+  "com.affine.share-menu.shareButton": "Share",
+  "com.affine.share-menu.sharedButton": "Shared",
+  "com.affine.share-menu.SharePage": "Share Page",
+  "com.affine.share-menu.SharedPage": "Shared Page",
+  "com.affine.share-menu.EnableCloudDescription": "Sharing page publicly requires AFFiNE Cloud service.",
+  "com.affine.share-menu.ShareViaExport": "Share via Export",
+  "com.affine.share-menu.ShareViaExportDescription": "Download a static copy of your page to share with others."
 }

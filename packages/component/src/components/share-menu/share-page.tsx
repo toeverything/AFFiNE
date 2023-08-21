@@ -17,19 +17,20 @@ import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 
 export const LocalSharePage = (props: ShareMenuProps) => {
+  const t = useAFFiNEI18N();
   return (
     <>
       <div className={styles.titleContainerStyle}>
         <WebIcon fontSize={16} />
-        Share Page
+        {t['com.affine.share-menu.SharePage']()}
       </div>
       <div className={styles.rowContainerStyle}>
         <div className={styles.descriptionStyle}>
-          Sharing page publicly requires AFFiNE Cloud service.
+          {t['com.affine.share-menu.EnableCloudDescription']()}
         </div>
         <div>
           <Button onClick={props.onEnableAffineCloud} type="primary">
-            Enable AFFiNE Cloud
+            {t['Enable AFFiNE Cloud']()}
           </Button>
         </div>
       </div>
