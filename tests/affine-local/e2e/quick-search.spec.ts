@@ -216,6 +216,7 @@ test('Assert the recent browse pages are on the recent list', async ({
   await page.keyboard.insertText('affine is the best');
   await page.waitForTimeout(300);
   await openQuickSearchByShortcut(page);
+  await page.waitForTimeout(300);
   await expect(
     page.getByRole('button', { name: 'affine is the best' })
   ).toHaveCount(1);
