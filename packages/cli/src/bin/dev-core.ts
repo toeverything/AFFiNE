@@ -9,6 +9,41 @@ import { config } from 'dotenv';
 import { type BuildFlags, projectRoot } from '../config/index.js';
 import { watchI18N } from '../util/i18n.js';
 
+const cwd = path.resolve(projectRoot, 'apps', 'core');
+
+const flags: BuildFlags = {
+  distribution: 'browser',
+  mode: 'development',
+  channel: 'canary',
+  coverage: false,
+  localBlockSuite: undefined,
+};
+
+if (process.argv.includes('--static')) {
+  await awaitChildProcess(
+    spawn(
+      'node',
+      [
+        '--loader',
+        'ts-node/esm/transpile-only',
+        '../../node_modules/webpack/bin/webpack.js',
+        'serve',
+        '--mode',
+        'development',
+        '--env',
+        'flags=' + Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
+      ].filter((v): v is string => !!v),
+      {
+        cwd,
+        stdio: 'inherit',
+        shell: true,
+        env: process.env,
+      }
+    )
+  );
+  process.exit(0);
+}
+
 const files = ['.env', '.env.local'];
 
 for (const file of files) {
@@ -20,16 +55,6 @@ for (const file of files) {
     break;
   }
 }
-
-const cwd = path.resolve(projectRoot, 'apps', 'core');
-
-const flags: BuildFlags = {
-  distribution: 'browser',
-  mode: 'development',
-  channel: 'canary',
-  coverage: false,
-  localBlockSuite: undefined,
-};
 
 const buildFlags = await p.group(
   {

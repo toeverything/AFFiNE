@@ -103,6 +103,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
+    "@node-rs/argon2": ^1.5.2
     "@playwright/test": ^1.37.0
   peerDependencies:
     "@playwright/test": "*"
@@ -298,7 +299,6 @@ __metadata:
     swc-plugin-coverage-instrument: ^0.0.20
     swr: 2.2.1
     thread-loader: ^4.0.2
-    ts-node: ^10.9.1
     valtio: ^1.10.6
     webpack: ^5.88.2
     webpack-cli: ^5.1.4
