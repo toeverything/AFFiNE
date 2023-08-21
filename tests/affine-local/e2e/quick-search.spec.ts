@@ -1,7 +1,11 @@
 import { test } from '@affine-test/kit/playwright';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  getBlockSuiteEditorTitle,
+  newPage,
+  waitEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page) =>
@@ -215,7 +219,12 @@ test('Assert the recent browse pages are on the recent list', async ({
   await openQuickSearchByShortcut(page);
   await addNewPage.click();
   await page.waitForTimeout(200);
-  await page.keyboard.insertText('affine is the best');
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('affine is the best', {
+      delay: 50,
+    });
+  }
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
   {
