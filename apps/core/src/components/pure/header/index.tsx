@@ -125,7 +125,7 @@ export const Header = ({ left, center, right }: HeaderPros) => {
     <>
       <TopTip />
       <div
-        className={style.header}
+        className={clsx(style.header, 'header')}
         // data-has-warning={showWarning}
         data-open={open}
         data-sidebar-floating={appSidebarFloating}

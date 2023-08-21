@@ -171,7 +171,7 @@ export const PageList = ({
 }: PageListProps) => {
   const virtualTableHeight = useVirtualTableHeight(
     '.main-container',
-    '.header-container'
+    '.header'
   );
   const sorter = useSorter<ListData>({
     data: list,

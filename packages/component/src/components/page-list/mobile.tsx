@@ -72,7 +72,7 @@ export const AllPageListMobileView = ({
 }) => {
   const virtualTableHeight = useVirtualTableHeight(
     '.main-container',
-    '.header-container'
+    '.header'
   );
 
   return (
