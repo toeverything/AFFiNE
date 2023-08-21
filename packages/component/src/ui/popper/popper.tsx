@@ -69,7 +69,7 @@ export const Popper = ({
     }
     window.clearTimeout(pointerLeaveTimer.current);
 
-    pointerEnterTimer.current = window.setTimeout(() => {
+    pointerEnterTimer.current = window.window.setTimeout(() => {
       setVisible(true);
     }, pointerEnterDelay);
   };
@@ -81,7 +81,7 @@ export const Popper = ({
       return;
     }
     window.clearTimeout(pointerEnterTimer.current);
-    pointerLeaveTimer.current = window.setTimeout(() => {
+    pointerLeaveTimer.current = window.window.setTimeout(() => {
       setVisible(false);
     }, pointerLeaveDelay);
   };

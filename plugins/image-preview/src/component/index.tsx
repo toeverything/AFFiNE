@@ -72,10 +72,10 @@ const ImagePreviewModalImpl = (
   const [hasPlayedAnimation, setHasPlayedAnimation] = useState<boolean>(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: number;
 
     if (!isOpen) {
-      timeoutId = setTimeout(() => {
+      timeoutId = window.setTimeout(() => {
         props.onClose();
         setIsOpen(true);
       }, 300);

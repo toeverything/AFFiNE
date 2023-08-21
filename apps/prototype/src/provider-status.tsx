@@ -25,11 +25,11 @@ const App = () => {
       <button
         data-testid="start-button"
         onClick={useCallback(() => {
-          disposeRef.current = setInterval(() => {
+          disposeRef.current = window.setInterval(() => {
             const counter = counterRef.current;
             map.set('counter', counter + 1);
             counterRef.current = counter + 1;
-          }, 0) as any;
+          }, 0);
         }, [])}
       >
         start writing
