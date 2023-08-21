@@ -1,7 +1,11 @@
 import { test } from '@affine-test/kit/playwright';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  getBlockSuiteEditorTitle,
+  newPage,
+  waitEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page) =>
@@ -184,40 +188,51 @@ test('Assert the recent browse pages are on the recent list', async ({
   // create first page
   await newPage(page);
   await page.keyboard.insertText('sgtokidoki');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
 
   // create second page
   await openQuickSearchByShortcut(page);
   const addNewPage = page.getByTestId('quick-search-add-new-page');
   await addNewPage.click();
   await page.keyboard.insertText('theliquidhorse');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
 
   // create thrid page
   await openQuickSearchByShortcut(page);
   await addNewPage.click();
   await page.keyboard.insertText('battlekot');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
 
   await openQuickSearchByShortcut(page);
-  // check does all 3 pages exists on recent page list
-  await expect(page.getByRole('button', { name: 'battlekot' })).toHaveCount(1);
-  await expect(
-    page.getByRole('button', { name: 'theliquidhorse' })
-  ).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'sgtokidoki' })).toHaveCount(1);
+  await page.waitForTimeout(200);
+  {
+    // check does all 3 pages exists on recent page list
+    const quickSearchItems = page.locator('[cmdk-item]');
+    expect(await quickSearchItems.nth(0).textContent()).toBe('battlekot');
+    expect(await quickSearchItems.nth(1).textContent()).toBe('theliquidhorse');
+    expect(await quickSearchItems.nth(2).textContent()).toBe('sgtokidoki');
+  }
 
-  // create forth page, and check does the recent page list only contains 3 pages
+  // create forth page, and check does the recent page list only contains three pages
   await openHomePage(page);
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
   await addNewPage.click();
-  await page.waitForTimeout(300);
-  await page.keyboard.insertText('affine is the best');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('affine is the best', {
+      delay: 50,
+    });
+  }
+  await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
-  await expect(
-    page.getByRole('button', { name: 'affine is the best' })
-  ).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'sgtokidoki' })).toHaveCount(0);
+  {
+    const quickSearchItems = page.locator('[cmdk-item]');
+    expect(await quickSearchItems.nth(0).textContent()).toBe(
+      'affine is the best'
+    );
+    expect(await quickSearchItems.nth(1).textContent()).toBe('battlekot');
+    expect(await quickSearchItems.nth(2).textContent()).toBe('theliquidhorse');
+  }
 });

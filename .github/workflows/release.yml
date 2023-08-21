@@ -5,6 +5,13 @@ on:
     branches:
       - master
 
+env:
+  BUILD_TYPE: stable
+  APP_NAME: affine
+  COVERAGE: false
+  DISTRIBUTION: browser
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
 jobs:
   release:
     name: Try publishing npm@latest release
@@ -17,3 +24,142 @@ jobs:
         run: ./scripts/publish.sh
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  build-core:
+    name: Build @affine/core
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Plugins
+        run: yarn run build:plugins
+      - name: Build Core
+        run: yarn nx build @affine/core
+      - name: Upload core artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+          if-no-files-found: error
+
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - name: Build Server
+        run: yarn nx build @affine/server
+      - name: Upload server dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+          if-no-files-found: error
+
+  build-storage:
+    name: Build Storage
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: '-C debuginfo=1'
+    environment: development
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          target: 'x86_64-unknown-linux-gnu'
+      - name: Build Storage
+        run: yarn build:storage
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/storage/storage.node
+          if-no-files-found: error
+
+  build-docker:
+    if: github.ref == 'refs/heads/master'
+    name: Build Docker
+    runs-on: ubuntu-latest
+    needs:
+      - build-server
+      - build-core
+      - build-storage
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download core artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+      - name: Download server dist
+        uses: actions/download-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
+      - name: Setup Git short hash
+        run: |
+          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          logout: false
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build front Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/front/Dockerfile
+          tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
+
+      # setup node without cache configuration
+      # Prisma cache is not compatible with docker build cache
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+
+      - name: Install Node.js dependencies
+        run: yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
+
+      - name: Build graphql Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/node/Dockerfile
+          tags: ghcr.io/toeverything/affine-graphql:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:latest
