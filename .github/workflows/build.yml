@@ -304,11 +304,6 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
       - name: Run playwright tests
         run: yarn e2e --forbid-only
         working-directory: tests/affine-plugin
@@ -392,11 +387,6 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
@@ -440,12 +430,6 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
 
       - name: Unzip
         run: yarn unzip
