@@ -13,6 +13,14 @@ import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 import { Metrics } from '../../../metrics/metrics';
 import { DocManager } from '../../doc';
 
+function trimGuid(ws: string, guid: string) {
+  if (guid.startsWith(`${ws}:space:`)) {
+    return guid.substring(ws.length + 1);
+  }
+
+  return guid;
+}
+
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
 })
@@ -77,8 +85,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
     const update = Buffer.from(message.update, 'base64');
     client.to(message.workspaceId).emit('server-update', message);
+    const guid = trimGuid(message.workspaceId, message.guid);
 
-    await this.docManager.push(message.workspaceId, message.guid, update);
+    await this.docManager.push(message.workspaceId, guid, update);
     endTimer();
   }
 
@@ -94,19 +103,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<string | false> {
     this.metric.socketIOEventCounter(1, { event: 'doc-load' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
-    let update = await this.docManager.getLatest(
-      message.workspaceId,
-      message.guid
-    );
+    const guid = trimGuid(message.workspaceId, message.guid);
+    let update = await this.docManager.getLatest(message.workspaceId, guid);
 
     const stateVector = message.stateVector
       ? Buffer.from(message.stateVector, 'base64')
       : null;
 
     if (update && stateVector) {
-      const doc = new YDoc({ guid: message.guid });
+      const doc = new YDoc({ guid });
       applyUpdate(doc, update);
       update = Buffer.from(encodeStateAsUpdate(doc, stateVector));
+      doc.destroy();
     }
 
     endTimer();
