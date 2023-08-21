@@ -8,29 +8,22 @@ import {
 import { isDesktop } from '@affine/env/constant';
 import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
-import { SessionProvider } from 'next-auth/react';
 import type { ReactElement } from 'react';
-import { useEffect } from 'react';
 import { useCallback } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
+import { z } from 'zod';
 
 import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
-type AuthType =
-  | 'setPassword'
-  | 'signIn'
-  | 'changePassword'
-  | 'signUp'
-  | 'changeEmail';
-const authTypes: AuthType[] = [
+const authTypeSchema = z.enum([
   'setPassword',
   'signIn',
   'changePassword',
   'signUp',
   'changeEmail',
-];
+]);
 
 export const AuthPage = (): ReactElement | null => {
   const user = useCurrentUser();
@@ -72,77 +65,69 @@ export const AuthPage = (): ReactElement | null => {
     }
   }, [jumpToIndex]);
 
-  if (authType === 'signUp') {
-    return (
-      <SignUpPage
-        user={user}
-        onSetPassword={onSetPassword}
-        onOpenAffine={onOpenAffine}
-      />
-    );
+  switch (authType) {
+    case 'signUp': {
+      return (
+        <SignUpPage
+          user={user}
+          onSetPassword={onSetPassword}
+          onOpenAffine={onOpenAffine}
+        />
+      );
+    }
+    case 'signIn': {
+      return <SignInSuccessPage onOpenAffine={onOpenAffine} />;
+    }
+    case 'changePassword': {
+      return (
+        <ChangePasswordPage
+          user={user}
+          onSetPassword={onSetPassword}
+          onOpenAffine={onOpenAffine}
+        />
+      );
+    }
+    case 'setPassword': {
+      return (
+        <SetPasswordPage
+          user={user}
+          onSetPassword={onSetPassword}
+          onOpenAffine={onOpenAffine}
+        />
+      );
+    }
+    case 'changeEmail': {
+      return (
+        <ChangeEmailPage
+          user={user}
+          onChangeEmail={onChangeEmail}
+          onOpenAffine={onOpenAffine}
+        />
+      );
+    }
   }
-
-  if (authType === 'signIn') {
-    return <SignInSuccessPage onOpenAffine={onOpenAffine} />;
-  }
-  if (authType === 'changePassword') {
-    return (
-      <ChangePasswordPage
-        user={user}
-        onSetPassword={onSetPassword}
-        onOpenAffine={onOpenAffine}
-      />
-    );
-  }
-  if (authType === 'setPassword') {
-    return (
-      <SetPasswordPage
-        user={user}
-        onSetPassword={onSetPassword}
-        onOpenAffine={onOpenAffine}
-      />
-    );
-  }
-  if (authType === 'changeEmail') {
-    return (
-      <ChangeEmailPage
-        user={user}
-        onChangeEmail={onChangeEmail}
-        onOpenAffine={onOpenAffine}
-      />
-    );
-  }
-
   return null;
 };
 
 export const loader: LoaderFunction = async args => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  if (!authTypes.includes(args.params.authType)) {
+  if (!args.params.authType) {
+    return redirect('/404');
+  }
+  if (!authTypeSchema.safeParse(args.params.authType).success) {
     return redirect('/404');
   }
   return null;
 };
 export const Component = () => {
-  const Page = () => {
-    const loginStatus = useCurrenLoginStatus();
-    const { jumpToExpired } = useNavigateHelper();
+  const loginStatus = useCurrenLoginStatus();
+  const { jumpToExpired } = useNavigateHelper();
 
-    useEffect(() => {
-      if (loginStatus === 'unauthenticated') {
-        jumpToExpired(RouteLogic.REPLACE);
-      }
-    }, [jumpToExpired, loginStatus]);
+  if (loginStatus === 'unauthenticated') {
+    jumpToExpired(RouteLogic.REPLACE);
+  }
 
-    if (loginStatus === 'authenticated') {
-      return <AuthPage />;
-    }
-    return null;
-  };
-  return (
-    <SessionProvider refetchOnWindowFocus>
-      <Page />
-    </SessionProvider>
-  );
+  if (loginStatus === 'authenticated') {
+    return <AuthPage />;
+  }
+  return null;
 };
