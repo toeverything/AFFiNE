@@ -15,7 +15,8 @@
     "tests/affine-legacy/*",
     "tests/affine-local",
     "tests/affine-plugin",
-    "tests/affine-prototype"
+    "tests/affine-prototype",
+    "tests/affine-cloud"
   ],
   "engines": {
     "node": ">=18.16.1 <19.0.0"

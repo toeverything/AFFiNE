@@ -53,6 +53,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/affine-cloud@workspace:tests/affine-cloud":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-cloud@workspace:tests/affine-cloud"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": ^1.37.0
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/affine-local@workspace:tests/affine-local":
   version: 0.0.0-use.local
   resolution: "@affine-test/affine-local@workspace:tests/affine-local"
