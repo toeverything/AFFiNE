@@ -7,7 +7,12 @@ import * as Toast from '@radix-ui/react-toast';
 import { IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { ReactElement } from 'react';
+import type {
+  CSSProperties,
+  Dispatch,
+  ReactElement,
+  SetStateAction,
+} from 'react';
 import {
   useCallback,
   useEffect,
@@ -40,7 +45,7 @@ export type NotificationCardProps = {
   notifications: Notification[];
   index: number;
   heights: Height[];
-  setHeights: React.Dispatch<React.SetStateAction<Height[]>>;
+  setHeights: Dispatch<SetStateAction<Height[]>>;
 };
 const typeColorMap = {
   info: {
@@ -80,7 +85,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const [animationKey, setAnimationKey] = useState(0);
   const animationRef = useRef<SVGAnimateElement>(null);
   const notificationRef = useRef<HTMLLIElement>(null);
-  const timerIdRef = useRef<NodeJS.Timeout>();
+  const timerIdRef = useRef<ReturnType<typeof setTimeout>>();
   const isFront = index === 0;
   const isVisible = index + 1 <= 3;
   const progressDuration = notification.timeout || 3000;
@@ -254,7 +259,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           '--z-index': notifications.length - index,
           '--offset': `${removed ? offsetBeforeRemove : offset.current}px`,
           '--initial-height': `${initialHeight}px`,
-        } as React.CSSProperties
+        } as CSSProperties
       }
       onPointerDown={event => {
         setOffsetBeforeRemove(offset.current);
@@ -446,7 +451,7 @@ export function NotificationCenter(): ReactElement {
         style={
           {
             '--front-toast-height': `${heights[0]?.height}px`,
-          } as React.CSSProperties
+          } as CSSProperties
         }
         className={styles.notificationCenterViewportStyle}
       />

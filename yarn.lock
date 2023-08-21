@@ -496,6 +496,7 @@ __metadata:
     "@types/affine__env": "workspace:*"
     "@types/eslint": ^8.44.2
     "@types/node": ^18.17.5
+    "@types/web": ^0.0.114
     "@typescript-eslint/eslint-plugin": ^6.4.0
     "@typescript-eslint/parser": ^6.4.0
     "@vanilla-extract/vite-plugin": ^3.8.2
@@ -12719,6 +12720,13 @@ __metadata:
   version: 0.0.16
   resolution: "@types/web-bluetooth@npm:0.0.16"
   checksum: f68a630d062202a25c46d48686ebae1cf429dc70b4578fcf13b8357b2db63e4aedfb6f6d752bd388366be46ebd19c1c9de45f8a15c2631bb79e904fdfc454f94
+  languageName: node
+  linkType: hard
+
+"@types/web@npm:^0.0.114":
+  version: 0.0.114
+  resolution: "@types/web@npm:0.0.114"
+  checksum: d8a72144dd7c9ada7d6a4558b37f14291cf16b0ba2b3254753cfe32cc1875fe718a6cfd37c567ff589460e3e68d3b7a588de4551fab5c31d1458e4af2f9c2376
   languageName: node
   linkType: hard
 

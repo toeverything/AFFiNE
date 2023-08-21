@@ -21,7 +21,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "types": ["affine__env"],
+    "types": ["affine__env", "web"],
     // Emit
     "declaration": true,
     "declarationMap": true,
@@ -41,7 +41,7 @@
     // Language and Environment
     "jsx": "preserve",
     "jsxImportSource": "@emotion/react",
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext"],
     "target": "ES2022",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, shell } from 'electron';
+import type { RequestInit } from 'undici';
 import { parse } from 'url';
 
 import { logger } from '../logger';
@@ -17,13 +18,13 @@ export const getExchangeTokenParams = (code: string) => {
     redirect_uri: redirectUri,
     grant_type: 'authorization_code',
   };
-  const requestInit: RequestInit = {
+  const requestInit = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams(postData).toString(),
-  };
+  } satisfies RequestInit;
   return { requestInit, url: tokenEndpoint };
 };
 

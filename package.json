@@ -75,6 +75,7 @@
     "@types/affine__env": "workspace:*",
     "@types/eslint": "^8.44.2",
     "@types/node": "^18.17.5",
+    "@types/web": "^0.0.114",
     "@typescript-eslint/eslint-plugin": "^6.4.0",
     "@typescript-eslint/parser": "^6.4.0",
     "@vanilla-extract/vite-plugin": "^3.8.2",
