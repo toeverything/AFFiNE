@@ -4,6 +4,7 @@ import type {
   AffinePublicWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
@@ -30,6 +31,7 @@ export interface ShareMenuProps<
 export const ShareMenu = (props: ShareMenuProps) => {
   const [isPublic] = useBlockSuiteWorkspacePageIsPublic(props.currentPage);
   const [open, setOpen] = useState(false);
+  const t = useAFFiNEI18N();
   const content = (
     <div className={styles.containerStyle}>
       <SharePage {...props} />
@@ -70,7 +72,9 @@ export const ShareMenu = (props: ShareMenuProps) => {
               : 'var(--affine-text-primary-color)',
           }}
         >
-          {isPublic ? 'Shared' : 'Share'}
+          {isPublic
+            ? t['com.affine.share-menu.sharedButton']()
+            : t['com.affine.share-menu.shareButton']()}
         </div>
       </Button>
     </Menu>
