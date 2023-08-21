@@ -1,4 +1,4 @@
-import { Menu, MenuItem } from '@affine/component';
+import { Menu, MenuItem, Tooltip } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
   AffineCloudWorkspace,
@@ -9,6 +9,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   CloudWorkspaceIcon,
+  HelpIcon,
   ImportIcon,
   MoreHorizontalIcon,
   PlusIcon,
@@ -29,6 +30,7 @@ import {
   StyledCreateWorkspaceCardPill,
   StyledCreateWorkspaceCardPillContent,
   StyledCreateWorkspaceCardPillIcon,
+  StyledHelperContainer,
   StyledImportWorkspaceCardPill,
   StyledModalBody,
   StyledModalContent,
@@ -94,6 +96,15 @@ const CloudWorkSpaceList = ({
           <StyledModalTitle>
             {t['com.affine.workspace.cloud.sync']()}
           </StyledModalTitle>
+          <Tooltip
+            content={t['Workspace description']()}
+            placement="top-start"
+            disablePortal={true}
+          >
+            <StyledHelperContainer>
+              <HelpIcon />
+            </StyledHelperContainer>
+          </Tooltip>
         </StyledModalHeaderLeft>
 
         <StyledOperationWrapper>
@@ -227,6 +238,15 @@ export const WorkspaceListModal = ({
         ) : null}
         <StyledModalHeader>
           <StyledModalTitle>{t['Local Workspace']()}</StyledModalTitle>
+          <Tooltip
+            content={t['Workspace description']()}
+            placement="top-start"
+            disablePortal={true}
+          >
+            <StyledHelperContainer>
+              <HelpIcon />
+            </StyledHelperContainer>
+          </Tooltip>
         </StyledModalHeader>
         <StyledModalContent>
           <WorkspaceList
