@@ -76,9 +76,7 @@ export const Basic: StoryFn = () => {
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
       workspace={localWorkspace}
       onEnableAffineCloud={unimplemented}
-      onOpenWorkspaceSettings={unimplemented}
       togglePagePublic={unimplemented}
-      toggleWorkspacePublish={unimplemented}
     />
   );
 };
@@ -107,9 +105,7 @@ export const AffineBasic: StoryFn = () => {
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
       workspace={affineWorkspace}
       onEnableAffineCloud={unimplemented}
-      onOpenWorkspaceSettings={unimplemented}
       togglePagePublic={unimplemented}
-      toggleWorkspacePublish={unimplemented}
     />
   );
 };
