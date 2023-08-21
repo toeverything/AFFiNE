@@ -4,6 +4,7 @@ import {
   SaveCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
+import { ShareMenu } from '@affine/component/share-menu';
 import type { Collection } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type {
@@ -11,8 +12,10 @@ import type {
   WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
+import { openDisableCloudAlertModalAtom } from '../atoms';
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
@@ -77,7 +80,10 @@ export function WorkspaceHeader({
   const setting = useCollectionManager(currentWorkspaceId);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
-
+  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
+  const handleOpenDisableCloudAlertModal = useCallback(() => {
+    setOpen(true);
+  }, [setOpen]);
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -117,6 +123,25 @@ export function WorkspaceHeader({
 
   // route in edit page
   if ('pageId' in currentEntry) {
+    const currentPage = currentWorkspace.blockSuiteWorkspace.getPage(
+      currentEntry.pageId
+    );
+    const rightItems = () => {
+      if (!currentPage) {
+        return <PluginHeader />;
+      }
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ShareMenu
+            workspace={currentWorkspace}
+            currentPage={currentPage}
+            onEnableAffineCloud={handleOpenDisableCloudAlertModal}
+            togglePagePublic={async () => {}}
+          />
+          <PluginHeader />
+        </div>
+      );
+    };
     return (
       <Header
         center={
@@ -125,7 +150,7 @@ export function WorkspaceHeader({
             pageId={currentEntry.pageId}
           />
         }
-        right={<PluginHeader />}
+        right={rightItems()}
       />
     );
   }
