@@ -1,5 +1,6 @@
 import { FlexWrapper, Input, toast, Wrapper } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
@@ -7,7 +8,6 @@ import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-s
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../shared';
 import { Upload } from '../../pure/file-upload';
 import * as style from './style.css';
 
