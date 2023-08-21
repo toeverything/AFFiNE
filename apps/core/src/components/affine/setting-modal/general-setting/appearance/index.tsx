@@ -130,9 +130,9 @@ export const AppearanceSettings = () => {
         </SettingRow>
         {environment.isDesktop ? (
           <SettingRow
-            name={t['Client Border Style']()}
+            name={t['com.affine.core.appearanceSettings.clientBorder.title']()}
             desc={t[
-              'com.affine.settings.appearance.border-style-description'
+              'com.affine.core.appearanceSettings.clientBorder.description'
             ]()}
             data-testid="client-border-style-trigger"
           >
@@ -144,8 +144,8 @@ export const AppearanceSettings = () => {
         ) : null}
 
         <SettingRow
-          name={t['Full width Layout']()}
-          desc={t['com.affine.settings.appearance.full-width-description']()}
+          name={t['com.affine.core.appearanceSettings.fullWidth.title']()}
+          desc={t['com.affine.core.appearanceSettings.fullWidth.description']()}
         >
           <Switch
             data-testid="full-width-layout-trigger"
@@ -155,9 +155,9 @@ export const AppearanceSettings = () => {
         </SettingRow>
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
-            name={t['Window frame style']()}
+            name={t['com.affine.core.appearanceSettings.windowFrame.title']()}
             desc={t[
-              'com.affine.settings.appearance.window-frame-description'
+              'com.affine.core.appearanceSettings.windowFrame.description'
             ]()}
           >
             <RadioButtonGroup
@@ -171,7 +171,9 @@ export const AppearanceSettings = () => {
               {windowFrameStyleOptions.map(option => {
                 return (
                   <RadioButton value={option} key={option}>
-                    {t[option]()}
+                    {t[
+                      `com.affine.core.appearanceSettings.windowFrame.${option}`
+                    ]()}
                   </RadioButton>
                 );
               })}
@@ -180,18 +182,24 @@ export const AppearanceSettings = () => {
         ) : null}
       </SettingWrapper>
       {runtimeConfig.enableNewSettingUnstableApi ? (
-        <SettingWrapper title={t['Date']()}>
+        <SettingWrapper
+          title={t['com.affine.core.appearanceSettings.date.title']()}
+        >
           <SettingRow
-            name={t['Date Format']()}
-            desc={t['com.affine.settings.appearance.date-format-description']()}
+            name={t['com.affine.core.appearanceSettings.dateFormat.title']()}
+            desc={t[
+              'com.affine.core.appearanceSettings.dateFormat.description'
+            ]()}
           >
             <div className={settingWrapper}>
               <DateFormatSetting />
             </div>
           </SettingRow>
           <SettingRow
-            name={t['Start Week On Monday']()}
-            desc={t['com.affine.settings.appearance.start-week-description']()}
+            name={t['com.affine.core.appearanceSettings.startWeek.title']()}
+            desc={t[
+              'com.affine.core.appearanceSettings.startWeek.description'
+            ]()}
           >
             <Switch
               checked={appSettings.startWeekOnMonday}
@@ -202,10 +210,10 @@ export const AppearanceSettings = () => {
       ) : null}
 
       {environment.isDesktop ? (
-        <SettingWrapper title={t['Sidebar']()}>
+        <SettingWrapper title={t['com.affine.core.appearanceSettings.sidebar.title']()}>
           <SettingRow
-            name={t['com.affine.settings.noise-style']()}
-            desc={t['com.affine.settings.noise-style-description']()}
+            name={t['com.affine.core.appearanceSettings.noisyBackground.title']()}
+            desc={t['com.affine.core.appearanceSettings.noisyBackground.description']()}
           >
             <Switch
               checked={appSettings.enableNoisyBackground}
@@ -216,8 +224,8 @@ export const AppearanceSettings = () => {
           </SettingRow>
           {environment.isMacOs && (
             <SettingRow
-              name={t['com.affine.settings.translucent-style']()}
-              desc={t['com.affine.settings.translucent-style-description']()}
+              name={t['com.affine.core.appearanceSettings.translucentUI.title']()}
+              desc={t['com.affine.core.appearanceSettings.translucentUI.description']()}
             >
               <Switch
                 checked={appSettings.enableBlurBackground}

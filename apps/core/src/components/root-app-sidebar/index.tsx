@@ -191,20 +191,26 @@ export const RootAppSidebar = ({
               onClick={onOpenSettingModal}
             >
               <span data-testid="settings-modal-trigger">
-                {t['Settings']()}
+                {t['com.affine.core.settingSidebar.title']()}
               </span>
             </MenuItem>
           ) : null}
         </SidebarContainer>
 
         <SidebarScrollableContainer>
-          <CategoryDivider label={t['Favorites']()} />
+          <CategoryDivider
+            label={t['com.affine.core.rootAppSidebar.favorites']()}
+          />
           <FavoriteList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['Collections']()}>
+          <CategoryDivider
+            label={t['com.affine.core.rootAppSidebar.collections']()}
+          >
             <AddCollectionButton workspace={blockSuiteWorkspace} />
           </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['others']()} />
+          <CategoryDivider
+            label={t['com.affine.core.rootAppSidebar.others']()}
+          />
           {/* fixme: remove the following spacer */}
           <div style={{ height: '4px' }} />
           <RouteMenuLinkItem
