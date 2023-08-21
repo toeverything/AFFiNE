@@ -1,12 +1,11 @@
 import { toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { isDesktop } from '@affine/env/constant';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import type { SaveDBFileResult } from '@toeverything/infra/type';
 import { useCallback } from 'react';
-
-import type { AffineOfficialWorkspace } from '../../../shared';
 
 async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
   if (window.apis && isDesktop) {

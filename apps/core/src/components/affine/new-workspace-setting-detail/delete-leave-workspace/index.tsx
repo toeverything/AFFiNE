@@ -1,9 +1,9 @@
 import { SettingRow } from '@affine/component/setting-components';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../../shared';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
 import { WorkspaceLeave } from './leave';

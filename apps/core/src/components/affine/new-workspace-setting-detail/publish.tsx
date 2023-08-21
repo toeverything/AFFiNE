@@ -5,13 +5,13 @@ import type {
   AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
 import { TmpDisableAffineCloudModal } from '../tmp-disable-affine-cloud-modal';

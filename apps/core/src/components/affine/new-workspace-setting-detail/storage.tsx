@@ -1,12 +1,12 @@
 import { FlexWrapper, toast, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../shared';
 import * as style from './style.css';
 
 const useDBFileSecondaryPath = (workspaceId: string) => {

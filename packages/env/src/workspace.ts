@@ -78,6 +78,11 @@ export interface AffinePublicWorkspace extends BaseWorkspace {
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
 
+export type AffineOfficialWorkspace =
+  | AffineCloudWorkspace
+  | LocalWorkspace
+  | AffinePublicWorkspace;
+
 export enum ReleaseType {
   // if workspace is not released yet, we will not show it in the workspace list
   UNRELEASED = 'unreleased',
