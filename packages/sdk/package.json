@@ -22,9 +22,9 @@
     "dist"
   ],
   "dependencies": {
-    "@blocksuite/blocks": "0.0.0-20230821003714-6c9c5137-nightly",
-    "@blocksuite/global": "0.0.0-20230821003714-6c9c5137-nightly",
-    "@blocksuite/store": "0.0.0-20230821003714-6c9c5137-nightly",
+    "@blocksuite/blocks": "0.0.0-20230821045124-712e6c3d-nightly",
+    "@blocksuite/global": "0.0.0-20230821045124-712e6c3d-nightly",
+    "@blocksuite/store": "0.0.0-20230821045124-712e6c3d-nightly",
     "jotai": "^2.3.1",
     "zod": "^3.22.1"
   },
