@@ -16,13 +16,22 @@ import { Menu, MenuItem } from '../../..';
 import { getContentParser } from './get-content-parser';
 import type { CommonMenuItemProps } from './types';
 
+type ExportMenuItemProps = {
+  iconSize?: number;
+  gap?: string;
+  fontSize?: string;
+};
 const MenuItemStyle = {
   padding: '4px 12px',
 };
 
 export const ExportToPdfMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'pdf' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'pdf' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -82,7 +91,10 @@ export const ExportToPdfMenuItem = ({
       data-testid="export-to-pdf"
       onClick={onClickDownloadPDF}
       icon={<ExportToPdfIcon />}
-      style={MenuItemStyle}
+      style={style}
+      iconSize={iconSize}
+      gap={gap}
+      fontSize={fontSize}
     >
       {t['Export to PDF']()}
     </MenuItem>
@@ -91,7 +103,11 @@ export const ExportToPdfMenuItem = ({
 
 export const ExportToHtmlMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'html' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'html' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -126,7 +142,10 @@ export const ExportToHtmlMenuItem = ({
         data-testid="export-to-html"
         onClick={onClickExportHtml}
         icon={<ExportToHtmlIcon />}
-        style={MenuItemStyle}
+        style={style}
+        iconSize={iconSize}
+        gap={gap}
+        fontSize={fontSize}
       >
         {t['Export to HTML']()}
       </MenuItem>
@@ -136,7 +155,11 @@ export const ExportToHtmlMenuItem = ({
 
 export const ExportToPngMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'png' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'png' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -173,7 +196,10 @@ export const ExportToPngMenuItem = ({
         data-testid="export-to-png"
         onClick={onClickDownloadPNG}
         icon={<ExportToPngIcon />}
-        style={MenuItemStyle}
+        style={style}
+        iconSize={iconSize}
+        gap={gap}
+        fontSize={fontSize}
       >
         {t['Export to PNG']()}
       </MenuItem>
@@ -183,7 +209,11 @@ export const ExportToPngMenuItem = ({
 
 export const ExportToMarkdownMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'markdown' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'markdown' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -218,7 +248,10 @@ export const ExportToMarkdownMenuItem = ({
         data-testid="export-to-markdown"
         onClick={onClickExportMarkdown}
         icon={<ExportToMarkdownIcon />}
-        style={MenuItemStyle}
+        style={style}
+        iconSize={iconSize}
+        gap={gap}
+        fontSize={fontSize}
       >
         {t['Export to Markdown']()}
       </MenuItem>
@@ -253,7 +286,7 @@ export const Export = ({
         data-testid="export-menu"
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
-        style={{ padding: '4px 12px' }}
+        style={MenuItemStyle}
         onClick={e => {
           e.stopPropagation();
           onItemClick?.();

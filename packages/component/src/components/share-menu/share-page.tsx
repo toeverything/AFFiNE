@@ -1,7 +1,6 @@
-import type { LocalWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { WebIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { useState } from 'react';
@@ -14,24 +13,28 @@ import {
   inputButtonRowStyle,
   menuItemStyle,
 } from './index.css';
+import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import { StyledDisableButton, StyledInput, StyledLinkSpan } from './styles';
 
 export const LocalSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   return (
-    <div className={menuItemStyle}>
-      <div className={descriptionStyle}>{t['Shared Pages Description']()}</div>
-      <Button
-        type="primary"
-        data-testid="share-menu-enable-affine-cloud-button"
-        onClick={() => {
-          props.onEnableAffineCloud(props.workspace as LocalWorkspace);
-        }}
-      >
-        {t['Enable AFFiNE Cloud']()}
-      </Button>
-    </div>
+    <>
+      <div className={styles.titleContainerStyle}>
+        <WebIcon fontSize={16} />
+        {t['com.affine.share-menu.SharePage']()}
+      </div>
+      <div className={styles.rowContainerStyle}>
+        <div className={styles.descriptionStyle}>
+          {t['com.affine.share-menu.EnableCloudDescription']()}
+        </div>
+        <div>
+          <Button onClick={props.onEnableAffineCloud} type="primary">
+            {t['Enable AFFiNE Cloud']()}
+          </Button>
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -70,7 +73,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
         {t['Create Shared Link Description']()}
       </div>
       <div className={inputButtonRowStyle}>
-        <StyledInput
+        <input
           type="text"
           readOnly
           value={isPublic ? sharingUrl : 'https://app.affine.pro/xxxx'}
@@ -92,24 +95,11 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           </Button>
         )}
       </div>
-      <div className={descriptionStyle}>
-        <Trans i18nKey="Shared Pages In Public Workspace Description">
-          The entire Workspace is published on the web and can be edited via
-          <StyledLinkSpan
-            onClick={() => {
-              props.onOpenWorkspaceSettings(props.workspace);
-            }}
-          >
-            Workspace Settings
-          </StyledLinkSpan>
-          .
-        </Trans>
-      </div>
       {isPublic && (
         <>
-          <StyledDisableButton onClick={() => setShowDisable(true)}>
+          <button onClick={() => setShowDisable(true)}>
             {t['Disable Public Link']()}
-          </StyledDisableButton>
+          </button>
           <PublicLinkDisableModal
             open={showDisable}
             onConfirmDisable={onDisablePublic}
