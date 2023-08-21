@@ -100,6 +100,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 
         <Button
           size="extraLarge"
+          data-testid="continue-login-button"
           block
           loading={isMutating}
           icon={
