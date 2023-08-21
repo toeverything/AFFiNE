@@ -66,7 +66,7 @@ export const TrashButtonGroup = () => {
           jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           blockSuiteWorkspace.removePage(pageId);
           toast(t['Permanently deleted']());
-        }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id])}
+        }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id, t])}
         onCancel={() => {
           setOpen(false);
         }}
