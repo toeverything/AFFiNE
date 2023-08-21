@@ -242,7 +242,7 @@ jobs:
     name: Server E2E Test
     runs-on: ubuntu-latest
     environment: development
-    needs: [build-storage, build-core]
+    needs: build-storage
     services:
       postgres:
         image: postgres
@@ -280,11 +280,6 @@ jobs:
         working-directory: apps/server
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
@@ -314,7 +309,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
-          name: test-results-e2e-${{ matrix.shard }}
+          name: test-results-e2e-server
           path: ./tests/affine-cloud/test-results
           if-no-files-found: ignore
 
