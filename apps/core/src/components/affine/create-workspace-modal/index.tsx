@@ -201,11 +201,9 @@ const SetSyncingModeContent = ({
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>
-        {t[
-          mode === 'new'
-            ? 'Created Successfully'
-            : 'com.affine.core.setSyncingMode.title.added'
-        ]()}
+        {mode === 'new'
+          ? t['Created Successfully']()
+          : t['com.affine.core.setSyncingMode.title.added']()}
       </div>
 
       <div className={style.radioGroup}>
