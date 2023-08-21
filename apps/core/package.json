@@ -6,7 +6,7 @@
   "scripts": {
     "build": "yarn -T run build-core",
     "dev": "yarn -T run dev-core",
-    "static-server": "ts-node-esm ./server.mts"
+    "static-server": "yarn -T run dev-core --static"
   },
   "exports": {
     "./app": "./src/app.tsx",
@@ -84,7 +84,6 @@
     "swc-loader": "^0.2.3",
     "swc-plugin-coverage-instrument": "^0.0.20",
     "thread-loader": "^4.0.2",
-    "ts-node": "^10.9.1",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
