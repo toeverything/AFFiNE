@@ -230,15 +230,6 @@ export const WorkspaceListModal = ({
         ) : null}
         <StyledModalHeader>
           <StyledModalTitle>{t['Local Workspace']()}</StyledModalTitle>
-          <Tooltip
-            content={t['Workspace description']()}
-            placement="top-start"
-            disablePortal={true}
-          >
-            <StyledHelperContainer>
-              <HelpIcon />
-            </StyledHelperContainer>
-          </Tooltip>
         </StyledModalHeader>
         <StyledModalContent>
           <WorkspaceList
