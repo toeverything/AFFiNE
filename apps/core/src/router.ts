@@ -29,6 +29,14 @@ export const routes = [
     lazy: () => import('./pages/404'),
   },
   {
+    path: '/auth/:authType',
+    lazy: () => import('./pages/auth'),
+  },
+  {
+    path: '/expired',
+    lazy: () => import('./pages/expired'),
+  },
+  {
     path: '*',
     lazy: () => import('./pages/404'),
   },
