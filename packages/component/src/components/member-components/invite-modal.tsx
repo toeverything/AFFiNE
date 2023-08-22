@@ -3,7 +3,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useCallback, useEffect, useState } from 'react';
 
-import { Menu, MenuItem, MenuTrigger } from '../../ui/menu';
 import { Modal, ModalCloseButton, ModalWrapper } from '../../ui/modal';
 import { AuthInput } from '..//auth-components';
 import { emailRegex } from '..//auth-components/utils';
@@ -23,37 +22,41 @@ const PermissionMenu = ({
   currentPermission: Permission;
   onChange: (permission: Permission) => void;
 }) => {
-  return (
-    <Menu
-      trigger="click"
-      content={
-        <>
-          {Object.entries(Permission).map(([permission]) => {
-            return (
-              <MenuItem
-                key={permission}
-                onClick={() => {
-                  onChange(permission as Permission);
-                }}
-              >
-                {permission}
-              </MenuItem>
-            );
-          })}
-        </>
-      }
-    >
-      <MenuTrigger
-        type="plain"
-        style={{
-          marginRight: -10,
-          height: '100%',
-        }}
-      >
-        {currentPermission}
-      </MenuTrigger>
-    </Menu>
-  );
+  console.log('currentPermission', currentPermission);
+  console.log('onChange', onChange);
+
+  return null;
+  // return (
+  //   <Menu
+  //     trigger="click"
+  //     content={
+  //       <>
+  //         {Object.entries(Permission).map(([permission]) => {
+  //           return (
+  //             <MenuItem
+  //               key={permission}
+  //               onClick={() => {
+  //                 onChange(permission as Permission);
+  //               }}
+  //             >
+  //               {permission}
+  //             </MenuItem>
+  //           );
+  //         })}
+  //       </>
+  //     }
+  //   >
+  //     <MenuTrigger
+  //       type="plain"
+  //       style={{
+  //         marginRight: -10,
+  //         height: '100%',
+  //       }}
+  //     >
+  //       {currentPermission}
+  //     </MenuTrigger>
+  //   </Menu>
+  // );
 };
 
 export const InviteModal = ({

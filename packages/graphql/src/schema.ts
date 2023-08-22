@@ -158,7 +158,7 @@ export type GetInviteInfoQuery = {
       __typename?: 'InvitationWorkspaceType';
       id: string;
       name: string;
-      avatar: string | null;
+      avatar: string;
     };
     user: {
       __typename?: 'UserType';
@@ -185,6 +185,7 @@ export type GetMembersByWorkspaceIdQuery = {
       avatarUrl: string | null;
       permission: Permission;
       inviteId: string;
+      accepted: boolean;
     }>;
   };
 };

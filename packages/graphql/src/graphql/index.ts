@@ -166,6 +166,7 @@ query getMembersByWorkspaceId($workspaceId: String!) {
       avatarUrl
       permission
       inviteId
+      accepted
     }
   }
 }`,

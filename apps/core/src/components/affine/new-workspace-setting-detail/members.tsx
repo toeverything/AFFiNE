@@ -1,4 +1,4 @@
-import { FlexWrapper, Menu, MenuItem, Tooltip } from '@affine/component';
+import { Menu, MenuItem, Tooltip } from '@affine/component';
 import {
   InviteModal,
   type InviteModalProps,
@@ -6,9 +6,12 @@ import {
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 import { Button, IconButton } from '@toeverything/components/button';
+import clsx from 'clsx';
 import { useSetAtom } from 'jotai/index';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useState } from 'react';
@@ -21,7 +24,6 @@ import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owne
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import type { AffineOfficialWorkspace } from '../../../shared';
-import { WorkspaceAvatar } from '../../pure/footer';
 import { AnyErrorBoundary } from '../any-error-boundary';
 import * as style from './style.css';
 
@@ -101,7 +103,7 @@ export const CloudWorkspaceMembersPanel = (
           </>
         ) : null}
       </SettingRow>
-      <FlexWrapper flexDirection="column" className={style.membersList}>
+      <div className={style.membersList}>
         {members.map(member => (
           <MemberItem
             key={member.id}
@@ -111,7 +113,7 @@ export const CloudWorkspaceMembersPanel = (
             currentUser={currentUser}
           />
         ))}
-      </FlexWrapper>
+      </div>
     </>
   );
 };
@@ -139,18 +141,22 @@ const MemberItem = ({
   const showOperationButton = isOwner && currentUser.email !== member.email;
   return (
     <div key={member.id} className={style.listItem}>
-      <div>
-        <WorkspaceAvatar
-          size={24}
-          name={undefined}
-          avatar={member.avatarUrl as string}
-        />
-      </div>
+      <Avatar size={36} url={member.avatarUrl as string} />
       <div className={style.memberContainer}>
         <div className={style.memberName}>{member.name}</div>
         <div className={style.memberEmail}>{member.email}</div>
       </div>
-      <div className={style.permissionContainer}>{member.permission}</div>
+      <div
+        className={clsx(style.roleOrStatus, {
+          pending: !member.accepted,
+        })}
+      >
+        {member.accepted
+          ? member.permission === Permission.Owner
+            ? 'Workspace Owner'
+            : 'Member'
+          : 'Pending'}
+      </div>
       <Menu
         content={
           <MenuItem
@@ -170,6 +176,7 @@ const MemberItem = ({
           disabled={!showOperationButton}
           style={{
             visibility: showOperationButton ? 'visible' : 'hidden',
+            flexShrink: 0,
           }}
         >
           <MoreVerticalIcon />
