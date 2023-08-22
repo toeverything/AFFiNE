@@ -27,7 +27,7 @@ export const QuickSearchModal = ({
   setOpen,
   workspace,
 }: QuickSearchModalProps) => {
-  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
+  const blockSuiteWorkspace = workspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, _setQuery] = useState('');
@@ -41,7 +41,7 @@ export const QuickSearchModal = ({
     setOpen(false);
   }, [setOpen]);
 
-  // Add ‘⌘+K’ shortcut keys as switches
+  // Add  ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
@@ -156,3 +156,5 @@ export const QuickSearchModal = ({
     </Modal>
   );
 };
+
+export default QuickSearchModal;
