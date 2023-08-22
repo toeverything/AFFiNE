@@ -101,3 +101,33 @@ export const spanStyle = style({
 export const disableSharePage = style({
   color: 'var(--affine-error-color)',
 });
+
+export const localSharePage = style({
+  padding: '12px 8px',
+  display: 'flex',
+  alignItems: 'center',
+  borderRadius: '8px',
+  backgroundColor: 'var(--affine-background-secondary-color)',
+  minHeight: '108px',
+  position: 'relative',
+});
+
+export const cloudSvgContainer = style({
+  width: '100%',
+  height: '100%',
+  minWidth: '185px',
+});
+
+export const cloudSvgStyle = style({
+  width: '193px',
+  height: '108px',
+  position: 'absolute',
+  bottom: '0',
+  right: '8px',
+});
+export const shareIconStyle = style({
+  fontSize: '16px',
+  color: 'var(--affine-icon-color)',
+  display: 'flex',
+  alignItems: 'center',
+});

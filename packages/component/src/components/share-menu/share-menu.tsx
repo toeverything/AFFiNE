@@ -36,7 +36,7 @@ export const ShareMenu = (props: ShareMenuProps) => {
     <div className={styles.containerStyle}>
       <SharePage {...props} />
       <div className={styles.columnContainerStyle}>
-        <Divider dividerColor="var(--affine-border-color)" />
+        <Divider dividerColor="var(--affine-border-color)" size="thinner" />
       </div>
       <ShareExport />
     </div>
