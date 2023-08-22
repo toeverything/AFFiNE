@@ -2,10 +2,11 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import type { Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
-import { useAtomValue } from 'jotai';
+import { type Atom, atom, useAtomValue } from 'jotai';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { recentPageSettingsAtom } from '../../../atoms';
@@ -21,6 +22,28 @@ export interface ResultsProps {
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
 }
 
+const loadAllPageWeakMap = new WeakMap<Workspace, Atom<Promise<void>>>();
+
+function getLoadAllPage(workspace: Workspace) {
+  if (loadAllPageWeakMap.has(workspace)) {
+    return loadAllPageWeakMap.get(workspace) as Atom<Promise<void>>;
+  } else {
+    const aAtom = atom(async () => {
+      // fixme: we have to load all pages here and re-index them
+      //  there might have performance issue
+      await Promise.all(
+        [...workspace.pages.values()].map(page =>
+          page.waitForLoaded().then(() => {
+            workspace.indexer.search.refreshPageIndex(page.id, page.spaceDoc);
+          })
+        )
+      );
+    });
+    loadAllPageWeakMap.set(workspace, aAtom);
+    return aAtom;
+  }
+}
+
 export const Results = ({
   query,
   workspace,
@@ -32,6 +55,7 @@ export const Results = ({
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
   const list = useSwitchToConfig(workspace.id);
+  useAtomValue(getLoadAllPage(blockSuiteWorkspace));
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
