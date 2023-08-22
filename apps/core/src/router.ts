@@ -37,6 +37,10 @@ export const routes = [
     lazy: () => import('./pages/expired'),
   },
   {
+    path: '/invite/:inviteId',
+    lazy: () => import('./pages/invite'),
+  },
+  {
     path: '*',
     lazy: () => import('./pages/404'),
   },

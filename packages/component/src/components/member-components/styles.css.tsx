@@ -15,3 +15,8 @@ export const inviteModalButtonContainer = style({
   justifyContent: 'flex-end',
   // marginTop: 10,
 });
+
+export const inviteName = style({
+  marginLeft: '4px',
+  marginRight: '10px',
+});

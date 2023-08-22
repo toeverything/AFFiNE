@@ -76,6 +76,7 @@ export const InviteModal = ({
       setIsValidEmail(false);
       return;
     }
+    setIsValidEmail(true);
 
     onConfirm({
       email: inviteEmail,

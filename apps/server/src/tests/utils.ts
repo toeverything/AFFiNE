@@ -8,7 +8,7 @@ import request from 'supertest';
 import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
-import type { InvitationType,WorkspaceType } from '../modules/workspaces';
+import type { InvitationType, WorkspaceType } from '../modules/workspaces';
 
 export class NestDebugLogger implements LoggerService {
   log(message: string): any {

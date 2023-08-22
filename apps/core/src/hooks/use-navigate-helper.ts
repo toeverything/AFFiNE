@@ -36,6 +36,14 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToWorkspace = useCallback(
+    (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate(`/workspace/${workspaceId}`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToSubPath = useCallback(
     (
       workspaceId: string,
@@ -95,5 +103,6 @@ export function useNavigateHelper() {
     jumpTo404,
     openPage,
     jumpToExpired,
+    jumpToWorkspace,
   };
 }
