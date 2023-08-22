@@ -68,7 +68,7 @@ export const EditCollectionModel = ({
           <EditCollection
             propertiesMeta={propertiesMeta}
             title={title}
-            onConfirmText={t['Save']()}
+            onConfirmText={t['com.affine.component.editCollection.save']()}
             init={init}
             getPageInfo={getPageInfo}
             onCancel={onClose}
@@ -164,7 +164,7 @@ export const EditCollection = ({
       }}
     >
       <div className={styles.saveTitle}>
-        {title ?? t['Update Collection']()}
+        {title ?? t['com.affine.component.editCollection.updateCollection']()}
       </div>
       <ScrollableContainer
         className={styles.scrollContainer}
@@ -201,7 +201,9 @@ export const EditCollection = ({
             minHeight: '200px',
           }}
         >
-          <div className={styles.filterTitle}>{t['Filters']()}</div>
+          <div className={styles.filterTitle}>
+            {t['com.affine.component.editCollection.filters']()}
+          </div>
           <FilterList
             propertiesMeta={propertiesMeta}
             value={value.filterList}
@@ -228,7 +230,9 @@ export const EditCollection = ({
         <div style={{ marginTop: 20 }}>
           <Input
             data-testid="input-collection-title"
-            placeholder={t['Untitled Collection']()}
+            placeholder={t[
+              'com.affine.component.editCollection.untitledCollection'
+            ]()}
             defaultValue={value.name}
             onChange={name => onChange({ ...value, name })}
           />
@@ -242,7 +246,7 @@ export const EditCollection = ({
         }}
       >
         <Button size="large" onClick={onCancel}>
-          {t['Cancel']()}
+          {t['com.affine.component.editCollection.button.cancel']()}
         </Button>
         <Button
           style={{
@@ -254,7 +258,8 @@ export const EditCollection = ({
           disabled={isNameEmpty}
           onClick={onSaveCollection}
         >
-          {onConfirmText ?? t['Create']()}
+          {onConfirmText ??
+            t['com.affine.component.editCollection.button.create']()}
         </Button>
       </div>
     </div>
@@ -297,10 +302,10 @@ export const SaveCollectionButton = ({
         size="large"
         style={{ padding: '7px 8px' }}
       >
-        {t['Save as New Collection']()}
+        {t['com.affine.component.editCollection.saveCollection']()}
       </Button>
       <EditCollectionModel
-        title={t['Save as New Collection']()}
+        title={t['com.affine.component.editCollection.saveCollection']()}
         propertiesMeta={propertiesMeta}
         init={init}
         onConfirm={onConfirm}

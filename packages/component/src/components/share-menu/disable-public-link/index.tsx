@@ -21,17 +21,17 @@ export const PublicLinkDisableModal = ({
     <Modal open={open} onClose={onClose}>
       <ModalWrapper width={480}>
         <Header>
-          <Title>{t['Disable Public Link']()}</Title>
+          <Title>{t['com.affine.component.publicLinkDisableModal.title']()}</Title>
           <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
         </Header>
         <Content>
-          <StyleTips>{t['Disable Public Link Description']()}</StyleTips>
+          <StyleTips>{t['com.affine.component.publicLinkDisableModal.description']()}</StyleTips>
           <ButtonContainer>
             <div>
               <Button onClick={onClose} block>
-                {t['Cancel']()}
+                {t['com.affine.component.publicLinkDisableModal.button.cancel']()}
               </Button>
             </div>
             <div>
@@ -44,7 +44,7 @@ export const PublicLinkDisableModal = ({
                   onClose();
                 }}
               >
-                {t['Disable']()}
+                {t['com.affine.component.publicLinkDisableModal.button.disable']()}
               </Button>
             </div>
           </ButtonContainer>
