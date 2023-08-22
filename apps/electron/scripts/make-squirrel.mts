@@ -23,7 +23,7 @@ async function ensureDirectory(dir: string) {
 // it was for forge's maker, but can be used standalone as well
 async function make() {
   const appName = productName;
-  const makeDir = path.resolve(ROOT, 'out', 'make', buildType);
+  const makeDir = path.resolve(ROOT, 'out', buildType, 'make');
   const outPath = path.resolve(makeDir, `squirrel.windows/${arch}`);
   const appDirectory = path.resolve(
     ROOT,
