@@ -8,6 +8,7 @@ import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suit
 import { Command } from 'cmdk';
 import { type Atom, atom, useAtomValue } from 'jotai';
 import type { Dispatch, SetStateAction } from 'react';
+import { startTransition, useEffect } from 'react';
 
 import { recentPageSettingsAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -75,7 +76,11 @@ export const Results = ({
     }
   });
 
-  setShowCreatePage(resultsPageMeta.length === 0);
+  useEffect(() => {
+    startTransition(() => {
+      setShowCreatePage(resultsPageMeta.length === 0);
+    });
+  }, [resultsPageMeta.length, setShowCreatePage]);
 
   if (!query) {
     return (
@@ -139,7 +144,12 @@ export const Results = ({
     return (
       <StyledNotFound>
         <span>{t['Find 0 result']()}</span>
-        <image href="/imgs/no-result.svg" width={200} height={200} />
+        <img
+          alt="no result"
+          src="/imgs/no-result.svg"
+          width={200}
+          height={200}
+        />
       </StyledNotFound>
     );
   }

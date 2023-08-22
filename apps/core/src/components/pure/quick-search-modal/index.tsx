@@ -42,7 +42,7 @@ export const QuickSearchModal = ({
     setOpen(false);
   }, [setOpen]);
 
-  // Add  ‘⌘+K’ shortcut keys as switches
+  // Add ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
