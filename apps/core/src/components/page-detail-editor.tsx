@@ -13,7 +13,7 @@ import {
   pluginEditorAtom,
   pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
-import { contentLayoutAtom, rootStore } from '@toeverything/infra/atom';
+import { contentLayoutAtom, getCurrentStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
@@ -103,9 +103,10 @@ const EditorWrapper = memo(function EditorWrapper({
             if (onLoad) {
               dispose = onLoad(page, editor);
             }
+            const rootStore = getCurrentStore();
             const editorItems = rootStore.get(pluginEditorAtom);
             let disposes: (() => void)[] = [];
-            const renderTimeout = setTimeout(() => {
+            const renderTimeout = window.setTimeout(() => {
               disposes = Object.entries(editorItems).map(([id, editorItem]) => {
                 const div = document.createElement('div');
                 div.setAttribute('plugin-id', id);
@@ -122,7 +123,7 @@ const EditorWrapper = memo(function EditorWrapper({
             return () => {
               dispose();
               clearTimeout(renderTimeout);
-              setTimeout(() => {
+              window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());
               });
             };
@@ -164,7 +165,7 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
             };
             const dispose = addCleanup(pluginName, cl);
             abortController.signal.addEventListener('abort', () => {
-              setTimeout(() => {
+              window.setTimeout(() => {
                 dispose();
                 cl();
               });

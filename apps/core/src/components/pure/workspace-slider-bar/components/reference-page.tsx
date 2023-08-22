@@ -29,7 +29,11 @@ export const ReferencePage = ({
   const icon = setting?.mode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />;
   const references = useBlockSuitePageReferences(workspace, pageId);
   const referencesToShow = useMemo(() => {
-    return [...new Set(references.filter(ref => !metaMapping[ref]?.trash))];
+    return [
+      ...new Set(
+        references.filter(ref => metaMapping[ref] && !metaMapping[ref]?.trash)
+      ),
+    ];
   }, [references, metaMapping]);
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;

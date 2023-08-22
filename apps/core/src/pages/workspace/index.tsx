@@ -2,7 +2,7 @@ import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-  rootStore,
+  getCurrentStore,
 } from '@toeverything/infra/atom';
 import type { ReactElement } from 'react';
 import { type LoaderFunction, Outlet, redirect } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { type LoaderFunction, Outlet, redirect } from 'react-router-dom';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 
 export const loader: LoaderFunction = async args => {
+  const rootStore = getCurrentStore();
   const meta = await rootStore.get(rootWorkspacesMetadataAtom);
   if (!meta.some(({ id }) => id === args.params.workspaceId)) {
     return redirect('/404');

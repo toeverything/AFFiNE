@@ -80,7 +80,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   const [animationKey, setAnimationKey] = useState(0);
   const animationRef = useRef<SVGAnimateElement>(null);
   const notificationRef = useRef<HTMLLIElement>(null);
-  const timerIdRef = useRef<NodeJS.Timeout>();
+  const timerIdRef = useRef<number>();
   const isFront = index === 0;
   const isVisible = index + 1 <= 3;
   const progressDuration = notification.timeout || 3000;
@@ -164,7 +164,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     setHeights(h =>
       h.filter(height => height.notificationKey !== notification.key)
     );
-    setTimeout(() => {
+    window.setTimeout(() => {
       if (!notification.key) {
         return;
       }
@@ -177,7 +177,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       clearTimeout(timerIdRef.current);
     }
     if (!expand) {
-      timerIdRef.current = setTimeout(() => {
+      timerIdRef.current = window.setTimeout(() => {
         onClickRemove();
       }, duration);
     }

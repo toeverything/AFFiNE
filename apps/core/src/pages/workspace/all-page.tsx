@@ -3,7 +3,7 @@ import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
-import { rootStore } from '@toeverything/infra/atom';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
@@ -13,6 +13,7 @@ import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 
 export const loader: LoaderFunction = async args => {
+  const rootStore = getCurrentStore();
   const workspaceId = args.params.workspaceId;
   assertExists(workspaceId);
   const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);

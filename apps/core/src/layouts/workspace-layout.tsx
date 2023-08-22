@@ -1,5 +1,8 @@
 import { Content, displayFlex } from '@affine/component';
-import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import {
+  AppSidebarFallback,
+  appSidebarResizingAtom,
+} from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
 import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
@@ -135,11 +138,9 @@ export const WorkspaceLayout = function WorkspacesSuspense({
         </CurrentWorkspaceContext>
       </Suspense>
       <CurrentWorkspaceContext>
-        <Suspense fallback={<WorkspaceFallback />}>
-          <Provider>
-            <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-          </Provider>
-        </Suspense>
+        <Provider>
+          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+        </Provider>
       </CurrentWorkspaceContext>
     </>
   );
@@ -231,30 +232,34 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
         onDragEnd={handleDragEnd}
       >
         <AppContainer resizing={resizing}>
-          <RootAppSidebar
-            isPublicWorkspace={false}
-            onOpenQuickSearchModal={handleOpenQuickSearchModal}
-            onOpenSettingModal={handleOpenSettingModal}
-            currentWorkspace={currentWorkspace}
-            onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-            openPage={useCallback(
-              (pageId: string) => {
-                assertExists(currentWorkspace);
-                return openPage(currentWorkspace.id, pageId);
-              },
-              [currentWorkspace, openPage]
-            )}
-            createPage={handleCreatePage}
-            currentPath={location.pathname.split('?')[0]}
-            paths={pathGenerator}
-          />
-          <MainContainer padding={appSetting.clientBorder}>
-            {children}
-            <ToolContainer>
-              <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
-              <HelpIsland showList={pageId ? undefined : showList} />
-            </ToolContainer>
-          </MainContainer>
+          <Suspense fallback={<AppSidebarFallback />}>
+            <RootAppSidebar
+              isPublicWorkspace={false}
+              onOpenQuickSearchModal={handleOpenQuickSearchModal}
+              onOpenSettingModal={handleOpenSettingModal}
+              currentWorkspace={currentWorkspace}
+              onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
+              openPage={useCallback(
+                (pageId: string) => {
+                  assertExists(currentWorkspace);
+                  return openPage(currentWorkspace.id, pageId);
+                },
+                [currentWorkspace, openPage]
+              )}
+              createPage={handleCreatePage}
+              currentPath={location.pathname.split('?')[0]}
+              paths={pathGenerator}
+            />
+          </Suspense>
+          <Suspense fallback={<MainContainer />}>
+            <MainContainer padding={appSetting.clientBorder}>
+              {children}
+              <ToolContainer>
+                <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
+                <HelpIsland showList={pageId ? undefined : showList} />
+              </ToolContainer>
+            </MainContainer>
+          </Suspense>
         </AppContainer>
         <PageListTitleCellDragOverlay />
       </DndContext>

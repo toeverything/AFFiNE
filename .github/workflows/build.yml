@@ -30,6 +30,7 @@ env:
   BUILD_TYPE: canary
   APP_NAME: affine
   COVERAGE: true
+  DISTRIBUTION: browser
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
@@ -133,26 +134,6 @@ jobs:
           path: ./apps/storybook/storybook-static
           if-no-files-found: error
 
-  build-core:
-    name: Build @affine/core
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Build Plugins
-        run: yarn run build:plugins
-      - name: Build Core
-        run: yarn nx build @affine/core
-      - name: Upload core artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
-          if-no-files-found: error
-
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
@@ -239,7 +220,6 @@ jobs:
     name: E2E Plugin Test
     runs-on: ubuntu-latest
     environment: development
-    needs: build-core
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -247,11 +227,6 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
       - name: Run playwright tests
         run: yarn e2e --forbid-only
         working-directory: tests/affine-plugin
@@ -328,8 +303,6 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     environment: development
-    needs: build-core
-
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
@@ -337,11 +310,6 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
 
       - name: Run playwright tests
         run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
@@ -373,7 +341,6 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     environment: development
-    needs: build-core
     strategy:
       matrix:
         spec:
@@ -386,12 +353,6 @@ jobs:
         with:
           playwright-install: true
           electron-install: false
-
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
 
       - name: Unzip
         run: yarn unzip
@@ -407,127 +368,6 @@ jobs:
         with:
           name: test-results-e2e-migration-${{ matrix.spec.package }}
           path: ./tests/affine-legacy/${{ matrix.spec.package }}/test-results
-          if-no-files-found: ignore
-
-  desktop-test:
-    name: Desktop Test
-    runs-on: ${{ matrix.spec.os }}
-    environment: development
-    strategy:
-      fail-fast: false
-      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
-      matrix:
-        spec:
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: x64,
-              target: x86_64-apple-darwin,
-              test: true,
-            }
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: arm64,
-              target: aarch64-apple-darwin,
-              test: false,
-            }
-          - {
-              os: ubuntu-latest,
-              platform: linux,
-              arch: x64,
-              target: x86_64-unknown-linux-gnu,
-              test: true,
-            }
-          - {
-              os: windows-latest,
-              platform: windows,
-              arch: x64,
-              target: x86_64-pc-windows-msvc,
-              test: true,
-            }
-    needs: build-core
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        timeout-minutes: 10
-        with:
-          playwright-install: true
-          hard-link-nm: false
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - name: Run unit tests
-        if: ${{ matrix.spec.test }}
-        shell: bash
-        run: yarn vitest
-        working-directory: ./apps/electron
-
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: apps/electron/resources/web-static
-
-      - name: Build Plugins
-        run: yarn run build:plugins
-
-      - name: Build Desktop Layers
-        run: yarn workspace @affine/electron build
-
-      - name: Upload desktop dist
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: ./apps/electron/dist
-
-      - name: Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/electron test
-        env:
-          COVERAGE: true
-
-      - name: Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn workspace @affine/electron test
-        env:
-          COVERAGE: true
-
-      - name: Make bundle
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
-        env:
-          SKIP_BUNDLE: true
-        run: yarn workspace @affine/electron make --platform=darwin --arch=arm64
-
-      - name: Bundle output check
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
-        run: |
-          yarn ts-node-esm ./scripts/macos-arm64-output-check.mts
-        working-directory: apps/electron
-
-      - name: Collect code coverage report
-        if: ${{ matrix.spec.test }}
-        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
-
-      - name: Upload e2e test coverage results
-        if: ${{ matrix.spec.test }}
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/lcov.info
-          flags: e2etest-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
-          name: affine
-          fail_ci_if_error: false
-
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
-          path: ./test-results
           if-no-files-found: ignore
 
   unit-test:
@@ -552,79 +392,3 @@ jobs:
           flags: unittest
           name: affine
           fail_ci_if_error: false
-
-  build-docker:
-    if: github.ref == 'refs/heads/master'
-    name: Build Docker
-    runs-on: ubuntu-latest
-    needs:
-      - build-server
-      - build-core
-      - build-storage
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download core artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: core
-          path: ./apps/core/dist
-      - name: Download server dist
-        uses: actions/download-artifact@v3
-        with:
-          name: server-dist
-          path: ./apps/server/dist
-      - name: Download storage.node
-        uses: actions/download-artifact@v3
-        with:
-          name: storage.node
-          path: ./apps/server
-      - name: Setup Git short hash
-        run: |
-          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          logout: false
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build front Dockerfile
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
-
-      # setup node without cache configuration
-      # Prisma cache is not compatible with docker build cache
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: '.nvmrc'
-          registry-url: https://npm.pkg.github.com
-          scope: '@toeverything'
-
-      - name: Install Node.js dependencies
-        run: yarn workspaces focus @affine/server --production
-
-      - name: Generate Prisma client
-        run: yarn workspace @affine/server prisma generate
-
-      - name: Build graphql Dockerfile
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:latest
