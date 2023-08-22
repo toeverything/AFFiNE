@@ -102,6 +102,24 @@ type WorkspaceType {
   owner: UserType!
 }
 
+type InvitationWorkspaceType {
+  id: ID!
+
+  """Workspace name"""
+  name: String!
+
+  """Base64 encoded avatar"""
+  avatar: String
+}
+
+type InvitationType {
+  """Workspace information"""
+  workspace: InvitationWorkspaceType!
+
+  """User information"""
+  user: UserType!
+}
+
 type Query {
   """Get all accessible workspaces for current user"""
   workspaces: [WorkspaceType!]!
@@ -111,6 +129,9 @@ type Query {
 
   """Get workspace by id"""
   workspace(id: String!): WorkspaceType!
+
+  """Update workspace"""
+  getInviteInfo(inviteId: String!): InvitationType!
 
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]!

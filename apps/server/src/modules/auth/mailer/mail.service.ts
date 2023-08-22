@@ -27,18 +27,83 @@ export class MailService {
     );
   }
 
-  async sendInviteEmail(to: string, workspaceId: string, inviteId: string) {
-    const url = `${this.config.baseUrl}/invite?id=${workspaceId}&invite=${inviteId}`;
+  async sendInviteEmail(
+    to: string,
+    inviteId: string,
+    invitationInfo: {
+      workspace: {
+        id: string;
+        name: string;
+        avatar: Buffer | null;
+      };
+      user: {
+        avatar: string;
+        name: string;
+      };
+    }
+  ) {
+    const buttonUrl = `${this.config.baseUrl}/invite/${inviteId}`;
+    const url = `${this.config.baseUrl}/workspaces/${invitationInfo.workspace.id}/all`;
+    const workspaceAvatar = invitationInfo.workspace.avatar || new Buffer('');
     const html = `
-      <h1>Invitation to workspace</h1>
-      <p>You have been invited to workspace. Click the link below to accept the invitation.</p>
-      <a href="${url}">${url}</a>
+          <h1>Invitation to workspace</h1>
+    <p>
+        <img
+                    src="${invitationInfo.user.avatar}"
+                    alt="Inviter avatar"
+                    width="16px"
+                    height="16px"
+                  />
+                  <span>${invitationInfo.user.name}</span>
+                  <span>invited you to join</span>
+                  <img
+                    src="cid:workspaceAvatar"
+                    alt="Workspace avatar"
+                    width="16px"
+                    height="16px"
+                  />
+                  <span>${invitationInfo.workspace.name}</span>
+
+    </p>
+
+    <p>${invitationInfo.user.avatar}</p>
+
+    <a href="${buttonUrl}">${buttonUrl}</a>
+    <p>
+    <a
+      href="${buttonUrl}"
+      target="_blank"
+      style="
+        font-size: 15px;
+        font-family: Inter;
+        line-height: 24px;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 8px 18px;
+        border: 1px solid #1e96eb;
+        background-color: #1e96eb;
+        display: inline-block;
+        font-weight: bold;
+      "
+      >Accept & Join</a
+    >
+</p>>
+    <a href="${url}">${url}</a>
     `;
+
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
       subject: `Invitation to workspace`,
       html,
+      attachments: [
+        {
+          cid: 'workspaceAvatar',
+          filename: 'image.jpg',
+          content: workspaceAvatar,
+        },
+      ],
     });
   }
   async sendChangePasswordEmail(to: string, url: string) {

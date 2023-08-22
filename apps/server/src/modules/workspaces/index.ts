@@ -12,4 +12,4 @@ import { WorkspaceResolver } from './resolver';
   exports: [PermissionService],
 })
 export class WorkspaceModule {}
-export { WorkspaceType } from './resolver';
+export { InvitationType, WorkspaceType } from './resolver';

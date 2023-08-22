@@ -20,6 +20,7 @@ import {
 import type { User, Workspace } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+import { applyUpdate, Doc } from 'yjs';
 
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
@@ -70,6 +71,28 @@ export class WorkspaceType implements Partial<Workspace> {
     description: 'Members of workspace',
   })
   members!: InviteUserType[];
+}
+
+@ObjectType()
+export class InvitationWorkspaceType {
+  @Field(() => ID)
+  id!: string;
+
+  @Field({ description: 'Workspace name' })
+  name!: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Base64 encoded avatar',
+  })
+  avatar!: string;
+}
+@ObjectType()
+export class InvitationType {
+  @Field({ description: 'Workspace information' })
+  workspace!: InvitationWorkspaceType;
+  @Field({ description: 'User information' })
+  user!: UserType;
 }
 
 @InputType()
@@ -360,7 +383,19 @@ export class WorkspaceResolver {
         permission
       );
       if (sendInviteMail) {
-        await this.mailer.sendInviteEmail(email, workspaceId, inviteId);
+        const inviteInfo = await this.getInviteInfo(inviteId);
+
+        await this.mailer.sendInviteEmail(email, inviteId, {
+          workspace: {
+            id: inviteInfo.workspace.id,
+            name: inviteInfo.workspace.name,
+            avatar: inviteInfo.workspace.avatar,
+          },
+          user: {
+            avatar: inviteInfo.user?.avatarUrl || '',
+            name: inviteInfo.user?.name || '',
+          },
+        });
       }
       return inviteId;
     } else {
@@ -371,10 +406,75 @@ export class WorkspaceResolver {
         permission
       );
       if (sendInviteMail) {
-        await this.mailer.sendInviteEmail(email, workspaceId, inviteId);
+        const inviteInfo = await this.getInviteInfo(inviteId);
+
+        await this.mailer.sendInviteEmail(email, inviteId, {
+          workspace: {
+            id: inviteInfo.workspace.id,
+            name: inviteInfo.workspace.name,
+            avatar: inviteInfo.workspace.avatar,
+          },
+          user: {
+            avatar: inviteInfo.user?.avatarUrl || '',
+            name: inviteInfo.user?.name || '',
+          },
+        });
       }
       return inviteId;
     }
+  }
+
+  @Query(() => InvitationType, {
+    description: 'Update workspace',
+  })
+  async getInviteInfo(@Args('inviteId') inviteId: string) {
+    const permission =
+      await this.prisma.userWorkspacePermission.findUniqueOrThrow({
+        where: {
+          id: inviteId,
+        },
+      });
+
+    const snapshot = await this.prisma.snapshot.findFirstOrThrow({
+      where: {
+        id: permission.workspaceId,
+        workspaceId: permission.workspaceId,
+      },
+    });
+
+    const doc = new Doc();
+
+    applyUpdate(doc, new Uint8Array(snapshot.blob));
+    const metaJSON = doc.getMap('meta').toJSON();
+
+    const owner = await this.prisma.userWorkspacePermission.findFirstOrThrow({
+      where: {
+        workspaceId: permission.workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    let avatarBuffer: Buffer | null = null;
+
+    if (metaJSON.avatar) {
+      const avatarBlob = await this.storage.getBlob(
+        permission.workspaceId,
+        metaJSON.avatar
+      );
+      avatarBuffer = avatarBlob?.data || null;
+    }
+
+    return {
+      workspace: {
+        name: metaJSON.name || '',
+        avatar: avatarBuffer,
+        id: permission.workspaceId,
+      },
+      user: owner.user,
+    };
   }
 
   @Mutation(() => Boolean)

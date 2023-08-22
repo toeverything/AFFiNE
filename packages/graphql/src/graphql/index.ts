@@ -129,6 +129,28 @@ query getCurrentUser {
 }`,
 };
 
+export const getInviteInfoQuery = {
+  id: 'getInviteInfoQuery' as const,
+  operationName: 'getInviteInfo',
+  definitionName: 'getInviteInfo',
+  containsFile: false,
+  query: `
+query getInviteInfo($inviteId: String!) {
+  getInviteInfo(inviteId: $inviteId) {
+    workspace {
+      id
+      name
+      avatar
+    }
+    user {
+      id
+      name
+      avatarUrl
+    }
+  }
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',

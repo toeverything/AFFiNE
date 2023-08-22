@@ -146,6 +146,29 @@ export type GetCurrentUserQuery = {
   };
 };
 
+export type GetInviteInfoQueryVariables = Exact<{
+  inviteId: Scalars['String']['input'];
+}>;
+
+export type GetInviteInfoQuery = {
+  __typename?: 'Query';
+  getInviteInfo: {
+    __typename?: 'InvitationType';
+    workspace: {
+      __typename?: 'InvitationWorkspaceType';
+      id: string;
+      name: string;
+      avatar: string | null;
+    };
+    user: {
+      __typename?: 'UserType';
+      id: string;
+      name: string;
+      avatarUrl: string | null;
+    };
+  };
+};
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -366,6 +389,11 @@ export type Queries =
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
+    }
+  | {
+      name: 'getInviteInfoQuery';
+      variables: GetInviteInfoQueryVariables;
+      response: GetInviteInfoQuery;
     }
   | {
       name: 'getMembersByWorkspaceIdQuery';

@@ -8,7 +8,7 @@ import request from 'supertest';
 import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
-import type { WorkspaceType } from '../modules/workspaces';
+import type { InvitationType,WorkspaceType } from '../modules/workspaces';
 
 export class NestDebugLogger implements LoggerService {
   log(message: string): any {
@@ -384,6 +384,37 @@ async function createTestApp() {
   return app;
 }
 
+async function getInviteInfo(
+  app: INestApplication,
+  token: string,
+  inviteId: string
+): Promise<InvitationType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          query {
+            getInviteInfo(inviteId: "${inviteId}") {
+              workspace {
+                id
+                name
+                avatar
+              }
+              user {
+                id
+                name
+                avatarUrl
+              }
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.workspace;
+}
+
 export {
   acceptInvite,
   acceptInviteById,
@@ -391,6 +422,7 @@ export {
   createWorkspace,
   currentUser,
   flushDB,
+  getInviteInfo,
   getPublicWorkspace,
   getWorkspace,
   inviteUser,

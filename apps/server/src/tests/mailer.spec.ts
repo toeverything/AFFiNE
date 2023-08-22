@@ -9,7 +9,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../app';
 import { MailService } from '../modules/auth/mailer';
-import { createWorkspace, inviteUser, signUp } from './utils';
+import { createWorkspace, getInviteInfo, inviteUser, signUp } from './utils';
 
 describe('Mail Module', () => {
   let app: INestApplication;
@@ -62,10 +62,22 @@ describe('Mail Module', () => {
         'Admin'
       );
 
+      const inviteInfo = await getInviteInfo(app, u1.token.token, inviteId);
+
       const resp = await mail.sendInviteEmail(
         'production@toeverything.info',
-        workspace.id,
-        inviteId
+        inviteId,
+        {
+          workspace: {
+            id: inviteInfo.workspace.id,
+            name: inviteInfo.workspace.name,
+            avatar: null,
+          },
+          user: {
+            avatar: inviteInfo.user?.avatarUrl || '',
+            name: inviteInfo.user?.name || '',
+          },
+        }
       );
 
       ok(resp.accepted.length === 1, 'failed to send invite email');
