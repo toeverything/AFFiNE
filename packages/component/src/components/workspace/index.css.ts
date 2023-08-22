@@ -97,6 +97,22 @@ export const mainContainerStyle = style({
   },
 } as ComplexStyleRule);
 
+globalStyle(`${mainContainerStyle} > div[data-panel-group]`, {
+  '@media': {
+    print: {
+      overflow: 'visible !important',
+    },
+  },
+});
+
+globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
+  '@media': {
+    print: {
+      overflow: 'visible !important',
+    },
+  },
+});
+
 export const toolStyle = style({
   position: 'fixed',
   right: '30px',
