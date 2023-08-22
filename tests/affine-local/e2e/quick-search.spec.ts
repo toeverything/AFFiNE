@@ -179,7 +179,7 @@ test('Not show navigation path if page is not a subpage or current page is not i
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
 });
 
-test('Assert the recent browse pages are on the recent list', async ({
+test('assert the recent browse pages are on the recent list', async ({
   page,
 }) => {
   await openHomePage(page);
@@ -187,20 +187,35 @@ test('Assert the recent browse pages are on the recent list', async ({
 
   // create first page
   await newPage(page);
-  await page.keyboard.insertText('sgtokidoki');
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('sgtokidoki', {
+      delay: 50,
+    });
+  }
   await page.waitForTimeout(200);
 
   // create second page
   await openQuickSearchByShortcut(page);
   const addNewPage = page.getByTestId('quick-search-add-new-page');
   await addNewPage.click();
-  await page.keyboard.insertText('theliquidhorse');
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('theliquidhorse', {
+      delay: 50,
+    });
+  }
   await page.waitForTimeout(200);
 
   // create thrid page
   await openQuickSearchByShortcut(page);
   await addNewPage.click();
-  await page.keyboard.insertText('battlekot');
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('battlekot', {
+      delay: 50,
+    });
+  }
   await page.waitForTimeout(200);
 
   await openQuickSearchByShortcut(page);
