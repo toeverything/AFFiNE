@@ -186,6 +186,7 @@ export type GetMembersByWorkspaceIdQuery = {
       permission: Permission;
       inviteId: string;
       accepted: boolean;
+      emailVerified: string | null;
     }>;
   };
 };

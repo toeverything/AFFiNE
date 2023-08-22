@@ -141,10 +141,20 @@ const MemberItem = ({
   const showOperationButton = isOwner && currentUser.email !== member.email;
   return (
     <div key={member.id} className={style.listItem}>
-      <Avatar size={36} url={member.avatarUrl as string} />
+      <Avatar
+        size={36}
+        url={member.avatarUrl as string}
+        name={(member.emailVerified ? member.name : member.email) as string}
+      />
       <div className={style.memberContainer}>
-        <div className={style.memberName}>{member.name}</div>
-        <div className={style.memberEmail}>{member.email}</div>
+        {member.emailVerified ? (
+          <>
+            <div className={style.memberName}>{member.name}</div>
+            <div className={style.memberEmail}>{member.email}</div>
+          </>
+        ) : (
+          <div className={style.memberName}>{member.email}</div>
+        )}
       </div>
       <div
         className={clsx(style.roleOrStatus, {
