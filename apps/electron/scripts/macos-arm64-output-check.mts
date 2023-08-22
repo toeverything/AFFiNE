@@ -1,5 +1,5 @@
-import { fileURLToPath } from 'node:url';
 import { readdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 const outputRoot = fileURLToPath(
   new URL(
