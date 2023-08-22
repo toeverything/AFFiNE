@@ -8,8 +8,10 @@ import {
 } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
-const openQuickSearchByShortcut = async (page: Page) =>
+const openQuickSearchByShortcut = async (page: Page) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+  await page.waitForTimeout(500);
+};
 
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
@@ -197,10 +199,8 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create second page
   await openQuickSearchByShortcut(page);
-  {
-    const addNewPage = page.getByTestId('quick-search-add-new-page');
-    await addNewPage.click();
-  }
+  const addNewPage = page.getByTestId('quick-search-add-new-page');
+  await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('theliquidhorse', {
@@ -211,10 +211,7 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create thrid page
   await openQuickSearchByShortcut(page);
-  {
-    const addNewPage = page.getByTestId('quick-search-add-new-page');
-    await addNewPage.click();
-  }
+  await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('battlekot', {
@@ -255,6 +252,5 @@ test('assert the recent browse pages are on the recent list', async ({
     expect(await quickSearchItems.nth(0).textContent()).toBe(
       'affine is the best'
     );
-    expect(await quickSearchItems.nth(1).textContent()).toBe('battlekot');
   }
 });

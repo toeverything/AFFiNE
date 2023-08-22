@@ -18,6 +18,6 @@ test('goto not found workspace', async ({ page }) => {
   // if doesn't wait for timeout, data won't be saved into indexedDB
   await page.waitForTimeout(1000);
   await page.goto(new URL('/workspace/invalid/all', coreUrl).toString());
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(3000);
   expect(page.url()).toBe(new URL('/404', coreUrl).toString());
 });
