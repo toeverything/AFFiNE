@@ -38,7 +38,7 @@ export const ShareExport = () => {
           gap={'4px'}
         />
       </div>
-      <div className={styles.rowContainerStyle}>
+      <div className={styles.columnContainerStyle}>
         <div className={styles.descriptionStyle}>
           {t['com.affine.share-menu.ShareViaExportDescription']()}
         </div>

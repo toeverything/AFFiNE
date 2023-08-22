@@ -33,15 +33,18 @@ export const containerStyle = style({
   flexDirection: 'column',
   gap: '8px',
 });
+
 export const indicatorContainerStyle = style({
   position: 'relative',
 });
+
 export const inputButtonRowStyle = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   marginTop: '16px',
 });
+
 export const titleContainerStyle = style({
   display: 'flex',
   alignItems: 'center',
@@ -51,11 +54,50 @@ export const titleContainerStyle = style({
   lineHeight: '22px',
   padding: '0 4px',
 });
-export const rowContainerStyle = style({
+export const subTitleStyle = style({
+  fontSize: 'var(--affine-font-sm)',
+  fontWeight: 500,
+  lineHeight: '22px',
+});
+
+export const columnContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   padding: '0 4px',
   width: '100%',
   gap: '12px',
+});
+
+export const rowContainerStyle = style({
+  display: 'flex',
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '12px',
+  padding: '4px',
+});
+
+export const radioButtonGroup = style({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  padding: '2px',
+  minWidth: '154px',
+  maxWidth: '250px',
+});
+
+export const radioButton = style({
+  color: 'var(--affine-text-secondary-color)',
+  selectors: {
+    '&[data-state="checked"]': {
+      color: 'var(--affine-text-primary-color)',
+    },
+  },
+});
+export const spanStyle = style({
+  padding: '4px 20px',
+});
+
+export const disableSharePage = style({
+  color: 'var(--affine-error-color)',
 });

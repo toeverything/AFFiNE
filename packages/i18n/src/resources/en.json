@@ -513,5 +513,8 @@
   "com.affine.share-menu.SharedPage": "Shared Page",
   "com.affine.share-menu.EnableCloudDescription": "Sharing page publicly requires AFFiNE Cloud service.",
   "com.affine.share-menu.ShareViaExport": "Share via Export",
-  "com.affine.share-menu.ShareViaExportDescription": "Download a static copy of your page to share with others."
+  "com.affine.share-menu.ShareViaExportDescription": "Download a static copy of your page to share with others.",
+  "com.affine.share-menu.ShareWithLink": "Share with link",
+  "com.affine.share-menu.ShareWithLinkDescription": "Create a link you can easily share with anyone. The visitors will open your page in the form od a document",
+  "com.affine.share-menu.ShareMode": "Share mode"
 }
