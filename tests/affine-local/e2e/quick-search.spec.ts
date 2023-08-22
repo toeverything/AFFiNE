@@ -8,8 +8,10 @@ import {
 } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
-const openQuickSearchByShortcut = async (page: Page) =>
+const openQuickSearchByShortcut = async (page: Page) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+  await page.waitForTimeout(500);
+};
 
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
