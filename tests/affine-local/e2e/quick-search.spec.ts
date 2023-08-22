@@ -113,6 +113,8 @@ test('Create a new page and search this page', async ({ page }) => {
 
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
+  await page.reload();
+  await waitEditorLoad(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
   await page.waitForTimeout(300);
