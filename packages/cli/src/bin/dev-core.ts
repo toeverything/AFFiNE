@@ -15,7 +15,7 @@ const flags: BuildFlags = {
   distribution: 'browser',
   mode: 'development',
   channel: 'canary',
-  coverage: false,
+  coverage: process.env.COVERAGE === 'true',
   localBlockSuite: undefined,
 };
 

@@ -70,7 +70,7 @@ const NameWorkspaceContent = ({
       <Input
         ref={ref => {
           if (ref) {
-            setTimeout(() => ref.focus(), 0);
+            window.setTimeout(() => ref.focus(), 0);
           }
         }}
         data-testid="create-workspace-input"

@@ -108,9 +108,26 @@ const CloudWorkSpaceList = ({
   return (
     <>
       <StyledModalHeader>
-        <StyledWorkspaceFlavourTitle>
-          {t['com.affine.workspace.cloud']()}
-        </StyledWorkspaceFlavourTitle>
+        <StyledModalHeaderLeft>
+          <StyledModalTitle>
+            {t['com.affine.workspace.cloud.sync']()}
+          </StyledModalTitle>
+        </StyledModalHeaderLeft>
+
+        <StyledOperationWrapper>
+          <Menu
+            placement="bottom-end"
+            trigger={['click']}
+            content={<AccountMenu />}
+            zIndex={1000}
+          >
+            <IconButton
+              data-testid="previous-image-button"
+              icon={<MoreHorizontalIcon />}
+              type="plain"
+            />
+          </Menu>
+        </StyledOperationWrapper>
       </StyledModalHeader>
       <StyledModalContent>
         <WorkspaceList
