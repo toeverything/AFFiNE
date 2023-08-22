@@ -7,7 +7,6 @@ import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suit
 import { Command } from 'cmdk';
 import { useAtomValue } from 'jotai';
 import type { Dispatch, SetStateAction } from 'react';
-import { useRef } from 'react';
 
 import { recentPageSettingsAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -33,17 +32,6 @@ export const Results = ({
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
   const list = useSwitchToConfig(workspace.id);
-  const onceRef = useRef(false);
-  if (!onceRef.current) {
-    // this is a yJS bug, we need to refresh the index manually
-    blockSuiteWorkspace.pages.forEach(page => {
-      blockSuiteWorkspace.indexer.search.refreshPageIndex(
-        page.id,
-        page.spaceDoc
-      );
-    });
-    onceRef.current = true;
-  }
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
