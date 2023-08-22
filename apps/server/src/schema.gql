@@ -109,7 +109,7 @@ type InvitationWorkspaceType {
   name: String!
 
   """Base64 encoded avatar"""
-  avatar: String
+  avatar: String!
 }
 
 type InvitationType {

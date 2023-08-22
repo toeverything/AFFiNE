@@ -19,4 +19,5 @@ export const inviteModalButtonContainer = style({
 export const inviteName = style({
   marginLeft: '4px',
   marginRight: '10px',
+  color: 'var(--affine-black)',
 });

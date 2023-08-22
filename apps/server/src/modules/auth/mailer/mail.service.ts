@@ -7,7 +7,7 @@ import {
   type Options,
   type Response,
 } from './mailer';
-
+import { emailTemplate } from './template';
 @Injectable()
 export class MailService {
   constructor(
@@ -34,7 +34,7 @@ export class MailService {
       workspace: {
         id: string;
         name: string;
-        avatar: Buffer | null;
+        avatar: string;
       };
       user: {
         avatar: string;
@@ -42,55 +42,35 @@ export class MailService {
       };
     }
   ) {
+    console.log('invitationInfo', invitationInfo);
+
     const buttonUrl = `${this.config.baseUrl}/invite/${inviteId}`;
-    const url = `${this.config.baseUrl}/workspaces/${invitationInfo.workspace.id}/all`;
-    const workspaceAvatar = invitationInfo.workspace.avatar || new Buffer('');
-    const html = `
-          <h1>Invitation to workspace</h1>
-    <p>
-        <img
-                    src="${invitationInfo.user.avatar}"
-                    alt="Inviter avatar"
-                    width="16px"
-                    height="16px"
-                  />
-                  <span>${invitationInfo.user.name}</span>
-                  <span>invited you to join</span>
-                  <img
-                    src="cid:workspaceAvatar"
-                    alt="Workspace avatar"
-                    width="16px"
-                    height="16px"
-                  />
-                  <span>${invitationInfo.workspace.name}</span>
+    const workspaceAvatar = invitationInfo.workspace.avatar;
 
-    </p>
+    const content = `  <img
+    src="${invitationInfo.user.avatar}"
+    alt=""
+    width="24px"
+    height="24px"
+    style="border-radius: 12px;object-fit: cover;vertical-align: middle"
+  />
+  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.user.name}</span>
+  <span>invited you to join</span>
+  <img
+    src="cid:workspaceAvatar"
+    alt=""
+    width="24px"
+    height="24px"
+    style="margin-left:10px;border-radius: 12px;object-fit: cover;vertical-align: middle"
+  />
+  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.workspace.name}</span>`;
 
-    <p>${invitationInfo.user.avatar}</p>
-
-    <a href="${buttonUrl}">${buttonUrl}</a>
-    <p>
-    <a
-      href="${buttonUrl}"
-      target="_blank"
-      style="
-        font-size: 15px;
-        font-family: Inter;
-        line-height: 24px;
-        color: #fff;
-        text-decoration: none;
-        border-radius: 8px;
-        padding: 8px 18px;
-        border: 1px solid #1e96eb;
-        background-color: #1e96eb;
-        display: inline-block;
-        font-weight: bold;
-      "
-      >Accept & Join</a
-    >
-</p>>
-    <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'You are invited!',
+      content,
+      buttonContent: 'Accept & Join',
+      buttonUrl,
+    });
 
     return this.sendMail({
       from: this.config.auth.email.sender,
@@ -100,8 +80,9 @@ export class MailService {
       attachments: [
         {
           cid: 'workspaceAvatar',
-          filename: 'image.jpg',
+          filename: 'image.png',
           content: workspaceAvatar,
+          encoding: 'base64',
         },
       ],
     });

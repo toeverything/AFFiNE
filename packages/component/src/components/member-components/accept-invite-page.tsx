@@ -20,7 +20,7 @@ export const AcceptInvitePage = ({
       subtitle={
         <FlexWrapper alignItems="center">
           <Avatar
-            url={inviteInfo.user.avatarUrl || undefined}
+            url={inviteInfo.user.avatarUrl || ''}
             name={inviteInfo.user.name}
             size={20}
             // FIXME: fix it in @toeverything/components/avatar
@@ -33,7 +33,7 @@ export const AcceptInvitePage = ({
           <span className={styles.inviteName}>{inviteInfo.user.name}</span>
           {t['invited you to join']()}
           <Avatar
-            url={inviteInfo.user.avatarUrl || undefined}
+            url={`data:image/png;base64,${inviteInfo.workspace.avatar}`}
             name={inviteInfo.workspace.name}
             size={20}
             style={{ marginLeft: 4 }}

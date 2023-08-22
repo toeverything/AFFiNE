@@ -38,7 +38,7 @@ export function useNavigateHelper() {
   );
   const jumpToWorkspace = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate(`/workspace/${workspaceId}`, {
+      return navigate(`/workspace/${workspaceId}/all`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },

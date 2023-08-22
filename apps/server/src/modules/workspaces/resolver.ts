@@ -31,6 +31,7 @@ import { AuthService } from '../auth/service';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
+import { defaultWorkspaceAvatar } from './utils';
 
 registerEnumType(Permission, {
   name: 'Permission',
@@ -82,7 +83,7 @@ export class InvitationWorkspaceType {
   name!: string;
 
   @Field(() => String, {
-    nullable: true,
+    // nullable: true,
     description: 'Base64 encoded avatar',
   })
   avatar!: string;
@@ -457,20 +458,20 @@ export class WorkspaceResolver {
       },
     });
 
-    let avatarBuffer: Buffer | null = null;
+    let avatar = '';
 
     if (metaJSON.avatar) {
       const avatarBlob = await this.storage.getBlob(
         permission.workspaceId,
         metaJSON.avatar
       );
-      avatarBuffer = avatarBlob?.data || null;
+      avatar = avatarBlob?.data.toString('base64') || '';
     }
 
     return {
       workspace: {
         name: metaJSON.name || '',
-        avatar: avatarBuffer,
+        avatar: avatar || defaultWorkspaceAvatar,
         id: permission.workspaceId,
       },
       user: owner.user,

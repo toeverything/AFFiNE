@@ -71,7 +71,7 @@ describe('Mail Module', () => {
           workspace: {
             id: inviteInfo.workspace.id,
             name: inviteInfo.workspace.name,
-            avatar: null,
+            avatar: '',
           },
           user: {
             avatar: inviteInfo.user?.avatarUrl || '',
