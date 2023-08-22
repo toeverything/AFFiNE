@@ -27,5 +27,5 @@
   "dependencies": {
     "lit": "^2.7.5"
   },
-  "version": "0.7.2"
+  "version": "0.7.3"
 }
