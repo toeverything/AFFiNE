@@ -208,7 +208,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@toeverything/components": ^0.0.12
+    "@toeverything/components": ^0.0.13
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.3.1
@@ -260,7 +260,7 @@ __metadata:
     "@sentry/webpack-plugin": ^2.6.2
     "@svgr/webpack": ^8.1.0
     "@swc/core": ^1.3.77
-    "@toeverything/components": ^0.0.12
+    "@toeverything/components": ^0.0.13
     "@types/lodash-es": ^4.17.8
     "@types/lodash.debounce": ^4.0.7
     "@types/webpack-env": ^1.18.1
@@ -437,7 +437,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
-    "@toeverything/components": ^0.0.12
+    "@toeverything/components": ^0.0.13
   languageName: unknown
   linkType: soft
 
@@ -463,7 +463,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
-    "@toeverything/components": ^0.0.12
+    "@toeverything/components": ^0.0.13
     "@toeverything/theme": ^0.7.12
     clsx: ^2.0.0
     foxact: ^0.2.20
@@ -582,7 +582,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
-    "@toeverything/components": ^0.0.12
+    "@toeverything/components": ^0.0.13
     jotai: ^2.3.1
     react: 18.2.0
     react-dom: 18.2.0
@@ -12909,9 +12909,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/components@npm:^0.0.12":
-  version: 0.0.12
-  resolution: "@toeverything/components@npm:0.0.12"
+"@toeverything/components@npm:^0.0.13":
+  version: 0.0.13
+  resolution: "@toeverything/components@npm:0.0.13"
   dependencies:
     "@blocksuite/icons": ^2.1.30
   peerDependencies:
@@ -12919,7 +12919,7 @@ __metadata:
     clsx: ^2
     react: ^18
     react-dom: ^18
-  checksum: a674444f5931f0267cba26792182e83411d938ec7c1929be20125de4451157584a4a08848e66bd2e69549517f685d250616ef6592446cbdc50be8618d7e966af
+  checksum: 0d6077455ffc4aed00216a1d87957ecc66e2c78c88d52a97232672edb9382ae6663a62e1d44543c859456697a4e1e101f2640e92abf27b9bee359266e3c33b73
   languageName: node
   linkType: hard
 

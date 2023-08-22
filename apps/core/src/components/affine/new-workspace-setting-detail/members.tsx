@@ -143,7 +143,7 @@ const MemberItem = ({
     <div key={member.id} className={style.listItem}>
       <Avatar
         size={36}
-        url={member.avatarUrl as string}
+        url={member.avatarUrl}
         name={(member.emailVerified ? member.name : member.email) as string}
       />
       <div className={style.memberContainer}>
