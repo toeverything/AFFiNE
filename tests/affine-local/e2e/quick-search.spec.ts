@@ -120,6 +120,16 @@ test('Create a new page and search this page', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
+
+  await page.reload();
+  await waitEditorLoad(page);
+  await openQuickSearchByShortcut(page);
+  await page.keyboard.insertText('test123456');
+  await page.waitForTimeout(300);
+  await assertResultList(page, ['test123456']);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  await assertTitle(page, 'test123456');
 });
 test('Navigate to the 404 page and try to open quick search', async ({
   page,
