@@ -4,7 +4,6 @@ import {
   SaveCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
-import { ShareMenu } from '@affine/component/share-menu';
 import type { Collection } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type {
@@ -12,12 +11,11 @@ import type {
   WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { openDisableCloudAlertModalAtom } from '../atoms';
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
+import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
 import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
@@ -80,10 +78,6 @@ export function WorkspaceHeader({
   const setting = useCollectionManager(currentWorkspaceId);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
-  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
-  const handleOpenDisableCloudAlertModal = useCallback(() => {
-    setOpen(true);
-  }, [setOpen]);
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -132,12 +126,7 @@ export function WorkspaceHeader({
       }
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ShareMenu
-            workspace={currentWorkspace}
-            currentPage={currentPage}
-            onEnableAffineCloud={handleOpenDisableCloudAlertModal}
-            togglePagePublic={async () => {}}
-          />
+          <SharePageModal workspace={currentWorkspace} page={currentPage} />
           <PluginHeader />
         </div>
       );
