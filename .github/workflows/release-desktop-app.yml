@@ -254,7 +254,7 @@ jobs:
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/${{ env.BUILD_TYPE }}/make -DestinationPath archive.zip
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
 
       - name: get all files to be signed
         id: get_files_to_be_signed
