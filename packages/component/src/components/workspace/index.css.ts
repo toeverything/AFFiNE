@@ -97,6 +97,9 @@ export const mainContainerStyle = style({
   },
 } as ComplexStyleRule);
 
+// These styles override the default styles of the react-resizable-panels
+// as the default styles make the overflow part hidden when printing to PDF.
+// See https://github.com/toeverything/AFFiNE/pull/3893
 globalStyle(`${mainContainerStyle} > div[data-panel-group]`, {
   '@media': {
     print: {
@@ -105,6 +108,9 @@ globalStyle(`${mainContainerStyle} > div[data-panel-group]`, {
   },
 });
 
+// These styles override the default styles of the react-resizable-panels
+// as the default styles make the overflow part hidden when printing to PDF.
+// See https://github.com/toeverything/AFFiNE/pull/3893
 globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
   '@media': {
     print: {
