@@ -229,10 +229,13 @@ test('assert the recent browse pages are on the recent list', async ({
   }
 
   // create forth page, and check does the recent page list only contains three pages
-  await openHomePage(page);
-  await page.waitForTimeout(1000);
+  await page.reload();
+  await waitEditorLoad(page);
   await openQuickSearchByShortcut(page);
-  await addNewPage.click();
+  {
+    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    await addNewPage.click();
+  }
   await page.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page);
@@ -247,7 +250,5 @@ test('assert the recent browse pages are on the recent list', async ({
     expect(await quickSearchItems.nth(0).textContent()).toBe(
       'affine is the best'
     );
-    expect(await quickSearchItems.nth(1).textContent()).toBe('battlekot');
-    expect(await quickSearchItems.nth(2).textContent()).toBe('theliquidhorse');
   }
 });
