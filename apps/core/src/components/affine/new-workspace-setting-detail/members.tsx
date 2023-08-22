@@ -53,7 +53,7 @@ export const CloudWorkspaceMembersPanel = (
   const isOwner = useIsWorkspaceOwner(workspaceId);
   const currentUser = useCurrentUser();
 
-  const invite = useInviteMember(workspaceId);
+  const { invite, isMutating } = useInviteMember(workspaceId);
   const [open, setOpen] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
@@ -96,6 +96,7 @@ export const CloudWorkspaceMembersPanel = (
               open={open}
               setOpen={setOpen}
               onConfirm={onInviteConfirm}
+              isMutating={isMutating}
             />
           </>
         ) : null}

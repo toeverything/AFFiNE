@@ -13,6 +13,7 @@ export interface InviteModalProps {
   open: boolean;
   setOpen: (value: boolean) => void;
   onConfirm: (params: { email: string; permission: Permission }) => void;
+  isMutating: boolean;
 }
 
 const PermissionMenu = ({
@@ -55,7 +56,12 @@ const PermissionMenu = ({
   );
 };
 
-export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
+export const InviteModal = ({
+  open,
+  setOpen,
+  onConfirm,
+  isMutating,
+}: InviteModalProps) => {
   const t = useAFFiNEI18N();
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
@@ -80,6 +86,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
   useEffect(() => {
     if (!open) {
       setInviteEmail('');
+      setIsValidEmail(true);
     }
   }, [open]);
 
@@ -103,6 +110,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
           {t['Invite Members Message']()}
           {/*TODO: check email & add placeholder*/}
           <AuthInput
+            disabled={isMutating}
             placeholder="email@example.com"
             value={inviteEmail}
             onChange={setInviteEmail}
@@ -125,7 +133,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
           <Button style={{ marginRight: 20 }} onClick={handleCancel}>
             {t['Cancel']()}
           </Button>
-          <Button type="primary" onClick={handleConfirm}>
+          <Button type="primary" onClick={handleConfirm} loading={isMutating}>
             {t['Invite']()}
           </Button>
         </div>
