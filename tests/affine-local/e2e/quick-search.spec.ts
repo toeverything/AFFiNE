@@ -234,7 +234,10 @@ test('assert the recent browse pages are on the recent list', async ({
   await openHomePage(page);
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
-  await addNewPage.click();
+  {
+    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    await addNewPage.click();
+  }
   await page.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page);
