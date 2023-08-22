@@ -183,7 +183,7 @@ const BookMarkUI = ({ page }: BookMarkProps) => {
       if (!shouldShowBookmarkMenu(pastedBlocks)) {
         return;
       }
-      setTimeout(() => {
+      window.setTimeout(() => {
         setAnchor(getCurrentNativeRange());
       }, 100);
     });

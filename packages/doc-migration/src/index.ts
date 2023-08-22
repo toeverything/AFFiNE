@@ -22,5 +22,3 @@ const migratedDoc = upgradeYDoc(originalDoc);
 
 saveYDocJSON(jsonOutputFile, migratedDoc);
 saveYDocBinary(migratedDoc, folder);
-
-// const ids = [...migratedDoc.get('meta').get('pages')].map(ele => ele.get('id'));

@@ -121,3 +121,7 @@ runs:
     - name: Build Infra
       shell: bash
       run: yarn run build:infra
+
+    - name: Build Plugins
+      shell: bash
+      run: yarn run build:plugins

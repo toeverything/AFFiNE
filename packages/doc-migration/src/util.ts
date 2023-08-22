@@ -79,9 +79,9 @@ export function upgradeYDoc(
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function migrateYDoc() {
   const docs = await prismOldService.getYDocs();
-  const saveMigratedDoc = (migratedDoc: Doc) => {
+  const saveMigratedDoc = async (migratedDoc: Doc) => {
     const workspaceId = migratedDoc.guid;
-    prismaNewService.insertYDoc(
+    await prismaNewService.insertYDoc(
       workspaceId,
       migratedDoc.guid,
       encodeStateAsUpdate(migratedDoc)
@@ -94,7 +94,7 @@ async function migrateYDoc() {
       >),
     ].map(ele => ele.get('id'))) {
       const subDoc = subDocs.get(id as string) as Doc;
-      prismaNewService.insertYDoc(
+      await prismaNewService.insertYDoc(
         workspaceId,
         subDoc.guid,
         encodeStateAsUpdate(subDoc)
