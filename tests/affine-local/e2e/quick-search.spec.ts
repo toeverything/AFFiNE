@@ -231,7 +231,7 @@ test('assert the recent browse pages are on the recent list', async ({
   }
 
   // create forth page, and check does the recent page list only contains three pages
-  await openHomePage(page);
+  await page.reload();
   await waitEditorLoad(page);
   await openQuickSearchByShortcut(page);
   {
