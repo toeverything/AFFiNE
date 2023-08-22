@@ -91,7 +91,7 @@ Basic.play = async ({ canvasElement }) => {
     expect(button).not.toBeNull();
     button.click();
   }
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise(resolve => window.setTimeout(resolve, 100));
   {
     const button = canvasElement.querySelector(
       '[data-testid="share-menu-enable-affine-cloud-button"]'
