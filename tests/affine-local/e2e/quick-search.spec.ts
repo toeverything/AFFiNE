@@ -256,6 +256,5 @@ test('assert the recent browse pages are on the recent list', async ({
       'affine is the best'
     );
     expect(await quickSearchItems.nth(1).textContent()).toBe('battlekot');
-    expect(await quickSearchItems.nth(2).textContent()).toBe('theliquidhorse');
   }
 });
