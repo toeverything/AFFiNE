@@ -52,12 +52,7 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
           'Server-Timing',
           `gql;dur=${costInMilliseconds};desc="GraphQL ${operation}"`
         );
-        const variables = reqContext.request.variables;
-        this.logger.error(
-          `${requestInfo}, query: ${reqContext.request.query}, ${
-            variables ? `variables: ${JSON.stringify(variables)}` : ''
-          }`
-        );
+        this.logger.error(`${requestInfo}, query: ${reqContext.request.query}`);
         return Promise.resolve();
       },
     });
