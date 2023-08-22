@@ -1,11 +1,17 @@
 import { test } from '@affine-test/kit/playwright';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { newPage, waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  getBlockSuiteEditorTitle,
+  newPage,
+  waitEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
-const openQuickSearchByShortcut = async (page: Page) =>
+const openQuickSearchByShortcut = async (page: Page) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+  await page.waitForTimeout(500);
+};
 
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
@@ -173,4 +179,78 @@ test('Not show navigation path if page is not a subpage or current page is not i
   await waitEditorLoad(page);
   await openQuickSearchByShortcut(page);
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
+});
+
+test('assert the recent browse pages are on the recent list', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+
+  // create first page
+  await newPage(page);
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('sgtokidoki', {
+      delay: 50,
+    });
+  }
+  await page.waitForTimeout(200);
+
+  // create second page
+  await openQuickSearchByShortcut(page);
+  const addNewPage = page.getByTestId('quick-search-add-new-page');
+  await addNewPage.click();
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('theliquidhorse', {
+      delay: 50,
+    });
+  }
+  await page.waitForTimeout(200);
+
+  // create thrid page
+  await openQuickSearchByShortcut(page);
+  await addNewPage.click();
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('battlekot', {
+      delay: 50,
+    });
+  }
+  await page.waitForTimeout(200);
+
+  await openQuickSearchByShortcut(page);
+  await page.waitForTimeout(200);
+  {
+    // check does all 3 pages exists on recent page list
+    const quickSearchItems = page.locator('[cmdk-item]');
+    expect(await quickSearchItems.nth(0).textContent()).toBe('battlekot');
+    expect(await quickSearchItems.nth(1).textContent()).toBe('theliquidhorse');
+    expect(await quickSearchItems.nth(2).textContent()).toBe('sgtokidoki');
+  }
+
+  // create forth page, and check does the recent page list only contains three pages
+  await page.reload();
+  await waitEditorLoad(page);
+  await openQuickSearchByShortcut(page);
+  {
+    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    await addNewPage.click();
+  }
+  await page.waitForTimeout(200);
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.type('affine is the best', {
+      delay: 50,
+    });
+  }
+  await page.waitForTimeout(1000);
+  await openQuickSearchByShortcut(page);
+  {
+    const quickSearchItems = page.locator('[cmdk-item]');
+    expect(await quickSearchItems.nth(0).textContent()).toBe(
+      'affine is the best'
+    );
+  }
 });

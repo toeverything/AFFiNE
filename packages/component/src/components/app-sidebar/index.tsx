@@ -35,7 +35,7 @@ export type AppSidebarProps = PropsWithChildren<
 function useEnableAnimation() {
   const [enable, setEnable] = useState(false);
   useEffect(() => {
-    setTimeout(() => {
+    window.setTimeout(() => {
       setEnable(true);
     }, 500);
   }, []);

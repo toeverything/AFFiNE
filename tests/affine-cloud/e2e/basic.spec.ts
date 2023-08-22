@@ -1,8 +1,29 @@
-import userA from '@affine-test/fixtures/userA.json';
 import { test } from '@affine-test/kit/playwright';
+import {
+  createRandomUser,
+  deleteUser,
+  getLoginCootie,
+} from '@affine-test/kit/utils/cloud';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
+
+let user: {
+  name: string;
+  email: string;
+  password: string;
+};
+
+test.beforeEach(async () => {
+  user = await createRandomUser();
+});
+
+test.afterEach(async () => {
+  // if you want to keep the user in the database for debugging,
+  // comment this line
+  await deleteUser(user.email);
+});
 
 test('server exist', async ({ page }) => {
   await openHomePage(page);
@@ -12,48 +33,30 @@ test('server exist', async ({ page }) => {
   expect(json.message).toMatch(/^AFFiNE GraphQL server/);
 });
 
-test.fixme('login', async ({ page, context }) => {
-  await openHomePage(page);
-  await waitEditorLoad(page);
-
-  await page.getByText('Demo Workspace').click();
-  await page.getByText('Sign in AFFiNE Cloud').click();
-  await page.getByPlaceholder('torvalds@osdl.org').fill(userA.email);
-  await page.getByLabel('Password').fill(userA.password);
-  await page.getByText('Sign in with Password').click();
-  await page.getByText('Demo Workspace').click();
-  expect(
-    (await context.cookies()).find(c => c.name === 'next-auth.session-token')
-  ).toBeTruthy();
-});
-
-test.fixme('enable cloud', async ({ page }) => {
+test('enable cloud success', async ({ page, context }) => {
   await page.goto('http://localhost:8080');
   await page.waitForSelector('v-line');
 
-  await page.getByText('Demo Workspace').click();
-  await page.getByText('Sign in AFFiNE Cloud').click();
-  await page.getByPlaceholder('torvalds@osdl.org').fill(userA.email);
-  await page.getByLabel('Password').fill(userA.password);
-  await page.getByText('Sign in with Password').click();
-  await page.waitForTimeout(1000);
-  await page.getByText('Demo Workspace').click();
-  await page.getByTestId('new-workspace').click({
-    timeout: 100000,
+  await clickSideBarCurrentWorkspaceBanner(page);
+  await page.getByTestId('cloud-signin-button').click({
+    delay: 200,
   });
-  await page.getByTestId('create-workspace-input').type('Test Cloud');
-  await page.getByTestId('create-workspace-create-button').click();
+  await page.getByPlaceholder('Enter your email address').type(user.email, {
+    delay: 50,
+  });
+  await page.getByTestId('continue-login-button').click({
+    delay: 200,
+  });
+  await page.getByTestId('sign-in-with-password').click({
+    delay: 200,
+  });
+  await page.getByTestId('password-input').type('123456', {
+    delay: 50,
+  });
+  expect(await getLoginCootie(context)).toBeUndefined();
+  await page.getByTestId('sign-in-button').click();
   await page.waitForTimeout(1000);
-  await page.getByTestId('slider-bar-workspace-setting-button').click();
-  await page.getByTestId('current-workspace-label').click();
-  await page.waitForTimeout(1000);
-  await page.getByTestId('publish-enable-affine-cloud-button').click();
-  await page.getByTestId('confirm-enable-affine-cloud-button').click();
-  await page.waitForTimeout(10000);
-  expect(await page.getByTestId('workspace-name').textContent()).toBe(
-    'Test Cloud'
-  );
-  expect(await page.getByTestId('workspace-flavour').textContent()).toBe(
-    'AFFiNE Cloud'
-  );
+  await page.reload();
+  await waitEditorLoad(page);
+  expect(await getLoginCootie(context)).toBeTruthy();
 });
