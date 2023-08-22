@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Vue hello world plugin",
-  "version": "0.8.0-beta.1",
+  "version": "0.8.0-beta.2",
   "scripts": {
     "dev": "af dev",
     "build": "af build"

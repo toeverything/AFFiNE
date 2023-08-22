@@ -1,7 +1,7 @@
 {
   "name": "@affine/plugin-cli",
   "type": "module",
-  "version": "0.8.0-beta.1",
+  "version": "0.8.0-beta.2",
   "bin": {
     "af": "./src/af.mjs"
   },
