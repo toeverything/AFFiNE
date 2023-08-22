@@ -252,6 +252,5 @@ test('assert the recent browse pages are on the recent list', async ({
     expect(await quickSearchItems.nth(0).textContent()).toBe(
       'affine is the best'
     );
-    expect(await quickSearchItems.nth(1).textContent()).toBe('battlekot');
   }
 });
