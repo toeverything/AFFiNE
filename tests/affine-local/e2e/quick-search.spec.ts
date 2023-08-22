@@ -197,8 +197,10 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create second page
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.getByTestId('quick-search-add-new-page');
-  await addNewPage.click();
+  {
+    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    await addNewPage.click();
+  }
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('theliquidhorse', {
@@ -209,7 +211,10 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create thrid page
   await openQuickSearchByShortcut(page);
-  await addNewPage.click();
+  {
+    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    await addNewPage.click();
+  }
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('battlekot', {
@@ -232,7 +237,10 @@ test('assert the recent browse pages are on the recent list', async ({
   await openHomePage(page);
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
-  await addNewPage.click();
+  {
+    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    await addNewPage.click();
+  }
   await page.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page);
