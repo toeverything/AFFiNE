@@ -232,7 +232,7 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create forth page, and check does the recent page list only contains three pages
   await openHomePage(page);
-  await page.waitForTimeout(1000);
+  await waitEditorLoad(page);
   await openQuickSearchByShortcut(page);
   {
     const addNewPage = page.getByTestId('quick-search-add-new-page');
