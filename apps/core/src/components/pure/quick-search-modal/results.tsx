@@ -2,6 +2,7 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
@@ -14,12 +15,17 @@ import type { AllWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
 import { StyledListItem, StyledNotFound } from './style';
 
+export function search(workspace: Workspace, query: string): PageMeta[] {
+  return workspace.meta.pageMetas.filter(meta => meta.title.includes(query));
+}
+
 export interface ResultsProps {
   workspace: AllWorkspace;
   query: string;
   onClose: () => void;
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
 }
+
 export const Results = ({
   query,
   workspace,
@@ -35,14 +41,7 @@ export const Results = ({
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
   const { jumpToPage, jumpToSubPath } = useNavigateHelper();
-  const results = blockSuiteWorkspace.search({ query });
-
-  // remove `space:` prefix
-  const pageIds = [...results.values()].map(id => id.slice(6));
-
-  const resultsPageMeta = pageList.filter(
-    page => pageIds.indexOf(page.id) > -1 && !page.trash
-  );
+  const resultsPageMeta = search(blockSuiteWorkspace, query);
 
   const recentlyViewedItem = recentPageSetting.filter(recent => {
     const page = pageList.find(page => recent.id === page.id);
