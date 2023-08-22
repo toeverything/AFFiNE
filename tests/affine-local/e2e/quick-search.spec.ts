@@ -197,10 +197,8 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create second page
   await openQuickSearchByShortcut(page);
-  {
-    const addNewPage = page.getByTestId('quick-search-add-new-page');
-    await addNewPage.click();
-  }
+  const addNewPage = page.getByTestId('quick-search-add-new-page');
+  await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('theliquidhorse', {
@@ -211,10 +209,7 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create thrid page
   await openQuickSearchByShortcut(page);
-  {
-    const addNewPage = page.getByTestId('quick-search-add-new-page');
-    await addNewPage.click();
-  }
+  await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('battlekot', {
@@ -234,13 +229,10 @@ test('assert the recent browse pages are on the recent list', async ({
   }
 
   // create forth page, and check does the recent page list only contains three pages
-  await page.reload();
-  await waitEditorLoad(page);
+  await openHomePage(page);
+  await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
-  {
-    const addNewPage = page.getByTestId('quick-search-add-new-page');
-    await addNewPage.click();
-  }
+  await addNewPage.click();
   await page.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page);
@@ -256,5 +248,6 @@ test('assert the recent browse pages are on the recent list', async ({
       'affine is the best'
     );
     expect(await quickSearchItems.nth(1).textContent()).toBe('battlekot');
+    expect(await quickSearchItems.nth(2).textContent()).toBe('theliquidhorse');
   }
 });
