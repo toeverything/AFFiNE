@@ -296,7 +296,7 @@ jobs:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: .
       - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath apps/electron/out/make
+        run: Expand-Archive -Path signed.zip -DestinationPath apps/electron/out/${{ env.BUILD_TYPE }}/make
 
       - name: Save artifacts
         run: |
