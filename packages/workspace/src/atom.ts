@@ -128,13 +128,12 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         try {
           const item = await list();
           // remove the metadata that is not in the list
+          //  because we treat the workspace adapter as the source of truth
           {
             const removed = metadata.filter(
               meta =>
                 !item.some(x => x.id === meta.id && x.flavour === meta.flavour)
             );
-            // remove the metadata that is not in the list
-            //  because we treat the workspace adapter as the source of truth
             removed.forEach(meta => {
               metadata.splice(metadata.indexOf(meta), 1);
             });
