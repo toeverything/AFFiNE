@@ -21,18 +21,16 @@
       "sys:flavour": "affine:note",
       "sys:children": [
         "jArWNRgiLB",
-        "pIToP0PXp_",
         "TUx2T-R2zT",
         "tKK8W8BwHQ",
         "q4UGzfn08o",
         "yDnnnpnCFh",
-        "_whbfMygjE",
         "Uq0yIH932N",
         "Ag86EJnVv0",
         "iQUJlC0oQT",
         "wtxc_a6qxN"
       ],
-      "prop:xywh": "[-12.5684605441112,-52.45959387999099,800,554]",
+      "prop:xywh": "[-12.5684605441112,-52.45959387999099,800,578]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
@@ -47,97 +45,6 @@
           "insert": "Basic things you should know: "
         }
       ]
-    },
-    "Uq0yIH932N": {
-      "sys:id": "Uq0yIH932N",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "🎉Congratulations! You already go through all of this list!"
-        }
-      ]
-    },
-    "wtxc_a6qxN": {
-      "sys:id": "wtxc_a6qxN",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "⏰Kindly Reminder: This page is automatically set up in the "
-        },
-        {
-          "insert": "+New Workspace",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": ". If you ever find yourself unsure about how to use AFFiNE, simply click on the workspace avatar and select \"Add a New Workspace\" to revisit this page and get the guidance you need."
-        }
-      ]
-    },
-    "iQUJlC0oQT": {
-      "sys:id": "iQUJlC0oQT",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "Ag86EJnVv0": {
-      "sys:id": "Ag86EJnVv0",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Click the "
-        },
-        {
-          "insert": "+ New Page",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " button at the bottom of your sidebar to start your journey in AFFiNE"
-        }
-      ]
-    },
-    "3emiITrWa-": {
-      "sys:id": "3emiITrWa-",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "1"
-        }
-      ],
-      "prop:type": "text"
-    },
-    "bTFvYq7VoW": {
-      "sys:id": "bTFvYq7VoW",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "2"
-        }
-      ],
-      "prop:type": "text"
-    },
-    "ap0Fo24XrG": {
-      "sys:id": "ap0Fo24XrG",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "3"
-        }
-      ],
-      "prop:type": "text"
     },
     "TUx2T-R2zT": {
       "sys:id": "TUx2T-R2zT",
@@ -284,10 +191,10 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Click the drop-down menu"
+          "insert": "Click the drop-down menu "
         },
         {
-          "insert": " \"v\" next to the title for more advanced options",
+          "insert": "\"v\" next to the title for more advanced options",
           "attributes": {
             "bold": true
           }
@@ -328,26 +235,83 @@
       ],
       "prop:checked": false
     },
-    "pIToP0PXp_": {
-      "sys:id": "pIToP0PXp_",
+    "Uq0yIH932N": {
+      "sys:id": "Uq0yIH932N",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h6",
+      "prop:text": [
+        {
+          "insert": "🎉 Congratulations! You already go through all of this list!"
+        }
+      ]
+    },
+    "Ag86EJnVv0": {
+      "sys:id": "Ag86EJnVv0",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Click the"
+        },
+        {
+          "insert": " ",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        },
+        {
+          "insert": "+ New Page",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)",
+            "bold": true
+          }
+        },
+        {
+          "insert": " ",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        },
+        {
+          "insert": "button at the bottom of your sidebar to start your journey in AFFiNE"
+        }
+      ]
+    },
+    "iQUJlC0oQT": {
+      "sys:id": "iQUJlC0oQT",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
       "prop:text": []
     },
-    "_whbfMygjE": {
-      "sys:id": "_whbfMygjE",
+    "wtxc_a6qxN": {
+      "sys:id": "wtxc_a6qxN",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
-      "prop:text": []
-    },
-    "EvpnX1Hvao": {
-      "sys:id": "EvpnX1Hvao",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
+      "prop:text": [
+        {
+          "insert": "⏰ Kindly Reminder: This page is automatically set up in the"
+        },
+        {
+          "insert": " ",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        },
+        {
+          "insert": "+New Workspace",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)",
+            "bold": true
+          }
+        },
+        {
+          "insert": ". If you ever find yourself unsure about how to use AFFiNE, simply click on the workspace avatar and select \"Add a New Workspace\" to revisit this page and get the guidance you need."
+        }
+      ]
     }
   }
 }

@@ -20,8 +20,8 @@
       "sys:id": "q7fYMX90uJ",
       "sys:flavour": "affine:note",
       "sys:children": [
+        "IuRC73HZLH",
         "YuOqeDHzoe",
-        "NPJSzQaJZ_",
         "jPGxHHA_QX",
         "sCk70nT5eX",
         "iKwcxVFpCH",
@@ -34,7 +34,7 @@
         "FSkrwB-T33",
         "abGz-82vvA"
       ],
-      "prop:xywh": "[0,0,800,937]",
+      "prop:xywh": "[0,0,800,1233]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
@@ -46,9 +46,88 @@
       "prop:type": "quote",
       "prop:text": [
         {
-          "insert": "Project: alink the project plan\nAttendees: @mention teammates\nDate & time: type /today"
+          "insert": "Project:"
+        },
+        {
+          "insert": " [alink the project plan]\n",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        },
+        {
+          "insert": "]Attendees: "
+        },
+        {
+          "insert": "[@mention teammates]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        },
+        {
+          "insert": "\nDate & time:"
+        },
+        {
+          "insert": " [type /today]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
         }
       ]
+    },
+    "IuRC73HZLH": {
+      "sys:id": "IuRC73HZLH",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/f9yKnlNMgKhF-CxOgHBsXkxfViCCkC6KwTv6Uj2Fcjw=.png",
+      "prop:caption": "",
+      "prop:width": 752,
+      "prop:height": 501.6328125
+    },
+    "jPGxHHA_QX": {
+      "sys:id": "jPGxHHA_QX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "Agenda"
+        }
+      ]
+    },
+    "sCk70nT5eX": {
+      "sys:id": "sCk70nT5eX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Write down the main topic to discuss."
+        }
+      ],
+      "prop:type": "text"
+    },
+    "iKwcxVFpCH": {
+      "sys:id": "iKwcxVFpCH",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "E.q.content roadmap"
+        }
+      ],
+      "prop:checked": false
+    },
+    "RPED0t8fSj": {
+      "sys:id": "RPED0t8fSj",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "Get aligned on the main upcoming topics"
+        }
+      ],
+      "prop:checked": false
     },
     "D3Y93H8WvU": {
       "sys:id": "D3Y93H8WvU",
@@ -105,58 +184,6 @@
         }
       ]
     },
-    "sCk70nT5eX": {
-      "sys:id": "sCk70nT5eX",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "Write down the main topic to discuss."
-        }
-      ],
-      "prop:type": "text"
-    },
-    "jPGxHHA_QX": {
-      "sys:id": "jPGxHHA_QX",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h1",
-      "prop:text": [
-        {
-          "insert": "Agenda"
-        }
-      ]
-    },
-    "iKwcxVFpCH": {
-      "sys:id": "iKwcxVFpCH",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "bulleted",
-      "prop:text": [
-        {
-          "insert": "E.q.content roadmap",
-          "attributes": {
-            "underline": true
-          }
-        }
-      ],
-      "prop:checked": false
-    },
-    "RPED0t8fSj": {
-      "sys:id": "RPED0t8fSj",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "bulleted",
-      "prop:text": [
-        {
-          "insert": "Get aligned on the main upcoming topics",
-          "attributes": {
-            "underline": true
-          }
-        }
-      ],
-      "prop:checked": false
-    },
     "FSkrwB-T33": {
       "sys:id": "FSkrwB-T33",
       "sys:flavour": "affine:list",
@@ -180,15 +207,6 @@
         }
       ],
       "prop:checked": false
-    },
-    "NPJSzQaJZ_": {
-      "sys:id": "NPJSzQaJZ_",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "i39ZQ24NlUfWI0MhkbtvHTzGnWMVdr-aC2aOjvHPVg4=",
-      "prop:caption": "",
-      "prop:width": 260,
-      "prop:height": 260
     }
   }
 }
