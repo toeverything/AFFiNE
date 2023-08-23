@@ -19,17 +19,34 @@
     "2xxenQgE1-": {
       "sys:id": "2xxenQgE1-",
       "sys:flavour": "affine:note",
-      "sys:children": ["P0VHAddqSh", "XPiPjHYnvE"],
-      "prop:xywh": "[0,0,800,176]",
+      "sys:children": ["G7wJk4W9lz"],
+      "prop:xywh": "[0,0,800,95]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
+    },
+    "XPiPjHYnvE": {
+      "sys:id": "XPiPjHYnvE",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Employee Information:",
+          "attributes": {
+            "underline": true,
+            "bold": true
+          }
+        }
+      ],
+      "prop:type": "text"
     },
     "ca2-VFQV45": {
       "sys:id": "ca2-VFQV45",
       "sys:flavour": "affine:note",
       "sys:children": [
-        "AwVOuNCAOQ",
+        "viFZDjrBqJ",
+        "XPiPjHYnvE",
+        "qpyYi7g_c6",
         "NpbigpLTNh",
         "e1ax4lVFjW",
         "rEKXjYtGDR",
@@ -38,33 +55,27 @@
         "VcUt-bpjIK",
         "a0xWifxvFi",
         "YiQINiDM6W",
+        "Zp-YtzbUUK",
         "ZMfsmg_5oZ",
+        "XH7xQMlX_0",
+        "mBO-_pWGoi",
+        "X_SNf6rQf4",
         "0LF9mjFcX9",
         "d2IrxHbD5D",
         "IdLESwrZ-U",
         "6YwnA2HHQM"
       ],
-      "prop:xywh": "[0,0,800,922]",
+      "prop:xywh": "[0,0,800,1718]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
     },
-    "AwVOuNCAOQ": {
-      "sys:id": "AwVOuNCAOQ",
+    "G7wJk4W9lz": {
+      "sys:id": "G7wJk4W9lz",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Name:",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " [Employee Name]"
-        }
-      ]
+      "prop:text": []
     },
     "NpbigpLTNh": {
       "sys:id": "NpbigpLTNh",
@@ -79,7 +90,13 @@
           }
         },
         {
-          "insert": " [Department Name]"
+          "insert": "  "
+        },
+        {
+          "insert": "[Department Name]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
         }
       ]
     },
@@ -96,7 +113,13 @@
           }
         },
         {
-          "insert": " [Job Title]"
+          "insert": " "
+        },
+        {
+          "insert": "[Job Title]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
         }
       ]
     },
@@ -113,7 +136,13 @@
           }
         },
         {
-          "insert": " [Date of Joining]"
+          "insert": "  "
+        },
+        {
+          "insert": "[Date of Joining]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
         }
       ]
     },
@@ -124,147 +153,28 @@
       "prop:type": "text",
       "prop:text": [
         {
-          "insert": "Review Date:",
+          "insert": "Review Date: ",
           "attributes": {
             "bold": true
           }
         },
         {
-          "insert": " [Review Date]"
+          "insert": " "
+        },
+        {
+          "insert": "[Review Date]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
         }
       ]
     },
-    "VwZ3681tdd": {
-      "sys:id": "VwZ3681tdd",
+    "OyFSyuWbzw": {
+      "sys:id": "OyFSyuWbzw",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[List Employee's Performance Goal 1]"
-        }
-      ]
-    },
-    "jT3Oo2XSeJ": {
-      "sys:id": "jT3Oo2XSeJ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[List Employee's Performance Goal 2]"
-        }
-      ]
-    },
-    "RviIfLJUPX": {
-      "sys:id": "RviIfLJUPX",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[List Employee's Performance Goal 3]"
-        }
-      ]
-    },
-    "ZEi_-9SS-Y": {
-      "sys:id": "ZEi_-9SS-Y",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[List Job Responsibility 1]"
-        }
-      ]
-    },
-    "8LPVaagwtP": {
-      "sys:id": "8LPVaagwtP",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[List Job Responsibility 2]"
-        }
-      ]
-    },
-    "lYnANRxW0A": {
-      "sys:id": "lYnANRxW0A",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[List Job Responsibility 3]"
-        }
-      ]
-    },
-    "YiQINiDM6W": {
-      "sys:id": "YiQINiDM6W",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Employee's Signature: ____________________________Date: ____________________________"
-        }
-      ]
-    },
-    "ZMfsmg_5oZ": {
-      "sys:id": "ZMfsmg_5oZ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Manager's Signature: ____________________________Date: ____________________________"
-        }
-      ]
-    },
-    "0LF9mjFcX9": {
-      "sys:id": "0LF9mjFcX9",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[Company Name]"
-        }
-      ]
-    },
-    "d2IrxHbD5D": {
-      "sys:id": "d2IrxHbD5D",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[Address]"
-        }
-      ]
-    },
-    "IdLESwrZ-U": {
-      "sys:id": "IdLESwrZ-U",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[Phone Number]"
-        }
-      ]
-    },
-    "6YwnA2HHQM": {
-      "sys:id": "6YwnA2HHQM",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "[Email]"
-        }
-      ]
+      "prop:text": []
     },
     "VcUt-bpjIK": {
       "sys:id": "VcUt-bpjIK",
@@ -320,7 +230,13 @@
           "mode": "table",
           "columns": [
             {
+              "id": "VcUt-bpjIK",
+              "hide": false,
+              "width": 260
+            },
+            {
               "id": "teyC7JgUni",
+              "hide": false,
               "width": 200
             }
           ],
@@ -358,6 +274,39 @@
       },
       "prop:titleColumnWidth": 343
     },
+    "VwZ3681tdd": {
+      "sys:id": "VwZ3681tdd",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 1]"
+        }
+      ]
+    },
+    "jT3Oo2XSeJ": {
+      "sys:id": "jT3Oo2XSeJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 2]"
+        }
+      ]
+    },
+    "RviIfLJUPX": {
+      "sys:id": "RviIfLJUPX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 3]"
+        }
+      ]
+    },
     "a0xWifxvFi": {
       "sys:id": "a0xWifxvFi",
       "sys:flavour": "affine:database",
@@ -386,7 +335,13 @@
           "mode": "table",
           "columns": [
             {
+              "id": "a0xWifxvFi",
+              "hide": false,
+              "width": 260
+            },
+            {
               "id": "ZdTyvkjQwz",
+              "hide": false,
               "width": 200
             }
           ],
@@ -405,36 +360,184 @@
       "prop:cells": {},
       "prop:titleColumnWidth": 354
     },
-    "OyFSyuWbzw": {
-      "sys:id": "OyFSyuWbzw",
+    "ZEi_-9SS-Y": {
+      "sys:id": "ZEi_-9SS-Y",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 1]"
+        }
+      ]
+    },
+    "8LPVaagwtP": {
+      "sys:id": "8LPVaagwtP",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 2]"
+        }
+      ]
+    },
+    "lYnANRxW0A": {
+      "sys:id": "lYnANRxW0A",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 3]"
+        }
+      ]
+    },
+    "YiQINiDM6W": {
+      "sys:id": "YiQINiDM6W",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Employee's Signature: "
+        }
+      ]
+    },
+    "Zp-YtzbUUK": {
+      "sys:id": "Zp-YtzbUUK",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Date: "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "ZMfsmg_5oZ": {
+      "sys:id": "ZMfsmg_5oZ",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
       "prop:text": []
     },
-    "XPiPjHYnvE": {
-      "sys:id": "XPiPjHYnvE",
+    "mBO-_pWGoi": {
+      "sys:id": "mBO-_pWGoi",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "Employee Information:",
+          "insert": "Date: "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "X_SNf6rQf4": {
+      "sys:id": "X_SNf6rQf4",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "0LF9mjFcX9": {
+      "sys:id": "0LF9mjFcX9",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Company Name]",
           "attributes": {
-            "underline": true,
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "d2IrxHbD5D": {
+      "sys:id": "d2IrxHbD5D",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Address]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "IdLESwrZ-U": {
+      "sys:id": "IdLESwrZ-U",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Phone Number]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "6YwnA2HHQM": {
+      "sys:id": "6YwnA2HHQM",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Email]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "qpyYi7g_c6": {
+      "sys:id": "qpyYi7g_c6",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Name:",
+          "attributes": {
             "bold": true
+          }
+        },
+        {
+          "insert": "  "
+        },
+        {
+          "insert": "[Employee Name]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
           }
         }
       ],
       "prop:type": "text"
     },
-    "P0VHAddqSh": {
-      "sys:id": "P0VHAddqSh",
+    "viFZDjrBqJ": {
+      "sys:id": "viFZDjrBqJ",
       "sys:flavour": "affine:image",
       "sys:children": [],
-      "prop:sourceId": "qezoK6du9n3PF4dl4aq5r7LeXz_sV3xOVpFzVVgjNsE=",
+      "prop:sourceId": "/static/gZLmSgmwumNdgf0eIfOSW44emctrLyFUaZapbk8eZ6s=.png",
       "prop:caption": "",
-      "prop:width": 0,
-      "prop:height": 0
+      "prop:width": 752,
+      "prop:height": 422.9140625
+    },
+    "XH7xQMlX_0": {
+      "sys:id": "XH7xQMlX_0",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Manager's Signature: "
+        }
+      ],
+      "prop:type": "text"
     }
   }
 }

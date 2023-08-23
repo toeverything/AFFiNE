@@ -20,27 +20,29 @@
       "sys:id": "gjPKqwOdlZ",
       "sys:flavour": "affine:note",
       "sys:children": [
+        "syUYSO6Hlw",
         "B12ua5IVdH",
-        "juvaBV46Dt",
+        "UWKiht4_yF",
         "tsqRR7Aqqe",
         "TzALQTyjsF",
+        "-RNdJMcB-M",
+        "_E43A1XjkR",
         "lbLc-rsTQ_",
         "IbLsSTqZWu",
-        "LfH4-lvRy1"
+        "LfH4-lvRy1",
+        "PmstSRjisx"
       ],
-      "prop:xywh": "[0,0,800,775]",
+      "prop:xywh": "[0,0,800,1414]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
     },
-    "juvaBV46Dt": {
-      "sys:id": "juvaBV46Dt",
-      "sys:flavour": "affine:image",
+    "UWKiht4_yF": {
+      "sys:id": "UWKiht4_yF",
+      "sys:flavour": "affine:paragraph",
       "sys:children": [],
-      "prop:sourceId": "4HXJrnBZGaGPFpowNawNog0aMg3dgoVaAnNqEMeUxq0=",
-      "prop:caption": "",
-      "prop:width": 0,
-      "prop:height": 0
+      "prop:type": "text",
+      "prop:text": []
     },
     "B12ua5IVdH": {
       "sys:id": "B12ua5IVdH",
@@ -49,7 +51,16 @@
       "prop:type": "quote",
       "prop:text": [
         {
-          "insert": "Using OKR (Objectives and Key Results) allows team members to participate in theformulation and decomposition of qoals, jointly find a way to achieve them. and divefull play to their subjective initiative, The weekly progress alignment allows eachmember to fully understand the goals, contribute ideas, and combine timelyfeedback and correction to complete the goal  better and faster."
+          "insert": "Using "
+        },
+        {
+          "insert": "OKR (Objectives and Key Results)",
+          "attributes": {
+            "link": "https://en.wikipedia.org/wiki/Objectives_and_key_results"
+          }
+        },
+        {
+          "insert": " allows team members to participate in theformulation and decomposition of qoals, jointly find a way to achieve them. and divefull play to their subjective initiative, The weekly progress alignment allows eachmember to fully understand the goals, contribute ideas, and combine timelyfeedback and correction to complete the goal  better and faster."
         }
       ]
     },
@@ -68,12 +79,33 @@
       "sys:id": "TzALQTyjsF",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
-      "prop:type": "quote",
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "-RNdJMcB-M": {
+      "sys:id": "-RNdJMcB-M",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
       "prop:text": [
         {
           "insert": "All team members collaboratively fill in the latest progress and next step plan of the person in charge of OKR, and discuss the progress at the meeting e! Team OKR weeklymeeting"
         }
-      ]
+      ],
+      "prop:type": "text"
+    },
+    "_E43A1XjkR": {
+      "sys:id": "_E43A1XjkR",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "PmstSRjisx": {
+      "sys:id": "PmstSRjisx",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
     },
     "lbLc-rsTQ_": {
       "sys:id": "lbLc-rsTQ_",
@@ -104,16 +136,24 @@
           "mode": "table",
           "columns": [
             {
+              "id": "LfH4-lvRy1",
+              "hide": false,
+              "width": 260
+            },
+            {
+              "id": "ftL1qPRgYl",
+              "hide": false,
+              "width": 200
+            },
+            {
               "id": "3s4GtwNZTH",
+              "hide": false,
               "width": 108
             },
             {
               "id": "IwZCoBvV9W",
+              "hide": false,
               "width": 142
-            },
-            {
-              "id": "ftL1qPRgYl",
-              "width": 200
             }
           ],
           "filter": {
@@ -247,6 +287,26 @@
       "prop:titleColumnName": "Key Resluts ",
       "prop:titleColumnWidth": 246
     },
+    "syUYSO6Hlw": {
+      "sys:id": "syUYSO6Hlw",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/VuXYyM9JUv1Fv_qjg1v5Go4Zksz0r4NXFeh3Na7JkIc=.png",
+      "prop:caption": "",
+      "prop:width": 752,
+      "prop:height": 501.2734375
+    },
+    "CLLfj990JA": {
+      "sys:id": "CLLfj990JA",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "The campus activity was successfully released, and the exposure was not less than 1 million people"
+        }
+      ]
+    },
     "iouBY8Zk33": {
       "sys:id": "iouBY8Zk33",
       "sys:flavour": "affine:paragraph",
@@ -268,17 +328,6 @@
         }
       ],
       "prop:type": "text"
-    },
-    "CLLfj990JA": {
-      "sys:id": "CLLfj990JA",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "The campus activity was successfully released, and the exposure was not less than 1 million people"
-        }
-      ]
     }
   }
 }

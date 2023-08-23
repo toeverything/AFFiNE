@@ -9,9 +9,7 @@ import { AffineContext } from '@affine/component/context';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
 import { createStore } from 'jotai/vanilla';
-import { setup } from '@affine/core/bootstrap/setup';
 import { _setCurrentStore } from '@toeverything/infra/atom';
-import { bootstrapPluginSystem } from '@affine/core/bootstrap/register-plugins';
 import { setupGlobal } from '@affine/env/global';
 
 setupGlobal();
@@ -54,6 +52,14 @@ const ThemeChange = () => {
 
 const storeMap = new Map<string, ReturnType<typeof createStore>>();
 
+const bootstrapPluginSystemPromise = import(
+  '@affine/core/bootstrap/register-plugins'
+).then(({ bootstrapPluginSystem }) => bootstrapPluginSystem);
+
+const setupPromise = import('@affine/core/bootstrap/setup').then(
+  ({ setup }) => setup
+);
+
 const withContextDecorator: Decorator = (Story, context) => {
   const { data: store } = useSWR(
     context.id,
@@ -64,7 +70,9 @@ const withContextDecorator: Decorator = (Story, context) => {
       localStorage.clear();
       const store = createStore();
       _setCurrentStore(store);
+      const setup = await setupPromise;
       await setup(store);
+      const bootstrapPluginSystem = await bootstrapPluginSystemPromise;
       await bootstrapPluginSystem(store);
       storeMap.set(context.id, store);
       return store;
