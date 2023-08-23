@@ -25,10 +25,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@playwright/test": ^1.37.0
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
@@ -42,10 +42,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@playwright/test": ^1.37.0
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
@@ -147,12 +147,12 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@affine/jotai": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     "@blocksuite/icons": ^2.1.31
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
     "@emotion/cache": ^11.11.0
@@ -239,13 +239,13 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@aws-sdk/client-s3": 3.378.0
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     "@blocksuite/icons": ^2.1.31
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@dnd-kit/core": ^6.0.8
     "@dnd-kit/sortable": ^7.0.2
     "@emotion/cache": ^11.11.0
@@ -324,12 +324,12 @@ __metadata:
   resolution: "@affine/docs@workspace:apps/docs"
   dependencies:
     "@affine/component": "workspace:*"
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@types/react": ^18.2.20
     "@types/react-dom": ^18.2.7
     "@vanilla-extract/css": ^1.12.0
@@ -354,10 +354,10 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@electron-forge/cli": ^6.4.0
     "@electron-forge/core": ^6.4.0
     "@electron-forge/core-utils": ^6.4.0
@@ -400,7 +400,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     lit: ^2.8.0
     react: 18.2.0
     react-dom: 18.2.0
@@ -476,12 +476,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/jotai@workspace:packages/jotai"
   dependencies:
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     jotai: ^2.3.1
     lottie-web: ^5.12.2
   peerDependencies:
@@ -619,13 +619,13 @@ __metadata:
     "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     "@blocksuite/icons": ^2.1.31
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@toeverything/hooks": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
     "@types/react": ^18.2.20
@@ -642,9 +642,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/sdk@workspace:packages/sdk"
   dependencies:
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     jotai: ^2.3.1
     vite: ^4.4.9
     vite-plugin-dts: 3.5.2
@@ -747,13 +747,13 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     "@blocksuite/icons": ^2.1.31
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@storybook/addon-actions": ^7.3.1
     "@storybook/addon-essentials": ^7.3.1
     "@storybook/addon-interactions": ^7.3.1
@@ -850,7 +850,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/y-provider@workspace:packages/y-provider"
   dependencies:
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
   peerDependencies:
     yjs: ^13.5.51
   languageName: unknown
@@ -3951,25 +3951,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/block-std@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/block-std@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/block-std@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/block-std@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     w3c-keyname: ^2.2.8
   peerDependencies:
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
-  checksum: 6bd1aff5677ce1330fb8dd5e294b3e9fb931782d1e3a9d45ae52749f9a43f75bd6667c0496b17b79ca2c676a8e972e88ad606259543c32ed777ea84f5da96572
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
+  checksum: 04d4d74274db0234c2c96d73594869ac18890b7466125f384591bb82ab76ef750385d4a58728ec95405dab52ccc8c4c6f4a54e163b1e8deac41932489d944053
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/blocks@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/blocks@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/blocks@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/phasor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/virgo": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/phasor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/virgo": 0.0.0-20230822230555-98129627-nightly
     "@floating-ui/dom": ^1.5.1
     "@types/webfontloader": ^1.6.35
     buffer: ^6.0.3
@@ -3986,33 +3986,33 @@ __metadata:
     webfontloader: ^1.6.28
     zod: ^3.21.4
   peerDependencies:
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@toeverything/theme": ^0.7.12
     yjs: ^13
-  checksum: faff415c28631e1c0ace833ba3597b76962a17bc5290a4566b2d0f13d998b685b55965eec82e8ac4ee67a7b8e7c5784f705741ff0ad3cd3246989fd7a62170ef
+  checksum: 1b533346b4b6345196edb0d9c9fdfc8e0b85ad428a19c395e9a1f7c63e38a4edf9506a4297707af7704802484d7fc61f1958b828b94d89cb68d4d34534d4299b
   languageName: node
   linkType: hard
 
-"@blocksuite/editor@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/editor@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/editor@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/editor@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     lit: ^2.7.6
   peerDependencies:
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     "@toeverything/theme": ^0.7.12
-  checksum: 64c83e89b4dd04783614455c5ab13494fa9383e0b626e1b4aa3c516144548c037e73eb9128fd07930c335965130c81741490536f56e387a1c03ba9fc45a16a24
+  checksum: 376729edaa588c7886b60c68c5ab8cd66d3f9e4e495a31fdb6749dfe8ed67781cf12f08b86d73e7d65955fc9381326938f57561b09ea34bde5e1fc70f081e04c
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/global@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/global@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/global@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
     ansi-colors: ^4.1.3
     zod: ^3.21.4
@@ -4021,7 +4021,7 @@ __metadata:
   peerDependenciesMeta:
     lit:
       optional: true
-  checksum: cd5339742d6f5c01221ea4653f56b98e7b48482d9aa1173450db84ae8849fe52d4c205f7a43089079c3e5efca0ad3f40f5a3e7eae359d032540db7444dfe3c84
+  checksum: e5b8805052d3fbaf9cd499fd9932bee726ce32c8348f9ed5e7de6f3b8ba13f14e36fac3a087621bd7ac02b286655e1da83ede8c68fc8d7367c6ef2bc9490f214
   languageName: node
   linkType: hard
 
@@ -4035,39 +4035,39 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/lit@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/lit@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/lit@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/lit@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/virgo": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/virgo": 0.0.0-20230822230555-98129627-nightly
     lit: ^2.7.6
   peerDependencies:
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
-  checksum: 8686c5dae150318be527553ab6ed67f5e01f0eb888e9691e1a0d78df6b38c98873704be10074ae4d18aa1fa84c293e97d082ab6751d64e95cbe8f71868bf6b2a
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
+  checksum: f1b3ab41dd72b08a697895b478b574bfd3dd823a406c2cf795166b6fd07b8d4f7240253621dc053b88ec13453f566ecd0b29fe8626aa09bc33480cd4e952a59f
   languageName: node
   linkType: hard
 
-"@blocksuite/phasor@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/phasor@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/phasor@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/phasor@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     fractional-indexing: ^3.2.0
   peerDependencies:
     nanoid: ^4
     yjs: ^13
-  checksum: 8dfd31e3e711629508ab0f406764d674ade5f9f9530aea9fce4615b1b2702b02d69804f096c9e8f8d059f6d2d39341e6e3516c2490969db42fec4ece96453b5e
+  checksum: 2c13e7b3cc62e27b9ae34b5770fd5278675e2464d670e319f49a823f0ce252b241e7aefb1763543855a24fb57f5168097397b732bf7ab824f23e66be99f0ab1c
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/store@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/store@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/store@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/virgo": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/virgo": 0.0.0-20230822230555-98129627-nightly
     "@types/flexsearch": ^0.7.3
     buffer: ^6.0.3
     flexsearch: 0.7.21
@@ -4082,20 +4082,20 @@ __metadata:
   peerDependencies:
     async-call-rpc: ^6
     yjs: ^13
-  checksum: 284f72e56b64fac0949cef1fb3ebc9b71a1a0c44f33a3a252129c882e9d05110e164c7055d909b392715042ad6eb44ae37219480c2b73349a82897459aaaaec4
+  checksum: ecb3e0bde5acf497c8565da37d5fc31cf62f0bb56815fee9d4a3d1380b68b41d88bd1d0f67a15ab5b85a5f79b97085efb462b2551aeb0ea793ff24ffdf0a1855
   languageName: node
   linkType: hard
 
-"@blocksuite/virgo@npm:0.0.0-20230821151132-2bd0c7f6-nightly":
-  version: 0.0.0-20230821151132-2bd0c7f6-nightly
-  resolution: "@blocksuite/virgo@npm:0.0.0-20230821151132-2bd0c7f6-nightly"
+"@blocksuite/virgo@npm:0.0.0-20230822230555-98129627-nightly":
+  version: 0.0.0-20230822230555-98129627-nightly
+  resolution: "@blocksuite/virgo@npm:0.0.0-20230822230555-98129627-nightly"
   dependencies:
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
     zod: ^3.21.4
   peerDependencies:
     lit: ^2.7
     yjs: ^13
-  checksum: 3fc280a0b21e9a5aef4a949bc0713096c84762a18ee9b4ac7cf5c898019ea9a6a4ad8f580f295c4f353554de2332b4d0d190fea8bf9221418339783e889a3be2
+  checksum: e524f0e45a4c66d86cf14d6f013a5db20d4651137f853584b1ac509bcc0befd11ce72bdb5629452c44e9a2f70c7d777e7b0f6073f34a55c404292b079ed0fa32
   languageName: node
   linkType: hard
 
@@ -6398,16 +6398,16 @@ __metadata:
   linkType: hard
 
 "@grpc/grpc-js@npm:^1.1.8, @grpc/grpc-js@npm:^1.7.1":
-  version: 1.9.0
-  resolution: "@grpc/grpc-js@npm:1.9.0"
+  version: 1.9.1
+  resolution: "@grpc/grpc-js@npm:1.9.1"
   dependencies:
-    "@grpc/proto-loader": ^0.7.0
+    "@grpc/proto-loader": ^0.7.8
     "@types/node": ">=12.12.47"
-  checksum: 32817c84e4b0eedc523b123cbfce935cafedbf33f94f7609931a878dd6945c4d83b4a781a9d7dedbd4fd273a95e8bd3b0de5f6ca920112331e1c3279fa104b3e
+  checksum: eb01e247a5fefb7730a1f934318aee5676390845efcde362bcfdd22c7278f57c2e2646d47e54ce84e75b061c41b0e412c3d4bd7d6ddccbc51e012e9984d28118
   languageName: node
   linkType: hard
 
-"@grpc/proto-loader@npm:^0.7.0":
+"@grpc/proto-loader@npm:^0.7.0, @grpc/proto-loader@npm:^0.7.8":
   version: 0.7.8
   resolution: "@grpc/proto-loader@npm:0.7.8"
   dependencies:
@@ -7803,8 +7803,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/platform-socket.io@npm:^10.0.5":
-  version: 10.2.0
-  resolution: "@nestjs/platform-socket.io@npm:10.2.0"
+  version: 10.2.1
+  resolution: "@nestjs/platform-socket.io@npm:10.2.1"
   dependencies:
     socket.io: 4.7.2
     tslib: 2.6.1
@@ -7812,7 +7812,7 @@ __metadata:
     "@nestjs/common": ^10.0.0
     "@nestjs/websockets": ^10.0.0
     rxjs: ^7.1.0
-  checksum: dc945865ed4fe5e4bb43519921d63d138e7d07eb4e4db2f0fc85d3d76d923041df87e0ed45adff55646f2abc95ffd97a30991c8b5ed1e48bfddf2c69a3ba74dc
+  checksum: d56680b1b070598e5de0f76d99bfdfb1725f9c7cccf4ff586fbb35602f1a2ff38d903b61a47266dc99501f3f5ff90b995a4f607476fb36407fa3f4ce4bcba106
   languageName: node
   linkType: hard
 
@@ -7836,8 +7836,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/websockets@npm:^10.0.5":
-  version: 10.2.0
-  resolution: "@nestjs/websockets@npm:10.2.0"
+  version: 10.2.1
+  resolution: "@nestjs/websockets@npm:10.2.1"
   dependencies:
     iterare: 1.2.1
     object-hash: 3.0.0
@@ -7851,7 +7851,7 @@ __metadata:
   peerDependenciesMeta:
     "@nestjs/platform-socket.io":
       optional: true
-  checksum: fe04e89b274400517fd74b3b188b858eb1b08f7a3760f7ed4e6c56a2caa75e08bebcf80923709cc3d384599aac9e5121c40a21ee8d98431972be8108d56ee304
+  checksum: 636a8795120f638e970b10815b2b4e81c2cee839945c4bc79a53b7378a416ff298e81cc96ee2b4092bec3cfbd51fc2961e2abc146b1157bacda7a75275e8ea6a
   languageName: node
   linkType: hard
 
@@ -8688,17 +8688,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/core@npm:1.15.1":
-  version: 1.15.1
-  resolution: "@opentelemetry/core@npm:1.15.1"
-  dependencies:
-    "@opentelemetry/semantic-conventions": 1.15.1
-  peerDependencies:
-    "@opentelemetry/api": ">=1.0.0 <1.5.0"
-  checksum: 875c75870bc3b178db20edfde90052cc09086c41736b9e31587cce428c569421b87553c4cffbf4efee9b2919030b8150bcf95af26933d52207b344ae8b397040
-  languageName: node
-  linkType: hard
-
 "@opentelemetry/core@npm:1.15.2":
   version: 1.15.2
   resolution: "@opentelemetry/core@npm:1.15.2"
@@ -8848,21 +8837,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation@npm:0.41.1":
-  version: 0.41.1
-  resolution: "@opentelemetry/instrumentation@npm:0.41.1"
-  dependencies:
-    "@types/shimmer": ^1.0.2
-    import-in-the-middle: 1.4.1
-    require-in-the-middle: ^7.1.1
-    semver: ^7.5.1
-    shimmer: ^1.2.1
-  peerDependencies:
-    "@opentelemetry/api": ^1.3.0
-  checksum: 3b2b51cfd2ca645700097dd7c013ef1305b3c0aac8777c7a9bf3cbd07e538de7e88671ebb731924a8d77368b05a051b700ab90e12347af16ab54f6097b322142
-  languageName: node
-  linkType: hard
-
 "@opentelemetry/instrumentation@npm:0.41.2, @opentelemetry/instrumentation@npm:^0.41.1, @opentelemetry/instrumentation@npm:^0.41.2":
   version: 0.41.2
   resolution: "@opentelemetry/instrumentation@npm:0.41.2"
@@ -8961,18 +8935,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/resources@npm:1.15.1":
-  version: 1.15.1
-  resolution: "@opentelemetry/resources@npm:1.15.1"
-  dependencies:
-    "@opentelemetry/core": 1.15.1
-    "@opentelemetry/semantic-conventions": 1.15.1
-  peerDependencies:
-    "@opentelemetry/api": ">=1.0.0 <1.5.0"
-  checksum: be7b45827306d84e842fdbed2b19a96c8746ab8b6fba112645b2b0eb6d406c23bf8eefe5e22b3897b349cd00e906e59a7c82bf4dcaf61b87ac984c0516e63819
-  languageName: node
-  linkType: hard
-
 "@opentelemetry/resources@npm:1.15.2":
   version: 1.15.2
   resolution: "@opentelemetry/resources@npm:1.15.2"
@@ -9035,19 +8997,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-trace-base@npm:1.15.1":
-  version: 1.15.1
-  resolution: "@opentelemetry/sdk-trace-base@npm:1.15.1"
-  dependencies:
-    "@opentelemetry/core": 1.15.1
-    "@opentelemetry/resources": 1.15.1
-    "@opentelemetry/semantic-conventions": 1.15.1
-  peerDependencies:
-    "@opentelemetry/api": ">=1.0.0 <1.5.0"
-  checksum: 747e5dd60a64ebea3f2abb1e771b3afb4d1d0bbf9347602a1cfa41c276d4d512c83a52571bbfe7e211ec683d55f2b1180c057c5da6bb699be504fd1d8752150b
-  languageName: node
-  linkType: hard
-
 "@opentelemetry/sdk-trace-base@npm:1.15.2":
   version: 1.15.2
   resolution: "@opentelemetry/sdk-trace-base@npm:1.15.2"
@@ -9074,13 +9023,6 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ">=1.0.0 <1.5.0"
   checksum: 67ffa3c9c40a4571ee1aadeec3623bb9bbf981593b5d68b157250b9a4a6a544605b4c68107b5cffb8bb81775868b9d5fee23ccec643f79d773d800ac8d4c155b
-  languageName: node
-  linkType: hard
-
-"@opentelemetry/semantic-conventions@npm:1.15.1":
-  version: 1.15.1
-  resolution: "@opentelemetry/semantic-conventions@npm:1.15.1"
-  checksum: 19fab8a805a13e4b6cfaacf31607301acdd2c415e8e8afa1f8313c68110b49d9cf02a6a1cc969f67ab71b1dbfcb5c5b063392c68f46fa32d05dbae9ce245e0d0
   languageName: node
   linkType: hard
 
@@ -9387,13 +9329,13 @@ __metadata:
   linkType: hard
 
 "@prisma/instrumentation@npm:^5.0.0":
-  version: 5.1.1
-  resolution: "@prisma/instrumentation@npm:5.1.1"
+  version: 5.2.0
+  resolution: "@prisma/instrumentation@npm:5.2.0"
   dependencies:
     "@opentelemetry/api": 1.4.1
-    "@opentelemetry/instrumentation": 0.41.1
-    "@opentelemetry/sdk-trace-base": 1.15.1
-  checksum: d074186bb5c86a1a9b09b0f2ef57e6321e1a7c0d06db7ccdbe6d56bd9c848928904ca402511637d48397017e0c2b7a34408b3a678e8db64f4148afa03113d9be
+    "@opentelemetry/instrumentation": 0.41.2
+    "@opentelemetry/sdk-trace-base": 1.15.2
+  checksum: 35010602a8b5fa096f029b6fd08ed682e1876f5aaa54b5294dad417555285b3351a6f78cf662e9c8b844225ea51cbc6c26094617a5dff059a7ab28012fc84c35
   languageName: node
   linkType: hard
 
@@ -10840,6 +10782,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smithy/abort-controller@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/abort-controller@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 2e328942b9f42c1186943ed300acd1bd0dbbf0b69ec4826a124fb1e649bcaef556c24d13023439dac0ce93cf37a46e3a277fe8a683fcaee95537d192a9f5d7da
+  languageName: node
+  linkType: hard
+
 "@smithy/chunked-blob-reader-native@npm:^2.0.0":
   version: 2.0.0
   resolution: "@smithy/chunked-blob-reader-native@npm:2.0.0"
@@ -10859,7 +10811,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/config-resolver@npm:^2.0.1, @smithy/config-resolver@npm:^2.0.3, @smithy/config-resolver@npm:^2.0.4":
+"@smithy/config-resolver@npm:^2.0.1, @smithy/config-resolver@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/config-resolver@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    "@smithy/util-config-provider": ^2.0.0
+    "@smithy/util-middleware": ^2.0.0
+    tslib: ^2.5.0
+  checksum: 324bc188246462ec7b29f128a92f9135620a37d1bf7c8071c3f51fc8249e8baafe8d8722e7547327c9fea8ad292c42383d211daa24dc8b627baacbeae62c3d1b
+  languageName: node
+  linkType: hard
+
+"@smithy/config-resolver@npm:^2.0.3, @smithy/config-resolver@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/config-resolver@npm:2.0.4"
   dependencies:
@@ -10884,6 +10848,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smithy/credential-provider-imds@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/credential-provider-imds@npm:2.0.5"
+  dependencies:
+    "@smithy/node-config-provider": ^2.0.5
+    "@smithy/property-provider": ^2.0.5
+    "@smithy/types": ^2.2.2
+    "@smithy/url-parser": ^2.0.5
+    tslib: ^2.5.0
+  checksum: 21c1564b1a1866205d9d38b0d857a2b50daf22cbc8621185d5eb89f975662dda9655569592f3ca6ffac159b1a29348bb58eb565cd8b175502e260ea6b8dd5c0f
+  languageName: node
+  linkType: hard
+
 "@smithy/eventstream-codec@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/eventstream-codec@npm:2.0.4"
@@ -10896,7 +10873,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/eventstream-serde-browser@npm:^2.0.1, @smithy/eventstream-serde-browser@npm:^2.0.3":
+"@smithy/eventstream-codec@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/eventstream-codec@npm:2.0.5"
+  dependencies:
+    "@aws-crypto/crc32": 3.0.0
+    "@smithy/types": ^2.2.2
+    "@smithy/util-hex-encoding": ^2.0.0
+    tslib: ^2.5.0
+  checksum: 472c0b1652e2afcf9dd9a8f122255d8b3b46019ead3c12ce8ceb3242d2dca525c5dcf6fd2fe57e03621283c8762b44d553a10eb0ce35eecaf2f4366c45bbf683
+  languageName: node
+  linkType: hard
+
+"@smithy/eventstream-serde-browser@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/eventstream-serde-browser@npm:2.0.5"
+  dependencies:
+    "@smithy/eventstream-serde-universal": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 5fb5f31b20d8b8e614159ed4fa7ad619d303f220bcf2f9bb13ccf07e91ccd187a898cf9c09c97fe4b48d49ba702d1e3d5ad833591afd0051253638204cfafa4b
+  languageName: node
+  linkType: hard
+
+"@smithy/eventstream-serde-browser@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/eventstream-serde-browser@npm:2.0.4"
   dependencies:
@@ -10907,7 +10907,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/eventstream-serde-config-resolver@npm:^2.0.1, @smithy/eventstream-serde-config-resolver@npm:^2.0.3":
+"@smithy/eventstream-serde-config-resolver@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/eventstream-serde-config-resolver@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: e1914a9b422c2cbcff1e8897e59ad0f8ca81116c08180f0316ba4adbfc72115ccbff5453488e8cba15431f980adc0a09695fb437b67df8e11b2ebbb0b70036c5
+  languageName: node
+  linkType: hard
+
+"@smithy/eventstream-serde-config-resolver@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/eventstream-serde-config-resolver@npm:2.0.4"
   dependencies:
@@ -10917,7 +10927,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/eventstream-serde-node@npm:^2.0.1, @smithy/eventstream-serde-node@npm:^2.0.3":
+"@smithy/eventstream-serde-node@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/eventstream-serde-node@npm:2.0.5"
+  dependencies:
+    "@smithy/eventstream-serde-universal": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: a13a432a13418d7d5f766b1dce312c004691b6cd1991d9bae74e65a2b5bcb4f4d8af285ad6c91edbbc8b9b50d4a1405432e0db38e52401c134113c00ea74c5b4
+  languageName: node
+  linkType: hard
+
+"@smithy/eventstream-serde-node@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/eventstream-serde-node@npm:2.0.4"
   dependencies:
@@ -10939,7 +10960,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/fetch-http-handler@npm:^2.0.1, @smithy/fetch-http-handler@npm:^2.0.3, @smithy/fetch-http-handler@npm:^2.0.4":
+"@smithy/eventstream-serde-universal@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/eventstream-serde-universal@npm:2.0.5"
+  dependencies:
+    "@smithy/eventstream-codec": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 94a49055f025a9aac5e115038bdebdc8c88086e58f25d32c3e57f2d788c880e113eccec4633b485b83e8b1e67d42d3870acedbf27365200fd436ebc13948f9e9
+  languageName: node
+  linkType: hard
+
+"@smithy/fetch-http-handler@npm:^2.0.1, @smithy/fetch-http-handler@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/fetch-http-handler@npm:2.0.5"
+  dependencies:
+    "@smithy/protocol-http": ^2.0.5
+    "@smithy/querystring-builder": ^2.0.5
+    "@smithy/types": ^2.2.2
+    "@smithy/util-base64": ^2.0.0
+    tslib: ^2.5.0
+  checksum: dae54728eca4e47b0e9604dd87cc503887f62d796b2f92efbbcdfcb4b7432454fa866898416ddf7fd02e7a7d06eb2ba0f1709e418cb1ce763764797f53188b46
+  languageName: node
+  linkType: hard
+
+"@smithy/fetch-http-handler@npm:^2.0.3, @smithy/fetch-http-handler@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/fetch-http-handler@npm:2.0.4"
   dependencies:
@@ -10952,7 +10997,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/hash-blob-browser@npm:^2.0.1, @smithy/hash-blob-browser@npm:^2.0.3":
+"@smithy/hash-blob-browser@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/hash-blob-browser@npm:2.0.5"
+  dependencies:
+    "@smithy/chunked-blob-reader": ^2.0.0
+    "@smithy/chunked-blob-reader-native": ^2.0.0
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: b66102c035d669169ef28c2ddc7115b0bb2620159eb0768782d832cc85324222e9463945477dc8b61daa5036251e76a0dd05ddda13e2464373cc31a0b05f94f1
+  languageName: node
+  linkType: hard
+
+"@smithy/hash-blob-browser@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/hash-blob-browser@npm:2.0.4"
   dependencies:
@@ -10964,7 +11021,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/hash-node@npm:^2.0.1, @smithy/hash-node@npm:^2.0.3":
+"@smithy/hash-node@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/hash-node@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    "@smithy/util-buffer-from": ^2.0.0
+    "@smithy/util-utf8": ^2.0.0
+    tslib: ^2.5.0
+  checksum: bfc0441464b0f37905feb715bf86fb0ded8be3d31e6b28a1e05bfd48b45fcb929f93be3b25d59a89bb0156cbeb9ba5a245ca807fc42f43b26dd77ed18a3794fa
+  languageName: node
+  linkType: hard
+
+"@smithy/hash-node@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/hash-node@npm:2.0.4"
   dependencies:
@@ -10976,7 +11045,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/hash-stream-node@npm:^2.0.1, @smithy/hash-stream-node@npm:^2.0.3":
+"@smithy/hash-stream-node@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/hash-stream-node@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    "@smithy/util-utf8": ^2.0.0
+    tslib: ^2.5.0
+  checksum: c1b1afa1595bf87101a906d28b7ce3fccfd9d32314305bf143ee126cce2977aa36fb57a12f6830f53008aadfe0161e5b4ad7a193ba00af652eaff27a50a3632b
+  languageName: node
+  linkType: hard
+
+"@smithy/hash-stream-node@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/hash-stream-node@npm:2.0.4"
   dependencies:
@@ -10987,7 +11067,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/invalid-dependency@npm:^2.0.1, @smithy/invalid-dependency@npm:^2.0.3":
+"@smithy/invalid-dependency@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/invalid-dependency@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: b24444cf315fb52078c6d4faaddccc15db7c8068b14bf3d4742ac6addd6719e94ac17b85cc6012714cbca047eb186ac54d632fd3ea5725a523d2fd7e903f0e81
+  languageName: node
+  linkType: hard
+
+"@smithy/invalid-dependency@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/invalid-dependency@npm:2.0.4"
   dependencies:
@@ -11006,7 +11096,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/md5-js@npm:^2.0.1, @smithy/md5-js@npm:^2.0.3":
+"@smithy/md5-js@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/md5-js@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    "@smithy/util-utf8": ^2.0.0
+    tslib: ^2.5.0
+  checksum: 4b253d6762750f751431d881f4d4fb6e0a0d0bc63744a637cff7cc51d242a3d84b906c3fed2500324f13236c16946f18a88b51f35b5ef8edd4ad1ffaf69fdac0
+  languageName: node
+  linkType: hard
+
+"@smithy/md5-js@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/md5-js@npm:2.0.4"
   dependencies:
@@ -11017,7 +11118,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/middleware-content-length@npm:^2.0.1, @smithy/middleware-content-length@npm:^2.0.3":
+"@smithy/middleware-content-length@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/middleware-content-length@npm:2.0.5"
+  dependencies:
+    "@smithy/protocol-http": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 1dfbac11f63a38a73bb33883c4575d0f74982000ad173a4b723d505734abad3cd20962635aa63231bd0ac1bcdebe75a4f95520c9779d542e6937b70a3dbc84c6
+  languageName: node
+  linkType: hard
+
+"@smithy/middleware-content-length@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/middleware-content-length@npm:2.0.4"
   dependencies:
@@ -11028,7 +11140,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/middleware-endpoint@npm:^2.0.1, @smithy/middleware-endpoint@npm:^2.0.3":
+"@smithy/middleware-endpoint@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/middleware-endpoint@npm:2.0.5"
+  dependencies:
+    "@smithy/middleware-serde": ^2.0.5
+    "@smithy/types": ^2.2.2
+    "@smithy/url-parser": ^2.0.5
+    "@smithy/util-middleware": ^2.0.0
+    tslib: ^2.5.0
+  checksum: 258ad9e51dc39aa0b6f16af14bdc80871e3fa0c9649e1ad83d3e8c7e14b4139f8dcba4fbe0953010fde08ba9af3b27611d70627368d94672232b3b667ac398ac
+  languageName: node
+  linkType: hard
+
+"@smithy/middleware-endpoint@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/middleware-endpoint@npm:2.0.4"
   dependencies:
@@ -11041,7 +11166,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/middleware-retry@npm:^2.0.1, @smithy/middleware-retry@npm:^2.0.3":
+"@smithy/middleware-retry@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/middleware-retry@npm:2.0.5"
+  dependencies:
+    "@smithy/protocol-http": ^2.0.5
+    "@smithy/service-error-classification": ^2.0.0
+    "@smithy/types": ^2.2.2
+    "@smithy/util-middleware": ^2.0.0
+    "@smithy/util-retry": ^2.0.0
+    tslib: ^2.5.0
+    uuid: ^8.3.2
+  checksum: 486d3a1d1e706abbb4853c1ee4db313578c19b2529a7c9c2f9e2afd4789f25d247f74895f2c745a49eed6f4c873bd00c2ad3da0f1d170da09c4e90798ca2c3b7
+  languageName: node
+  linkType: hard
+
+"@smithy/middleware-retry@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/middleware-retry@npm:2.0.4"
   dependencies:
@@ -11056,7 +11196,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/middleware-serde@npm:^2.0.1, @smithy/middleware-serde@npm:^2.0.3, @smithy/middleware-serde@npm:^2.0.4":
+"@smithy/middleware-serde@npm:^2.0.1, @smithy/middleware-serde@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/middleware-serde@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 51c2ce5158106757da351fce512ea709c1cf7a2724f5e4430bf18c4e70571a806ebc7f09e38b3281fc81d5446da106450ee84c4508607cff83078c58be61f8dd
+  languageName: node
+  linkType: hard
+
+"@smithy/middleware-serde@npm:^2.0.3, @smithy/middleware-serde@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/middleware-serde@npm:2.0.4"
   dependencies:
@@ -11075,7 +11225,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/node-config-provider@npm:^2.0.1, @smithy/node-config-provider@npm:^2.0.3, @smithy/node-config-provider@npm:^2.0.4":
+"@smithy/node-config-provider@npm:^2.0.1, @smithy/node-config-provider@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/node-config-provider@npm:2.0.5"
+  dependencies:
+    "@smithy/property-provider": ^2.0.5
+    "@smithy/shared-ini-file-loader": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: fca153adfd50f575fc6352645204ba53f67388ee83e4013695810c1b7fe199888259f5ed9fe889b28664981a20ce45bd380c4d0f5fce9484c850ebd0d61d80a8
+  languageName: node
+  linkType: hard
+
+"@smithy/node-config-provider@npm:^2.0.3, @smithy/node-config-provider@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/node-config-provider@npm:2.0.4"
   dependencies:
@@ -11087,7 +11249,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/node-http-handler@npm:^2.0.1, @smithy/node-http-handler@npm:^2.0.3, @smithy/node-http-handler@npm:^2.0.4":
+"@smithy/node-http-handler@npm:^2.0.1, @smithy/node-http-handler@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/node-http-handler@npm:2.0.5"
+  dependencies:
+    "@smithy/abort-controller": ^2.0.5
+    "@smithy/protocol-http": ^2.0.5
+    "@smithy/querystring-builder": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: fb2c6faab1d0107e7610c4ed723114c58de4b396e4e76a13df7831ef4d22ae188138af8becd749b95acec94a44e3d673b2ca9fee5217928ca3bea52c6e5319b0
+  languageName: node
+  linkType: hard
+
+"@smithy/node-http-handler@npm:^2.0.3, @smithy/node-http-handler@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/node-http-handler@npm:2.0.4"
   dependencies:
@@ -11110,7 +11285,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/protocol-http@npm:^2.0.1, @smithy/protocol-http@npm:^2.0.3, @smithy/protocol-http@npm:^2.0.4":
+"@smithy/property-provider@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/property-provider@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 3c988c97864a8fb0b956e8aa245bab3c608f62ab42b340db140e3d18cd8414ff964383a97c4bd01a36baa327084005daa5cd4d106e6fe6070572786e8f43b6ac
+  languageName: node
+  linkType: hard
+
+"@smithy/protocol-http@npm:^2.0.1, @smithy/protocol-http@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/protocol-http@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 0c9dbc7c90a3908626260156ec26e8fc83eb257c002a01c4f840efc19065a9397df8ebaf9ed7f521baea5b2792e3476143ae8bd7e7f21aaa454bcb894c3d1658
+  languageName: node
+  linkType: hard
+
+"@smithy/protocol-http@npm:^2.0.3, @smithy/protocol-http@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/protocol-http@npm:2.0.4"
   dependencies:
@@ -11131,6 +11326,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smithy/querystring-builder@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/querystring-builder@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    "@smithy/util-uri-escape": ^2.0.0
+    tslib: ^2.5.0
+  checksum: 4a684189ac9bf50dba2c648a6a36299181bcdf3e688dc5e5bce94a5befd30e6662b6e84e5a30e8876dc2ff293eeb74f4fdf17446e8886228a62f1cbcf5c0e807
+  languageName: node
+  linkType: hard
+
 "@smithy/querystring-parser@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/querystring-parser@npm:2.0.4"
@@ -11138,6 +11344,16 @@ __metadata:
     "@smithy/types": ^2.2.1
     tslib: ^2.5.0
   checksum: cd7ba10925fe4e4cac9b90dd308270b32d9a12c89a75ede93fbb6b25e662135084d6c29034a27678df53d1386a16c6012f6a2f873c264b2d6c6ed70cc10676aa
+  languageName: node
+  linkType: hard
+
+"@smithy/querystring-parser@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/querystring-parser@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 71d5fb2379529c6fe411945d05887b169113df0c29258981cb541487c0c5cd9be8dc31efee34e357e6532733b000a77f374e665c0ef73aeb92c3134f10ecf607
   languageName: node
   linkType: hard
 
@@ -11158,6 +11374,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smithy/shared-ini-file-loader@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/shared-ini-file-loader@npm:2.0.5"
+  dependencies:
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 47a838a3e1e7c7d90e52a6f2061400d6bd9f892095a031500e4f06cd838f3cb66848d1ab953aecba1a0d9b99ae5facb19756ee2290b279564b7c25873371165e
+  languageName: node
+  linkType: hard
+
 "@smithy/signature-v4@npm:^2.0.0":
   version: 2.0.4
   resolution: "@smithy/signature-v4@npm:2.0.4"
@@ -11174,7 +11400,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/smithy-client@npm:^2.0.1, @smithy/smithy-client@npm:^2.0.3":
+"@smithy/smithy-client@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/smithy-client@npm:2.0.5"
+  dependencies:
+    "@smithy/middleware-stack": ^2.0.0
+    "@smithy/types": ^2.2.2
+    "@smithy/util-stream": ^2.0.5
+    tslib: ^2.5.0
+  checksum: 8dabc85dae6f7a47cc743e412cbf4d95f93bdee163d9b9dfb0c1f4361f0c3c2d627a1e1dcfec506a2052775b8d3da5977ba94d820c3a3abc48c6d2344185d849
+  languageName: node
+  linkType: hard
+
+"@smithy/smithy-client@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/smithy-client@npm:2.0.4"
   dependencies:
@@ -11186,7 +11424,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/types@npm:^2.0.2, @smithy/types@npm:^2.2.0, @smithy/types@npm:^2.2.1":
+"@smithy/types@npm:^2.0.2, @smithy/types@npm:^2.2.2":
+  version: 2.2.2
+  resolution: "@smithy/types@npm:2.2.2"
+  dependencies:
+    tslib: ^2.5.0
+  checksum: 2799a14620da60efb2a0aba1bf9adc553a5446dc447b9ee1d7a95410233a70dff2b5e563fecf84388137dabbe662c6bf3a2247ca20a1f266c1256f82e0f25fcf
+  languageName: node
+  linkType: hard
+
+"@smithy/types@npm:^2.2.0, @smithy/types@npm:^2.2.1":
   version: 2.2.1
   resolution: "@smithy/types@npm:2.2.1"
   dependencies:
@@ -11195,7 +11442,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/url-parser@npm:^2.0.1, @smithy/url-parser@npm:^2.0.3, @smithy/url-parser@npm:^2.0.4":
+"@smithy/url-parser@npm:^2.0.1, @smithy/url-parser@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/url-parser@npm:2.0.5"
+  dependencies:
+    "@smithy/querystring-parser": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: 5360d96d21492a7014bc952f530bf30a50008a809dc0cb219d336bbd23be29ff15437033bddebe600ff763e3d1efab2fe8cacc6d7545c26c86377e23e6a404d8
+  languageName: node
+  linkType: hard
+
+"@smithy/url-parser@npm:^2.0.3, @smithy/url-parser@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/url-parser@npm:2.0.4"
   dependencies:
@@ -11253,7 +11511,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/util-defaults-mode-browser@npm:^2.0.1, @smithy/util-defaults-mode-browser@npm:^2.0.3":
+"@smithy/util-defaults-mode-browser@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/util-defaults-mode-browser@npm:2.0.5"
+  dependencies:
+    "@smithy/property-provider": ^2.0.5
+    "@smithy/types": ^2.2.2
+    bowser: ^2.11.0
+    tslib: ^2.5.0
+  checksum: 2e2ac168289e7d8b302a9a9aed7b999e3f56ca62bfdd282f16bd90dae532ba29c745b71e2a466df3948862a188e5b7dca86854dc4dc65d521bbadd4b0cb67984
+  languageName: node
+  linkType: hard
+
+"@smithy/util-defaults-mode-browser@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/util-defaults-mode-browser@npm:2.0.4"
   dependencies:
@@ -11265,7 +11535,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/util-defaults-mode-node@npm:^2.0.1, @smithy/util-defaults-mode-node@npm:^2.0.3":
+"@smithy/util-defaults-mode-node@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/util-defaults-mode-node@npm:2.0.5"
+  dependencies:
+    "@smithy/config-resolver": ^2.0.5
+    "@smithy/credential-provider-imds": ^2.0.5
+    "@smithy/node-config-provider": ^2.0.5
+    "@smithy/property-provider": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: c952dd62e389935528eea9672b2fe3f1ab800dcd48ae56e903fc6c0c052045945aeb670dfb42587e556a2b17170c71409ca971b27847aaf5bca2bebda443dd8c
+  languageName: node
+  linkType: hard
+
+"@smithy/util-defaults-mode-node@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/util-defaults-mode-node@npm:2.0.4"
   dependencies:
@@ -11307,7 +11591,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/util-stream@npm:^2.0.1, @smithy/util-stream@npm:^2.0.3, @smithy/util-stream@npm:^2.0.4":
+"@smithy/util-stream@npm:^2.0.1, @smithy/util-stream@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@smithy/util-stream@npm:2.0.5"
+  dependencies:
+    "@smithy/fetch-http-handler": ^2.0.5
+    "@smithy/node-http-handler": ^2.0.5
+    "@smithy/types": ^2.2.2
+    "@smithy/util-base64": ^2.0.0
+    "@smithy/util-buffer-from": ^2.0.0
+    "@smithy/util-hex-encoding": ^2.0.0
+    "@smithy/util-utf8": ^2.0.0
+    tslib: ^2.5.0
+  checksum: a78312fcbd50b55eb995959fccea8b7957dd352a1fff1abea2906aa5629305b68a9f3025bcd1edd60e5a2d5dd9e1dab00959f5971ded0d450fb463cf9865aedd
+  languageName: node
+  linkType: hard
+
+"@smithy/util-stream@npm:^2.0.3, @smithy/util-stream@npm:^2.0.4":
   version: 2.0.4
   resolution: "@smithy/util-stream@npm:2.0.4"
   dependencies:
@@ -11342,7 +11642,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/util-waiter@npm:^2.0.1, @smithy/util-waiter@npm:^2.0.3":
+"@smithy/util-waiter@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "@smithy/util-waiter@npm:2.0.5"
+  dependencies:
+    "@smithy/abort-controller": ^2.0.5
+    "@smithy/types": ^2.2.2
+    tslib: ^2.5.0
+  checksum: b36069643d7641f019f8eb28e006eb301e82f5d93412f79b87ae473d661830349e60d65c18219e252d276cd014954f05e989eb6098100efb782219167a88f1f0
+  languageName: node
+  linkType: hard
+
+"@smithy/util-waiter@npm:^2.0.3":
   version: 2.0.4
   resolution: "@smithy/util-waiter@npm:2.0.4"
   dependencies:
@@ -12929,12 +13240,12 @@ __metadata:
   dependencies:
     "@affine/env": "workspace:*"
     "@affine/y-provider": "workspace:*"
-    "@blocksuite/block-std": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/block-std": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     foxact: ^0.2.20
   peerDependencies:
     "@affine/y-provider": "workspace:*"
@@ -12969,11 +13280,11 @@ __metadata:
   resolution: "@toeverything/infra@workspace:packages/infra"
   dependencies:
     "@affine/sdk": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/editor": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/global": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/lit": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/editor": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/global": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/lit": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     async-call-rpc: ^6.3.1
     electron: "link:../../apps/electron/node_modules/electron"
     jotai: ^2.3.1
@@ -13016,8 +13327,8 @@ __metadata:
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
     "@affine/y-provider": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230821151132-2bd0c7f6-nightly
-    "@blocksuite/store": 0.0.0-20230821151132-2bd0c7f6-nightly
+    "@blocksuite/blocks": 0.0.0-20230822230555-98129627-nightly
+    "@blocksuite/store": 0.0.0-20230822230555-98129627-nightly
     idb: ^7.1.1
     vite: ^4.4.9
     vite-plugin-dts: 3.5.2
@@ -13676,9 +13987,9 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0":
-  version: 20.5.1
-  resolution: "@types/node@npm:20.5.1"
-  checksum: 3dbe611cd67afa987102c8558ee70f848949c5dcfee5f60abc073e55c0d7b048e391bf06bb1e0dc052cb7210ca97136ac496cbaf6e89123c989de6bd125fde82
+  version: 20.5.3
+  resolution: "@types/node@npm:20.5.3"
+  checksum: fe67a0fd7402218bdf91523a2b1c2e41d619f7294b1a471e0a778b8bc7bb3fcf291aed12041bcbe9622d50a3d1295a9adea0e7e19bb9386a246bf66071404721
   languageName: node
   linkType: hard
 
@@ -23133,18 +23444,6 @@ __metadata:
   version: 4.0.0
   resolution: "import-from@npm:4.0.0"
   checksum: 1fa29c05b048da18914e91d9a529e5d9b91774bebbfab10e53f59bcc1667917672b971cf102fee857f142e5e433ce69fa1f0a596e1c7d82f9947a5ec352694b9
-  languageName: node
-  linkType: hard
-
-"import-in-the-middle@npm:1.4.1":
-  version: 1.4.1
-  resolution: "import-in-the-middle@npm:1.4.1"
-  dependencies:
-    acorn: ^8.8.2
-    acorn-import-assertions: ^1.9.0
-    cjs-module-lexer: ^1.2.2
-    module-details-from-path: ^1.0.3
-  checksum: 39cf8ba24f660dfd7f57cd871ea39b0162cb80d6fefd9150988b8836e50c3c64d9ea8793777f631730de929e90d8bd5cf18bcb65338d05e810c8d26075cddb26
   languageName: node
   linkType: hard
 

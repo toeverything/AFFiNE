@@ -2,6 +2,7 @@ import { initEmptyPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { type WorkspaceUISchema } from '@affine/env/workspace';
+import { useCallback } from 'react';
 
 import { useWorkspace } from '../../hooks/use-workspace';
 import { BlockSuitePageList, PageDetailEditor, Provider } from '../shared';
@@ -21,7 +22,7 @@ export const UI = {
       <>
         <PageDetailEditor
           pageId={currentPageId}
-          onInit={initEmptyPage}
+          onInit={useCallback(async page => initEmptyPage(page), [])}
           onLoad={onLoadEditor}
           workspace={workspace.blockSuiteWorkspace}
         />

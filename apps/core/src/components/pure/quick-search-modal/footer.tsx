@@ -1,6 +1,5 @@
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageBlockModel } from '@blocksuite/blocks';
 import { assertEquals } from '@blocksuite/global/utils';
 import { PlusIcon } from '@blocksuite/icons';
 import { nanoid } from '@blocksuite/store';
@@ -39,15 +38,7 @@ export const Footer = ({
         const id = nanoid();
         const page = createPage(id);
         assertEquals(page.id, id);
-        await initEmptyPage(page);
-        const block = page.getBlockByFlavour(
-          'affine:page'
-        )[0] as PageBlockModel;
-        if (block) {
-          block.title.insert(query, 0);
-        } else {
-          console.warn('No page block found');
-        }
+        await initEmptyPage(page, query);
         blockSuiteWorkspace.setPageMeta(page.id, {
           title: query,
         });

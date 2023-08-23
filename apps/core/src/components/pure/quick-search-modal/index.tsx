@@ -1,7 +1,7 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
-import { startTransition } from 'react';
+import { startTransition, Suspense } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
@@ -13,6 +13,7 @@ import {
   StyledModalDivider,
   StyledModalFooter,
   StyledModalHeader,
+  StyledNotFound,
   StyledShortcut,
 } from './style';
 
@@ -41,7 +42,7 @@ export const QuickSearchModal = ({
     setOpen(false);
   }, [setOpen]);
 
-  // Add  ‘⌘+K’ shortcut keys as switches
+  // Add ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
@@ -131,12 +132,20 @@ export const QuickSearchModal = ({
           <StyledModalDivider />
           <Command.List>
             <StyledContent>
-              <Results
-                query={query}
-                onClose={handleClose}
-                workspace={workspace}
-                setShowCreatePage={setShowCreatePage}
-              />
+              <Suspense
+                fallback={
+                  <StyledNotFound>
+                    <span>{t['com.affine.loading']()}</span>
+                  </StyledNotFound>
+                }
+              >
+                <Results
+                  query={query}
+                  onClose={handleClose}
+                  workspace={workspace}
+                  setShowCreatePage={setShowCreatePage}
+                />
+              </Suspense>
             </StyledContent>
             {showCreatePage ? (
               <>

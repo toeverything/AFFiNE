@@ -105,3 +105,23 @@ WorkspaceList.parameters = {
     },
   }),
 };
+
+export const SearchPage: StoryFn = () => {
+  return <FakeApp />;
+};
+SearchPage.play = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await waitFor(async () => {
+    assertExists(canvasElement.querySelector('v-line'));
+  });
+  await userEvent.click(canvas.getByTestId('slider-bar-quick-search-button'));
+};
+SearchPage.decorators = [withRouter];
+SearchPage.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/',
+    },
+  }),
+};

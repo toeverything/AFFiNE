@@ -40,6 +40,21 @@ export function useAppHelper() {
       },
       [set]
     ),
+    addCloudWorkspace: useCallback(
+      (workspaceId: string) => {
+        getOrCreateWorkspace(workspaceId, WorkspaceFlavour.AFFINE_CLOUD);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.AFFINE_CLOUD,
+            version: WorkspaceVersion.DatabaseV3,
+          },
+        ]);
+        logger.debug('imported cloud workspace', workspaceId);
+      },
+      [set]
+    ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
         const blockSuiteWorkspace = getOrCreateWorkspace(
