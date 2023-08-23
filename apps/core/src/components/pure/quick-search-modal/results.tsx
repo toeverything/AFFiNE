@@ -2,11 +2,13 @@ import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import type { Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { Command } from 'cmdk';
-import { useAtomValue } from 'jotai';
+import { type Atom, atom, useAtomValue } from 'jotai';
 import type { Dispatch, SetStateAction } from 'react';
+import { startTransition, useEffect } from 'react';
 
 import { recentPageSettingsAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -20,6 +22,29 @@ export interface ResultsProps {
   onClose: () => void;
   setShowCreatePage: Dispatch<SetStateAction<boolean>>;
 }
+
+const loadAllPageWeakMap = new WeakMap<Workspace, Atom<Promise<void>>>();
+
+function getLoadAllPage(workspace: Workspace) {
+  if (loadAllPageWeakMap.has(workspace)) {
+    return loadAllPageWeakMap.get(workspace) as Atom<Promise<void>>;
+  } else {
+    const aAtom = atom(async () => {
+      // fixme: we have to load all pages here and re-index them
+      //  there might have performance issue
+      await Promise.all(
+        [...workspace.pages.values()].map(page =>
+          page.waitForLoaded().then(() => {
+            workspace.indexer.search.refreshPageIndex(page.id, page.spaceDoc);
+          })
+        )
+      );
+    });
+    loadAllPageWeakMap.set(workspace, aAtom);
+    return aAtom;
+  }
+}
+
 export const Results = ({
   query,
   workspace,
@@ -31,14 +56,20 @@ export const Results = ({
   const pageList = useBlockSuitePageMeta(blockSuiteWorkspace);
   assertExists(blockSuiteWorkspace.id);
   const list = useSwitchToConfig(workspace.id);
+  useAtomValue(getLoadAllPage(blockSuiteWorkspace));
 
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
   const { jumpToPage, jumpToSubPath } = useNavigateHelper();
-  const results = blockSuiteWorkspace.search({ query });
-
-  // remove `space:` prefix
-  const pageIds = [...results.values()].map(id => id.slice(6));
+  const pageIds = [...blockSuiteWorkspace.search({ query }).values()].map(
+    id => {
+      if (id.startsWith('space:')) {
+        return id.slice(6);
+      } else {
+        return id;
+      }
+    }
+  );
 
   const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
@@ -53,7 +84,11 @@ export const Results = ({
     }
   });
 
-  setShowCreatePage(resultsPageMeta.length === 0);
+  useEffect(() => {
+    startTransition(() => {
+      setShowCreatePage(resultsPageMeta.length === 0);
+    });
+  }, [resultsPageMeta.length, setShowCreatePage]);
 
   if (!query) {
     return (
@@ -117,7 +152,12 @@ export const Results = ({
     return (
       <StyledNotFound>
         <span>{t['Find 0 result']()}</span>
-        <image href="/imgs/no-result.svg" width={200} height={200} />
+        <img
+          alt="no result"
+          src="/imgs/no-result.svg"
+          width={200}
+          height={200}
+        />
       </StyledNotFound>
     );
   }
