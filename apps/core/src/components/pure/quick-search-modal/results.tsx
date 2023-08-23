@@ -61,7 +61,15 @@ export const Results = ({
   const recentPageSetting = useAtomValue(recentPageSettingsAtom);
   const t = useAFFiNEI18N();
   const { jumpToPage, jumpToSubPath } = useNavigateHelper();
-  const pageIds = [...blockSuiteWorkspace.search({ query }).values()];
+  const pageIds = [...blockSuiteWorkspace.search({ query }).values()].map(
+    id => {
+      if (id.startsWith('space:')) {
+        return id.slice(6);
+      } else {
+        return null;
+      }
+    }
+  );
 
   const resultsPageMeta = pageList.filter(
     page => pageIds.indexOf(page.id) > -1 && !page.trash
