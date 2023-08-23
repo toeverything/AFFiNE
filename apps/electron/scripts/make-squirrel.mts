@@ -7,6 +7,7 @@ import {
   arch,
   buildType,
   iconUrl,
+  icoPath,
   platform,
   productName,
   ROOT,
@@ -45,6 +46,7 @@ async function make() {
     appDirectory: appDirectory,
     outputDirectory: outPath,
     iconUrl: iconUrl,
+    setupIcon: icoPath,
     loadingGif: path.resolve(ROOT, './resources/icons/affine_installing.gif'),
   };
 

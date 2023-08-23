@@ -153,6 +153,11 @@ export async function buildShowcaseWorkspace(
       tags: ['q3mceOl_zi', 'g1L5dXKctL'],
       updatedDate: 1691645102104,
     },
+    j8hIA_C0QF: {
+      createDate: 1691574743531,
+      tags: ['icg1n5UdkP'],
+      updatedDate: 1691574743531,
+    },
   } satisfies Record<string, Partial<PageMeta>>;
   const data = [
     [
@@ -179,6 +184,7 @@ export async function buildShowcaseWorkspace(
     ['PqZ7MLlL_9', import('@affine/templates/v1/brief-event-planning.json')],
     ['A4wBRdQZN0', import('@affine/templates/v1/meeting-summary.json')],
     ['kBB4lzhm7C', import('@affine/templates/v1/okr-template.json')],
+    ['j8hIA_C0QF', import('@affine/templates/v1/travel-note.json')],
   ] as const;
   await Promise.all(
     data.map(async ([id, promise]) => {

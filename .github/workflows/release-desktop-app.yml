@@ -103,10 +103,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
-        timeout-minutes: 10
         uses: ./.github/actions/setup-node
       - name: Setup Maker
-        timeout-minutes: 10
         uses: ./.github/actions/setup-maker
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
