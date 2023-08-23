@@ -66,7 +66,7 @@ export const Results = ({
       if (id.startsWith('space:')) {
         return id.slice(6);
       } else {
-        return null;
+        return id;
       }
     }
   );
