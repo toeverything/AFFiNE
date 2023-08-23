@@ -56,8 +56,6 @@ export const Basic = () => {
               title: `${key} title`,
               message: `${key} message`,
               type: 'info',
-              theme: 'default',
-              timeout: 100000,
             });
           }}
         >

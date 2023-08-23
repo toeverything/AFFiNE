@@ -232,8 +232,6 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       data-visible={isVisible}
       data-index={index}
       data-front={isFront}
-      data-swiping={false}
-      data-swipe-out={false}
       data-expanded={expand}
       onMouseEnter={() => {
         setExpand(true);
