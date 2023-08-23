@@ -12,16 +12,6 @@ import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
 
-function yjsMergeUpdates(updates: Buffer[]): Buffer {
-  const doc = new Doc();
-
-  updates.forEach(update => {
-    applyUpdate(doc, update);
-  });
-
-  return Buffer.from(encodeStateAsUpdate(doc));
-}
-
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   if (yBinary.equals(jwstBinary)) {
     return true;
@@ -74,8 +64,18 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     this.destroy();
   }
 
+  protected yjsMergeUpdates(updates: Buffer[]): Buffer {
+    const doc = new Doc();
+
+    updates.forEach(update => {
+      applyUpdate(doc, update);
+    });
+
+    return Buffer.from(encodeStateAsUpdate(doc));
+  }
+
   protected mergeUpdates(guid: string, ...updates: Buffer[]): Buffer {
-    const yjsResult = yjsMergeUpdates(updates);
+    const yjsResult = this.yjsMergeUpdates(updates);
     this.metrics.jwstCodecMerge(1, {});
     let log = false;
     if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
@@ -207,9 +207,9 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
     if (updates.length) {
       if (snapshot) {
-        return this.mergeUpdates(guid, snapshot, ...updates);
+        return this.yjsMergeUpdates([snapshot, ...updates]);
       } else {
-        return this.mergeUpdates(guid, ...updates);
+        return this.yjsMergeUpdates(updates);
       }
     }
 
