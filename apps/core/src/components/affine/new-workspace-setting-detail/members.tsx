@@ -5,6 +5,7 @@ import {
 } from '@affine/component/member-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -23,7 +24,6 @@ import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
-import type { AffineOfficialWorkspace } from '../../../shared';
 import { AnyErrorBoundary } from '../any-error-boundary';
 import * as style from './style.css';
 

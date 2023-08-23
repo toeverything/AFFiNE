@@ -1,12 +1,12 @@
 import { ConfirmModal } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 
 import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
 import { useLeaveWorkspace } from '../../../../hooks/affine/use-leave-workspace';
-import type { AffineOfficialWorkspace } from '../../../../shared';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
 
