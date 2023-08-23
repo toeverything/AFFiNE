@@ -37,7 +37,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableNewSettingUnstableApi: false,
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
-      enableNotificationCenter: false,
+      enableNotificationCenter: true,
       enableCloud: true,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
