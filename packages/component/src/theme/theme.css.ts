@@ -5,7 +5,7 @@ globalStyle('body', {
   color: 'var(--affine-text-primary-color)',
   fontFamily: 'var(--affine-font-family)',
   fontSize: 'var(--affine-font-base)',
-  lineHeight: 'var(--affine-font-height)',
+  lineHeight: 'var(--affine-line-height)',
 });
 
 globalStyle('html', {

@@ -15,6 +15,7 @@ import { useCallback } from 'react';
 
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
+import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
 import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
@@ -77,7 +78,6 @@ export function WorkspaceHeader({
   const setting = useCollectionManager(currentWorkspaceId);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
-
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -117,6 +117,20 @@ export function WorkspaceHeader({
 
   // route in edit page
   if ('pageId' in currentEntry) {
+    const currentPage = currentWorkspace.blockSuiteWorkspace.getPage(
+      currentEntry.pageId
+    );
+    const rightItems = () => {
+      if (!currentPage) {
+        return <PluginHeader />;
+      }
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <SharePageModal workspace={currentWorkspace} page={currentPage} />
+          <PluginHeader />
+        </div>
+      );
+    };
     return (
       <Header
         center={
@@ -125,7 +139,7 @@ export function WorkspaceHeader({
             pageId={currentEntry.pageId}
           />
         }
-        right={<PluginHeader />}
+        right={rightItems()}
       />
     );
   }

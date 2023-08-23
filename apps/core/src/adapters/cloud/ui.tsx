@@ -4,7 +4,7 @@ import type {
   WorkspaceFlavour,
   WorkspaceUISchema,
 } from '@affine/env/workspace';
-import { lazy } from 'react';
+import { lazy, useCallback } from 'react';
 
 import { useWorkspace } from '../../hooks/use-workspace';
 import {
@@ -35,7 +35,7 @@ export const UI = {
       <>
         <PageDetailEditor
           pageId={currentPageId}
-          onInit={initEmptyPage}
+          onInit={useCallback(async page => initEmptyPage(page), [])}
           onLoad={onLoadEditor}
           workspace={workspace.blockSuiteWorkspace}
         />

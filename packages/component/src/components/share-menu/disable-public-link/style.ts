@@ -1,42 +1,35 @@
 import { styled } from '../../..';
 
-export const StyledModalWrapper = styled('div')(() => {
-  return {
-    position: 'relative',
-    padding: '0px',
-    width: '560px',
-    background: 'var(--affine-white)',
-    borderRadius: '12px',
-    // height: '312px',
-  };
+export const Header = styled('div')({
+  display: 'flex',
+  justifyContent: 'space-between',
+  paddingRight: '20px',
+  paddingTop: '20px',
+  paddingLeft: '24px',
+  alignItems: 'center',
 });
 
-export const StyledModalHeader = styled('div')(() => {
-  return {
-    margin: '44px 0px 12px 0px',
-    width: '560px',
-    fontWeight: '600',
-    fontSize: 'var(--affine-font-h6)',
-    textAlign: 'center',
-  };
+export const Content = styled('div')({
+  padding: '12px 24px 20px 24px',
 });
 
-export const StyledTextContent = styled('div')(() => {
-  return {
-    margin: 'auto',
-    width: '560px',
-    padding: '0px 84px',
-    fontWeight: '400',
-    fontSize: 'var(--affine-font-base)',
-    textAlign: 'center',
-  };
+export const Title = styled('div')({
+  fontSize: 'var(--affine-font-h6)',
+  lineHeight: '26px',
+  fontWeight: 600,
 });
 
-export const StyledButtonContent = styled('div')(() => {
+export const StyleTips = styled('div')(() => {
   return {
-    margin: '32px 0',
+    userSelect: 'none',
+    marginBottom: '20px',
+  };
+});
+export const ButtonContainer = styled('div')(() => {
+  return {
     display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    gap: '20px',
+    paddingTop: '20px',
   };
 });
