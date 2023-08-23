@@ -22,22 +22,15 @@ import {
 import { FilterList } from '../filter';
 import * as styles from './collection-list.css';
 
-type CreateCollectionProps = {
+interface EditCollectionModelProps {
+  init?: Collection;
   title?: string;
-  init: Collection;
-  onConfirm: (collection: Collection) => void;
-  onConfirmText?: string;
+  open: boolean;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-};
-
-type SaveCollectionButtonProps = {
-  onConfirm: (collection: Collection) => Promise<void>;
-  getPageInfo: GetPageInfoById;
-  propertiesMeta: PropertiesMeta;
-  filterList: Filter[];
-  workspaceId: string;
-};
+  onClose: () => void;
+  onConfirm: (view: Collection) => Promise<void>;
+}
 
 export const EditCollectionModel = ({
   init,
@@ -47,15 +40,7 @@ export const EditCollectionModel = ({
   getPageInfo,
   propertiesMeta,
   title,
-}: {
-  init?: Collection;
-  onConfirm: (view: Collection) => Promise<void>;
-  open: boolean;
-  onClose: () => void;
-  title?: string;
-  getPageInfo: GetPageInfoById;
-  propertiesMeta: PropertiesMeta;
-}) => {
+}: EditCollectionModelProps) => {
   const t = useAFFiNEI18N();
   const onConfirmOnCollection = useCallback(
     (view: Collection) => {
@@ -95,47 +80,46 @@ export const EditCollectionModel = ({
   );
 };
 
-const Page = ({
-  id,
-  onClick,
-  getPageInfo,
-}: {
+interface PageProps {
   id: string;
-  onClick: (id: string) => void;
   getPageInfo: GetPageInfoById;
-}) => {
+  onClick: (id: string) => void;
+}
+
+const Page = ({ id, onClick, getPageInfo }: PageProps) => {
   const page = getPageInfo(id);
-  if (!page) {
-    return null;
-  }
-  const icon = page.isEdgeless ? (
-    <EdgelessIcon
-      style={{
-        width: 17.5,
-        height: 17.5,
-      }}
-    />
-  ) : (
-    <PageIcon
-      style={{
-        width: 17.5,
-        height: 17.5,
-      }}
-    />
-  );
-  const click = () => {
-    onClick(id);
-  };
+  const handleClick = useCallback(() => onClick(id), [id, onClick]);
   return (
-    <div className={styles.pageContainer}>
-      <div className={styles.pageIcon}>{icon}</div>
-      <div className={styles.pageTitle}>{page.title}</div>
-      <div onClick={click} className={styles.deleteIcon}>
-        <RemoveIcon />
-      </div>
-    </div>
+    <>
+      {page ? (
+        <div className={styles.pageContainer}>
+          <div className={styles.pageIcon}>
+            {page.isEdgeless ? (
+              <EdgelessIcon style={{ width: 17.5, height: 17.5 }} />
+            ) : (
+              <PageIcon style={{ width: 17.5, height: 17.5 }} />
+            )}
+          </div>
+          <div className={styles.pageTitle}>{page.title}</div>
+          <div onClick={handleClick} className={styles.deleteIcon}>
+            <RemoveIcon />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 };
+
+interface EditCollectionProps {
+  title?: string;
+  onConfirmText?: string;
+  init: Collection;
+  getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
+  onCancel: () => void;
+  onConfirm: (collection: Collection) => void;
+}
+
 export const EditCollection = ({
   title,
   init,
@@ -144,9 +128,7 @@ export const EditCollection = ({
   onConfirmText,
   getPageInfo,
   propertiesMeta,
-}: CreateCollectionProps & {
-  onCancel: () => void;
-}) => {
+}: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
   const removeFromExcludeList = useCallback(
@@ -223,13 +205,8 @@ export const EditCollection = ({
           <FilterList
             propertiesMeta={propertiesMeta}
             value={value.filterList}
-            onChange={list =>
-              onChange({
-                ...value,
-                filterList: list,
-              })
-            }
-          ></FilterList>
+            onChange={filterList => onChange({ ...value, filterList })}
+          />
           {value.allowList ? (
             <div className={styles.allowList}>
               <div className={styles.allowTitle}>With follow pages:</div>
@@ -253,12 +230,7 @@ export const EditCollection = ({
             data-testid="input-collection-title"
             placeholder={t['Untitled Collection']()}
             defaultValue={value.name}
-            onChange={text =>
-              onChange({
-                ...value,
-                name: text,
-              })
-            }
+            onChange={name => onChange({ ...value, name })}
           />
         </div>
       </ScrollableContainer>
@@ -288,6 +260,15 @@ export const EditCollection = ({
     </div>
   );
 };
+
+interface SaveCollectionButtonProps {
+  getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
+  filterList: Filter[];
+  workspaceId: string;
+  onConfirm: (collection: Collection) => Promise<void>;
+}
+
 export const SaveCollectionButton = ({
   onConfirm,
   getPageInfo,
