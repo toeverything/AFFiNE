@@ -1,4 +1,8 @@
-import { BadRequestException, HttpException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+} from '@nestjs/common';
 import {
   Args,
   Field,
@@ -47,6 +51,14 @@ export class UserType implements Partial<User> {
 export class DeleteAccount {
   @Field()
   success!: boolean;
+}
+
+@ObjectType()
+export class AddToNewFeaturesWaitingList {
+  @Field()
+  email!: string;
+  @Field()
+  type!: NewFeaturesKind;
 }
 
 @Auth()
@@ -138,6 +150,27 @@ export class UserResolver {
     });
     return {
       success: true,
+    };
+  }
+
+  @Mutation(() => AddToNewFeaturesWaitingList)
+  async addToNewFeaturesWaitingList(
+    @CurrentUser() user: UserType,
+    @Args('type') type: NewFeaturesKind,
+    @Args('email') email: string
+  ): Promise<AddToNewFeaturesWaitingList> {
+    if (!user.email.endsWith('@toeverything.info')) {
+      throw new ForbiddenException('You are not allowed to do this');
+    }
+    await this.prisma.newFeaturesWaitingList.create({
+      data: {
+        email,
+        type,
+      },
+    });
+    return {
+      email,
+      type,
     };
   }
 }
