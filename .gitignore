@@ -17,6 +17,7 @@
 
 # dependencies
 node_modules
+**/prisma-generated
 
 # IDEs and editors
 **/.idea

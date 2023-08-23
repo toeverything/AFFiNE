@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import type { Array as YArray, Map as YMap } from 'yjs';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
-import { prismaNewService, prismOldService } from './prisma';
+import { prismaNewService } from './prisma';
 
 export function loadYDoc(path: string) {
   const binary = fs.readFileSync(path);
@@ -76,34 +76,30 @@ export function upgradeYDoc(
   return migratedDoc;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function migrateYDoc() {
-  const docs = await prismOldService.getYDocs();
-  const saveMigratedDoc = async (migratedDoc: Doc) => {
-    const workspaceId = migratedDoc.guid;
+export async function saveMigratedDoc(
+  workspaceId: string,
+  migratedDoc: Doc,
+  createdAt: Date
+) {
+  await prismaNewService.insertYDoc(
+    workspaceId,
+    migratedDoc.guid,
+    encodeStateAsUpdate(migratedDoc),
+    createdAt
+  );
+
+  const subDocs = migratedDoc.get('spaces') as YMap<unknown>;
+  for (const id of [
+    ...((migratedDoc.get('meta') as YMap<unknown>).get('pages') as YArray<
+      YMap<unknown>
+    >),
+  ].map(ele => ele.get('id'))) {
+    const subDoc = subDocs.get(id as string) as Doc;
     await prismaNewService.insertYDoc(
       workspaceId,
-      migratedDoc.guid,
-      encodeStateAsUpdate(migratedDoc)
+      subDoc.guid,
+      encodeStateAsUpdate(subDoc),
+      createdAt
     );
-
-    const subDocs = migratedDoc.get('spaces') as YMap<unknown>;
-    for (const id of [
-      ...((migratedDoc.get('meta') as YMap<unknown>).get('pages') as YArray<
-        YMap<unknown>
-      >),
-    ].map(ele => ele.get('id'))) {
-      const subDoc = subDocs.get(id as string) as Doc;
-      await prismaNewService.insertYDoc(
-        workspaceId,
-        subDoc.guid,
-        encodeStateAsUpdate(subDoc)
-      );
-    }
-  };
-
-  for (const doc of docs) {
-    const migratedDoc = upgradeYDoc(doc);
-    await saveMigratedDoc(migratedDoc);
   }
 }

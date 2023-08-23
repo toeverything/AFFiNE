@@ -1,0 +1,47 @@
+generator client {
+    provider      = "prisma-client-js"
+    binaryTargets = ["native"]
+    output        = "./prisma-generated/clientOldBinary"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_OLD_BINARY_URL")
+}
+
+model blobs {
+    workspace String   @db.VarChar
+    hash      String   @db.VarChar
+    blob      Bytes
+    length    BigInt
+    timestamp DateTime @db.Timestamptz(6)
+
+    @@id([workspace, hash])
+    @@index([workspace], map: "blobs_list")
+}
+
+model docs {
+    id        Int      @id @default(autoincrement())
+    workspace String   @db.VarChar
+    timestamp DateTime @db.Timestamptz(6)
+    blob      Bytes
+
+    @@index([workspace], map: "workspaces_update")
+}
+
+model optimized_blobs {
+    workspace String   @db.VarChar
+    hash      String   @db.VarChar
+    blob      Bytes
+    length    BigInt
+    timestamp DateTime @db.Timestamptz(6)
+    params    String   @db.VarChar
+
+    @@id([workspace, hash, params])
+    @@index([workspace], map: "blobs_optimized_list")
+}
+
+model seaql_migrations {
+    version    String @id @db.VarChar
+    applied_at BigInt
+}
