@@ -97,6 +97,26 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        id: setup-node-1
+        continue-on-error: true
+        timeout-minutes: 10
+        with:
+          playwright-install: true
+          hard-link-nm: false
+      # try second time if failed
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        id: setup-node-2
+        if: ${{ steps.setup-node-1.outcome == 'failure' }}
+        timeout-minutes: 10
+        with:
+          playwright-install: true
+          hard-link-nm: false
+      # try third time if failed
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        id: setup-node-3
+        if: ${{ steps.setup-node-2.outcome == 'failure' }}
         timeout-minutes: 10
         with:
           playwright-install: true
