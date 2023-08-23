@@ -24,7 +24,7 @@ const editorFlags: BlockSuiteFeatureFlags = {
 };
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
-  const buildPreset: Record<string, RuntimeConfig> = {
+  const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
     stable: {
       enablePlugin: true,
       enableTestProperties: false,
@@ -39,10 +39,22 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: false,
       enableCloud: true,
-      serverUrlPrefix: 'https://affine.fail',
+      serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
+    },
+    get beta() {
+      return {
+        ...this.stable,
+        serverUrlPrefix: 'https://ambassador.affine.pro',
+      };
+    },
+    get internal() {
+      return {
+        ...this.stable,
+        serverUrlPrefix: 'https://affine.fail',
+      };
     },
     // canary will be aggressive and enable all features
     canary: {
@@ -65,10 +77,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
     },
   };
-
-  // beta and internal versions are the same as stable
-  buildPreset.beta = buildPreset.stable;
-  buildPreset.internal = buildPreset.stable;
 
   const currentBuild = buildFlags.channel;
 
