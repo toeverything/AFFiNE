@@ -10,6 +10,8 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/nx.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
   pull_request:
   merge_group:
     branches:
@@ -20,13 +22,15 @@ on:
       - README.md
       - .github/**
       - '!.github/workflows/nx.yml'
+      - '!.github/actions/build-rust/action.yml'
+      - '!.github/actions/setup-node/action.yml'
 
 jobs:
   main:
     name: Nx Cloud - Main Job
     uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.13.0
     with:
-      runs-on: ubuntu-latest
+      runs-on: macos-latest
       main-branch-name: master
       number-of-agents: 5
       init-commands: |
@@ -43,7 +47,7 @@ jobs:
     name: Nx Cloud - Agents
     uses: nrwl/ci/.github/workflows/nx-cloud-agents.yml@v0.13.0
     with:
-      runs-on: ubuntu-latest
+      runs-on: macos-latest
       number-of-agents: 5
       environment-variables: |
         BUILD_TYPE=canary
