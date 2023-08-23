@@ -27,7 +27,7 @@
     "build": "yarn nx build @affine/core",
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",
-    "build:infra": "yarn nx run-many -t build -p infra sdk",
+    "build:infra": "yarn nx run-many -t build -p infra sdk i18n",
     "build:plugins": "yarn nx run-many -t build  --projects=tag:plugin",
     "build:storybook": "yarn nx build @affine/storybook",
     "start:web-static": "yarn workspace @affine/core static-server",
