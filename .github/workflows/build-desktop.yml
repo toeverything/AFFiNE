@@ -95,14 +95,12 @@ jobs:
     needs: build-core
     steps:
       - uses: actions/checkout@v3
-      - uses: Wandalen/wretry.action@master
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        timeout-minutes: 10
         with:
-          action: ./.github/actions/setup-node
-          with: |
-            playwright-install: true
-            hard-link-nm: false
-          attempt_limit: 3
-          attempt_delay: 2000
+          playwright-install: true
+          hard-link-nm: false
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
