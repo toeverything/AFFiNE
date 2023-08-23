@@ -73,8 +73,6 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   // const setNotificationRemoveAnimation = useSetAtom(notificationRemoveAnimationAtom);
   const [mounted, setMounted] = useState<boolean>(false);
   const [removed, setRemoved] = useState<boolean>(false);
-  const [swiping, setSwiping] = useState<boolean>(false);
-  const [swipeOut, setSwipeOut] = useState<boolean>(false);
   const [offsetBeforeRemove, setOffsetBeforeRemove] = useState<number>(0);
   const [initialHeight, setInitialHeight] = useState<number>(0);
   const [animationKey, setAnimationKey] = useState(0);
@@ -93,7 +91,6 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   );
   const duration = notification.timeout || 3000;
   const offset = useRef(0);
-  const pointerStartYRef = useRef<number | null>(null);
 
   const notificationsHeightBefore = useMemo(() => {
     return heights.reduce((prev, curr, reducerIndex) => {
@@ -235,8 +232,6 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       data-visible={isVisible}
       data-index={index}
       data-front={isFront}
-      data-swiping={swiping}
-      data-swipe-out={swipeOut}
       data-expanded={expand}
       onMouseEnter={() => {
         setExpand(true);
@@ -247,6 +242,8 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       onMouseLeave={() => {
         setExpand(false);
       }}
+      onSwipeEnd={event => event.preventDefault()}
+      onSwipeMove={event => event.preventDefault()}
       style={
         {
           '--index': index,
@@ -254,49 +251,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           '--z-index': notifications.length - index,
           '--offset': `${removed ? offsetBeforeRemove : offset.current}px`,
           '--initial-height': `${initialHeight}px`,
+          userSelect: 'auto',
         } as React.CSSProperties
       }
-      onPointerDown={event => {
-        setOffsetBeforeRemove(offset.current);
-        (event.target as HTMLElement).setPointerCapture(event.pointerId);
-        if ((event.target as HTMLElement).tagName === 'BUTTON') return;
-        setSwiping(true);
-        pointerStartYRef.current = event.clientY;
-      }}
-      onPointerUp={() => {
-        if (swipeOut) return;
-        const swipeAmount = Number(
-          notificationRef.current?.style
-            .getPropertyValue('--swipe-amount')
-            .replace('px', '') || 0
-        );
-        if (Math.abs(swipeAmount) >= 20) {
-          setOffsetBeforeRemove(offset.current);
-          onClickRemove();
-          setSwipeOut(true);
-          return;
-        }
-
-        notificationRef.current?.style.setProperty('--swipe-amount', '0px');
-        pointerStartYRef.current = null;
-        setSwiping(false);
-      }}
-      onPointerMove={event => {
-        if (!pointerStartYRef.current) return;
-        const yPosition = event.clientY - pointerStartYRef.current;
-
-        const isAllowedToSwipe = yPosition > 0;
-
-        if (!isAllowedToSwipe) {
-          notificationRef.current?.style.setProperty('--swipe-amount', '0px');
-          return;
-        }
-
-        notificationRef.current?.style.setProperty(
-          '--swipe-amount',
-          `${yPosition}px`
-        );
-      }}
     >
       <div
         className={clsx({
