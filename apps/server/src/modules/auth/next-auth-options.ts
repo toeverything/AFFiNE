@@ -263,7 +263,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         return session;
       },
       signIn: async ({ profile }) => {
-        if (config.affineEnv !== 'beta') {
+        if (!config.beta) {
           return true;
         }
         if (profile?.email) {

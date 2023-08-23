@@ -85,7 +85,16 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         'boolean',
       ],
     } satisfies AFFiNEConfig['ENV_MAP'],
-    affineEnv: 'beta',
+    affineEnv: 'dev',
+    get canary() {
+      return this.affineEnv === 'dev';
+    },
+    get beta() {
+      return this.affineEnv === 'beta';
+    },
+    get stable() {
+      return this.affineEnv === 'production';
+    },
     env: process.env.NODE_ENV ?? 'development',
     get prod() {
       return this.env === 'production';

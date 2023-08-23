@@ -80,7 +80,7 @@ export interface AFFiNEConfig {
   /**
    * Deployment environment
    */
-  readonly affineEnv: 'canary' | 'beta' | 'production';
+  readonly affineEnv: 'dev' | 'beta' | 'production';
   /**
    * alias to `process.env.NODE_ENV`
    *
@@ -88,6 +88,12 @@ export interface AFFiNEConfig {
    * @env NODE_ENV
    */
   readonly env: string;
+  /**
+   * fast AFFiNE environment judge
+   */
+  get canary(): boolean;
+  get beta(): boolean;
+  get stable(): boolean;
   /**
    * fast environment judge
    */
