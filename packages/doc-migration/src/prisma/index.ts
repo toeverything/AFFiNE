@@ -10,7 +10,6 @@ class PrismaNewService {
 
   constructor() {
     this.prismaClient = new PrismaClientNew();
-    this.prismaClient.$connect();
   }
 
   public async insertYDoc(
@@ -33,8 +32,12 @@ class PrismaNewService {
     return this.prismaClient;
   }
 
-  public dispose() {
-    this.prismaClient.$disconnect();
+  public async connect() {
+    await this.prismaClient.$connect();
+  }
+
+  public async disconnect() {
+    await this.prismaClient.$disconnect();
   }
 }
 
@@ -45,8 +48,6 @@ class PrismaOldService {
   constructor() {
     this.prismaClient = new PrismaClientOld();
     this.prismaClientBinary = new PrismaClientOldBinary();
-    this.prismaClient.$connect();
-    this.prismaClientBinary.$connect();
   }
 
   public async getYDocs(): Promise<DocType[]> {
@@ -79,9 +80,14 @@ class PrismaOldService {
     return this.prismaClientBinary;
   }
 
-  public dispose() {
-    this.prismaClient.$disconnect();
-    this.prismaClientBinary.$disconnect();
+  public async connect() {
+    await this.prismaClient.$connect();
+    await this.prismaClientBinary.$connect();
+  }
+
+  public async disconnect() {
+    await this.prismaClient.$disconnect();
+    await this.prismaClientBinary.$disconnect();
   }
 }
 

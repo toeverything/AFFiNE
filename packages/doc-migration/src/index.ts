@@ -5,6 +5,9 @@
 import { prismaNewService, prismOldService } from './prisma';
 import { saveMigratedDoc, upgradeYDoc } from './util';
 
+await prismOldService.connect();
+await prismaNewService.connect();
+
 const docs = await prismOldService.getYDocs();
 
 for (const { workspaceId, doc, createdAt } of docs) {
@@ -60,3 +63,6 @@ await prismaNewClient.userWorkspacePermission.createMany({
     };
   }),
 });
+
+await prismOldService.disconnect();
+await prismaNewService.disconnect();
