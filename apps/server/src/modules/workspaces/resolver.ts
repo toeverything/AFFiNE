@@ -199,6 +199,27 @@ export class WorkspaceResolver {
     }));
   }
 
+  @Query(() => Boolean, {
+    description: 'Get is owner of workspace',
+    complexity: 2,
+  })
+  async isOwner(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    const data = await this.prisma.userWorkspacePermission.findFirst({
+      where: {
+        workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return data?.user?.id === user.id;
+  }
+
   @Query(() => [WorkspaceType], {
     description: 'Get all accessible workspaces for current user',
     complexity: 2,

@@ -121,6 +121,9 @@ type InvitationType {
 }
 
 type Query {
+  """Get is owner of workspace"""
+  isOwner(workspaceId: String!): Boolean!
+
   """Get all accessible workspaces for current user"""
   workspaces: [WorkspaceType!]!
 

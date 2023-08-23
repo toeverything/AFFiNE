@@ -151,6 +151,17 @@ query getInviteInfo($inviteId: String!) {
 }`,
 };
 
+export const getIsOwnerQuery = {
+  id: 'getIsOwnerQuery' as const,
+  operationName: 'getIsOwner',
+  definitionName: 'isOwner',
+  containsFile: false,
+  query: `
+query getIsOwner($workspaceId: String!) {
+  isOwner(workspaceId: $workspaceId)
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',

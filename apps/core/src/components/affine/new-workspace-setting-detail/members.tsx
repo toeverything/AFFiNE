@@ -21,7 +21,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
-import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import { AnyErrorBoundary } from '../any-error-boundary';
@@ -29,6 +28,7 @@ import * as style from './style.css';
 
 export type MembersPanelProps = {
   workspace: AffineOfficialWorkspace;
+  isOwner: boolean;
 };
 const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
@@ -46,13 +46,13 @@ const MembersPanelLocal = () => {
   );
 };
 
-export const CloudWorkspaceMembersPanel = (
-  props: MembersPanelProps
-): ReactElement => {
-  const workspaceId = props.workspace.id;
+export const CloudWorkspaceMembersPanel = ({
+  workspace,
+  isOwner,
+}: MembersPanelProps): ReactElement => {
+  const workspaceId = workspace.id;
   const members = useMembers(workspaceId);
   const t = useAFFiNEI18N();
-  const isOwner = useIsWorkspaceOwner(workspaceId);
   const currentUser = useCurrentUser();
   const { invite, isMutating } = useInviteMember(workspaceId);
   const [open, setOpen] = useState(false);

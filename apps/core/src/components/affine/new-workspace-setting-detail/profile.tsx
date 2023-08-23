@@ -9,17 +9,16 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
-import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { Upload } from '../../pure/file-upload';
 import * as style from './style.css';
 
 interface ProfilePanelProps {
   workspace: AffineOfficialWorkspace;
+  isOwner: boolean;
 }
 
-export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
+export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
-  const isOwner = useIsWorkspaceOwner(workspace.id);
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace

@@ -169,6 +169,12 @@ export type GetInviteInfoQuery = {
   };
 };
 
+export type GetIsOwnerQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetIsOwnerQuery = { __typename?: 'Query'; isOwner: boolean };
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -405,6 +411,11 @@ export type Queries =
       name: 'getInviteInfoQuery';
       variables: GetInviteInfoQueryVariables;
       response: GetInviteInfoQuery;
+    }
+  | {
+      name: 'getIsOwnerQuery';
+      variables: GetIsOwnerQueryVariables;
+      response: GetIsOwnerQuery;
     }
   | {
       name: 'getMembersByWorkspaceIdQuery';

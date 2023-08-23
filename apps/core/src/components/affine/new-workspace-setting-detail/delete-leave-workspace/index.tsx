@@ -5,7 +5,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 
-import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
 import { useLeaveWorkspace } from '../../../../hooks/affine/use-leave-workspace';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
@@ -13,15 +12,16 @@ import { WorkspaceDeleteModal } from './delete';
 interface DeleteLeaveWorkspaceProps {
   workspace: AffineOfficialWorkspace;
   onDeleteWorkspace: WorkspaceSettingDetailProps['onDeleteWorkspace'];
+  isOwner: boolean;
 }
 
 export const DeleteLeaveWorkspace = ({
   workspace,
   onDeleteWorkspace,
+  isOwner,
 }: DeleteLeaveWorkspaceProps) => {
   const t = useAFFiNEI18N();
   // fixme: cloud regression
-  const isOwner = useIsWorkspaceOwner(workspace.id);
   const leaveWorkspace = useLeaveWorkspace(workspace.id);
 
   const [showDelete, setShowDelete] = useState(false);

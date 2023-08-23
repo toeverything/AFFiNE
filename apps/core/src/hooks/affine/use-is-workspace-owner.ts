@@ -1,19 +1,19 @@
-import { Permission } from '@affine/graphql';
-import { useMemo } from 'react';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { getIsOwnerQuery } from '@affine/graphql';
+import { useQuery } from '@affine/workspace/affine/gql';
 
-import { useCurrentUser } from './use-current-user';
-import { useMembers } from './use-members';
+export function useIsWorkspaceOwner(workspace: AffineOfficialWorkspace) {
+  const { data } = useQuery({
+    query: getIsOwnerQuery,
+    variables: {
+      workspaceId: workspace.id,
+    },
+  });
 
-export function useIsWorkspaceOwner(workspaceId: string) {
-  const currentUser = useCurrentUser();
-  const members = useMembers(workspaceId);
-  return useMemo(
-    () =>
-      members.some(
-        member =>
-          member.email === currentUser.email &&
-          member.permission === Permission.Owner
-      ),
-    [currentUser.email, members]
-  );
+  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+    return true;
+  }
+
+  return data.isOwner;
 }

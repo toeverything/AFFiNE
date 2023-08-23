@@ -11,6 +11,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useMemo } from 'react';
 
+import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
@@ -40,6 +41,7 @@ export const WorkspaceSettingDetail = ({
   const t = useAFFiNEI18N();
   const workspace = useWorkspace(workspaceId);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
+  const isOwner = useIsWorkspaceOwner(workspace);
 
   const storageAndExportSetting = useMemo(() => {
     if (environment.isDesktop) {
@@ -68,7 +70,7 @@ export const WorkspaceSettingDetail = ({
           desc={t['com.affine.settings.workspace.not-owner']()}
           spreadCol={false}
         >
-          <ProfilePanel workspace={workspace} />
+          <ProfilePanel workspace={workspace} isOwner={isOwner} />
         </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['AFFiNE Cloud']()}>
@@ -77,13 +79,14 @@ export const WorkspaceSettingDetail = ({
           onDeleteWorkspace={onDeleteWorkspace}
           {...props}
         />
-        <MembersPanel workspace={workspace} />
+        <MembersPanel workspace={workspace} isOwner={isOwner} />
       </SettingWrapper>
       {storageAndExportSetting}
       <SettingWrapper>
         <DeleteLeaveWorkspace
           workspace={workspace}
           onDeleteWorkspace={onDeleteWorkspace}
+          isOwner={isOwner}
         />
       </SettingWrapper>
     </>
