@@ -43,6 +43,7 @@ runs:
       with:
         timeout_minutes: 10
         max_attempts: 3
+        retry_on: timeout
         command: yarn install ${{ inputs.extra-flags }}
       env:
         HUSKY: '0'
