@@ -1,37 +1,20 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-const { z } = require('zod');
-
 const {
   utils: { fromBuildIdentifier },
 } = require('@electron-forge/core');
 
 const path = require('node:path');
 
-const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
-
-const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
-const buildType = ReleaseTypeSchema.parse(envBuildType);
-const stableBuild = buildType === 'stable';
-const productName = !stableBuild ? `AFFiNE-${buildType}` : 'AFFiNE';
-const icoPath = !stableBuild
-  ? `./resources/icons/icon_${buildType}.ico`
-  : './resources/icons/icon.ico';
-const icnsPath = !stableBuild
-  ? `./resources/icons/icon_${buildType}.icns`
-  : './resources/icons/icon.icns';
-
-const arch =
-  process.argv.indexOf('--arch') > 0
-    ? process.argv[process.argv.indexOf('--arch') + 1]
-    : process.arch;
-
-const platform =
-  process.argv.indexOf('--platform') > 0
-    ? process.argv[process.argv.indexOf('--platform') + 1]
-    : process.platform;
-
-const windowsIconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
+const {
+  arch,
+  buildType,
+  icnsPath,
+  icoPath,
+  platform,
+  productName,
+  iconUrl,
+} = require('./scripts/make-env');
 
 const makers = [
   !process.env.SKIP_BUNDLE &&
@@ -84,7 +67,7 @@ const makers = [
     config: {
       name: productName,
       setupIcon: icoPath,
-      iconUrl: windowsIconUrl,
+      iconUrl: iconUrl,
       loadingGif: './resources/icons/affine_installing.gif',
     },
   },

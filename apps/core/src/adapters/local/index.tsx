@@ -22,6 +22,7 @@ import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { useCallback } from 'react';
 
 import { setPageModeAtom } from '../../atoms';
 import {
@@ -91,7 +92,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
-            onInit={initEmptyPage}
+            onInit={useCallback(async page => initEmptyPage(page), [])}
             onLoad={onLoadEditor}
             workspace={workspace}
           />
