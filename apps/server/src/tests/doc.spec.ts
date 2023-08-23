@@ -132,7 +132,7 @@ test('Doc Module', async t => {
 
     await manager.apply();
 
-    deepEqual(await manager.getLatest(ws.id, '1'), update);
+    deepEqual(await manager.getLatestUpdate(ws.id, '1'), update);
 
     let appendUpdate = Buffer.from([]);
     doc.on('update', update => {
@@ -150,6 +150,9 @@ test('Doc Module', async t => {
 
     await manager.apply();
 
-    deepEqual(await manager.getLatest(ws.id, '1'), encodeStateAsUpdate(doc));
+    deepEqual(
+      await manager.getLatestUpdate(ws.id, '1'),
+      encodeStateAsUpdate(doc)
+    );
   });
 });

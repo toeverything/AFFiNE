@@ -12,16 +12,6 @@ import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
 
-function yjsMergeUpdates(updates: Buffer[]): Buffer {
-  const doc = new Doc();
-
-  updates.forEach(update => {
-    applyUpdate(doc, update);
-  });
-
-  return Buffer.from(encodeStateAsUpdate(doc));
-}
-
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   if (yBinary.equals(jwstBinary)) {
     return true;
@@ -74,8 +64,24 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     this.destroy();
   }
 
+  protected recoverDoc(...updates: Buffer[]): Doc {
+    const doc = new Doc();
+
+    updates.forEach(update => {
+      applyUpdate(doc, update);
+    });
+
+    return doc;
+  }
+
+  protected yjsMergeUpdates(...updates: Buffer[]): Buffer {
+    const doc = this.recoverDoc(...updates);
+
+    return Buffer.from(encodeStateAsUpdate(doc));
+  }
+
   protected mergeUpdates(guid: string, ...updates: Buffer[]): Buffer {
-    const yjsResult = yjsMergeUpdates(updates);
+    const yjsResult = this.yjsMergeUpdates(...updates);
     this.metrics.jwstCodecMerge(1, {});
     let log = false;
     if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
@@ -198,22 +204,35 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
    *
    * latest = snapshot + updates
    */
-  async getLatest(
-    workspaceId: string,
-    guid: string
-  ): Promise<Buffer | undefined> {
+  async getLatest(workspaceId: string, guid: string): Promise<Doc | undefined> {
     const snapshot = await this.getSnapshot(workspaceId, guid);
     const updates = await this.getUpdates(workspaceId, guid);
 
     if (updates.length) {
       if (snapshot) {
-        return this.mergeUpdates(guid, snapshot, ...updates);
+        return this.recoverDoc(snapshot, ...updates);
       } else {
-        return this.mergeUpdates(guid, ...updates);
+        return this.recoverDoc(...updates);
       }
     }
 
-    return snapshot;
+    if (snapshot) {
+      return this.recoverDoc(snapshot);
+    }
+
+    return undefined;
+  }
+
+  /**
+   * get the latest doc and convert it to update binary
+   */
+  async getLatestUpdate(
+    workspaceId: string,
+    guid: string
+  ): Promise<Buffer | undefined> {
+    const doc = await this.getLatest(workspaceId, guid);
+
+    return doc ? Buffer.from(encodeStateAsUpdate(doc)) : undefined;
   }
 
   /**
