@@ -68,7 +68,7 @@
     "@magic-works/i18n-codegen": "^0.5.0",
     "@nx/vite": "16.7.0",
     "@perfsee/sdk": "^1.9.0",
-    "@playwright/test": "^1.37.0",
+    "@playwright/test": "^1.37.1",
     "@taplo/cli": "^0.5.2",
     "@testing-library/react": "^14.0.0",
     "@toeverything/infra": "workspace:*",
