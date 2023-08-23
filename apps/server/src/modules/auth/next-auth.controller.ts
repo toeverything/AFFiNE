@@ -108,6 +108,10 @@ export class NextAuthController {
       options,
     });
 
+    if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
+      res.redirect('https://community.affine.pro/c/insider-general/');
+    }
+
     if (status) {
       res.status(status);
     }
@@ -127,7 +131,7 @@ export class NextAuthController {
       } else if (action === 'signout') {
         res.send(JSON.stringify({ url: redirect }));
       } else {
-        res.redirect(redirect);
+        res.send(JSON.stringify({ url: redirect }));
       }
     } else if (typeof body === 'string') {
       res.send(body);

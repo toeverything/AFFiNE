@@ -78,6 +78,10 @@ export interface AFFiNEConfig {
    */
   readonly version: string;
   /**
+   * Deployment environment
+   */
+  readonly affineEnv: 'canary' | 'beta' | 'production';
+  /**
    * alias to `process.env.NODE_ENV`
    *
    * @default 'production'

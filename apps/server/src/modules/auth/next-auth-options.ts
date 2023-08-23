@@ -14,6 +14,7 @@ import Google from 'next-auth/providers/google';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { NewFeaturesKind } from '../users/types';
 import { MailService } from './mailer';
 import { getUtcTimestamp, UserClaim } from './service';
 
@@ -261,8 +262,25 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         return session;
       },
-      redirect(params) {
-        return params.url;
+      signIn: async ({ profile }) => {
+        if (config.affineEnv !== 'beta') {
+          return true;
+        }
+        if (profile?.email) {
+          return await prisma.newFeaturesWaitingList
+            .findUnique({
+              where: {
+                email: profile.email,
+                type: NewFeaturesKind.EarlyAccess,
+              },
+            })
+            .then(user => !!user)
+            .catch(() => false);
+        }
+        return false;
+      },
+      redirect({ url }) {
+        return url;
       },
     };
     return nextAuthOptions;

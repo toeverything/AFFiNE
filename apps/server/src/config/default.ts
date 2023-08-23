@@ -54,6 +54,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_PORT: ['port', 'int'],
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
+      AFFINE_ENV: 'affineEnv',
       DATABASE_URL: 'db.url',
       AUTH_PRIVATE_KEY: 'auth.privateKey',
       ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
@@ -84,6 +85,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         'boolean',
       ],
     } satisfies AFFiNEConfig['ENV_MAP'],
+    affineEnv: 'beta',
     env: process.env.NODE_ENV ?? 'development',
     get prod() {
       return this.env === 'production';

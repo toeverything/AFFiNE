@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, HttpException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -12,10 +12,12 @@ import type { User } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
+import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
+import { NewFeaturesKind } from './types';
 
 @ObjectType()
 export class UserType implements Partial<User> {
@@ -52,7 +54,8 @@ export class DeleteAccount {
 export class UserResolver {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly config: Config
   ) {}
 
   @Query(() => UserType, {
@@ -78,6 +81,19 @@ export class UserResolver {
   })
   @Public()
   async user(@Args('email') email: string) {
+    if (this.config.affineEnv === 'beta') {
+      const hasEarlyAccess = await this.prisma.newFeaturesWaitingList
+        .findUnique({
+          where: { email, type: NewFeaturesKind.EarlyAccess },
+        })
+        .catch(() => false);
+      if (!hasEarlyAccess) {
+        return new HttpException(
+          `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
+          401
+        );
+      }
+    }
     // TODO: need to limit a user can only get another user witch is in the same workspace
     return this.prisma.user
       .findUnique({
