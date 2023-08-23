@@ -726,7 +726,6 @@ __metadata:
     storybook: ^7.3.1
     storybook-addon-react-router-v6: ^2.0.4
     storybook-dark-mode: ^3.0.1
-    vite-plugin-turbosnap: ^1.0.2
     wait-on: ^7.0.1
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -32571,13 +32570,6 @@ __metadata:
   peerDependencies:
     vite: ^3.0.0 || ^4.0.0
   checksum: b73f001f080517d7c2342ad5b0779c1e5ec8b5820e85a57280e8f979d095946a32ab717a59eaae60e3f715784a138785208619aa6d936cd9a80e6a03e364e4fc
-  languageName: node
-  linkType: hard
-
-"vite-plugin-turbosnap@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "vite-plugin-turbosnap@npm:1.0.2"
-  checksum: c5da204cd9fa0dbf8a5f3c151681057da0f8cec3acbec94bdc04e525d410d85bd87c46b73498ba20c487fe61a68b1486b0f88bc51fec48d7053d1f3597411231
   languageName: node
   linkType: hard
 
