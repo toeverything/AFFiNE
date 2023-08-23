@@ -56,8 +56,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     setPageMeta(pageId, { favorite: !favorite });
     toast(
       favorite
-        ? t['Removed from Favorites']()
-        : t['com.affine.core.toastMessage.favorite.added']()
+        ? t['com.affine.core.toastMessage.removedFavorites']()
+        : t['com.affine.core.toastMessage.addedFavorites']()
     );
   }, [favorite, pageId, setPageMeta, t]);
   const handleSwitchMode = useCallback(() => {
@@ -66,13 +66,13 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     }));
     toast(
       mode === 'page'
-        ? t['com.affine.edgelessMode']()
-        : t['com.affine.pageMode']()
+        ? t['com.affine.core.toastMessage.edgelessMode']()
+        : t['com.affine.core.toastMessage.pageMode']()
     );
   }, [mode, setSetting, t]);
   const handleOnConfirm = useCallback(() => {
     removeToTrash(pageId);
-    toast(t['Moved to Trash']());
+    toast(t['com.affine.core.toastMessage.movedTrash']());
     setOpenConfirm(false);
   }, [pageId, removeToTrash, t]);
   const menuItemStyle = {
@@ -140,8 +140,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         }
       >
         {favorite
-          ? t['Remove from favorites']()
-          : t['com.affine.component.operationMenu.favorite.add']()}
+          ? t['com.affine.component.favoritePageOperation.remove']()
+          : t['com.affine.component.favoritePageOperation.add']()}
       </MenuItem>
       {/* {TODO: add tag and duplicate function support} */}
       {/* <MenuItem

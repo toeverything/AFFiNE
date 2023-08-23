@@ -216,7 +216,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
         // TODO-Doma
         // Co-locate `moveToTrash` with the toast for reuse, as they're always used together
         moveToTrash(pageId);
-        toast(t['Successfully deleted']());
+        toast(t['com.affine.core.toastMessage.successfullyDeleted']());
       }
       // Drag page into Collections
       processCollectionsDrag(e);

@@ -204,11 +204,15 @@ export const BlockSuitePageList = ({
         },
         onRestorePage: () => {
           restoreFromTrash(pageMeta.id);
-          toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
+          toast(
+            t['com.affine.core.toastMessage.restored']({
+              title: pageMeta.title || 'Untitled',
+            })
+          );
         },
         onPermanentlyDeletePage: () => {
           permanentlyDeletePage(pageMeta.id);
-          toast(t['Permanently deleted']());
+          toast(t['com.affine.core.toastMessage.permanentlyDeleted']());
         },
       };
     });
@@ -243,19 +247,23 @@ export const BlockSuitePageList = ({
       },
       removeToTrash: () => {
         removeToTrash(pageMeta.id);
-        toast(t['Successfully deleted']());
+        toast(t['com.affine.core.toastMessage.successfullyDeleted']());
       },
       onRestorePage: () => {
         restoreFromTrash(pageMeta.id);
-        toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
+        toast(
+          t['com.affine.core.toastMessage.restored']({
+            title: pageMeta.title || 'Untitled',
+          })
+        );
       },
       bookmarkPage: () => {
         const status = pageMeta.favorite;
         toggleFavorite(pageMeta.id);
         toast(
           status
-            ? t['Removed from Favorites']()
-            : t['com.affine.core.toastMessage.favorite.added']()
+            ? t['com.affine.core.toastMessage.removedFavorites']()
+            : t['com.affine.core.toastMessage.addedFavorites']()
         );
       },
       onDisablePublicSharing: () => {

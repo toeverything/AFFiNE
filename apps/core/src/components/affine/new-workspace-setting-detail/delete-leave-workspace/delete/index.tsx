@@ -40,10 +40,10 @@ export const WorkspaceDeleteModal = ({
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>{t['Delete Workspace']()}?</StyledModalHeader>
+        <StyledModalHeader>{t['com.affine.core.workspaceDelete.title']()}?</StyledModalHeader>
         {workspace.flavour === WorkspaceFlavour.LOCAL ? (
           <StyledTextContent>
-            <Trans i18nKey="Delete Workspace Description">
+            <Trans i18nKey="com.affine.core.workspaceDelete.description">
               Deleting (
               <StyledWorkspaceName>
                 {{ workspace: workspaceName } as any}
@@ -54,7 +54,7 @@ export const WorkspaceDeleteModal = ({
           </StyledTextContent>
         ) : (
           <StyledTextContent>
-            <Trans i18nKey="Delete Workspace Description2">
+            <Trans i18nKey="com.affine.core.workspaceDelete.description2">
               Deleting (
               <StyledWorkspaceName>
                 {{ workspace: workspaceName } as any}
@@ -73,14 +73,14 @@ export const WorkspaceDeleteModal = ({
             }}
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
-            placeholder={t['Placeholder of delete workspace']()}
+            placeholder={t['com.affine.core.workspaceDelete.placeholder']()}
             width={315}
             height={42}
           />
         </StyledInputContent>
         <StyledButtonContent>
           <Button onClick={onClose} size="large">
-            {t['Cancel']()}
+            {t['com.affine.core.workspaceDelete.button.cancel']()}
           </Button>
           <Button
             data-testid="delete-workspace-confirm-button"
@@ -90,7 +90,7 @@ export const WorkspaceDeleteModal = ({
             type="error"
             style={{ marginLeft: '24px' }}
           >
-            {t['Delete']()}
+            {t['com.affine.core.workspaceDelete.button.delete']()}
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>

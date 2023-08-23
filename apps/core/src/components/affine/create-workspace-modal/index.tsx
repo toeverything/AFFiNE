@@ -82,7 +82,7 @@ const NameWorkspaceContent = ({
       />
       <div className={style.buttonGroup}>
         <Button data-testid="create-workspace-close-button" onClick={onClose}>
-          {t.Cancel()}
+          {t['Cancel']()}
         </Button>
         <Button
           data-testid="create-workspace-create-button"
@@ -93,7 +93,7 @@ const NameWorkspaceContent = ({
           type="primary"
           onClick={handleCreateWorkspace}
         >
-          {t.Create()}
+          {t['Create']()}
         </Button>
       </div>
     </div>
