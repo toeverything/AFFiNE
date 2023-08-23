@@ -132,6 +132,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
       );
 
       for (const Adapter of Adapters) {
+        const { CRUD, flavour: currentFlavour } = Adapter;
         if (
           Adapter.Events['app:access'] &&
           !(await Adapter.Events['app:access']())
@@ -140,7 +141,20 @@ const rootWorkspacesMetadataPromiseAtom = atom<
           continue;
         }
         try {
-          const item = await Adapter.CRUD.list();
+          const item = await CRUD.list();
+          // remove the metadata that is not in the list
+          //  because we treat the workspace adapter as the source of truth
+          {
+            const removed = metadata.filter(
+              meta =>
+                meta.flavour === currentFlavour &&
+                !item.some(x => x.id === meta.id)
+            );
+            removed.forEach(meta => {
+              metadata.splice(metadata.indexOf(meta), 1);
+            });
+          }
+          // sort the metadata by the order of the list
           if (metadata.length) {
             item.sort((a, b) => {
               return (
