@@ -2,7 +2,7 @@ import { app } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { z } from 'zod';
 
-import { isMacOS } from '../../shared/utils';
+import { isMacOS, isWindows } from '../../shared/utils';
 import { logger } from '../logger';
 import { updaterSubjects } from './event';
 
@@ -40,8 +40,8 @@ export const registerUpdater = async () => {
     return;
   }
 
-  // TODO: support auto update on windows and linux
-  const allowAutoUpdate = isMacOS();
+  // TODO: support auto update on linux
+  const allowAutoUpdate = isMacOS() || isWindows();
 
   autoUpdater.logger = logger;
   autoUpdater.autoDownload = false;
