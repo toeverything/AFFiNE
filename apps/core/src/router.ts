@@ -41,6 +41,10 @@ export const routes = [
     lazy: () => import('./pages/invite'),
   },
   {
+    path: '/signIn',
+    lazy: () => import('./pages/sign-in'),
+  },
+  {
     path: '*',
     lazy: () => import('./pages/404'),
   },

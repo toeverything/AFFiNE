@@ -425,6 +425,7 @@ export class WorkspaceResolver {
     }
   }
 
+  @Public()
   @Query(() => InvitationType, {
     description: 'Update workspace',
   })

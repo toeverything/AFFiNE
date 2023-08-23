@@ -20,10 +20,7 @@ import { Divider } from '@toeverything/components/divider';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import {
-  openAuthModalAtom,
-  openDisableCloudAlertModalAtom,
-} from '../../../atoms';
+import { authAtom, openDisableCloudAlertModalAtom } from '../../../atoms';
 import type { AllWorkspace } from '../../../shared';
 import {
   StyledCreateWorkspaceCardPill,
@@ -152,7 +149,7 @@ export const WorkspaceListModal = ({
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
-  const setOpenAuthModal = useSetAtom(openAuthModalAtom);
+  const setOpenAuthModal = useSetAtom(authAtom);
   const isLoggedIn = false;
   const anchorEl = document.getElementById('current-workspace');
 
@@ -187,7 +184,7 @@ export const WorkspaceListModal = ({
               } else {
                 setOpenAuthModal(state => ({
                   ...state,
-                  open: true,
+                  openModal: true,
                 }));
               }
             }}
