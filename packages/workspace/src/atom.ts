@@ -132,7 +132,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
           {
             const removed = metadata.filter(
               meta =>
-                !item.some(x => x.id === meta.id && x.flavour === meta.flavour)
+                !item.some(x => x.id !== meta.id && x.flavour === meta.flavour)
             );
             removed.forEach(meta => {
               metadata.splice(metadata.indexOf(meta), 1);
