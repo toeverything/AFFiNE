@@ -6,8 +6,10 @@ import { CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
+import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { Upload } from '../../pure/file-upload';
 import * as style from './style.css';
 
@@ -17,6 +19,7 @@ interface ProfilePanelProps {
 
 export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
+  const isOwner = useIsWorkspaceOwner(workspace.id);
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
@@ -38,7 +41,7 @@ export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
 
   return (
     <div className={style.profileWrapper}>
-      <div className={style.avatarWrapper}>
+      <div className={clsx(style.avatarWrapper, { disable: !isOwner })}>
         <Upload
           accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
           fileChange={update}
@@ -59,6 +62,7 @@ export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
         <div className={style.label}>{t['Workspace Name']()}</div>
         <FlexWrapper alignItems="center" flexGrow="1">
           <Input
+            disabled={!isOwner}
             width={280}
             height={32}
             defaultValue={input}

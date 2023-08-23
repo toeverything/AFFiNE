@@ -30,6 +30,9 @@ export const avatarWrapper = style({
 globalStyle(`${avatarWrapper}:hover .camera-icon-wrapper`, {
   display: 'flex',
 });
+globalStyle(`${avatarWrapper}:hover .camera-icon-wrapper`, {
+  display: 'flex',
+});
 globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   width: '100%',
   height: '100%',
