@@ -6,13 +6,9 @@ runs:
   steps:
     - name: 'Install @electron-forge/maker-dmg'
       if: runner.os == 'macos'
-      uses: nick-fields/retry@v2
+      shell: bash
       working-directory: ./apps/electron
-      with:
-        timeout_minutes: 10
-        max_attempts: 3
-        retry_on: timeout
-        command: yarn add @electron-forge/maker-dmg --dev
+      run: yarn add @electron-forge/maker-dmg --dev
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'

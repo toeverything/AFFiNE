@@ -39,12 +39,20 @@ runs:
       run: yarn config set nmMode hardlinks-local
 
     - name: yarn install
-      uses: nick-fields/retry@v2
-      with:
-        timeout_minutes: 10
-        max_attempts: 3
-        retry_on: timeout
-        command: yarn install ${{ inputs.extra-flags }}
+      if: ${{ inputs.package-install == 'true' }}
+      continue-on-error: true
+      shell: bash
+      run: yarn install ${{ inputs.extra-flags }}
+      env:
+        HUSKY: '0'
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        SENTRYCLI_SKIP_DOWNLOAD: '1'
+
+    - name: yarn install (try again)
+      if: ${{ steps.install.outcome == 'failure' }}
+      shell: bash
+      run: yarn install ${{ inputs.extra-flags }}
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
