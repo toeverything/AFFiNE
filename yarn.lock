@@ -766,6 +766,7 @@ __metadata:
     "@storybook/react-vite": ^7.3.1
     "@storybook/test-runner": ^0.13.0
     "@storybook/testing-library": ^0.2.0
+    "@tomfreudenberg/next-auth-mock": ^0.5.6
     "@vitejs/plugin-react": ^4.0.4
     chromatic: ^6.22.0
     concurrently: ^8.2.0
@@ -13342,6 +13343,16 @@ __metadata:
   version: 0.3.0
   resolution: "@tokenizer/token@npm:0.3.0"
   checksum: 1d575d02d2a9f0c5a4ca5180635ebd2ad59e0f18b42a65f3d04844148b49b3db35cf00b6012a1af2d59c2ab3caca59451c5689f747ba8667ee586ad717ee58e1
+  languageName: node
+  linkType: hard
+
+"@tomfreudenberg/next-auth-mock@npm:^0.5.6":
+  version: 0.5.6
+  resolution: "@tomfreudenberg/next-auth-mock@npm:0.5.6"
+  peerDependencies:
+    next-auth: ^4.12.3
+    react: ^18
+  checksum: ed87ad78e9f74f6c4224769cfb8ec643d8645447761970f3e7b9b80143ba4e2ef3991a995dfbfb06a028f369e644762cdbdd9ef2d013be35d4a131fb617cd8bd
   languageName: node
   linkType: hard
 
