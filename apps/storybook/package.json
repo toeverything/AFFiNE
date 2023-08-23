@@ -41,8 +41,7 @@
     "chromatic": "^6.22.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "storybook-addon-react-router-v6": "^2.0.4",
-    "vite-plugin-turbosnap": "^1.0.2"
+    "storybook-addon-react-router-v6": "^2.0.4"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
