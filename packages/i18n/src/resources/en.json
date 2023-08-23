@@ -317,6 +317,7 @@
   "Zoom to 100%": "Zoom to 100%",
   "Zoom to fit": "Zoom to fit",
   "all": "all",
+  "com.affine.loading": "Loading...",
   "com.affine.banner.content": "This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.",
   "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can fill out the <1>AFFiNE Cloud Signup</1>.",
   "com.affine.cloudTempDisable.title": "AFFiNE Cloud is upgrading now.",
