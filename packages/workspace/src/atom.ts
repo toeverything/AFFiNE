@@ -120,13 +120,27 @@ const rootWorkspacesMetadataPromiseAtom = atom<
     }
     // step 2: fetch from adapters
     {
-      const lists = Object.values(WorkspaceAdapters)
-        .sort((a, b) => a.loadPriority - b.loadPriority)
-        .map(({ CRUD }) => CRUD.list);
+      const Adapters = Object.values(WorkspaceAdapters).sort(
+        (a, b) => a.loadPriority - b.loadPriority
+      );
 
-      for (const list of lists) {
+      for (const Adapter of Adapters) {
+        const { CRUD, flavour: currentFlavour } = Adapter;
         try {
-          const item = await list();
+          const item = await CRUD.list();
+          // remove the metadata that is not in the list
+          //  because we treat the workspace adapter as the source of truth
+          {
+            const removed = metadata.filter(
+              meta =>
+                meta.flavour === currentFlavour &&
+                !item.some(x => x.id === meta.id)
+            );
+            removed.forEach(meta => {
+              metadata.splice(metadata.indexOf(meta), 1);
+            });
+          }
+          // sort the metadata by the order of the list
           if (metadata.length) {
             item.sort((a, b) => {
               return (
