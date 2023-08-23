@@ -1,12 +1,14 @@
+import { ConfirmModal } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
+import { useLeaveWorkspace } from '../../../../hooks/affine/use-leave-workspace';
 import type { AffineOfficialWorkspace } from '../../../../shared';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
-import { WorkspaceLeave } from './leave';
 
 interface DeleteLeaveWorkspaceProps {
   workspace: AffineOfficialWorkspace;
@@ -19,10 +21,23 @@ export const DeleteLeaveWorkspace = ({
 }: DeleteLeaveWorkspaceProps) => {
   const t = useAFFiNEI18N();
   // fixme: cloud regression
-  const isOwner = true;
+  const isOwner = useIsWorkspaceOwner(workspace.id);
+  const leaveWorkspace = useLeaveWorkspace(workspace.id);
 
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
+
+  const onLeaveOrDelete = useCallback(() => {
+    if (isOwner) {
+      setShowDelete(true);
+    } else {
+      setShowLeave(true);
+    }
+  }, [isOwner]);
+
+  const onCloseConfirmModal = useCallback(() => {
+    setShowLeave(false);
+  }, []);
 
   return (
     <>
@@ -36,9 +51,7 @@ export const DeleteLeaveWorkspace = ({
         }
         desc={t['com.affine.settings.remove-workspace-description']()}
         style={{ cursor: 'pointer' }}
-        onClick={() => {
-          setShowDelete(true);
-        }}
+        onClick={onLeaveOrDelete}
         testId="delete-workspace-button"
       >
         <ArrowRightSmallIcon />
@@ -53,11 +66,15 @@ export const DeleteLeaveWorkspace = ({
           workspace={workspace}
         />
       ) : (
-        <WorkspaceLeave
+        <ConfirmModal
           open={showLeave}
-          onClose={() => {
-            setShowLeave(false);
-          }}
+          onConfirm={leaveWorkspace}
+          onCancel={onCloseConfirmModal}
+          onClose={onCloseConfirmModal}
+          title={`${t['Leave Workspace']()}?`}
+          content={t['Leave Workspace hint']()}
+          confirmType="warning"
+          confirmText={t['Leave']()}
         />
       )}
     </>

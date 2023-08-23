@@ -168,6 +168,7 @@
   "Keyboard Shortcuts": "Keyboard shortcuts",
   "Leave": "Leave",
   "Leave Workspace": "Leave Workspace",
+  "Leave Workspace hint": "After you leave, you will not be able to access content within this workspace.",
   "Leave Workspace Description": "After you leave, you will no longer be able to access the contents of this workspace.",
   "Link": "Hyperlink (with selected text)",
   "Loading": "Loading...",

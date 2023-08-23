@@ -240,6 +240,15 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type LeaveWorkspaceMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type LeaveWorkspaceMutation = {
+  __typename?: 'Mutation';
+  leaveWorkspace: boolean;
+};
+
 export type RevokeMemberPermissionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -463,6 +472,11 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'leaveWorkspaceMutation';
+      variables: LeaveWorkspaceMutationVariables;
+      response: LeaveWorkspaceMutation;
     }
   | {
       name: 'revokeMemberPermissionMutation';

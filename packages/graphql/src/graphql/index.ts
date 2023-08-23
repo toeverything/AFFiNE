@@ -241,6 +241,17 @@ query getWorkspaces {
 }`,
 };
 
+export const leaveWorkspaceMutation = {
+  id: 'leaveWorkspaceMutation' as const,
+  operationName: 'leaveWorkspace',
+  definitionName: 'leaveWorkspace',
+  containsFile: false,
+  query: `
+mutation leaveWorkspace($workspaceId: String!) {
+  leaveWorkspace(workspaceId: $workspaceId)
+}`,
+};
+
 export const revokeMemberPermissionMutation = {
   id: 'revokeMemberPermissionMutation' as const,
   operationName: 'revokeMemberPermission',

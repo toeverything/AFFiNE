@@ -14,7 +14,7 @@ import { Button, IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai/index';
 import type { ReactElement } from 'react';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
@@ -54,10 +54,10 @@ export const CloudWorkspaceMembersPanel = (
   const t = useAFFiNEI18N();
   const isOwner = useIsWorkspaceOwner(workspaceId);
   const currentUser = useCurrentUser();
-
   const { invite, isMutating } = useInviteMember(workspaceId);
   const [open, setOpen] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
+  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
 
   const memberCount = members.length;
 
@@ -108,9 +108,9 @@ export const CloudWorkspaceMembersPanel = (
           <MemberItem
             key={member.id}
             member={member}
-            workspaceId={workspaceId}
             isOwner={isOwner}
             currentUser={currentUser}
+            onRevoke={revokeMemberPermission}
           />
         ))}
       </div>
@@ -122,77 +122,77 @@ const MemberItem = ({
   member,
   isOwner,
   currentUser,
-  workspaceId,
+  onRevoke,
 }: {
   member: Member;
-  workspaceId: string;
   isOwner: boolean;
   currentUser: CheckedUser;
+  onRevoke: (memberId: string) => void;
 }) => {
-  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
+  const t = useAFFiNEI18N();
 
-  const handleRevoke = useCallback(
-    async (memberId: string) => {
-      await revokeMemberPermission(memberId);
-    },
-    [revokeMemberPermission]
-  );
+  const handleRevoke = useCallback(() => {
+    onRevoke(member.id);
+  }, [onRevoke, member.id]);
 
-  const showOperationButton = isOwner && currentUser.email !== member.email;
+  const operationButtonInfo = useMemo(() => {
+    return {
+      show: isOwner && currentUser.id !== member.id,
+      leaveOrRevokeText: t['Remove from workspace'](),
+    };
+  }, [currentUser.id, isOwner, member.id, t]);
+
   return (
-    <div key={member.id} className={style.listItem}>
-      <Avatar
-        size={36}
-        url={member.avatarUrl}
-        name={(member.emailVerified ? member.name : member.email) as string}
-      />
-      <div className={style.memberContainer}>
-        {member.emailVerified ? (
-          <>
-            <div className={style.memberName}>{member.name}</div>
-            <div className={style.memberEmail}>{member.email}</div>
-          </>
-        ) : (
-          <div className={style.memberName}>{member.email}</div>
-        )}
-      </div>
-      <div
-        className={clsx(style.roleOrStatus, {
-          pending: !member.accepted,
-        })}
-      >
-        {member.accepted
-          ? member.permission === Permission.Owner
-            ? 'Workspace Owner'
-            : 'Member'
-          : 'Pending'}
-      </div>
-      <Menu
-        content={
-          <MenuItem
-            data-member-id={member.id}
-            onClick={useCallback(() => {
-              handleRevoke(member.id);
-            }, [handleRevoke, member.id])}
-          >
-            Remove from Workspace
-          </MenuItem>
-        }
-        placement="bottom"
-        disablePortal={true}
-        trigger="click"
-      >
-        <IconButton
-          disabled={!showOperationButton}
-          style={{
-            visibility: showOperationButton ? 'visible' : 'hidden',
-            flexShrink: 0,
-          }}
+    <>
+      <div key={member.id} className={style.listItem}>
+        <Avatar
+          size={36}
+          url={member.avatarUrl}
+          name={(member.emailVerified ? member.name : member.email) as string}
+        />
+        <div className={style.memberContainer}>
+          {member.emailVerified ? (
+            <>
+              <div className={style.memberName}>{member.name}</div>
+              <div className={style.memberEmail}>{member.email}</div>
+            </>
+          ) : (
+            <div className={style.memberName}>{member.email}</div>
+          )}
+        </div>
+        <div
+          className={clsx(style.roleOrStatus, {
+            pending: !member.accepted,
+          })}
         >
-          <MoreVerticalIcon />
-        </IconButton>
-      </Menu>
-    </div>
+          {member.accepted
+            ? member.permission === Permission.Owner
+              ? 'Workspace Owner'
+              : 'Member'
+            : 'Pending'}
+        </div>
+        <Menu
+          content={
+            <MenuItem data-member-id={member.id} onClick={handleRevoke}>
+              {operationButtonInfo.leaveOrRevokeText}
+            </MenuItem>
+          }
+          placement="bottom"
+          disablePortal={true}
+          trigger="click"
+        >
+          <IconButton
+            disabled={!operationButtonInfo.show}
+            style={{
+              visibility: operationButtonInfo.show ? 'visible' : 'hidden',
+              flexShrink: 0,
+            }}
+          >
+            <MoreVerticalIcon />
+          </IconButton>
+        </Menu>
+      </div>
+    </>
   );
 };
 
