@@ -104,15 +104,32 @@ export const CloudWorkspaceMembersPanel = (
         ) : null}
       </SettingRow>
       <div className={style.membersList}>
-        {members.map(member => (
-          <MemberItem
-            key={member.id}
-            member={member}
-            isOwner={isOwner}
-            currentUser={currentUser}
-            onRevoke={revokeMemberPermission}
-          />
-        ))}
+        {members
+          // From GPT
+          .sort((a, b) => {
+            if (
+              a.permission === Permission.Owner &&
+              b.permission !== Permission.Owner
+            ) {
+              return -1;
+            }
+            if (
+              a.permission !== Permission.Owner &&
+              b.permission === Permission.Owner
+            ) {
+              return 1;
+            }
+            return 0;
+          })
+          .map(member => (
+            <MemberItem
+              key={member.id}
+              member={member}
+              isOwner={isOwner}
+              currentUser={currentUser}
+              onRevoke={revokeMemberPermission}
+            />
+          ))}
       </div>
     </>
   );
