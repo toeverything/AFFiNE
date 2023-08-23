@@ -138,28 +138,38 @@ export const createConfiguration: (
               '@blocksuite/block-std': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'block-std'
+                'block-std',
+                'src'
               ),
               '@blocksuite/blocks': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'blocks'
+                'blocks',
+                'src'
               ),
               '@blocksuite/editor': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'editor'
+                'editor',
+                'src'
               ),
               '@blocksuite/global': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'global'
+                'global',
+                'src'
               ),
-              '@blocksuite/lit': resolve(blocksuiteBaseDir, 'packages', 'lit'),
+              '@blocksuite/lit': resolve(
+                blocksuiteBaseDir,
+                'packages',
+                'lit',
+                'src'
+              ),
               '@blocksuite/phasor': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'phasor'
+                'phasor',
+                'src'
               ),
               '@blocksuite/store/providers/broadcast-channel': resolve(
                 blocksuiteBaseDir,
@@ -170,12 +180,14 @@ export const createConfiguration: (
               '@blocksuite/store': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'store'
+                'store',
+                'src'
               ),
               '@blocksuite/virgo': resolve(
                 blocksuiteBaseDir,
                 'packages',
-                'virgo'
+                'virgo',
+                'src'
               ),
             },
     },
