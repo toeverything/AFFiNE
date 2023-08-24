@@ -340,6 +340,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Install glob
+        run: npm install -g glob
       - name: Generate Release yml
         run: |
           cp ./apps/electron/scripts/generate-yml.js .
