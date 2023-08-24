@@ -3,7 +3,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const glob = require('glob');
 /* eslint-enable */
 
 const yml = {
@@ -11,9 +10,9 @@ const yml = {
   files: [],
 };
 
-const generateYml = async platform => {
-  const files = glob.sync(`./affine-*-${platform}-*.{exe,zip,dmg,AppImage}`);
-
+const generateYml = platform => {
+  const regex = new RegExp(`^affine-.*-${platform}-.*.(exe|zip|dmg|AppImage)$`);
+  const files = fs.readdirSync(__dirname).filter(file => regex.test(file));
   files.forEach(fileName => {
     const filePath = path.join(__dirname, './', fileName);
     try {
