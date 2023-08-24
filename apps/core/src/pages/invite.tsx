@@ -5,7 +5,7 @@ import {
   type GetInviteInfoQuery,
   getInviteInfoQuery,
 } from '@affine/graphql';
-import { fetcher, useMutation } from '@affine/workspace/affine/gql';
+import { fetcher } from '@affine/workspace/affine/gql';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
@@ -29,6 +29,15 @@ export const loader: LoaderFunction = async args => {
     return redirect('/404');
   }
 
+  // No mater sign in or not, we need to accept the invite
+  await fetcher({
+    query: acceptInviteByInviteIdMutation,
+    variables: {
+      workspaceId: res.getInviteInfo.workspace.id,
+      inviteId,
+    },
+  }).catch(console.error);
+
   return {
     inviteId,
     inviteInfo: res.getInviteInfo,
@@ -42,14 +51,10 @@ export const Component = () => {
   const { jumpToSubPath } = useNavigateHelper();
 
   const [, setAuthAtom] = useAtom(authAtom);
-  const { inviteId, inviteInfo } = useLoaderData() as {
+  const { inviteInfo } = useLoaderData() as {
     inviteId: string;
     inviteInfo: GetInviteInfoQuery['getInviteInfo'];
   };
-
-  const { trigger: acceptInviteByInviteId } = useMutation({
-    mutation: acceptInviteByInviteIdMutation,
-  });
 
   const loadWorkspaceAfterSignIn = useCallback(() => {
     addCloudWorkspace(inviteInfo.workspace.id);
@@ -63,14 +68,6 @@ export const Component = () => {
       RouteLogic.REPLACE
     );
   }, [addCloudWorkspace, inviteInfo.workspace.id, jumpToSubPath]);
-
-  // No mater sign in or not, we need to accept the invite
-  useEffect(() => {
-    acceptInviteByInviteId({
-      workspaceId: inviteInfo.workspace.id,
-      inviteId,
-    }).catch(console.error);
-  }, [inviteId, inviteInfo.workspace.id, acceptInviteByInviteId]);
 
   useEffect(() => {
     if (loginStatus === 'unauthenticated') {
