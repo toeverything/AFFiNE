@@ -16,6 +16,14 @@ import { DocManager } from '../doc';
 import { UserType } from '../users';
 import { PermissionService } from './permission';
 
+function trimGuid(ws: string, guid: string) {
+  if (guid.startsWith(`${ws}:space:`)) {
+    return guid.substring(ws.length + 1);
+  }
+
+  return guid;
+}
+
 @Controller('/api/workspaces')
 export class WorkspacesController {
   constructor(
@@ -59,7 +67,9 @@ export class WorkspacesController {
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
-    const update = await this.docManager.getLatestUpdate(ws, guid);
+    const id = trimGuid(ws, guid);
+
+    const update = await this.docManager.getLatestUpdate(ws, id);
 
     if (!update) {
       throw new NotFoundException('Doc not found');
