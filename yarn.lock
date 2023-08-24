@@ -360,6 +360,7 @@ __metadata:
     electron-window-state: ^5.0.3
     esbuild: ^0.19.2
     fs-extra: ^11.1.1
+    glob: ^10.3.3
     jotai: ^2.3.1
     link-preview-js: ^3.0.5
     lodash-es: ^4.17.21
@@ -20588,7 +20589,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^10.0.0, glob@npm:^10.2.2":
+"glob@npm:^10.0.0, glob@npm:^10.2.2, glob@npm:^10.3.3":
   version: 10.3.3
   resolution: "glob@npm:10.3.3"
   dependencies:
