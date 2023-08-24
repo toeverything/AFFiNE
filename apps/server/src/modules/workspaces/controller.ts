@@ -11,18 +11,11 @@ import type { Response } from 'express';
 import format from 'pretty-time';
 
 import { StorageProvide } from '../../storage';
+import { trimGuid } from '../../utils/doc';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocManager } from '../doc';
 import { UserType } from '../users';
 import { PermissionService } from './permission';
-
-function trimGuid(ws: string, guid: string) {
-  if (guid.startsWith(`${ws}:space:`)) {
-    return guid.substring(ws.length + 1);
-  }
-
-  return guid;
-}
 
 @Controller('/api/workspaces')
 export class WorkspacesController {

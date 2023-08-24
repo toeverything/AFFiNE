@@ -11,15 +11,8 @@ import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
+import { trimGuid } from '../../../utils/doc';
 import { DocManager } from '../../doc';
-
-function trimGuid(ws: string, guid: string) {
-  if (guid.startsWith(`${ws}:space:`)) {
-    return guid.substring(ws.length + 1);
-  }
-
-  return guid;
-}
 
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
