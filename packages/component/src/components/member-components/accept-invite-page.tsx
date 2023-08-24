@@ -38,12 +38,6 @@ export const AcceptInvitePage = ({
             size={20}
             style={{ marginLeft: 4 }}
             colorfulFallback={true}
-            // FIXME: fix it in @toeverything/components/avatar
-            imageProps={{
-              style: {
-                objectFit: 'cover',
-              },
-            }}
           />
           <span className={styles.inviteName}>{inviteInfo.workspace.name}</span>
         </FlexWrapper>
