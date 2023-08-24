@@ -54,13 +54,22 @@ export const createAffineDataSource = (
             guid,
             stateVector,
           },
-          (update: Error | string | null) => {
-            if (update instanceof Error) {
-              reject(update);
+          (docState: Error | { missing: string; state: string } | null) => {
+            if (docState instanceof Error) {
+              reject(docState);
               return;
             }
 
-            resolve(update ? base64ToUint8Array(update) : false);
+            resolve(
+              docState
+                ? {
+                    missing: base64ToUint8Array(docState.missing),
+                    state: docState.state
+                      ? base64ToUint8Array(docState.state)
+                      : undefined,
+                  }
+                : false
+            );
           }
         );
       });

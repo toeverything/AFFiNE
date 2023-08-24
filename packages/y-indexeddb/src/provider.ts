@@ -6,7 +6,7 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import { openDB } from 'idb';
 import type { Doc } from 'yjs';
-import { diffUpdate } from 'yjs';
+import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
   type BlockSuiteBinaryDB,
@@ -50,11 +50,11 @@ const createDatasource = ({
         const { updates } = data;
         const update = mergeUpdates(updates.map(({ update }) => update));
 
-        const diff = options?.stateVector
+        const missing = options?.stateVector
           ? diffUpdate(update, options?.stateVector)
           : update;
 
-        return diff;
+        return { missing, state: encodeStateVectorFromUpdate(update) };
       } catch (err: any) {
         if (!err.message?.includes('The database connection is closing.')) {
           throw err;
