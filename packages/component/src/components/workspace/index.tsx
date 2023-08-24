@@ -1,20 +1,14 @@
 import { clsx } from 'clsx';
-import type {
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-  ReactNode,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
 
 import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
-export interface WorkspaceRootProps {
+export type WorkspaceRootProps = PropsWithChildren<{
   resizing?: boolean;
   useNoisyBackground?: boolean;
   useBlurBackground?: boolean;
-  children: ReactNode;
-}
+}>;
 
 export const AppContainer = ({
   resizing,
@@ -53,7 +47,7 @@ export const MainContainer = ({
       {...props}
       className={clsx(mainContainerStyle, 'main-container', className)}
       data-is-macos={environment.isDesktop && environment.isMacOs}
-      data-show-padding={padding}
+      data-show-padding={!!padding}
     >
       {children}
     </div>
