@@ -30,6 +30,7 @@ export async function createRandomUser() {
     },
   });
   await client.$disconnect();
+  console.log('user created', user);
   return client.user.findUnique({
     where: {
       email: user.email,
