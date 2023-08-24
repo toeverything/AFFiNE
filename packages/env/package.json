@@ -5,7 +5,7 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230823134503-134d8f1a-nightly",
+    "@blocksuite/global": "0.0.0-20230824081236-b25a3da9-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.22.1"
