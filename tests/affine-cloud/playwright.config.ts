@@ -39,6 +39,8 @@ const config: PlaywrightTestConfig = {
       port: 3010,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
       env: {
         DATABASE_URL:
           process.env.DATABASE_URL ??
