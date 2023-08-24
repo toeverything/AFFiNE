@@ -10,6 +10,7 @@ import {
   Mutation,
   ObjectType,
   Query,
+  registerEnumType,
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
@@ -22,6 +23,10 @@ import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 import { NewFeaturesKind } from './types';
+
+registerEnumType(NewFeaturesKind, {
+  name: 'NewFeaturesKind',
+});
 
 @ObjectType()
 export class UserType implements Partial<User> {
@@ -57,7 +62,7 @@ export class DeleteAccount {
 export class AddToNewFeaturesWaitingList {
   @Field()
   email!: string;
-  @Field()
+  @Field(() => NewFeaturesKind, { description: 'New features kind' })
   type!: NewFeaturesKind;
 }
 
@@ -156,7 +161,10 @@ export class UserResolver {
   @Mutation(() => AddToNewFeaturesWaitingList)
   async addToNewFeaturesWaitingList(
     @CurrentUser() user: UserType,
-    @Args('type') type: NewFeaturesKind,
+    @Args('type', {
+      type: () => NewFeaturesKind,
+    })
+    type: NewFeaturesKind,
     @Args('email') email: string
   ): Promise<AddToNewFeaturesWaitingList> {
     if (!user.email.endsWith('@toeverything.info')) {

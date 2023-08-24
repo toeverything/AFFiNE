@@ -34,6 +34,17 @@ type DeleteAccount {
   success: Boolean!
 }
 
+type AddToNewFeaturesWaitingList {
+  email: String!
+
+  """New features kind"""
+  type: NewFeaturesKind!
+}
+
+enum NewFeaturesKind {
+  EarlyAccess
+}
+
 type TokenType {
   token: String!
   refresh: String!
@@ -142,6 +153,7 @@ type Mutation {
   """Upload user avatar"""
   uploadAvatar(id: String!, avatar: Upload!): UserType!
   deleteAccount: DeleteAccount!
+  addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
   changePassword(id: String!, newPassword: String!): UserType!
