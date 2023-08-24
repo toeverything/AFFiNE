@@ -47,16 +47,13 @@ test('enable cloud success', async ({ page, context }) => {
   await page.getByTestId('continue-login-button').click({
     delay: 200,
   });
-  await page.getByTestId('sign-in-with-password').click({
-    delay: 200,
-  });
   await page.getByTestId('password-input').type('123456', {
     delay: 50,
   });
   expect(await getLoginCookie(context)).toBeUndefined();
   await page.getByTestId('sign-in-button').click();
   await page.waitForTimeout(1000);
-  await page.goto('http://localhost:8080');
+  await page.reload();
   await waitEditorLoad(page);
   expect(await getLoginCookie(context)).toBeTruthy();
 });
