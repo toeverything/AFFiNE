@@ -114,8 +114,8 @@ export function AppUpdaterButtonPure({
         <div className={clsx([styles.installLabelNormal])}>
           <span className={styles.ellipsisTextOverflow}>
             {!updateReady
-              ? t['com.affine.updater.downloading']()
-              : t['com.affine.updater.update-available']()}
+              ? t['com.affine.component.appUpdater.downloading']()
+              : t['com.affine.component.appUpdater.updateAvailable']()}
           </span>
           <span className={styles.versionLabel}>
             {updateAvailable?.version}
@@ -127,7 +127,7 @@ export function AppUpdaterButtonPure({
             <ResetIcon className={styles.icon} />
             <span className={styles.ellipsisTextOverflow}>
               {t[
-                appQuitting ? 'Loading' : 'com.affine.updater.restart-to-update'
+                appQuitting ? 'Loading' : 'com.affine.component.appUpdater.installUpdate'
               ]()}
             </span>
           </div>
@@ -136,7 +136,7 @@ export function AppUpdaterButtonPure({
             <div
               className={styles.progressInner}
               style={{ width: `${downloadProgress}%` }}
-            ></div>
+            />
           </div>
         )}
       </div>
@@ -148,7 +148,7 @@ export function AppUpdaterButtonPure({
       <>
         <div className={clsx([styles.installLabelNormal])}>
           <span className={styles.ellipsisTextOverflow}>
-            {t['com.affine.updater.update-available']()}
+            {t['com.affine.component.appUpdater.updateAvailable']()}
           </span>
           <span className={styles.versionLabel}>
             {updateAvailable?.version}
@@ -157,7 +157,7 @@ export function AppUpdaterButtonPure({
 
         <div className={clsx([styles.installLabelHover])}>
           <span className={styles.ellipsisTextOverflow}>
-            {t['com.affine.updater.open-download-page']()}
+            {t['com.affine.component.appUpdater.openDownloadPage']()}
           </span>
         </div>
       </>
@@ -170,7 +170,7 @@ export function AppUpdaterButtonPure({
         <div className={clsx([styles.whatsNewLabel])}>
           <NewIcon className={styles.icon} />
           <span className={styles.ellipsisTextOverflow}>
-            {t[`Discover what's new!`]()}
+            {t['com.affine.component.appUpdater.whatsNew']()}
           </span>
         </div>
         <div

@@ -42,7 +42,7 @@ export const NotFoundPage = () => {
           }
         }}
       >
-        {t['Back Home']()}
+        {t['com.affine.core.notFoundPage.button.back']()}
       </Button>
     </StyledContainer>
   );

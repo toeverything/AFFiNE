@@ -57,7 +57,7 @@ export const DeleteLeaveWorkspace = ({
           <span style={{ color: 'var(--affine-error-color)' }}>
             {isOwner
               ? t['com.affine.core.workspaceDelete.title']()
-              : t['com.affine.core.workspaceLeave.title']()}
+              : t['com.affine.core.deleteLeaveWorkspace.leave']()}
           </span>
         }
         desc={t['com.affine.core.deleteLeaveWorkspace.description']()}
@@ -82,8 +82,8 @@ export const DeleteLeaveWorkspace = ({
           onConfirm={onLeaveConfirm}
           onCancel={onCloseLeaveModal}
           onClose={onCloseLeaveModal}
-          title={`${t['Leave Workspace']()}?`}
-          content={t['Leave Workspace hint']()}
+            title={`${t['com.affine.core.deleteLeaveWorkspace.leave']()}?`}
+            content={t['com.affine.core.deleteLeaveWorkspace.leaveDescription']()}
           confirmType="warning"
           confirmText={t['Leave']()}
         />

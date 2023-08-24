@@ -5,6 +5,7 @@ import type { ConfirmProps } from '../../..';
 import { Confirm, MenuItem } from '../../..';
 import { moveToTrashStyle } from './index.css';
 import type { CommonMenuItemProps } from './types';
+
 export const MoveToTrash = ({
   onSelect,
   onItemClick,
@@ -23,7 +24,7 @@ export const MoveToTrash = ({
         icon={<DeleteTemporarilyIcon />}
         className={moveToTrashStyle}
       >
-        {t['Move to Trash']()}
+        {t['com.affine.component.moveToTrash.title']()}
       </MenuItem>
     </>
   );
@@ -39,8 +40,8 @@ const ConfirmModal = ({
 
   return (
     <Confirm
-      title={t['Delete page?']()}
-      content={t['will be moved to Trash']({
+      title={t['com.affine.component.moveToTrash.confirmModal.title']()}
+      content={t['com.affine.component.moveToTrash.confirmModal.description']({
         title: title || 'Untitled',
       })}
       confirmButtonTestId="confirm-delete-page"
