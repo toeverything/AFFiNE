@@ -20,6 +20,7 @@ import {
 import type { User, Workspace } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+import { applyUpdate, Doc } from 'yjs';
 
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
@@ -30,6 +31,7 @@ import { AuthService } from '../auth/service';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
+import { defaultWorkspaceAvatar } from './utils';
 
 registerEnumType(Permission, {
   name: 'Permission',
@@ -70,6 +72,28 @@ export class WorkspaceType implements Partial<Workspace> {
     description: 'Members of workspace',
   })
   members!: InviteUserType[];
+}
+
+@ObjectType()
+export class InvitationWorkspaceType {
+  @Field(() => ID)
+  id!: string;
+
+  @Field({ description: 'Workspace name' })
+  name!: string;
+
+  @Field(() => String, {
+    // nullable: true,
+    description: 'Base64 encoded avatar',
+  })
+  avatar!: string;
+}
+@ObjectType()
+export class InvitationType {
+  @Field({ description: 'Workspace information' })
+  workspace!: InvitationWorkspaceType;
+  @Field({ description: 'User information' })
+  user!: UserType;
 }
 
 @InputType()
@@ -173,6 +197,27 @@ export class WorkspaceResolver {
       inviteId: id,
       accepted,
     }));
+  }
+
+  @Query(() => Boolean, {
+    description: 'Get is owner of workspace',
+    complexity: 2,
+  })
+  async isOwner(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    const data = await this.prisma.userWorkspacePermission.findFirst({
+      where: {
+        workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return data?.user?.id === user.id;
   }
 
   @Query(() => [WorkspaceType], {
@@ -360,7 +405,19 @@ export class WorkspaceResolver {
         permission
       );
       if (sendInviteMail) {
-        await this.mailer.sendInviteEmail(email, workspaceId, inviteId);
+        const inviteInfo = await this.getInviteInfo(inviteId);
+
+        await this.mailer.sendInviteEmail(email, inviteId, {
+          workspace: {
+            id: inviteInfo.workspace.id,
+            name: inviteInfo.workspace.name,
+            avatar: inviteInfo.workspace.avatar,
+          },
+          user: {
+            avatar: inviteInfo.user?.avatarUrl || '',
+            name: inviteInfo.user?.name || '',
+          },
+        });
       }
       return inviteId;
     } else {
@@ -371,10 +428,76 @@ export class WorkspaceResolver {
         permission
       );
       if (sendInviteMail) {
-        await this.mailer.sendInviteEmail(email, workspaceId, inviteId);
+        const inviteInfo = await this.getInviteInfo(inviteId);
+
+        await this.mailer.sendInviteEmail(email, inviteId, {
+          workspace: {
+            id: inviteInfo.workspace.id,
+            name: inviteInfo.workspace.name,
+            avatar: inviteInfo.workspace.avatar,
+          },
+          user: {
+            avatar: inviteInfo.user?.avatarUrl || '',
+            name: inviteInfo.user?.name || '',
+          },
+        });
       }
       return inviteId;
     }
+  }
+
+  @Public()
+  @Query(() => InvitationType, {
+    description: 'Update workspace',
+  })
+  async getInviteInfo(@Args('inviteId') inviteId: string) {
+    const permission =
+      await this.prisma.userWorkspacePermission.findUniqueOrThrow({
+        where: {
+          id: inviteId,
+        },
+      });
+
+    const snapshot = await this.prisma.snapshot.findFirstOrThrow({
+      where: {
+        id: permission.workspaceId,
+        workspaceId: permission.workspaceId,
+      },
+    });
+
+    const doc = new Doc();
+
+    applyUpdate(doc, new Uint8Array(snapshot.blob));
+    const metaJSON = doc.getMap('meta').toJSON();
+
+    const owner = await this.prisma.userWorkspacePermission.findFirstOrThrow({
+      where: {
+        workspaceId: permission.workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    let avatar = '';
+
+    if (metaJSON.avatar) {
+      const avatarBlob = await this.storage.getBlob(
+        permission.workspaceId,
+        metaJSON.avatar
+      );
+      avatar = avatarBlob?.data.toString('base64') || '';
+    }
+
+    return {
+      workspace: {
+        name: metaJSON.name || '',
+        avatar: avatar || defaultWorkspaceAvatar,
+        id: permission.workspaceId,
+      },
+      user: owner.user,
+    };
   }
 
   @Mutation(() => Boolean)

@@ -111,14 +111,19 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
     },
     NewSettingsDetail: ({
       currentWorkspaceId,
-      onDeleteWorkspace,
       onTransformWorkspace,
+      onDeleteLocalWorkspace,
+      onDeleteCloudWorkspace,
+      onLeaveWorkspace,
     }) => {
       return (
         <NewWorkspaceSettingDetail
-          onDeleteWorkspace={onDeleteWorkspace}
+          onDeleteLocalWorkspace={onDeleteLocalWorkspace}
+          onDeleteCloudWorkspace={onDeleteCloudWorkspace}
+          onLeaveWorkspace={onLeaveWorkspace}
           workspaceId={currentWorkspaceId}
           onTransferWorkspace={onTransformWorkspace}
+          isOwner={true}
         />
       );
     },

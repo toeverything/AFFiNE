@@ -13,7 +13,7 @@ import { useAtom } from 'jotai/index';
 import { signOut } from 'next-auth/react';
 import { type FC, useCallback, useState } from 'react';
 
-import { openAuthModalAtom } from '../../../../atoms';
+import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
@@ -112,11 +112,11 @@ export const AvatarAndName = () => {
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-  const [, setAuthModal] = useAtom(openAuthModalAtom);
+  const [, setAuthModal] = useAtom(authAtom);
 
   const onChangeEmail = useCallback(() => {
     setAuthModal({
-      open: true,
+      openModal: true,
       state: 'sendEmail',
       email: user.email,
       emailType: 'changeEmail',
@@ -124,7 +124,7 @@ export const AccountSetting: FC = () => {
   }, [setAuthModal, user.email]);
   const onChangePassword = useCallback(() => {
     setAuthModal({
-      open: true,
+      openModal: true,
       state: 'sendEmail',
       email: user.email,
       emailType: 'changePassword',

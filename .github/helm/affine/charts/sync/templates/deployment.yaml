@@ -40,6 +40,8 @@ spec:
             value: "sync"
           - name: NEXTAUTH_URL
             value: "{{ .Values.global.ingress.host }}"
+          - name: AFFINE_ENV
+            value: "{{ .Release.Namespace }}"
           - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:

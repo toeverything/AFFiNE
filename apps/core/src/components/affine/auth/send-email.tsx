@@ -31,7 +31,6 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
     case 'changeEmail':
       return t['com.affine.settings.email.action']();
   }
-  return '';
 };
 
 const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
@@ -45,7 +44,6 @@ const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
     case 'changeEmail':
       return t['com.affine.auth.sent.change.email.hint']();
   }
-  return '';
 };
 const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
   const t = useAFFiNEI18N();
@@ -58,7 +56,6 @@ const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
     case 'changeEmail':
       return t['com.affine.auth.send.change.email.link']();
   }
-  return '';
 };
 
 const useSendEmail = (emailType: AuthPanelProps['emailType']) => {

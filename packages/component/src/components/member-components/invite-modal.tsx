@@ -3,7 +3,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useCallback, useEffect, useState } from 'react';
 
-import { Menu, MenuItem, MenuTrigger } from '../../ui/menu';
 import { Modal, ModalCloseButton, ModalWrapper } from '../../ui/modal';
 import { AuthInput } from '..//auth-components';
 import { emailRegex } from '..//auth-components/utils';
@@ -13,6 +12,7 @@ export interface InviteModalProps {
   open: boolean;
   setOpen: (value: boolean) => void;
   onConfirm: (params: { email: string; permission: Permission }) => void;
+  isMutating: boolean;
 }
 
 const PermissionMenu = ({
@@ -22,40 +22,49 @@ const PermissionMenu = ({
   currentPermission: Permission;
   onChange: (permission: Permission) => void;
 }) => {
-  return (
-    <Menu
-      trigger="click"
-      content={
-        <>
-          {Object.entries(Permission).map(([permission]) => {
-            return (
-              <MenuItem
-                key={permission}
-                onClick={() => {
-                  onChange(permission as Permission);
-                }}
-              >
-                {permission}
-              </MenuItem>
-            );
-          })}
-        </>
-      }
-    >
-      <MenuTrigger
-        type="plain"
-        style={{
-          marginRight: -10,
-          height: '100%',
-        }}
-      >
-        {currentPermission}
-      </MenuTrigger>
-    </Menu>
-  );
+  console.log('currentPermission', currentPermission);
+  console.log('onChange', onChange);
+
+  return null;
+  // return (
+  //   <Menu
+  //     trigger="click"
+  //     content={
+  //       <>
+  //         {Object.entries(Permission).map(([permission]) => {
+  //           return (
+  //             <MenuItem
+  //               key={permission}
+  //               onClick={() => {
+  //                 onChange(permission as Permission);
+  //               }}
+  //             >
+  //               {permission}
+  //             </MenuItem>
+  //           );
+  //         })}
+  //       </>
+  //     }
+  //   >
+  //     <MenuTrigger
+  //       type="plain"
+  //       style={{
+  //         marginRight: -10,
+  //         height: '100%',
+  //       }}
+  //     >
+  //       {currentPermission}
+  //     </MenuTrigger>
+  //   </Menu>
+  // );
 };
 
-export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
+export const InviteModal = ({
+  open,
+  setOpen,
+  onConfirm,
+  isMutating,
+}: InviteModalProps) => {
   const t = useAFFiNEI18N();
   const [inviteEmail, setInviteEmail] = useState('');
   const [permission, setPermission] = useState(Permission.Write);
@@ -70,6 +79,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
       setIsValidEmail(false);
       return;
     }
+    setIsValidEmail(true);
 
     onConfirm({
       email: inviteEmail,
@@ -80,6 +90,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
   useEffect(() => {
     if (!open) {
       setInviteEmail('');
+      setIsValidEmail(true);
     }
   }, [open]);
 
@@ -103,6 +114,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
           {t['Invite Members Message']()}
           {/*TODO: check email & add placeholder*/}
           <AuthInput
+            disabled={isMutating}
             placeholder="email@example.com"
             value={inviteEmail}
             onChange={setInviteEmail}
@@ -125,7 +137,7 @@ export const InviteModal = ({ open, setOpen, onConfirm }: InviteModalProps) => {
           <Button style={{ marginRight: 20 }} onClick={handleCancel}>
             {t['Cancel']()}
           </Button>
-          <Button type="primary" onClick={handleConfirm}>
+          <Button type="primary" onClick={handleConfirm} loading={isMutating}>
             {t['Invite']()}
           </Button>
         </div>

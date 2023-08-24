@@ -173,3 +173,8 @@ globalStyle(`${authPageContainer} .subtitle`, {
 globalStyle(`${authPageContainer} a`, {
   color: 'var(--affine-link-color)',
 });
+
+export const signInPageContainer = style({
+  width: '400px',
+  margin: '205px auto 0',
+});

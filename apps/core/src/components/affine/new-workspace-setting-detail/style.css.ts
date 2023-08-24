@@ -30,6 +30,9 @@ export const avatarWrapper = style({
 globalStyle(`${avatarWrapper}:hover .camera-icon-wrapper`, {
   display: 'flex',
 });
+globalStyle(`${avatarWrapper}:hover .camera-icon-wrapper`, {
+  display: 'flex',
+});
 globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   width: '100%',
   height: '100%',
@@ -76,48 +79,63 @@ export const fakeWrapper = style({
 
 export const membersList = style({
   marginTop: '24px',
-  padding: '12px 6px',
+  padding: '4px',
   borderRadius: '12px',
   background: 'var(--affine-background-primary-color)',
-  gap: '2px',
+  maxHeight: '464px',
+  overflow: 'hidden',
 });
 
 export const listItem = style({
-  padding: '0 16px',
-  height: '40px',
+  padding: '0 4px 0 16px',
+  height: '58px',
   display: 'flex',
   width: '100%',
   alignItems: 'center',
-  gap: '12px',
   ':hover': {
     background: 'var(--affine-hover-color)',
     borderRadius: '8px',
   },
 });
 export const memberContainer = style({
-  width: '100%',
+  width: '250px',
   display: 'flex',
   flexDirection: 'column',
+  flexShrink: 0,
+  marginLeft: '12px',
+  marginRight: '20px',
 });
-export const permissionContainer = style({
-  width: '100%',
-  textAlign: 'center',
+export const roleOrStatus = style({
+  // width: '20%',
+  flexGrow: 1,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  fontSize: 'var(--affine-font-sm)',
+  selectors: {
+    '&.pending': {
+      color: 'var(--affine-primary-color)',
+    },
+  },
 });
 export const memberName = style({
-  width: '100%',
   fontSize: 'var(--affine-font-sm)',
   color: 'var(--affine-text-primary-color)',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  lineHeight: '22px',
 });
 export const memberEmail = style({
-  width: '100%',
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  lineHeight: '20px',
 });
 export const iconButton = style({});
-export const displayNone = style({
-  opacity: 0,
-  pointerEvents: 'none',
-});
+
 globalStyle(`${listItem}:hover ${iconButton}`, {
   opacity: 1,
   pointerEvents: 'all',

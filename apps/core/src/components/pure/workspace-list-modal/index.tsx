@@ -25,7 +25,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import {
-  openAuthModalAtom,
+  authAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
 } from '../../../atoms';
@@ -40,6 +40,7 @@ import {
   StyledModalFooterContent,
   StyledModalHeader,
   StyledModalHeaderContent,
+  StyledModalHeaderLeft,
   StyledModalTitle,
   StyledOperationWrapper,
   StyledSignInCardPill,
@@ -110,7 +111,7 @@ const CloudWorkSpaceList = ({
       <StyledModalHeader>
         <StyledModalHeaderLeft>
           <StyledModalTitle>
-            {t['com.affine.workspace.cloud.sync']()}
+            {t['com.affine.workspace.cloud']()}
           </StyledModalTitle>
         </StyledModalHeaderLeft>
 
@@ -168,8 +169,8 @@ export const WorkspaceListModal = ({
   onMoveWorkspace,
 }: WorkspaceModalProps) => {
   const t = useAFFiNEI18N();
-  const setOpen = useSetAtom(openAuthModalAtom);
-  const setDisableCloudOpen =  useSetAtom(openDisableCloudAlertModalAtom);
+  const setOpen = useSetAtom(authAtom);
+  const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
   // TODO: AFFiNE Cloud support
   const { data: session, status } = useSession();
   const isLoggedIn = status === 'authenticated' ? true : false;
@@ -208,15 +209,15 @@ export const WorkspaceListModal = ({
                 padding: '0px 12px',
               }}
               onClick={async () => {
-              if (!runtimeConfig.enableCloud) {
-                setDisableCloudOpen(true);
-              } else {
-                setOpen(state=> ({
-                  ...state,
-                  open: true,
-                }));
-              }
-            }}
+                if (!runtimeConfig.enableCloud) {
+                  setDisableCloudOpen(true);
+                } else {
+                  setOpen(state => ({
+                    ...state,
+                    openModal: true,
+                  }));
+                }
+              }}
               data-testid="cloud-signin-button"
             >
               <StyledCreateWorkspaceCardPillContent>

@@ -12,7 +12,7 @@ import { SendEmail } from './send-email';
 import { SignIn } from './sign-in';
 import { SignInWithPassword } from './sign-in-with-password';
 
-export type AuthModalProps = AuthModalBaseProps & {
+export type AuthProps = {
   state:
     | 'signIn'
     | 'afterSignUpSendEmail'
@@ -20,26 +20,27 @@ export type AuthModalProps = AuthModalBaseProps & {
     // throw away
     | 'signInWithPassword'
     | 'sendEmail';
-  setAuthState: (state: AuthModalProps['state']) => void;
-  setAuthEmail: (state: AuthModalProps['email']) => void;
-  setEmailType: (state: AuthModalProps['emailType']) => void;
+  setAuthState: (state: AuthProps['state']) => void;
+  setAuthEmail: (state: AuthProps['email']) => void;
+  setEmailType: (state: AuthProps['emailType']) => void;
   email: string;
   emailType: 'setPassword' | 'changePassword' | 'changeEmail';
+  onSignedIn?: () => void;
 };
 
 export type AuthPanelProps = {
   email: string;
-  setAuthState: AuthModalProps['setAuthState'];
-  setAuthEmail: AuthModalProps['setAuthEmail'];
-  setEmailType: AuthModalProps['setEmailType'];
-  emailType: AuthModalProps['emailType'];
-  setOpen: (open: boolean) => void;
+  setAuthState: AuthProps['setAuthState'];
+  setAuthEmail: AuthProps['setAuthEmail'];
+  setEmailType: AuthProps['setEmailType'];
+  emailType: AuthProps['emailType'];
+  onSignedIn?: () => void;
   authStore: AuthStoreAtom;
   setAuthStore: (data: Partial<AuthStoreAtom>) => void;
 };
 
 const config: {
-  [k in AuthModalProps['state']]: FC<AuthPanelProps>;
+  [k in AuthProps['state']]: FC<AuthPanelProps>;
 } = {
   signIn: SignIn,
   afterSignUpSendEmail: AfterSignUpSendEmail,
@@ -57,7 +58,7 @@ export const authStoreAtom = atom<AuthStoreAtom>({
   resendCountDown: 60,
 });
 
-export const AuthModal: FC<AuthModalProps> = ({
+export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
   open,
   state,
   setOpen,
@@ -67,11 +68,7 @@ export const AuthModal: FC<AuthModalProps> = ({
   setEmailType,
   emailType,
 }) => {
-  const [authStore, setAuthStore] = useAtom(authStoreAtom);
-
-  const CurrentPanel = useMemo(() => {
-    return config[state];
-  }, [state]);
+  const [, setAuthStore] = useAtom(authStoreAtom);
 
   useEffect(() => {
     if (!open) {
@@ -91,26 +88,67 @@ export const AuthModal: FC<AuthModalProps> = ({
     }
   }, [setOpen]);
 
+  const onSignedIn = useCallback(() => {
+    setOpen(false);
+  }, [setOpen]);
+
   return (
     <AuthModalBase open={open} setOpen={setOpen}>
-      <CurrentPanel
+      <AuthPanel
+        state={state}
         email={email}
-        setAuthState={setAuthState}
         setAuthEmail={setAuthEmail}
+        setAuthState={setAuthState}
         setEmailType={setEmailType}
-        setOpen={setOpen}
-        authStore={authStore}
         emailType={emailType}
-        setAuthStore={useCallback(
-          (data: Partial<AuthStoreAtom>) => {
-            setAuthStore(prev => ({
-              ...prev,
-              ...data,
-            }));
-          },
-          [setAuthStore]
-        )}
+        onSignedIn={onSignedIn}
       />
     </AuthModalBase>
+  );
+};
+
+export const AuthPanel: FC<AuthProps> = ({
+  state,
+  email,
+  setAuthEmail,
+  setAuthState,
+  setEmailType,
+  emailType,
+  onSignedIn,
+}) => {
+  const [authStore, setAuthStore] = useAtom(authStoreAtom);
+
+  const CurrentPanel = useMemo(() => {
+    return config[state];
+  }, [state]);
+
+  useEffect(() => {
+    return () => {
+      setAuthStore({
+        hasSentEmail: false,
+        resendCountDown: 60,
+      });
+    };
+  }, [setAuthEmail, setAuthStore]);
+
+  return (
+    <CurrentPanel
+      email={email}
+      setAuthState={setAuthState}
+      setAuthEmail={setAuthEmail}
+      setEmailType={setEmailType}
+      authStore={authStore}
+      emailType={emailType}
+      onSignedIn={onSignedIn}
+      setAuthStore={useCallback(
+        (data: Partial<AuthStoreAtom>) => {
+          setAuthStore(prev => ({
+            ...prev,
+            ...data,
+          }));
+        },
+        [setAuthStore]
+      )}
+    />
   );
 };

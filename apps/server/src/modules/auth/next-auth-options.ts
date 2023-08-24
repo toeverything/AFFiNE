@@ -14,6 +14,7 @@ import Google from 'next-auth/providers/google';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { NewFeaturesKind } from '../users/types';
 import { MailService } from './mailer';
 import { getUtcTimestamp, UserClaim } from './service';
 
@@ -107,15 +108,15 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       ],
       // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
-      debug: !config.prod,
+      debug: !config.node.prod,
       session: {
-        strategy: config.prod ? 'database' : 'jwt',
+        strategy: config.node.prod ? 'database' : 'jwt',
       },
       // @ts-expect-error Third part library type mismatch
       logger: console,
     };
 
-    if (!config.prod) {
+    if (!config.node.prod) {
       nextAuthOptions.providers.push(
         // @ts-expect-error esm interop issue
         Credentials.default({
@@ -261,8 +262,25 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         return session;
       },
-      redirect(params) {
-        return params.url;
+      signIn: async ({ profile }) => {
+        if (!config.affine.beta || !config.node.prod) {
+          return true;
+        }
+        if (profile?.email) {
+          return await prisma.newFeaturesWaitingList
+            .findUnique({
+              where: {
+                email: profile.email,
+                type: NewFeaturesKind.EarlyAccess,
+              },
+            })
+            .then(user => !!user)
+            .catch(() => false);
+        }
+        return false;
+      },
+      redirect({ url }) {
+        return url;
       },
     };
     return nextAuthOptions;

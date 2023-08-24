@@ -17,5 +17,6 @@
         "watch": true
       }
     }
-  }
+  },
+  "tags": ["infra"]
 }
