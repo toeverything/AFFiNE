@@ -20,7 +20,7 @@
       "sys:id": "2xxenQgE1-",
       "sys:flavour": "affine:note",
       "sys:children": ["G7wJk4W9lz"],
-      "prop:xywh": "[0,0,800,95]",
+      "prop:xywh": "[0,0,800,91]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
@@ -65,7 +65,7 @@
         "IdLESwrZ-U",
         "6YwnA2HHQM"
       ],
-      "prop:xywh": "[0,0,800,1718]",
+      "prop:xywh": "[0,0,800,1719]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false

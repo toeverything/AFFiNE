@@ -140,10 +140,66 @@
       "sys:id": "-ojLJIJje-",
       "sys:flavour": "affine:note",
       "sys:children": ["YnFGTZ6yir"],
-      "prop:xywh": "[-520.1114681167911,-486.0645426128129,482.5493184329824,424]",
+      "prop:xywh": "[-520.1114681167911,-486.0645426128129,482.5493184329824,423]",
       "prop:index": "a0",
       "prop:background": "--affine-background-secondary-color",
       "prop:hidden": false
+    },
+    "YnFGTZ6yir": {
+      "sys:id": "YnFGTZ6yir",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/bfXllFddegV9vvxPcSWnOtm-_tuzXm-0OQ59z9Su1zA=.png",
+      "prop:caption": "Photography works captured during travels",
+      "prop:width": 0,
+      "prop:height": 0
+    },
+    "7Qi6fWz4TN": {
+      "sys:id": "7Qi6fWz4TN",
+      "sys:flavour": "affine:note",
+      "sys:children": ["jGev2GyGKL"],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[38.96811099378566,-200.29430936575764,482.5493184329824,120]",
+      "prop:index": "a01",
+      "prop:hidden": false
+    },
+    "jGev2GyGKL": {
+      "sys:id": "jGev2GyGKL",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "h1",
+      "prop:text": [
+        {
+          "insert": "Plan"
+        }
+      ]
+    },
+    "5CknxAZgZB": {
+      "sys:id": "5CknxAZgZB",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "KKDT6sZ0Nv",
+        "jKeJ-YRXoA",
+        "a59vcG9HaA",
+        "De3HEQZ__h",
+        "tUbJealdZU",
+        "xR-MYtrLU6"
+      ],
+      "prop:background": "--affine-tag-blue",
+      "prop:xywh": "[-518.1114681167911,473.07749381963725,482.5493184329824,276]",
+      "prop:index": "a011",
+      "prop:hidden": false
+    },
+    "KKDT6sZ0Nv": {
+      "sys:id": "KKDT6sZ0Nv",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "🛫 Destination "
+        }
+      ],
+      "prop:type": "h6"
     },
     "jKeJ-YRXoA": {
       "sys:id": "jKeJ-YRXoA",
@@ -193,6 +249,38 @@
       ],
       "prop:checked": false
     },
+    "xR-MYtrLU6": {
+      "sys:id": "xR-MYtrLU6",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "ow3WtXDA0v": {
+      "sys:id": "ow3WtXDA0v",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "wyDrII4_zo",
+        "jDG5Dctm01",
+        "VE75jgbATn",
+        "CtDajZVmR0",
+        "2sO9clEfdw",
+        "KYwudyH-g6"
+      ],
+      "prop:background": "--affine-tag-green",
+      "prop:xywh": "[48.92190793859946,1229.1096577000872,482.5493184329824,276]",
+      "prop:index": "a011",
+      "prop:hidden": false
+    },
+    "wyDrII4_zo": {
+      "sys:id": "wyDrII4_zo",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "🧳 Pre-Departure Check list Check list "
+        }
+      ],
+      "prop:type": "h6"
+    },
     "jDG5Dctm01": {
       "sys:id": "jDG5Dctm01",
       "sys:flavour": "affine:list",
@@ -241,242 +329,10 @@
       ],
       "prop:checked": false
     },
-    "0T1i96StRQ": {
-      "sys:id": "0T1i96StRQ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "📅 Planned Activities "
-        }
-      ]
-    },
-    "wyDrII4_zo": {
-      "sys:id": "wyDrII4_zo",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "🧳 Pre-Departure Check list Check list "
-        }
-      ],
-      "prop:type": "h6"
-    },
-    "jXisia29Fb": {
-      "sys:id": "jXisia29Fb",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "📃 Departure information "
-        }
-      ],
-      "prop:type": "h6"
-    },
-    "DKulR2XaNU": {
-      "sys:id": "DKulR2XaNU",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "🛬 Return information "
-        }
-      ],
-      "prop:type": "h6"
-    },
-    "6ekvWjJfJ5": {
-      "sys:id": "6ekvWjJfJ5",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "8F4IBsaho5": {
-      "sys:id": "8F4IBsaho5",
-      "sys:flavour": "affine:divider",
-      "sys:children": []
-    },
-    "xR-MYtrLU6": {
-      "sys:id": "xR-MYtrLU6",
-      "sys:flavour": "affine:divider",
-      "sys:children": []
-    },
     "KYwudyH-g6": {
       "sys:id": "KYwudyH-g6",
       "sys:flavour": "affine:divider",
       "sys:children": []
-    },
-    "odobNXqPPN": {
-      "sys:id": "odobNXqPPN",
-      "sys:flavour": "affine:divider",
-      "sys:children": []
-    },
-    "1Xy1WwgXOZ": {
-      "sys:id": "1Xy1WwgXOZ",
-      "sys:flavour": "affine:divider",
-      "sys:children": []
-    },
-    "yoQ4O16Igw": {
-      "sys:id": "yoQ4O16Igw",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "j8hIA_C0QF"
-            }
-          }
-        }
-      ]
-    },
-    "kvu6wIpxxZ": {
-      "sys:id": "kvu6wIpxxZ",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "your plan"
-        }
-      ],
-      "prop:checked": false
-    },
-    "PFbF2yzMLy": {
-      "sys:id": "PFbF2yzMLy",
-      "sys:flavour": "affine:list",
-      "sys:children": ["kvu6wIpxxZ", "ERXt7bNw-c"],
-      "prop:type": "numbered",
-      "prop:text": [
-        {
-          "insert": "day 1 "
-        }
-      ],
-      "prop:checked": false
-    },
-    "ERXt7bNw-c": {
-      "sys:id": "ERXt7bNw-c",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "your plan"
-        }
-      ],
-      "prop:checked": false
-    },
-    "KKDT6sZ0Nv": {
-      "sys:id": "KKDT6sZ0Nv",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "🛫 Destination "
-        }
-      ],
-      "prop:type": "h6"
-    },
-    "YnFGTZ6yir": {
-      "sys:id": "YnFGTZ6yir",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "/static/bfXllFddegV9vvxPcSWnOtm-_tuzXm-0OQ59z9Su1zA=.png",
-      "prop:caption": "Photography works captured during travels",
-      "prop:width": 0,
-      "prop:height": 0
-    },
-    "jGev2GyGKL": {
-      "sys:id": "jGev2GyGKL",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h1",
-      "prop:text": [
-        {
-          "insert": "Plan"
-        }
-      ]
-    },
-    "Im6AKkmqOo": {
-      "sys:id": "Im6AKkmqOo",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "7JpoobqNZ2": {
-      "sys:id": "7JpoobqNZ2",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "Photograph"
-        }
-      ],
-      "prop:type": "h1"
-    },
-    "-cQ1R0mp7R": {
-      "sys:id": "-cQ1R0mp7R",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "8Y7KAJEok0": {
-      "sys:id": "8Y7KAJEok0",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "/static/8oj6ym4HlTcshT40Zn6D5DeOgaVCSOOXJvT_EyiqUw8=.png",
-      "prop:caption": "",
-      "prop:width": 752,
-      "prop:height": 501.328125
-    },
-    "tZ6IwQGtmg": {
-      "sys:id": "tZ6IwQGtmg",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "/static/cw9XjQ-pCeSW7LKMzVREGHeCPTXWYbtE-QbZLEY3RrI=.png",
-      "prop:caption": "",
-      "prop:width": 752,
-      "prop:height": 1109.578125
-    },
-    "NZyixEW1XH": {
-      "sys:id": "NZyixEW1XH",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "/static/Vqc8rxFbGyc5L1QeE_Zr10XEcIai_0Xw4Qv6d3ldRPE=.png",
-      "prop:caption": "",
-      "prop:width": 752,
-      "prop:height": 501.328125
-    },
-    "7Qi6fWz4TN": {
-      "sys:id": "7Qi6fWz4TN",
-      "sys:flavour": "affine:note",
-      "sys:children": ["jGev2GyGKL"],
-      "prop:background": "--affine-background-secondary-color",
-      "prop:xywh": "[38.96811099378566,-200.29430936575764,482.5493184329824,120]",
-      "prop:index": "a01",
-      "prop:hidden": false
-    },
-    "ow3WtXDA0v": {
-      "sys:id": "ow3WtXDA0v",
-      "sys:flavour": "affine:note",
-      "sys:children": [
-        "wyDrII4_zo",
-        "jDG5Dctm01",
-        "VE75jgbATn",
-        "CtDajZVmR0",
-        "2sO9clEfdw",
-        "KYwudyH-g6"
-      ],
-      "prop:background": "--affine-tag-green",
-      "prop:xywh": "[48.92190793859946,1229.1096577000872,482.5493184329824,276]",
-      "prop:index": "a011",
-      "prop:hidden": false
     },
     "EzFOvVBA3P": {
       "sys:id": "EzFOvVBA3P",
@@ -495,105 +351,52 @@
       "prop:index": "a0111",
       "prop:hidden": false
     },
-    "uljK66mxso": {
-      "sys:id": "uljK66mxso",
-      "sys:flavour": "affine:note",
-      "sys:children": [
-        "jXisia29Fb",
-        "b2Ggy8x_Zc",
-        "1OSk9g8I6l",
-        "jtc2Sg_GaR",
-        "8F4IBsaho5"
-      ],
-      "prop:background": "--affine-tag-green",
-      "prop:xywh": "[48.92190793859946,1520.329402804088,482.5493184329824,244]",
-      "prop:index": "a01111",
-      "prop:hidden": false
-    },
-    "Sg1fGLKBvH": {
-      "sys:id": "Sg1fGLKBvH",
-      "sys:flavour": "affine:note",
-      "sys:children": [
-        "DKulR2XaNU",
-        "vk2mYJtRJ6",
-        "dzbbrQNiDh",
-        "9KLhe6sL97",
-        "1Xy1WwgXOZ"
-      ],
-      "prop:background": "--affine-tag-red",
-      "prop:xywh": "[-4.812573798716954,473.07749381963725,482.5493184329824,244]",
-      "prop:index": "a011111",
-      "prop:hidden": false
-    },
-    "RxtyG021dD": {
-      "sys:id": "RxtyG021dD",
-      "sys:flavour": "affine:note",
-      "sys:children": ["yoQ4O16Igw", "7JpoobqNZ2", "-cQ1R0mp7R"],
-      "prop:background": "--affine-background-secondary-color",
-      "prop:xywh": "[1059.2666610517663,-581.9153214705414,2070.370188968697,186]",
-      "prop:index": "a0111111",
-      "prop:hidden": false
-    },
-    "fXQp_Lo2oW": {
-      "sys:id": "fXQp_Lo2oW",
-      "sys:flavour": "affine:note",
-      "sys:children": ["8Y7KAJEok0"],
-      "prop:background": "--affine-background-secondary-color",
-      "prop:xywh": "[1059.266939333298,-344.9498499303626,1060.3618184329823,605]",
-      "prop:index": "a01111111",
-      "prop:hidden": false
-    },
-    "knm3VvViEw": {
-      "sys:id": "knm3VvViEw",
-      "sys:flavour": "affine:note",
-      "sys:children": ["tZ6IwQGtmg"],
-      "prop:background": "--affine-background-secondary-color",
-      "prop:xywh": "[2291.575944929066,-322.7479176645791,808.6877112901249,1214]",
-      "prop:index": "a011111111",
-      "prop:hidden": false
-    },
-    "-2P7D2P0Ro": {
-      "sys:id": "-2P7D2P0Ro",
-      "sys:flavour": "affine:note",
-      "sys:children": ["NZyixEW1XH"],
-      "prop:background": "--affine-background-secondary-color",
-      "prop:xywh": "[1059.2669140103512,323.26394177867127,1063.2397621269242,605]",
-      "prop:index": "a0111111111",
-      "prop:hidden": false
-    },
-    "5CknxAZgZB": {
-      "sys:id": "5CknxAZgZB",
-      "sys:flavour": "affine:note",
-      "sys:children": [
-        "KKDT6sZ0Nv",
-        "jKeJ-YRXoA",
-        "a59vcG9HaA",
-        "De3HEQZ__h",
-        "tUbJealdZU",
-        "xR-MYtrLU6",
-        "yUsBvT_iPS"
-      ],
-      "prop:background": "--affine-tag-blue",
-      "prop:xywh": "[-518.1114681167911,473.07749381963725,482.5493184329824,319]",
-      "prop:index": "a011",
-      "prop:hidden": false
-    },
-    "yUsBvT_iPS": {
-      "sys:id": "yUsBvT_iPS",
+    "0T1i96StRQ": {
+      "sys:id": "0T1i96StRQ",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
-      "prop:type": "text",
+      "prop:type": "h6",
       "prop:text": [
         {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "Rh4LaevS9j"
-            }
-          }
+          "insert": "📅 Planned Activities "
         }
       ]
+    },
+    "PFbF2yzMLy": {
+      "sys:id": "PFbF2yzMLy",
+      "sys:flavour": "affine:list",
+      "sys:children": ["kvu6wIpxxZ", "ERXt7bNw-c"],
+      "prop:type": "numbered",
+      "prop:text": [
+        {
+          "insert": "day 1 "
+        }
+      ],
+      "prop:checked": false
+    },
+    "kvu6wIpxxZ": {
+      "sys:id": "kvu6wIpxxZ",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "todo",
+      "prop:text": [
+        {
+          "insert": "your plan"
+        }
+      ],
+      "prop:checked": false
+    },
+    "ERXt7bNw-c": {
+      "sys:id": "ERXt7bNw-c",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "todo",
+      "prop:text": [
+        {
+          "insert": "your plan"
+        }
+      ],
+      "prop:checked": false
     },
     "P-h4AChPUA": {
       "sys:id": "P-h4AChPUA",
@@ -643,6 +446,37 @@
       ],
       "prop:checked": false
     },
+    "odobNXqPPN": {
+      "sys:id": "odobNXqPPN",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "uljK66mxso": {
+      "sys:id": "uljK66mxso",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "jXisia29Fb",
+        "b2Ggy8x_Zc",
+        "1OSk9g8I6l",
+        "jtc2Sg_GaR",
+        "8F4IBsaho5"
+      ],
+      "prop:background": "--affine-tag-green",
+      "prop:xywh": "[48.92190793859946,1520.329402804088,482.5493184329824,244]",
+      "prop:index": "a01111",
+      "prop:hidden": false
+    },
+    "jXisia29Fb": {
+      "sys:id": "jXisia29Fb",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "📃 Departure information "
+        }
+      ],
+      "prop:type": "h6"
+    },
     "b2Ggy8x_Zc": {
       "sys:id": "b2Ggy8x_Zc",
       "sys:flavour": "affine:list",
@@ -679,6 +513,37 @@
       ],
       "prop:checked": false
     },
+    "8F4IBsaho5": {
+      "sys:id": "8F4IBsaho5",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "Sg1fGLKBvH": {
+      "sys:id": "Sg1fGLKBvH",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "DKulR2XaNU",
+        "vk2mYJtRJ6",
+        "dzbbrQNiDh",
+        "9KLhe6sL97",
+        "1Xy1WwgXOZ"
+      ],
+      "prop:background": "--affine-tag-red",
+      "prop:xywh": "[-4.812573798716954,473.07749381963725,482.5493184329824,244]",
+      "prop:index": "a011111",
+      "prop:hidden": false
+    },
+    "DKulR2XaNU": {
+      "sys:id": "DKulR2XaNU",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "🛬 Return information "
+        }
+      ],
+      "prop:type": "h6"
+    },
     "vk2mYJtRJ6": {
       "sys:id": "vk2mYJtRJ6",
       "sys:flavour": "affine:list",
@@ -714,6 +579,109 @@
         }
       ],
       "prop:checked": false
+    },
+    "1Xy1WwgXOZ": {
+      "sys:id": "1Xy1WwgXOZ",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "RxtyG021dD": {
+      "sys:id": "RxtyG021dD",
+      "sys:flavour": "affine:note",
+      "sys:children": ["7JpoobqNZ2", "-cQ1R0mp7R"],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[1059.2666610517663,-581.9153214705414,2070.370188968697,153]",
+      "prop:index": "a0111111",
+      "prop:hidden": false
+    },
+    "7JpoobqNZ2": {
+      "sys:id": "7JpoobqNZ2",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Photograph"
+        }
+      ],
+      "prop:type": "h1"
+    },
+    "-cQ1R0mp7R": {
+      "sys:id": "-cQ1R0mp7R",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "fXQp_Lo2oW": {
+      "sys:id": "fXQp_Lo2oW",
+      "sys:flavour": "affine:note",
+      "sys:children": ["8Y7KAJEok0"],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[1059.266939333298,-344.9498499303626,1060.3618184329823,605]",
+      "prop:index": "a01111111",
+      "prop:hidden": false
+    },
+    "8Y7KAJEok0": {
+      "sys:id": "8Y7KAJEok0",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/8oj6ym4HlTcshT40Zn6D5DeOgaVCSOOXJvT_EyiqUw8=.png",
+      "prop:caption": "",
+      "prop:width": 752,
+      "prop:height": 501.328125
+    },
+    "knm3VvViEw": {
+      "sys:id": "knm3VvViEw",
+      "sys:flavour": "affine:note",
+      "sys:children": ["tZ6IwQGtmg"],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[2291.575944929066,-322.7479176645791,808.6877112901249,1214]",
+      "prop:index": "a011111111",
+      "prop:hidden": false
+    },
+    "tZ6IwQGtmg": {
+      "sys:id": "tZ6IwQGtmg",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/cw9XjQ-pCeSW7LKMzVREGHeCPTXWYbtE-QbZLEY3RrI=.png",
+      "prop:caption": "",
+      "prop:width": 752,
+      "prop:height": 1109.578125
+    },
+    "-2P7D2P0Ro": {
+      "sys:id": "-2P7D2P0Ro",
+      "sys:flavour": "affine:note",
+      "sys:children": ["NZyixEW1XH", "852MBPj6YV"],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[1059.2669140103512,323.26394177867127,1063.2397621269242,638]",
+      "prop:index": "a0111111111",
+      "prop:hidden": false
+    },
+    "NZyixEW1XH": {
+      "sys:id": "NZyixEW1XH",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/Vqc8rxFbGyc5L1QeE_Zr10XEcIai_0Xw4Qv6d3ldRPE=.png",
+      "prop:caption": "",
+      "prop:width": 752,
+      "prop:height": 501.328125
+    },
+    "852MBPj6YV": {
+      "sys:id": "852MBPj6YV",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "j8hIA_C0QF"
+            }
+          }
+        }
+      ]
     }
   }
 }
