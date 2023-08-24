@@ -32,7 +32,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
     .getByTestId('delete-workspace-input')
     .type(currentWorkspaceName as string);
   const promise = page
-    .getByTestId('affine-toast')
+    .getByTestId('affine-notification')
     .waitFor({ state: 'attached' });
   await page.getByTestId('delete-workspace-confirm-button').click();
   await promise;
