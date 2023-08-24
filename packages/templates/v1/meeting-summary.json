@@ -34,7 +34,7 @@
         "FSkrwB-T33",
         "abGz-82vvA"
       ],
-      "prop:xywh": "[0,0,800,1233]",
+      "prop:xywh": "[0,0,800,1237]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
@@ -112,7 +112,7 @@
       "prop:type": "bulleted",
       "prop:text": [
         {
-          "insert": "E.q.content roadmap"
+          "insert": "E.g. content roadmap"
         }
       ],
       "prop:checked": false
