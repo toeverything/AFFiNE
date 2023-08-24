@@ -89,6 +89,10 @@ jobs:
             platform: linux
             arch: x64
             target: x86_64-unknown-linux-gnu
+          - runner: windows-latest
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.spec.runner }}
     needs:
       - before-make
