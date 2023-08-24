@@ -89,7 +89,7 @@ jobs:
             platform: linux
             arch: x64
             target: x86_64-unknown-linux-gnu
-    runs-on: ${{ matrix.spec.os }}
+    runs-on: ${{ matrix.spec.runner }}
     needs:
       - before-make
       - set-build-version
