@@ -5,7 +5,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 
-import { useLeaveWorkspace } from '../../../../hooks/affine/use-leave-workspace';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
 
@@ -22,8 +21,6 @@ export const DeleteLeaveWorkspace = ({
 }: DeleteLeaveWorkspaceProps) => {
   const t = useAFFiNEI18N();
   // fixme: cloud regression
-  const leaveWorkspace = useLeaveWorkspace(workspace.id);
-
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
 
@@ -38,6 +35,10 @@ export const DeleteLeaveWorkspace = ({
   const onCloseConfirmModal = useCallback(() => {
     setShowLeave(false);
   }, []);
+
+  const onLeaveConfirm = useCallback(() => {
+    return onDeleteWorkspace(workspace.id);
+  }, [onDeleteWorkspace, workspace.id]);
 
   return (
     <>
@@ -68,7 +69,7 @@ export const DeleteLeaveWorkspace = ({
       ) : (
         <ConfirmModal
           open={showLeave}
-          onConfirm={leaveWorkspace}
+          onConfirm={onLeaveConfirm}
           onCancel={onCloseConfirmModal}
           onClose={onCloseConfirmModal}
           title={`${t['Leave Workspace']()}?`}

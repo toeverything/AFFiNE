@@ -38,6 +38,7 @@ export const Component = () => {
   const loginStatus = useCurrenLoginStatus();
   const { jumpToSignIn } = useNavigateHelper();
   const { addCloudWorkspace } = useAppHelper();
+  const { jumpToWorkspace } = useNavigateHelper();
 
   const [, setAuthAtom] = useAtom(authAtom);
   const { inviteId, inviteInfo } = useLoaderData() as {
@@ -52,6 +53,11 @@ export const Component = () => {
   const loadWorkspaceAfterSignIn = useCallback(() => {
     addCloudWorkspace(inviteInfo.workspace.id);
   }, [addCloudWorkspace, inviteInfo.workspace.id]);
+
+  const openWorkspace = useCallback(() => {
+    addCloudWorkspace(inviteInfo.workspace.id);
+    jumpToWorkspace(inviteInfo.workspace.id, RouteLogic.REPLACE);
+  }, [addCloudWorkspace, inviteInfo.workspace.id, jumpToWorkspace]);
 
   // No mater sign in or not, we need to accept the invite
   useEffect(() => {
@@ -83,27 +89,13 @@ export const Component = () => {
   ]);
 
   if (loginStatus === 'authenticated') {
-    return <InvitePage inviteInfo={inviteInfo} />;
+    return (
+      <AcceptInvitePage
+        inviteInfo={inviteInfo}
+        onOpenWorkspace={openWorkspace}
+      />
+    );
   }
 
   return null;
-};
-
-export const InvitePage = ({
-  inviteInfo,
-}: {
-  inviteInfo: GetInviteInfoQuery['getInviteInfo'];
-}) => {
-  const { jumpToWorkspace } = useNavigateHelper();
-
-  const onOpenWorkspace = useCallback(() => {
-    jumpToWorkspace(inviteInfo.workspace.id, RouteLogic.REPLACE);
-  }, [inviteInfo.workspace.id, jumpToWorkspace]);
-
-  return (
-    <AcceptInvitePage
-      onOpenWorkspace={onOpenWorkspace}
-      inviteInfo={inviteInfo}
-    />
-  );
 };

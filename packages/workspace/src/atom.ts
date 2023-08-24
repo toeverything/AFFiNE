@@ -125,6 +125,8 @@ const rootWorkspacesMetadataPromiseAtom = atom<
 
       metadata.push(...loadFromLocalStorage());
     }
+    console.log('local Metadata', [...metadata]);
+
     // step 2: fetch from adapters
     {
       const Adapters = Object.values(WorkspaceAdapters).sort(
@@ -141,6 +143,8 @@ const rootWorkspacesMetadataPromiseAtom = atom<
         }
         try {
           const item = await Adapter.CRUD.list();
+          console.log('item', item);
+
           if (metadata.length) {
             item.sort((a, b) => {
               return (
@@ -216,8 +220,6 @@ export const rootWorkspacesMetadataAtom = atom<
       // write back to localStorage
       rootWorkspaceMetadataArraySchema.parse(metadata);
       localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
-      set(currentPageIdAtom, null);
-      set(currentWorkspaceIdAtom, null);
 
       // if the current workspace is deleted, reset the current workspace
       if (oldWorkspaceId && metadata.some(x => x.id === oldWorkspaceId)) {

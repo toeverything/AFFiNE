@@ -1,9 +1,14 @@
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
 import { getUIAdapter } from '../../../../adapters/workspace';
 import { openSettingModalAtom } from '../../../../atoms';
+import { useLeaveWorkspace } from '../../../../hooks/affine/use-leave-workspace';
+import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
 import {
   RouteLogic,
@@ -13,22 +18,48 @@ import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
 
 export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
+  const { jumpToWorkspace } = useNavigateHelper();
+  const [currentWorkspace] = useCurrentWorkspace();
   const workspace = useWorkspace(workspaceId);
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
+
+  const leaveWorkspace = useLeaveWorkspace();
   usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
   const setSettingModal = useSetAtom(openSettingModalAtom);
   const helper = useAppHelper();
-  const { jumpToIndex } = useNavigateHelper();
 
   const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
+  // This function mey not need id param
   const onDeleteWorkspace = useCallback(
     async (id: string) => {
-      await helper.deleteWorkspace(id);
       setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
-      jumpToIndex(RouteLogic.REPLACE);
+
+      if (currentWorkspace.id === workspaceId) {
+        const backWorkspace = workspaces.find(ws => ws.id !== workspaceId);
+        // TODO: if there is no workspace, jump to a new page(wait for design)
+        jumpToWorkspace(backWorkspace?.id || '', RouteLogic.REPLACE);
+      }
+
+      if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+        await helper.deleteWorkspace(id);
+      }
+      if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+        await leaveWorkspace(id);
+      }
     },
-    [helper, jumpToIndex, setSettingModal]
+    [
+      currentWorkspace.id,
+      helper,
+      jumpToWorkspace,
+      leaveWorkspace,
+      setSettingModal,
+      workspace.flavour,
+      workspaceId,
+      workspaces,
+    ]
   );
+
   const onTransformWorkspace = useOnTransformWorkspace();
 
   return (
