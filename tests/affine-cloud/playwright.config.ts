@@ -5,7 +5,7 @@ import type {
 
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
-  fullyParallel: true,
+  fullyParallel: !process.env.CI,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
     baseURL: 'http://localhost:8081/',
@@ -20,7 +20,7 @@ const config: PlaywrightTestConfig = {
     video: 'on-first-retry',
   },
   forbidOnly: !!process.env.CI,
-  workers: 4,
+  workers: process.env.CI ? 1 : 4,
   retries: 1,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
@@ -59,7 +59,6 @@ const config: PlaywrightTestConfig = {
 
 if (process.env.CI) {
   config.retries = 3;
-  config.workers = '50%';
 }
 
 export default config;

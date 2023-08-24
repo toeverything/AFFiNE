@@ -37,10 +37,10 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsValidEmail(true);
-    const res = await verifyUser({ email: email });
+    const { user } = await verifyUser({ email });
 
     setAuthEmail(email);
-    if (res?.user) {
+    if (user) {
       signIn('email', {
         email: email,
         callbackUrl: buildCallbackUrl('signIn'),
