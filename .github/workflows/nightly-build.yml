@@ -73,37 +73,24 @@ jobs:
   make-distribution:
     environment: production
     strategy:
-      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # For windows, we need a separate approach
       matrix:
         spec:
-          - {
-              os: macos-latest,
-              platform: darwin,
-              arch: x64,
-              target: x86_64-apple-darwin,
-            }
-          - {
-              os: macos-latest,
-              platform: darwin,
-              arch: arm64,
-              target: aarch64-apple-darwin,
-            }
-          - {
-              os: ubuntu-latest,
-              platform: linux,
-              arch: x64,
-              target: x86_64-unknown-linux-gnu,
-            }
-          - {
-              os: windows-latest,
-              platform: win32,
-              arch: x64,
-              target: x86_64-pc-windows-msvc,
-            }
-    runs-on: ${{ matrix.spec.os }}
-    needs:
-      - before-make
-      - set-build-version
+          - runner: macos-latest
+            platform: darwin
+            arch: x64
+            target: x86_64-apple-darwin
+          - runner: macos-latest
+            platform: darwin
+            arch: arm64
+            target: aarch64-apple-darwin
+          - runner: ubuntu-latest
+            platform: linux
+            arch: x64
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.spec.runner }}
+    needs: before-make
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -122,8 +109,6 @@ jobs:
         with:
           target: ${{ matrix.spec.target }}
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - name: Replace Version
-        run: ./scripts/set-version.sh ${{ needs.set-build-version.outputs.version }}
       - uses: actions/download-artifact@v3
         with:
           name: core
@@ -151,21 +136,168 @@ jobs:
           mkdir -p builds
           mv apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
           mv apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-      - name: Save artifacts (windows)
-        if: ${{ matrix.spec.platform == 'win32' }}
-        run: |
-          mkdir -p builds
-          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
-          mv apps/electron/out/*/make/squirrel.windows/x64/*.nupkg ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.nupkg
-
       - name: Save artifacts (linux)
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
           mkdir -p builds
           mv apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.zip
           mv apps/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
+          path: builds
+
+  package-distribution-windows:
+    environment: production
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # For windows, we need a separate approach
+      matrix:
+        spec:
+          - runner: windows-latest
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.spec.runner }}
+    needs: before-make
+    outputs:
+      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
+    env:
+      SKIP_GENERATE_ASSETS: 1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        timeout-minutes: 10
+        uses: ./.github/actions/setup-node
+      - name: Setup Maker
+        timeout-minutes: 10
+        uses: ./.github/actions/setup-maker
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: apps/electron/resources/web-static
+
+      - name: Build Plugins
+        run: yarn run build:plugins
+
+      - name: Build Desktop Layers
+        run: yarn workspace @affine/electron build
+
+      - name: package
+        run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
+      - name: get all files to be signed
+        id: get_files_to_be_signed
+        run: |
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\', '') + '"' }) -join ' ')
+          "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          echo $FILES_TO_BE_SIGNED
+
+      - name: Zip artifacts for faster upload
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/* -DestinationPath archive.zip
+
+      - name: Save packaged artifacts for signing
+        uses: actions/upload-artifact@v3
+        with:
+          name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: |
+            archive.zip
+            !**/*.map
+
+  sign-packaged-artifacts-windows:
+    needs: package-distribution-windows
+    uses: ./.github/workflows/windows-signer.yml
+    with:
+      files: ${{ needs.package-distribution-windows.outputs.FILES_TO_BE_SIGNED }}
+      artifact-name: packaged-win32-x64
+
+  make-windows-installer:
+    environment: production
+    needs: sign-packaged-artifacts-windows
+    strategy:
+      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # For windows, we need a separate approach
+      matrix:
+        spec:
+          - runner: windows-latest
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.spec.runner }}
+    outputs:
+      FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        timeout-minutes: 10
+        uses: ./.github/actions/setup-node
+      - name: Download and overwrite packaged artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: .
+      - name: unzip file
+        run: Expand-Archive -Path signed.zip -DestinationPath apps/electron/out
+
+      - name: Make squirrel.windows installer
+        run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+
+      - name: Zip artifacts for faster upload
+        run: Compress-Archive -CompressionLevel Fastest -Path apps/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
+
+      - name: get all files to be signed
+        id: get_files_to_be_signed
+        run: |
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path apps/electron/out/${{ env.BUILD_TYPE }}/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\apps\electron\out\${{ env.BUILD_TYPE }}\make\', '') + '"' }) -join ' ')
+          "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          echo $FILES_TO_BE_SIGNED
+
+      - name: Save installer for signing
+        uses: actions/upload-artifact@v3
+        with:
+          name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: archive.zip
+
+  sign-installer-artifacts-windows:
+    needs: make-windows-installer
+    uses: ./.github/workflows/windows-signer.yml
+    with:
+      files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED }}
+      artifact-name: installer-win32-x64
+
+  finalize-installer-windows:
+    environment: production
+    needs: sign-installer-artifacts-windows
+    strategy:
+      matrix:
+        spec:
+          - runner: windows-latest
+            platform: win32
+            arch: x64
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.spec.runner }}
+    steps:
+      - name: Download and overwrite installer artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: .
+      - name: unzip file
+        run: Expand-Archive -Path signed.zip -DestinationPath apps/electron/out/${{ env.BUILD_TYPE }}/make
+
+      - name: Save artifacts
+        run: |
+          mkdir -p builds
+          mv apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv apps/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
@@ -225,8 +357,6 @@ jobs:
             ./*.zip
             ./*.dmg
             ./*.exe
-            ./*.nupkg
-            ./RELEASES
             ./*.AppImage
             ./*.apk
             ./*.yml

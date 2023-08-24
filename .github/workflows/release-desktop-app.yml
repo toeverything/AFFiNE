@@ -360,7 +360,6 @@ jobs:
             ./*.zip
             ./*.dmg
             ./*.exe
-            ./RELEASES
             ./*.AppImage
             ./*.apk
             ./*.yml
