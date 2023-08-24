@@ -88,6 +88,7 @@ export class InvitationWorkspaceType {
   })
   avatar!: string;
 }
+
 @ObjectType()
 export class InvitationType {
   @Field({ description: 'Workspace information' })

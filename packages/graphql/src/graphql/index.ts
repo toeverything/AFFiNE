@@ -227,6 +227,19 @@ query getWorkspacePublicById($id: String!) {
 }`,
 };
 
+export const getWorkspaceSharedPagesQuery = {
+  id: 'getWorkspaceSharedPagesQuery' as const,
+  operationName: 'getWorkspaceSharedPages',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspaceSharedPages($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    sharedPages
+  }
+}`,
+};
+
 export const getWorkspaceQuery = {
   id: 'getWorkspaceQuery' as const,
   operationName: 'getWorkspace',
@@ -272,6 +285,17 @@ export const revokeMemberPermissionMutation = {
   query: `
 mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
   revoke(workspaceId: $workspaceId, userId: $userId)
+}`,
+};
+
+export const revokePageMutation = {
+  id: 'revokePageMutation' as const,
+  operationName: 'revokePage',
+  definitionName: 'revokePage',
+  containsFile: false,
+  query: `
+mutation revokePage($workspaceId: String!, $pageId: String!) {
+  revokePage(workspaceId: $workspaceId, pageId: $pageId)
 }`,
 };
 
@@ -340,6 +364,17 @@ mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
   updateWorkspace(input: {id: $id, public: $public}) {
     id
   }
+}`,
+};
+
+export const sharePageMutation = {
+  id: 'sharePageMutation' as const,
+  operationName: 'sharePage',
+  definitionName: 'sharePage',
+  containsFile: false,
+  query: `
+mutation sharePage($workspaceId: String!, $pageId: String!) {
+  sharePage(workspaceId: $workspaceId, pageId: $pageId)
 }`,
 };
 

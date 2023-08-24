@@ -6,9 +6,9 @@ import {
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
-import type {
+import {
   WorkspaceFlavour,
-  WorkspaceHeaderProps,
+  type WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useCallback } from 'react';
@@ -117,20 +117,15 @@ export function WorkspaceHeader({
 
   // route in edit page
   if ('pageId' in currentEntry) {
+    const isCloudWorkspace =
+      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
     const currentPage = currentWorkspace.blockSuiteWorkspace.getPage(
       currentEntry.pageId
     );
-    const rightItems = () => {
-      if (!currentPage) {
-        return <PluginHeader />;
-      }
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <SharePageModal workspace={currentWorkspace} page={currentPage} />
-          <PluginHeader />
-        </div>
-      );
-    };
+    const sharePageModal =
+      isCloudWorkspace && currentPage ? (
+        <SharePageModal workspace={currentWorkspace} page={currentPage} />
+      ) : null;
     return (
       <Header
         center={
@@ -139,7 +134,12 @@ export function WorkspaceHeader({
             pageId={currentEntry.pageId}
           />
         }
-        right={rightItems()}
+        right={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {sharePageModal}
+            <PluginHeader />
+          </div>
+        }
       />
     );
   }

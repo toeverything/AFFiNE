@@ -10,7 +10,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, WebIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -76,8 +75,9 @@ export const LocalSharePage = (props: ShareMenuProps) => {
 };
 
 export const AffineSharePage = (props: ShareMenuProps) => {
-  const [isPublic, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(
-    props.currentPage
+  const [isPublic, setIsPublic] = props.useIsSharedPage(
+    props.workspace.id,
+    props.currentPage.id
   );
   const [showDisable, setShowDisable] = useState(false);
   const t = useAFFiNEI18N();
