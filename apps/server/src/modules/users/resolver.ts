@@ -112,7 +112,7 @@ export class UserResolver {
       }
     }
     // TODO: need to limit a user can only get another user witch is in the same workspace
-    return this.prisma.user
+    const user = await this.prisma.user
       .findUnique({
         where: { email },
       })
@@ -120,6 +120,8 @@ export class UserResolver {
         console.error(e);
         return null;
       });
+    console.log(11111111, user);
+    return user;
   }
 
   @Mutation(() => UserType, {
