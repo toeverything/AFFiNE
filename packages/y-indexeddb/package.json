@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.8.0-canary.33",
+  "version": "0.8.0-canary.34",
   "description": "IndexedDB database adapter for Yjs",
   "repository": "toeverything/AFFiNE",
   "author": "toeverything",
