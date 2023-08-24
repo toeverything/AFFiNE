@@ -319,6 +319,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/doc-migration@workspace:packages/doc-migration":
+  version: 0.0.0-use.local
+  resolution: "@affine/doc-migration@workspace:packages/doc-migration"
+  dependencies:
+    "@affine/env": "workspace:*"
+    "@blocksuite/blocks": 0.0.0-20230814155455-ceb5d5d8-nightly
+    "@blocksuite/store": 0.0.0-20230814155455-ceb5d5d8-nightly
+    "@blocksuite/store-0.6.0": "npm:@blocksuite/store@0.6.0"
+    "@prisma/client": 5.1.1
+    "@types/fs-extra": ^11.0.1
+    fs-extra: ^11.1.1
+    nodemon: ^3.0.1
+    prisma: ^5.1.1
+    yjs: ^13.6.7
+  languageName: unknown
+  linkType: soft
+
 "@affine/docs@workspace:apps/docs":
   version: 0.0.0-use.local
   resolution: "@affine/docs@workspace:apps/docs"
@@ -4204,6 +4221,30 @@ __metadata:
     async-call-rpc: ^6
     yjs: ^13
   checksum: 284f72e56b64fac0949cef1fb3ebc9b71a1a0c44f33a3a252129c882e9d05110e164c7055d909b392715042ad6eb44ae37219480c2b73349a82897459aaaaec4
+  languageName: node
+  linkType: hard
+
+"@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230814155455-ceb5d5d8-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230814155455-ceb5d5d8-nightly-8b4457adbc.patch::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-20230814155455-ceb5d5d8-nightly
+  resolution: "@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230814155455-ceb5d5d8-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230814155455-ceb5d5d8-nightly-8b4457adbc.patch::version=0.0.0-20230814155455-ceb5d5d8-nightly&hash=14a2d6&locator=%40affine%2Fmonorepo%40workspace%3A."
+  dependencies:
+    "@blocksuite/global": 0.0.0-20230814155455-ceb5d5d8-nightly
+    "@blocksuite/virgo": 0.0.0-20230814155455-ceb5d5d8-nightly
+    "@types/flexsearch": ^0.7.3
+    buffer: ^6.0.3
+    flexsearch: 0.7.21
+    idb-keyval: ^6.2.1
+    ky: ^0.33.3
+    lib0: ^0.2.78
+    merge: ^2.1.1
+    minimatch: ^9.0.3
+    nanoid: ^4.0.2
+    y-protocols: ^1.0.5
+    zod: ^3.21.4
+  peerDependencies:
+    async-call-rpc: ^6
+    yjs: ^13
+  checksum: adf9527beca2585db072fd8739dbac458c2b6a04e4412f93dd3559c0e6d422cd8d133ca3f6040758abbcf636c4080d6815ce618c25fa33ee18fa67f50b074e30
   languageName: node
   linkType: hard
 
@@ -19028,23 +19069,6 @@ __metadata:
   checksum: 1b643814e5947a87620f8a906287079347492282964ce1c236d52c414e3e3941126b96581376b180ba6e66899e70b86b587bc1aa23e3acd9957765be952d83fc
   languageName: node
   linkType: hard
-
-"doc-migration@workspace:packages/doc-migration":
-  version: 0.0.0-use.local
-  resolution: "doc-migration@workspace:packages/doc-migration"
-  dependencies:
-    "@affine/env": "workspace:*"
-    "@blocksuite/blocks": 0.0.0-20230814155455-ceb5d5d8-nightly
-    "@blocksuite/store": 0.0.0-20230814155455-ceb5d5d8-nightly
-    "@blocksuite/store-0.6.0": "npm:@blocksuite/store@0.6.0"
-    "@prisma/client": 5.1.1
-    "@types/fs-extra": ^11.0.1
-    fs-extra: ^11.1.1
-    nodemon: ^3.0.1
-    prisma: ^5.1.1
-    yjs: ^13.6.7
-  languageName: unknown
-  linkType: soft
 
 "doctrine@npm:^2.1.0":
   version: 2.1.0

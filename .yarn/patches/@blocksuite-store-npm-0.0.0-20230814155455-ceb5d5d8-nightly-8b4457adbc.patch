@@ -1,0 +1,19 @@
+diff --git a/src/workspace/schema.ts b/src/workspace/schema.ts
+index 73d1af9ee22c60d5e694291532449fcdfef7932d..5626300e1464fa2ad020f48345b0486ebd74b49a 100644
+--- a/src/workspace/schema.ts
++++ b/src/workspace/schema.ts
+@@ -125,10 +125,10 @@ export class Schema {
+     Array.from(blocks.values()).forEach(block => {
+       const flavour = block.get('sys:flavour') as string;
+       const currentVersion = oldVersions[flavour];
+-      assertExists(
+-        currentVersion,
+-        `previous version for flavour ${flavour} not found`
+-      );
++      if (!currentVersion) {
++        console.warn(`previous version for flavour ${flavour} not found`);
++        return;
++      }
+       this.upgradeBlock(flavour, currentVersion, block);
+     });
+   };

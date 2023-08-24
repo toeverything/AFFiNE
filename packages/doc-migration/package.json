@@ -1,10 +1,11 @@
 {
-  "name": "doc-migration",
+  "name": "@affine/doc-migration",
   "packageManager": "yarn@3.6.0",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "dev": "nodemon ./src/index.ts",
+    "generate": "prisma generate --schema schema.new.prisma && prisma generate --schema schema.old.prisma && prisma generate --schema schema.old.binary.prisma",
     "generate-new": "prisma generate --schema schema.new.prisma",
     "generate-old": "prisma generate --schema schema.old.prisma",
     "generate-old-binary": "prisma generate --schema schema.old.binary.prisma"
