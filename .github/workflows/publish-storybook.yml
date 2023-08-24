@@ -37,5 +37,5 @@ jobs:
         with:
           workingDir: apps/storybook
           buildScriptName: build
-          onlyChanged: true
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          zip: true

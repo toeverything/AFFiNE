@@ -40,6 +40,7 @@ export default {
         vanillaExtractPlugin(),
         tsconfigPaths({
           root: fileURLToPath(new URL('../../../', import.meta.url)),
+          ignoreConfigErrors: true,
         }),
       ],
       define: {
