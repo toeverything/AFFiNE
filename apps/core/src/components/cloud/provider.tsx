@@ -1,6 +1,6 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { assertExists } from '@blocksuite/global/utils';
-import { GraphQLError } from 'graphql/index';
+import { GraphQLError } from 'graphql';
 import { useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback } from 'react';

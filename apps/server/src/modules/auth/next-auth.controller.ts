@@ -108,9 +108,6 @@ export class NextAuthController {
       options,
     });
 
-    if (status) {
-      res.status(status);
-    }
     if (headers) {
       for (const { key, value } of headers) {
         res.setHeader(key, value);
@@ -121,13 +118,21 @@ export class NextAuthController {
         res.cookie(cookie.name, cookie.value, cookie.options);
       }
     }
+
+    if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
+      res.redirect('https://community.affine.pro/c/insider-general/');
+      return;
+    }
+
+    if (status) {
+      res.status(status);
+    }
+
     if (redirect) {
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
-      } else if (action === 'signout') {
-        res.send(JSON.stringify({ url: redirect }));
       } else {
-        res.redirect(redirect);
+        res.send(JSON.stringify({ url: redirect }));
       }
     } else if (typeof body === 'string') {
       res.send(body);

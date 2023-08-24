@@ -54,6 +54,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_PORT: ['port', 'int'],
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
+      AFFINE_ENV: 'affineEnv',
       DATABASE_URL: 'db.url',
       AUTH_PRIVATE_KEY: 'auth.privateKey',
       ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
@@ -84,18 +85,26 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         'boolean',
       ],
     } satisfies AFFiNEConfig['ENV_MAP'],
+    affineEnv: 'dev',
+    get affine() {
+      const env = this.affineEnv;
+      return {
+        canary: env === 'dev',
+        beta: env === 'beta',
+        stable: env === 'production',
+      };
+    },
     env: process.env.NODE_ENV ?? 'development',
-    get prod() {
-      return this.env === 'production';
-    },
-    get dev() {
-      return this.env === 'development';
-    },
-    get test() {
-      return this.env === 'test';
+    get node() {
+      const env = this.env;
+      return {
+        prod: env === 'production',
+        dev: env === 'development',
+        test: env === 'test',
+      };
     },
     get deploy() {
-      return !this.dev && !this.test;
+      return !this.node.dev && !this.node.test;
     },
     https: false,
     host: 'localhost',
@@ -105,7 +114,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       url: '',
     },
     get origin() {
-      return this.dev
+      return this.node.dev
         ? 'http://localhost:8080'
         : `${this.https ? 'https' : 'http'}://${this.host}${
             this.host === 'localhost' ? `:${this.port}` : ''

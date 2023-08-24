@@ -93,7 +93,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
             `jwst codec result doesn't match yjs codec result for: ${guid}`
           );
           log = true;
-          if (this.config.dev) {
+          if (this.config.node.dev) {
             this.logger.warn(`Expected:\n  ${yjsResult.toString('hex')}`);
             this.logger.warn(`Result:\n  ${jwstResult.toString('hex')}`);
           }

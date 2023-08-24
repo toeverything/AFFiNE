@@ -78,6 +78,10 @@ export interface AFFiNEConfig {
    */
   readonly version: string;
   /**
+   * Deployment environment
+   */
+  readonly affineEnv: 'dev' | 'beta' | 'production';
+  /**
    * alias to `process.env.NODE_ENV`
    *
    * @default 'production'
@@ -85,11 +89,21 @@ export interface AFFiNEConfig {
    */
   readonly env: string;
   /**
+   * fast AFFiNE environment judge
+   */
+  get affine(): {
+    canary: boolean;
+    beta: boolean;
+    stable: boolean;
+  };
+  /**
    * fast environment judge
    */
-  get prod(): boolean;
-  get dev(): boolean;
-  get test(): boolean;
+  get node(): {
+    prod: boolean;
+    dev: boolean;
+    test: boolean;
+  };
   get deploy(): boolean;
 
   /**
