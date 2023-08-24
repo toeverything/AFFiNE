@@ -10,7 +10,7 @@ export function useIsSharedPage(
   workspaceId: string,
   pageId: string
 ): [isSharedPage: boolean, setSharedPage: (enable: boolean) => void] {
-  const { data } = useQuery({
+  const { data, mutate } = useQuery({
     query: getWorkspaceSharedPagesQuery,
     variables: {
       workspaceId,
@@ -34,19 +34,24 @@ export function useIsSharedPage(
           enableSharePage({
             workspaceId,
             pageId,
-          }).catch(e => {
-            console.error(e);
-          });
+          })
+            .then(() => {
+              return mutate();
+            })
+            .catch(console.error);
         } else {
           disableSharePage({
             workspaceId,
             pageId,
-          }).catch(e => {
-            console.error(e);
-          });
+          })
+            .then(() => {
+              return mutate();
+            })
+            .catch(console.error);
         }
+        mutate().catch(console.error);
       },
-      [disableSharePage, enableSharePage, pageId, workspaceId]
+      [disableSharePage, enableSharePage, mutate, pageId, workspaceId]
     ),
   ];
 }
