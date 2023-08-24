@@ -11,7 +11,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useMemo } from 'react';
 
-import { useIsWorkspaceOwner } from '../../../hooks/affine/use-is-workspace-owner';
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
@@ -22,7 +21,10 @@ import { StoragePanel } from './storage';
 
 export interface WorkspaceSettingDetailProps {
   workspaceId: string;
-  onDeleteWorkspace: (id: string) => Promise<void>;
+  isOwner: boolean;
+  onDeleteLocalWorkspace: () => void;
+  onDeleteCloudWorkspace: () => void;
+  onLeaveWorkspace: () => void;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
     To extends WorkspaceFlavour,
@@ -33,15 +35,11 @@ export interface WorkspaceSettingDetailProps {
   ) => void;
 }
 
-export const WorkspaceSettingDetail = ({
-  workspaceId,
-  onDeleteWorkspace,
-  ...props
-}: WorkspaceSettingDetailProps) => {
+export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
+  const { workspaceId } = props;
   const t = useAFFiNEI18N();
   const workspace = useWorkspace(workspaceId);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
-  const isOwner = useIsWorkspaceOwner(workspace);
 
   const storageAndExportSetting = useMemo(() => {
     if (environment.isDesktop) {
@@ -70,24 +68,16 @@ export const WorkspaceSettingDetail = ({
           desc={t['com.affine.settings.workspace.not-owner']()}
           spreadCol={false}
         >
-          <ProfilePanel workspace={workspace} isOwner={isOwner} />
+          <ProfilePanel workspace={workspace} {...props} />
         </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['AFFiNE Cloud']()}>
-        <PublishPanel
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-          {...props}
-        />
-        <MembersPanel workspace={workspace} isOwner={isOwner} />
+        <PublishPanel workspace={workspace} {...props} />
+        <MembersPanel workspace={workspace} {...props} />
       </SettingWrapper>
       {storageAndExportSetting}
       <SettingWrapper>
-        <DeleteLeaveWorkspace
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-          isOwner={isOwner}
-        />
+        <DeleteLeaveWorkspace workspace={workspace} {...props} />
       </SettingWrapper>
     </>
   );

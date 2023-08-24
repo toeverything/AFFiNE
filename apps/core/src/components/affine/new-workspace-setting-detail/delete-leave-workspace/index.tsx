@@ -1,6 +1,7 @@
 import { ConfirmModal } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
@@ -8,15 +9,15 @@ import { useCallback, useState } from 'react';
 import type { WorkspaceSettingDetailProps } from '../index';
 import { WorkspaceDeleteModal } from './delete';
 
-interface DeleteLeaveWorkspaceProps {
+export interface DeleteLeaveWorkspaceProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;
-  onDeleteWorkspace: WorkspaceSettingDetailProps['onDeleteWorkspace'];
-  isOwner: boolean;
 }
 
 export const DeleteLeaveWorkspace = ({
   workspace,
-  onDeleteWorkspace,
+  onDeleteCloudWorkspace,
+  onDeleteLocalWorkspace,
+  onLeaveWorkspace,
   isOwner,
 }: DeleteLeaveWorkspaceProps) => {
   const t = useAFFiNEI18N();
@@ -32,13 +33,22 @@ export const DeleteLeaveWorkspace = ({
     }
   }, [isOwner]);
 
-  const onCloseConfirmModal = useCallback(() => {
+  const onCloseLeaveModal = useCallback(() => {
     setShowLeave(false);
   }, []);
 
   const onLeaveConfirm = useCallback(() => {
-    return onDeleteWorkspace(workspace.id);
-  }, [onDeleteWorkspace, workspace.id]);
+    return onLeaveWorkspace();
+  }, [onLeaveWorkspace]);
+
+  const onDeleteConfirm = useCallback(() => {
+    if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+      return onDeleteLocalWorkspace();
+    }
+    if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+      return onDeleteCloudWorkspace();
+    }
+  }, [onDeleteCloudWorkspace, onDeleteLocalWorkspace, workspace.flavour]);
 
   return (
     <>
@@ -59,7 +69,7 @@ export const DeleteLeaveWorkspace = ({
       </SettingRow>
       {isOwner ? (
         <WorkspaceDeleteModal
-          onDeleteWorkspace={onDeleteWorkspace}
+          onConfirm={onDeleteConfirm}
           open={showDelete}
           onClose={() => {
             setShowDelete(false);
@@ -70,8 +80,8 @@ export const DeleteLeaveWorkspace = ({
         <ConfirmModal
           open={showLeave}
           onConfirm={onLeaveConfirm}
-          onCancel={onCloseConfirmModal}
-          onClose={onCloseConfirmModal}
+          onCancel={onCloseLeaveModal}
+          onClose={onCloseLeaveModal}
           title={`${t['Leave Workspace']()}?`}
           content={t['Leave Workspace hint']()}
           confirmType="warning"

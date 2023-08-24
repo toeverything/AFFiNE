@@ -230,8 +230,6 @@ export const rootWorkspacesMetadataAtom = atom<
       // write back to localStorage
       rootWorkspaceMetadataArraySchema.parse(metadata);
       localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
-      set(currentPageIdAtom, null);
-      set(currentWorkspaceIdAtom, null);
 
       // if the current workspace is deleted, reset the current workspace
       if (oldWorkspaceId && metadata.some(x => x.id === oldWorkspaceId)) {

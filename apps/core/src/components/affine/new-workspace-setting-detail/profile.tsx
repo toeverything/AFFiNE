@@ -10,11 +10,11 @@ import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
 import { Upload } from '../../pure/file-upload';
+import { type WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
 
-interface ProfilePanelProps {
+export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;
-  isOwner: boolean;
 }
 
 export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {

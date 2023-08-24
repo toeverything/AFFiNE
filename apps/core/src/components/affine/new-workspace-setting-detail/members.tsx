@@ -24,12 +24,13 @@ import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import { AnyErrorBoundary } from '../any-error-boundary';
+import { type WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
 
-export type MembersPanelProps = {
+export interface MembersPanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;
-  isOwner: boolean;
-};
+}
+
 const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
   return (

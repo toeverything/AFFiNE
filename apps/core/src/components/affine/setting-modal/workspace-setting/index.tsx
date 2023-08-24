@@ -1,4 +1,6 @@
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { pushNotificationAtom } from '@affine/component/notification-center';
+import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { useSetAtom } from 'jotai';
@@ -18,59 +20,75 @@ import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
 
 export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
+  const t = useAFFiNEI18N();
+
   const { jumpToSubPath } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
   const workspace = useWorkspace(workspaceId);
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const leaveWorkspace = useLeaveWorkspace();
   usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
   const setSettingModal = useSetAtom(openSettingModalAtom);
-  const helper = useAppHelper();
+  const { deleteWorkspace } = useAppHelper();
 
   const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
-  // This function mey not need id param
-  const onDeleteWorkspace = useCallback(
-    async (id: string) => {
-      setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
+  const closeAndJumpout = useCallback(() => {
+    setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
 
-      if (currentWorkspace.id === workspaceId) {
-        const backWorkspace = workspaces.find(ws => ws.id !== workspaceId);
-        // TODO: if there is no workspace, jump to a new page(wait for design)
+    if (currentWorkspace.id === workspaceId) {
+      const backWorkspace = workspaces.find(ws => ws.id !== workspaceId);
+      // TODO: if there is no workspace, jump to a new page(wait for design)
 
-        jumpToSubPath(
-          backWorkspace?.id || '',
-          WorkspaceSubPath.ALL,
-          RouteLogic.REPLACE
-        );
-      }
+      jumpToSubPath(
+        backWorkspace?.id || '',
+        WorkspaceSubPath.ALL,
+        RouteLogic.REPLACE
+      );
+    }
+  }, [
+    currentWorkspace.id,
+    jumpToSubPath,
+    setSettingModal,
+    workspaceId,
+    workspaces,
+  ]);
 
-      if (workspace.flavour === WorkspaceFlavour.LOCAL) {
-        await helper.deleteWorkspace(id);
-      }
-      if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-        await leaveWorkspace(id);
-      }
-    },
-    [
-      currentWorkspace.id,
-      helper,
-      jumpToSubPath,
-      leaveWorkspace,
-      setSettingModal,
-      workspace.flavour,
-      workspaceId,
-      workspaces,
-    ]
-  );
+  const handleDeleteWorkspace = useCallback(async () => {
+    closeAndJumpout();
+    await deleteWorkspace(workspaceId);
+    pushNotification({
+      title: t['Successfully deleted'](),
+      type: 'success',
+    });
+  }, [closeAndJumpout, deleteWorkspace, pushNotification, t, workspaceId]);
+
+  const handleLeaveWorkspace = useCallback(async () => {
+    closeAndJumpout();
+    await leaveWorkspace(workspaceId);
+    pushNotification({
+      title: 'Successfully leave',
+      type: 'success',
+    });
+  }, [closeAndJumpout, leaveWorkspace, pushNotification, workspaceId]);
 
   const onTransformWorkspace = useOnTransformWorkspace();
+  // const handleDelete = useCallback(async () => {
+  //   await onDeleteWorkspace();
+  //   toast(t['Successfully deleted'](), {
+  //     portal: document.body,
+  //   });
+  //   onClose();
+  // }, [onClose, onDeleteWorkspace, t, workspace.id]);
 
   return (
     <NewSettingsDetail
+      onDeleteCloudWorkspace={handleDeleteWorkspace}
+      onDeleteLocalWorkspace={handleDeleteWorkspace}
+      onLeaveWorkspace={handleLeaveWorkspace}
       onTransformWorkspace={onTransformWorkspace}
-      onDeleteWorkspace={onDeleteWorkspace}
       currentWorkspaceId={workspaceId}
     />
   );
