@@ -51,6 +51,7 @@ export const loader: LoaderFunction = async ({ params }) => {
     applyUpdate(page.spaceDoc, new Uint8Array(buffer));
   }
   logger.info('workspace', workspace);
+  workspace.awarenessStore.setReadonly(page, true);
   return page;
 };
 
