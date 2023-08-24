@@ -22,7 +22,7 @@ import { useAppHelper } from '../../../../hooks/use-workspaces';
 export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   const t = useAFFiNEI18N();
 
-  const { jumpToSubPath } = useNavigateHelper();
+  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
   const workspace = useWorkspace(workspaceId);
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
@@ -35,21 +35,27 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
 
   const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
 
-  const closeAndJumpout = useCallback(() => {
+  const closeAndJumpOut = useCallback(() => {
     setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
 
     if (currentWorkspace.id === workspaceId) {
       const backWorkspace = workspaces.find(ws => ws.id !== workspaceId);
       // TODO: if there is no workspace, jump to a new page(wait for design)
-
-      jumpToSubPath(
-        backWorkspace?.id || '',
-        WorkspaceSubPath.ALL,
-        RouteLogic.REPLACE
-      );
+      if (backWorkspace) {
+        jumpToSubPath(
+          backWorkspace?.id || '',
+          WorkspaceSubPath.ALL,
+          RouteLogic.REPLACE
+        );
+      } else {
+        setTimeout(() => {
+          jumpToIndex(RouteLogic.REPLACE);
+        }, 100);
+      }
     }
   }, [
     currentWorkspace.id,
+    jumpToIndex,
     jumpToSubPath,
     setSettingModal,
     workspaceId,
@@ -57,22 +63,22 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   ]);
 
   const handleDeleteWorkspace = useCallback(async () => {
-    closeAndJumpout();
     await deleteWorkspace(workspaceId);
+    closeAndJumpOut();
     pushNotification({
       title: t['Successfully deleted'](),
       type: 'success',
     });
-  }, [closeAndJumpout, deleteWorkspace, pushNotification, t, workspaceId]);
+  }, [closeAndJumpOut, deleteWorkspace, pushNotification, t, workspaceId]);
 
   const handleLeaveWorkspace = useCallback(async () => {
-    closeAndJumpout();
     await leaveWorkspace(workspaceId);
+    closeAndJumpOut();
     pushNotification({
       title: 'Successfully leave',
       type: 'success',
     });
-  }, [closeAndJumpout, leaveWorkspace, pushNotification, workspaceId]);
+  }, [closeAndJumpOut, leaveWorkspace, pushNotification, workspaceId]);
 
   const onTransformWorkspace = useOnTransformWorkspace();
   // const handleDelete = useCallback(async () => {
