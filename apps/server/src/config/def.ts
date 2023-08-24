@@ -91,15 +91,19 @@ export interface AFFiNEConfig {
   /**
    * fast AFFiNE environment judge
    */
-  get canary(): boolean;
-  get beta(): boolean;
-  get stable(): boolean;
+  get affine(): {
+    canary: boolean;
+    beta: boolean;
+    stable: boolean;
+  };
   /**
    * fast environment judge
    */
-  get prod(): boolean;
-  get dev(): boolean;
-  get test(): boolean;
+  get node(): {
+    prod: boolean;
+    dev: boolean;
+    test: boolean;
+  };
   get deploy(): boolean;
 
   /**

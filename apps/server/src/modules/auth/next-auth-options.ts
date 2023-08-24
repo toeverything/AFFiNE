@@ -108,15 +108,15 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       ],
       // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
-      debug: !config.prod,
+      debug: !config.node.prod,
       session: {
-        strategy: config.prod ? 'database' : 'jwt',
+        strategy: config.node.prod ? 'database' : 'jwt',
       },
       // @ts-expect-error Third part library type mismatch
       logger: console,
     };
 
-    if (!config.prod) {
+    if (!config.node.prod) {
       nextAuthOptions.providers.push(
         // @ts-expect-error esm interop issue
         Credentials.default({
@@ -263,7 +263,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         return session;
       },
       signIn: async ({ profile }) => {
-        if (!config.beta || !config.prod) {
+        if (!config.affine.beta || !config.node.prod) {
           return true;
         }
         if (profile?.email) {

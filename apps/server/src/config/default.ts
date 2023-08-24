@@ -86,27 +86,25 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       ],
     } satisfies AFFiNEConfig['ENV_MAP'],
     affineEnv: 'dev',
-    get canary() {
-      return this.affineEnv === 'dev';
-    },
-    get beta() {
-      return this.affineEnv === 'beta';
-    },
-    get stable() {
-      return this.affineEnv === 'production';
+    get affine() {
+      const env = this.affineEnv;
+      return {
+        canary: env === 'dev',
+        beta: env === 'beta',
+        stable: env === 'production',
+      };
     },
     env: process.env.NODE_ENV ?? 'development',
-    get prod() {
-      return this.env === 'production';
-    },
-    get dev() {
-      return this.env === 'development';
-    },
-    get test() {
-      return this.env === 'test';
+    get node() {
+      const env = this.env;
+      return {
+        prod: env === 'production',
+        dev: env === 'development',
+        test: env === 'test',
+      };
     },
     get deploy() {
-      return !this.dev && !this.test;
+      return !this.node.dev && !this.node.test;
     },
     https: false,
     host: 'localhost',
@@ -116,7 +114,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       url: '',
     },
     get origin() {
-      return this.dev
+      return this.node.dev
         ? 'http://localhost:8080'
         : `${this.https ? 'https' : 'http'}://${this.host}${
             this.host === 'localhost' ? `:${this.port}` : ''

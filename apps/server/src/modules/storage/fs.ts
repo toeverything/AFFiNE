@@ -16,7 +16,7 @@ export class FSService {
   async writeFile(key: string, file: FileUpload) {
     const dest = this.config.objectStorage.fs.path;
     const fileName = `${key}-${randomUUID()}`;
-    const prefix = this.config.dev
+    const prefix = this.config.node.dev
       ? `${this.config.https ? 'https' : 'http'}://${this.config.host}:${
           this.config.port
         }`
