@@ -32,6 +32,10 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export enum NewFeaturesKind {
+  EarlyAccess = 'EarlyAccess',
+}
+
 /** User permission in workspace */
 export enum Permission {
   Admin = 'Admin',
@@ -187,6 +191,7 @@ export type GetUserQuery = {
     name: string;
     avatarUrl: string | null;
     email: string;
+    hasPassword: boolean | null;
   } | null;
 };
 

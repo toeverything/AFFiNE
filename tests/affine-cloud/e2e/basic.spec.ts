@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import {
   createRandomUser,
   deleteUser,
-  getLoginCootie,
+  getLoginCookie,
 } from '@affine-test/kit/utils/cloud';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
@@ -53,10 +53,10 @@ test('enable cloud success', async ({ page, context }) => {
   await page.getByTestId('password-input').type('123456', {
     delay: 50,
   });
-  expect(await getLoginCootie(context)).toBeUndefined();
+  expect(await getLoginCookie(context)).toBeUndefined();
   await page.getByTestId('sign-in-button').click();
   await page.waitForTimeout(1000);
-  await page.reload();
+  await page.goto('http://localhost:8080');
   await waitEditorLoad(page);
-  expect(await getLoginCootie(context)).toBeTruthy();
+  expect(await getLoginCookie(context)).toBeTruthy();
 });

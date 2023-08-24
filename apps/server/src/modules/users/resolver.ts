@@ -39,17 +39,20 @@ export class UserType implements Partial<User> {
   @Field({ description: 'User email' })
   email!: string;
 
-  @Field({ description: 'User avatar url', nullable: true })
-  avatarUrl!: string;
+  @Field(() => String, { description: 'User avatar url', nullable: true })
+  avatarUrl: string | null = null;
 
-  @Field({ description: 'User email verified', nullable: true })
-  emailVerified!: Date;
+  @Field(() => Date, { description: 'User email verified', nullable: true })
+  emailVerified: Date | null = null;
 
   @Field({ description: 'User created date', nullable: true })
   createdAt!: Date;
 
-  @Field({ description: 'User password has been set', nullable: true })
-  hasPassword!: boolean;
+  @Field(() => Boolean, {
+    description: 'User password has been set',
+    nullable: true,
+  })
+  hasPassword?: boolean;
 }
 
 @ObjectType()
@@ -116,11 +119,13 @@ export class UserResolver {
       .findUnique({
         where: { email },
       })
-      .catch(e => {
-        console.error(e);
+      .catch(() => {
         return null;
       });
-    console.log(11111111, user);
+    if (user?.password) {
+      const userResponse: UserType = user;
+      userResponse.hasPassword = true;
+    }
     return user;
   }
 

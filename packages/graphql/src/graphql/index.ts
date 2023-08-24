@@ -174,6 +174,7 @@ query getUser($email: String!) {
     name
     avatarUrl
     email
+    hasPassword
   }
 }`,
 };

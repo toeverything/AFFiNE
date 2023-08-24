@@ -41,13 +41,16 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setAuthEmail(email);
     if (user) {
-      signIn('email', {
-        email: email,
-        callbackUrl: buildCallbackUrl('signIn'),
-        redirect: true,
-      }).catch(console.error);
-
-      setAuthState('afterSignInSendEmail');
+      if (user.hasPassword) {
+        setAuthState('signInWithPassword');
+      } else {
+        signIn('email', {
+          email: email,
+          callbackUrl: buildCallbackUrl('signIn'),
+          redirect: true,
+        }).catch(console.error);
+        setAuthState('afterSignInSendEmail');
+      }
     } else {
       signIn('email', {
         email: email,
