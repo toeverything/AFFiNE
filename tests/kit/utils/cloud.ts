@@ -13,7 +13,7 @@ export async function getLoginCootie(
 export async function createRandomUser() {
   const user = {
     name: faker.internet.userName(),
-    email: faker.internet.email(),
+    email: faker.internet.email().toLowerCase(),
     password: '123456',
   };
   const {
