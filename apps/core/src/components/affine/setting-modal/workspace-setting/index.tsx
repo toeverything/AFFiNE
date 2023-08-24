@@ -63,8 +63,9 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   ]);
 
   const handleDeleteWorkspace = useCallback(async () => {
-    await deleteWorkspace(workspaceId);
     closeAndJumpOut();
+    await deleteWorkspace(workspaceId);
+
     pushNotification({
       title: t['Successfully deleted'](),
       type: 'success',
@@ -72,8 +73,9 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   }, [closeAndJumpOut, deleteWorkspace, pushNotification, t, workspaceId]);
 
   const handleLeaveWorkspace = useCallback(async () => {
-    await leaveWorkspace(workspaceId);
     closeAndJumpOut();
+    await leaveWorkspace(workspaceId);
+
     pushNotification({
       title: 'Successfully leave',
       type: 'success',
