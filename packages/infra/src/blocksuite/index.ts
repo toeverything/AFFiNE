@@ -80,7 +80,7 @@ export async function buildShowcaseWorkspace(
   };
   workspace.meta.setProperties(prototypes);
   const { store, atoms } = options;
-  ['F1SX6cgNxy', 'nQd2Bdvoqz'].forEach(pageId => {
+  ['F1SX6cgNxy', 'nQd2Bdvoqz', 'j8hIA_C0QF'].forEach(pageId => {
     store.set(atoms.pageMode, pageId, 'edgeless');
   });
 

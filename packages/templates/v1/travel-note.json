@@ -3963,332 +3963,6 @@
         }
       }
     },
-    "z5K-1WZCjs": {
-      "sys:id": "z5K-1WZCjs",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "ysuFSftqLd": {
-      "sys:id": "ysuFSftqLd",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "Destination "
-        }
-      ]
-    },
-    "RTE7hiYYQS": {
-      "sys:id": "RTE7hiYYQS",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Arrival time"
-        }
-      ],
-      "prop:checked": false
-    },
-    "twXXJ8tCFb": {
-      "sys:id": "twXXJ8tCFb",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Local transport "
-        }
-      ],
-      "prop:checked": false
-    },
-    "EHyiTSucou": {
-      "sys:id": "EHyiTSucou",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Accomedation "
-        }
-      ],
-      "prop:checked": false
-    },
-    "9MqBf-Kncd": {
-      "sys:id": "9MqBf-Kncd",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Additional Phone Numbers "
-        }
-      ],
-      "prop:checked": false
-    },
-    "G4WFaM_BGE": {
-      "sys:id": "G4WFaM_BGE",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "Pre-Departure Check list Check list "
-        }
-      ]
-    },
-    "_swN_x8fj7": {
-      "sys:id": "_swN_x8fj7",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Vaccinations/immuzations "
-        }
-      ],
-      "prop:checked": false
-    },
-    "NAsvDHsuZR": {
-      "sys:id": "NAsvDHsuZR",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Rental car booked "
-        }
-      ],
-      "prop:checked": false
-    },
-    "_aYJO0g3cp": {
-      "sys:id": "_aYJO0g3cp",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "Home "
-        }
-      ],
-      "prop:checked": false
-    },
-    "7-pKLJ0zC8": {
-      "sys:id": "7-pKLJ0zC8",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "To pack"
-        }
-      ],
-      "prop:checked": false
-    },
-    "E-1Z9r2nA9": {
-      "sys:id": "E-1Z9r2nA9",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "Planned Activities "
-        }
-      ]
-    },
-    "fBKoNiWCO9": {
-      "sys:id": "fBKoNiWCO9",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "numbered",
-      "prop:text": [
-        {
-          "insert": "day 1 "
-        }
-      ],
-      "prop:checked": false
-    },
-    "CZUPolQ4Yy": {
-      "sys:id": "CZUPolQ4Yy",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "numbered",
-      "prop:text": [
-        {
-          "insert": "day 2 "
-        }
-      ],
-      "prop:checked": false
-    },
-    "g_4P053tNA": {
-      "sys:id": "g_4P053tNA",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "numbered",
-      "prop:text": [
-        {
-          "insert": "day 3 "
-        }
-      ],
-      "prop:checked": false
-    },
-    "xyEoPaSpa3": {
-      "sys:id": "xyEoPaSpa3",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "numbered",
-      "prop:text": [
-        {
-          "insert": "day 4 "
-        }
-      ],
-      "prop:checked": false
-    },
-    "Do6zeg1sbv": {
-      "sys:id": "Do6zeg1sbv",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "numbered",
-      "prop:text": [
-        {
-          "insert": "day 5"
-        }
-      ],
-      "prop:checked": false
-    },
-    "XDYpxWQ0OI": {
-      "sys:id": "XDYpxWQ0OI",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "Departure information "
-        }
-      ]
-    },
-    "gxuqfr5yWI": {
-      "sys:id": "gxuqfr5yWI",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "date "
-        }
-      ],
-      "prop:checked": false
-    },
-    "Nm6vE5ZXw-": {
-      "sys:id": "Nm6vE5ZXw-",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "time"
-        }
-      ],
-      "prop:checked": false
-    },
-    "2w7OuAdBh2": {
-      "sys:id": "2w7OuAdBh2",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "airin"
-        }
-      ],
-      "prop:checked": false
-    },
-    "4y9ljkVgKs": {
-      "sys:id": "4y9ljkVgKs",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "Return information "
-        }
-      ]
-    },
-    "_jfEmSNuPp": {
-      "sys:id": "_jfEmSNuPp",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "date "
-        }
-      ],
-      "prop:checked": false
-    },
-    "RgnA5fyh6E": {
-      "sys:id": "RgnA5fyh6E",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "time "
-        }
-      ],
-      "prop:checked": false
-    },
-    "ZbxcJ4AKdk": {
-      "sys:id": "ZbxcJ4AKdk",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "todo",
-      "prop:text": [
-        {
-          "insert": "airline"
-        }
-      ],
-      "prop:checked": false
-    },
-    "-0PXrBGfML": {
-      "sys:id": "-0PXrBGfML",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "k07JiWnb-S7qgd9gDQNgqo-LYMe03RX8fR0TXQ-SpG4=",
-      "prop:width": 0,
-      "prop:height": 0,
-      "prop:caption": ""
-    },
-    "ScIoONgm6k": {
-      "sys:id": "ScIoONgm6k",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "Bd5F0WRI0fLh8RK1al9PawPVT3jv7VwBrqiiBEtdV-g=",
-      "prop:width": 0,
-      "prop:height": 0,
-      "prop:caption": ""
-    },
-    "u-8_fqeFGW": {
-      "sys:id": "u-8_fqeFGW",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "v2yF7lY2L5rtorTtTmYFsoMb9dBPKs5M1y9cUKxcI1M=",
-      "prop:width": 0,
-      "prop:height": 0,
-      "prop:caption": ""
-    },
-    "HNZJgZE-AT": {
-      "sys:id": "HNZJgZE-AT",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "nSEEkYxrThpZfLoPNOzMp6HWekvutAIYmADElDe1J6I=",
-      "prop:width": 0,
-      "prop:height": 0,
-      "prop:caption": ""
-    },
     "wftZGqAaGk": {
       "sys:id": "wftZGqAaGk",
       "sys:flavour": "affine:note",
@@ -4297,6 +3971,13 @@
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
+    },
+    "g3DjK77Y9W": {
+      "sys:id": "g3DjK77Y9W",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
     },
     "r2rrI_f2Km": {
       "sys:id": "r2rrI_f2Km",
@@ -4313,6 +3994,17 @@
       "prop:index": "a0",
       "prop:hidden": false
     },
+    "-fW2hIj40h": {
+      "sys:id": "-fW2hIj40h",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Destnation"
+        }
+      ],
+      "prop:type": "h6"
+    },
     "bZFJf6e-Yq": {
       "sys:id": "bZFJf6e-Yq",
       "sys:flavour": "affine:list",
@@ -4323,6 +4015,18 @@
           "insert": "Arrival time"
         }
       ],
+      "prop:checked": false
+    },
+    "UmA52Inqpd": {
+      "sys:id": "UmA52Inqpd",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Local transport "
+        }
+      ],
+      "prop:type": "todo",
       "prop:checked": false
     },
     "CWvSbFoDRq": {
@@ -4693,36 +4397,6 @@
       "prop:width": 0,
       "prop:height": 0,
       "prop:caption": ""
-    },
-    "g3DjK77Y9W": {
-      "sys:id": "g3DjK77Y9W",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "UmA52Inqpd": {
-      "sys:id": "UmA52Inqpd",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "Local transport "
-        }
-      ],
-      "prop:type": "todo",
-      "prop:checked": false
-    },
-    "-fW2hIj40h": {
-      "sys:id": "-fW2hIj40h",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "Destnation"
-        }
-      ],
-      "prop:type": "h6"
     }
   }
 }
