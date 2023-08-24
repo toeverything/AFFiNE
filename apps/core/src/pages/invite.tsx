@@ -1,4 +1,5 @@
 import { AcceptInvitePage } from '@affine/component/member-components';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   acceptInviteByInviteIdMutation,
   type GetInviteInfoQuery,
@@ -38,7 +39,7 @@ export const Component = () => {
   const loginStatus = useCurrenLoginStatus();
   const { jumpToSignIn } = useNavigateHelper();
   const { addCloudWorkspace } = useAppHelper();
-  const { jumpToWorkspace } = useNavigateHelper();
+  const { jumpToSubPath } = useNavigateHelper();
 
   const [, setAuthAtom] = useAtom(authAtom);
   const { inviteId, inviteInfo } = useLoaderData() as {
@@ -56,8 +57,12 @@ export const Component = () => {
 
   const openWorkspace = useCallback(() => {
     addCloudWorkspace(inviteInfo.workspace.id);
-    jumpToWorkspace(inviteInfo.workspace.id, RouteLogic.REPLACE);
-  }, [addCloudWorkspace, inviteInfo.workspace.id, jumpToWorkspace]);
+    jumpToSubPath(
+      inviteInfo.workspace.id,
+      WorkspaceSubPath.ALL,
+      RouteLogic.REPLACE
+    );
+  }, [addCloudWorkspace, inviteInfo.workspace.id, jumpToSubPath]);
 
   // No mater sign in or not, we need to accept the invite
   useEffect(() => {

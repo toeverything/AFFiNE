@@ -1,4 +1,4 @@
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { useSetAtom } from 'jotai';
@@ -18,7 +18,7 @@ import { useWorkspace } from '../../../../hooks/use-workspace';
 import { useAppHelper } from '../../../../hooks/use-workspaces';
 
 export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
-  const { jumpToWorkspace } = useNavigateHelper();
+  const { jumpToSubPath } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
   const workspace = useWorkspace(workspaceId);
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
@@ -38,7 +38,12 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
       if (currentWorkspace.id === workspaceId) {
         const backWorkspace = workspaces.find(ws => ws.id !== workspaceId);
         // TODO: if there is no workspace, jump to a new page(wait for design)
-        jumpToWorkspace(backWorkspace?.id || '', RouteLogic.REPLACE);
+
+        jumpToSubPath(
+          backWorkspace?.id || '',
+          WorkspaceSubPath.ALL,
+          RouteLogic.REPLACE
+        );
       }
 
       if (workspace.flavour === WorkspaceFlavour.LOCAL) {
@@ -51,7 +56,7 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
     [
       currentWorkspace.id,
       helper,
-      jumpToWorkspace,
+      jumpToSubPath,
       leaveWorkspace,
       setSettingModal,
       workspace.flavour,
