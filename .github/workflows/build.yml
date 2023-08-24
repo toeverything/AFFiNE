@@ -29,6 +29,7 @@ env:
   DEBUG: napi:*
   BUILD_TYPE: canary
   APP_NAME: affine
+  AFFINE_ENV: dev
   COVERAGE: true
   DISTRIBUTION: browser
   MACOSX_DEPLOYMENT_TARGET: '10.13'

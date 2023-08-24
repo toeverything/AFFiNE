@@ -44,6 +44,7 @@ const config: PlaywrightTestConfig = {
           process.env.DATABASE_URL ??
           'postgresql://affine@localhost:5432/affine',
         NODE_ENV: 'development',
+        AFFINE_ENV: process.env.AFFINE_ENV ?? 'dev',
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',
