@@ -125,8 +125,6 @@ const rootWorkspacesMetadataPromiseAtom = atom<
 
       metadata.push(...loadFromLocalStorage());
     }
-    console.log('local Metadata', [...metadata]);
-
     // step 2: fetch from adapters
     {
       const Adapters = Object.values(WorkspaceAdapters).sort(
@@ -134,6 +132,7 @@ const rootWorkspacesMetadataPromiseAtom = atom<
       );
 
       for (const Adapter of Adapters) {
+        const { CRUD, flavour: currentFlavour } = Adapter;
         if (
           Adapter.Events['app:access'] &&
           !(await Adapter.Events['app:access']())
@@ -142,9 +141,20 @@ const rootWorkspacesMetadataPromiseAtom = atom<
           continue;
         }
         try {
-          const item = await Adapter.CRUD.list();
-          console.log('item', item);
-
+          const item = await CRUD.list();
+          // remove the metadata that is not in the list
+          //  because we treat the workspace adapter as the source of truth
+          {
+            const removed = metadata.filter(
+              meta =>
+                meta.flavour === currentFlavour &&
+                !item.some(x => x.id === meta.id)
+            );
+            removed.forEach(meta => {
+              metadata.splice(metadata.indexOf(meta), 1);
+            });
+          }
+          // sort the metadata by the order of the list
           if (metadata.length) {
             item.sort((a, b) => {
               return (
@@ -220,6 +230,8 @@ export const rootWorkspacesMetadataAtom = atom<
       // write back to localStorage
       rootWorkspaceMetadataArraySchema.parse(metadata);
       localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
+      set(currentPageIdAtom, null);
+      set(currentWorkspaceIdAtom, null);
 
       // if the current workspace is deleted, reset the current workspace
       if (oldWorkspaceId && metadata.some(x => x.id === oldWorkspaceId)) {

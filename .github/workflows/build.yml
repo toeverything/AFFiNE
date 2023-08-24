@@ -113,27 +113,6 @@ jobs:
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
-  build-storybook:
-    name: Build Storybook
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          electron-install: false
-      - run: yarn nx build @affine/storybook
-        env:
-          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - name: Upload storybook artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
-          if-no-files-found: error
-
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest

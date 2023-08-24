@@ -59,7 +59,7 @@ export class WorkspacesController {
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
-    const update = await this.docManager.getLatest(ws, guid);
+    const update = await this.docManager.getLatestUpdate(ws, guid);
 
     if (!update) {
       throw new NotFoundException('Doc not found');
