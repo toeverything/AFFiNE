@@ -7,7 +7,7 @@ import {
   type Options,
   type Response,
 } from './mailer';
-
+import { emailTemplate } from './template';
 @Injectable()
 export class MailService {
   constructor(
@@ -27,18 +27,64 @@ export class MailService {
     );
   }
 
-  async sendInviteEmail(to: string, workspaceId: string, inviteId: string) {
-    const url = `${this.config.baseUrl}/invite?id=${workspaceId}&invite=${inviteId}`;
-    const html = `
-      <h1>Invitation to workspace</h1>
-      <p>You have been invited to workspace. Click the link below to accept the invitation.</p>
-      <a href="${url}">${url}</a>
-    `;
+  async sendInviteEmail(
+    to: string,
+    inviteId: string,
+    invitationInfo: {
+      workspace: {
+        id: string;
+        name: string;
+        avatar: string;
+      };
+      user: {
+        avatar: string;
+        name: string;
+      };
+    }
+  ) {
+    console.log('invitationInfo', invitationInfo);
+
+    const buttonUrl = `${this.config.baseUrl}/invite/${inviteId}`;
+    const workspaceAvatar = invitationInfo.workspace.avatar;
+
+    const content = `  <img
+    src="${invitationInfo.user.avatar}"
+    alt=""
+    width="24px"
+    height="24px"
+    style="border-radius: 12px;object-fit: cover;vertical-align: middle"
+  />
+  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.user.name}</span>
+  <span>invited you to join</span>
+  <img
+    src="cid:workspaceAvatar"
+    alt=""
+    width="24px"
+    height="24px"
+    style="margin-left:10px;border-radius: 12px;object-fit: cover;vertical-align: middle"
+  />
+  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.workspace.name}</span>`;
+
+    const html = emailTemplate({
+      title: 'You are invited!',
+      content,
+      buttonContent: 'Accept & Join',
+      buttonUrl,
+    });
+
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
       subject: `Invitation to workspace`,
       html,
+      attachments: [
+        {
+          cid: 'workspaceAvatar',
+          filename: 'image.png',
+          content: workspaceAvatar,
+          encoding: 'base64',
+        },
+      ],
     });
   }
   async sendChangePasswordEmail(to: string, url: string) {

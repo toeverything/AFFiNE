@@ -109,5 +109,11 @@ export function useAppHelper() {
       },
       [jotaiWorkspaces, set]
     ),
+    deleteWorkspaceMeta: useCallback(
+      (workspaceId: string) => {
+        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+      },
+      [set]
+    ),
   };
 }

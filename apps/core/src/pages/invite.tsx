@@ -1,51 +1,103 @@
 import { AcceptInvitePage } from '@affine/component/member-components';
-import { isDesktop } from '@affine/env/constant';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   acceptInviteByInviteIdMutation,
-  acceptInviteByWorkspaceIdMutation,
+  type GetInviteInfoQuery,
+  getInviteInfoQuery,
 } from '@affine/graphql';
-import { useMutation } from '@affine/workspace/affine/gql';
-import type { ReactElement } from 'react';
+import { fetcher } from '@affine/workspace/affine/gql';
+import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
 
+import { authAtom } from '../atoms';
+import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-// valid URL: /invite?wsId=xxx&inviteId=xxx
-// valid URL: /invite?wsId=xxx
-export const Component = (): ReactElement => {
-  const [searchParams] = useSearchParams();
-  const workspaceId = searchParams.get('id');
-  const inviteId = searchParams.get('invite');
-  const { jumpToIndex } = useNavigateHelper();
+import { useAppHelper } from '../hooks/use-workspaces';
 
-  const { trigger: triggerByWorkspaceId } = useMutation({
-    mutation: acceptInviteByWorkspaceIdMutation,
-  });
-  const { trigger: triggerByInviteId } = useMutation({
-    mutation: acceptInviteByInviteIdMutation,
-  });
+export const loader: LoaderFunction = async args => {
+  const inviteId = args.params.inviteId || '';
+  const res = await fetcher({
+    query: getInviteInfoQuery,
+    variables: {
+      inviteId,
+    },
+  }).catch(console.error);
 
-  const onOpenAffine = useCallback(() => {
-    if (isDesktop) {
-      window.apis.ui.handleFinishLogin();
-    } else {
-      jumpToIndex(RouteLogic.REPLACE);
-    }
-  }, [jumpToIndex]);
+  // If the inviteId is invalid, redirect to 404 page
+  if (!res || !res?.getInviteInfo) {
+    return redirect('/404');
+  }
+
+  // No mater sign in or not, we need to accept the invite
+  await fetcher({
+    query: acceptInviteByInviteIdMutation,
+    variables: {
+      workspaceId: res.getInviteInfo.workspace.id,
+      inviteId,
+    },
+  }).catch(console.error);
+
+  return {
+    inviteId,
+    inviteInfo: res.getInviteInfo,
+  };
+};
+
+export const Component = () => {
+  const loginStatus = useCurrenLoginStatus();
+  const { jumpToSignIn } = useNavigateHelper();
+  const { addCloudWorkspace } = useAppHelper();
+  const { jumpToSubPath } = useNavigateHelper();
+
+  const [, setAuthAtom] = useAtom(authAtom);
+  const { inviteInfo } = useLoaderData() as {
+    inviteId: string;
+    inviteInfo: GetInviteInfoQuery['getInviteInfo'];
+  };
+
+  const loadWorkspaceAfterSignIn = useCallback(() => {
+    addCloudWorkspace(inviteInfo.workspace.id);
+  }, [addCloudWorkspace, inviteInfo.workspace.id]);
+
+  const openWorkspace = useCallback(() => {
+    addCloudWorkspace(inviteInfo.workspace.id);
+    jumpToSubPath(
+      inviteInfo.workspace.id,
+      WorkspaceSubPath.ALL,
+      RouteLogic.REPLACE
+    );
+  }, [addCloudWorkspace, inviteInfo.workspace.id, jumpToSubPath]);
 
   useEffect(() => {
-    // User accepts the invitation when enters the page
-    if (inviteId && workspaceId) {
-      triggerByInviteId({
-        workspaceId,
-        inviteId,
-      }).catch(console.error);
-    } else if (workspaceId) {
-      triggerByWorkspaceId({
-        workspaceId,
-      }).catch(console.error);
+    if (loginStatus === 'unauthenticated') {
+      // We can not pass function to navigate state, so we need to save it in atom
+      setAuthAtom(prev => ({
+        ...prev,
+        onceSignedIn: loadWorkspaceAfterSignIn,
+      }));
+      jumpToSignIn(RouteLogic.REPLACE, {
+        state: {
+          callbackURL: `/workspace/${inviteInfo.workspace.id}/all`,
+        },
+      });
     }
-  }, [inviteId, triggerByWorkspaceId, triggerByInviteId, workspaceId]);
+  }, [
+    inviteInfo.workspace.id,
+    jumpToSignIn,
+    loadWorkspaceAfterSignIn,
+    loginStatus,
+    setAuthAtom,
+  ]);
 
-  return <AcceptInvitePage onOpenAffine={onOpenAffine} />;
+  if (loginStatus === 'authenticated') {
+    return (
+      <AcceptInvitePage
+        inviteInfo={inviteInfo}
+        onOpenWorkspace={openWorkspace}
+      />
+    );
+  }
+
+  return null;
 };

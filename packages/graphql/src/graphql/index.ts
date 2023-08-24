@@ -129,6 +129,39 @@ query getCurrentUser {
 }`,
 };
 
+export const getInviteInfoQuery = {
+  id: 'getInviteInfoQuery' as const,
+  operationName: 'getInviteInfo',
+  definitionName: 'getInviteInfo',
+  containsFile: false,
+  query: `
+query getInviteInfo($inviteId: String!) {
+  getInviteInfo(inviteId: $inviteId) {
+    workspace {
+      id
+      name
+      avatar
+    }
+    user {
+      id
+      name
+      avatarUrl
+    }
+  }
+}`,
+};
+
+export const getIsOwnerQuery = {
+  id: 'getIsOwnerQuery' as const,
+  operationName: 'getIsOwner',
+  definitionName: 'isOwner',
+  containsFile: false,
+  query: `
+query getIsOwner($workspaceId: String!) {
+  isOwner(workspaceId: $workspaceId)
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',
@@ -144,6 +177,8 @@ query getMembersByWorkspaceId($workspaceId: String!) {
       avatarUrl
       permission
       inviteId
+      accepted
+      emailVerified
     }
   }
 }`,
@@ -215,6 +250,17 @@ query getWorkspaces {
   workspaces {
     id
   }
+}`,
+};
+
+export const leaveWorkspaceMutation = {
+  id: 'leaveWorkspaceMutation' as const,
+  operationName: 'leaveWorkspace',
+  definitionName: 'leaveWorkspace',
+  containsFile: false,
+  query: `
+mutation leaveWorkspace($workspaceId: String!) {
+  leaveWorkspace(workspaceId: $workspaceId)
 }`,
 };
 

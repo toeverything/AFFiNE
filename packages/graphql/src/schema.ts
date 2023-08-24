@@ -150,6 +150,35 @@ export type GetCurrentUserQuery = {
   };
 };
 
+export type GetInviteInfoQueryVariables = Exact<{
+  inviteId: Scalars['String']['input'];
+}>;
+
+export type GetInviteInfoQuery = {
+  __typename?: 'Query';
+  getInviteInfo: {
+    __typename?: 'InvitationType';
+    workspace: {
+      __typename?: 'InvitationWorkspaceType';
+      id: string;
+      name: string;
+      avatar: string;
+    };
+    user: {
+      __typename?: 'UserType';
+      id: string;
+      name: string;
+      avatarUrl: string | null;
+    };
+  };
+};
+
+export type GetIsOwnerQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetIsOwnerQuery = { __typename?: 'Query'; isOwner: boolean };
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -166,6 +195,8 @@ export type GetMembersByWorkspaceIdQuery = {
       avatarUrl: string | null;
       permission: Permission;
       inviteId: string;
+      accepted: boolean;
+      emailVerified: string | null;
     }>;
   };
 };
@@ -218,6 +249,15 @@ export type GetWorkspacesQueryVariables = Exact<{ [key: string]: never }>;
 export type GetWorkspacesQuery = {
   __typename?: 'Query';
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
+};
+
+export type LeaveWorkspaceMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type LeaveWorkspaceMutation = {
+  __typename?: 'Mutation';
+  leaveWorkspace: boolean;
 };
 
 export type RevokeMemberPermissionMutationVariables = Exact<{
@@ -373,6 +413,16 @@ export type Queries =
       response: GetCurrentUserQuery;
     }
   | {
+      name: 'getInviteInfoQuery';
+      variables: GetInviteInfoQueryVariables;
+      response: GetInviteInfoQuery;
+    }
+  | {
+      name: 'getIsOwnerQuery';
+      variables: GetIsOwnerQueryVariables;
+      response: GetIsOwnerQuery;
+    }
+  | {
       name: 'getMembersByWorkspaceIdQuery';
       variables: GetMembersByWorkspaceIdQueryVariables;
       response: GetMembersByWorkspaceIdQuery;
@@ -438,6 +488,11 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'leaveWorkspaceMutation';
+      variables: LeaveWorkspaceMutationVariables;
+      response: LeaveWorkspaceMutation;
     }
   | {
       name: 'revokeMemberPermissionMutation';

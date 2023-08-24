@@ -2,7 +2,6 @@ import { Modal as ModalUnstyled } from '@mui/base/Modal';
 import type { CSSProperties } from 'react';
 
 import { styled } from '../../styles';
-import { Wrapper } from '../layout';
 
 export const StyledBackdrop = styled('div')(() => {
   return {
@@ -42,10 +41,25 @@ export const StyledModal = styled(ModalUnstyled, {
   };
 });
 
-export const StyledWrapper = styled(Wrapper)(() => {
+export const StyledModalFooter = styled('div')(() => {
   return {
-    width: '100vw',
-    height: '100vh',
-    overflow: 'hidden',
+    marginTop: 40,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  };
+});
+
+export const StyledModalTitle = styled('div')(() => {
+  return {
+    fontWeight: 600,
+    fontSize: 'var(--affine-font-h-6)',
+  };
+});
+export const StyledModalContent = styled('div')(() => {
+  return {
+    fontSize: 'var(--affine-font-base)',
+    lineHeight: '24px',
+    marginTop: '12px',
   };
 });

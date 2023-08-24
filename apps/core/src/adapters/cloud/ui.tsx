@@ -6,6 +6,7 @@ import type {
 } from '@affine/env/workspace';
 import { lazy, useCallback } from 'react';
 
+import { useIsWorkspaceOwner } from '../../hooks/affine/use-is-workspace-owner';
 import { useWorkspace } from '../../hooks/use-workspace';
 import {
   BlockSuitePageList,
@@ -54,14 +55,20 @@ export const UI = {
   },
   NewSettingsDetail: ({
     currentWorkspaceId,
-    onDeleteWorkspace,
     onTransformWorkspace,
+    onDeleteLocalWorkspace,
+    onDeleteCloudWorkspace,
+    onLeaveWorkspace,
   }) => {
+    const isOwner = useIsWorkspaceOwner(currentWorkspaceId);
     return (
       <NewWorkspaceSettingDetail
-        onDeleteWorkspace={onDeleteWorkspace}
+        onDeleteLocalWorkspace={onDeleteLocalWorkspace}
+        onDeleteCloudWorkspace={onDeleteCloudWorkspace}
+        onLeaveWorkspace={onLeaveWorkspace}
         workspaceId={currentWorkspaceId}
         onTransferWorkspace={onTransformWorkspace}
+        isOwner={isOwner}
       />
     );
   },
