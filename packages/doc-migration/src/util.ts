@@ -5,7 +5,6 @@ import { tryMigrate } from '@blocksuite/store-0.6.0';
 import fs from 'fs-extra';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import type { Array as YArray, Map as YMap } from 'yjs';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import { prismaNewService } from './prisma';
@@ -76,30 +75,38 @@ export function upgradeYDoc(
   return migratedDoc;
 }
 
-export async function saveMigratedDoc(
+export async function saveMigratedDocToUpdate(
   workspaceId: string,
   migratedDoc: Doc,
   createdAt: Date
 ) {
-  await prismaNewService.insertYDoc(
+  await prismaNewService.insertYDocToUpdate(
     workspaceId,
     migratedDoc.guid,
     encodeStateAsUpdate(migratedDoc),
     createdAt
   );
 
-  const subDocs = migratedDoc.get('spaces') as YMap<unknown>;
-  for (const id of [
-    ...((migratedDoc.get('meta') as YMap<unknown>).get('pages') as YArray<
-      YMap<unknown>
-    >),
-  ].map(ele => ele.get('id'))) {
-    const subDoc = subDocs.get(id as string) as Doc;
-    await prismaNewService.insertYDoc(
-      workspaceId,
-      subDoc.guid,
-      encodeStateAsUpdate(subDoc),
-      createdAt
-    );
+  for (const subDoc of migratedDoc.subdocs) {
+    saveMigratedDocToUpdate(workspaceId, subDoc, createdAt);
+  }
+}
+
+export async function saveMigratedDocToSnapshot(
+  workspaceId: string,
+  migratedDoc: Doc,
+  createdAt: Date,
+  updatedAt: Date
+) {
+  await prismaNewService.insertYDocToSnapshot(
+    workspaceId,
+    migratedDoc.guid,
+    encodeStateAsUpdate(migratedDoc),
+    createdAt,
+    updatedAt
+  );
+
+  for (const subDoc of migratedDoc.subdocs) {
+    saveMigratedDocToSnapshot(workspaceId, subDoc, createdAt, updatedAt);
   }
 }
