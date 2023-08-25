@@ -39,6 +39,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: true,
       enableCloud: true,
+      enableEnhanceShareMode: false,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
@@ -71,6 +72,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: true,
       enableCloud: true,
+      enableEnhanceShareMode: false,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -115,17 +117,16 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableCloud: process.env.ENABLE_CLOUD
       ? process.env.ENABLE_CLOUD === 'true'
       : currentBuildPreset.enableCloud,
+    enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
+      ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
+      : currentBuildPreset.enableEnhanceShareMode,
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
   };
 
   if (buildFlags.mode === 'development') {
-    if (buildFlags.distribution === 'browser')
-      currentBuildPreset.serverUrlPrefix = '';
-    else if (buildFlags.distribution === 'desktop') {
-      currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
-    }
+    currentBuildPreset.serverUrlPrefix = 'http://localhost:8080';
   }
 
   return {

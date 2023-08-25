@@ -1,0 +1,5 @@
+query getWorkspaceSharedPages($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    sharedPages
+  }
+}

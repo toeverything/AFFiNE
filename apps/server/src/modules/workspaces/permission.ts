@@ -191,7 +191,7 @@ export class PermissionService {
       },
     });
 
-    return data.map(item => item.subPageId);
+    return data.map(item => item.subPageId).filter(Boolean);
   }
 
   async checkPage(ws: string, page: string, user?: string) {

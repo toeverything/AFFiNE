@@ -235,6 +235,15 @@ export type GetWorkspacePublicByIdQuery = {
   workspace: { __typename?: 'WorkspaceType'; public: boolean };
 };
 
+export type GetWorkspaceSharedPagesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetWorkspaceSharedPagesQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; sharedPages: Array<string> };
+};
+
 export type GetWorkspaceQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -268,6 +277,16 @@ export type RevokeMemberPermissionMutationVariables = Exact<{
 export type RevokeMemberPermissionMutation = {
   __typename?: 'Mutation';
   revoke: boolean;
+};
+
+export type RevokePageMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type RevokePageMutation = {
+  __typename?: 'Mutation';
+  revokePage: boolean;
 };
 
 export type SendChangeEmailMutationVariables = Exact<{
@@ -329,6 +348,13 @@ export type SetWorkspacePublicByIdMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
+
+export type SharePageMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type SharePageMutation = { __typename?: 'Mutation'; sharePage: boolean };
 
 export type SignInMutationVariables = Exact<{
   email: Scalars['String']['input'];
@@ -443,6 +469,11 @@ export type Queries =
       response: GetWorkspacePublicByIdQuery;
     }
   | {
+      name: 'getWorkspaceSharedPagesQuery';
+      variables: GetWorkspaceSharedPagesQueryVariables;
+      response: GetWorkspaceSharedPagesQuery;
+    }
+  | {
       name: 'getWorkspaceQuery';
       variables: GetWorkspaceQueryVariables;
       response: GetWorkspaceQuery;
@@ -500,6 +531,11 @@ export type Mutations =
       response: RevokeMemberPermissionMutation;
     }
   | {
+      name: 'revokePageMutation';
+      variables: RevokePageMutationVariables;
+      response: RevokePageMutation;
+    }
+  | {
       name: 'sendChangeEmailMutation';
       variables: SendChangeEmailMutationVariables;
       response: SendChangeEmailMutation;
@@ -528,6 +564,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'sharePageMutation';
+      variables: SharePageMutationVariables;
+      response: SharePageMutation;
     }
   | {
       name: 'signInMutation';

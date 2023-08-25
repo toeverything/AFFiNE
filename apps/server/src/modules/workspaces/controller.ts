@@ -11,6 +11,7 @@ import type { Response } from 'express';
 import format from 'pretty-time';
 
 import { StorageProvide } from '../../storage';
+import { trimGuid } from '../../utils/doc';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocManager } from '../doc';
 import { UserType } from '../users';
@@ -59,7 +60,9 @@ export class WorkspacesController {
     const start = process.hrtime();
     await this.permission.check(ws, user?.id);
 
-    const update = await this.docManager.getLatestUpdate(ws, guid);
+    const id = trimGuid(ws, guid);
+
+    const update = await this.docManager.getLatestUpdate(ws, id);
 
     if (!update) {
       throw new NotFoundException('Doc not found');

@@ -10,7 +10,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, WebIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -76,14 +75,16 @@ export const LocalSharePage = (props: ShareMenuProps) => {
 };
 
 export const AffineSharePage = (props: ShareMenuProps) => {
-  const [isPublic, setIsPublic] = useBlockSuiteWorkspacePageIsPublic(
-    props.currentPage
-  );
+  const {
+    workspace: { id: workspaceId },
+    currentPage: { id: pageId },
+  } = props;
+  const [isPublic, setIsPublic] = props.useIsSharedPage(workspaceId, pageId);
   const [showDisable, setShowDisable] = useState(false);
   const t = useAFFiNEI18N();
   const sharingUrl = useMemo(() => {
-    return `/public-workspace/${props.workspace.id}/${props.currentPage.id}`;
-  }, [props.workspace.id, props.currentPage.id]);
+    return `${runtimeConfig.serverUrlPrefix}/share/${workspaceId}/${pageId}`;
+  }, [workspaceId, pageId]);
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
   }, [setIsPublic]);
@@ -127,7 +128,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             fontSize: 'var(--affine-font-xs)',
             lineHeight: '20px',
           }}
-          value={isPublic ? sharingUrl : 'https://app.affine.pro/xxxx'}
+          value={isPublic ? sharingUrl : `${runtimeConfig.serverUrlPrefix}/...`}
           readOnly
         />
         {isPublic ? (
@@ -144,69 +145,77 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           </Button>
         )}
       </div>
-      <div className={styles.rowContainerStyle}>
-        <div className={styles.subTitleStyle}>
-          {t['com.affine.share-menu.ShareMode']()}
-        </div>
-        <div>
-          <RadioButtonGroup
-            className={styles.radioButtonGroup}
-            defaultValue={'page'}
-            onValueChange={() => {}}
-          >
-            <RadioButton
-              className={styles.radioButton}
-              value={'page'}
-              spanStyle={styles.spanStyle}
+      {runtimeConfig.enableEnhanceShareMode ? (
+        <div className={styles.rowContainerStyle}>
+          <div className={styles.subTitleStyle}>
+            {t['com.affine.share-menu.ShareMode']()}
+          </div>
+          <div>
+            <RadioButtonGroup
+              className={styles.radioButtonGroup}
+              defaultValue={'page'}
+              onValueChange={() => {}}
             >
-              {t['Page']()}
-            </RadioButton>
-            <RadioButton
-              className={styles.radioButton}
-              value={'edgeless'}
-              spanStyle={styles.spanStyle}
-            >
-              {t['Edgeless']()}
-            </RadioButton>
-          </RadioButtonGroup>
+              <RadioButton
+                className={styles.radioButton}
+                value={'page'}
+                spanStyle={styles.spanStyle}
+              >
+                {t['Page']()}
+              </RadioButton>
+              <RadioButton
+                className={styles.radioButton}
+                value={'edgeless'}
+                spanStyle={styles.spanStyle}
+              >
+                {t['Edgeless']()}
+              </RadioButton>
+            </RadioButtonGroup>
+          </div>
         </div>
-      </div>
+      ) : null}
       {isPublic ? (
         <>
-          <div className={styles.rowContainerStyle}>
-            <div className={styles.subTitleStyle}>Link expires</div>
-            <div>
-              <Menu
-                content={<MenuItem>Never</MenuItem>}
-                placement="bottom-end"
-                trigger="click"
-              >
-                <MenuTrigger
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '4px 6px 4px 10px',
-                  }}
-                >
-                  Never
-                </MenuTrigger>
-              </Menu>
-            </div>
-          </div>
-          <div className={styles.rowContainerStyle}>
-            <div className={styles.subTitleStyle}>
-              {'Show "Created with AFFiNE"'}
-            </div>
-            <div>
-              <Switch />
-            </div>
-          </div>
-          <div className={styles.rowContainerStyle}>
-            <div className={styles.subTitleStyle}>Search engine indexing</div>
-            <div>
-              <Switch />
-            </div>
-          </div>
+          {runtimeConfig.enableEnhanceShareMode && (
+            <>
+              <div className={styles.rowContainerStyle}>
+                <div className={styles.subTitleStyle}>Link expires</div>
+                <div>
+                  <Menu
+                    content={<MenuItem>Never</MenuItem>}
+                    placement="bottom-end"
+                    trigger="click"
+                  >
+                    <MenuTrigger
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '4px 6px 4px 10px',
+                      }}
+                    >
+                      Never
+                    </MenuTrigger>
+                  </Menu>
+                </div>
+              </div>
+              <div className={styles.rowContainerStyle}>
+                <div className={styles.subTitleStyle}>
+                  {'Show "Created with AFFiNE"'}
+                </div>
+                <div>
+                  <Switch />
+                </div>
+              </div>
+              <div className={styles.rowContainerStyle}>
+                <div className={styles.subTitleStyle}>
+                  Search engine indexing
+                </div>
+                <div>
+                  <Switch />
+                </div>
+              </div>
+            </>
+          )}
           <div
             className={styles.rowContainerStyle}
             onClick={() => setShowDisable(true)}

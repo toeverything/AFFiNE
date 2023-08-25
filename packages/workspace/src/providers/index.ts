@@ -19,6 +19,7 @@ import { createAffineDataSource } from '../affine';
 import {
   createCloudDownloadProvider,
   createMergeCloudSnapshotProvider,
+  downloadBinaryFromCloud,
 } from './cloud';
 import {
   createSQLiteDBDownloadProvider,
@@ -115,6 +116,7 @@ export {
   createIndexedDBDownloadProvider,
   createSQLiteDBDownloadProvider,
   createSQLiteProvider,
+  downloadBinaryFromCloud,
 };
 
 export const createLocalProviders = (): DocProviderCreator[] => {

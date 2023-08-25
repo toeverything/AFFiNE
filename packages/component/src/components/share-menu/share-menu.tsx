@@ -8,11 +8,11 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import { useState } from 'react';
+import { useAtom } from 'jotai';
 
 import { Menu } from '../../ui/menu/menu';
 import * as styles from './index.css';
+import { enableShareMenuAtom } from './index.jotai';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
 
@@ -24,13 +24,21 @@ export interface ShareMenuProps<
 > {
   workspace: Workspace;
   currentPage: Page;
+  useIsSharedPage: (
+    workspaceId: string,
+    pageId: string
+  ) => [isSharePage: boolean, setIsSharePage: (enable: boolean) => void];
   onEnableAffineCloud: () => void;
   togglePagePublic: () => Promise<void>;
 }
 
 export const ShareMenu = (props: ShareMenuProps) => {
-  const [isPublic] = useBlockSuiteWorkspacePageIsPublic(props.currentPage);
-  const [open, setOpen] = useState(false);
+  const { useIsSharedPage } = props;
+  const isSharedPage = useIsSharedPage(
+    props.workspace.id,
+    props.currentPage.id
+  );
+  const [open, setOpen] = useAtom(enableShareMenuAtom);
   const t = useAFFiNEI18N();
   const content = (
     <div className={styles.containerStyle}>
@@ -67,12 +75,12 @@ export const ShareMenu = (props: ShareMenuProps) => {
       >
         <div
           style={{
-            color: isPublic
+            color: isSharedPage
               ? 'var(--affine-link-color)'
               : 'var(--affine-text-primary-color)',
           }}
         >
-          {isPublic
+          {isSharedPage
             ? t['com.affine.share-menu.sharedButton']()
             : t['com.affine.share-menu.shareButton']()}
         </div>

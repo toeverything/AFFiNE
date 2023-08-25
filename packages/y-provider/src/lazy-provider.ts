@@ -96,6 +96,9 @@ export const createLazyProvider = (
           });
           return;
         }
+        changeStatus({
+          type: 'synced',
+        });
         return remoteUpdate;
       })
       .catch(error => {
@@ -295,6 +298,7 @@ export const createLazyProvider = (
 
   return {
     get status() {
+      console.log('currentStatus', currentStatus);
       return currentStatus;
     },
     subscribeStatusChange(cb: () => void) {

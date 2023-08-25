@@ -114,21 +114,6 @@ const CloudWorkSpaceList = ({
             {t['com.affine.workspace.cloud']()}
           </StyledModalTitle>
         </StyledModalHeaderLeft>
-
-        <StyledOperationWrapper>
-          <Menu
-            placement="bottom-end"
-            trigger={['click']}
-            content={<AccountMenu />}
-            zIndex={1000}
-          >
-            <IconButton
-              data-testid="previous-image-button"
-              icon={<MoreHorizontalIcon />}
-              type="plain"
-            />
-          </Menu>
-        </StyledOperationWrapper>
       </StyledModalHeader>
       <StyledModalContent>
         <WorkspaceList
@@ -249,7 +234,7 @@ export const WorkspaceListModal = ({
                 zIndex={1000}
               >
                 <IconButton
-                  data-testid="previous-image-button"
+                  data-testid="more-button"
                   icon={<MoreHorizontalIcon />}
                   type="plain"
                 />
