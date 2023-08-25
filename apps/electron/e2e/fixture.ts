@@ -32,7 +32,7 @@ export const test = base.extend<{
 }>({
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
-    await page.getByTestId('modal-close-button').click({
+    await page.getByTestId('onboarding-modal-close-button').click({
       delay: 100,
     });
     if (!process.env.CI) {

@@ -49,7 +49,12 @@ export const TourModal = ({ open, onClose }: TourModalProps) => {
         style={{ minHeight: '480px' }}
         data-testid="onboarding-modal"
       >
-        <ModalCloseButton top={6} right={10} onClick={handleClose} />
+        <ModalCloseButton
+          top={6}
+          right={10}
+          onClick={handleClose}
+          data-testid="onboarding-modal-close-button"
+        />
         <div className={modalStyle}>
           <div className={titleContainerStyle}>
             {step !== -1 && (
