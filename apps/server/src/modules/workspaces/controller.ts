@@ -64,7 +64,6 @@ export class WorkspacesController {
       !(await this.permission.tryCheck(ws, user?.id)) &&
       !(await this.permission.tryCheckSharePage(ws, id))
     ) {
-      console.log(ws, guid);
       throw new ForbiddenException('Permission denied');
     }
 
