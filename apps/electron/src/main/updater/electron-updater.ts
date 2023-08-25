@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { isMacOS, isWindows } from '../../shared/utils';
 import { logger } from '../logger';
+import { CustomGitHubProvider } from './custom-github-provider';
 import { updaterSubjects } from './event';
 
 export const ReleaseTypeSchema = z.enum([
@@ -13,9 +14,9 @@ export const ReleaseTypeSchema = z.enum([
   'internal',
 ]);
 
-export const envBuildType = (process.env.BUILD_TYPE || 'canary')
-  .trim()
-  .toLowerCase();
+export const envBuildType = 'canary'; // (process.env.BUILD_TYPE || 'canary')
+// .trim()
+// .toLowerCase();
 export const buildType = ReleaseTypeSchema.parse(envBuildType);
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
@@ -36,7 +37,7 @@ export const checkForUpdates = async (force = true) => {
 
 export const registerUpdater = async () => {
   // skip auto update in dev mode & internal
-  if (isDev || buildType === 'internal') {
+  if (buildType === 'internal') {
     return;
   }
 
@@ -51,11 +52,13 @@ export const registerUpdater = async () => {
 
   const feedUrl: Parameters<typeof autoUpdater.setFeedURL>[0] = {
     channel: buildType,
-    provider: 'github',
+    // @ts-expect-error - hacks for custom provider that allows passing the same options as GitHubProvider
+    provider: 'custom',
     // @ts-expect-error - just ignore for now
     repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
+    updateProvider: CustomGitHubProvider,
   };
 
   logger.debug('auto-updater feed config', feedUrl);
