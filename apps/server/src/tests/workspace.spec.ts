@@ -121,7 +121,6 @@ describe('Workspace Module', () => {
       u1.token.token,
       workspace.id
     );
-    console.log('pages', pages);
     ok(pages.length === 1, 'failed to get shared pages');
     ok(pages[0] === 'page1', 'failed to get shared page: page1');
 
