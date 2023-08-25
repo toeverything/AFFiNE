@@ -132,6 +132,7 @@ export const AppearanceSettings = () => {
             desc={t[
               'com.affine.settings.appearance.border-style-description'
             ]()}
+            data-testid="client-border-style-trigger"
           >
             <Switch
               checked={appSettings.clientBorder}
