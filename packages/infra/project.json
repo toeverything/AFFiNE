@@ -5,17 +5,13 @@
   "sourceRoot": "packages/infra/src",
   "targets": {
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "nx:run-script",
+      "dependsOn": ["^build"],
+      "inputs": ["{projectRoot}/**/*"],
       "options": {
-        "outputPath": "packages/infra/dist"
-      }
-    },
-    "serve": {
-      "executor": "@nx/vite:build",
-      "options": {
-        "outputPath": "packages/infra/dist",
-        "watch": true
-      }
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/dist"]
     }
   }
 }
