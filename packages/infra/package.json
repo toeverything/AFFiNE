@@ -53,7 +53,7 @@
     "@blocksuite/blocks": "0.0.0-20230824205952-3df3727b-nightly",
     "@blocksuite/global": "0.0.0-20230824205952-3df3727b-nightly",
     "@blocksuite/store": "0.0.0-20230824205952-3df3727b-nightly",
-    "jotai": "^2.3.1",
+    "jotai": "^2.4.0",
     "zod": "^3.22.1"
   },
   "devDependencies": {
