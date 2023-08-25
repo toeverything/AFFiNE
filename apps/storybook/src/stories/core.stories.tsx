@@ -139,7 +139,7 @@ ImportPage.play = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByTestId('editor-option-menu-import'));
 };
 ImportPage.decorators = [withRouter];
-SearchPage.parameters = {
+ImportPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
     location: {
