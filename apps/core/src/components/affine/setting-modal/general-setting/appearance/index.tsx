@@ -81,9 +81,6 @@ export const AppearanceSettings = () => {
   const t = useAFFiNEI18N();
 
   const [appSettings, setAppSettings] = useAppSetting();
-  const defaultAppSettings = {
-    clientBorder: process.platform === 'win32' ? false : true,
-  };
 
   const changeSwitch = useCallback(
     (key: keyof AppSetting, checked: boolean) => {
@@ -137,7 +134,7 @@ export const AppearanceSettings = () => {
             ]()}
           >
             <Switch
-              checked={defaultAppSettings.clientBorder}
+              checked={appSettings.clientBorder}
               onChange={checked => changeSwitch('clientBorder', checked)}
             />
           </SettingRow>
