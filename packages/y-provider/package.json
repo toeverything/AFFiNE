@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
-    "@blocksuite/store": "0.0.0-20230824081236-b25a3da9-nightly"
+    "@blocksuite/store": "0.0.0-20230824205952-3df3727b-nightly"
   },
   "peerDependencies": {
     "yjs": "^13.5.51"
