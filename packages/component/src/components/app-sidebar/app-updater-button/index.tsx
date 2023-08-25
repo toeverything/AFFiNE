@@ -125,7 +125,8 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     <button
       style={style}
       className={clsx([styles.root, className])}
-      data-has-update={updateAvailable ? 'true' : 'false'}
+      data-has-update={!!updateAvailable}
+      data-updating={appQuitting}
       data-disabled={
         (updateAvailable?.allowAutoUpdate && !updateReady) || appQuitting
       }
@@ -157,7 +158,9 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
           <div className={clsx([styles.installLabelHover])}>
             <ResetIcon className={styles.icon} />
             <span className={styles.ellipsisTextOverflow}>
-              {t['com.affine.updater.restart-to-update']()}
+              {t[
+                appQuitting ? 'Loading' : 'com.affine.updater.restart-to-update'
+              ]()}
             </span>
           </div>
         ) : (
