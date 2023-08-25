@@ -36,6 +36,7 @@ export class PermissionService {
     user?: string,
     permission: Permission = Permission.Read
   ) {
+    const sharePages = await this.getPages(ws, user);
     // If the permission is read, we should check if the workspace is public
     if (permission === Permission.Read) {
       const data = await this.prisma.workspace.count({
@@ -48,7 +49,7 @@ export class PermissionService {
     }
 
     if (!user) {
-      return false;
+      return sharePages.length > 0;
     }
 
     const data = await this.prisma.userWorkspacePermission.count({
@@ -192,6 +193,12 @@ export class PermissionService {
     });
 
     return data.map(item => item.subPageId).filter(Boolean);
+  }
+
+  async tryCheckSharePage(ws: string, page: string) {
+    const data = await this.getPages(ws);
+
+    return data.map(page => `space:${page}`).includes(page);
   }
 
   async checkPage(ws: string, page: string, user?: string) {
