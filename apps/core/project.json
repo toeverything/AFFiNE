@@ -10,6 +10,11 @@
           "target": "build",
           "params": "ignore"
         },
+        {
+          "projects": ["tag:infra"],
+          "target": "build",
+          "params": "ignore"
+        },
         "^build"
       ],
       "inputs": [
