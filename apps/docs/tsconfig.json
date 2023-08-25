@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "moduleResolution": "Node16",
+    "moduleResolution": "bundler",
     "strict": true,
     "target": "esnext",
     "downlevelIteration": true,
