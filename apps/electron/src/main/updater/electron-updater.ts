@@ -52,12 +52,13 @@ export const registerUpdater = async () => {
 
   const feedUrl: Parameters<typeof autoUpdater.setFeedURL>[0] = {
     channel: buildType,
-    // @ts-expect-error - hacks for custom provider that allows passing the same options as GitHubProvider
-    provider: 'custom',
+    // hack for custom provider
+    provider: 'custom' as 'github',
     // @ts-expect-error - just ignore for now
     repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
+    // @ts-expect-error hack for custom provider
     updateProvider: CustomGitHubProvider,
   };
 
