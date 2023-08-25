@@ -133,9 +133,10 @@ ImportPage.play = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await waitFor(() => {
     assertExists(
-      canvasElement.querySelector('[data-testid="editor-option-menu-import"]')
+      canvasElement.querySelector('[data-testid="header-dropDownButton"]')
     );
   });
+  await userEvent.click(canvas.getByTestId('header-dropDownButton'));
   await userEvent.click(canvas.getByTestId('editor-option-menu-import'));
 };
 ImportPage.decorators = [withRouter];
