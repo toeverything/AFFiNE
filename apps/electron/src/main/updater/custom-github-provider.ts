@@ -1,5 +1,6 @@
 // credits: migrated from https://github.com/electron-userland/electron-builder/blob/master/packages/electron-updater/src/providers/GitHubProvider.ts
 import type {
+  CustomPublishOptions,
   GithubOptions,
   ReleaseNoteInfo,
   XElement,
@@ -27,11 +28,11 @@ const hrefRegExp = /\/tag\/([^/]+)$/;
 
 export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
   constructor(
-    protected override options: GithubOptions,
+    options: CustomPublishOptions,
     private updater: AppUpdater,
     runtimeOptions: ProviderRuntimeOptions
   ) {
-    super(options, 'github.com', runtimeOptions);
+    super(options as unknown as GithubOptions, 'github.com', runtimeOptions);
   }
 
   async getLatestVersion(): Promise<GithubUpdateInfo> {
