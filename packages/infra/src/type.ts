@@ -192,7 +192,7 @@ export interface UpdateMeta {
 export type UpdaterHandlers = {
   currentVersion: () => Promise<string>;
   quitAndInstall: () => Promise<void>;
-  checkForUpdatesAndNotify: () => Promise<UpdateMeta | null>;
+  checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 
 export type WorkspaceHandlers = {
@@ -260,7 +260,7 @@ export interface DBEvents {
 }
 
 export interface WorkspaceEvents {
-  onWorkspaceChange: (
+  onMetaChange: (
     fn: (workspaceId: string, meta: WorkspaceMeta) => void
   ) => () => void;
 }
