@@ -17,6 +17,9 @@
         },
         {
           "runtime": "node -v"
+        },
+        {
+          "runtime": "clang --version"
         }
       ],
       "outputs": ["{projectRoot}/*.node", "{workspaceRoot}/*.node"]
