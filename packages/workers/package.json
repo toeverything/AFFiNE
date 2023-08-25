@@ -1,6 +1,6 @@
 {
   "name": "@affine/workers",
-  "version": "0.8.0-beta.3",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
     "dev": "wrangler dev"
