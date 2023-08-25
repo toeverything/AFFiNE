@@ -125,3 +125,34 @@ SearchPage.parameters = {
     },
   }),
 };
+
+export const ImportPage: StoryFn = () => {
+  return <FakeApp />;
+};
+ImportPage.play = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await waitFor(() => {
+    assertExists(canvasElement.querySelector('v-line'));
+  });
+  await waitFor(() => {
+    assertExists(
+      canvasElement.querySelector('[data-testid="header-dropDownButton"]')
+    );
+  });
+  await userEvent.click(canvas.getByTestId('header-dropDownButton'));
+  await waitFor(() => {
+    assertExists(
+      canvasElement.querySelector('[data-testid="editor-option-menu-import"]')
+    );
+  });
+  await userEvent.click(canvas.getByTestId('editor-option-menu-import'));
+};
+ImportPage.decorators = [withRouter];
+ImportPage.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/',
+    },
+  }),
+};
