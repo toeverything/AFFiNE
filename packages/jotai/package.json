@@ -3,15 +3,15 @@
   "private": true,
   "main": "./src/index.ts",
   "dependencies": {
-    "jotai": "^2.3.1"
+    "jotai": "^2.4.0"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/blocks": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/editor": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/global": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/lit": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/store": "0.0.0-20230824205952-3df3727b-nightly",
+    "@blocksuite/block-std": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/blocks": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/editor": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/global": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/lit": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/store": "0.0.0-20230825054009-a12544d6-nightly",
     "lottie-web": "^5.12.2"
   },
   "peerDependencies": {

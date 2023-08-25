@@ -10,26 +10,26 @@
   },
   "dependencies": {
     "@affine/component": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/blocks": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/editor": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/global": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/lit": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/store": "0.0.0-20230824205952-3df3727b-nightly",
+    "@blocksuite/block-std": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/blocks": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/editor": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/global": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/lit": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/store": "0.0.0-20230825054009-a12544d6-nightly",
     "express": "^4.18.2",
-    "jotai": "^2.3.1",
+    "jotai": "^2.4.0",
     "react": "18.3.0-canary-7118f5dd7-20230705",
     "react-dom": "18.3.0-canary-7118f5dd7-20230705",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
     "waku": "0.14.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.20",
+    "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
-    "@vanilla-extract/css": "^1.12.0",
-    "@vanilla-extract/vite-plugin": "^3.8.2",
+    "@vanilla-extract/css": "^1.13.0",
+    "@vanilla-extract/vite-plugin": "^3.9.0",
     "autoprefixer": "^10.4.15",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.1.6"
+    "typescript": "^5.2.2"
   }
 }

@@ -20,15 +20,15 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "jotai": "^2.3.1",
+    "jotai": "^2.4.0",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
-    "lib0": "^0.2.82",
+    "lib0": "^0.2.83",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",
-    "zod": "^3.22.1"
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/ws": "^8.5.5",

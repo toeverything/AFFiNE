@@ -5,10 +5,10 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20230824205952-3df3727b-nightly",
+    "@blocksuite/global": "0.0.0-20230825054009-a12544d6-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zod": "^3.22.1"
+    "zod": "^3.22.2"
   },
   "exports": {
     "./automation": "./src/automation.ts",

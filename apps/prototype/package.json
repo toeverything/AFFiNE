@@ -18,23 +18,23 @@
     "@affine/jotai": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/blocks": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/editor": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/global": "0.0.0-20230824205952-3df3727b-nightly",
+    "@blocksuite/block-std": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/blocks": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/editor": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/global": "0.0.0-20230825054009-a12544d6-nightly",
     "@blocksuite/icons": "^2.1.31",
-    "@blocksuite/lit": "0.0.0-20230824205952-3df3727b-nightly",
-    "@blocksuite/store": "0.0.0-20230824205952-3df3727b-nightly",
+    "@blocksuite/lit": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/store": "0.0.0-20230825054009-a12544d6-nightly",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.20",
+    "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react-swc": "^3.3.2",
-    "typescript": "^5.1.6",
+    "typescript": "^5.2.2",
     "vite": "^4.4.9"
   }
 }
