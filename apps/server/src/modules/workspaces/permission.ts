@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, WorkspaceStatus } from '@prisma/client';
 
 import { PrismaService } from '../../prisma';
 import { Permission } from './types';
@@ -53,7 +53,7 @@ export class PermissionService {
     // If the permission is read, we should check if the workspace is public
     if (permission === Permission.Read) {
       const data = await this.prisma.workspace.count({
-        where: { id: ws, public: true },
+        where: { id: ws, public: WorkspaceStatus.PUBLIC },
       });
 
       return data > 0;

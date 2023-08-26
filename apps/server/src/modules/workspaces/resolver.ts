@@ -16,7 +16,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User, Workspace } from '@prisma/client';
+import { User, Workspace, WorkspaceStatus } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
@@ -39,7 +39,7 @@ export class WorkspaceType implements Partial<Workspace> {
   id!: string;
 
   @Field({ description: 'is Public workspace' })
-  public!: boolean;
+  public!: WorkspaceStatus;
 
   @Field({ description: 'Workspace created date' })
   createdAt!: Date;
@@ -200,7 +200,7 @@ export class WorkspaceResolver {
 
     const workspace = await this.prisma.workspace.create({
       data: {
-        public: false,
+        public: WorkspaceStatus.PRIVATE,
         users: {
           create: {
             type: Permission.Owner,

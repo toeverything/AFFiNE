@@ -8,9 +8,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum WorkspaceStatus {
+  PUBLIC
+  ALL
+  PRIVATE
+}
+
 model Workspace {
   id             String                    @id @default(uuid()) @db.VarChar
-  public         Boolean
+  public         WorkspaceStatus
   createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   users          UserWorkspacePermission[]
   blobs          Blob[]

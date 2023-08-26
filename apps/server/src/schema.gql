@@ -37,13 +37,19 @@ type TokenType {
   refresh: String!
 }
 
+enum WorkspaceStatus {
+  PUBLIC
+  ALL
+  PRIVATE
+}
+
 type WorkspaceType {
   id: ID!
 
   """
   is Public workspace
   """
-  public: Boolean!
+  public: WorkspaceStatus!
 
   """
   Workspace created date
