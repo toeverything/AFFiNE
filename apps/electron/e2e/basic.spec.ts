@@ -1,5 +1,6 @@
 import { platform } from 'node:os';
 
+import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
 import { test } from './fixture';
@@ -79,6 +80,19 @@ if (platform() === 'darwin') {
     }
   });
 }
+
+test('clientBorder value should disable by default on window', async ({
+  page,
+}) => {
+  await clickSideBarSettingButton(page);
+  await page.waitForTimeout(1000);
+  const settingItem = page.locator(
+    '[data-testid="client-border-style-trigger"]'
+  );
+  expect(await settingItem.locator('input').inputValue()).toEqual(
+    process.platform === 'win32' ? 'off' : 'on'
+  );
+});
 
 test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');

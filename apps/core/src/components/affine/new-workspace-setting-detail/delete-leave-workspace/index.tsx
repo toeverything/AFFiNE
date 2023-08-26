@@ -39,7 +39,7 @@ export const DeleteLeaveWorkspace = ({
         onClick={() => {
           setShowDelete(true);
         }}
-        testId="delete-workspace-button"
+        data-testid="delete-workspace-button"
       >
         <ArrowRightSmallIcon />
       </SettingRow>
