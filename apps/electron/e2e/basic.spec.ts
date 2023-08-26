@@ -90,7 +90,7 @@ test('clientBorder value should disable by default on window', async ({
     '[data-testid="client-border-style-trigger"]'
   );
   expect(await settingItem.locator('input').inputValue()).toEqual(
-    platform() === 'win32' ? 'off' : 'on'
+    process.platform === 'win32' ? 'off' : 'on'
   );
 });
 
