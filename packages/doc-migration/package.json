@@ -1,6 +1,5 @@
 {
   "name": "@affine/doc-migration",
-  "packageManager": "yarn@3.6.0",
   "type": "module",
   "scripts": {
     "build": "tsc",

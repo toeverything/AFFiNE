@@ -117,8 +117,5 @@
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.2.0"
   },
-  "packageManager": "yarn@3.6.0",
-  "resolutions": {
-    "@blocksuite/store@0.0.0-20230814155455-ceb5d5d8-nightly": "patch:@blocksuite/store@npm%3A0.0.0-20230814155455-ceb5d5d8-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230814155455-ceb5d5d8-nightly-8b4457adbc.patch"
-  }
+  "packageManager": "yarn@3.6.0"
 }

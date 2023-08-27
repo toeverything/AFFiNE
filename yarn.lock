@@ -4224,30 +4224,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230814155455-ceb5d5d8-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230814155455-ceb5d5d8-nightly-8b4457adbc.patch::locator=%40affine%2Fmonorepo%40workspace%3A.":
-  version: 0.0.0-20230814155455-ceb5d5d8-nightly
-  resolution: "@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230814155455-ceb5d5d8-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230814155455-ceb5d5d8-nightly-8b4457adbc.patch::version=0.0.0-20230814155455-ceb5d5d8-nightly&hash=14a2d6&locator=%40affine%2Fmonorepo%40workspace%3A."
-  dependencies:
-    "@blocksuite/global": 0.0.0-20230814155455-ceb5d5d8-nightly
-    "@blocksuite/virgo": 0.0.0-20230814155455-ceb5d5d8-nightly
-    "@types/flexsearch": ^0.7.3
-    buffer: ^6.0.3
-    flexsearch: 0.7.21
-    idb-keyval: ^6.2.1
-    ky: ^0.33.3
-    lib0: ^0.2.78
-    merge: ^2.1.1
-    minimatch: ^9.0.3
-    nanoid: ^4.0.2
-    y-protocols: ^1.0.5
-    zod: ^3.21.4
-  peerDependencies:
-    async-call-rpc: ^6
-    yjs: ^13
-  checksum: adf9527beca2585db072fd8739dbac458c2b6a04e4412f93dd3559c0e6d422cd8d133ca3f6040758abbcf636c4080d6815ce618c25fa33ee18fa67f50b074e30
-  languageName: node
-  linkType: hard
-
 "@blocksuite/virgo@npm:0.0.0-20230814155455-ceb5d5d8-nightly":
   version: 0.0.0-20230814155455-ceb5d5d8-nightly
   resolution: "@blocksuite/virgo@npm:0.0.0-20230814155455-ceb5d5d8-nightly"

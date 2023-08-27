@@ -69,7 +69,11 @@ export function upgradeYDoc(
   globalBlockSuiteSchema.register(AffineSchemas).register(__unstableSchemas);
   globalBlockSuiteSchema.upgradeWorkspace(migratedDoc);
   for (const subdoc of [...migratedDoc.subdocs]) {
-    globalBlockSuiteSchema.upgradePage(intermediateBlockVersions, subdoc); // upgrade step3
+    try {
+      globalBlockSuiteSchema.upgradePage(intermediateBlockVersions, subdoc); // upgrade step3
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return migratedDoc;
