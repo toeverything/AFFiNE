@@ -104,3 +104,10 @@ export const StyledWorkspaceType = styled('p')(() => {
     fontSize: 10,
   };
 });
+
+export const StyledWorkspaceTitleArea = styled('div')(() => {
+  return {
+    display: 'flex',
+    justifyContent: 'space-between',
+  };
+});

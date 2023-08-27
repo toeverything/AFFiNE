@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Vue hello world plugin",
-  "version": "0.8.0-canary.34",
+  "version": "0.9.0-canary.0",
   "scripts": {
     "dev": "af dev",
     "build": "af build"

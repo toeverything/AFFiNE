@@ -7,6 +7,7 @@ import { WorkspaceFallback } from '@affine/component/workspace';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { use } from 'foxact/use';
+import { SessionProvider } from 'next-auth/react';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -47,16 +48,18 @@ const languageLoadingPromise = loadLanguage().catch(console.error);
 export const App = memo(function App() {
   use(languageLoadingPromise);
   return (
-    <CacheProvider value={cache}>
-      <AffineContext store={getCurrentStore()}>
-        <DebugProvider>
-          <RouterProvider
-            fallbackElement={<WorkspaceFallback key="RouterFallback" />}
-            router={router}
-            future={future}
-          />
-        </DebugProvider>
-      </AffineContext>
-    </CacheProvider>
+    <SessionProvider refetchOnWindowFocus>
+      <CacheProvider value={cache}>
+        <AffineContext store={getCurrentStore()}>
+          <DebugProvider>
+            <RouterProvider
+              fallbackElement={<WorkspaceFallback key="RouterFallback" />}
+              router={router}
+              future={future}
+            />
+          </DebugProvider>
+        </AffineContext>
+      </CacheProvider>
+    </SessionProvider>
   );
 });

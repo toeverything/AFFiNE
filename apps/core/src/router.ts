@@ -25,8 +25,28 @@ export const routes = [
     ],
   },
   {
+    path: '/share/:workspaceId/:pageId',
+    lazy: () => import('./pages/share/detail-page'),
+  },
+  {
     path: '/404',
     lazy: () => import('./pages/404'),
+  },
+  {
+    path: '/auth/:authType',
+    lazy: () => import('./pages/auth'),
+  },
+  {
+    path: '/expired',
+    lazy: () => import('./pages/expired'),
+  },
+  {
+    path: '/invite/:inviteId',
+    lazy: () => import('./pages/invite'),
+  },
+  {
+    path: '/signIn',
+    lazy: () => import('./pages/sign-in'),
   },
   {
     path: '*',

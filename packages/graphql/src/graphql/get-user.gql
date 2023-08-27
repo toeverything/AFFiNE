@@ -1,0 +1,9 @@
+query getUser($email: String!) {
+  user(email: $email) {
+    id
+    name
+    avatarUrl
+    email
+    hasPassword
+  }
+}

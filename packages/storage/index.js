@@ -6,5 +6,4 @@ const require = createRequire(import.meta.url);
 const binding = require('./storage.node');
 
 export const Storage = binding.Storage;
-export const Workspace = binding.Workspace;
-export const Document = binding.Doc;
+export const mergeUpdatesInApplyWay = binding.mergeUpdatesInApplyWay;

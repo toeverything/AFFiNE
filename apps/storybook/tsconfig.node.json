@@ -10,7 +10,7 @@
     "noEmit": false,
     "outDir": "lib/.storybook"
   },
-  "include": [".storybook/**/*"],
+  "include": [".storybook"],
   "exclude": ["lib"],
   "references": [
     { "path": "../../apps/core" },

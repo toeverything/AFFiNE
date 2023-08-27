@@ -2,8 +2,7 @@
 import { assertEquals } from '@blocksuite/global/utils';
 import { z } from 'zod';
 
-import { isBrowser, isDesktop, isServer } from './constant.js';
-import { isValidIPAddress } from './is-valid-ip-address.js';
+import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const blockSuiteFeatureFlags = z.object({
@@ -37,8 +36,10 @@ export const runtimeFlagsSchema = z.object({
   enableSQLiteProvider: z.boolean(),
   enableNotificationCenter: z.boolean(),
   enableCloud: z.boolean(),
+  enableEnhanceShareMode: z.boolean(),
+  // this is for the electron app
+  serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
-  serverAPI: z.string(),
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),
   editorVersion: z.string(),
@@ -163,31 +164,5 @@ export function setupGlobal() {
   }
   globalThis.environment = environment;
 
-  let prefixUrl: string;
-  if (!isBrowser || isDesktop) {
-    // SSR or Desktop
-    const serverAPI = runtimeConfig.serverAPI;
-    if (isValidIPAddress(serverAPI.split(':')[0])) {
-      // This is for Server side rendering support
-      prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
-    } else {
-      prefixUrl = serverAPI;
-    }
-    prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
-  } else {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('prefixUrl')) {
-      prefixUrl = params.get('prefixUrl') as string;
-    } else {
-      prefixUrl = window.location.origin + '/';
-    }
-  }
-
-  const apiUrl = new URL(prefixUrl);
-  const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
-  const websocketPrefixUrl = `${wsProtocol}://${apiUrl.host}`;
-
-  globalThis.prefixUrl = prefixUrl;
-  globalThis.websocketPrefixUrl = websocketPrefixUrl;
   globalThis.$AFFINE_SETUP = true;
 }

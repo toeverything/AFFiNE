@@ -95,6 +95,7 @@ const electronModule = {
       return [browserWindow];
     },
   },
+  utilityProcess: {},
   nativeTheme: nativeTheme,
   ipcMain,
   shell: {} as Partial<Electron.Shell>,

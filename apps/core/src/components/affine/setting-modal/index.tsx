@@ -7,6 +7,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import { Suspense, useCallback } from 'react';
 
+import { useCurrenLoginStatus } from '../../../hooks/affine/use-curren-login-status';
 import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
@@ -38,6 +39,7 @@ export const SettingModal = ({
   onSettingClick,
 }: SettingModalProps) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrenLoginStatus();
 
   const generalSettingList = useGeneralSettingList();
 
@@ -85,7 +87,9 @@ export const SettingModal = ({
             {generalSettingList.find(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
             ) : null}
-            {activeTab === 'account' ? <AccountSetting /> : null}
+            {activeTab === 'account' && loginStatus === 'authenticated' ? (
+              <AccountSetting />
+            ) : null}
           </div>
           <div className="footer">
             <div className={footerIconWrapper}>

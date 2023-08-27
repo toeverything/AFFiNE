@@ -1,0 +1,5 @@
+mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
+  updateWorkspace(input: { id: $id, public: $public }) {
+    id
+  }
+}

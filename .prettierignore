@@ -14,3 +14,4 @@ _next
 storybook-static
 web-static
 public
+apps/server/src/schema.gql

@@ -1,0 +1,14 @@
+query getInviteInfo($inviteId: String!) {
+  getInviteInfo(inviteId: $inviteId) {
+    workspace {
+      id
+      name
+      avatar
+    }
+    user {
+      id
+      name
+      avatarUrl
+    }
+  }
+}
