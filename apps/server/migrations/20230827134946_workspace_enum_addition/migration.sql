@@ -10,6 +10,3 @@ CREATE TYPE "WorkspaceStatus" AS ENUM ('PUBLIC', 'ALL', 'PRIVATE');
 -- AlterTable
 ALTER TABLE "workspaces" DROP COLUMN "public",
 ADD COLUMN     "public" "WorkspaceStatus" NOT NULL;
-
--- DropEnum
-DROP TYPE "PublicStatus";
