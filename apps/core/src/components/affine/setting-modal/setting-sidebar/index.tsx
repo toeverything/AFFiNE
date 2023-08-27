@@ -1,4 +1,4 @@
-import { ScrollableContainer, Tooltip } from '@affine/component';
+import { ScrollableContainer } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
@@ -7,11 +7,12 @@ import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import { Suspense } from 'react';
+import { Suspense, useRef } from 'react';
 
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
@@ -136,6 +137,7 @@ const WorkspaceListItem = ({
 }: WorkspaceListItemProps) => {
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
+  const ref = useRef(null);
 
   return (
     <div
@@ -143,16 +145,17 @@ const WorkspaceListItem = ({
       title={workspaceName}
       onClick={onClick}
       data-testid="workspace-list-item"
+      ref={ref}
     >
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
         <Tooltip
           content="Current"
-          title="Current"
-          offset={[0, -5]}
-          placement="top"
-          disablePortal={false}
+          side="top"
+          portalOptions={{
+            container: ref.current,
+          }}
         >
           <div
             className={currentWorkspaceLabel}

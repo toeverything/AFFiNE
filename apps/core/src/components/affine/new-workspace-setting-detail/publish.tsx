@@ -1,4 +1,4 @@
-import { FlexWrapper, Switch, Tooltip } from '@affine/component';
+import { FlexWrapper, Switch } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Unreachable } from '@affine/env/constant';
 import type {
@@ -8,6 +8,7 @@ import type {
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -93,10 +94,7 @@ const FakePublishPanelAffine = (_props: FakePublishPanelAffineProps) => {
   const t = useAFFiNEI18N();
 
   return (
-    <Tooltip
-      content={t['com.affine.settings.workspace.publish-tooltip']()}
-      placement="top"
-    >
+    <Tooltip content={t['com.affine.settings.workspace.publish-tooltip']()}>
       <div className={style.fakeWrapper}>
         <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
           <Switch checked={false} />

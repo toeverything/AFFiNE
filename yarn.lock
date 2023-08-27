@@ -196,7 +196,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@toeverything/components": ^0.0.17
+    "@toeverything/components": ^0.0.19
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.4.0
@@ -246,7 +246,7 @@ __metadata:
     "@sentry/webpack-plugin": ^2.7.0
     "@svgr/webpack": ^8.1.0
     "@swc/core": ^1.3.80
-    "@toeverything/components": ^0.0.17
+    "@toeverything/components": ^0.0.19
     "@types/lodash.debounce": ^4.0.7
     "@types/webpack-env": ^1.18.1
     async-call-rpc: ^6.3.1
@@ -417,7 +417,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
-    "@toeverything/components": ^0.0.17
+    "@toeverything/components": ^0.0.19
   languageName: unknown
   linkType: soft
 
@@ -443,7 +443,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
-    "@toeverything/components": ^0.0.17
+    "@toeverything/components": ^0.0.19
     "@toeverything/theme": ^0.7.12
     clsx: ^2.0.0
     foxact: ^0.2.20
@@ -562,7 +562,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
-    "@toeverything/components": ^0.0.17
+    "@toeverything/components": ^0.0.19
     jotai: ^2.4.0
     react: 18.2.0
     react-dom: 18.2.0
@@ -9137,6 +9137,37 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@radix-ui/react-tooltip@npm:^1.0.6":
+  version: 1.0.6
+  resolution: "@radix-ui/react-tooltip@npm:1.0.6"
+  dependencies:
+    "@babel/runtime": ^7.13.10
+    "@radix-ui/primitive": 1.0.1
+    "@radix-ui/react-compose-refs": 1.0.1
+    "@radix-ui/react-context": 1.0.1
+    "@radix-ui/react-dismissable-layer": 1.0.4
+    "@radix-ui/react-id": 1.0.1
+    "@radix-ui/react-popper": 1.1.2
+    "@radix-ui/react-portal": 1.0.3
+    "@radix-ui/react-presence": 1.0.1
+    "@radix-ui/react-primitive": 1.0.3
+    "@radix-ui/react-slot": 1.0.2
+    "@radix-ui/react-use-controllable-state": 1.0.1
+    "@radix-ui/react-visually-hidden": 1.0.3
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    react: ^16.8 || ^17.0 || ^18.0
+    react-dom: ^16.8 || ^17.0 || ^18.0
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-dom":
+      optional: true
+  checksum: 8220f103432e9ad9ff8a828ca890e14bf3323864a0bb145d1ef689cf446ab5ca0af18e5fed5da89db957065c504e79ec12fbe5e551d6e7b84b470fbd672c918d
+  languageName: node
+  linkType: hard
+
 "@radix-ui/react-use-callback-ref@npm:1.0.0":
   version: 1.0.0
   resolution: "@radix-ui/react-use-callback-ref@npm:1.0.0"
@@ -11700,17 +11731,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/components@npm:^0.0.17":
-  version: 0.0.17
-  resolution: "@toeverything/components@npm:0.0.17"
+"@toeverything/components@npm:^0.0.19":
+  version: 0.0.19
+  resolution: "@toeverything/components@npm:0.0.19"
   dependencies:
     "@blocksuite/icons": ^2.1.30
+    "@radix-ui/react-tooltip": ^1.0.6
   peerDependencies:
     "@radix-ui/react-avatar": ^1
     clsx: ^2
     react: ^18
     react-dom: ^18
-  checksum: 3dc1eb4a8f7aebc8423f7ac1dda0f51db892ea25922b0c8b2d5f81bd987030fac796ac6950f364d3591e68ee3b19cf80bf0add02ecaff631c920a32440e1981b
+  checksum: 705bd025d958866b4615348cd6b127e305fd8c0a837a024da82fda2f5dad8d9aaa26f939956ec52bfca404fa2086cc15d6ae08b2eb75e26db2651798c1bfe766
   languageName: node
   linkType: hard
 

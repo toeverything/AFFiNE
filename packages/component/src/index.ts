@@ -15,5 +15,4 @@ export * from './ui/shared/container';
 export * from './ui/switch';
 export * from './ui/table';
 export * from './ui/toast';
-export * from './ui/tooltip';
 export * from './ui/tree-view';
