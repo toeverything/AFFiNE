@@ -28,6 +28,7 @@ const useDBFileSecondaryPath = (workspaceId: string) => {
         }
       });
     }
+    return () => {};
   }, [workspaceId]);
   return path;
 };
