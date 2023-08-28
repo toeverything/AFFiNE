@@ -79,7 +79,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: 'x86_64-unknown-linux-gnu'
-          package: '@affine/stroage'
+          package: '@affine/storage'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storage.node
         uses: actions/upload-artifact@v3
