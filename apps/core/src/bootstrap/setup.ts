@@ -41,9 +41,9 @@ async function tryMigration() {
               'version' in oldMeta ? oldMeta.version : undefined,
               {
                 getCurrentRootDoc: async () => {
-                  const adapter = WorkspaceAdapters[oldMeta.flavour];
+                  const adapter = WorkspaceAdapters[WorkspaceFlavour.LOCAL];
                   const workspace = await adapter.CRUD.get(oldMeta.id);
-                  assertExists(workspace);
+                  assertExists(workspace, 'workspace should exist');
                   const doc = workspace.blockSuiteWorkspace.doc;
                   const provider = createIndexedDBDownloadProvider(
                     workspace.id,
