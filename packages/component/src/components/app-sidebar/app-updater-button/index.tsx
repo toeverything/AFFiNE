@@ -1,7 +1,7 @@
-import { Tooltip } from '@affine/component';
 import { isBrowser, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import { startTransition, useCallback, useState } from 'react';
@@ -83,7 +83,7 @@ export function AppUpdaterButtonPure({
     }
 
     return (
-      <Tooltip content={tooltip} placement="top-start">
+      <Tooltip content={tooltip} side="top">
         {node}
       </Tooltip>
     );

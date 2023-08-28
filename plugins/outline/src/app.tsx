@@ -1,4 +1,3 @@
-import { Tooltip } from '@affine/component';
 import {
   currentPageAtom,
   deleteLayoutAtom,
@@ -8,6 +7,7 @@ import { TOCNotesPanel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { RightSidebarIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ComponentType, PropsWithChildren } from 'react';
 import { useCallback, useRef, useState } from 'react';

@@ -12,5 +12,3 @@ export async function initEmptyPage(page: Page, title?: string) {
   const noteBlockId = page.addBlock('affine:note', {}, pageBlockId);
   page.addBlock('affine:paragraph', {}, noteBlockId);
 }
-
-export * from './subdoc-migration.js';

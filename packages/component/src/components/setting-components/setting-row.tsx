@@ -3,14 +3,14 @@ import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 
 import { settingRow } from './share.css';
 
-interface SettingRowProps {
+type SettingRowProps = {
   name: ReactNode;
   desc: ReactNode;
   style?: CSSProperties;
   onClick?: () => void;
   spreadCol?: boolean;
-  testId?: string;
-}
+  'data-testid'?: string;
+};
 
 export const SettingRow = ({
   name,
@@ -19,7 +19,7 @@ export const SettingRow = ({
   onClick,
   style,
   spreadCol = true,
-  testId = '',
+  ...props
 }: PropsWithChildren<SettingRowProps>) => {
   return (
     <div
@@ -28,7 +28,7 @@ export const SettingRow = ({
       })}
       style={style}
       onClick={onClick}
-      data-testid={testId}
+      data-testid={props['data-testid']}
     >
       <div className="left-col">
         <div className="name">{name}</div>

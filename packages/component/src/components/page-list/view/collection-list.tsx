@@ -6,11 +6,12 @@ import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
-import { MenuItem, Tooltip } from '../../..';
+import { MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
@@ -46,8 +47,10 @@ const CollectionOption = ({
     >
       <Tooltip
         content={collection.name}
-        placement="right"
-        pointerEnterDelay={1500}
+        side="right"
+        rootOptions={{
+          delayDuration: 1500,
+        }}
       >
         <div
           style={{
@@ -171,7 +174,9 @@ export const CollectionList = ({
           >
             <Tooltip
               content={setting.currentCollection.name}
-              pointerEnterDelay={1500}
+              rootOptions={{
+                delayDuration: 1500,
+              }}
             >
               <>{setting.currentCollection.name}</>
             </Tooltip>

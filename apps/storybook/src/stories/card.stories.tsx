@@ -1,4 +1,4 @@
-import { toast, Tooltip } from '@affine/component';
+import { toast } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { WorkspaceCard } from '@affine/component/card/workspace-card';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -10,6 +10,7 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { Meta } from '@storybook/react';
+import { Tooltip } from '@toeverything/components/tooltip';
 
 export default {
   title: 'AFFiNE/Card',
