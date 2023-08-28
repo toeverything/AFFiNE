@@ -116,39 +116,37 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       logger: console,
     };
 
-    if (!config.node.prod) {
-      nextAuthOptions.providers.push(
-        // @ts-expect-error esm interop issue
-        Credentials.default({
-          name: 'Password',
-          credentials: {
-            email: {
-              label: 'Email',
-              type: 'text',
-              placeholder: 'torvalds@osdl.org',
-            },
-            password: { label: 'Password', type: 'password' },
+    nextAuthOptions.providers.push(
+      // @ts-expect-error esm interop issue
+      Credentials.default({
+        name: 'Password',
+        credentials: {
+          email: {
+            label: 'Email',
+            type: 'text',
+            placeholder: 'torvalds@osdl.org',
           },
-          async authorize(
-            credentials:
-              | Record<'email' | 'password' | 'hashedPassword', string>
-              | undefined
-          ) {
-            if (!credentials) {
-              return null;
-            }
-            const { password, hashedPassword } = credentials;
-            if (!password || !hashedPassword) {
-              return null;
-            }
-            if (!(await verify(hashedPassword, password))) {
-              return null;
-            }
-            return credentials;
-          },
-        })
-      );
-    }
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(
+          credentials:
+            | Record<'email' | 'password' | 'hashedPassword', string>
+            | undefined
+        ) {
+          if (!credentials) {
+            return null;
+          }
+          const { password, hashedPassword } = credentials;
+          if (!password || !hashedPassword) {
+            return null;
+          }
+          if (!(await verify(hashedPassword, password))) {
+            return null;
+          }
+          return credentials;
+        },
+      })
+    );
 
     if (config.auth.oauthProviders.github) {
       nextAuthOptions.providers.push(
