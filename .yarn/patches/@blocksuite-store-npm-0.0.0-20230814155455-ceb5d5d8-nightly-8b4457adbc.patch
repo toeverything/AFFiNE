@@ -1,0 +1,25 @@
+diff --git a/src/workspace/schema.ts b/src/workspace/schema.ts
+index 73d1af9ee22c60d5e694291532449fcdfef7932d..8cdc43844373aebed5250dc081c755b381ab8582 100644
+--- a/src/workspace/schema.ts
++++ b/src/workspace/schema.ts
+@@ -122,13 +122,15 @@ export class Schema {
+   upgradePage = (oldVersions: Record<string, number>, pageData: Y.Doc) => {
+     const blocks = pageData.get('blocks') as Y.Map<unknown>;
+     assertExists(blocks instanceof Y.Map, 'blocks must be a Y.Map');
+-    Array.from(blocks.values()).forEach(block => {
++    Array.from(blocks.keys()).forEach(key => {
++      const block = blocks.get(key) as Y.Map<unknown>;
+       const flavour = block.get('sys:flavour') as string;
+       const currentVersion = oldVersions[flavour];
+-      assertExists(
+-        currentVersion,
+-        `previous version for flavour ${flavour} not found`
+-      );
++      if (!currentVersion) {
++        console.error(`previous version for flavour ${flavour} not found, delete current block`);
++        blocks.delete(key);
++        return;
++      }
+       this.upgradeBlock(flavour, currentVersion, block);
+     });
+   };

@@ -223,7 +223,6 @@ function migrateBlocks(oldDoc: YDoc, newDoc: YDoc) {
     const blocks = subdoc.getMap('blocks');
     Array.from(originalBlocks.entries()).forEach(([key, value]) => {
       const blockData = value.clone();
-      blocks.set(key, blockData);
       const flavour = blockData.get('sys:flavour') as string;
       if (flavour === 'affine:page') {
         pageBlock = blockData;
@@ -232,7 +231,12 @@ function migrateBlocks(oldDoc: YDoc, newDoc: YDoc) {
       }
       const version = originalVersions.get(flavour);
       if (version !== undefined) {
-        runBlockMigration(flavour, blockData, version);
+        try {
+          runBlockMigration(flavour, blockData, version);
+          blocks.set(key, blockData);
+        } catch (e) {
+          console.error(e);
+        }
       }
     });
 
