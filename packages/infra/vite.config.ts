@@ -34,6 +34,7 @@ export default defineConfig({
         'rxjs',
         'zod',
         'react',
+        'yjs',
         /^jotai/,
         /^@blocksuite/,
         /^@affine\/templates/,

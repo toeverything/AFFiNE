@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 
-import { migrateToSubdoc } from '@affine/env/blocksuite';
 import { SqliteConnection } from '@affine/native';
+import { migrateToSubdoc } from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
