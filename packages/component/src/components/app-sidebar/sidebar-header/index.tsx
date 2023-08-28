@@ -19,7 +19,6 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
   const open = useAtomValue(appSidebarOpenAtom);
   return (
     <div className={navHeaderStyle} data-open={open}>
-      {open && <SidebarSwitch />}
       {environment.isDesktop && (
         <>
           {environment.isMacOs && <div style={{ flex: 1 }} />}
@@ -51,6 +50,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           {!environment.isMacOs && <div style={{ flex: 1 }} />}
         </>
       )}
+      {open && <SidebarSwitch />}
     </div>
   );
 };
