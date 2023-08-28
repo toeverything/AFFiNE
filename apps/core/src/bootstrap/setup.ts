@@ -18,6 +18,7 @@ import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import {
+  migrateLocalBlobStorage,
   migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
@@ -35,35 +36,65 @@ async function tryMigration() {
       const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
         if (oldMeta.flavour === WorkspaceFlavour.LOCAL) {
-          migrateWorkspace('version' in oldMeta ? oldMeta.version : undefined, {
-            getCurrentRootDoc: async () => {
-              const adapter = WorkspaceAdapters[oldMeta.flavour];
-              const workspace = await adapter.CRUD.get(oldMeta.id);
-              assertExists(workspace);
-              const doc = workspace.blockSuiteWorkspace.doc;
-              const provider = createIndexedDBDownloadProvider(
-                workspace.id,
-                doc,
-                {
-                  awareness:
-                    workspace.blockSuiteWorkspace.awarenessStore.awareness,
-                }
-              ) as LocalIndexedDBDownloadProvider;
-              provider.sync();
-              await provider.whenReady;
-              return doc as Doc;
-            },
-            createWorkspace: async () => {
-              const adapter = WorkspaceAdapters[oldMeta.flavour];
-              const id = await adapter.CRUD.create(
-                getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL)
-              );
-              const workspace = await adapter.CRUD.get(id);
-              assertExists(workspace, 'workspace should exist after create');
-              return workspace.blockSuiteWorkspace;
-            },
-            getSchema: () => globalBlockSuiteSchema,
-          });
+          promises.push(
+            migrateWorkspace(
+              'version' in oldMeta ? oldMeta.version : undefined,
+              {
+                getCurrentRootDoc: async () => {
+                  const adapter = WorkspaceAdapters[oldMeta.flavour];
+                  const workspace = await adapter.CRUD.get(oldMeta.id);
+                  assertExists(workspace);
+                  const doc = workspace.blockSuiteWorkspace.doc;
+                  const provider = createIndexedDBDownloadProvider(
+                    workspace.id,
+                    doc,
+                    {
+                      awareness:
+                        workspace.blockSuiteWorkspace.awarenessStore.awareness,
+                    }
+                  ) as LocalIndexedDBDownloadProvider;
+                  provider.sync();
+                  await provider.whenReady;
+                  return doc as Doc;
+                },
+                createWorkspace: async () => {
+                  const adapter = WorkspaceAdapters[oldMeta.flavour];
+                  const id = await adapter.CRUD.create(
+                    getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL)
+                  );
+                  const workspace = await adapter.CRUD.get(id);
+                  assertExists(
+                    workspace,
+                    'workspace should exist after create'
+                  );
+                  return workspace.blockSuiteWorkspace;
+                },
+                getSchema: () => globalBlockSuiteSchema,
+              }
+            ).then(async workspace => {
+              if (typeof workspace !== 'boolean') {
+                const adapter = WorkspaceAdapters[oldMeta.flavour];
+                const oldWorkspace = await adapter.CRUD.get(oldMeta.id);
+                const newId = await adapter.CRUD.create(workspace);
+                assertExists(
+                  oldWorkspace,
+                  'workspace should exist after migrate'
+                );
+                await adapter.CRUD.delete(oldWorkspace.blockSuiteWorkspace);
+                const index = newMetadata.findIndex(
+                  meta => meta.id === oldMeta.id
+                );
+                newMetadata[index] = {
+                  ...oldMeta,
+                  id: newId,
+                  version: WorkspaceVersion.DatabaseV3,
+                };
+                await migrateLocalBlobStorage(workspace.id, newId);
+              } else if (workspace) {
+                console.log('workspace migrated', oldMeta.id);
+              }
+            })
+          );
         }
       });
 
