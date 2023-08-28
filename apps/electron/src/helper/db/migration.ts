@@ -1,7 +1,11 @@
+import { equal } from 'node:assert';
 import { resolve } from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
-import { migrateToSubdoc } from '@toeverything/infra/blocksuite';
+import {
+  migrateToSubdoc,
+  WorkspaceVersion,
+} from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
@@ -28,6 +32,72 @@ export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
 
   // 4. close db
   await db.close();
+};
+
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { Schema, Workspace } from '@blocksuite/store';
+import { migrateWorkspace } from '@toeverything/infra/blocksuite';
+
+// v1 v2 -> v3
+export const migrateToLatestDatabase = async (path: string) => {
+  const connection = new SqliteConnection(path);
+  await connection.connect();
+  await connection.initVersion();
+  const schema = new Schema();
+  schema.register(AffineSchemas).register(__unstableSchemas);
+  const rootDoc = new YDoc();
+  const downloadBinary = async (doc: YDoc, isRoot: boolean): Promise<void> => {
+    const update = (
+      await connection.getUpdates(isRoot ? undefined : doc.guid)
+    ).map(update => update.data);
+    // Buffer[] -> Uint8Array
+    const data = new Uint8Array(Buffer.concat(update).buffer);
+    applyUpdate(doc, data);
+    // trigger data manually
+    if (isRoot) {
+      doc.getMap('meta');
+      doc.getMap('spaces');
+    } else {
+      doc.getMap('blocks');
+    }
+    await Promise.all(
+      [...doc.subdocs].map(subdoc => {
+        return downloadBinary(subdoc, false);
+      })
+    );
+  };
+  await downloadBinary(rootDoc, true);
+  const result = await migrateWorkspace(WorkspaceVersion.SubDoc, {
+    getSchema: () => schema,
+    getCurrentRootDoc: () => Promise.resolve(rootDoc),
+    createWorkspace: () =>
+      Promise.resolve(
+        new Workspace({
+          id: nanoid(10),
+          schema,
+          blobStorages: [],
+          providerCreators: [],
+        })
+      ),
+  });
+  equal(
+    typeof result,
+    'boolean',
+    'migrateWorkspace should return boolean value'
+  );
+  const uploadBinary = async (doc: YDoc, isRoot: boolean) => {
+    await connection.replaceUpdates(doc.guid, [
+      { docId: isRoot ? undefined : doc.guid, data: encodeStateAsUpdate(doc) },
+    ]);
+    // connection..applyUpdate(encodeStateAsUpdate(doc), 'self', doc.guid)
+    await Promise.all(
+      [...doc.subdocs].map(subdoc => {
+        return uploadBinary(subdoc, false);
+      })
+    );
+  };
+  await uploadBinary(rootDoc, true);
+  await connection.close();
 };
 
 export const copyToTemp = async (path: string) => {
