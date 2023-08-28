@@ -12,7 +12,11 @@ import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { ensureSQLiteDB } from '../db/ensure-db';
-import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../db/migration';
+import {
+  copyToTemp,
+  migrateToLatestDatabase,
+  migrateToSubdocAndReplaceDatabase,
+} from '../db/migration';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
@@ -197,7 +201,22 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       }
     }
 
+    if (validationResult === ValidationResult.MissingVersionColumn) {
+      try {
+        const tmpDBPath = await copyToTemp(originalPath);
+        await migrateToLatestDatabase(tmpDBPath);
+        originalPath = tmpDBPath;
+      } catch (error) {
+        logger.warn(
+          `loadDBFile, migration version column failed: ${originalPath}`,
+          error
+        );
+        return { error: 'DB_FILE_MIGRATION_FAILED' };
+      }
+    }
+
     if (
+      validationResult !== ValidationResult.MissingVersionColumn &&
       validationResult !== ValidationResult.MissingDocIdColumn &&
       validationResult !== ValidationResult.Valid
     ) {
