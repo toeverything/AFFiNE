@@ -1,7 +1,8 @@
-import { FlexWrapper, toast, Tooltip } from '@affine/component';
+import { FlexWrapper, toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -75,9 +76,9 @@ export const StoragePanel = ({ workspace }: StoragePanelProps) => {
       secondaryPath ? (
         <FlexWrapper justifyContent="space-between">
           <Tooltip
-            zIndex={1000}
             content={t['com.affine.settings.storage.db-location.change-hint']()}
-            placement="top-start"
+            side="top"
+            align="start"
           >
             <Button
               data-testid="move-folder"
