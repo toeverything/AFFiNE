@@ -4,19 +4,19 @@ import {
   ModalCloseButton,
   ModalWrapper,
   toast,
-  Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import type {
   LoadDBFileResult,
   SelectDBFileLocationResult,
 } from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -125,6 +125,7 @@ const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {
   const t = useAFFiNEI18N();
+  const ref = useRef(null);
   const defaultDBLocation = useDefaultDBLocation();
   const [opening, setOpening] = useState(false);
 
@@ -161,11 +162,12 @@ const SetDBLocationContent = ({
           {t['Customize']()}
         </Button>
         <Tooltip
-          zIndex={1000}
           content={t['Default db location hint']({
             location: defaultDBLocation,
           })}
-          placement="top-start"
+          portalOptions={{
+            container: ref.current,
+          }}
         >
           <Button
             data-testid="create-workspace-default-location-button"
@@ -175,6 +177,7 @@ const SetDBLocationContent = ({
             }}
             icon={<HelpIcon />}
             iconPosition="end"
+            ref={ref}
           >
             {t['Default Location']()}
           </Button>

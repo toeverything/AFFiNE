@@ -1,10 +1,10 @@
-import { Tooltip } from '@affine/component';
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
@@ -53,7 +53,9 @@ export const CollectionBar = (props: CollectionBarProps) => {
           />
           <Tooltip
             content={setting.currentCollection.name}
-            pointerEnterDelay={1500}
+            rootOptions={{
+              delayDuration: 1500,
+            }}
           >
             <div
               style={{
@@ -68,11 +70,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
           </Tooltip>
           {actions.map(action => {
             return (
-              <Tooltip
-                key={action.name}
-                content={action.tooltip}
-                placement="top-start"
-              >
+              <Tooltip key={action.name} content={action.tooltip}>
                 <div
                   data-testid={`collection-bar-option-${action.name}`}
                   onClick={action.click}

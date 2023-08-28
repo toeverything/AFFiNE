@@ -1,4 +1,3 @@
-import { Tooltip } from '@affine/component';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -13,6 +12,7 @@ import {
 } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import { Button, IconButton } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import { useAtom } from 'jotai';
@@ -336,7 +336,7 @@ const ImagePreviewModalImpl = (
         ) : null}
         <div className={imagePreviewActionBarStyle}>
           <div>
-            <Tooltip content={'Previous'} placement={'top'} showArrow={true}>
+            <Tooltip content={'Previous'}>
               <IconButton
                 data-testid="previous-image-button"
                 icon={<ArrowLeftSmallIcon />}
@@ -348,7 +348,7 @@ const ImagePreviewModalImpl = (
                 }}
               />
             </Tooltip>
-            <Tooltip content={'Next'} placement={'top'} showArrow={true}>
+            <Tooltip content={'Next'}>
               <IconButton
                 data-testid="next-image-button"
                 icon={<ArrowRightSmallIcon />}
@@ -362,7 +362,7 @@ const ImagePreviewModalImpl = (
             </Tooltip>
           </div>
           <div className={groupStyle}></div>
-          <Tooltip content={'Fit to Screen'} placement={'top'} showArrow={true}>
+          <Tooltip content={'Fit to Screen'}>
             <IconButton
               data-testid="fit-to-screen-button"
               icon={<ViewBarIcon />}
@@ -371,7 +371,7 @@ const ImagePreviewModalImpl = (
               onClick={() => resetZoom()}
             />
           </Tooltip>
-          <Tooltip content={'Zoom out'} placement={'top'} showArrow={true}>
+          <Tooltip content={'Zoom out'}>
             <IconButton
               data-testid="zoom-out-button"
               icon={<MinusIcon />}
@@ -380,7 +380,7 @@ const ImagePreviewModalImpl = (
               onClick={zoomOut}
             />
           </Tooltip>
-          <Tooltip content={'Reset Scale'} placement={'top'} showArrow={true}>
+          <Tooltip content={'Reset Scale'}>
             <Button
               data-testid="reset-scale-button"
               type="plain"
@@ -391,7 +391,7 @@ const ImagePreviewModalImpl = (
               {`${(currentScale * 100).toFixed(0)}%`}
             </Button>
           </Tooltip>
-          <Tooltip content={'Zoom in'} placement={'top'} showArrow={true}>
+          <Tooltip content={'Zoom in'}>
             <IconButton
               data-testid="zoom-in-button"
               icon={<PlusIcon />}
@@ -401,7 +401,7 @@ const ImagePreviewModalImpl = (
             />
           </Tooltip>
           <div className={groupStyle}></div>
-          <Tooltip content={'Download'} placement={'top'} showArrow={true}>
+          <Tooltip content={'Download'}>
             <IconButton
               data-testid="download-button"
               icon={<DownloadIcon />}
@@ -415,11 +415,7 @@ const ImagePreviewModalImpl = (
               }}
             />
           </Tooltip>
-          <Tooltip
-            content={'Copy to clipboard'}
-            placement={'top'}
-            showArrow={true}
-          >
+          <Tooltip content={'Copy to clipboard'}>
             <IconButton
               data-testid="copy-to-clipboard-button"
               icon={<CopyIcon />}
@@ -460,7 +456,7 @@ const ImagePreviewModalImpl = (
             />
           </Tooltip>
           <div className={groupStyle}></div>
-          <Tooltip content={'Delete'} placement={'top'} showArrow={true}>
+          <Tooltip content={'Delete'}>
             <IconButton
               data-testid="delete-button"
               icon={<DeleteIcon />}
