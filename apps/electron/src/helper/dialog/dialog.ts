@@ -10,6 +10,8 @@ import type {
 } from '@toeverything/infra/type';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
+import type { Doc } from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { ensureSQLiteDB } from '../db/ensure-db';
 import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../db/migration';
@@ -216,6 +218,40 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       id: workspaceId,
       mainDBPath: internalFilePath,
     });
+
+    const db = await ensureSQLiteDB(workspaceId);
+    const { Workspace, Schema } = await import('@blocksuite/store');
+    const schema = new Schema();
+    const { __unstableSchemas, AffineSchemas } = await import(
+      '@blocksuite/blocks/models'
+    );
+    schema.register(AffineSchemas).register(__unstableSchemas);
+    const workspace = new Workspace({
+      id: workspaceId,
+      schema,
+      blobStorages: [],
+    });
+    const downloadBinary = async (doc: Doc): Promise<void> => {
+      const update = db.getDocAsUpdates(doc.guid);
+      if (update) {
+        applyUpdate(doc, update);
+      }
+      await Promise.all(
+        [...doc.subdocs].map(subdoc => {
+          return downloadBinary(subdoc);
+        })
+      );
+    };
+    await downloadBinary(workspace.doc);
+    // always try to upgrade the workspace
+    schema.upgradeWorkspace(workspace.doc);
+    const uploadBinary = (doc: Doc) => {
+      db.applyUpdate(encodeStateAsUpdate(doc), 'self', doc.guid);
+      [...doc.subdocs].map(subdoc => {
+        return uploadBinary(subdoc);
+      });
+    };
+    uploadBinary(workspace.doc);
 
     return { workspaceId };
   } catch (err) {
