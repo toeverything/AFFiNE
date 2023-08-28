@@ -55,6 +55,24 @@ jobs:
           path: ./apps/core/dist
           if-no-files-found: error
 
+  build-native:
+    name: Build Native
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-core
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Run tests
+        run: yarn test
+        working-directory: ./packages/native
+
   desktop-test:
     name: Desktop Test
     runs-on: ${{ matrix.spec.os }}
