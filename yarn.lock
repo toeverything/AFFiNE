@@ -665,7 +665,7 @@ __metadata:
     graphql-type-json: ^0.3.2
     graphql-upload: ^16.0.2
     lodash-es: ^4.17.21
-    next-auth: 4.22.5
+    next-auth: 4.23.1
     nodemailer: ^6.9.4
     nodemon: ^3.0.1
     parse-duration: ^1.1.0
@@ -25506,9 +25506,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next-auth@npm:4.22.5":
-  version: 4.22.5
-  resolution: "next-auth@npm:4.22.5"
+"next-auth@npm:4.23.1":
+  version: 4.23.1
+  resolution: "next-auth@npm:4.23.1"
   dependencies:
     "@babel/runtime": ^7.20.13
     "@panva/hkdf": ^1.0.2
@@ -25527,7 +25527,7 @@ __metadata:
   peerDependenciesMeta:
     nodemailer:
       optional: true
-  checksum: 94e8cb4d72a68636d2f26ba7cd330085c5589227449b180ee559fdb4100ee4e3d8f541776d2dc059c6878d640fe6e177a6ab22e375916529424ab0f6c369f482
+  checksum: 995114797c257ccf71a82d19fb6316fb7709b552aaaf66444591c505a4b8e00b0cae3f4db4316b63a8cc439076044cc391ab171c4f6ee2e086709c5b3bbfed24
   languageName: node
   linkType: hard
 
