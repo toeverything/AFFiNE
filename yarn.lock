@@ -579,7 +579,7 @@ __metadata:
     "@vanilla-extract/rollup-plugin": ^1.3.0
     "@vitejs/plugin-vue": ^4.3.3
     rollup: ^3.28.1
-    rollup-plugin-swc3: ^0.9.1
+    rollup-plugin-swc3: ^0.10.1
     ts-node: ^10.9.1
   bin:
     af: ./src/af.mjs
@@ -29324,18 +29324,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rollup-plugin-swc3@npm:^0.9.1":
-  version: 0.9.1
-  resolution: "rollup-plugin-swc3@npm:0.9.1"
+"rollup-plugin-swc3@npm:^0.10.1":
+  version: 0.10.1
+  resolution: "rollup-plugin-swc3@npm:0.10.1"
   dependencies:
     "@fastify/deepmerge": ^1.3.0
     "@rollup/pluginutils": ^4.2.1
     get-tsconfig: ^4.6.2
-    rollup-swc-preserve-directives: ^0.3.0
+    rollup-swc-preserve-directives: ^0.3.2
   peerDependencies:
     "@swc/core": ">=1.2.165"
     rollup: ^2.0.0 || ^3.0.0
-  checksum: 2603a1b47e612e0f9ff3d18d9b3798d56822d7ffce098124e8a6151728700f3fd284653ca3eeeb56b14894079f4ca18f76616b904e17fb1127028c1e07893cb8
+  checksum: 286b8ccf04a7ad2588e821ed199849c5c5189703562ea4a684dc3c49fb7a23a211eab596ce53f25dae063c07ecde13b7cef8e3a4a5d8202837b87d867b375cef
   languageName: node
   linkType: hard
 
@@ -29348,7 +29348,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rollup-swc-preserve-directives@npm:^0.3.0":
+"rollup-swc-preserve-directives@npm:^0.3.2":
   version: 0.3.2
   resolution: "rollup-swc-preserve-directives@npm:0.3.2"
   dependencies:
