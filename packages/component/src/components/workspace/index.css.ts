@@ -70,7 +70,7 @@ export const mainContainerStyle = style({
   backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
-      margin: '8px',
+      margin: '8px 8px 8px 0',
       borderRadius: '5px',
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',

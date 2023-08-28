@@ -26,6 +26,7 @@ export const Switch = (props: SwitchProps) => {
       <input
         className={clsx(styles.inputStyle)}
         type="checkbox"
+        value={isChecked ? 'on' : 'off'}
         checked={isChecked}
         onChange={handleChange}
       />

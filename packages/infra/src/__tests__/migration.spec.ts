@@ -16,8 +16,8 @@ const doc = new Doc();
 applyUpdate(doc, new Uint8Array(yDocBuffer));
 const migratedDoc = migrateToSubdoc(doc);
 
-describe('subdoc', () => {
-  test('Migration to subdoc', async () => {
+describe('migration', () => {
+  test('migration to subdoc', async () => {
     const { default: json } = await import('@affine-test/fixtures/output.json');
     const length = Object.keys(json).length;
     const binary = new Uint8Array(length);
@@ -49,13 +49,13 @@ describe('subdoc', () => {
     });
   });
 
-  test('Test fixture should be set correctly', () => {
+  test('test fixture should be set correctly', () => {
     const meta = doc.getMap('space:meta');
     const versions = meta.get('versions') as YMap<unknown>;
     expect(versions.get('affine:code')).toBeTypeOf('number');
   });
 
-  test('Meta data should be migrated correctly', () => {
+  test('metadata should be migrated correctly', () => {
     const originalMeta = doc.getMap('space:meta');
     const originalVersions = originalMeta.get('versions') as YMap<unknown>;
 

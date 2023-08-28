@@ -9,9 +9,10 @@ import {
   ResetIcon,
 } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
 
-import { Confirm, FlexWrapper, Menu, MenuItem, Tooltip } from '../../..';
+import { Confirm, FlexWrapper, Menu, MenuItem } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export interface OperationCellProps {
@@ -125,7 +126,7 @@ export const TrashOperationCell = ({
   const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>
-      <Tooltip content={t['Restore it']()} placement="top-start">
+      <Tooltip content={t['Restore it']()} side="top">
         <IconButton
           style={{ marginRight: '12px' }}
           onClick={() => {
@@ -135,7 +136,7 @@ export const TrashOperationCell = ({
           <ResetIcon />
         </IconButton>
       </Tooltip>
-      <Tooltip content={t['Delete permanently']()} placement="top-start">
+      <Tooltip content={t['Delete permanently']()} side="top" align="end">
         <IconButton
           onClick={() => {
             setOpen(true);

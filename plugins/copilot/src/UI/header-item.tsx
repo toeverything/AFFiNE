@@ -1,7 +1,7 @@
-import { Tooltip } from '@affine/component';
 import { deleteLayoutAtom, pushLayoutAtom } from '@affine/sdk/entry';
 import { AiIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
 import type { ComponentType, PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useState } from 'react';
@@ -18,7 +18,7 @@ export const HeaderItem = ({
   const pushLayout = useSetAtom(pushLayoutAtom);
   const deleteLayout = useSetAtom(deleteLayoutAtom);
   return (
-    <Tooltip content="Chat with AI" placement="bottom-end">
+    <Tooltip content="Chat with AI" side="bottom">
       <IconButton
         onClick={useCallback(() => {
           if (!open) {

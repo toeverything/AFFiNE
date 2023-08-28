@@ -27,7 +27,6 @@ export const StyledTextContent = styled('div')(() => {
   return {
     margin: 'auto',
     width: '425px',
-    fontFamily: 'Avenir Next',
     fontStyle: 'normal',
     fontWeight: '400',
     fontSize: '18px',

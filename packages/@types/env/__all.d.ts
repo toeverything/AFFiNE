@@ -3,6 +3,7 @@ import type {
   DBHandlerManager,
   DebugHandlerManager,
   DialogHandlerManager,
+  EventMap,
   ExportHandlerManager,
   UIHandlerManager,
   UnwrapManagerHandlerToClientSide,
@@ -24,7 +25,7 @@ declare global {
       updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
       workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
     };
-    events: any;
+    events: EventMap;
   }
 
   interface WindowEventMap {
