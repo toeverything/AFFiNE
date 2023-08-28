@@ -1,8 +1,5 @@
 import { setupGlobal } from '@affine/env/global';
-import type {
-  LocalIndexedDBDownloadProvider,
-  WorkspaceAdapter,
-} from '@affine/env/workspace';
+import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
@@ -14,7 +11,6 @@ import {
   getOrCreateWorkspace,
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
-import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import {
@@ -22,8 +18,10 @@ import {
   migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
+import { downloadBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
-import type { Doc } from 'yjs';
+import { Doc } from 'yjs';
+import { applyUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -41,21 +39,22 @@ async function tryMigration() {
               'version' in oldMeta ? oldMeta.version : undefined,
               {
                 getCurrentRootDoc: async () => {
-                  const adapter = WorkspaceAdapters[WorkspaceFlavour.LOCAL];
-                  const workspace = await adapter.CRUD.get(oldMeta.id);
-                  assertExists(workspace, 'workspace should exist');
-                  const doc = workspace.blockSuiteWorkspace.doc;
-                  const provider = createIndexedDBDownloadProvider(
-                    workspace.id,
-                    doc,
-                    {
-                      awareness:
-                        workspace.blockSuiteWorkspace.awarenessStore.awareness,
+                  const doc = new Doc({
+                    guid: oldMeta.id,
+                  });
+                  const downloadWorkspace = async (doc: Doc): Promise<void> => {
+                    const binary = await downloadBinary(doc.guid);
+                    if (binary) {
+                      applyUpdate(doc, binary);
                     }
-                  ) as LocalIndexedDBDownloadProvider;
-                  provider.sync();
-                  await provider.whenReady;
-                  return doc as Doc;
+                    return Promise.all(
+                      [...doc.subdocs.values()].map(subdoc =>
+                        downloadWorkspace(subdoc)
+                      )
+                    ).then();
+                  };
+                  await downloadWorkspace(doc);
+                  return doc;
                 },
                 createWorkspace: async () =>
                   getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
@@ -80,6 +79,7 @@ async function tryMigration() {
                   version: WorkspaceVersion.DatabaseV3,
                 };
                 await migrateLocalBlobStorage(workspace.id, newId);
+                console.log('workspace migrated', oldMeta.id, newId);
               } else if (workspace) {
                 console.log('workspace migrated', oldMeta.id);
               }
