@@ -85,7 +85,7 @@ const ImagePreviewModalImpl = (
       };
     }
 
-    return () => {};
+    return;
   }, [isOpen, props, setIsOpen]);
 
   const nextImageHandler = useCallback(
