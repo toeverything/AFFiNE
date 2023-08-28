@@ -57,18 +57,8 @@ async function tryMigration() {
                   await provider.whenReady;
                   return doc as Doc;
                 },
-                createWorkspace: async () => {
-                  const adapter = WorkspaceAdapters[oldMeta.flavour];
-                  const id = await adapter.CRUD.create(
-                    getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL)
-                  );
-                  const workspace = await adapter.CRUD.get(id);
-                  assertExists(
-                    workspace,
-                    'workspace should exist after create'
-                  );
-                  return workspace.blockSuiteWorkspace;
-                },
+                createWorkspace: async () =>
+                  getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
                 getSchema: () => globalBlockSuiteSchema,
               }
             ).then(async workspace => {
