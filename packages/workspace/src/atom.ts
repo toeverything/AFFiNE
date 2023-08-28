@@ -1,7 +1,8 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
+import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import { atom } from 'jotai';
 import { z } from 'zod';
 

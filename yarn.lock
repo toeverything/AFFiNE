@@ -11771,6 +11771,7 @@ __metadata:
     react: ^18.2.0
     vite: ^4.4.9
     vite-plugin-dts: 3.5.2
+    yjs: ^13.6.7
     zod: ^3.22.2
   peerDependencies:
     "@affine/templates": "*"
@@ -11779,6 +11780,7 @@ __metadata:
     async-call-rpc: "*"
     electron: "*"
     react: "*"
+    yjs: ^13
   peerDependenciesMeta:
     "@affine/templates":
       optional: true
@@ -11791,6 +11793,8 @@ __metadata:
     electron:
       optional: true
     react:
+      optional: true
+    yjs:
       optional: true
   languageName: unknown
   linkType: soft
