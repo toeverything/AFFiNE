@@ -42,6 +42,7 @@
     "@electron-forge/shared-types": "^6.4.1",
     "@electron/remote": "2.0.10",
     "@reforged/maker-appimage": "^3.3.1",
+    "@toeverything/infra": "workspace:*",
     "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.2",
     "cross-env": "7.0.3",
@@ -53,6 +54,8 @@
     "fs-extra": "^11.1.1",
     "glob": "^10.3.3",
     "jotai": "^2.4.0",
+    "lodash-es": "^4.17.21",
+    "rxjs": "^7.8.1",
     "ts-node": "^10.9.1",
     "undici": "^5.23.0",
     "uuid": "^9.0.0",
@@ -61,13 +64,10 @@
     "zx": "^7.2.3"
   },
   "dependencies": {
-    "@toeverything/infra": "workspace:*",
     "async-call-rpc": "^6.3.1",
     "electron-updater": "^6.1.4",
     "link-preview-js": "^3.0.5",
-    "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
-    "rxjs": "^7.8.1",
     "yjs": "^13.6.7"
   },
   "build": {
