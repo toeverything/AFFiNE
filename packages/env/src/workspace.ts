@@ -10,11 +10,6 @@ import type { PropsWithChildren, ReactNode } from 'react';
 
 import type { Collection } from './filter.js';
 
-export enum WorkspaceVersion {
-  SubDoc = 2,
-  DatabaseV3 = 3,
-}
-
 export enum WorkspaceSubPath {
   ALL = 'all',
   SETTING = 'setting',
