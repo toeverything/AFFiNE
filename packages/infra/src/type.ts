@@ -184,10 +184,15 @@ export type ExportHandlers = {
   savePDFFileAs: (title: string) => Promise<any>;
 };
 
+export interface UpdateMeta {
+  version: string;
+  allowAutoUpdate: boolean;
+}
+
 export type UpdaterHandlers = {
-  currentVersion: () => Promise<any>;
-  quitAndInstall: () => Promise<any>;
-  checkForUpdatesAndNotify: () => Promise<any>;
+  currentVersion: () => Promise<string>;
+  quitAndInstall: () => Promise<void>;
+  checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 
 export type WorkspaceHandlers = {
@@ -195,15 +200,6 @@ export type WorkspaceHandlers = {
   delete: (id: string) => Promise<void>;
   getMeta: (id: string) => Promise<WorkspaceMeta>;
 };
-
-export type EventMap = DBHandlers &
-  DebugHandlers &
-  DialogHandlers &
-  UIHandlers &
-  ClipboardHandlers &
-  ExportHandlers &
-  UpdaterHandlers &
-  WorkspaceHandlers;
 
 export type UnwrapManagerHandlerToServerSide<
   ElectronEvent extends {
@@ -242,3 +238,36 @@ export type App<
 > = TypedEventEmitter<{
   [K in keyof Handlers as `${Namespace}:${K & string}`]: Handlers[K];
 }>;
+
+export interface UpdaterEvents {
+  onUpdateAvailable: (fn: (versionMeta: UpdateMeta) => void) => () => void;
+  onUpdateReady: (fn: (versionMeta: UpdateMeta) => void) => () => void;
+  onDownloadProgress: (fn: (progress: number) => void) => () => void;
+}
+
+export interface ApplicationMenuEvents {
+  onNewPageAction: (fn: () => void) => () => void;
+}
+
+export interface DBEvents {
+  onExternalUpdate: (
+    fn: (update: {
+      workspaceId: string;
+      update: Uint8Array;
+      docId?: string;
+    }) => void
+  ) => () => void;
+}
+
+export interface WorkspaceEvents {
+  onMetaChange: (
+    fn: (workspaceId: string, meta: WorkspaceMeta) => void
+  ) => () => void;
+}
+
+export interface EventMap {
+  updater: UpdaterEvents;
+  applicationMenu: ApplicationMenuEvents;
+  db: DBEvents;
+  workspace: WorkspaceEvents;
+}
