@@ -11794,6 +11794,8 @@ __metadata:
       optional: true
     react:
       optional: true
+    yjs:
+      optional: true
   languageName: unknown
   linkType: soft
 

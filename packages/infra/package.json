@@ -93,6 +93,9 @@
     },
     "react": {
       "optional": true
+    },
+    "yjs": {
+      "optional": true
     }
   },
   "version": "0.9.0-canary.0"
