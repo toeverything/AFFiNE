@@ -10,7 +10,7 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/block-std": "0.7.0",
     "@blocksuite/blocks": "0.0.0-20230825054009-a12544d6-nightly",
     "@blocksuite/global": "0.0.0-20230825054009-a12544d6-nightly",
     "@blocksuite/store": "0.0.0-20230825054009-a12544d6-nightly",
