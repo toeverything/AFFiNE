@@ -19,10 +19,10 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
   const open = useAtomValue(appSidebarOpenAtom);
   return (
     <div className={navHeaderStyle} data-open={open}>
+      <div style={{ flex: 1 }} />
       {open && <SidebarSwitch />}
       {environment.isDesktop && (
         <>
-          {environment.isMacOs && <div style={{ flex: 1 }} />}
           <IconButton
             data-testid="app-sidebar-arrow-button-back"
             disabled={props.router?.history.current === 0}
