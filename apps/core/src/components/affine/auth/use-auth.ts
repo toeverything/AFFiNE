@@ -10,7 +10,7 @@ const COUNT_DOWN_TIME = 20;
 const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
 
 function handleSendEmailError(
-  res: SignInResponse | undefined,
+  res: SignInResponse | undefined | void,
   pushNotification: (notification: Notification) => void
 ) {
   if (res?.error) {
@@ -32,13 +32,11 @@ function handleSendEmailError(
 type AuthStoreAtom = {
   allowSendEmail: boolean;
   resendCountDown: number;
-  clearId: number;
 };
 
 export const authStoreAtom = atom<AuthStoreAtom>({
   allowSendEmail: true,
   resendCountDown: COUNT_DOWN_TIME,
-  clearId: 0,
 });
 
 const countDownAtom = atom(
@@ -54,7 +52,10 @@ const countDownAtom = atom(
         window.clearInterval(clearId);
         return;
       }
-      set(authStoreAtom, { resendCountDown: countDown - 1 });
+      set(authStoreAtom, {
+        resendCountDown: countDown - 1,
+        allowSendEmail: false,
+      });
     }, 1000);
   }
 );

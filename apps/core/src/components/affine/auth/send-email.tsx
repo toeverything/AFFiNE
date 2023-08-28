@@ -16,7 +16,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai/react';
-import { type FC, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { AuthPanelProps } from './index';
 
@@ -118,14 +118,13 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
   };
 };
 
-export const SendEmail: FC<AuthPanelProps> = ({
+export const SendEmail = ({
   setAuthState,
-  setAuthStore,
   email,
-  authStore: { hasSentEmail },
   emailType,
-}) => {
+}: AuthPanelProps) => {
   const t = useAFFiNEI18N();
+  const [hasSentEmail, setHasSentEmail] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const title = useEmailTitle(emailType);
@@ -143,8 +142,8 @@ export const SendEmail: FC<AuthPanelProps> = ({
       key: Date.now().toString(),
       type: 'success',
     });
-    setAuthStore({ hasSentEmail: true });
-  }, [email, hint, pushNotification, sendEmail, setAuthStore]);
+    setHasSentEmail(true);
+  }, [email, hint, pushNotification, sendEmail]);
 
   return (
     <>

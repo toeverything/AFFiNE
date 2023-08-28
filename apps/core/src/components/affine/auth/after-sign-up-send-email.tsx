@@ -25,7 +25,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
 
   useEffect(() => {
     if (loginStatus === 'authenticated') {
-      onSignedIn();
+      onSignedIn?.();
     }
   }, [loginStatus, onSignedIn]);
 

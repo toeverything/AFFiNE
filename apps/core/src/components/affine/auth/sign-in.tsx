@@ -12,11 +12,11 @@ import { Button } from '@toeverything/components/button';
 import { type FC, useEffect, useState } from 'react';
 import { useCallback } from 'react';
 
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -40,7 +40,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 
   useEffect(() => {
     if (loginStatus === 'authenticated') {
-      onSignedIn();
+      onSignedIn?.();
     }
   }, [loginStatus, onSignedIn]);
 

@@ -9,7 +9,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
-import { useAtom } from 'jotai/index';
+import { useSetAtom } from 'jotai/index';
 import { signOut } from 'next-auth/react';
 import { type FC, useCallback, useState } from 'react';
 
@@ -112,7 +112,7 @@ export const AvatarAndName = () => {
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-  const [, setAuthModal] = useAtom(authAtom);
+  const setAuthModal = useSetAtom(authAtom);
 
   const onChangeEmail = useCallback(() => {
     setAuthModal({
@@ -122,14 +122,15 @@ export const AccountSetting: FC = () => {
       emailType: 'changeEmail',
     });
   }, [setAuthModal, user.email]);
-  const onChangePassword = useCallback(() => {
+
+  const onPasswordButtonClick = useCallback(() => {
     setAuthModal({
       openModal: true,
       state: 'sendEmail',
       email: user.email,
-      emailType: 'changePassword',
+      emailType: user.hasPassword ? 'changePassword' : 'setPassword',
     });
-  }, [setAuthModal, user.email]);
+  }, [setAuthModal, user.email, user.hasPassword]);
 
   return (
     <>
@@ -148,7 +149,7 @@ export const AccountSetting: FC = () => {
         name={t['com.affine.settings.password']()}
         desc={t['com.affine.settings.password.message']()}
       >
-        <Button onClick={onChangePassword}>
+        <Button onClick={onPasswordButtonClick}>
           {user.hasPassword
             ? t['com.affine.settings.password.action.change']()
             : t['com.affine.settings.password.action.set']()}

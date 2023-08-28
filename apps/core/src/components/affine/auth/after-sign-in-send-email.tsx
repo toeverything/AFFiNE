@@ -26,7 +26,7 @@ export const AfterSignInSendEmail = ({
 
   useEffect(() => {
     if (loginStatus === 'authenticated') {
-      onSignedIn();
+      onSignedIn?.();
     }
   }, [loginStatus, onSignedIn]);
 

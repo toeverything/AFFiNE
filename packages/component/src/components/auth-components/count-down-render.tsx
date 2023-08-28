@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, type HTMLAttributes } from 'react';
 
 const formatTime = (time: number): string => {
   const minutes = Math.floor(time / 60);
@@ -10,10 +10,11 @@ const formatTime = (time: number): string => {
   return `${formattedMinutes}:${formattedSeconds}`;
 };
 
-export const CountDownRender = forwardRef<HTMLDivElement, { timeLeft: number }>(
-  ({ timeLeft, ...props }) => {
-    return <div {...props}>{formatTime(timeLeft)}</div>;
-  }
-);
+export const CountDownRender = forwardRef<
+  HTMLDivElement,
+  { timeLeft: number } & HTMLAttributes<HTMLDivElement>
+>(({ timeLeft, ...props }) => {
+  return <div {...props}>{formatTime(timeLeft)}</div>;
+});
 
 CountDownRender.displayName = 'CountDownRender';
