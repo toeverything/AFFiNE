@@ -131,6 +131,8 @@ export class NextAuthController {
     if (redirect) {
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
+      } else if (action === 'callback') {
+        res.redirect(redirect);
       } else {
         res.send(JSON.stringify({ url: redirect }));
       }

@@ -1,11 +1,14 @@
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
+import { pushNotificationAtom } from '@affine/component/notification-center';
+import type { Notification } from '@affine/component/notification-center/index.jotai';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { signIn } from 'next-auth/react';
+import { useSetAtom } from 'jotai';
+import { signIn, type SignInResponse } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
@@ -16,6 +19,19 @@ import * as style from './style.css';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
+}
+
+function handleSendEmailError(
+  res: SignInResponse | undefined,
+  pushNotification: (notification: Notification) => void
+) {
+  if (res?.error) {
+    pushNotification({
+      title: 'Send email error',
+      message: 'Please back to home and try again',
+      type: 'error',
+    });
+  }
 }
 
 export const SignIn: FC<AuthPanelProps> = ({
@@ -29,7 +45,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     mutation: getUserQuery,
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
-
+  const pushNotification = useSetAtom(pushNotificationAtom);
   const onContinue = useCallback(async () => {
     if (!validateEmail(email)) {
       setIsValidEmail(false);
@@ -41,26 +57,26 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setAuthEmail(email);
     if (user) {
-      if (user.hasPassword) {
-        setAuthState('signInWithPassword');
-      } else {
-        signIn('email', {
-          email: email,
-          callbackUrl: buildCallbackUrl('signIn'),
-          redirect: true,
-        }).catch(console.error);
-        setAuthState('afterSignInSendEmail');
-      }
+      signIn('email', {
+        email: email,
+        callbackUrl: buildCallbackUrl('signIn'),
+        redirect: false,
+      })
+        .then(res => handleSendEmailError(res, pushNotification))
+        .catch(console.error);
+      setAuthState('afterSignInSendEmail');
     } else {
       signIn('email', {
         email: email,
         callbackUrl: buildCallbackUrl('signUp'),
-        redirect: true,
-      }).catch(console.error);
+        redirect: false,
+      })
+        .then(res => handleSendEmailError(res, pushNotification))
+        .catch(console.error);
 
       setAuthState('afterSignUpSendEmail');
     }
-  }, [email, setAuthEmail, setAuthState, verifyUser]);
+  }, [email, setAuthEmail, setAuthState, verifyUser, pushNotification]);
   return (
     <>
       <ModalHeader
