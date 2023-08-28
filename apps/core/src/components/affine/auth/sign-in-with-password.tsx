@@ -19,7 +19,7 @@ import { forgetPasswordButton } from './style.css';
 export const SignInWithPassword: FC<AuthPanelProps> = ({
   setAuthState,
   email,
-  setOpen,
+  onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
   const { update } = useSession();
@@ -41,14 +41,14 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
     }
 
     await update();
-    setOpen(false);
+    onSignedIn?.();
     pushNotification({
       title: `${email}${t['com.affine.auth.has.signed']()}`,
       message: '',
       key: Date.now().toString(),
       type: 'success',
     });
-  }, [email, password, pushNotification, setOpen, t, update]);
+  }, [email, password, pushNotification, onSignedIn, t, update]);
 
   return (
     <>

@@ -6,7 +6,7 @@
     "module": "ESNext",
     "verbatimModuleSyntax": false,
     "resolveJsonModule": true,
-    "moduleResolution": "Node16",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "outDir": "./lib/.webpack",
     "rootDir": "."
@@ -15,6 +15,9 @@
   "references": [
     {
       "path": "../../packages/cli"
+    },
+    {
+      "path": "../../packages/env"
     }
   ]
 }

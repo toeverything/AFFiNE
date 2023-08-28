@@ -1,25 +1,5 @@
 {
   "blocks": {
-    "TBjwPij8cJ": {
-      "sys:id": "TBjwPij8cJ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "quote",
-      "prop:text": [
-        {
-          "insert": "Maximize your team's performance and drive goal-oriented success with our extensive collection of "
-        },
-        {
-          "insert": "OKR templates",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": ", specifically crafted to facilitate effective objective setting, key result tracking, and overall performance improvement."
-        }
-      ]
-    },
     "qsMt8nCetT": {
       "sys:id": "qsMt8nCetT",
       "sys:flavour": "affine:page",
@@ -40,22 +20,36 @@
       "sys:id": "pk_Cjkpyd4",
       "sys:flavour": "affine:note",
       "sys:children": [
-        "koPFC7j_R7",
+        "IAOXx-DBBz",
         "5hR-BR03ms",
         "zVgCQKWH-c",
+        "ym2g48zSU_",
+        "o1UyrWV30t",
         "1EUiH1t60b",
         "HmzMXKFaci",
+        "v5CGQQPDrt",
+        "lcf4te4rxB",
+        "AbN8iFn0RW",
         "uXdWxSSWgl",
         "TBjwPij8cJ",
         "mjgDUguqmV",
+        "c_gX1ik0kK",
+        "IU3gGmIffA",
         "LnERZXy0xj",
         "oi0BxPtiit",
         "DuRxwNJe2w"
       ],
-      "prop:xywh": "[0,0,800,643]",
+      "prop:xywh": "[0,0,800,939]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
+    },
+    "IAOXx-DBBz": {
+      "sys:id": "IAOXx-DBBz",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
     },
     "5hR-BR03ms": {
       "sys:id": "5hR-BR03ms",
@@ -94,6 +88,18 @@
         }
       ]
     },
+    "ym2g48zSU_": {
+      "sys:id": "ym2g48zSU_",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "o1UyrWV30t": {
+      "sys:id": "o1UyrWV30t",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
     "1EUiH1t60b": {
       "sys:id": "1EUiH1t60b",
       "sys:flavour": "affine:paragraph",
@@ -128,6 +134,37 @@
         }
       ]
     },
+    "v5CGQQPDrt": {
+      "sys:id": "v5CGQQPDrt",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "AbN8iFn0RW": {
+      "sys:id": "AbN8iFn0RW",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "lcf4te4rxB": {
+      "sys:id": "lcf4te4rxB",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "IU3gGmIffA": {
+      "sys:id": "IU3gGmIffA",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "c_gX1ik0kK": {
+      "sys:id": "c_gX1ik0kK",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
     "uXdWxSSWgl": {
       "sys:id": "uXdWxSSWgl",
       "sys:flavour": "affine:paragraph",
@@ -145,14 +182,25 @@
         }
       ]
     },
-    "koPFC7j_R7": {
-      "sys:id": "koPFC7j_R7",
-      "sys:flavour": "affine:image",
+    "TBjwPij8cJ": {
+      "sys:id": "TBjwPij8cJ",
+      "sys:flavour": "affine:paragraph",
       "sys:children": [],
-      "prop:sourceId": "rY96Bunn-69CnNe5X_e5CJLwgCJnN6rcbUisecs8kkQ=",
-      "prop:caption": "",
-      "prop:width": 0,
-      "prop:height": 0
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Maximize your team's performance and drive goal-oriented success with our extensive collection of "
+        },
+        {
+          "insert": "OKR templates",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": ", specifically crafted to facilitate effective objective setting, key result tracking, and overall performance improvement."
+        }
+      ]
     },
     "mjgDUguqmV": {
       "sys:id": "mjgDUguqmV",
@@ -181,13 +229,6 @@
         }
       ]
     },
-    "DuRxwNJe2w": {
-      "sys:id": "DuRxwNJe2w",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
     "oi0BxPtiit": {
       "sys:id": "oi0BxPtiit",
       "sys:flavour": "affine:paragraph",
@@ -198,6 +239,13 @@
           "insert": "✏Unleash your creativity and elevate your work efficiency to new heights by customizing templates that perfectly align with your unique needs and objectives."
         }
       ]
+    },
+    "DuRxwNJe2w": {
+      "sys:id": "DuRxwNJe2w",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
     }
   }
 }

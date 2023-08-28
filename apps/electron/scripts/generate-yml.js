@@ -1,8 +1,8 @@
 // do not run in your local machine
 /* eslint-disable */
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
 /* eslint-enable */
 
 const yml = {
@@ -10,18 +10,10 @@ const yml = {
   files: [],
 };
 
-let fileList = [];
-// TODO: maybe add `beta` and `stable`
-const BUILD_TYPE = process.env.BUILD_TYPE || 'canary';
-
-const generateYml = async () => {
-  fileList = [
-    `affine-${BUILD_TYPE}-macos-arm64.dmg`,
-    `affine-${BUILD_TYPE}-macos-arm64.zip`,
-    `affine-${BUILD_TYPE}-macos-x64.zip`,
-    `affine-${BUILD_TYPE}-macos-x64.dmg`,
-  ];
-  fileList.forEach(fileName => {
+const generateYml = platform => {
+  const regex = new RegExp(`^affine-.*-${platform}-.*.(exe|zip|dmg|AppImage)$`);
+  const files = fs.readdirSync(__dirname).filter(file => regex.test(file));
+  files.forEach(fileName => {
     const filePath = path.join(__dirname, './', fileName);
     try {
       const fileData = fs.readFileSync(filePath);
@@ -58,6 +50,9 @@ const generateYml = async () => {
     `sha512: ${yml.sha512}\n` +
     `releaseDate: ${yml.releaseDate}\n`;
 
-  fs.writeFileSync(`./latest-mac.yml`, ymlStr);
+  const fileName = platform === 'windows' ? 'latest.yml' : 'latest-mac.yml';
+
+  fs.writeFileSync(fileName, ymlStr);
 };
-generateYml();
+generateYml('windows');
+generateYml('macos');

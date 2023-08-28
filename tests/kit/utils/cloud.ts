@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie } from '@playwright/test';
 
-export async function getLoginCootie(
+export async function getLoginCookie(
   context: BrowserContext
 ): Promise<Cookie | undefined> {
   return (await context.cookies()).find(
@@ -13,7 +13,7 @@ export async function getLoginCootie(
 export async function createRandomUser() {
   const user = {
     name: faker.internet.userName(),
-    email: faker.internet.email(),
+    email: faker.internet.email().toLowerCase(),
     password: '123456',
   };
   const {
@@ -30,6 +30,7 @@ export async function createRandomUser() {
     },
   });
   await client.$disconnect();
+
   return client.user.findUnique({
     where: {
       email: user.email,

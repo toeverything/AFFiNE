@@ -1,7 +1,11 @@
 import type { WorkspaceSubPath } from '@affine/env/workspace';
 import { useCallback } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  type NavigateOptions,
+  useLocation,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
+  useNavigate,
+} from 'react-router-dom';
 
 export enum RouteLogic {
   REPLACE = 'replace',
@@ -86,6 +90,18 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToSignIn = useCallback(
+    (
+      logic: RouteLogic = RouteLogic.PUSH,
+      otherOptions?: Omit<NavigateOptions, 'replace'>
+    ) => {
+      return navigate('/signIn', {
+        replace: logic === RouteLogic.REPLACE,
+        ...otherOptions,
+      });
+    },
+    [navigate]
+  );
 
   return {
     jumpToPage,
@@ -95,5 +111,6 @@ export function useNavigateHelper() {
     jumpTo404,
     openPage,
     jumpToExpired,
+    jumpToSignIn,
   };
 }

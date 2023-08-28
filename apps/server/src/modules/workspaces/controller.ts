@@ -1,6 +1,7 @@
 import type { Storage } from '@affine/storage';
 import {
   Controller,
+  ForbiddenException,
   Get,
   Inject,
   NotFoundException,
@@ -11,6 +12,7 @@ import type { Response } from 'express';
 import format from 'pretty-time';
 
 import { StorageProvide } from '../../storage';
+import { trimGuid } from '../../utils/doc';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocManager } from '../doc';
 import { UserType } from '../users';
@@ -57,9 +59,15 @@ export class WorkspacesController {
     @Res() res: Response
   ) {
     const start = process.hrtime();
-    await this.permission.check(ws, user?.id);
+    const id = trimGuid(ws, guid);
+    if (
+      !(await this.permission.tryCheck(ws, user?.id)) &&
+      !(await this.permission.tryCheckSharePage(ws, id))
+    ) {
+      throw new ForbiddenException('Permission denied');
+    }
 
-    const update = await this.docManager.getLatest(ws, guid);
+    const update = await this.docManager.getLatestUpdate(ws, id);
 
     if (!update) {
       throw new NotFoundException('Doc not found');

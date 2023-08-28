@@ -8,18 +8,11 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
+import { trimGuid } from '../../../utils/doc';
 import { DocManager } from '../../doc';
-
-function trimGuid(ws: string, guid: string) {
-  if (guid.startsWith(`${ws}:space:`)) {
-    return guid.substring(ws.length + 1);
-  }
-
-  return guid;
-}
 
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
@@ -100,26 +93,32 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       stateVector?: string;
       targetClientId?: number;
     }
-  ): Promise<string | false> {
+  ): Promise<{ missing: string; state?: string } | false> {
     this.metric.socketIOEventCounter(1, { event: 'doc-load' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
     const guid = trimGuid(message.workspaceId, message.guid);
-    let update = await this.docManager.getLatest(message.workspaceId, guid);
+    const doc = await this.docManager.getLatest(message.workspaceId, guid);
 
-    const stateVector = message.stateVector
-      ? Buffer.from(message.stateVector, 'base64')
-      : null;
-
-    if (update && stateVector) {
-      const doc = new YDoc({ guid });
-      applyUpdate(doc, update);
-      update = Buffer.from(encodeStateAsUpdate(doc, stateVector));
-      doc.destroy();
+    if (!doc) {
+      endTimer();
+      return false;
     }
 
-    endTimer();
+    const missing = Buffer.from(
+      encodeStateAsUpdate(
+        doc,
+        message.stateVector
+          ? Buffer.from(message.stateVector, 'base64')
+          : undefined
+      )
+    ).toString('base64');
+    const state = Buffer.from(encodeStateVector(doc)).toString('base64');
 
-    return update ? update.toString('base64') : false;
+    endTimer();
+    return {
+      missing,
+      state,
+    };
   }
 
   @SubscribeMessage('awareness-init')

@@ -20,7 +20,7 @@ import { useCallback } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 
-import { openAuthModalAtom } from '../../../../atoms';
+import { authAtom } from '../../../../atoms';
 import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
@@ -32,6 +32,7 @@ import {
   accountButton,
   currentWorkspaceLabel,
   settingSlideBar,
+  sidebarFooter,
   sidebarItemsWrapper,
   sidebarSelectItem,
   sidebarSubtitle,
@@ -69,13 +70,13 @@ export const UserInfo = ({
 
 export const SignInButton = () => {
   const t = useAFFiNEI18N();
-  const [, setAuthModal] = useAtom(openAuthModalAtom);
+  const [, setAuthModal] = useAtom(authAtom);
 
   return (
     <div
       className={accountButton}
       onClick={useCallback(() => {
-        setAuthModal({ open: true, state: 'signIn' });
+        setAuthModal({ openModal: true, state: 'signIn' });
       }, [setAuthModal])}
     >
       <div className="avatar not-sign">
@@ -151,13 +152,15 @@ export const SettingSidebar = ({
         </Suspense>
       </div>
 
-      {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
-        <SignInButton />
-      ) : null}
+      <div className={sidebarFooter}>
+        {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
+          <SignInButton />
+        ) : null}
 
-      {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
-        <UserInfo onAccountSettingClick={onAccountSettingClick} />
-      ) : null}
+        {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+          <UserInfo onAccountSettingClick={onAccountSettingClick} />
+        ) : null}
+      </div>
     </div>
   );
 };

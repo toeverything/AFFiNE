@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { applyUpdate, Doc } from 'yjs';
+import { Doc, encodeStateAsUpdate } from 'yjs';
 
 import { DocManager } from '../../doc';
 import { assertExists } from '../utils';
@@ -18,25 +18,22 @@ export class WorkspaceService {
       guid: string;
       update: Buffer;
     }> = [];
-    const queue: Array<[string, Buffer]> = [];
+    const queue: Array<[string, Doc]> = [];
     // Workspace Doc's guid is the same as workspaceId. This is achieved by when creating a new workspace, the doc guid
     // is manually set to workspaceId.
-    const update = await this.docManager.getLatest(workspaceId, workspaceId);
-    if (update) {
-      queue.push([workspaceId, update]);
+    const doc = await this.docManager.getLatest(workspaceId, workspaceId);
+    if (doc) {
+      queue.push([workspaceId, doc]);
     }
 
     while (queue.length > 0) {
-      const update = queue.pop();
-      assertExists(update);
-      const [guid, buf] = update;
+      const head = queue.pop();
+      assertExists(head);
+      const [guid, doc] = head;
       docs.push({
         guid: guid,
-        update: buf,
+        update: Buffer.from(encodeStateAsUpdate(doc)),
       });
-
-      const doc = new Doc({ guid });
-      applyUpdate(doc, buf);
 
       for (const { guid } of doc.subdocs) {
         const subDoc = await this.docManager.getLatest(workspaceId, guid);

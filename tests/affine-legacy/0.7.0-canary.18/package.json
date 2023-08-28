@@ -10,14 +10,14 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230822230555-98129627-nightly",
-    "@blocksuite/blocks": "0.0.0-20230822230555-98129627-nightly",
-    "@blocksuite/global": "0.0.0-20230822230555-98129627-nightly",
-    "@blocksuite/store": "0.0.0-20230822230555-98129627-nightly",
-    "@playwright/test": "^1.37.0",
+    "@blocksuite/block-std": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/blocks": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/global": "0.0.0-20230825054009-a12544d6-nightly",
+    "@blocksuite/store": "0.0.0-20230825054009-a12544d6-nightly",
+    "@playwright/test": "^1.37.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^3.0.0-beta.1",
-    "serve": "^14.2.0"
+    "serve": "^14.2.1"
   },
-  "version": "0.8.0-canary.30"
+  "version": "0.9.0-canary.0"
 }

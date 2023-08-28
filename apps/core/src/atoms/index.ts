@@ -3,7 +3,7 @@ import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
 import type { AtomFamily } from 'jotai/vanilla/utils/atomFamily';
 
-import type { AuthModalProps } from '../components/affine/auth';
+import type { AuthProps } from '../components/affine/auth';
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import type { SettingProps } from '../components/affine/setting-modal';
 // modal atoms
@@ -23,14 +23,16 @@ export const openSettingModalAtom = atom<SettingAtom>({
 });
 
 export type AuthAtom = {
-  open: boolean;
-  state: AuthModalProps['state'];
+  openModal: boolean;
+  state: AuthProps['state'];
   email?: string;
-  emailType?: AuthModalProps['emailType'];
+  emailType?: AuthProps['emailType'];
+  // Only used for sign in page callback, after called, it will be set to undefined
+  onceSignedIn?: () => void;
 };
 
-export const openAuthModalAtom = atom<AuthAtom>({
-  open: false,
+export const authAtom = atom<AuthAtom>({
+  openModal: false,
   state: 'signIn',
   email: '',
   emailType: 'changeEmail',

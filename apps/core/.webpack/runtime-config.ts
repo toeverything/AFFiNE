@@ -24,7 +24,7 @@ const editorFlags: BlockSuiteFeatureFlags = {
 };
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
-  const buildPreset: Record<string, RuntimeConfig> = {
+  const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
     stable: {
       enablePlugin: true,
       enableTestProperties: false,
@@ -37,12 +37,25 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableNewSettingUnstableApi: false,
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
-      enableNotificationCenter: false,
+      enableNotificationCenter: true,
       enableCloud: true,
-      serverUrlPrefix: 'https://affine.fail',
+      enableEnhanceShareMode: false,
+      serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
+    },
+    get beta() {
+      return {
+        ...this.stable,
+        serverUrlPrefix: 'https://ambassador.affine.pro',
+      };
+    },
+    get internal() {
+      return {
+        ...this.stable,
+        serverUrlPrefix: 'https://affine.fail',
+      };
     },
     // canary will be aggressive and enable all features
     canary: {
@@ -59,16 +72,13 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableMoveDatabase: false,
       enableNotificationCenter: true,
       enableCloud: true,
+      enableEnhanceShareMode: false,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
     },
   };
-
-  // beta and internal versions are the same as stable
-  buildPreset.beta = buildPreset.stable;
-  buildPreset.internal = buildPreset.stable;
 
   const currentBuild = buildFlags.channel;
 
@@ -107,17 +117,16 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableCloud: process.env.ENABLE_CLOUD
       ? process.env.ENABLE_CLOUD === 'true'
       : currentBuildPreset.enableCloud,
+    enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
+      ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
+      : currentBuildPreset.enableEnhanceShareMode,
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
   };
 
   if (buildFlags.mode === 'development') {
-    if (buildFlags.distribution === 'browser')
-      currentBuildPreset.serverUrlPrefix = '';
-    else if (buildFlags.distribution === 'desktop') {
-      currentBuildPreset.serverUrlPrefix = 'http://localhost:3010';
-    }
+    currentBuildPreset.serverUrlPrefix = 'http://localhost:8080';
   }
 
   return {

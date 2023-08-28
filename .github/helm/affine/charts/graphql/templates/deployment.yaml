@@ -39,6 +39,8 @@ spec:
             value: "1"
           - name: SERVER_FLAVOR
             value: "graphql"
+          - name: AFFINE_ENV
+            value: "{{ .Release.Namespace }}"
           - name: NEXTAUTH_URL
             value: "{{ .Values.global.ingress.host }}"
           - name: DATABASE_PASSWORD

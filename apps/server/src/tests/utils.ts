@@ -8,21 +8,25 @@ import request from 'supertest';
 import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
-import type { WorkspaceType } from '../modules/workspaces';
+import type { InvitationType, WorkspaceType } from '../modules/workspaces';
 
 export class NestDebugLogger implements LoggerService {
   log(message: string): any {
     console.log(message);
   }
+
   error(message: string, trace: string): any {
     console.error(message, trace);
   }
+
   warn(message: string): any {
     console.warn(message);
   }
+
   debug(message: string): any {
     console.debug(message);
   }
+
   verbose(message: string): any {
     console.log(message);
   }
@@ -94,6 +98,28 @@ async function createWorkspace(
     .attach('0', Buffer.from([0, 0]), 'init.data')
     .expect(200);
   return res.body.data.createWorkspace;
+}
+
+export async function getWorkspaceSharedPages(
+  app: INestApplication,
+  token: string,
+  workspaceId: string
+): Promise<string[]> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          query {
+            workspace(id: "${workspaceId}") {
+              sharedPages
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.workspace.sharedPages;
 }
 
 async function getWorkspace(
@@ -356,7 +382,9 @@ async function flushDB() {
   const client = new PrismaClient();
   await client.$connect();
   const result: { tablename: string }[] =
-    await client.$queryRaw`SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'`;
+    await client.$queryRaw`SELECT tablename
+                           FROM pg_catalog.pg_tables
+                           WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'`;
 
   // remove all table data
   await client.$executeRawUnsafe(
@@ -384,6 +412,37 @@ async function createTestApp() {
   return app;
 }
 
+async function getInviteInfo(
+  app: INestApplication,
+  token: string,
+  inviteId: string
+): Promise<InvitationType> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          query {
+            getInviteInfo(inviteId: "${inviteId}") {
+              workspace {
+                id
+                name
+                avatar
+              }
+              user {
+                id
+                name
+                avatarUrl
+              }
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.workspace;
+}
+
 export {
   acceptInvite,
   acceptInviteById,
@@ -391,6 +450,7 @@ export {
   createWorkspace,
   currentUser,
   flushDB,
+  getInviteInfo,
   getPublicWorkspace,
   getWorkspace,
   inviteUser,

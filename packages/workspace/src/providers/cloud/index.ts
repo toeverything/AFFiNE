@@ -8,14 +8,24 @@ const Y = Workspace.Y;
 
 const logger = new DebugLogger('affine:cloud');
 
-async function downloadBinary(rootGuid: string, doc: Doc) {
-  const guid = doc.guid;
+export async function downloadBinaryFromCloud(
+  rootGuid: string,
+  pageGuid: string
+) {
   const response = await fetchWithReport(
-    runtimeConfig.serverUrlPrefix + `/api/workspaces/${rootGuid}/docs/${guid}`
+    runtimeConfig.serverUrlPrefix +
+      `/api/workspaces/${rootGuid}/docs/${pageGuid}`
   );
   if (response.ok) {
-    const buffer = await response.arrayBuffer();
-    Y.applyUpdate(doc, new Uint8Array(buffer));
+    return response.arrayBuffer();
+  }
+  return false;
+}
+
+async function downloadBinary(rootGuid: string, doc: Doc) {
+  const buffer = await downloadBinaryFromCloud(rootGuid, doc.guid);
+  if (buffer) {
+    Y.applyUpdate(doc, new Uint8Array(buffer), 'affine-cloud');
   }
 }
 

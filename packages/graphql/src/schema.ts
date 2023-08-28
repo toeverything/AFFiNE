@@ -32,6 +32,10 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export enum NewFeaturesKind {
+  EarlyAccess = 'EarlyAccess',
+}
+
 /** User permission in workspace */
 export enum Permission {
   Admin = 'Admin',
@@ -146,6 +150,35 @@ export type GetCurrentUserQuery = {
   };
 };
 
+export type GetInviteInfoQueryVariables = Exact<{
+  inviteId: Scalars['String']['input'];
+}>;
+
+export type GetInviteInfoQuery = {
+  __typename?: 'Query';
+  getInviteInfo: {
+    __typename?: 'InvitationType';
+    workspace: {
+      __typename?: 'InvitationWorkspaceType';
+      id: string;
+      name: string;
+      avatar: string;
+    };
+    user: {
+      __typename?: 'UserType';
+      id: string;
+      name: string;
+      avatarUrl: string | null;
+    };
+  };
+};
+
+export type GetIsOwnerQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetIsOwnerQuery = { __typename?: 'Query'; isOwner: boolean };
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
@@ -162,6 +195,8 @@ export type GetMembersByWorkspaceIdQuery = {
       avatarUrl: string | null;
       permission: Permission;
       inviteId: string;
+      accepted: boolean;
+      emailVerified: string | null;
     }>;
   };
 };
@@ -187,6 +222,7 @@ export type GetUserQuery = {
     name: string;
     avatarUrl: string | null;
     email: string;
+    hasPassword: boolean | null;
   } | null;
 };
 
@@ -197,6 +233,15 @@ export type GetWorkspacePublicByIdQueryVariables = Exact<{
 export type GetWorkspacePublicByIdQuery = {
   __typename?: 'Query';
   workspace: { __typename?: 'WorkspaceType'; public: boolean };
+};
+
+export type GetWorkspaceSharedPagesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetWorkspaceSharedPagesQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; sharedPages: Array<string> };
 };
 
 export type GetWorkspaceQueryVariables = Exact<{
@@ -215,6 +260,15 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type LeaveWorkspaceMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type LeaveWorkspaceMutation = {
+  __typename?: 'Mutation';
+  leaveWorkspace: boolean;
+};
+
 export type RevokeMemberPermissionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -223,6 +277,16 @@ export type RevokeMemberPermissionMutationVariables = Exact<{
 export type RevokeMemberPermissionMutation = {
   __typename?: 'Mutation';
   revoke: boolean;
+};
+
+export type RevokePageMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type RevokePageMutation = {
+  __typename?: 'Mutation';
+  revokePage: boolean;
 };
 
 export type SendChangeEmailMutationVariables = Exact<{
@@ -284,6 +348,13 @@ export type SetWorkspacePublicByIdMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
+
+export type SharePageMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type SharePageMutation = { __typename?: 'Mutation'; sharePage: boolean };
 
 export type SignInMutationVariables = Exact<{
   email: Scalars['String']['input'];
@@ -368,6 +439,16 @@ export type Queries =
       response: GetCurrentUserQuery;
     }
   | {
+      name: 'getInviteInfoQuery';
+      variables: GetInviteInfoQueryVariables;
+      response: GetInviteInfoQuery;
+    }
+  | {
+      name: 'getIsOwnerQuery';
+      variables: GetIsOwnerQueryVariables;
+      response: GetIsOwnerQuery;
+    }
+  | {
       name: 'getMembersByWorkspaceIdQuery';
       variables: GetMembersByWorkspaceIdQueryVariables;
       response: GetMembersByWorkspaceIdQuery;
@@ -386,6 +467,11 @@ export type Queries =
       name: 'getWorkspacePublicByIdQuery';
       variables: GetWorkspacePublicByIdQueryVariables;
       response: GetWorkspacePublicByIdQuery;
+    }
+  | {
+      name: 'getWorkspaceSharedPagesQuery';
+      variables: GetWorkspaceSharedPagesQueryVariables;
+      response: GetWorkspaceSharedPagesQuery;
     }
   | {
       name: 'getWorkspaceQuery';
@@ -435,9 +521,19 @@ export type Mutations =
       response: DeleteWorkspaceMutation;
     }
   | {
+      name: 'leaveWorkspaceMutation';
+      variables: LeaveWorkspaceMutationVariables;
+      response: LeaveWorkspaceMutation;
+    }
+  | {
       name: 'revokeMemberPermissionMutation';
       variables: RevokeMemberPermissionMutationVariables;
       response: RevokeMemberPermissionMutation;
+    }
+  | {
+      name: 'revokePageMutation';
+      variables: RevokePageMutationVariables;
+      response: RevokePageMutation;
     }
   | {
       name: 'sendChangeEmailMutation';
@@ -468,6 +564,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'sharePageMutation';
+      variables: SharePageMutationVariables;
+      response: SharePageMutation;
     }
   | {
       name: 'signInMutation';

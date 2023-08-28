@@ -169,7 +169,6 @@ legend {
   outline: 0;
   border: 0;
   font-size: var(--affine-font-base);
-  line-height: var(--affine-line-height);
   font-family: var(--affine-font-family);
 }
 

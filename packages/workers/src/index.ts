@@ -1,4 +1,9 @@
-const ALLOW_ORIGIN = ['https://affine.pro', 'https://affine.fail'];
+const ALLOW_ORIGIN = [
+  'https://affine.pro',
+  'https://app.affine.pro',
+  'https://ambassador.affine.pro',
+  'https://affine.fail',
+];
 
 function isString(s: any): boolean {
   return typeof s === 'string' || s instanceof String;

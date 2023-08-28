@@ -12,6 +12,7 @@ import {
   StyledSettingLink,
   StyledWorkspaceInfo,
   StyledWorkspaceTitle,
+  StyledWorkspaceTitleArea,
 } from './styles';
 
 export interface WorkspaceTypeProps {
@@ -70,25 +71,29 @@ export const WorkspaceCard = ({
       <WorkspaceAvatar size={28} workspace={workspace} />
 
       <StyledWorkspaceInfo>
-        <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>
-        <WorkspaceType flavour={meta.flavour} />
+        <StyledWorkspaceTitleArea style={{ display: 'flex' }}>
+          <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>
+
+          <StyledSettingLink
+            className="setting-entry"
+            onClick={e => {
+              e.stopPropagation();
+              onSettingClick(meta.id);
+            }}
+            withoutHoverStyle={true}
+          >
+            <SettingsIcon style={{ margin: '0px' }} />
+          </StyledSettingLink>
+        </StyledWorkspaceTitleArea>
         {/* {meta.flavour === WorkspaceFlavour.LOCAL && (
           <p title={t['Available Offline']()}>
             <LocalDataIcon />
-            <span>{t['Available Offline']()}</span>
+            <WorkspaceType flavour={meta.flavour} />
           </p>
+
         )} */}
+        <WorkspaceType flavour={meta.flavour} />
       </StyledWorkspaceInfo>
-      <StyledSettingLink
-        className="setting-entry"
-        data-testid="workspace-card-setting-button"
-        onClick={e => {
-          e.stopPropagation();
-          onSettingClick(meta.id);
-        }}
-      >
-        <SettingsIcon />
-      </StyledSettingLink>
     </StyledCard>
   );
 };

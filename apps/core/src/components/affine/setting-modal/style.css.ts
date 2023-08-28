@@ -9,10 +9,9 @@ export const settingContent = style({
 
 globalStyle(`${settingContent} .wrapper`, {
   width: '60%',
-  minWidth: '450px',
   padding: '0 15px',
   height: '100%',
-  maxWidth: '560px',
+  minWidth: '560px',
   margin: '0 auto',
   overflowY: 'auto',
 });

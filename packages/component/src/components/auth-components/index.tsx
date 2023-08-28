@@ -9,5 +9,6 @@ export * from './modal-header';
 export * from './password-input';
 export * from './resend-button';
 export * from './set-password-page';
+export * from './sign-in-page-container';
 export * from './sign-in-success-page';
 export * from './sign-up-page';

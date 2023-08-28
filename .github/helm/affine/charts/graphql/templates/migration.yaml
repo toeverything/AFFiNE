@@ -20,6 +20,8 @@ spec:
         env:
           - name: NODE_ENV
             value: "{{ .Values.env }}"
+          - name: AFFINE_ENV
+            value: "{{ .Release.Namespace }}"
           - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:

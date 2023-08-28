@@ -26,11 +26,7 @@ function pickAndBind<T extends object, U extends keyof T>(
 ): { [K in U]: T[K] } {
   return keys.reduce((acc, key) => {
     const prop = obj[key];
-    acc[key] =
-      typeof prop === 'function'
-        ? // @ts-expect-error - a hack to bind the function
-          prop.bind(obj)
-        : prop;
+    acc[key] = typeof prop === 'function' ? prop.bind(obj) : prop;
     return acc;
   }, {} as any);
 }

@@ -12,7 +12,7 @@ import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
-  openAuthModalAtom,
+  authAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
@@ -92,38 +92,38 @@ export const Setting = () => {
 
 export const AuthModal = (): ReactElement => {
   const [
-    { open, state, email = '', emailType = 'changePassword' },
-    setOpenAuthModalAtom,
-  ] = useAtom(openAuthModalAtom);
+    { openModal, state, email = '', emailType = 'changePassword' },
+    setAuthAtom,
+  ] = useAtom(authAtom);
   return (
     <Auth
-      open={open}
+      open={openModal}
       state={state}
       email={email}
       emailType={emailType}
       setEmailType={useCallback(
         emailType => {
-          setOpenAuthModalAtom(prev => ({ ...prev, emailType }));
+          setAuthAtom(prev => ({ ...prev, emailType }));
         },
-        [setOpenAuthModalAtom]
+        [setAuthAtom]
       )}
       setOpen={useCallback(
         open => {
-          setOpenAuthModalAtom(prev => ({ ...prev, open }));
+          setAuthAtom(prev => ({ ...prev, openModal: open }));
         },
-        [setOpenAuthModalAtom]
+        [setAuthAtom]
       )}
       setAuthState={useCallback(
         state => {
-          setOpenAuthModalAtom(prev => ({ ...prev, state }));
+          setAuthAtom(prev => ({ ...prev, state }));
         },
-        [setOpenAuthModalAtom]
+        [setAuthAtom]
       )}
       setAuthEmail={useCallback(
         email => {
-          setOpenAuthModalAtom(prev => ({ ...prev, email }));
+          setAuthAtom(prev => ({ ...prev, email }));
         },
-        [setOpenAuthModalAtom]
+        [setAuthAtom]
       )}
     />
   );

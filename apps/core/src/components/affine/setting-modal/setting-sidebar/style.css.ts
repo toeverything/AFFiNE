@@ -34,7 +34,7 @@ export const sidebarItemsWrapper = style({
   selectors: {
     '&.scroll': {
       flexGrow: 1,
-      overflowY: 'hidden',
+      overflowY: 'auto',
     },
   },
 });
@@ -91,6 +91,8 @@ export const currentWorkspaceLabel = style({
     },
   },
 });
+
+export const sidebarFooter = style({ padding: '0 16px' });
 
 export const accountButton = style({
   height: '42px',

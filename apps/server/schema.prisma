@@ -38,7 +38,7 @@ model UserWorkspacePermission {
 model User {
   id            String                    @id @default(uuid()) @db.VarChar
   name          String
-  email         String?                   @unique
+  email         String                    @unique
   emailVerified DateTime?                 @map("email_verified")
   // image field is for the next-auth
   avatarUrl     String?                   @map("avatar_url") @db.VarChar
@@ -139,4 +139,13 @@ model Update {
 
   @@index([id, workspaceId])
   @@map("updates")
+}
+
+model NewFeaturesWaitingList {
+  id        String   @id @default(uuid()) @db.VarChar
+  email     String   @unique
+  type      Int      @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("new_features_waiting_list")
 }
