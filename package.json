@@ -82,7 +82,7 @@
     "@vitejs/plugin-react-swc": "^3.3.2",
     "@vitest/coverage-istanbul": "0.33.0",
     "@vitest/ui": "0.33.0",
-    "eslint": "^8.47.0",
+    "eslint": "^8.48.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-i": "^2.28.0",
     "eslint-plugin-prettier": "^5.0.0",
