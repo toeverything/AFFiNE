@@ -9,6 +9,8 @@ import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
 import { prismaNewService } from './prisma';
 
+export const step = 10;
+
 export function loadYDoc(path: string) {
   const binary = fs.readFileSync(path);
   const doc = new Doc();
@@ -77,23 +79,6 @@ export function upgradeYDoc(
   }
 
   return migratedDoc;
-}
-
-export async function saveMigratedDocToUpdate(
-  workspaceId: string,
-  migratedDoc: Doc,
-  createdAt: Date
-) {
-  await prismaNewService.insertYDocToUpdate(
-    workspaceId,
-    migratedDoc.guid,
-    encodeStateAsUpdate(migratedDoc),
-    createdAt
-  );
-
-  for (const subDoc of migratedDoc.subdocs) {
-    saveMigratedDocToUpdate(workspaceId, subDoc, createdAt);
-  }
 }
 
 export async function saveMigratedDocToSnapshot(

@@ -2,20 +2,12 @@
  * Migrate YDoc from version 0.6.0 to 0.8.0
  */
 
-import { prismaNewService, prismOldService } from './prisma';
-import { saveMigratedDoc, upgradeYDoc } from './util';
+import { prismaNewService, prismaOldService } from './prisma';
 
-await prismOldService.connect();
+await prismaOldService.connect();
 await prismaNewService.connect();
 
-const docs = await prismOldService.getYDocs();
-
-for (const { workspaceId, doc, createdAt } of docs) {
-  const migratedDoc = upgradeYDoc(doc);
-  await saveMigratedDoc(workspaceId, migratedDoc, createdAt);
-}
-
-const prismaOldClient = prismOldService.getClient();
+const prismaOldClient = prismaOldService.getClient();
 const prismaNewClient = prismaNewService.getClient();
 
 const users = await prismaOldClient.users.findMany();
@@ -64,5 +56,5 @@ await prismaNewClient.userWorkspacePermission.createMany({
   }),
 });
 
-await prismOldService.disconnect();
+await prismaOldService.disconnect();
 await prismaNewService.disconnect();
