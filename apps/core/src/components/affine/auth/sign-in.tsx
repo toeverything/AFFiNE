@@ -21,6 +21,8 @@ function validateEmail(email: string) {
   return emailRegex.test(email);
 }
 
+const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
+
 function handleSendEmailError(
   res: SignInResponse | undefined,
   pushNotification: (notification: Notification) => void
@@ -29,6 +31,13 @@ function handleSendEmailError(
     pushNotification({
       title: 'Send email error',
       message: 'Please back to home and try again',
+      type: 'error',
+    });
+  }
+  if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+    pushNotification({
+      title: 'Sign up error',
+      message: `You don't have early access permission\nVisit ${INTERNAL_BETA_URL} for more information`,
       type: 'error',
     });
   }

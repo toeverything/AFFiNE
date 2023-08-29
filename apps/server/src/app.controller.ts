@@ -1,13 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 
-import pkg from '../package.json' assert { type: 'json' };
-
 @Controller('/')
 export class AppController {
   @Get()
-  hello() {
+  info() {
+    const version = AFFiNE.version;
     return {
-      message: `AFFiNE GraphQL server: ${pkg.version}`,
+      compatibility: version,
+      message: `AFFiNE ${version} Server`,
     };
   }
 }

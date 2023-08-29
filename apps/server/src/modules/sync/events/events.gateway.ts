@@ -16,6 +16,7 @@ import { DocManager } from '../../doc';
 
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
+  transports: ['websocket'],
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private connectionCount = 0;
