@@ -63,9 +63,9 @@ const createHelmCommand = ({ isDryRun }) => {
           `--set-json   sync.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
         ]
       : [];
-  const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 1;
-  const graphqlReplicaCount = isProduction ? 3 : isBeta ? 2 : 1;
-  const syncReplicaCount = isProduction ? 6 : isBeta ? 3 : 1;
+  const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
+  const graphqlReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
+  const syncReplicaCount = isProduction ? 6 : isBeta ? 3 : 2;
   const namespace = isProduction ? 'production' : isBeta ? 'beta' : 'dev';
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,

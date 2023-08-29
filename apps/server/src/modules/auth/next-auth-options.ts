@@ -266,15 +266,16 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         return session;
       },
-      signIn: async ({ profile }) => {
+      signIn: async ({ profile, user }) => {
         if (!config.affine.beta || !config.node.prod) {
           return true;
         }
-        if (profile?.email) {
-          return await prisma.newFeaturesWaitingList
+        const email = profile?.email ?? user.email;
+        if (email) {
+          return prisma.newFeaturesWaitingList
             .findUnique({
               where: {
-                email: profile.email,
+                email,
                 type: NewFeaturesKind.EarlyAccess,
               },
             })
