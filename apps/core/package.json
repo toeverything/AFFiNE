@@ -70,7 +70,7 @@
     "zod": "^3.22.2"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.378.0",
+    "@aws-sdk/client-s3": "3.400.0",
     "@perfsee/webpack": "^1.8.4",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.7.0",
