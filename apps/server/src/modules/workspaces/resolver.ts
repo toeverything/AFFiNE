@@ -113,6 +113,11 @@ export class UpdateWorkspaceInput extends PickType(
   id!: string;
 }
 
+/**
+ * Workspace resolver
+ * Public apis rate limit: 10 req/m
+ * Other rate limit: 120 req/m
+ */
 @UseGuards(CloudThrottlerGuard)
 @Throttle(120, 60)
 @Auth()

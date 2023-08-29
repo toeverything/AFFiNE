@@ -71,8 +71,12 @@ export class AddToNewFeaturesWaitingList {
   type!: NewFeaturesKind;
 }
 
+/**
+ * User resolver
+ * All op rate limit: 10 req/m
+ */
 @UseGuards(CloudThrottlerGuard)
-@Throttle(120, 60)
+@Throttle(10, 60)
 @Auth()
 @Resolver(() => UserType)
 export class UserResolver {
