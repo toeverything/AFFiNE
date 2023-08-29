@@ -28,6 +28,7 @@
     "@nestjs/graphql": "^12.0.8",
     "@nestjs/platform-express": "^10.2.2",
     "@nestjs/platform-socket.io": "^10.2.2",
+    "@nestjs/throttler": "^4.2.1",
     "@nestjs/websockets": "^10.2.2",
     "@node-rs/argon2": "^1.5.2",
     "@node-rs/crc32": "^1.7.2",
