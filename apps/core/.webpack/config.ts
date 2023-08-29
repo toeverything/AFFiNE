@@ -69,19 +69,20 @@ const OptimizeOptionOptions: (
   },
 });
 
-export const publicPath = (function () {
+export const getPublicPath = (buildFlags: BuildFlags) => {
   const { BUILD_TYPE } = process.env;
   const publicPath = process.env.PUBLIC_PATH ?? '/';
-  if (process.env.COVERAGE) {
+  if (process.env.COVERAGE || buildFlags.distribution === 'desktop') {
     return publicPath;
   }
+
   if (BUILD_TYPE === 'canary') {
     return `https://dev.affineassets.com/${gitShortHash()}/`;
   } else if (BUILD_TYPE === 'beta' || BUILD_TYPE === 'stable') {
     return `https://prod.affineassets.com/${gitShortHash()}/`;
   }
   return publicPath;
-})();
+};
 
 export const createConfiguration: (
   buildFlags: BuildFlags,
@@ -119,7 +120,7 @@ export const createConfiguration: (
       path: join(rootPath, 'dist'),
       clean: buildFlags.mode === 'production',
       globalObject: 'globalThis',
-      publicPath,
+      publicPath: getPublicPath(buildFlags),
     },
     target: ['web', 'es2022'],
 
