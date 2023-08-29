@@ -96,6 +96,6 @@ export async function saveMigratedDocToSnapshot(
   );
 
   for (const subDoc of migratedDoc.subdocs) {
-    saveMigratedDocToSnapshot(workspaceId, subDoc, createdAt, updatedAt);
+    await saveMigratedDocToSnapshot(workspaceId, subDoc, createdAt, updatedAt);
   }
 }
