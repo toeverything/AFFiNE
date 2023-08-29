@@ -16,7 +16,7 @@
     "@storybook/addon-storysource": "^7.4.0",
     "@storybook/blocks": "^7.4.0",
     "@storybook/builder-vite": "^7.4.0",
-    "@storybook/jest": "^0.2.1",
+    "@storybook/jest": "^0.2.2",
     "@storybook/react": "^7.4.0",
     "@storybook/react-vite": "^7.4.0",
     "@storybook/test-runner": "^0.13.0",
@@ -42,7 +42,7 @@
     "chromatic": "^6.24.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "storybook-addon-react-router-v6": "^2.0.5"
+    "storybook-addon-react-router-v6": "^2.0.7"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",

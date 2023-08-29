@@ -29,7 +29,7 @@
     "lib0": "^0.2.83",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "socket.io-client": "^4.7.1",
+    "socket.io-client": "^4.7.2",
     "swr": "2.2.0",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",
