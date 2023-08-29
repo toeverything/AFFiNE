@@ -5,6 +5,7 @@ import { CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import debounce from 'lodash.debounce';
 import { useCallback, useState } from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
@@ -67,6 +68,10 @@ export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
             maxLength={64}
             minLength={0}
             onChange={setInput}
+            onKeyUp={debounce(e => {
+              if (e.code === 'Enter' && name !== input)
+                handleUpdateWorkspaceName(input);
+            }, 1000)}
           />
           {input === workspace.blockSuiteWorkspace.meta.name ? null : (
             <IconButton
