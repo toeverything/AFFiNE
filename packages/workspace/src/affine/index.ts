@@ -22,6 +22,7 @@ function getIoManager(): Manager {
   }
   ioManager = new Manager(runtimeConfig.serverUrlPrefix + '/', {
     autoConnect: false,
+    transports: ['websocket'],
   });
   return ioManager;
 }

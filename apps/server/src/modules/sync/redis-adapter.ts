@@ -30,10 +30,7 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   override createIOServer(port: number, options?: ServerOptions): any {
-    const server = super.createIOServer(port, {
-      ...options,
-      transport: ['websocket'],
-    });
+    const server = super.createIOServer(port, options);
     server.adapter(this.adapterConstructor);
     return server;
   }
