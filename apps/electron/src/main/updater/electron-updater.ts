@@ -37,7 +37,7 @@ export const checkForUpdates = async (force = true) => {
 
 export const registerUpdater = async () => {
   // skip auto update in dev mode & internal
-  if (buildType === 'internal') {
+  if (buildType === 'internal' || isDev) {
     return;
   }
 
