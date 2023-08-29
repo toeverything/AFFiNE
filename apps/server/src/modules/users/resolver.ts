@@ -71,6 +71,8 @@ export class AddToNewFeaturesWaitingList {
   type!: NewFeaturesKind;
 }
 
+@UseGuards(CloudThrottlerGuard)
+@Throttle(120, 60)
 @Auth()
 @Resolver(() => UserType)
 export class UserResolver {
@@ -96,8 +98,6 @@ export class UserResolver {
     };
   }
 
-  @UseGuards(CloudThrottlerGuard)
-  @Throttle(10, 30)
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',

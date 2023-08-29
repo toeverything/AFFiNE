@@ -113,6 +113,8 @@ export class UpdateWorkspaceInput extends PickType(
   id!: string;
 }
 
+@UseGuards(CloudThrottlerGuard)
+@Throttle(120, 60)
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
@@ -256,7 +258,6 @@ export class WorkspaceResolver {
     });
   }
 
-  @UseGuards(CloudThrottlerGuard)
   @Throttle(10, 30)
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
@@ -461,7 +462,6 @@ export class WorkspaceResolver {
     }
   }
 
-  @UseGuards(CloudThrottlerGuard)
   @Throttle(10, 30)
   @Public()
   @Query(() => InvitationType, {
@@ -528,8 +528,6 @@ export class WorkspaceResolver {
     return this.permissionProvider.revoke(workspaceId, userId);
   }
 
-  @UseGuards(CloudThrottlerGuard)
-  @Throttle(10, 30)
   @Mutation(() => Boolean)
   @Public()
   async acceptInviteById(

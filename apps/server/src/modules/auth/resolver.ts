@@ -26,6 +26,8 @@ export class TokenType {
   refresh!: string;
 }
 
+@UseGuards(CloudThrottlerGuard)
+@Throttle(120, 60)
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
@@ -46,7 +48,7 @@ export class AuthResolver {
   }
 
   @UseGuards(CloudThrottlerGuard)
-  @Throttle(10, 60)
+  @Throttle(2, 60)
   @Mutation(() => UserType)
   async signUp(
     @Context() ctx: { req: Request },
@@ -95,7 +97,7 @@ export class AuthResolver {
   }
 
   @UseGuards(CloudThrottlerGuard)
-  @Throttle(5, 60)
+  @Throttle(1, 60)
   @Mutation(() => Boolean)
   async sendChangePasswordEmail(
     @Args('email') email: string,
@@ -107,7 +109,7 @@ export class AuthResolver {
   }
 
   @UseGuards(CloudThrottlerGuard)
-  @Throttle(5, 60)
+  @Throttle(1, 60)
   @Mutation(() => Boolean)
   async sendSetPasswordEmail(
     @Args('email') email: string,
@@ -119,7 +121,7 @@ export class AuthResolver {
   }
 
   @UseGuards(CloudThrottlerGuard)
-  @Throttle(5, 60)
+  @Throttle(1, 60)
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @Args('email') email: string,
