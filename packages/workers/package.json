@@ -1,6 +1,6 @@
 {
   "name": "@affine/workers",
-  "version": "0.9.0-canary.2",
+  "version": "0.9.0-canary.3",
   "private": true,
   "scripts": {
     "dev": "wrangler dev"
