@@ -157,8 +157,14 @@ export class WorkspaceResolver {
     description: 'Shared pages of workspace',
     complexity: 2,
   })
-  sharedPages(@Parent() workspace: WorkspaceType) {
-    return this.permissionProvider.getPages(workspace.id);
+  async sharedPages(@Parent() workspace: WorkspaceType) {
+    const data = await this.prisma.userWorkspacePermission.findMany({
+      where: {
+        workspaceId: workspace.id,
+      },
+    });
+
+    return data.map(item => item.subPageId).filter(Boolean);
   }
 
   @ResolveField(() => UserType, {

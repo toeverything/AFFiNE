@@ -61,8 +61,8 @@ export class WorkspacesController {
     const start = process.hrtime();
     const id = trimGuid(ws, guid);
     if (
-      !(await this.permission.tryCheck(ws, user?.id)) &&
-      !(await this.permission.tryCheckSharePage(ws, id))
+      // if a user has the permission
+      !(await this.permission.isAccessible(ws, id, user?.id))
     ) {
       throw new ForbiddenException('Permission denied');
     }

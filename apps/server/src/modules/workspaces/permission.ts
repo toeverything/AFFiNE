@@ -21,9 +21,41 @@ export class PermissionService {
     return data?.type as Permission;
   }
 
+  async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
+    if (user) {
+      return await this.tryCheck(ws, user);
+    } else {
+      // check if this is a public workspace
+      const count = await this.prisma.workspace.count({
+        where: { id: ws, public: true },
+      });
+      if (count > 0) {
+        return true;
+      }
+
+      // check whether this is a public subpage
+      const workspace = await this.prisma.userWorkspacePermission.findMany({
+        where: {
+          workspaceId: ws,
+          userId: null,
+        },
+      });
+      const subpages = workspace
+        .map(ws => ws.subPageId)
+        .filter((v): v is string => !!v);
+      if (subpages.length > 0 && ws === id) {
+        // rootDoc is always accessible when there is a public subpage
+        return true;
+      } else {
+        // check if this is a public subpage
+        return subpages.map(page => `space:${page}`).includes(id);
+      }
+    }
+  }
+
   async check(
     ws: string,
-    user?: string,
+    user: string,
     permission: Permission = Permission.Read
   ) {
     if (!(await this.tryCheck(ws, user, permission))) {
@@ -33,10 +65,9 @@ export class PermissionService {
 
   async tryCheck(
     ws: string,
-    user?: string,
+    user: string,
     permission: Permission = Permission.Read
   ) {
-    const sharePages = await this.getPages(ws, user);
     // If the permission is read, we should check if the workspace is public
     if (permission === Permission.Read) {
       const data = await this.prisma.workspace.count({
@@ -46,10 +77,6 @@ export class PermissionService {
       if (data > 0) {
         return true;
       }
-    }
-
-    if (!user) {
-      return sharePages.length > 0;
     }
 
     const data = await this.prisma.userWorkspacePermission.count({
@@ -172,7 +199,7 @@ export class PermissionService {
     return result.count > 0;
   }
 
-  async getPage(ws: string, page: string, user?: string) {
+  async isPageAccessible(ws: string, page: string, user?: string) {
     const data = await this.prisma.userWorkspacePermission.findFirst({
       where: {
         workspaceId: ws,
@@ -182,46 +209,6 @@ export class PermissionService {
     });
 
     return data?.accepted || false;
-  }
-
-  async getPages(ws: string, user?: string) {
-    const data = await this.prisma.userWorkspacePermission.findMany({
-      where: {
-        workspaceId: ws,
-        userId: user,
-      },
-    });
-
-    return data.map(item => item.subPageId).filter(Boolean);
-  }
-
-  async tryCheckSharePage(ws: string, page: string) {
-    const data = await this.getPages(ws);
-
-    return data.map(page => `space:${page}`).includes(page);
-  }
-
-  async checkPage(ws: string, page: string, user?: string) {
-    if (!(await this.tryCheckPage(ws, page, user))) {
-      throw new ForbiddenException('Permission denied');
-    }
-  }
-
-  async tryCheckPage(ws: string, page: string, user?: string) {
-    const data = await this.prisma.userWorkspacePermission.count({
-      where: {
-        workspaceId: ws,
-        subPageId: page,
-        userId: user,
-        accepted: true,
-      },
-    });
-
-    if (data > 0) {
-      return true;
-    }
-
-    return false;
   }
 
   async grantPage(

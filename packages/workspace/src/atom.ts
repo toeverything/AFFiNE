@@ -1,7 +1,7 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { BlockHub } from '@blocksuite/blocks';
-import { assertEquals,assertExists } from '@blocksuite/global/utils';
+import { assertEquals, assertExists } from '@blocksuite/global/utils';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
