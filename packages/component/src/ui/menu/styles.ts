@@ -68,7 +68,7 @@ export const StyledMenuItem = styled('button')<{
   disabled = false,
   active = false,
   disableHover = false,
-  userFocused = false
+  userFocused = false,
 }) => {
   return {
     width: '100%',
@@ -101,11 +101,11 @@ export const StyledMenuItem = styled('button')<{
         : {
             backgroundColor: 'var(--affine-hover-color)',
           },
-     ...(userFocused && !disabled
-            ? {
-                backgroundColor: 'var(--affine-hover-color)',
-              }
-            : {}),
+    ...(userFocused && !disabled
+      ? {
+          backgroundColor: 'var(--affine-hover-color)',
+        }
+      : {}),
     ...(active && !disabled
       ? {
           backgroundColor: 'var(--affine-hover-color)',
