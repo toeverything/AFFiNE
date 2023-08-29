@@ -1,5 +1,10 @@
 import type { Storage } from '@affine/storage';
-import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   Args,
   Field,
@@ -24,6 +29,7 @@ import { applyUpdate, Doc } from 'yjs';
 
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
@@ -250,6 +256,8 @@ export class WorkspaceResolver {
     });
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(10, 30)
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
   })
@@ -453,6 +461,8 @@ export class WorkspaceResolver {
     }
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(10, 30)
   @Public()
   @Query(() => InvitationType, {
     description: 'Update workspace',
@@ -518,6 +528,8 @@ export class WorkspaceResolver {
     return this.permissionProvider.revoke(workspaceId, userId);
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(10, 30)
   @Mutation(() => Boolean)
   @Public()
   async acceptInviteById(

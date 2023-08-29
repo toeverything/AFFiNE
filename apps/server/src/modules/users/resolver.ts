@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   HttpException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   Args,
@@ -19,6 +20,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
@@ -94,6 +96,8 @@ export class UserResolver {
     };
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(10, 30)
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',

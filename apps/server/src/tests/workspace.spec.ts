@@ -61,6 +61,13 @@ describe('Workspace Module', () => {
     ok(user.email === 'u1@affine.pro', 'user.email is not valid');
   });
 
+  it('should be throttled at call signUp', async () => {
+    for (let i = 0; i < 10; i++) {
+      await signUp(app, `u${i}`, `u${i}@affine.pro`, `${i}`);
+    }
+    await rejects(signUp(app, 'u11', 'u11@affine.pro', '11'));
+  });
+
   it('should create a workspace', async () => {
     const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
 

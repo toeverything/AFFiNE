@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -12,6 +12,7 @@ import {
 import type { Request } from 'express';
 
 import { Config } from '../../config';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import { UserType } from '../users/resolver';
 import { CurrentUser } from './guard';
 import { AuthService } from './service';
@@ -44,6 +45,8 @@ export class AuthResolver {
     };
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signUp(
     @Context() ctx: { req: Request },
@@ -56,6 +59,8 @@ export class AuthResolver {
     return user;
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signIn(
     @Context() ctx: { req: Request },
@@ -89,6 +94,8 @@ export class AuthResolver {
     return user;
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendChangePasswordEmail(
     @Args('email') email: string,
@@ -99,6 +106,8 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendSetPasswordEmail(
     @Args('email') email: string,
@@ -109,6 +118,8 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @Args('email') email: string,
