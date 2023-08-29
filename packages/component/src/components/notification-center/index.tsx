@@ -233,6 +233,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       data-index={index}
       data-front={isFront}
       data-expanded={expand}
+      data-testid="affine-notification"
       onMouseEnter={() => {
         setExpand(true);
       }}

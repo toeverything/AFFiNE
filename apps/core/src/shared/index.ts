@@ -1,17 +1,7 @@
-import type {
-  AffineCloudWorkspace,
-  LocalWorkspace,
-} from '@affine/env/workspace';
-import type { AffinePublicWorkspace } from '@affine/env/workspace';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
 export { BlockSuiteWorkspace };
-
-export type AffineOfficialWorkspace =
-  | AffineCloudWorkspace
-  | LocalWorkspace
-  | AffinePublicWorkspace;
 
 export type AllWorkspace = WorkspaceRegistry[keyof WorkspaceRegistry];
 

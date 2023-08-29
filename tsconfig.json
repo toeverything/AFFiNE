@@ -11,8 +11,8 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
     // noPropertyAccessFromIndexSignature: false,
     // noUncheckedIndexedAccess: false,
     "useUnknownInCatchVariables": true,
@@ -56,6 +56,7 @@
     "paths": {
       "@affine/core/*": ["./packages/core/src/*"],
       "@affine/cli/*": ["./packages/cli/src/*"],
+      "@affine/server/*": ["./apps/server/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
         "./packages/component/src/components/*/index",
@@ -174,6 +175,9 @@
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
+    },
+    {
+      "path": "./tests/affine-cloud"
     },
     {
       "path": "./tests/affine-legacy/0.8.0-canary.7"

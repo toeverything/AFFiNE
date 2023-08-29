@@ -1,6 +1,7 @@
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 import { PerfseePlugin } from '@perfsee/webpack';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
@@ -10,13 +11,14 @@ import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { compact } from 'lodash-es';
 
 import { productionCacheGroups } from './cache-group.js';
 import type { BuildFlags } from '@affine/cli/config';
 import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
-import { computeCacheKey } from './utils.js';
 import type { RuntimeConfig } from '@affine/env/global';
+import { WebpackS3Plugin, gitShortHash } from './s3-plugin.js';
 
 const IN_CI = !!process.env.CI;
 
@@ -67,15 +69,25 @@ const OptimizeOptionOptions: (
   },
 });
 
+export const publicPath = (function () {
+  const { BUILD_TYPE } = process.env;
+  const publicPath = process.env.PUBLIC_PATH ?? '/';
+  if (process.env.COVERAGE) {
+    return publicPath;
+  }
+  if (BUILD_TYPE === 'canary') {
+    return `https://dev.affineassets.com/${gitShortHash()}/`;
+  } else if (BUILD_TYPE === 'beta' || BUILD_TYPE === 'stable') {
+    return `https://prod.affineassets.com/${gitShortHash()}/`;
+  }
+  return publicPath;
+})();
+
 export const createConfiguration: (
   buildFlags: BuildFlags,
   runtimeConfig: RuntimeConfig
 ) => webpack.Configuration = (buildFlags, runtimeConfig) => {
-  let publicPath = process.env.PUBLIC_PATH ?? '/';
-
   const blocksuiteBaseDir = buildFlags.localBlockSuite;
-
-  const cacheKey = computeCacheKey(buildFlags);
 
   const config = {
     name: 'affine',
@@ -96,8 +108,11 @@ export const createConfiguration: (
           ? 'js/[name]-[contenthash:8].js'
           : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
-      chunkFilename: 'js/chunk.[name].js',
-      assetModuleFilename: 'assets/[contenthash:8][ext][query]',
+      chunkFilename:
+        buildFlags.mode === 'production'
+          ? 'js/chunk.[name]-[contenthash:8].js'
+          : 'js/chunk.[name].js',
+      assetModuleFilename: 'assets/[name]-[contenthash:8][ext][query]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
@@ -190,14 +205,6 @@ export const createConfiguration: (
                 'src'
               ),
             },
-    },
-
-    cache: {
-      type: 'filesystem',
-      buildDependencies: {
-        config: [fileURLToPath(import.meta.url)],
-      },
-      version: cacheKey,
     },
 
     module: {
@@ -308,7 +315,7 @@ export const createConfiguration: (
                 {
                   loader: 'css-loader',
                   options: {
-                    url: false,
+                    url: true,
                     sourceMap: false,
                     modules: false,
                     import: true,
@@ -333,22 +340,23 @@ export const createConfiguration: (
         },
       ],
     },
-
-    plugins: [
-      ...(IN_CI ? [] : [new webpack.ProgressPlugin({ percentBy: 'entries' })]),
-      ...(buildFlags.mode === 'development'
-        ? [new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })]
-        : [
-            new MiniCssExtractPlugin({
-              filename: `[name].[contenthash:8].css`,
-              ignoreOrder: true,
-            }),
-          ]),
+    plugins: compact([
+      IN_CI ? null : new webpack.ProgressPlugin({ percentBy: 'entries' }),
+      buildFlags.mode === 'development'
+        ? new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })
+        : new MiniCssExtractPlugin({
+            filename: `[name].[contenthash:8].css`,
+            ignoreOrder: true,
+          }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({}),
         'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
+        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
+          process.env.SHOULD_REPORT_TRACE
+        )}`,
+        'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({
@@ -359,7 +367,10 @@ export const createConfiguration: (
           },
         ],
       }),
-    ],
+      buildFlags.mode === 'production' && process.env.R2_SECRET_ACCESS_KEY
+        ? new WebpackS3Plugin()
+        : null,
+    ]),
 
     optimization: OptimizeOptionOptions(buildFlags),
 
@@ -372,6 +383,14 @@ export const createConfiguration: (
         directory: resolve(rootPath, 'public'),
         publicPath: '/',
         watch: true,
+      },
+      proxy: {
+        '/api': 'http://localhost:3010',
+        '/socket.io': {
+          target: 'http://localhost:3010',
+          ws: true,
+        },
+        '/graphql': 'http://localhost:3010',
       },
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;

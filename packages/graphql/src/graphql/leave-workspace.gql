@@ -1,0 +1,3 @@
+mutation leaveWorkspace($workspaceId: String!) {
+  leaveWorkspace(workspaceId: $workspaceId)
+}

@@ -1,31 +1,35 @@
 import { styled } from '@affine/component';
 
 export const Header = styled('div')({
-  height: '44px',
   display: 'flex',
-  flexDirection: 'row-reverse',
-  paddingRight: '10px',
-  paddingTop: '10px',
-  flexShrink: 0,
+  justifyContent: 'space-between',
+  paddingRight: '20px',
+  paddingTop: '20px',
+  paddingLeft: '24px',
+  alignItems: 'center',
 });
 
 export const Content = styled('div')({
-  textAlign: 'center',
+  padding: '12px 24px 20px 24px',
 });
 
-export const ContentTitle = styled('h1')({
-  fontSize: '20px',
-  lineHeight: '28px',
+export const Title = styled('div')({
+  fontSize: 'var(--affine-font-h6)',
+  lineHeight: '26px',
   fontWeight: 600,
-  textAlign: 'center',
 });
 
 export const StyleTips = styled('div')(() => {
   return {
     userSelect: 'none',
-    width: '400px',
-    margin: 'auto',
-    marginBottom: '32px',
-    marginTop: '12px',
+    marginBottom: '20px',
+  };
+});
+export const ButtonContainer = styled('div')(() => {
+  return {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '20px',
+    paddingTop: '20px',
   };
 });

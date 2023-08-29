@@ -38,6 +38,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/theme": "^0.7.12",
     "@vanilla-extract/dynamic": "^2.0.3",
+    "check-password-strength": "^2.0.7",
     "clsx": "^2.0.0",
     "dayjs": "^1.11.9",
     "jotai": "^2.4.0",
@@ -51,12 +52,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230827224823-81f8728e-nightly",
-    "@blocksuite/editor": "0.0.0-20230827224823-81f8728e-nightly",
-    "@blocksuite/global": "0.0.0-20230827224823-81f8728e-nightly",
+    "@blocksuite/blocks": "0.0.0-20230828163942-e5356e86-nightly",
+    "@blocksuite/editor": "0.0.0-20230828163942-e5356e86-nightly",
+    "@blocksuite/global": "0.0.0-20230828163942-e5356e86-nightly",
     "@blocksuite/icons": "^2.1.31",
-    "@blocksuite/lit": "0.0.0-20230827224823-81f8728e-nightly",
-    "@blocksuite/store": "0.0.0-20230827224823-81f8728e-nightly",
+    "@blocksuite/lit": "0.0.0-20230828163942-e5356e86-nightly",
+    "@blocksuite/store": "0.0.0-20230828163942-e5356e86-nightly",
     "@types/react": "^18.2.21",
     "@types/react-datepicker": "^4.15.0",
     "@types/react-dnd": "^3.0.2",
@@ -66,5 +67,5 @@
     "vite": "^4.4.9",
     "yjs": "^13.6.7"
   },
-  "version": "0.9.0-canary.0"
+  "version": "0.9.0-canary.1"
 }

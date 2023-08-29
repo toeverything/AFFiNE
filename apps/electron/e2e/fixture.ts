@@ -8,8 +8,9 @@ import {
   test as base,
   testResultDir,
 } from '@affine-test/kit/playwright';
+import type { Page } from '@playwright/test';
 import fs from 'fs-extra';
-import type { ElectronApplication, Page } from 'playwright';
+import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
 
 function generateUUID() {
@@ -19,7 +20,6 @@ function generateUUID() {
 type RoutePath = 'setting';
 
 export const test = base.extend<{
-  page: Page;
   electronApp: ElectronApplication;
   appInfo: {
     appPath: string;
@@ -60,7 +60,7 @@ export const test = base.extend<{
         }
       );
     }
-    await use(page);
+    await use(page as Page);
     if (enableCoverage) {
       await page.evaluate(() =>
         // @ts-expect-error

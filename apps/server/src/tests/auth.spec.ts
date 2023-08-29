@@ -1,17 +1,19 @@
 /// <reference types="../global.d.ts" />
-import { ok } from 'node:assert';
-import { beforeEach, test } from 'node:test';
+import { equal } from 'node:assert';
+import { afterEach, beforeEach, test } from 'node:test';
 
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 
 import { ConfigModule } from '../config';
 import { GqlModule } from '../graphql.module';
+import { MetricsModule } from '../metrics';
 import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
 
 let auth: AuthService;
+let module: TestingModule;
 
 // cleanup database before each test
 beforeEach(async () => {
@@ -21,7 +23,7 @@ beforeEach(async () => {
 });
 
 beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
         auth: {
@@ -33,37 +35,50 @@ beforeEach(async () => {
       PrismaModule,
       GqlModule,
       AuthModule,
+      MetricsModule,
     ],
   }).compile();
   auth = module.get(AuthService);
 });
 
+afterEach(async () => {
+  await module.close();
+});
+
 test('should be able to register and signIn', async () => {
-  await auth.register('Alex Yang', 'alexyang@example.org', '123456');
+  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
 });
 
 test('should be able to verify', async () => {
-  await auth.register('Alex Yang', 'alexyang@example.org', '123456');
+  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
+  const date = new Date();
+
   const user = {
     id: '1',
     name: 'Alex Yang',
     email: 'alexyang@example.org',
-    createdAt: new Date(),
+    emailVerified: date,
+    createdAt: date,
+    avatarUrl: '',
   };
   {
     const token = await auth.sign(user);
     const claim = await auth.verify(token);
-    ok(claim.id === '1');
-    ok(claim.name === 'Alex Yang');
-    ok(claim.email === 'alexyang@example.org');
+    equal(claim.id, '1');
+    equal(claim.name, 'Alex Yang');
+    equal(claim.email, 'alexyang@example.org');
+    equal(claim.emailVerified?.toISOString(), date.toISOString());
+    equal(claim.createdAt.toISOString(), date.toISOString());
   }
   {
     const token = await auth.refresh(user);
     const claim = await auth.verify(token);
-    ok(claim.id === '1');
-    ok(claim.name === 'Alex Yang');
-    ok(claim.email === 'alexyang@example.org');
+    equal(claim.id, '1');
+    equal(claim.name, 'Alex Yang');
+    equal(claim.email, 'alexyang@example.org');
+    equal(claim.emailVerified?.toISOString(), date.toISOString());
+    equal(claim.createdAt.toISOString(), date.toISOString());
   }
 });

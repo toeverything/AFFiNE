@@ -1,9 +1,9 @@
-import { Modal, ModalWrapper, Wrapper } from '@affine/component';
+import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
 
-import { Content, ContentTitle, Header, StyleTips } from './style';
+import { ButtonContainer, Content, Header, StyleTips, Title } from './style';
 
 interface EnableAffineCloudModalProps {
   open: boolean;
@@ -20,32 +20,32 @@ export const EnableAffineCloudModal = ({
 
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
-      <ModalWrapper width={560} height={292}>
+      <ModalWrapper width={480}>
         <Header>
+          <Title>{t['Enable AFFiNE Cloud']()}</Title>
           <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
         </Header>
         <Content>
-          <ContentTitle>{t['Enable AFFiNE Cloud']()}?</ContentTitle>
           <StyleTips>{t['Enable AFFiNE Cloud Description']()}</StyleTips>
-          {/* <StyleTips>{t('Retain cached cloud data')}</StyleTips> */}
-          <Wrapper width={284} margin="auto">
-            <Button
-              data-testid="confirm-enable-affine-cloud-button"
-              type="primary"
-              block
-              onClick={onConfirm}
-              style={{
-                marginBottom: '16px',
-              }}
-            >
-              {t['Sign in and Enable']()}
-            </Button>
-            <Button onClick={onClose} block>
-              {t['Not now']()}
-            </Button>
-          </Wrapper>
+          <ButtonContainer>
+            <div>
+              <Button onClick={onClose} block>
+                {t['Cancel']()}
+              </Button>
+            </div>
+            <div>
+              <Button
+                data-testid="confirm-enable-affine-cloud-button"
+                type="primary"
+                block
+                onClick={onConfirm}
+              >
+                {t['Sign in and Enable']()}
+              </Button>
+            </div>
+          </ButtonContainer>
         </Content>
       </ModalWrapper>
     </Modal>

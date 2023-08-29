@@ -1,13 +1,12 @@
 import { Input, Modal, ModalCloseButton } from '@affine/component';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../../../shared';
-import { toast } from '../../../../../utils';
 import {
   StyledButtonContent,
   StyledInputContent,
@@ -21,14 +20,14 @@ interface WorkspaceDeleteProps {
   open: boolean;
   onClose: () => void;
   workspace: AffineOfficialWorkspace;
-  onDeleteWorkspace: (id: string) => Promise<void>;
+  onConfirm: () => void;
 }
 
 export const WorkspaceDeleteModal = ({
   open,
   onClose,
+  onConfirm,
   workspace,
-  onDeleteWorkspace,
 }: WorkspaceDeleteProps) => {
   const [workspaceName] = useBlockSuiteWorkspaceName(
     workspace.blockSuiteWorkspace
@@ -36,19 +35,6 @@ export const WorkspaceDeleteModal = ({
   const [deleteStr, setDeleteStr] = useState<string>('');
   const allowDelete = deleteStr === workspaceName;
   const t = useAFFiNEI18N();
-
-  const handleDelete = useCallback(() => {
-    onDeleteWorkspace(workspace.id)
-      .then(() => {
-        toast(t['Successfully deleted'](), {
-          portal: document.body,
-        });
-        onClose();
-      })
-      .catch(() => {
-        // ignore error
-      });
-  }, [onClose, onDeleteWorkspace, t, workspace.id]);
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -99,7 +85,7 @@ export const WorkspaceDeleteModal = ({
           <Button
             data-testid="delete-workspace-confirm-button"
             disabled={!allowDelete}
-            onClick={handleDelete}
+            onClick={onConfirm}
             size="large"
             type="error"
             style={{ marginLeft: '24px' }}

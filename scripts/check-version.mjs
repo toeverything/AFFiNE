@@ -1,4 +1,4 @@
-import semver from 'semver';
+const semver = await import('../apps/server/node_modules/semver/index.js');
 
 import packageJson from '../package.json' assert { type: 'json' };
 

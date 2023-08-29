@@ -1,14 +1,12 @@
 import { FlexWrapper, toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-
-import type { AffineOfficialWorkspace } from '../../../shared';
-import * as style from './style.css';
 
 const useDBFileSecondaryPath = (workspaceId: string) => {
   const [path, setPath] = useState<string | undefined>(undefined);
@@ -83,7 +81,7 @@ export const StoragePanel = ({ workspace }: StoragePanelProps) => {
           >
             <Button
               data-testid="move-folder"
-              className={style.urlButton}
+              // className={style.urlButton}
               size="large"
               onClick={handleMoveTo}
             >

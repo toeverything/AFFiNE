@@ -11,20 +11,30 @@ import {
 export type IconMenuProps = PropsWithChildren<{
   icon?: ReactElement;
   endIcon?: ReactElement;
-  iconSize?: [number, number];
+  iconSize?: number;
   disabled?: boolean;
   active?: boolean;
   disableHover?: boolean;
+  gap?: string;
+  fontSize?: string;
 }> &
   HTMLAttributes<HTMLButtonElement>;
 
 export const MenuItem = forwardRef<HTMLButtonElement, IconMenuProps>(
-  ({ endIcon, icon, children, ...props }, ref) => {
+  ({ endIcon, icon, children, gap, fontSize, iconSize, ...props }, ref) => {
     return (
       <StyledMenuItem ref={ref} {...props}>
-        {icon && <StyledStartIconWrapper>{icon}</StyledStartIconWrapper>}
-        <StyledContent>{children}</StyledContent>
-        {endIcon && <StyledEndIconWrapper>{endIcon}</StyledEndIconWrapper>}
+        {icon && (
+          <StyledStartIconWrapper iconSize={iconSize} gap={gap}>
+            {icon}
+          </StyledStartIconWrapper>
+        )}
+        <StyledContent fontSize={fontSize}>{children}</StyledContent>
+        {endIcon && (
+          <StyledEndIconWrapper iconSize={iconSize} gap={gap}>
+            {endIcon}
+          </StyledEndIconWrapper>
+        )}
       </StyledMenuItem>
     );
   }

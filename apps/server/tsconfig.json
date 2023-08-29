@@ -7,6 +7,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
     "isolatedModules": false,
     "resolveJsonModule": true,
     "types": ["node"],

@@ -38,7 +38,14 @@ class HelperProcessManager {
   // a rpc server for the main process -> helper process
   rpc?: _AsyncVersionOf<HelperToMain>;
 
-  static instance = new HelperProcessManager();
+  static _instance: HelperProcessManager | null = null;
+
+  static get instance() {
+    if (!this._instance) {
+      this._instance = new HelperProcessManager();
+    }
+    return this._instance;
+  }
 
   private constructor() {
     const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH);

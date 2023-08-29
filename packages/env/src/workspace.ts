@@ -49,6 +49,10 @@ export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
 }
 
+export interface AffineSocketIOProvider extends PassiveDocProvider {
+  flavour: 'affine-socket-io';
+}
+
 type BaseWorkspace = {
   flavour: string;
   id: string;
@@ -68,10 +72,15 @@ export interface LocalWorkspace extends BaseWorkspace {
 }
 
 export interface AffinePublicWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.PUBLIC;
+  flavour: WorkspaceFlavour.AFFINE_PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
+
+export type AffineOfficialWorkspace =
+  | AffineCloudWorkspace
+  | LocalWorkspace
+  | AffinePublicWorkspace;
 
 export enum ReleaseType {
   // if workspace is not released yet, we will not show it in the workspace list
@@ -91,7 +100,7 @@ export enum WorkspaceFlavour {
    */
   AFFINE_CLOUD = 'affine-cloud',
   LOCAL = 'local',
-  PUBLIC = 'affine-public',
+  AFFINE_PUBLIC = 'affine-public',
 }
 
 export const settingPanel = {
@@ -107,7 +116,7 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 // built-in workspaces
 export interface WorkspaceRegistry {
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-  [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
+  [WorkspaceFlavour.AFFINE_PUBLIC]: AffinePublicWorkspace;
   [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
 }
 
@@ -137,7 +146,9 @@ export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
 
 type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
-    onDeleteWorkspace: (id: string) => Promise<void>;
+    onDeleteLocalWorkspace: () => void;
+    onDeleteCloudWorkspace: () => void;
+    onLeaveWorkspace: () => void;
     onTransformWorkspace: <
       From extends keyof WorkspaceRegistry,
       To extends keyof WorkspaceRegistry,
@@ -170,16 +181,15 @@ export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   PageList: FC<PageListProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
+  LoginCard?: FC<object>;
 }
 
 export interface AppEvents {
   // event there is no workspace
-  // usually used to initialize workspace plugin
+  // usually used to initialize workspace adapter
   'app:init': () => string[];
-  // request to gain access to workspace plugin
-  'workspace:access': () => Promise<void>;
-  // request to revoke access to workspace plugin
-  'workspace:revoke': () => Promise<void>;
+  // event if you have access to workspace adapter
+  'app:access': () => Promise<boolean>;
 }
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
