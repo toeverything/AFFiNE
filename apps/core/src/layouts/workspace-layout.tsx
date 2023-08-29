@@ -41,6 +41,7 @@ import {
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
@@ -206,6 +207,8 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const { pageId } = useParams();
 
+  const setMainContainer = useSetAtom(mainContainerAtom);
+
   return (
     <>
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
@@ -234,8 +237,11 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
               paths={pathGenerator}
             />
           </Suspense>
-          <Suspense fallback={<MainContainer />}>
-            <MainContainer padding={appSetting.clientBorder}>
+          <Suspense fallback={<MainContainer ref={setMainContainer} />}>
+            <MainContainer
+              ref={setMainContainer}
+              padding={appSetting.clientBorder}
+            >
               {children}
               <ToolContainer>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />

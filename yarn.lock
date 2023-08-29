@@ -262,7 +262,6 @@ __metadata:
     "@swc/core": ^1.3.80
     "@toeverything/components": ^0.0.24
     "@types/lodash-es": ^4.17.8
-    "@types/lodash.debounce": ^4.0.7
     "@types/webpack-env": ^1.18.1
     async-call-rpc: ^6.3.1
     cmdk: ^0.2.0
@@ -278,7 +277,6 @@ __metadata:
     jotai-devtools: ^0.6.2
     lit: ^2.8.0
     lodash-es: ^4.17.21
-    lodash.debounce: ^4.0.8
     lottie-web: ^5.12.2
     mime-types: ^2.1.35
     mini-css-extract-plugin: ^2.7.6
@@ -12662,7 +12660,9 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230828163942-e5356e86-nightly
     "@blocksuite/lit": 0.0.0-20230828163942-e5356e86-nightly
     "@blocksuite/store": 0.0.0-20230828163942-e5356e86-nightly
+    "@types/lodash.debounce": ^4.0.7
     foxact: ^0.2.20
+    lodash.debounce: ^4.0.8
   peerDependencies:
     "@affine/y-provider": "workspace:*"
     "@blocksuite/block-std": "*"
