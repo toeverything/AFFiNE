@@ -110,9 +110,16 @@ jobs:
         with:
           name: storage.node
           path: ./apps/server
-      - name: Setup Git short hash
+      - name: Setup env
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          if [ -z "${{ inputs.flavor }}" ]
+          then
+            echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_FLAVOR=canary" >> "$GITHUB_ENV"
+          fi
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -133,7 +140,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:latest
+          tags: ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
 
       # setup node without cache configuration
       # Prisma cache is not compatible with docker build cache
@@ -159,7 +166,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:latest
+          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
 
   deploy:
     name: Deploy to cluster
