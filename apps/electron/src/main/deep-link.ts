@@ -90,6 +90,7 @@ async function handleSignIn(url: string) {
       const finalUrl = new URL(window.webContents.getURL());
       console.log('final url', finalUrl);
       // hack: wait for the hidden window to send broadcast message to the main window
+      // that's how next-auth works for cross-tab communication
       setTimeout(() => {
         window.destroy();
       }, 3000);

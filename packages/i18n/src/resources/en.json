@@ -426,6 +426,8 @@
   "com.affine.settings.profile.placeholder": "Input account name",
   "com.affine.auth.sign.in": "Sign in",
   "com.affine.auth.sign.up": "Sign up",
+  "com.affine.auth.desktop.signing.in": "Signing in...",
+  "com.affine.auth.desktop.signing.in.message": "Signing in with account <1></1>",
   "com.affine.auth.sign.up.sent.email.subtitle": "Create your account",
   "com.affine.auth.sign.sent.email.message.start": "An email with a magic link has been sent to ",
   "com.affine.auth.sign.sent.email.message.end": " You can click the link to create an account automatically.",
