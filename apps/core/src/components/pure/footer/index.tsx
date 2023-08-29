@@ -3,12 +3,12 @@ import { CloudWorkspaceIcon } from '@blocksuite/icons';
 import { signIn } from 'next-auth/react';
 import { type CSSProperties, type FC, forwardRef, useCallback } from 'react';
 
-import { useCurrenLoginStatus } from '../../../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 // import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton } from './styles';
 export const Footer: FC = () => {
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
 
   // const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (

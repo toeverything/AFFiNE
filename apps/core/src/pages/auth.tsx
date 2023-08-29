@@ -5,7 +5,6 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { isDesktop } from '@affine/env/constant';
 import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
 import type { ReactElement } from 'react';
@@ -13,7 +12,7 @@ import { useCallback } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 import { z } from 'zod';
 
-import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
@@ -58,11 +57,7 @@ export const AuthPage = (): ReactElement | null => {
     [changePassword, user.id]
   );
   const onOpenAffine = useCallback(() => {
-    if (isDesktop) {
-      window.apis.ui.handleFinishLogin();
-    } else {
-      jumpToIndex(RouteLogic.REPLACE);
-    }
+    jumpToIndex(RouteLogic.REPLACE);
   }, [jumpToIndex]);
 
   switch (authType) {
@@ -119,7 +114,7 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 export const Component = () => {
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
   const { jumpToExpired } = useNavigateHelper();
 
   if (loginStatus === 'unauthenticated') {
