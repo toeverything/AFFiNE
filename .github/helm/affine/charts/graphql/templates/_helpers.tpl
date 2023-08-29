@@ -40,6 +40,7 @@ helm.sh/chart: {{ include "graphql.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+monitoring: enabled
 {{- end }}
 
 {{/*
@@ -73,60 +74,5 @@ key: {{ $secret.data.private }}
     Generate new data
 */}}
 key: {{ genPrivateKey "ecdsa" | b64enc }}
-{{- end -}}
-{{- end -}}
-
-{{- define "objectStorage.r2" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.app.objectStorage.r2.secretName -}}
-{{- if $secret -}}
-{{/*
-   Reusing existing secret data
-*/}}
-accountId: {{ $secret.data.accountId }}
-accessKeyId: {{ $secret.data.accessKeyId }}
-secretAccessKey: {{ $secret.data.secretAccessKey }}
-bucket: {{ $secret.data.bucket }}
-{{- else -}}
-{{/*
-    Generate new data
-*/}}
-accountId: {{ .Values.app.objectStorage.r2.accountId | b64enc }}
-accessKeyId: {{ .Values.app.objectStorage.r2.accessKeyId | b64enc }}
-secretAccessKey: {{ .Values.app.objectStorage.r2.secretAccessKey | b64enc }}
-bucket: {{ .Values.app.objectStorage.r2.bucket | b64enc }}
-{{- end -}}
-{{- end -}}
-
-{{- define "objectStorage.oauth.google" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.app.oauth.google.secretName -}}
-{{- if $secret -}}
-{{/*
-   Reusing existing secret data
-*/}}
-clientId: {{ $secret.data.clientId }}
-clientSecret: {{ $secret.data.clientSecret }}
-{{- else -}}
-{{/*
-    Generate new data
-*/}}
-clientId: "{{ .Values.app.oauth.google.clientId | b64enc }}"
-clientSecret: "{{ .Values.app.oauth.google.clientSecret | b64enc }}"
-{{- end -}}
-{{- end -}}
-
-{{- define "objectStorage.oauth.github" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.app.oauth.github.secretName -}}
-{{- if $secret -}}
-{{/*
-   Reusing existing secret data
-*/}}
-clientId: {{ $secret.data.clientId }}
-clientSecret: {{ $secret.data.clientSecret }}
-{{- else -}}
-{{/*
-    Generate new data
-*/}}
-clientId: "{{ .Values.app.oauth.github.clientId | b64enc }}"
-clientSecret: "{{ .Values.app.oauth.github.clientSecret | b64enc }}"
 {{- end -}}
 {{- end -}}

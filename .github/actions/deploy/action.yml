@@ -1,0 +1,50 @@
+name: 'Deploy to Cluster'
+description: 'Deploy AFFiNE Cloud to cluster'
+inputs:
+  build-type:
+    description: 'Align with App build type, canary|beta|stable|internal'
+    default: 'canary'
+  gcp-project-number:
+    description: 'GCP project number'
+    required: true
+  gcp-project-id:
+    description: 'GCP project id'
+    required: true
+  service-account:
+    description: 'Service account'
+  cluster-name:
+    description: 'Cluster name'
+  cluster-location:
+    description: 'Cluster location'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Git short hash
+      shell: bash
+      run: |
+        echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+    - uses: azure/setup-helm@v3
+    - id: auth
+      uses: google-github-actions/auth@v1
+      with:
+        workload_identity_provider: 'projects/${{ inputs.gcp-project-number }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
+        service_account: '${{ inputs.service-account }}'
+        token_format: 'access_token'
+        project_id: '${{ inputs.gcp-project-id }}'
+
+    - name: 'Setup gcloud cli'
+      uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        install_components: 'gke-gcloud-auth-plugin'
+
+    - id: get-gke-credentials
+      shell: bash
+      run: |
+        gcloud container clusters get-credentials ${{ inputs.cluster-name }} --region ${{ inputs.cluster-location }} --project ${{ inputs.gcp-project-id }}
+
+    - name: Deploy
+      shell: bash
+      run: node ./.github/actions/deploy/deploy.mjs
+      env:
+        BUILD_TYPE: '${{ inputs.build-type }}'

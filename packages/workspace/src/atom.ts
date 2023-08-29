@@ -1,7 +1,11 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { BlockHub } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertEquals, assertExists } from '@blocksuite/global/utils';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/infra/atom';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import { atom } from 'jotai';
 import { z } from 'zod';
@@ -58,7 +62,7 @@ export const workspaceAdaptersAtom = atom<
 /**
  * root workspaces atom
  * this atom stores the metadata of all workspaces,
- * which is `id` and `flavor`, that is enough to load the real workspace data
+ * which is `id` and `flavor,` that is enough to load the real workspace data
  */
 const METADATA_STORAGE_KEY = 'jotai-workspaces';
 const rootWorkspacesMetadataPrimitiveAtom = atom<Promise<
@@ -69,10 +73,12 @@ const rootWorkspacesMetadataPromiseAtom = atom<
 >(async (get, { signal }) => {
   const WorkspaceAdapters = get(workspaceAdaptersAtom);
   assertExists(WorkspaceAdapters, 'workspace adapter should be defined');
-  const maybeMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
-  if (maybeMetadata !== null) {
-    return maybeMetadata;
-  }
+  const primitiveMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
+  assertEquals(
+    primitiveMetadata,
+    null,
+    'rootWorkspacesMetadataPrimitiveAtom should be null'
+  );
 
   if (environment.isServer) {
     // return a promise in SSR to avoid the hydration mismatch
@@ -127,6 +133,13 @@ const rootWorkspacesMetadataPromiseAtom = atom<
 
       for (const Adapter of Adapters) {
         const { CRUD, flavour: currentFlavour } = Adapter;
+        if (
+          Adapter.Events['app:access'] &&
+          !(await Adapter.Events['app:access']())
+        ) {
+          // skip the adapter if the user doesn't have access to it
+          continue;
+        }
         try {
           const item = await CRUD.list();
           // remove the metadata that is not in the list
@@ -182,7 +195,10 @@ type SetStateAction<Value> = Value | ((prev: Value) => Value);
 
 export const rootWorkspacesMetadataAtom = atom<
   Promise<RootWorkspaceMetadata[]>,
-  [SetStateAction<RootWorkspaceMetadata[]>],
+  [
+    setStateAction: SetStateAction<RootWorkspaceMetadata[]>,
+    newWorkspaceId?: string,
+  ],
   void
 >(
   async get => {
@@ -192,8 +208,11 @@ export const rootWorkspacesMetadataAtom = atom<
     }
     return get(rootWorkspacesMetadataPromiseAtom);
   },
-  async (get, set, action) => {
+  async (get, set, action, newWorkspaceId) => {
     const metadataPromise = get(rootWorkspacesMetadataPromiseAtom);
+    const oldWorkspaceId = get(currentWorkspaceIdAtom);
+    const oldPageId = get(currentPageIdAtom);
+
     // get metadata
     set(rootWorkspacesMetadataPrimitiveAtom, async maybeMetadataPromise => {
       let metadata: RootWorkspaceMetadata[] =
@@ -211,6 +230,17 @@ export const rootWorkspacesMetadataAtom = atom<
       // write back to localStorage
       rootWorkspaceMetadataArraySchema.parse(metadata);
       localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(metadata));
+
+      // if the current workspace is deleted, reset the current workspace
+      if (oldWorkspaceId && metadata.some(x => x.id === oldWorkspaceId)) {
+        set(currentWorkspaceIdAtom, oldWorkspaceId);
+        set(currentPageIdAtom, oldPageId);
+      }
+
+      if (newWorkspaceId) {
+        set(currentPageIdAtom, null);
+        set(currentWorkspaceIdAtom, newWorkspaceId);
+      }
       return metadata;
     });
   }

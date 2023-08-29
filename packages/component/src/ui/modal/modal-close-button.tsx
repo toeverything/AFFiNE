@@ -37,5 +37,3 @@ export const ModalCloseButton = ({
     </IconButton>
   );
 };
-
-export default ModalCloseButton;

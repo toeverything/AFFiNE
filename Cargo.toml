@@ -1,5 +1,10 @@
 [workspace]
-members = ["./packages/native", "./packages/native/schema"]
+resolver = "2"
+members = [
+  "./packages/native",
+  "./packages/native/schema",
+  "./packages/storage",
+]
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
@@ -9,3 +14,7 @@ lto = true
 codegen-units = 1
 opt-level = 3
 strip = "symbols"
+
+[patch.crates-io]
+lib0 = { git = "https://github.com/toeverything/y-crdt", rev = "a700f09" }
+yrs = { git = "https://github.com/toeverything/y-crdt", rev = "a700f09" }

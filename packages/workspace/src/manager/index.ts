@@ -1,6 +1,7 @@
 import { isBrowser, isDesktop } from '@affine/env/constant';
 import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { createAffinePublicProviders } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
 import {
@@ -13,6 +14,7 @@ import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/w
 import type { Doc } from 'yjs';
 import type { Transaction } from 'yjs';
 
+import { createCloudBlobStorage } from '../blob/cloud-blob-storage';
 import { createStaticStorage } from '../blob/local-static-storage';
 import { createSQLiteStorage } from '../blob/sqlite-blob-storage';
 import { createAffineProviders, createLocalProviders } from '../providers';
@@ -95,18 +97,18 @@ export function getOrCreateWorkspace(
   const idGenerator = Generator.NanoID;
 
   const blobStorages: StoreOptions['blobStorages'] = [];
-
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
+      blobStorages.push(createCloudBlobStorage);
       if (isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
+      providerCreators.push(...createAffineProviders());
 
       // todo(JimmFly): add support for cloud storage
     }
-    providerCreators.push(...createAffineProviders());
-  } else {
+  } else if (flavour === WorkspaceFlavour.LOCAL) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
       if (isDesktop && runtimeConfig.enableSQLiteProvider) {
@@ -114,6 +116,17 @@ export function getOrCreateWorkspace(
       }
     }
     providerCreators.push(...createLocalProviders());
+  } else if (flavour === WorkspaceFlavour.AFFINE_PUBLIC) {
+    if (isBrowser) {
+      blobStorages.push(createIndexeddbStorage);
+      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
+        blobStorages.push(createSQLiteStorage);
+      }
+    }
+    blobStorages.push(createCloudBlobStorage);
+    providerCreators.push(...createAffinePublicProviders());
+  } else {
+    throw new Error('unsupported flavour');
   }
   blobStorages.push(createStaticStorage);
 

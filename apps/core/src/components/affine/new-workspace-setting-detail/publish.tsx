@@ -1,18 +1,19 @@
-import { FlexWrapper, Switch } from '@affine/component';
+import { FlexWrapper, Input, Switch } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineCloudWorkspace,
+  AffinePublicWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
 import { TmpDisableAffineCloudModal } from '../tmp-disable-affine-cloud-modal';
@@ -29,14 +30,16 @@ export interface PublishPanelLocalProps
 }
 export interface PublishPanelAffineProps
   extends Omit<WorkspaceSettingDetailProps, 'workspaceId'> {
-  workspace: AffineCloudWorkspace;
+  workspace: AffineCloudWorkspace | AffinePublicWorkspace;
 }
 
 const PublishPanelAffine = (props: PublishPanelAffineProps) => {
   const { workspace } = props;
   const t = useAFFiNEI18N();
   // const toggleWorkspacePublish = useToggleWorkspacePublish(workspace);
-
+  const isPublic = useMemo(() => {
+    return workspace.flavour === WorkspaceFlavour.AFFINE_PUBLIC;
+  }, [workspace]);
   const [origin, setOrigin] = useState('');
   const shareUrl = origin + '/public-workspace/' + workspace.id;
 
@@ -54,35 +57,35 @@ const PublishPanelAffine = (props: PublishPanelAffineProps) => {
   }, [shareUrl, t]);
 
   return (
-    <>
+    <div style={{ display: 'none' }}>
       <SettingRow
         name={t['Publish']()}
-        desc={
-          // workspace.public ? t['Unpublished hint']() : t['Published hint']()
-          'UNFINISHED'
-        }
+        desc={isPublic ? t['Unpublished hint']() : t['Published hint']()}
+        style={{
+          marginBottom: isPublic ? '12px' : '25px',
+        }}
       >
-        {/* <Switch
-          checked={workspace.public}
-          onChange={checked => toggleWorkspacePublish(checked)}
-        /> */}
+        <Switch
+          checked={isPublic}
+          // onChange={useCallback(value => {
+          //   console.log('onChange', value);
+          // }, [])}
+        />
       </SettingRow>
-      <FlexWrapper justifyContent="space-between">
-        <Button
-          className={style.urlButton}
-          size="large"
-          onClick={useCallback(() => {
-            window.open(shareUrl, '_blank');
-          }, [shareUrl])}
-          title={shareUrl}
-        >
-          {shareUrl}
-        </Button>
-        <Button size="large" onClick={copyUrl}>
-          {t['Copy']()}
-        </Button>
-      </FlexWrapper>
-    </>
+      {isPublic ? (
+        <FlexWrapper justifyContent="space-between" marginBottom={25}>
+          <Input value={shareUrl} disabled />
+          <Button
+            onClick={copyUrl}
+            style={{
+              marginLeft: '20px',
+            }}
+          >
+            {t['Copy']()}
+          </Button>
+        </FlexWrapper>
+      ) : null}
+    </div>
   );
 };
 
@@ -164,7 +167,10 @@ const PublishPanelLocal = ({
 };
 
 export const PublishPanel = (props: PublishPanelProps) => {
-  if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+  if (
+    props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
+    props.workspace.flavour === WorkspaceFlavour.AFFINE_PUBLIC
+  ) {
     return <PublishPanelAffine {...props} workspace={props.workspace} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <PublishPanelLocal {...props} workspace={props.workspace} />;

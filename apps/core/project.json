@@ -10,20 +10,18 @@
           "target": "build",
           "params": "ignore"
         },
+        {
+          "projects": ["tag:infra"],
+          "target": "build",
+          "params": "ignore"
+        },
         "^build"
       ],
       "inputs": [
         "{projectRoot}/.webpack/**/*",
         "{projectRoot}/**/*",
         "{projectRoot}/public/**/*",
-        "{workspaceRoot}/packages/env/src/**/*",
-        "{workspaceRoot}/packages/component/src/**/*",
-        "{workspaceRoot}/packages/debug/src/**/*",
-        "{workspaceRoot}/packages/graphql/src/**/*",
-        "{workspaceRoot}/packages/hooks/src/**/*",
-        "{workspaceRoot}/packages/jotai/src/**/*",
-        "{workspaceRoot}/packages/templates/src/**/*",
-        "{workspaceRoot}/packages/workspace/src/**/*",
+        "{workspaceRoot}/packages/**/*",
         {
           "env": "BUILD_TYPE"
         },

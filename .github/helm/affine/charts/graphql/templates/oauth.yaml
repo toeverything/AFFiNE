@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Values.app.oauth.email.secretName }}"
+type: Opaque
+data:
+  sender: "{{ .Values.app.oauth.email.sender | b64enc }}"
+  login: "{{ .Values.app.oauth.email.login | b64enc }}"
+  password: "{{ .Values.app.oauth.email.password | b64enc }}"
+  server: "{{ .Values.app.oauth.email.server | b64enc }}"
+  port: "{{ .Values.app.oauth.email.port | b64enc }}"
+---
+{{- if .Values.app.oauth.google.enabled -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Values.app.oauth.google.secretName }}"
+type: Opaque
+data:
+  clientId: "{{ .Values.app.oauth.google.clientId | b64enc }}"
+  clientSecret: "{{ .Values.app.oauth.google.clientSecret | b64enc }}"
+{{- end }}
+---
+{{- if .Values.app.oauth.github.enabled -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Values.app.oauth.github.secretName }}"
+type: Opaque
+data:
+  clientId: "{{ .Values.app.oauth.github.clientId | b64enc }}"
+  clientSecret: "{{ .Values.app.oauth.github.clientSecret | b64enc }}"
+{{- end }}

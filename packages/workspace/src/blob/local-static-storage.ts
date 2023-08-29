@@ -25,10 +25,14 @@ export const createStaticStorage = (): BlobStorage => {
       get: async (key: string) => {
         if (key.startsWith('/static/')) {
           const response = await fetch(key);
-          return response.blob();
+          if (response.ok) {
+            return response.blob();
+          }
         } else if (predefinedStaticFiles.includes(key)) {
           const response = await fetch(`/static/${key}.png`);
-          return response.blob();
+          if (response.ok) {
+            return response.blob();
+          }
         }
         return null;
       },

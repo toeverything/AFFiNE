@@ -29,6 +29,7 @@ env:
   DEBUG: napi:*
   BUILD_TYPE: canary
   APP_NAME: affine
+  AFFINE_ENV: dev
   COVERAGE: true
   DISTRIBUTION: browser
   MACOSX_DEPLOYMENT_TARGET: '10.13'
@@ -113,30 +114,11 @@ jobs:
         env:
           NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
-  build-storybook:
-    name: Build Storybook
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          electron-install: false
-      - run: yarn nx build @affine/storybook
-        env:
-          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - name: Upload storybook artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: storybook
-          path: ./apps/storybook/storybook-static
-          if-no-files-found: error
-
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: '-C debuginfo=1'
     environment: development
 
     steps:
@@ -144,11 +126,11 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup Rust
-        uses: ./.github/actions/setup-rust
+        uses: ./.github/actions/build-rust
         with:
           target: 'x86_64-unknown-linux-gnu'
-      - name: Build Storage
-        run: yarn build:storage
+          package: '@affine/storage'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storage.node
         uses: actions/upload-artifact@v3
         with:
@@ -215,6 +197,81 @@ jobs:
           flags: server-test
           name: affine
           fail_ci_if_error: false
+
+  server-e2e-test:
+    name: Server E2E Test
+    runs-on: ubuntu-latest
+    environment: development
+    needs: build-storage
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+      - name: Initialize database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+        env:
+          PGPASSWORD: affine
+      - name: Generate prisma client
+        run: |
+          yarn exec prisma generate
+          yarn exec prisma db push
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Run init-db script
+        run: yarn exec ts-node-esm ./scripts/init-db.ts
+        working-directory: apps/server
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
+
+      - name: Run playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: tests/affine-cloud
+        env:
+          COVERAGE: true
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+
+      - name: Collect code coverage report
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: server-e2etest
+          name: affine
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-server
+          path: ./tests/affine-cloud/test-results
+          if-no-files-found: ignore
 
   e2e-plugin-test:
     name: E2E Plugin Test

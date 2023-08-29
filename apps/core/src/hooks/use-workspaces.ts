@@ -43,6 +43,21 @@ export function useAppHelper() {
       },
       [set]
     ),
+    addCloudWorkspace: useCallback(
+      (workspaceId: string) => {
+        getOrCreateWorkspace(workspaceId, WorkspaceFlavour.AFFINE_CLOUD);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.AFFINE_CLOUD,
+            version: WorkspaceVersion.DatabaseV3,
+          },
+        ]);
+        logger.debug('imported cloud workspace', workspaceId);
+      },
+      [set]
+    ),
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
         const blockSuiteWorkspace = getOrCreateWorkspace(
@@ -96,6 +111,12 @@ export function useAppHelper() {
         await set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
       },
       [jotaiWorkspaces, set]
+    ),
+    deleteWorkspaceMeta: useCallback(
+      (workspaceId: string) => {
+        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+      },
+      [set]
     ),
   };
 }

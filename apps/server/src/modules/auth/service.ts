@@ -12,8 +12,14 @@ import type { User } from '@prisma/client';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { MailService } from './mailer';
 
-export type UserClaim = Pick<User, 'id' | 'name' | 'email' | 'createdAt'>;
+export type UserClaim = Pick<
+  User,
+  'id' | 'name' | 'email' | 'emailVerified' | 'createdAt' | 'avatarUrl'
+> & {
+  hasPassword?: boolean;
+};
 
 export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
@@ -21,7 +27,8 @@ export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
 export class AuthService {
   constructor(
     private config: Config,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private mailer: MailService
   ) {}
 
   sign(user: UserClaim) {
@@ -32,6 +39,9 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          emailVerified: user.emailVerified?.toISOString(),
+          image: user.avatarUrl,
+          hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
         },
         iat: now,
@@ -58,6 +68,9 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          emailVerified: user.emailVerified?.toISOString(),
+          image: user.avatarUrl,
+          hasPassword: Boolean(user.hasPassword),
           createdAt: user.createdAt.toISOString(),
         },
         exp: now + this.config.auth.refreshTokenExpiresIn,
@@ -78,7 +91,7 @@ export class AuthService {
 
   async verify(token: string) {
     try {
-      return (
+      const data = (
         await jwtVerify(token, this.config.auth.publicKey, {
           algorithms: [Algorithm.ES256],
           iss: [this.config.serverId],
@@ -86,6 +99,12 @@ export class AuthService {
           requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
         })
       ).data as UserClaim;
+
+      return {
+        ...data,
+        emailVerified: data.emailVerified ? new Date(data.emailVerified) : null,
+        createdAt: new Date(data.createdAt),
+      };
     } catch (e) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -119,7 +138,7 @@ export class AuthService {
     return user;
   }
 
-  async register(name: string, email: string, password: string): Promise<User> {
+  async signUp(name: string, email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {
         email,
@@ -139,5 +158,97 @@ export class AuthService {
         password: hashedPassword,
       },
     });
+  }
+
+  async createAnonymousUser(email: string): Promise<User> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+
+    if (user) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        name: 'Unnamed',
+        email,
+      },
+    });
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+  }
+
+  async isUserHasPassword(email: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+    return Boolean(user.password);
+  }
+
+  async changePassword(id: string, newPassword: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    const hashedPassword = await hash(newPassword);
+
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        password: hashedPassword,
+      },
+    });
+  }
+  async changeEmail(id: string, newEmail: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        email: newEmail,
+      },
+    });
+  }
+
+  async sendChangePasswordEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendChangePasswordEmail(email, callbackUrl);
+  }
+  async sendSetPasswordEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendSetPasswordEmail(email, callbackUrl);
+  }
+  async sendChangeEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendChangeEmail(email, callbackUrl);
   }
 }

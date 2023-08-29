@@ -1,4 +1,19 @@
-import { displayFlex, styled, textEllipsis } from '@affine/component';
+import {
+  displayFlex,
+  displayInlineFlex,
+  styled,
+  textEllipsis,
+} from '@affine/component';
+
+export const StyledSplitLine = styled('div')(() => {
+  return {
+    width: '1px',
+    height: '20px',
+    background: 'var(--affine-border-color)',
+    marginRight: '24px',
+  };
+});
+
 export const StyleWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
@@ -108,5 +123,30 @@ export const StyledModalHeader = styled('div')(() => {
     borderRadius: '24px 24px 0 0',
     padding: '0 40px',
     ...displayFlex('space-between', 'center'),
+  };
+});
+
+export const StyledSignInButton = styled('button')(() => {
+  return {
+    fontWeight: 600,
+    paddingLeft: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingRight: '15px',
+    borderRadius: '8px',
+    '&:hover': {
+      backgroundColor: 'var(--affine-hover-color)',
+    },
+    '.circle': {
+      width: '40px',
+      height: '40px',
+      borderRadius: '20px',
+      color: 'var(--affine-primary-color)',
+      fontSize: '24px',
+      flexShrink: 0,
+      marginRight: '16px',
+      ...displayInlineFlex('center', 'center'),
+    },
   };
 });
