@@ -158,6 +158,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         Github.default({
           clientId: config.auth.oauthProviders.github.clientId,
           clientSecret: config.auth.oauthProviders.github.clientSecret,
+          allowDangerousEmailAccountLinking: true,
         })
       );
     }
@@ -169,6 +170,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           clientId: config.auth.oauthProviders.google.clientId,
           clientSecret: config.auth.oauthProviders.google.clientSecret,
           checks: 'nonce',
+          allowDangerousEmailAccountLinking: true,
         })
       );
     }
