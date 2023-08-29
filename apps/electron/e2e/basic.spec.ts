@@ -1,5 +1,6 @@
 import { platform } from 'node:os';
 
+import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
 import { test } from './fixture';
@@ -27,8 +28,8 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-default-page-block-title');
-      await page.type('.affine-default-page-block-title', 'test1', {
+      await page.focus('.affine-doc-page-block-title');
+      await page.type('.affine-doc-page-block-title', 'test1', {
         delay: 100,
       });
       await page.waitForTimeout(500);
@@ -36,8 +37,8 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-default-page-block-title');
-      await page.type('.affine-default-page-block-title', 'test2', {
+      await page.focus('.affine-doc-page-block-title');
+      await page.type('.affine-doc-page-block-title', 'test2', {
         delay: 100,
       });
       await page.waitForTimeout(500);
@@ -45,14 +46,14 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-default-page-block-title');
-      await page.type('.affine-default-page-block-title', 'test3', {
+      await page.focus('.affine-doc-page-block-title');
+      await page.type('.affine-doc-page-block-title', 'test3', {
         delay: 100,
       });
     }
     {
       const title = (await page
-        .locator('.affine-default-page-block-title')
+        .locator('.affine-doc-page-block-title')
         .textContent()) as string;
       expect(title.trim()).toBe('test3');
     }
@@ -63,7 +64,7 @@ if (platform() === 'darwin') {
     await page.waitForTimeout(1000);
     {
       const title = (await page
-        .locator('.affine-default-page-block-title')
+        .locator('.affine-doc-page-block-title')
         .textContent()) as string;
       expect(title.trim()).toBe('test1');
     }
@@ -73,12 +74,25 @@ if (platform() === 'darwin') {
     await page.waitForTimeout(1000);
     {
       const title = (await page
-        .locator('.affine-default-page-block-title')
+        .locator('.affine-doc-page-block-title')
         .textContent()) as string;
       expect(title.trim()).toBe('test3');
     }
   });
 }
+
+test('clientBorder value should disable by default on window', async ({
+  page,
+}) => {
+  await clickSideBarSettingButton(page);
+  await page.waitForTimeout(1000);
+  const settingItem = page.locator(
+    '[data-testid="client-border-style-trigger"]'
+  );
+  expect(await settingItem.locator('input').inputValue()).toEqual(
+    process.platform === 'win32' ? 'off' : 'on'
+  );
+});
 
 test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');
@@ -96,9 +110,10 @@ test('app theme', async ({ page, electronApp }) => {
   }
 
   {
-    await page.getByTestId('editor-option-menu').click();
-    await page.getByTestId('change-theme-dark').click();
+    await page.getByTestId('settings-modal-trigger').click();
+    await page.getByTestId('appearance-panel-trigger').click();
     await page.waitForTimeout(50);
+    await page.getByTestId('dark-theme-trigger').click();
     const themeMode = await root.evaluate(element =>
       element.getAttribute('data-theme')
     );
@@ -108,18 +123,6 @@ test('app theme', async ({ page, electronApp }) => {
     });
     expect(theme).toBe('dark');
   }
-});
-
-test('affine cloud disabled', async ({ page }) => {
-  await page.getByTestId('new-page-button').click({
-    delay: 100,
-  });
-  await page.waitForSelector('v-line');
-  await page.getByTestId('current-workspace').click();
-  await page.getByTestId('sign-in-button').click();
-  await page.getByTestId('disable-affine-cloud-modal').waitFor({
-    state: 'visible',
-  });
 });
 
 test('affine onboarding button', async ({ page }) => {
@@ -152,13 +155,21 @@ test('windows only check', async ({ page }) => {
 
 test('delete workspace', async ({ page }) => {
   await page.getByTestId('current-workspace').click();
-  await page.getByTestId('add-or-new-workspace').click();
   await page.getByTestId('new-workspace').click();
-  await page.getByTestId('create-workspace-default-location-button').click();
-  await page.getByTestId('create-workspace-input').type('Delete Me');
-  await page.getByTestId('create-workspace-create-button').click();
-  await page.getByTestId('create-workspace-continue-button').click();
-  await page.getByTestId('slider-bar-workspace-setting-button').click();
+  await page.getByTestId('create-workspace-default-location-button').click({
+    delay: 100,
+  });
+  await page.getByTestId('create-workspace-input').type('Delete Me', {
+    delay: 100,
+  });
+  await page.getByTestId('create-workspace-create-button').click({
+    delay: 100,
+  });
+  await page.getByTestId('create-workspace-continue-button').click({
+    delay: 100,
+  });
+  await page.waitForTimeout(1000);
+  await clickSideBarSettingButton(page);
   await page.getByTestId('current-workspace-label').click();
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
     'Delete Me'

@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
+import { initEmptyPage } from '@affine/env/blocksuite';
 import {
   DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   DEFAULT_WORKSPACE_NAME,
@@ -19,12 +19,17 @@ import {
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { nanoid } from '@blocksuite/store';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/plugin-infra/__internal__/react';
+import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
+import { getCurrentStore } from '@toeverything/infra/atom';
+import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { useCallback } from 'react';
 
+import { setPageModeAtom } from '../../atoms';
 import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
+  Provider,
   WorkspaceHeader,
 } from '../shared';
 
@@ -35,27 +40,30 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
+    'app:access': async () => true,
     'app:init': () => {
       const blockSuiteWorkspace = getOrCreateWorkspace(
         nanoid(),
         WorkspaceFlavour.LOCAL
       );
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-      const page = blockSuiteWorkspace.createPage({
-        id: `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
-      });
       if (runtimeConfig.enablePreloading) {
-        initPageWithPreloading(page).catch(err => {
+        buildShowcaseWorkspace(blockSuiteWorkspace, {
+          store: getCurrentStore(),
+          atoms: {
+            pageMode: setPageModeAtom,
+          },
+        }).catch(err => {
           logger.error('init page with preloading failed', err);
         });
       } else {
+        const page = blockSuiteWorkspace.createPage({
+          id: `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
+        });
         initEmptyPage(page).catch(error => {
           logger.error('init page with empty failed', error);
         });
       }
-      blockSuiteWorkspace.setPageMeta(page.id, {
-        jumpOnce: true,
-      });
       const provider = createIndexedDBDownloadProvider(
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
@@ -73,9 +81,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   CRUD,
   UI: {
     Header: WorkspaceHeader,
-    Provider: ({ children }) => {
-      return <>{children}</>;
-    },
+    Provider,
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
       const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
       const page = workspace.getPage(currentPageId);
@@ -86,7 +92,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
-            onInit={initEmptyPage}
+            onInit={useCallback(async page => initEmptyPage(page), [])}
             onLoad={onLoadEditor}
             workspace={workspace}
           />
@@ -105,14 +111,19 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
     },
     NewSettingsDetail: ({
       currentWorkspaceId,
-      onDeleteWorkspace,
       onTransformWorkspace,
+      onDeleteLocalWorkspace,
+      onDeleteCloudWorkspace,
+      onLeaveWorkspace,
     }) => {
       return (
         <NewWorkspaceSettingDetail
-          onDeleteWorkspace={onDeleteWorkspace}
+          onDeleteLocalWorkspace={onDeleteLocalWorkspace}
+          onDeleteCloudWorkspace={onDeleteCloudWorkspace}
+          onLeaveWorkspace={onLeaveWorkspace}
           workspaceId={currentWorkspaceId}
           onTransferWorkspace={onTransformWorkspace}
+          isOwner={true}
         />
       );
     },

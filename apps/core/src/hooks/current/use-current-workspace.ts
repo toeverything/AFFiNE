@@ -2,7 +2,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/manager';
+} from '@toeverything/infra/atom';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 

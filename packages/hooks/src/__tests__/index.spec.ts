@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { Schema, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
 import { describe, expect, test } from 'vitest';
@@ -14,15 +14,15 @@ import { beforeEach } from 'vitest';
 
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 import { useBlockSuiteWorkspaceName } from '../use-block-suite-workspace-name';
-import { useBlockSuiteWorkspacePageIsPublic } from '../use-block-suite-workspace-page-is-public';
 import { useBlockSuiteWorkspacePageTitle } from '../use-block-suite-workspace-page-title';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
 
+const schema = new Schema();
+schema.register(AffineSchemas).register(__unstableSchemas);
+
 beforeEach(async () => {
-  blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test' })
-    .register(AffineSchemas)
-    .register(__unstableSchemas);
+  blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test', schema });
   const initPage = async (page: Page) => {
     await page.waitForLoaded();
     expect(page).not.toBeNull();
@@ -62,19 +62,6 @@ describe('useBlockSuiteWorkspacePageTitle', () => {
     blockSuiteWorkspace.setPageMeta('page0', { title: '1' });
     pageTitleHook.rerender();
     expect(pageTitleHook.result.current).toBe('1');
-  });
-});
-
-describe('useBlockSuiteWorkspacePageIsPublic', () => {
-  test('basic', async () => {
-    const page = blockSuiteWorkspace.getPage('page0') as Page;
-    expect(page).not.toBeNull();
-    const hook = renderHook(() => useBlockSuiteWorkspacePageIsPublic(page));
-    expect(hook.result.current[0]).toBe(false);
-    hook.result.current[1](true);
-    expect(page.meta.isPublic).toBe(true);
-    hook.rerender();
-    expect(hook.result.current[0]).toBe(true);
   });
 });
 

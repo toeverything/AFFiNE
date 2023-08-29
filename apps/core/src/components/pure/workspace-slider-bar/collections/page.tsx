@@ -150,6 +150,7 @@ export const Page = ({
     <Collapsible.Root open={!collapsed}>
       <MenuItem
         data-testid="collection-page"
+        data-type="collection-list-item"
         icon={icon}
         onClick={clickPage}
         className={styles.title}
@@ -181,20 +182,18 @@ export const Page = ({
       >
         {page.title || t['Untitled']()}
       </MenuItem>
-      <Collapsible.Content>
-        <div style={{ marginLeft: 8 }}>
-          {referencesToRender.map(id => {
-            return (
-              <ReferencePage
-                key={id}
-                workspace={workspace}
-                pageId={id}
-                metaMapping={allPageMeta}
-                parentIds={new Set([pageId])}
-              />
-            );
-          })}
-        </div>
+      <Collapsible.Content className={styles.collapsibleContent}>
+        {referencesToRender.map(id => {
+          return (
+            <ReferencePage
+              key={id}
+              workspace={workspace}
+              pageId={id}
+              metaMapping={allPageMeta}
+              parentIds={new Set([pageId])}
+            />
+          );
+        })}
       </Collapsible.Content>
     </Collapsible.Root>
   );

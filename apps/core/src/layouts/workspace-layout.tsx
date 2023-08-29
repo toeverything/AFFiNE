@@ -1,6 +1,8 @@
 import { Content, displayFlex } from '@affine/component';
-import { AffineWatermark } from '@affine/component/affine-watermark';
-import { appSidebarResizingAtom } from '@affine/component/app-sidebar';
+import {
+  AppSidebarFallback,
+  appSidebarResizingAtom,
+} from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
 import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
@@ -10,7 +12,6 @@ import {
   ToolContainer,
   WorkspaceFallback,
 } from '@affine/component/workspace';
-import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootBlockHubAtom,
@@ -28,25 +29,22 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { usePassiveWorkspaceEffect } from '@toeverything/plugin-infra/__internal__/react';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/plugin-infra/manager';
+import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
+import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { FC, PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import type { PropsWithChildren, ReactElement } from 'react';
+import { lazy, Suspense, useCallback } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 
-import { WorkspaceAdapters } from '../adapters/workspace';
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
 import { useAppSetting } from '../atoms/settings';
+import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
+import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
@@ -70,19 +68,17 @@ const QuickSearchModal = lazy(() =>
   }))
 );
 
-function DefaultProvider({ children }: PropsWithChildren) {
-  return <>{children}</>;
-}
-
-export const QuickSearch: FC = () => {
+export const QuickSearch = () => {
   const [currentWorkspace] = useCurrentWorkspace();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+
   if (!blockSuiteWorkspace) {
     return null;
   }
+
   return (
     <QuickSearchModal
       workspace={currentWorkspace}
@@ -91,15 +87,6 @@ export const QuickSearch: FC = () => {
     />
   );
 };
-
-declare global {
-  // eslint-disable-next-line no-var
-  var HALTING_PROBLEM_TIMEOUT: number;
-}
-
-if (globalThis.HALTING_PROBLEM_TIMEOUT === undefined) {
-  globalThis.HALTING_PROBLEM_TIMEOUT = 1000;
-}
 
 const showList: IslandItemNames[] = environment.isDesktop
   ? ['whatNew', 'contact', 'guide']
@@ -111,20 +98,6 @@ export const CurrentWorkspaceContext = ({
   const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
-  const navigate = useNavigate();
-  // fixme(himself65): this is not a good way to handle this,
-  //  need a better way to check whether this workspace really exist.
-  useEffect(() => {
-    const id = setTimeout(() => {
-      if (!exist) {
-        navigate('/');
-        globalThis.HALTING_PROBLEM_TIMEOUT <<= 1;
-      }
-    }, globalThis.HALTING_PROBLEM_TIMEOUT);
-    return () => {
-      clearTimeout(id);
-    };
-  }, [exist, metadata.length, navigate]);
   if (metadata.length === 0) {
     return <WorkspaceFallback key="no-workspace" />;
   }
@@ -137,66 +110,42 @@ export const CurrentWorkspaceContext = ({
   return <>{children}</>;
 };
 
-export const WorkspaceLayout: FC<PropsWithChildren> =
-  function WorkspacesSuspense({ children }) {
-    const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
-    const jotaiWorkspaces = useAtomValue(rootWorkspacesMetadataAtom);
-    const meta = useMemo(
-      () => jotaiWorkspaces.find(x => x.id === currentWorkspaceId),
-      [currentWorkspaceId, jotaiWorkspaces]
-    );
-
-    const Provider =
-      (meta && WorkspaceAdapters[meta.flavour].UI.Provider) ?? DefaultProvider;
-    return (
-      <>
+export const WorkspaceLayout = function WorkspacesSuspense({
+  children,
+}: PropsWithChildren) {
+  return (
+    <AdapterProviderWrapper>
+      <CurrentWorkspaceContext>
         {/* load all workspaces is costly, do not block the whole UI */}
-        <Suspense fallback={null}>
+        <Suspense>
           <AllWorkspaceModals />
-          <CurrentWorkspaceContext>
-            {/* fixme(himself65): don't re-render whole modals */}
-            <CurrentWorkspaceModals key={currentWorkspaceId} />
-          </CurrentWorkspaceContext>
+          <CurrentWorkspaceModals />
         </Suspense>
-        <CurrentWorkspaceContext>
-          <Suspense fallback={<WorkspaceFallback />}>
-            <Provider>
-              <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-            </Provider>
-          </Suspense>
-        </CurrentWorkspaceContext>
-      </>
-    );
-  };
+        <Suspense fallback={<WorkspaceFallback />}>
+          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+        </Suspense>
+      </CurrentWorkspaceContext>
+    </AdapterProviderWrapper>
+  );
+};
 
-export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
+export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
-  const { jumpToPage, openPage } = useNavigateHelper();
+  const { openPage } = useNavigateHelper();
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
-  useEffect(() => {
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(
-      `${currentWorkspace.blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`
-    );
-    if (page && page.meta.jumpOnce) {
-      currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
-        jumpOnce: false,
-      });
-      setCurrentPageId(currentPageId);
-      jumpToPage(currentWorkspace.id, page.id);
-    }
-  }, [currentPageId, currentWorkspace, jumpToPage, setCurrentPageId]);
-
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
-  const helper = useBlockSuiteWorkspaceHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 
   const handleCreatePage = useCallback(() => {
-    return helper.createPage(nanoid());
-  }, [helper]);
+    const id = nanoid();
+    helper.createPage(id);
+    const page = currentWorkspace.blockSuiteWorkspace.getPage(id);
+    assertExists(page);
+    return page;
+  }, [currentWorkspace.blockSuiteWorkspace, helper]);
+
   const handleOpenWorkspaceListModal = useCallback(() => {
     setOpenWorkspacesModal(true);
   }, [setOpenWorkspacesModal]);
@@ -266,31 +215,34 @@ export const WorkspaceLayoutInner: FC<PropsWithChildren> = ({ children }) => {
         onDragEnd={handleDragEnd}
       >
         <AppContainer resizing={resizing}>
-          <RootAppSidebar
-            isPublicWorkspace={false}
-            onOpenQuickSearchModal={handleOpenQuickSearchModal}
-            onOpenSettingModal={handleOpenSettingModal}
-            currentWorkspace={currentWorkspace}
-            onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
-            openPage={useCallback(
-              (pageId: string) => {
-                assertExists(currentWorkspace);
-                return openPage(currentWorkspace.id, pageId);
-              },
-              [currentWorkspace, openPage]
-            )}
-            createPage={handleCreatePage}
-            currentPath={location.pathname.split('?')[0]}
-            paths={pathGenerator}
-          />
-          <MainContainer padding={appSetting.clientBorder}>
-            {children}
-            <ToolContainer>
-              <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
-              <HelpIsland showList={pageId ? undefined : showList} />
-            </ToolContainer>
-            <AffineWatermark />
-          </MainContainer>
+          <Suspense fallback={<AppSidebarFallback />}>
+            <RootAppSidebar
+              isPublicWorkspace={false}
+              onOpenQuickSearchModal={handleOpenQuickSearchModal}
+              onOpenSettingModal={handleOpenSettingModal}
+              currentWorkspace={currentWorkspace}
+              onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
+              openPage={useCallback(
+                (pageId: string) => {
+                  assertExists(currentWorkspace);
+                  return openPage(currentWorkspace.id, pageId);
+                },
+                [currentWorkspace, openPage]
+              )}
+              createPage={handleCreatePage}
+              currentPath={location.pathname.split('?')[0]}
+              paths={pathGenerator}
+            />
+          </Suspense>
+          <Suspense fallback={<MainContainer />}>
+            <MainContainer padding={appSetting.clientBorder}>
+              {children}
+              <ToolContainer>
+                <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
+                <HelpIsland showList={pageId ? undefined : showList} />
+              </ToolContainer>
+            </MainContainer>
+          </Suspense>
         </AppContainer>
         <PageListTitleCellDragOverlay />
       </DndContext>

@@ -5,26 +5,26 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import type { WorkspaceHeaderProps } from '@affine/env/workspace';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SettingsIcon } from '@blocksuite/icons';
-import { uuidv4 } from '@blocksuite/store';
-import type { ReactElement } from 'react';
+import type { PropertiesMeta } from '@affine/env/filter';
+import {
+  WorkspaceFlavour,
+  type WorkspaceHeaderProps,
+} from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useCallback } from 'react';
 
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
-import { BlockSuiteEditorHeader } from './blocksuite/workspace-header';
+import { SharePageModal } from './affine/share-page-modal';
+import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
 import { filterContainerStyle } from './filter-container.css';
-import { WorkspaceModeFilterTab, WorkspaceTitle } from './pure/workspace-title';
+import { Header } from './pure/header';
+import { PluginHeader } from './pure/plugin-header';
+import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
 
-export function WorkspaceHeader({
-  currentWorkspaceId,
-  currentEntry,
-}: WorkspaceHeaderProps<WorkspaceFlavour>): ReactElement {
-  const setting = useCollectionManager(currentWorkspaceId);
-  const t = useAFFiNEI18N();
+const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
+  const currentWorkspace = useWorkspace(workspaceId);
+  const setting = useCollectionManager(workspaceId);
   const saveToCollection = useCallback(
     async (collection: Collection) => {
       await setting.saveCollection(collection);
@@ -32,101 +32,117 @@ export function WorkspaceHeader({
     },
     [setting]
   );
-
-  const currentWorkspace = useWorkspace(currentWorkspaceId);
-
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );
-  if ('subPath' in currentEntry) {
-    if (currentEntry.subPath === WorkspaceSubPath.ALL) {
-      const leftSlot = (
-        <CollectionList
-          setting={setting}
-          getPageInfo={getPageInfoById}
+  if (!setting.isDefault || !setting.currentCollection.filterList.length) {
+    return null;
+  }
+
+  return (
+    <div className={filterContainerStyle}>
+      <div style={{ flex: 1 }}>
+        <FilterList
           propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
-        ></CollectionList>
-      );
-      const filterContainer =
-        setting.isDefault && setting.currentCollection.filterList.length > 0 ? (
-          <div className={filterContainerStyle}>
-            <div style={{ flex: 1 }}>
-              <FilterList
-                propertiesMeta={
-                  currentWorkspace.blockSuiteWorkspace.meta.properties
-                }
-                value={setting.currentCollection.filterList}
-                onChange={filterList => {
-                  return setting.updateCollection({
-                    ...setting.currentCollection,
-                    filterList,
-                  });
-                }}
-              />
-            </div>
-            <div>
-              {setting.currentCollection.filterList.length > 0 ? (
-                <SaveCollectionButton
-                  propertiesMeta={
-                    currentWorkspace.blockSuiteWorkspace.meta.properties
-                  }
-                  getPageInfo={getPageInfoById}
-                  init={{
-                    id: uuidv4(),
-                    name: '',
-                    filterList: setting.currentCollection.filterList,
-                    workspaceId: currentWorkspaceId,
-                  }}
-                  onConfirm={saveToCollection}
-                ></SaveCollectionButton>
-              ) : null}
-            </div>
-          </div>
-        ) : null;
-      return (
-        <>
-          <WorkspaceModeFilterTab
-            workspace={currentWorkspace}
-            currentPage={null}
-            isPublic={false}
-            leftSlot={leftSlot}
-          />
-          {filterContainer}
-        </>
-      );
-    } else if (currentEntry.subPath === WorkspaceSubPath.SETTING) {
-      return (
-        <WorkspaceTitle
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPublic={false}
-          icon={<SettingsIcon />}
-        >
-          {t['Workspace Settings']()}
-        </WorkspaceTitle>
-      );
-    } else if (
-      currentEntry.subPath === WorkspaceSubPath.SHARED ||
-      currentEntry.subPath === WorkspaceSubPath.TRASH
-    ) {
-      return (
-        <WorkspaceModeFilterTab
-          workspace={currentWorkspace}
-          currentPage={null}
-          isPublic={false}
+          value={setting.currentCollection.filterList}
+          onChange={filterList => {
+            return setting.updateCollection({
+              ...setting.currentCollection,
+              filterList,
+            });
+          }}
         />
-      );
-    }
-  } else if ('pageId' in currentEntry) {
-    const pageId = currentEntry.pageId;
-    const isPublic = currentWorkspace.flavour === WorkspaceFlavour.PUBLIC;
+      </div>
+      <div>
+        {setting.currentCollection.filterList.length > 0 ? (
+          <SaveCollectionButton
+            propertiesMeta={
+              currentWorkspace.blockSuiteWorkspace.meta
+                .properties as PropertiesMeta
+            }
+            getPageInfo={getPageInfoById}
+            onConfirm={saveToCollection}
+            filterList={setting.currentCollection.filterList}
+            workspaceId={workspaceId}
+          ></SaveCollectionButton>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+export function WorkspaceHeader({
+  currentWorkspaceId,
+  currentEntry,
+}: WorkspaceHeaderProps<WorkspaceFlavour>) {
+  const setting = useCollectionManager(currentWorkspaceId);
+
+  const currentWorkspace = useWorkspace(currentWorkspaceId);
+  const getPageInfoById = useGetPageInfoById(
+    currentWorkspace.blockSuiteWorkspace
+  );
+
+  // route in all page
+  if (
+    'subPath' in currentEntry &&
+    currentEntry.subPath === WorkspaceSubPath.ALL
+  ) {
     return (
-      <BlockSuiteEditorHeader
-        isPublic={isPublic}
-        workspace={currentWorkspace}
-        currentPage={currentWorkspace.blockSuiteWorkspace.getPage(pageId)}
+      <>
+        <Header
+          left={
+            <CollectionList
+              setting={setting}
+              getPageInfo={getPageInfoById}
+              propertiesMeta={
+                currentWorkspace.blockSuiteWorkspace.meta.properties
+              }
+            />
+          }
+          center={<WorkspaceModeFilterTab />}
+        />
+        {<FilterContainer workspaceId={currentWorkspaceId} />}
+      </>
+    );
+  }
+
+  // route in shared or trash
+  if (
+    'subPath' in currentEntry &&
+    (currentEntry.subPath === WorkspaceSubPath.SHARED ||
+      currentEntry.subPath === WorkspaceSubPath.TRASH)
+  ) {
+    return <Header center={<WorkspaceModeFilterTab />} />;
+  }
+
+  // route in edit page
+  if ('pageId' in currentEntry) {
+    const isCloudWorkspace =
+      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+    const currentPage = currentWorkspace.blockSuiteWorkspace.getPage(
+      currentEntry.pageId
+    );
+    const sharePageModal =
+      isCloudWorkspace && currentPage ? (
+        <SharePageModal workspace={currentWorkspace} page={currentPage} />
+      ) : null;
+    return (
+      <Header
+        center={
+          <BlockSuiteHeaderTitle
+            workspace={currentWorkspace}
+            pageId={currentEntry.pageId}
+          />
+        }
+        right={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {sharePageModal}
+            <PluginHeader />
+          </div>
+        }
       />
     );
   }
-  return <></>;
+
+  return null;
 }

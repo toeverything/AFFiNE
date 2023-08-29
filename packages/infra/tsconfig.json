@@ -4,10 +4,13 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "moduleResolution": "Node16",
+    "moduleResolution": "bundler",
     "outDir": "lib"
   },
   "references": [
+    {
+      "path": "../sdk"
+    },
     {
       "path": "./tsconfig.node.json"
     }

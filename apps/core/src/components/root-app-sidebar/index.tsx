@@ -29,6 +29,7 @@ import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
+import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 import ImportPage from './import-page';
@@ -50,14 +51,14 @@ export type RootAppSidebarProps = {
 };
 
 const RouteMenuLinkItem = React.forwardRef<
-  HTMLDivElement,
+  HTMLButtonElement,
   {
     currentPath: string; // todo: pass through useRouter?
-    path?: string | null;
+    path: string;
     icon: ReactElement;
     children?: ReactElement;
     isDraggedOver?: boolean;
-  } & React.HTMLAttributes<HTMLDivElement>
+  } & React.HTMLAttributes<HTMLButtonElement>
 >(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
   // Force active style when a page is dragged over
   const active = isDraggedOver || currentPath === path;
@@ -66,7 +67,7 @@ const RouteMenuLinkItem = React.forwardRef<
       ref={ref}
       {...props}
       active={active}
-      href={path ?? ''}
+      to={path ?? ''}
       icon={icon}
     >
       {children}
@@ -110,11 +111,12 @@ export const RootAppSidebar = ({
     if (isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
+    return;
   }, [onClickNewPage]);
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
-    if (isDesktop && typeof sidebarOpen === 'boolean') {
+    if (isDesktop) {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
@@ -169,7 +171,7 @@ export const RootAppSidebar = ({
           <RouteMenuLinkItem
             icon={<FolderIcon />}
             currentPath={currentPath}
-            path={currentWorkspaceId && paths.all(currentWorkspaceId)}
+            path={paths.all(currentWorkspaceId)}
             onClick={backToAll}
           >
             <span data-testid="all-pages">{t['All pages']()}</span>
@@ -190,15 +192,19 @@ export const RootAppSidebar = ({
         <SidebarScrollableContainer>
           <CategoryDivider label={t['Favorites']()} />
           <FavoriteList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['Collections']()} />
+          <CategoryDivider label={t['Collections']()}>
+            <AddCollectionButton workspace={blockSuiteWorkspace} />
+          </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['others']()} />
+          {/* fixme: remove the following spacer */}
+          <div style={{ height: '4px' }} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
             isDraggedOver={trashDroppable.isOver}
             icon={<DeleteTemporarilyIcon />}
             currentPath={currentPath}
-            path={currentWorkspaceId && paths.trash(currentWorkspaceId)}
+            path={paths.trash(currentWorkspaceId)}
           >
             <span data-testid="trash-page">{t['Trash']()}</span>
           </RouteMenuLinkItem>
@@ -208,7 +214,7 @@ export const RootAppSidebar = ({
         </SidebarScrollableContainer>
         <SidebarContainer>
           {isDesktop && <AppUpdaterButton />}
-          <div />
+          <div style={{ height: '4px' }} />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>
       </AppSidebar>

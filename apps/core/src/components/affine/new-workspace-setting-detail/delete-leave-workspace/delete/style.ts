@@ -5,7 +5,7 @@ export const StyledModalWrapper = styled('div')(() => {
     position: 'relative',
     padding: '0px',
     width: '560px',
-    background: 'var(--affine-white)',
+    background: 'var(--affine-background-overlay-panel-color)',
     borderRadius: '12px',
     // height: '312px',
   };
@@ -27,7 +27,6 @@ export const StyledTextContent = styled('div')(() => {
   return {
     margin: 'auto',
     width: '425px',
-    fontFamily: 'Avenir Next',
     fontStyle: 'normal',
     fontWeight: '400',
     fontSize: '18px',

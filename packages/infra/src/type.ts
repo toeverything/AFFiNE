@@ -1,4 +1,44 @@
+import type { ExpectedLayout } from '@affine/sdk/entry';
+import type { WritableAtom } from 'jotai';
+import { z } from 'zod';
+
 import type { TypedEventEmitter } from './core/event-emitter.js';
+
+export const packageJsonInputSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  description: z.string(),
+  affinePlugin: z.object({
+    release: z.union([z.boolean(), z.enum(['development'])]),
+    entry: z.object({
+      core: z.string(),
+      server: z.string().optional(),
+    }),
+    serverCommand: z.array(z.string()).optional(),
+  }),
+});
+
+export const packageJsonOutputSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  description: z.string(),
+  affinePlugin: z.object({
+    release: z.union([z.boolean(), z.enum(['development'])]),
+    entry: z.object({
+      core: z.string(),
+    }),
+    assets: z.array(z.string()),
+    serverCommand: z.array(z.string()).optional(),
+  }),
+});
+
+type SetStateAction<Value> = Value | ((prev: Value) => Value);
+
+export type ContentLayoutAtom = WritableAtom<
+  ExpectedLayout,
+  [SetStateAction<ExpectedLayout>],
+  void
+>;
 
 export abstract class HandlerManager<
   Namespace extends string,
@@ -54,7 +94,7 @@ export type DBHandlers = {
   getDocAsUpdates: (
     workspaceId: string,
     subdocId?: string
-  ) => Promise<Uint8Array>;
+  ) => Promise<Uint8Array | false>;
   applyDocUpdate: (
     id: string,
     update: Uint8Array,
@@ -65,9 +105,9 @@ export type DBHandlers = {
     key: string,
     data: Uint8Array
   ) => Promise<void>;
-  getBlob: (workspaceId: string, key: string) => Promise<any>;
+  getBlob: (workspaceId: string, key: string) => Promise<Buffer | null>;
   deleteBlob: (workspaceId: string, key: string) => Promise<void>;
-  getBlobKeys: (workspaceId: string) => Promise<any>;
+  getBlobKeys: (workspaceId: string) => Promise<string[]>;
   getDefaultStorageLocation: () => Promise<string>;
 };
 
@@ -76,13 +116,55 @@ export type DebugHandlers = {
   logFilePath: () => Promise<string>;
 };
 
+export type ErrorMessage =
+  | 'DB_FILE_ALREADY_LOADED'
+  | 'DB_FILE_PATH_INVALID'
+  | 'DB_FILE_INVALID'
+  | 'DB_FILE_MIGRATION_FAILED'
+  | 'FILE_ALREADY_EXISTS'
+  | 'UNKNOWN_ERROR';
+
+export interface LoadDBFileResult {
+  workspaceId?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+export interface SaveDBFileResult {
+  filePath?: string;
+  canceled?: boolean;
+  error?: ErrorMessage;
+}
+
+export interface SelectDBFileLocationResult {
+  filePath?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+export interface MoveDBFileResult {
+  filePath?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+// provide a backdoor to set dialog path for testing in playwright
+export interface FakeDialogResult {
+  canceled?: boolean;
+  filePath?: string;
+  filePaths?: string[];
+}
+
 export type DialogHandlers = {
-  revealDBFile: (workspaceId: string) => Promise<any>;
-  loadDBFile: () => Promise<any>;
-  saveDBFileAs: (workspaceId: string) => Promise<any>;
-  moveDBFile: (workspaceId: string, dbFileLocation?: string) => Promise<any>;
-  selectDBFileLocation: () => Promise<any>;
-  setFakeDialogResult: (result: any) => Promise<any>;
+  revealDBFile: (workspaceId: string) => Promise<void>;
+  loadDBFile: () => Promise<LoadDBFileResult>;
+  saveDBFileAs: (workspaceId: string) => Promise<SaveDBFileResult>;
+  moveDBFile: (
+    workspaceId: string,
+    dbFileLocation?: string
+  ) => Promise<MoveDBFileResult>;
+  selectDBFileLocation: () => Promise<SelectDBFileLocationResult>;
+  setFakeDialogResult: (result: any) => Promise<void>;
 };
 
 export type UIHandlers = {
@@ -102,10 +184,15 @@ export type ExportHandlers = {
   savePDFFileAs: (title: string) => Promise<any>;
 };
 
+export interface UpdateMeta {
+  version: string;
+  allowAutoUpdate: boolean;
+}
+
 export type UpdaterHandlers = {
-  currentVersion: () => Promise<any>;
-  quitAndInstall: () => Promise<any>;
-  checkForUpdatesAndNotify: () => Promise<any>;
+  currentVersion: () => Promise<string>;
+  quitAndInstall: () => Promise<void>;
+  checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 
 export type WorkspaceHandlers = {
@@ -113,15 +200,6 @@ export type WorkspaceHandlers = {
   delete: (id: string) => Promise<void>;
   getMeta: (id: string) => Promise<WorkspaceMeta>;
 };
-
-export type EventMap = DBHandlers &
-  DebugHandlers &
-  DialogHandlers &
-  UIHandlers &
-  ClipboardHandlers &
-  ExportHandlers &
-  UpdaterHandlers &
-  WorkspaceHandlers;
 
 export type UnwrapManagerHandlerToServerSide<
   ElectronEvent extends {
@@ -160,3 +238,44 @@ export type App<
 > = TypedEventEmitter<{
   [K in keyof Handlers as `${Namespace}:${K & string}`]: Handlers[K];
 }>;
+
+export interface UpdaterEvents {
+  onUpdateAvailable: (fn: (versionMeta: UpdateMeta) => void) => () => void;
+  onUpdateReady: (fn: (versionMeta: UpdateMeta) => void) => () => void;
+  onDownloadProgress: (fn: (progress: number) => void) => () => void;
+}
+
+export interface ApplicationMenuEvents {
+  onNewPageAction: (fn: () => void) => () => void;
+}
+
+export interface DBEvents {
+  onExternalUpdate: (
+    fn: (update: {
+      workspaceId: string;
+      update: Uint8Array;
+      docId?: string;
+    }) => void
+  ) => () => void;
+}
+
+export interface WorkspaceEvents {
+  onMetaChange: (
+    fn: (workspaceId: string, meta: WorkspaceMeta) => void
+  ) => () => void;
+}
+
+export interface UIEvents {
+  onStartLogin: (fn: (options: { email: string }) => void) => () => void;
+  onFinishLogin: (
+    fn: (result: { success: boolean; email: string }) => void
+  ) => () => void;
+}
+
+export interface EventMap {
+  updater: UpdaterEvents;
+  applicationMenu: ApplicationMenuEvents;
+  db: DBEvents;
+  ui: UIEvents;
+  workspace: WorkspaceEvents;
+}

@@ -6,44 +6,31 @@ const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
 const editorFlags: BlockSuiteFeatureFlags = {
-  enable_database: true,
-  enable_slash_menu: true,
-  enable_edgeless_toolbar: true,
-  enable_block_hub: true,
   enable_drag_handle: true,
+  enable_block_hub: true,
   enable_surface: true,
+  enable_edgeless_toolbar: true,
+  enable_slash_menu: true,
+  enable_database: true,
+  enable_database_filter: false,
+  enable_data_view: false,
+  enable_page_tags: false,
+  enable_toggle_block: false,
   enable_linked_page: true,
   enable_bookmark_operation: false,
+  enable_note_index: false,
+
+  enable_attachment_block: true,
 };
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
-  const buildPreset: Record<string, RuntimeConfig> = {
+  const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
     stable: {
-      enablePlugin: false,
+      enablePlugin: true,
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
-      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
-      imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
-      enablePreloading: true,
-      enableNewSettingModal: true,
-      enableNewSettingUnstableApi: false,
-      enableSQLiteProvider: true,
-      enableMoveDatabase: false,
-      enableNotificationCenter: false,
-      enableCloud: false,
-      serverAPI: 'https://localhost:3010',
-      editorFlags,
-      appVersion: packageJson.version,
-      editorVersion: packageJson.dependencies['@blocksuite/editor'],
-    },
-    // canary will be aggressive and enable all features
-    canary: {
-      enablePlugin: true,
-      enableTestProperties: true,
-      enableBroadcastChannelProvider: true,
-      enableDebugPage: true,
-      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0717',
+      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0818',
       imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
       enablePreloading: true,
       enableNewSettingModal: true,
@@ -51,17 +38,47 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableSQLiteProvider: true,
       enableMoveDatabase: false,
       enableNotificationCenter: true,
-      enableCloud: false,
-      serverAPI: 'https://localhost:3010',
+      enableCloud: true,
+      enableEnhanceShareMode: false,
+      serverUrlPrefix: 'https://app.affine.pro',
+      editorFlags,
+      appVersion: packageJson.version,
+      editorVersion: packageJson.dependencies['@blocksuite/editor'],
+    },
+    get beta() {
+      return {
+        ...this.stable,
+        serverUrlPrefix: 'https://ambassador.affine.pro',
+      };
+    },
+    get internal() {
+      return {
+        ...this.stable,
+        serverUrlPrefix: 'https://affine.fail',
+      };
+    },
+    // canary will be aggressive and enable all features
+    canary: {
+      enablePlugin: true,
+      enableTestProperties: true,
+      enableBroadcastChannelProvider: true,
+      enableDebugPage: true,
+      changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
+      imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
+      enablePreloading: true,
+      enableNewSettingModal: true,
+      enableNewSettingUnstableApi: false,
+      enableSQLiteProvider: true,
+      enableMoveDatabase: false,
+      enableNotificationCenter: true,
+      enableCloud: true,
+      enableEnhanceShareMode: false,
+      serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
     },
   };
-
-  // beta and internal versions are the same as stable
-  buildPreset.beta = buildPreset.stable;
-  buildPreset.internal = buildPreset.stable;
 
   const currentBuild = buildFlags.channel;
 
@@ -100,10 +117,17 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableCloud: process.env.ENABLE_CLOUD
       ? process.env.ENABLE_CLOUD === 'true'
       : currentBuildPreset.enableCloud,
+    enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
+      ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
+      : currentBuildPreset.enableEnhanceShareMode,
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
   };
+
+  if (buildFlags.mode === 'development') {
+    currentBuildPreset.serverUrlPrefix = 'http://localhost:8080';
+  }
 
   return {
     ...currentBuildPreset,

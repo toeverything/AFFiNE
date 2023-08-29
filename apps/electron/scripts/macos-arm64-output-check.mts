@@ -1,12 +1,13 @@
-import { fileURLToPath } from 'node:url';
 import { readdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 const outputRoot = fileURLToPath(
   new URL(
-    '../zip-out/AFFiNE-canary.app/Contents/Resources/app',
+    '../out/canary/AFFiNE-canary-darwin-arm64/AFFiNE-canary.app/Contents/Resources/app',
     import.meta.url
   )
 );
+
 const outputList = [
   [
     'dist',
@@ -16,18 +17,10 @@ const outputList = [
       'preload.js',
       'affine.darwin-arm64.node',
       'plugins',
-      'workers',
     ],
   ],
-  ['dist/plugins', ['bookmark-block']],
-  ['dist/plugins/bookmark-block', ['index.mjs']],
-  ['dist/workers', ['plugin.worker.js']],
-  [
-    'node_modules/@toeverything/plugin-infra/dist',
-    ['manager.js', 'manager.cjs'],
-  ],
-  ['node_modules/@blocksuite/global/dist', ['utils.js']],
-  ['node_modules/jotai', ['vanilla.js']],
+  ['dist/plugins', ['bookmark']],
+  ['dist/plugins/bookmark', ['index.cjs']],
 ] as [entry: string, expected: string[]][];
 
 await Promise.all(

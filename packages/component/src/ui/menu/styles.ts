@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react';
 
 import { displayFlex, styled, textEllipsis } from '../../styles';
-import { Button } from '../button';
 import StyledPopperContainer from '../shared/container';
 
 export const StyledMenuWrapper = styled(StyledPopperContainer, {
@@ -14,6 +13,7 @@ export const StyledMenuWrapper = styled(StyledPopperContainer, {
   return {
     width,
     height,
+    minWidth: '200px',
     background: 'var(--affine-white)',
     padding: '8px 4px',
     fontSize: '14px',
@@ -23,28 +23,36 @@ export const StyledMenuWrapper = styled(StyledPopperContainer, {
   };
 });
 
-export const StyledStartIconWrapper = styled('div')(() => {
+export const StyledStartIconWrapper = styled('div')<{
+  gap?: CSSProperties['gap'];
+  iconSize?: CSSProperties['fontSize'];
+}>(({ gap, iconSize }) => {
   return {
     display: 'flex',
-    marginRight: '12px',
-    fontSize: '20px',
+    marginRight: gap ? gap : '12px',
+    fontSize: iconSize ? iconSize : '20px',
     color: 'var(--affine-icon-color)',
   };
 });
-export const StyledEndIconWrapper = styled('div')(() => {
+export const StyledEndIconWrapper = styled('div')<{
+  gap?: CSSProperties['gap'];
+  iconSize?: CSSProperties['fontSize'];
+}>(({ gap, iconSize }) => {
   return {
     display: 'flex',
-    marginLeft: '12px',
-    fontSize: '20px',
+    marginLeft: gap ? gap : '12px',
+    fontSize: iconSize ? iconSize : '20px',
     color: 'var(--affine-icon-color)',
   };
 });
 
-export const StyledContent = styled('div')(() => {
+export const StyledContent = styled('div')<{
+  fontSize?: CSSProperties['fontSize'];
+}>(({ fontSize }) => {
   return {
     textAlign: 'left',
     flexGrow: 1,
-    fontSize: 'var(--affine-font-base)',
+    fontSize: fontSize ? fontSize : 'var(--affine-font-base)',
     ...textEllipsis(1),
   };
 });
@@ -64,7 +72,7 @@ export const StyledMenuItem = styled('button')<{
     width: '100%',
     borderRadius: '5px',
     padding: '0 14px',
-    fontSize: 'var(--affine-font-base)',
+    fontSize: 'var(--affine-font-sm)',
     height: '32px',
     ...displayFlex('flex-start', 'center'),
     cursor: isDir ? 'pointer' : '',
@@ -97,17 +105,5 @@ export const StyledMenuItem = styled('button')<{
           backgroundColor: 'var(--affine-hover-color)',
         }
       : {}),
-  };
-});
-
-export const StyledButton = styled(Button)(() => {
-  return {
-    width: '100%',
-    // height: '32px',
-    borderRadius: '8px',
-    backgroundColor: 'transparent',
-    ...displayFlex('space-between', 'center'),
-    border: `1px solid var(--affine-border-color)`,
-    padding: '0 10px',
   };
 });

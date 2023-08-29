@@ -3,14 +3,18 @@ function testPackageName(regexp: RegExp): (module: any) => boolean {
     module.nameForCondition && regexp.test(module.nameForCondition());
 }
 
+// https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
 export const productionCacheGroups = {
   asyncVendor: {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {
-      // https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
-      const name =
-        module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)?.[1] ??
-        'unknown';
+      // monorepo linked in node_modules, so it's not a npm package
+      if (!module.context.includes('node_modules')) {
+        return `app-async`;
+      }
+      const name = module.context.match(
+        /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+      )?.[1];
       return `npm-async-${name}`;
     },
     priority: Number.MAX_SAFE_INTEGER,

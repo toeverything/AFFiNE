@@ -1,6 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
+  previewFeatures = ["metrics", "tracing"]
 }
 
 datasource db {
@@ -9,13 +10,10 @@ datasource db {
 }
 
 model Workspace {
-  id             String                    @id @default(uuid()) @db.VarChar
-  public         Boolean
-  createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  users          UserWorkspacePermission[]
-  blobs          Blob[]
-  docs           Doc[]
-  optimizedBlobs OptimizedBlob[]
+  id        String                    @id @default(uuid()) @db.VarChar
+  public    Boolean
+  createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  users     UserWorkspacePermission[]
 
   @@map("workspaces")
 }
@@ -23,25 +21,27 @@ model Workspace {
 model UserWorkspacePermission {
   id          String    @id @default(uuid()) @db.VarChar
   workspaceId String    @map("workspace_id") @db.VarChar
-  userId      String    @map("entity_id") @db.VarChar
+  subPageId   String?   @map("sub_page_id") @db.VarChar
+  userId      String?   @map("entity_id") @db.VarChar
   /// Read/Write/Admin/Owner
   type        Int       @db.SmallInt
   /// Whether the permission invitation is accepted by the user
   accepted    Boolean   @default(false)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  @@unique([workspaceId, subPageId, userId])
   @@map("user_workspace_permissions")
 }
 
 model User {
   id            String                    @id @default(uuid()) @db.VarChar
   name          String
-  email         String?                   @unique
+  email         String                    @unique
   emailVerified DateTime?                 @map("email_verified")
   // image field is for the next-auth
-  avatarUrl     String?                   @map("image") @db.VarChar
+  avatarUrl     String?                   @map("avatar_url") @db.VarChar
   accounts      Account[]
   sessions      Session[]
   workspaces    UserWorkspacePermission[]
@@ -92,42 +92,60 @@ model VerificationToken {
 }
 
 model Blob {
-  hash        String   @id @default(uuid()) @db.VarChar
+  id          Int      @id @default(autoincrement()) @db.Integer
+  hash        String   @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
   blob        Bytes    @db.ByteA
-  length      Int
+  length      BigInt
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, hash])
   @@map("blobs")
 }
 
 model OptimizedBlob {
-  hash        String   @id @default(uuid()) @db.VarChar
+  id          Int      @id @default(autoincrement()) @db.Integer
+  hash        String   @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
   params      String   @db.VarChar
   blob        Bytes    @db.ByteA
-  length      Int
+  length      BigInt
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, hash, params])
   @@map("optimized_blobs")
 }
 
-model Doc {
-  id           Int      @id @default(autoincrement()) @db.Integer
-  workspaceId  String   @map("workspace_id") @db.VarChar
-  guid         String   @db.VarChar
-  is_workspace Boolean  @default(true) @db.Boolean
-  blob         Bytes    @db.ByteA
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+// the latest snapshot of each doc that we've seen
+// Snapshot + Updates are the latest state of the doc
+model Snapshot {
+  id          String   @default(uuid()) @map("guid") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  blob        Bytes    @db.ByteA
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@id([id, workspaceId])
+  @@map("snapshots")
+}
 
-  @@index([workspaceId, guid])
-  @@map("docs")
+// backup during other update operation queue downtime
+model Update {
+  objectId    String   @id @default(uuid()) @map("object_id") @db.VarChar
+  id          String   @map("guid") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  blob        Bytes    @db.ByteA
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([id, workspaceId])
+  @@map("updates")
+}
+
+model NewFeaturesWaitingList {
+  id        String   @id @default(uuid()) @db.VarChar
+  email     String   @unique
+  type      Int      @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("new_features_waiting_list")
 }

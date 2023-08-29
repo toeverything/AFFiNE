@@ -1,9 +1,11 @@
+import type { PrimitiveAtom } from 'jotai';
 import { atom } from 'jotai';
 import { atomFamily, atomWithStorage } from 'jotai/utils';
+import type { AtomFamily } from 'jotai/vanilla/utils/atomFamily';
 
+import type { AuthProps } from '../components/affine/auth';
 import type { CreateWorkspaceMode } from '../components/affine/create-workspace-modal';
 import type { SettingProps } from '../components/affine/setting-modal';
-
 // modal atoms
 export const openWorkspacesModalAtom = atom(false);
 export const openCreateWorkspaceModalAtom = atom<CreateWorkspaceMode>(false);
@@ -18,6 +20,22 @@ export const openSettingModalAtom = atom<SettingAtom>({
   activeTab: 'appearance',
   workspaceId: null,
   open: false,
+});
+
+export type AuthAtom = {
+  openModal: boolean;
+  state: AuthProps['state'];
+  email?: string;
+  emailType?: AuthProps['emailType'];
+  // Only used for sign in page callback, after called, it will be set to undefined
+  onceSignedIn?: () => void;
+};
+
+export const authAtom = atom<AuthAtom>({
+  openModal: false,
+  state: 'signIn',
+  email: '',
+  emailType: 'changeEmail',
 });
 
 export const openDisableCloudAlertModalAtom = atom(false);
@@ -59,19 +77,16 @@ const defaultPageSetting = {
   mode: 'page',
 } satisfies PageLocalSetting;
 
-export const pageSettingFamily = atomFamily((pageId: string) =>
+export const pageSettingFamily: AtomFamily<
+  string,
+  PrimitiveAtom<PageLocalSetting>
+> = atomFamily((pageId: string) =>
   atom(
     get =>
       get(pageSettingsBaseAtom)[pageId] ?? {
         ...defaultPageSetting,
       },
-    (
-      get,
-      set,
-      patch:
-        | Partial<PageLocalSetting>
-        | ((prevSetting: PageLocalSetting | undefined) => void)
-    ) => {
+    (get, set, patch) => {
       set(recentPageSettingsBaseAtom, ids => {
         // pick 3 recent page ids
         return [...new Set([pageId, ...ids]).values()].slice(0, 3);
@@ -93,7 +108,7 @@ export const pageSettingFamily = atomFamily((pageId: string) =>
 
 export const setPageModeAtom = atom(
   void 0,
-  (get, set, pageId: string, mode: PageMode) => {
+  (_, set, pageId: string, mode: PageMode) => {
     set(pageSettingFamily(pageId), { mode });
   }
 );

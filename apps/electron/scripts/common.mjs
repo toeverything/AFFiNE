@@ -15,7 +15,7 @@ const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
 /** @type 'production' | 'development'' */
 const mode = (process.env.NODE_ENV = process.env.NODE_ENV || 'development');
 
-/** @return {{layers: import('esbuild').BuildOptions, workers: import('esbuild').BuildOptions}} */
+/** @return {{layers: import('esbuild').BuildOptions}} */
 export const config = () => {
   const define = Object.fromEntries([
     ['process.env.NODE_ENV', `"${mode}"`],
@@ -32,6 +32,7 @@ export const config = () => {
         resolve(electronDir, './src/main/index.ts'),
         resolve(electronDir, './src/preload/index.ts'),
         resolve(electronDir, './src/helper/index.ts'),
+        resolve(electronDir, './src/worker/plugin.ts'),
       ],
       entryNames: '[dir]',
       outdir: resolve(electronDir, './dist'),
@@ -43,6 +44,7 @@ export const config = () => {
         'electron-updater',
         '@toeverything/plugin-infra',
         'yjs',
+        'semver',
       ],
       define: define,
       format: 'cjs',
@@ -51,24 +53,7 @@ export const config = () => {
       },
       assetNames: '[name]',
       treeShaking: true,
-    },
-    workers: {
-      entryPoints: [
-        resolve(electronDir, './src/main/workers/plugin.worker.ts'),
-      ],
-      entryNames: '[dir]/[name]',
-      outdir: resolve(electronDir, './dist/workers'),
-      bundle: true,
-      target: `node${NODE_MAJOR_VERSION}`,
-      platform: 'node',
-      external: ['@toeverything/plugin-infra', 'async-call-rpc'],
-      define: define,
-      format: 'cjs',
-      loader: {
-        '.node': 'copy',
-      },
-      assetNames: '[name]',
-      treeShaking: true,
+      sourcemap: 'linked',
     },
   };
 };

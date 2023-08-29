@@ -8,6 +8,7 @@ import ja from './ja.json';
 import ko from './ko.json';
 import ru from './ru.json';
 import zh_Hans from './zh-Hans.json';
+import zh_Hant from './zh-Hant.json';
 
 export const LOCALES = [
   {
@@ -17,7 +18,7 @@ export const LOCALES = [
     originalName: '한국어(대한민국)',
     flagEmoji: '🇰🇷',
     base: false,
-    completeRate: 0.652,
+    completeRate: 0.6,
     res: ko,
   },
   {
@@ -27,8 +28,18 @@ export const LOCALES = [
     originalName: 'English',
     flagEmoji: '🇬🇧',
     base: true,
-    completeRate: 1,
+    completeRate: 0.981,
     res: en,
+  },
+  {
+    id: 1000040003,
+    name: 'Traditional Chinese',
+    tag: 'zh-Hant',
+    originalName: '繁體中文',
+    flagEmoji: '🇭🇰',
+    base: false,
+    completeRate: 0.981,
+    res: zh_Hant,
   },
   {
     id: 1000040004,
@@ -37,7 +48,7 @@ export const LOCALES = [
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
     base: false,
-    completeRate: 1.003,
+    completeRate: 0.905,
     res: zh_Hans,
   },
   {
@@ -47,7 +58,7 @@ export const LOCALES = [
     originalName: 'français',
     flagEmoji: '🇫🇷',
     base: false,
-    completeRate: 0.972,
+    completeRate: 0.955,
     res: fr,
   },
   {
@@ -57,7 +68,7 @@ export const LOCALES = [
     originalName: 'Deutsch',
     flagEmoji: '🇩🇪',
     base: false,
-    completeRate: 0.745,
+    completeRate: 0.784,
     res: de,
   },
   {
@@ -67,7 +78,7 @@ export const LOCALES = [
     originalName: 'русский',
     flagEmoji: '🇷🇺',
     base: false,
-    completeRate: 0.487,
+    completeRate: 0.635,
     res: ru,
   },
   {
@@ -77,7 +88,7 @@ export const LOCALES = [
     originalName: '日本語',
     flagEmoji: '🇯🇵',
     base: false,
-    completeRate: 0.725,
+    completeRate: 0.652,
     res: ja,
   },
 ] as const;

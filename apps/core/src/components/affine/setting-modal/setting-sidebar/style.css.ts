@@ -4,7 +4,7 @@ export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
   background: 'var(--affine-background-secondary-color)',
-  padding: '20px 16px',
+  padding: '20px 0px',
   height: '100%',
   flexShrink: 0,
   display: 'flex',
@@ -15,14 +15,14 @@ export const sidebarTitle = style({
   fontSize: 'var(--affine-font-h-6)',
   fontWeight: '600',
   lineHeight: 'var(--affine-line-height)',
-  paddingLeft: '8px',
+  padding: '0px 16px 0px 24px',
 });
 
 export const sidebarSubtitle = style({
   fontSize: 'var(--affine-font-sm)',
   lineHeight: 'var(--affine-line-height)',
   color: 'var(--affine-text-secondary-color)',
-  paddingLeft: '8px',
+  padding: '0px 16px 0px 24px',
   marginTop: '20px',
   marginBottom: '4px',
   display: 'flex',
@@ -42,9 +42,9 @@ export const sidebarItemsWrapper = style({
 export const sidebarSelectItem = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '0 8px',
+  margin: '0px 16px 4px 16px',
+  padding: '0px 8px',
   height: '30px',
-  marginBottom: '4px',
   fontSize: 'var(--affine-font-sm)',
   borderRadius: '8px',
   cursor: 'pointer',
@@ -75,21 +75,24 @@ globalStyle(`${settingSlideBar} .setting-name`, {
   whiteSpace: 'nowrap',
   flexGrow: 1,
 });
-globalStyle(`${settingSlideBar} .current-label`, {
+export const currentWorkspaceLabel = style({
+  width: '20px',
   height: '20px',
-  borderRadius: '8px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  padding: '0 5px',
-  // TODO: use color variable
-  background: '#1E96EB',
-  fontSize: 'var(--affine-font-xs)',
-  fontWeight: '600',
-  color: 'var(--affine-white)',
-  marginLeft: '10px',
-  flexShrink: 0,
+  selectors: {
+    '&::after': {
+      content: '""',
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      background: 'var(--affine-blue)',
+    },
+  },
 });
+
+export const sidebarFooter = style({ padding: '0 16px' });
 
 export const accountButton = style({
   height: '42px',
@@ -109,6 +112,20 @@ globalStyle(`${accountButton} .avatar`, {
   border: '1px solid',
   borderColor: 'var(--affine-white)',
   marginRight: '10px',
+  flexShrink: 0,
+});
+
+globalStyle(`${accountButton} .avatar.not-sign`, {
+  width: '28px',
+  height: '28px',
+  borderRadius: '50%',
+  fontSize: '22px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderColor: 'var(--affine-border-color)',
+  color: 'var(--affine-border-color)',
+  background: 'var(--affine-white)',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

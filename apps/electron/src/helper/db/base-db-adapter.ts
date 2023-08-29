@@ -44,10 +44,10 @@ export abstract class BaseSQLiteAdapter {
     try {
       if (!this.db) {
         logger.warn(`${this.path} is not connected`);
-        return;
+        return null;
       }
       const blob = await this.db.getBlob(key);
-      return blob?.data;
+      return blob?.data ?? null;
     } catch (error) {
       logger.error('getBlob', error);
       return null;

@@ -1,11 +1,12 @@
-import { Button, FlexWrapper, toast, Tooltip } from '@affine/component';
+import { FlexWrapper, toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
+import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
-import { type FC, useCallback, useEffect, useState } from 'react';
-
-import type { AffineOfficialWorkspace } from '../../../shared';
-import * as style from './style.css';
+import { useCallback, useEffect, useState } from 'react';
 
 const useDBFileSecondaryPath = (workspaceId: string) => {
   const [path, setPath] = useState<string | undefined>(undefined);
@@ -26,13 +27,16 @@ const useDBFileSecondaryPath = (workspaceId: string) => {
         }
       });
     }
+    return;
   }, [workspaceId]);
   return path;
 };
 
-export const StoragePanel: FC<{
+interface StoragePanelProps {
   workspace: AffineOfficialWorkspace;
-}> = ({ workspace }) => {
+}
+
+export const StoragePanel = ({ workspace }: StoragePanelProps) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
   const secondaryPath = useDBFileSecondaryPath(workspaceId);
@@ -51,11 +55,10 @@ export const StoragePanel: FC<{
     setMoveToInProgress(true);
     window.apis?.dialog
       .moveDBFile(workspaceId)
-      .then(result => {
+      .then((result: MoveDBFileResult) => {
         if (!result?.error && !result?.canceled) {
           toast(t['Move folder success']());
         } else if (result?.error) {
-          // @ts-expect-error: result.error is dynamic
           toast(t[result.error]());
         }
       })
@@ -72,21 +75,20 @@ export const StoragePanel: FC<{
       secondaryPath ? (
         <FlexWrapper justifyContent="space-between">
           <Tooltip
-            zIndex={1000}
             content={t['com.affine.settings.storage.db-location.change-hint']()}
-            placement="top-start"
+            side="top"
+            align="start"
           >
             <Button
               data-testid="move-folder"
-              className={style.urlButton}
-              size="middle"
+              // className={style.urlButton}
+              size="large"
               onClick={handleMoveTo}
             >
               {secondaryPath}
             </Button>
           </Tooltip>
           <Button
-            size="small"
             data-testid="reveal-folder"
             data-disabled={moveToInProgress}
             onClick={onRevealDBFile}
@@ -96,7 +98,6 @@ export const StoragePanel: FC<{
         </FlexWrapper>
       ) : (
         <Button
-          size="small"
           data-testid="move-folder"
           data-disabled={moveToInProgress}
           onClick={handleMoveTo}

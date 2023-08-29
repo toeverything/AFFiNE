@@ -1,6 +1,7 @@
-import { Button, displayFlex, styled } from '@affine/component';
+import { displayFlex, styled } from '@affine/component';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
 import type { ReactElement } from 'react';
 
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -32,7 +33,6 @@ export const NotfoundPage = () => {
 
       <p>{t['404 - Page Not Found']()}</p>
       <Button
-        shape="round"
         onClick={() => {
           const id = localStorage.getItem('last_workspace_id');
           if (id) {

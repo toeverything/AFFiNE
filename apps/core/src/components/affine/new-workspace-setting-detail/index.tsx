@@ -9,18 +9,22 @@ import type {
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { type FC, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
+import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
 
-export type WorkspaceSettingDetailProps = {
+export interface WorkspaceSettingDetailProps {
   workspaceId: string;
-  onDeleteWorkspace: (id: string) => Promise<void>;
+  isOwner: boolean;
+  onDeleteLocalWorkspace: () => void;
+  onDeleteCloudWorkspace: () => void;
+  onLeaveWorkspace: () => void;
   onTransferWorkspace: <
     From extends WorkspaceFlavour,
     To extends WorkspaceFlavour,
@@ -29,13 +33,10 @@ export type WorkspaceSettingDetailProps = {
     to: To,
     workspace: WorkspaceRegistry[From]
   ) => void;
-};
+}
 
-export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
-  workspaceId,
-  onDeleteWorkspace,
-  ...props
-}) => {
+export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
+  const { workspaceId } = props;
   const t = useAFFiNEI18N();
   const workspace = useWorkspace(workspaceId);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
@@ -59,32 +60,24 @@ export const WorkspaceSettingDetail: FC<WorkspaceSettingDetailProps> = ({
     <>
       <SettingHeader
         title={t[`Workspace Settings with name`]({ name })}
-        subtitle={t['You can customize your workspace here.']()}
+        subtitle={t['com.affine.settings.workspace.description']()}
       />
       <SettingWrapper title={t['Info']()}>
         <SettingRow
           name={t['Workspace Profile']()}
-          desc={t[
-            'Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.'
-          ]()}
+          desc={t['com.affine.settings.workspace.not-owner']()}
           spreadCol={false}
         >
-          <ProfilePanel workspace={workspace} />
+          <ProfilePanel workspace={workspace} {...props} />
         </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['AFFiNE Cloud']()}>
-        <PublishPanel
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-          {...props}
-        />
+        <PublishPanel workspace={workspace} {...props} />
+        <MembersPanel workspace={workspace} {...props} />
       </SettingWrapper>
       {storageAndExportSetting}
       <SettingWrapper>
-        <DeleteLeaveWorkspace
-          workspace={workspace}
-          onDeleteWorkspace={onDeleteWorkspace}
-        />
+        <DeleteLeaveWorkspace workspace={workspace} {...props} />
       </SettingWrapper>
     </>
   );

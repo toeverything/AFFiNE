@@ -1,34 +1,6 @@
-import { Button, displayFlex, styled, TextButton } from '../..';
+import { Button } from '@toeverything/components/button';
 
-export const StyledShareButton = styled(TextButton, {
-  shouldForwardProp: (prop: string) => prop !== 'isShared',
-})<{ isShared?: boolean }>(({ isShared }) => {
-  return {
-    padding: '4px 8px',
-    marginLeft: '4px',
-    marginRight: '16px',
-    border: `1px solid ${
-      isShared ? 'var(--affine-primary-color)' : 'var(--affine-icon-color)'
-    }`,
-    color: isShared
-      ? 'var(--affine-primary-color)'
-      : 'var(--affine-icon-color)',
-    borderRadius: '8px',
-    ':hover': {
-      border: `1px solid ${'var(--affine-primary-color)'}`,
-    },
-    span: {
-      ...displayFlex('center', 'center'),
-    },
-  };
-});
-
-export const StyledTabsWrapper = styled('div')(() => {
-  return {
-    ...displayFlex('space-around', 'center'),
-    position: 'relative',
-  };
-});
+import { displayFlex, styled } from '../..';
 
 export const TabItem = styled('li')<{ isActive?: boolean }>(({ isActive }) => {
   {
@@ -51,7 +23,7 @@ export const TabItem = styled('li')<{ isActive?: boolean }>(({ isActive }) => {
         background: 'var(--affine-hover-color)',
         opacity: 1,
         color: isActive
-          ? 'var(--affine-text-primary-color)'
+          ? 'var(--affine-t/ext-primary-color)'
           : 'var(--affine-text-secondary-color)',
         svg: {
           fill: isActive
@@ -97,16 +69,6 @@ export const StyledInput = styled('input')(() => {
     borderRadius: '4px',
     flexGrow: 1,
     marginRight: '10px',
-  };
-});
-export const StyledButton = styled(TextButton)(() => {
-  return {
-    color: 'var(--affine-primary-color)',
-    height: '32px',
-    background: '#F3F0FF',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '4px 20px',
   };
 });
 export const StyledDisableButton = styled(Button)(() => {

@@ -28,6 +28,17 @@ import type { ListData, PageListProps, TrashListData } from './type';
 import { useSorter } from './use-sorter';
 import { formatDate, useIsSmallDevices } from './utils';
 
+interface AllPagesHeadProps {
+  isPublicWorkspace: boolean;
+  sorter: ReturnType<typeof useSorter<ListData>>;
+  createNewPage: () => void;
+  createNewEdgeless: () => void;
+  importFile: () => void;
+  getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
+  workspaceId: string;
+}
+
 const AllPagesHead = ({
   isPublicWorkspace,
   sorter,
@@ -37,16 +48,7 @@ const AllPagesHead = ({
   getPageInfo,
   propertiesMeta,
   workspaceId,
-}: {
-  isPublicWorkspace: boolean;
-  sorter: ReturnType<typeof useSorter<ListData>>;
-  createNewPage: () => void;
-  createNewEdgeless: () => void;
-  importFile: () => void;
-  getPageInfo: GetPageInfoById;
-  propertiesMeta: PropertiesMeta;
-  workspaceId: string;
-}) => {
+}: AllPagesHeadProps) => {
   const t = useAFFiNEI18N();
   const titleList = useMemo(
     () => [
@@ -65,7 +67,7 @@ const AllPagesHead = ({
         content: t['Created'](),
         proportion: 0.1,
         tableCellStyle: {
-          width: '80px',
+          width: '110px',
         } satisfies CSSProperties,
       },
       {
@@ -73,7 +75,7 @@ const AllPagesHead = ({
         content: t['Updated'](),
         proportion: 0.1,
         tableCellStyle: {
-          width: '80px',
+          width: '110px',
         } satisfies CSSProperties,
       },
       {
@@ -88,7 +90,7 @@ const AllPagesHead = ({
         showWhen: () => !isPublicWorkspace,
         sortable: false,
         tableCellStyle: {
-          width: '130px',
+          width: '140px',
         } satisfies CSSProperties,
         styles: {
           justifyContent: 'flex-end',
@@ -235,10 +237,15 @@ const TrashListHead = () => {
   );
 };
 
-export const PageListTrashView: React.FC<{
+interface PageListTrashViewProps {
   list: TrashListData[];
   fallback?: React.ReactNode;
-}> = ({ list, fallback }) => {
+}
+
+export const PageListTrashView = ({
+  list,
+  fallback,
+}: PageListTrashViewProps) => {
   const t = useAFFiNEI18N();
 
   const theme = useTheme();

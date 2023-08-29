@@ -1,24 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "jsxImportSource": "@emotion/react",
-    "incremental": true,
-    "experimentalDecorators": true,
-    "types": ["webpack-env"]
+    "outDir": "lib",
+    "typeRoots": ["../../node_modules", "../../node_modules/@types"],
+    "types": ["webpack-env", "ses", "affine__env"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
   "exclude": ["node_modules"],
   "references": [
     {
@@ -46,9 +33,6 @@
       "path": "../../packages/workspace"
     },
 
-    {
-      "path": "../../plugins/bookmark-block"
-    },
     {
       "path": "../../plugins/copilot"
     },

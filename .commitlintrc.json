@@ -21,10 +21,13 @@
         "native",
         "templates",
         "y-indexeddb",
+        "y-provider",
         "debug",
         "storage",
         "infra",
-        "plugin-infra"
+        "plugin-cli",
+        "sdk",
+        "plugin"
       ]
     ]
   }

@@ -15,8 +15,8 @@ import {
   type WebContents,
 } from 'electron';
 
+import { MessageEventChannel } from '../shared/utils';
 import { logger } from './logger';
-import { MessageEventChannel } from './utils';
 
 const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
 
@@ -26,11 +26,7 @@ function pickAndBind<T extends object, U extends keyof T>(
 ): { [K in U]: T[K] } {
   return keys.reduce((acc, key) => {
     const prop = obj[key];
-    acc[key] =
-      typeof prop === 'function'
-        ? // @ts-expect-error - a hack to bind the function
-          prop.bind(obj)
-        : prop;
+    acc[key] = typeof prop === 'function' ? prop.bind(obj) : prop;
     return acc;
   }, {} as any);
 }
@@ -42,7 +38,14 @@ class HelperProcessManager {
   // a rpc server for the main process -> helper process
   rpc?: _AsyncVersionOf<HelperToMain>;
 
-  static instance = new HelperProcessManager();
+  static _instance: HelperProcessManager | null = null;
+
+  static get instance() {
+    if (!this._instance) {
+      this._instance = new HelperProcessManager();
+    }
+    return this._instance;
+  }
 
   private constructor() {
     const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH);

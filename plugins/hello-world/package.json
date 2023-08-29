@@ -1,0 +1,26 @@
+{
+  "name": "@affine/hello-world-plugin",
+  "type": "module",
+  "private": true,
+  "description": "Hello world plugin",
+  "version": "0.9.0-canary.3",
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
+  "affinePlugin": {
+    "release": false,
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
+    "@blocksuite/icons": "^2.1.31",
+    "@toeverything/components": "^0.0.24"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
+  }
+}

@@ -1,7 +1,8 @@
-import { displayFlex, styled, textEllipsis } from '../../../styles';
-import { IconButton } from '../../../ui/button/icon-button';
+import { IconButton } from '@toeverything/components/button';
 
-export const StyleWorkspaceInfo = styled('div')(() => {
+import { displayFlex, styled, textEllipsis } from '../../../styles';
+
+export const StyledWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '15px',
     width: '202px',
@@ -22,13 +23,13 @@ export const StyleWorkspaceInfo = styled('div')(() => {
   };
 });
 
-export const StyleWorkspaceTitle = styled('div')(() => {
+export const StyledWorkspaceTitle = styled('div')(() => {
   return {
     fontSize: 'var(--affine-font-base)',
     fontWeight: 600,
     lineHeight: '24px',
-    marginBottom: '10px',
     maxWidth: '200px',
+    color: 'var(--affine-text-primary-color)',
     ...textEllipsis(1),
   };
 });
@@ -37,19 +38,21 @@ export const StyledCard = styled('div')<{
   active?: boolean;
 }>(({ active }) => {
   const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
+  const backgroundColor = active ? 'var(--affine-white)' : 'transparent';
   return {
-    width: '310px',
-    height: '124px',
+    width: '280px',
+    height: '58px',
     cursor: 'pointer',
     padding: '16px',
-    boxShadow: 'var(--affine-shadow-1)',
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '24px',
+    marginBottom: '12px',
     transition: 'background .2s',
-    background: 'var(--affine-white-80)',
+    alignItems: 'center',
     position: 'relative',
+    color: 'var(--affine-text-secondary-color)',
+    background: backgroundColor,
     ':hover': {
       background: 'var(--affine-hover-color)',
       '.add-icon': {
@@ -93,5 +96,18 @@ export const StyledSettingLink = styled(IconButton)(() => {
     ':hover': {
       background: 'var(--affine-hover-color)',
     },
+  };
+});
+
+export const StyledWorkspaceType = styled('p')(() => {
+  return {
+    fontSize: 10,
+  };
+});
+
+export const StyledWorkspaceTitleArea = styled('div')(() => {
+  return {
+    display: 'flex',
+    justifyContent: 'space-between',
   };
 });

@@ -1,4 +1,4 @@
-import type { Collection } from '@affine/env/filter';
+import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -8,10 +8,11 @@ import {
   RemoveIcon,
   SaveIcon,
 } from '@blocksuite/icons';
-import { useCallback, useState } from 'react';
+import { uuidv4 } from '@blocksuite/store';
+import { Button } from '@toeverything/components/button';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
-  Button,
   Input,
   Modal,
   ModalCloseButton,
@@ -21,14 +22,16 @@ import {
 import { FilterList } from '../filter';
 import * as styles from './collection-list.css';
 
-type CreateCollectionProps = {
+interface EditCollectionModelProps {
+  init?: Collection;
   title?: string;
-  init: Collection;
-  onConfirm: (collection: Collection) => void;
-  onConfirmText?: string;
+  open: boolean;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-};
+  onClose: () => void;
+  onConfirm: (view: Collection) => Promise<void>;
+}
+
 export const EditCollectionModel = ({
   init,
   onConfirm,
@@ -37,16 +40,20 @@ export const EditCollectionModel = ({
   getPageInfo,
   propertiesMeta,
   title,
-}: {
-  init?: Collection;
-  onConfirm: (view: Collection) => void;
-  open: boolean;
-  onClose: () => void;
-  title?: string;
-  getPageInfo: GetPageInfoById;
-  propertiesMeta: PropertiesMeta;
-}) => {
+}: EditCollectionModelProps) => {
   const t = useAFFiNEI18N();
+  const onConfirmOnCollection = useCallback(
+    (view: Collection) => {
+      onConfirm(view)
+        .then(() => {
+          onClose();
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    [onClose, onConfirm]
+  );
   return (
     <Modal open={open} onClose={onClose}>
       <ModalWrapper
@@ -56,12 +63,7 @@ export const EditCollectionModel = ({
           background: 'var(--affine-background-primary-color)',
         }}
       >
-        <ModalCloseButton
-          top={12}
-          right={12}
-          onClick={onClose}
-          hoverColor="var(--affine-icon-color)"
-        />
+        <ModalCloseButton top={12} right={12} onClick={onClose} />
         {init ? (
           <EditCollection
             propertiesMeta={propertiesMeta}
@@ -70,10 +72,7 @@ export const EditCollectionModel = ({
             init={init}
             getPageInfo={getPageInfo}
             onCancel={onClose}
-            onConfirm={view => {
-              onConfirm(view);
-              onClose();
-            }}
+            onConfirm={onConfirmOnCollection}
           />
         ) : null}
       </ModalWrapper>
@@ -81,47 +80,46 @@ export const EditCollectionModel = ({
   );
 };
 
-const Page = ({
-  id,
-  onClick,
-  getPageInfo,
-}: {
+interface PageProps {
   id: string;
-  onClick: (id: string) => void;
   getPageInfo: GetPageInfoById;
-}) => {
+  onClick: (id: string) => void;
+}
+
+const Page = ({ id, onClick, getPageInfo }: PageProps) => {
   const page = getPageInfo(id);
-  if (!page) {
-    return null;
-  }
-  const icon = page.isEdgeless ? (
-    <EdgelessIcon
-      style={{
-        width: 17.5,
-        height: 17.5,
-      }}
-    />
-  ) : (
-    <PageIcon
-      style={{
-        width: 17.5,
-        height: 17.5,
-      }}
-    />
-  );
-  const click = () => {
-    onClick(id);
-  };
+  const handleClick = useCallback(() => onClick(id), [id, onClick]);
   return (
-    <div className={styles.pageContainer}>
-      <div className={styles.pageIcon}>{icon}</div>
-      <div className={styles.pageTitle}>{page.title}</div>
-      <div onClick={click} className={styles.deleteIcon}>
-        <RemoveIcon />
-      </div>
-    </div>
+    <>
+      {page ? (
+        <div className={styles.pageContainer}>
+          <div className={styles.pageIcon}>
+            {page.isEdgeless ? (
+              <EdgelessIcon style={{ width: 17.5, height: 17.5 }} />
+            ) : (
+              <PageIcon style={{ width: 17.5, height: 17.5 }} />
+            )}
+          </div>
+          <div className={styles.pageTitle}>{page.title}</div>
+          <div onClick={handleClick} className={styles.deleteIcon}>
+            <RemoveIcon />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 };
+
+interface EditCollectionProps {
+  title?: string;
+  onConfirmText?: string;
+  init: Collection;
+  getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
+  onCancel: () => void;
+  onConfirm: (collection: Collection) => void;
+}
+
 export const EditCollection = ({
   title,
   init,
@@ -130,9 +128,7 @@ export const EditCollection = ({
   onConfirmText,
   getPageInfo,
   propertiesMeta,
-}: CreateCollectionProps & {
-  onCancel: () => void;
-}) => {
+}: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
   const removeFromExcludeList = useCallback(
@@ -153,6 +149,12 @@ export const EditCollection = ({
     },
     [value]
   );
+  const isNameEmpty = useMemo(() => value.name.trim().length === 0, [value]);
+  const onSaveCollection = useCallback(() => {
+    if (!isNameEmpty) {
+      onConfirm(value);
+    }
+  }, [value, isNameEmpty, onConfirm]);
   return (
     <div
       style={{
@@ -196,19 +198,15 @@ export const EditCollection = ({
             borderRadius: 8,
             padding: 18,
             marginTop: 20,
+            minHeight: '200px',
           }}
         >
-          <div className={styles.filterTitle}>Filters</div>
+          <div className={styles.filterTitle}>{t['Filters']()}</div>
           <FilterList
             propertiesMeta={propertiesMeta}
             value={value.filterList}
-            onChange={list =>
-              onChange({
-                ...value,
-                filterList: list,
-              })
-            }
-          ></FilterList>
+            onChange={filterList => onChange({ ...value, filterList })}
+          />
           {value.allowList ? (
             <div className={styles.allowList}>
               <div className={styles.allowTitle}>With follow pages:</div>
@@ -230,14 +228,9 @@ export const EditCollection = ({
         <div style={{ marginTop: 20 }}>
           <Input
             data-testid="input-collection-title"
-            placeholder="Untitled Collection"
+            placeholder={t['Untitled Collection']()}
             defaultValue={value.name}
-            onChange={text =>
-              onChange({
-                ...value,
-                name: text,
-              })
-            }
+            onChange={name => onChange({ ...value, name })}
           />
         </div>
       </ScrollableContainer>
@@ -248,21 +241,18 @@ export const EditCollection = ({
           marginTop: 40,
         }}
       >
-        <Button className={styles.cancelButton} onClick={onCancel}>
+        <Button size="large" onClick={onCancel}>
           {t['Cancel']()}
         </Button>
         <Button
           style={{
             marginLeft: 20,
-            borderRadius: '8px',
           }}
+          size="large"
           data-testid="save-collection"
           type="primary"
-          onClick={() => {
-            if (value.name.trim().length > 0) {
-              onConfirm(value);
-            }
-          }}
+          disabled={isNameEmpty}
+          onClick={onSaveCollection}
         >
           {onConfirmText ?? t['Create']()}
         </Button>
@@ -270,28 +260,44 @@ export const EditCollection = ({
     </div>
   );
 };
+
+interface SaveCollectionButtonProps {
+  getPageInfo: GetPageInfoById;
+  propertiesMeta: PropertiesMeta;
+  filterList: Filter[];
+  workspaceId: string;
+  onConfirm: (collection: Collection) => Promise<void>;
+}
+
 export const SaveCollectionButton = ({
-  init,
   onConfirm,
   getPageInfo,
   propertiesMeta,
-}: CreateCollectionProps) => {
+  filterList,
+  workspaceId,
+}: SaveCollectionButtonProps) => {
   const [show, changeShow] = useState(false);
+  const [init, setInit] = useState<Collection>();
+  const handleClick = useCallback(() => {
+    changeShow(true);
+    setInit({
+      id: uuidv4(),
+      name: '',
+      filterList,
+      workspaceId,
+    });
+  }, [changeShow, workspaceId, filterList]);
   const t = useAFFiNEI18N();
   return (
     <>
       <Button
-        className={styles.saveButton}
-        onClick={() => changeShow(true)}
-        size="middle"
+        onClick={handleClick}
         data-testid="save-as-collection"
+        icon={<SaveIcon />}
+        size="large"
+        style={{ padding: '7px 8px' }}
       >
-        <div className={styles.saveButtonContainer}>
-          <div className={styles.saveIcon}>
-            <SaveIcon />
-          </div>
-          <div className={styles.saveText}>Save As Collection</div>
-        </div>
+        {t['Save As New Collection']()}
       </Button>
       <EditCollectionModel
         title={t['Save As New Collection']()}

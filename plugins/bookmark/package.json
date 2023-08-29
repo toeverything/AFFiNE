@@ -1,0 +1,30 @@
+{
+  "name": "@affine/bookmark-plugin",
+  "type": "module",
+  "version": "0.9.0-canary.3",
+  "description": "Bookmark Plugin",
+  "affinePlugin": {
+    "release": true,
+    "entry": {
+      "core": "./src/index.ts",
+      "server": "./src/server.ts"
+    },
+    "serverCommand": [
+      "com.blocksuite.bookmark-block.get-bookmark-data-by-link"
+    ]
+  },
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
+    "@blocksuite/icons": "^2.1.31",
+    "foxact": "^0.2.20",
+    "link-preview-js": "^3.0.5"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*"
+  }
+}

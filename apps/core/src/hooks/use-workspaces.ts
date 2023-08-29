@@ -1,18 +1,21 @@
 import { DebugLogger } from '@affine/debug';
-import { initEmptyPage, initPageWithPreloading } from '@affine/env/blocksuite';
-import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
-import { assertEquals } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
-import { getWorkspace } from '@toeverything/plugin-infra/__internal__/workspace';
+import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
+import { getCurrentStore } from '@toeverything/infra/atom';
+import {
+  buildShowcaseWorkspace,
+  WorkspaceVersion,
+} from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { LocalAdapter } from '../adapters/local';
 import { WorkspaceAdapters } from '../adapters/workspace';
+import { setPageModeAtom } from '../atoms';
 
 const logger = new DebugLogger('use-workspaces');
 
@@ -27,16 +30,31 @@ export function useAppHelper() {
       async (workspaceId: string): Promise<string> => {
         getOrCreateWorkspace(workspaceId, WorkspaceFlavour.LOCAL);
         saveWorkspaceToLocalStorage(workspaceId);
-        await set(workspaces => [
+        set(workspaces => [
           ...workspaces,
           {
             id: workspaceId,
             flavour: WorkspaceFlavour.LOCAL,
-            version: WorkspaceVersion.SubDoc,
+            version: WorkspaceVersion.DatabaseV3,
           },
         ]);
         logger.debug('imported local workspace', workspaceId);
         return workspaceId;
+      },
+      [set]
+    ),
+    addCloudWorkspace: useCallback(
+      (workspaceId: string) => {
+        getOrCreateWorkspace(workspaceId, WorkspaceFlavour.AFFINE_CLOUD);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.AFFINE_CLOUD,
+            version: WorkspaceVersion.DatabaseV3,
+          },
+        ]);
+        logger.debug('imported cloud workspace', workspaceId);
       },
       [set]
     ),
@@ -54,30 +72,19 @@ export function useAppHelper() {
             id,
             WorkspaceFlavour.LOCAL
           );
-          const pageId = `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`;
-          const page = blockSuiteWorkspace.createPage({
-            id: pageId,
-          });
-          assertEquals(page.id, pageId);
-          if (runtimeConfig.enablePreloading) {
-            await initPageWithPreloading(page).catch(error => {
-              console.error('import error:', error);
-            });
-          } else {
-            await initEmptyPage(page).catch(error => {
-              console.error('init empty page error', error);
-            });
-          }
-          blockSuiteWorkspace.setPageMeta(page.id, {
-            jumpOnce: true,
+          await buildShowcaseWorkspace(blockSuiteWorkspace, {
+            store: getCurrentStore(),
+            atoms: {
+              pageMode: setPageModeAtom,
+            },
           });
         }
-        await set(workspaces => [
+        set(workspaces => [
           ...workspaces,
           {
             id,
             flavour: WorkspaceFlavour.LOCAL,
-            version: WorkspaceVersion.SubDoc,
+            version: WorkspaceVersion.DatabaseV3,
           },
         ]);
         logger.debug('created local workspace', id);
@@ -104,6 +111,12 @@ export function useAppHelper() {
         await set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
       },
       [jotaiWorkspaces, set]
+    ),
+    deleteWorkspaceMeta: useCallback(
+      (workspaceId: string) => {
+        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+      },
+      [set]
     ),
   };
 }

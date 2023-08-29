@@ -41,8 +41,9 @@ export interface InsertRow {
 export enum ValidationResult {
   MissingTables = 0,
   MissingDocIdColumn = 1,
-  GeneralError = 2,
-  Valid = 3,
+  MissingVersionColumn = 2,
+  GeneralError = 3,
+  Valid = 4,
 }
 export class Subscription {
   toString(): string;
@@ -75,6 +76,8 @@ export class SqliteConnection {
     docId: string | undefined | null,
     updates: Array<InsertRow>
   ): Promise<void>;
+  initVersion(): Promise<void>;
+  setVersion(version: number): Promise<void>;
   close(): Promise<void>;
   get isClose(): boolean;
   static validate(path: string): Promise<ValidationResult>;

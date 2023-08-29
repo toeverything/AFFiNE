@@ -7,13 +7,16 @@ import { NewPageButton } from '@affine/component/page-list';
 import { OperationCell } from '@affine/component/page-list';
 import { PageIcon } from '@blocksuite/icons';
 import { expect } from '@storybook/jest';
-import type { StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
 
 export default {
   title: 'AFFiNE/PageList',
   component: PageList,
-};
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
+} satisfies Meta;
 
 export const AffineOperationCell: StoryFn<OperationCellProps> = ({
   ...props
@@ -34,7 +37,7 @@ AffineOperationCell.play = async ({ canvasElement }) => {
       '[data-testid="page-list-operation-button"]'
     ) as HTMLButtonElement;
     expect(button).not.toBeNull();
-    userEvent.click(button);
+    await userEvent.click(button);
   }
 };
 
@@ -51,7 +54,7 @@ AffineNewPageButton.play = async ({ canvasElement }) => {
   expect(button).not.toBeNull();
   const dropdown = button.querySelector('svg') as SVGSVGElement;
   expect(dropdown).not.toBeNull();
-  userEvent.click(dropdown);
+  await userEvent.click(dropdown);
 };
 
 export const AffineAllPageList: StoryFn<typeof PageList> = ({ ...props }) => (
@@ -69,11 +72,11 @@ AffineAllPageList.args = {
       favorite: false,
       icon: <PageIcon />,
       isPublicPage: true,
-      title: 'Today Page',
+      title: 'Last Page',
       tags: [],
       preview: 'this is page preview',
-      createDate: new Date(),
-      updatedDate: new Date(),
+      createDate: new Date('2021-01-01'),
+      updatedDate: new Date('2023-08-15'),
       bookmarkPage: () => toast('Bookmark page'),
       onClickPage: () => toast('Click page'),
       onDisablePublicSharing: () => toast('Disable public sharing'),

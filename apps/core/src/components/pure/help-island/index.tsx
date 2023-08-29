@@ -1,6 +1,7 @@
-import { MuiFade, Tooltip } from '@affine/component';
+import { MuiFade } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai/react';
 import { useAtomValue } from 'jotai/react';
 import { useCallback, useState } from 'react';
@@ -57,10 +58,10 @@ export const HelpIsland = ({
         inEdgelessPage={mode === 'edgeless'}
       >
         <StyledAnimateWrapper
-          style={{ height: spread ? `${showList.length * 44}px` : 0 }}
+          style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t["Discover what's new!"]()} placement="left-end">
+            <Tooltip content={t["Discover what's new!"]()} side="left">
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
@@ -72,7 +73,7 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('contact') && (
-            <Tooltip content={t['Contact Us']()} placement="left-end">
+            <Tooltip content={t['Contact Us']()} side="left">
               <StyledIconWrapper
                 data-testid="right-bottom-contact-us-icon"
                 onClick={openAbout}
@@ -82,7 +83,7 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('shortcuts') && (
-            <Tooltip content={t['Keyboard Shortcuts']()} placement="left-end">
+            <Tooltip content={t['Keyboard Shortcuts']()} side="left">
               <StyledIconWrapper
                 data-testid="shortcuts-icon"
                 onClick={() => {
@@ -97,7 +98,7 @@ export const HelpIsland = ({
           {showList.includes('guide') && (
             <Tooltip
               content={t['com.affine.helpIsland.gettingStarted']()}
-              placement="left-end"
+              side="left"
             >
               <StyledIconWrapper
                 data-testid="easy-guide"
@@ -112,7 +113,7 @@ export const HelpIsland = ({
           )}
         </StyledAnimateWrapper>
 
-        <Tooltip content={t['Help and Feedback']()} placement="left-end">
+        <Tooltip content={t['Help and Feedback']()} side="left">
           <MuiFade in={!spread} data-testid="faq-icon">
             <StyledTriggerWrapper>
               <HelpIcon />

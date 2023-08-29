@@ -12,13 +12,30 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
-import type { StoryFn } from '@storybook/react';
+import type { Meta, StoryFn } from '@storybook/react';
 import { use } from 'foxact/use';
 import { useState } from 'react';
 
 export default {
   title: 'AFFiNE/ShareMenu',
   component: ShareMenu,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
+} satisfies Meta;
+
+const sharePageMap = new Map<string, boolean>([]);
+// todo: use a real hook
+const useIsSharedPage = (
+  _workspaceId: string,
+  pageId: string
+): [isSharePage: boolean, setIsSharePage: (enable: boolean) => void] => {
+  const [isShared, setIsShared] = useState(sharePageMap.get(pageId) ?? false);
+  const togglePagePublic = (enable: boolean) => {
+    setIsShared(enable);
+    sharePageMap.set(pageId, enable);
+  };
+  return [isShared, togglePagePublic];
 };
 
 async function initPage(page: Page) {
@@ -71,11 +88,10 @@ export const Basic: StoryFn = () => {
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
+      useIsSharedPage={useIsSharedPage}
       workspace={localWorkspace}
       onEnableAffineCloud={unimplemented}
-      onOpenWorkspaceSettings={unimplemented}
       togglePagePublic={unimplemented}
-      toggleWorkspacePublish={unimplemented}
     />
   );
 };
@@ -88,7 +104,7 @@ Basic.play = async ({ canvasElement }) => {
     expect(button).not.toBeNull();
     button.click();
   }
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise(resolve => window.setTimeout(resolve, 100));
   {
     const button = canvasElement.querySelector(
       '[data-testid="share-menu-enable-affine-cloud-button"]'
@@ -102,11 +118,10 @@ export const AffineBasic: StoryFn = () => {
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
+      useIsSharedPage={useIsSharedPage}
       workspace={affineWorkspace}
       onEnableAffineCloud={unimplemented}
-      onOpenWorkspaceSettings={unimplemented}
       togglePagePublic={unimplemented}
-      toggleWorkspacePublish={unimplemented}
     />
   );
 };

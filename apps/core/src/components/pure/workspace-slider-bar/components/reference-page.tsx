@@ -31,12 +31,10 @@ export const ReferencePage = ({
   const referencesToShow = useMemo(() => {
     return [
       ...new Set(
-        references.filter(
-          ref => !parentIds.has(ref) && !metaMapping[ref]?.trash
-        )
+        references.filter(ref => metaMapping[ref] && !metaMapping[ref]?.trash)
       ),
     ];
-  }, [references, parentIds, metaMapping]);
+  }, [references, metaMapping]);
   const [collapsed, setCollapsed] = useState(true);
   const collapsible = referencesToShow.length > 0;
   const nestedItem = parentIds.size > 0;
@@ -52,7 +50,7 @@ export const ReferencePage = ({
         data-type="favorite-list-item"
         data-testid={`favorite-list-item-${pageId}`}
         active={active}
-        href={`/workspace/${workspace.id}/${pageId}`}
+        to={`/workspace/${workspace.id}/${pageId}`}
         icon={icon}
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}

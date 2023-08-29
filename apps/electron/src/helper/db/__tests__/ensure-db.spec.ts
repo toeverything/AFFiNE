@@ -91,7 +91,8 @@ test('db should be removed in db$Map after destroyed', async () => {
   expect(db$Map.has(workspaceId)).toBe(false);
 });
 
-test('if db has a secondary db path, we should also poll that', async () => {
+// we have removed secondary db feature
+test.skip('if db has a secondary db path, we should also poll that', async () => {
   const { ensureSQLiteDB } = await import('../ensure-db');
   const { storeWorkspaceMeta } = await import('../../workspace');
   const workspaceId = v4();

@@ -1,11 +1,14 @@
 import { join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 
-import { logger } from '@affine/electron/main/logger';
+import { logger, pluginLogger } from '@affine/electron/main/logger';
 import { AsyncCall } from 'async-call-rpc';
 import { ipcMain } from 'electron';
+import { readFile } from 'fs/promises';
 
-import { MessageEventChannel } from './utils';
+import { MessageEventChannel } from '../shared/utils';
+
+const builtInPlugins = ['bookmark'];
 
 declare global {
   // fixme(himself65):
@@ -14,57 +17,41 @@ declare global {
   var asyncCall: Record<string, (...args: any) => PromiseLike<any>>;
 }
 
-export function registerPlugin() {
-  const pluginWorkerPath = join(__dirname, './workers/plugin.worker.js');
+export async function registerPlugin() {
+  logger.info('import plugin manager');
   const asyncCall = AsyncCall<
     Record<string, (...args: any) => PromiseLike<any>>
   >(
     {
       log: (...args: any[]) => {
-        logger.log('Plugin Worker', ...args);
+        pluginLogger.log(...args);
       },
     },
     {
-      channel: new MessageEventChannel(new Worker(pluginWorkerPath)),
+      channel: new MessageEventChannel(
+        new Worker(resolve(__dirname, './worker.js'), {})
+      ),
     }
   );
   globalThis.asyncCall = asyncCall;
-  logger.info('import plugin manager');
-  import('@toeverything/plugin-infra/manager')
-    .then(({ rootStore, affinePluginsAtom }) => {
-      logger.info('import plugin manager');
-      const bookmarkPluginPath = join(
+  await Promise.all(
+    builtInPlugins.map(async plugin => {
+      const pluginPackageJsonPath = join(
         process.env.PLUGIN_DIR ?? resolve(__dirname, './plugins'),
-        './bookmark-block/index.mjs'
+        `./${plugin}/package.json`
       );
-      logger.info('bookmark plugin path:', bookmarkPluginPath);
-      import('file://' + bookmarkPluginPath);
-      let dispose: () => void = () => {
-        // noop
-      };
-      rootStore.sub(affinePluginsAtom, () => {
-        dispose();
-        const plugins = rootStore.get(affinePluginsAtom);
-        Object.values(plugins).forEach(plugin => {
-          logger.info('register plugin', plugin.definition.id);
-          plugin.definition.commands.forEach(command => {
-            logger.info('register plugin command', command);
-            ipcMain.handle(command, (event, ...args) =>
-              asyncCall[command](...args)
-            );
-          });
+      logger.info(`${plugin} plugin path:`, pluginPackageJsonPath);
+      const packageJson = JSON.parse(
+        await readFile(pluginPackageJsonPath, 'utf-8')
+      );
+      console.log('packageJson', packageJson);
+      const serverCommand: string[] = packageJson.affinePlugin.serverCommand;
+      serverCommand.forEach(command => {
+        ipcMain.handle(command, async (_, ...args) => {
+          logger.info(`plugin ${plugin} called`);
+          return asyncCall[command](...args);
         });
-        dispose = () => {
-          Object.values(plugins).forEach(plugin => {
-            plugin.definition.commands.forEach(command => {
-              logger.info('unregister plugin command', command);
-              ipcMain.removeHandler(command);
-            });
-          });
-        };
       });
     })
-    .catch(error => {
-      logger.error('import plugin manager error', error);
-    });
+  );
 }

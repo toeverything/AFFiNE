@@ -28,34 +28,34 @@ export default {
     '@storybook/addon-interactions',
     '@storybook/addon-storysource',
     'storybook-dark-mode',
+    'storybook-addon-react-router-v6',
   ],
   framework: {
     name: '@storybook/react-vite',
   },
-  async viteFinal(config, { configType }) {
+  async viteFinal(config, _options) {
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
       plugins: [
         vanillaExtractPlugin(),
         tsconfigPaths({
           root: fileURLToPath(new URL('../../../', import.meta.url)),
+          ignoreConfigErrors: true,
         }),
       ],
       define: {
         'process.env': {},
+        'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
+        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
+          process.env.SHOULD_REPORT_TRACE
+        )}`,
+        'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         runtimeConfig: getRuntimeConfig({
           distribution: 'browser',
           mode: 'development',
           channel: 'canary',
           coverage: false,
         }),
-      },
-      resolve: {
-        alias: {
-          'dotenv/config': fileURLToPath(
-            new URL('../../../scripts/vitest/dotenv-config.ts', import.meta.url)
-          ),
-        },
       },
     });
   },

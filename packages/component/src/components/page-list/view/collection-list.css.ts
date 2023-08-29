@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const menuTitleStyle = style({
   marginLeft: '12px',
@@ -20,6 +20,8 @@ export const viewButton = style({
   padding: '4px 8px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',
+  ['WebkitAppRegion' as string]: 'no-drag',
+  maxWidth: '150px',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
   transition: 'margin-left 0.2s ease-in-out',
@@ -28,6 +30,13 @@ export const viewButton = style({
     background: 'var(--affine-hover-color)',
   },
   marginRight: '20px',
+});
+globalStyle(`${viewButton} > span`, {
+  display: 'block',
+  width: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 export const viewMenu = style({});
 export const viewOption = style({
@@ -56,11 +65,17 @@ export const deleteOption = style({
 export const filterButton = style({
   borderRadius: '8px',
   height: '100%',
+  width: '100%',
+  marginRight: '20px',
   padding: '4px 8px',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-white)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   color: 'var(--affine-text-secondary-color)',
   border: '1px solid var(--affine-border-color)',
+  ['WebkitAppRegion' as string]: 'no-drag',
   transition: 'margin-left 0.2s ease-in-out',
   ':hover': {
     borderColor: 'var(--affine-border-color)',

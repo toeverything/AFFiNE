@@ -1,27 +1,22 @@
+import { FlexWrapper } from '@affine/component';
 import { EditCollectionModel } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteIcon,
-  FilteredIcon,
-  FilterIcon,
-  FolderIcon,
-  PinIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons';
+import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
-import { useAtom } from 'jotai';
-import type { MouseEvent, ReactNode } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
+import { useCallback, useState } from 'react';
 
-import { Button, MenuItem } from '../../..';
+import { MenuItem } from '../../..';
 import Menu from '../../../ui/menu/menu';
-import { appSidebarOpenAtom } from '../../app-sidebar';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
+import { useActions } from './use-action';
 
 const CollectionOption = ({
   collection,
@@ -32,42 +27,12 @@ const CollectionOption = ({
   setting: ReturnType<typeof useCollectionManager>;
   updateCollection: (view: Collection) => void;
 }) => {
-  const actions: {
-    icon: ReactNode;
-    click: () => void;
-    className?: string;
-    name: string;
-  }[] = useMemo(
-    () => [
-      {
-        icon: <PinIcon />,
-        name: 'pin',
-        click: () => {
-          return setting.updateCollection({
-            ...collection,
-            pinned: !collection.pinned,
-          });
-        },
-      },
-      {
-        icon: <FilterIcon />,
-        name: 'edit',
-        click: () => {
-          updateCollection(collection);
-        },
-      },
-      {
-        icon: <DeleteIcon style={{ color: 'var(--affine-error-color)' }} />,
-        name: 'delete',
-        click: () => {
-          setting.deleteCollection(collection.id).catch(err => {
-            console.error(err);
-          });
-        },
-      },
-    ],
-    [setting, updateCollection, collection]
-  );
+  const actions = useActions({
+    collection,
+    setting,
+    openEdit: updateCollection,
+  });
+
   const selectCollection = useCallback(
     () => setting.selectCollection(collection.id),
     [setting, collection.id]
@@ -80,39 +45,56 @@ const CollectionOption = ({
       key={collection.id}
       className={styles.viewMenu}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+      <Tooltip
+        content={collection.name}
+        side="right"
+        rootOptions={{
+          delayDuration: 1500,
         }}
       >
-        <div>{collection.name}</div>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          {actions.map((v, i) => {
-            const onClick = (e: MouseEvent<HTMLDivElement>) => {
-              e.stopPropagation();
-              v.click();
-            };
-            return (
-              <div
-                data-testid={`collection-select-option-${v.name}`}
-                key={i}
-                onClick={onClick}
-                style={{ marginLeft: i === 0 ? 28 : undefined }}
-                className={clsx(styles.viewOption, v.className)}
-              >
-                {v.icon}
-              </div>
-            );
-          })}
+          <div
+            style={{
+              maxWidth: '150px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {collection.name}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            {actions.map((action, i) => {
+              const onClick = (e: MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                action.click();
+              };
+
+              return (
+                <div
+                  data-testid={`collection-select-option-${action.name}`}
+                  key={i}
+                  onClick={onClick}
+                  style={{ marginLeft: i === 0 ? 28 : undefined }}
+                  className={clsx(styles.viewOption, action.className)}
+                >
+                  {action.icon}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </Tooltip>
     </MenuItem>
   );
 };
@@ -126,14 +108,17 @@ export const CollectionList = ({
   propertiesMeta: PropertiesMeta;
 }) => {
   const t = useAFFiNEI18N();
-  const [open] = useAtom(appSidebarOpenAtom);
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
-      return setting.updateCollection({
-        ...setting.currentCollection,
-        filterList,
-      });
+      setting
+        .updateCollection({
+          ...setting.currentCollection,
+          filterList,
+        })
+        .catch(err => {
+          console.error(err);
+        });
     },
     [setting]
   );
@@ -142,24 +127,14 @@ export const CollectionList = ({
     []
   );
   const onConfirm = useCallback(
-    (view: Collection) => {
-      return setting.updateCollection(view).then(() => {
-        closeUpdateCollectionModal();
-      });
+    async (view: Collection) => {
+      await setting.updateCollection(view);
+      closeUpdateCollectionModal();
     },
     [closeUpdateCollectionModal, setting]
   );
   return (
-    <div
-      className={clsx({
-        [styles.filterButtonCollapse]: !open,
-      })}
-      style={{
-        marginLeft: 4,
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
+    <FlexWrapper alignItems="center">
       {setting.savedCollections.length > 0 && (
         <Menu
           trigger="click"
@@ -194,12 +169,17 @@ export const CollectionList = ({
           }
         >
           <Button
-            size="small"
-            className={clsx(styles.viewButton)}
-            hoverColor="var(--affine-icon-color)"
             data-testid="collection-select"
+            style={{ marginRight: '20px' }}
           >
-            {setting.currentCollection.name}
+            <Tooltip
+              content={setting.currentCollection.name}
+              rootOptions={{
+                delayDuration: 1500,
+              }}
+            >
+              <>{setting.currentCollection.name}</>
+            </Tooltip>
           </Button>
         </Menu>
       )}
@@ -214,13 +194,7 @@ export const CollectionList = ({
           />
         }
       >
-        <Button
-          icon={<FilteredIcon />}
-          className={clsx(styles.filterButton)}
-          size="small"
-          hoverColor="var(--affine-icon-color)"
-          data-testid="create-first-filter"
-        >
+        <Button icon={<FilteredIcon />} data-testid="create-first-filter">
           {t['com.affine.filter']()}
         </Button>
       </Menu>
@@ -232,6 +206,6 @@ export const CollectionList = ({
         onClose={closeUpdateCollectionModal}
         onConfirm={onConfirm}
       ></EditCollectionModel>
-    </div>
+    </FlexWrapper>
   );
 };

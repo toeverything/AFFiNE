@@ -8,7 +8,8 @@
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
     "noEmit": false,
-    "outDir": "./lib/scripts"
+    "outDir": "./lib/scripts",
+    "allowJs": true
   },
   "include": ["./scripts", "esbuild.main.config.ts", "esbuild.plugin.config.ts"]
 }

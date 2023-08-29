@@ -2,8 +2,9 @@ import { app } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { z } from 'zod';
 
+import { isMacOS, isWindows } from '../../shared/utils';
 import { logger } from '../logger';
-import { isMacOS } from '../utils';
+import { CustomGitHubProvider } from './custom-github-provider';
 import { updaterSubjects } from './event';
 
 export const ReleaseTypeSchema = z.enum([
@@ -35,13 +36,13 @@ export const checkForUpdates = async (force = true) => {
 };
 
 export const registerUpdater = async () => {
-  // skip auto update in dev mode
-  if (isDev) {
+  // skip auto update in dev mode & internal
+  if (buildType === 'internal' || isDev) {
     return;
   }
 
-  // TODO: support auto update on windows and linux
-  const allowAutoUpdate = isMacOS();
+  // TODO: support auto update on linux
+  const allowAutoUpdate = isMacOS() || isWindows();
 
   autoUpdater.logger = logger;
   autoUpdater.autoDownload = false;
@@ -51,10 +52,14 @@ export const registerUpdater = async () => {
 
   const feedUrl: Parameters<typeof autoUpdater.setFeedURL>[0] = {
     channel: buildType,
-    provider: 'github',
+    // hack for custom provider
+    provider: 'custom' as 'github',
+    // @ts-expect-error - just ignore for now
     repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
+    // @ts-expect-error hack for custom provider
+    updateProvider: CustomGitHubProvider,
   };
 
   logger.debug('auto-updater feed config', feedUrl);
@@ -99,7 +104,9 @@ export const registerUpdater = async () => {
   });
   autoUpdater.forceDevUpdateConfig = isDev;
 
-  app.on('activate', async () => {
-    await checkForUpdates(false);
+  app.on('activate', () => {
+    checkForUpdates(false).catch(err => {
+      console.error(err);
+    });
   });
 };

@@ -1,10 +1,5 @@
 import { clsx } from 'clsx';
-import type {
-  FC,
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
 
 import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
@@ -15,12 +10,12 @@ export type WorkspaceRootProps = PropsWithChildren<{
   useBlurBackground?: boolean;
 }>;
 
-export const AppContainer: FC<WorkspaceRootProps> = ({
+export const AppContainer = ({
   resizing,
   useNoisyBackground,
   useBlurBackground,
   children,
-}) => {
+}: WorkspaceRootProps) => {
   const noisyBackground = useNoisyBackground && environment.isDesktop;
   return (
     <div
@@ -36,24 +31,23 @@ export const AppContainer: FC<WorkspaceRootProps> = ({
   );
 };
 
-export type MainContainerProps = PropsWithChildren<{
+export interface MainContainerProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   padding?: boolean;
-}> &
-  HTMLAttributes<HTMLDivElement>;
+}
 
 export const MainContainer = ({
   className,
   padding,
   children,
   ...props
-}: MainContainerProps): ReactElement => {
+}: PropsWithChildren<MainContainerProps>): ReactElement => {
   return (
     <div
       {...props}
       className={clsx(mainContainerStyle, 'main-container', className)}
       data-is-macos={environment.isDesktop && environment.isMacOs}
-      data-show-padding={padding}
+      data-show-padding={!!padding}
     >
       {children}
     </div>

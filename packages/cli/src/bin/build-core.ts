@@ -3,19 +3,25 @@ import path from 'node:path';
 
 import type { BuildFlags } from '../config/index.js';
 import { projectRoot } from '../config/index.js';
+import { buildI18N } from '../util/i18n.js';
 
 const cwd = path.resolve(projectRoot, 'apps', 'core');
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const buildType = process.env.BUILD_TYPE_OVERRIDE || process.env.BUILD_TYPE;
+
 const getChannel = () => {
-  switch (process.env.BUILD_TYPE) {
+  switch (buildType) {
     case 'canary':
     case 'beta':
     case 'stable':
     case 'internal':
-      return process.env.BUILD_TYPE;
+      return buildType;
+    case '':
+      throw new Error('BUILD_TYPE is not set');
     default: {
       throw new Error(
-        'BUILD_TYPE must be one of canary, beta, stable, internal'
+        `BUILD_TYPE must be one of canary, beta, stable, internal, received [${buildType}]`
       );
     }
   }
@@ -43,6 +49,7 @@ const flags = {
   coverage: process.env.COVERAGE === 'true',
 } satisfies BuildFlags;
 
+buildI18N();
 spawn(
   'node',
   [

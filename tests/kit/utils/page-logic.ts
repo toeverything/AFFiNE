@@ -7,6 +7,13 @@ export async function waitEditorLoad(page: Page) {
   });
 }
 
+export async function waitForAllPagesLoad(page: Page) {
+  // if filters tag is rendered, we believe all_pages is ready
+  await page.waitForSelector('[data-testid="create-first-filter"]', {
+    timeout: 1000,
+  });
+}
+
 export async function newPage(page: Page) {
   // fixme(himself65): if too fast, the page will crash
   await page.getByTestId('new-page-button').click({
@@ -16,7 +23,7 @@ export async function newPage(page: Page) {
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {
-  return page.locator('v-line').nth(0);
+  return page.locator('.affine-doc-page-block-title').nth(0);
 }
 
 export async function type(page: Page, content: string, delay = 50) {
@@ -45,7 +52,7 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
 
 export async function clickPageMoreActions(page: Page) {
   return page
-    .getByTestId('editor-header-items')
-    .getByTestId('editor-option-menu')
+    .getByTestId('header')
+    .getByTestId('header-dropDownButton')
     .click();
 }

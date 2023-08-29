@@ -1,6 +1,5 @@
-import { Button } from '@affine/component';
-import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { PlusIcon, ResetIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';
@@ -31,7 +30,6 @@ export const Conversation = (props: ConversationProps): ReactElement => {
         [styles.avatarRightStyle]: props.type === 'human',
       })}
     >
-      <WorkspaceAvatar workspace={null} />
       <div className={styles.conversationContainerStyle}>
         <div
           className={clsx(styles.conversationStyle, {
@@ -55,20 +53,10 @@ export const Conversation = (props: ConversationProps): ReactElement => {
         </div>
         {props.type === 'ai' ? (
           <div className={styles.insertButtonsStyle}>
-            <Button
-              icon={<PlusIcon />}
-              size="small"
-              className={styles.insertButtonStyle}
-              hoverColor="var(--affine-text-primary-color)"
-            >
+            <Button icon={<PlusIcon />} className={styles.insertButtonStyle}>
               Insert list block only
             </Button>
-            <Button
-              icon={<PlusIcon />}
-              size="small"
-              className={styles.insertButtonStyle}
-              hoverColor="var(--affine-text-primary-color)"
-            >
+            <Button icon={<PlusIcon />} className={styles.insertButtonStyle}>
               Insert all
             </Button>
           </div>

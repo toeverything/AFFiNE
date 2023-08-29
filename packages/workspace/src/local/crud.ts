@@ -2,7 +2,6 @@ import { DebugLogger } from '@affine/debug';
 import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
-import { createIndexedDBProvider } from '@toeverything/y-indexeddb';
 import { createJSONStorage } from 'jotai/utils';
 import { z } from 'zod';
 
@@ -75,12 +74,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
         }
       });
     });
-
-    const persistence = createIndexedDBProvider(blockSuiteWorkspace.doc);
-    persistence.connect();
-    await persistence.whenSynced.then(() => {
-      persistence.disconnect();
-    });
+    // todo: do we need to persist doc to persistence datasource?
     saveWorkspaceToLocalStorage(id);
     return id;
   },
@@ -104,26 +98,10 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   list: async () => {
     logger.debug('list');
     const storage = getStorage();
-    let allWorkspaceIDs: string[] = Array.isArray(
-      storage.getItem(kStoreKey, [])
-    )
-      ? (storage.getItem(kStoreKey, []) as z.infer<typeof schema>)
-      : [];
+    const allWorkspaceIDs: string[] = storage.getItem(kStoreKey, []) as z.infer<
+      typeof schema
+    >;
 
-    // workspaces in desktop
-    if (
-      window.apis &&
-      environment.isDesktop &&
-      runtimeConfig.enableSQLiteProvider
-    ) {
-      const desktopIds = (await window.apis.workspace.list()).map(([id]) => id);
-      // the ids maybe a subset of the local storage
-      const moreWorkspaces = desktopIds.filter(
-        id => !allWorkspaceIDs.includes(id)
-      );
-      allWorkspaceIDs = [...allWorkspaceIDs, ...moreWorkspaces];
-      storage.setItem(kStoreKey, allWorkspaceIDs);
-    }
     const workspaces = (
       await Promise.all(allWorkspaceIDs.map(id => CRUD.get(id)))
     ).filter(item => item !== null) as LocalWorkspace[];

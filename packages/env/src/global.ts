@@ -1,69 +1,25 @@
 /// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
-import type {
-  DBHandlerManager,
-  DebugHandlerManager,
-  DialogHandlerManager,
-  ExportHandlerManager,
-  UIHandlerManager,
-  UnwrapManagerHandlerToClientSide,
-  UpdaterHandlerManager,
-  WorkspaceHandlerManager,
-} from '@toeverything/infra';
 import { z } from 'zod';
 
-import { isBrowser, isDesktop, isServer } from './constant.js';
-import { isValidIPAddress } from './is-valid-ip-address.js';
+import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
-
-declare global {
-  interface Window {
-    appInfo: {
-      electron: boolean;
-    };
-    apis: {
-      db: UnwrapManagerHandlerToClientSide<DBHandlerManager>;
-      debug: UnwrapManagerHandlerToClientSide<DebugHandlerManager>;
-      dialog: UnwrapManagerHandlerToClientSide<DialogHandlerManager>;
-      export: UnwrapManagerHandlerToClientSide<ExportHandlerManager>;
-      ui: UnwrapManagerHandlerToClientSide<UIHandlerManager>;
-      updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
-      workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
-    };
-    events: any;
-  }
-
-  interface WindowEventMap {
-    'migration-done': CustomEvent;
-  }
-
-  // eslint-disable-next-line no-var
-  var $migrationDone: boolean;
-  // eslint-disable-next-line no-var
-  var platform: Platform | undefined;
-  // eslint-disable-next-line no-var
-  var environment: Environment;
-  // eslint-disable-next-line no-var
-  var runtimeConfig: RuntimeConfig;
-  // eslint-disable-next-line no-var
-  var $AFFINE_SETUP: boolean | undefined;
-  // eslint-disable-next-line no-var
-  var editorVersion: string | undefined;
-  // eslint-disable-next-line no-var
-  var prefixUrl: string;
-  // eslint-disable-next-line no-var
-  var websocketPrefixUrl: string;
-}
 
 export const blockSuiteFeatureFlags = z.object({
   enable_database: z.boolean(),
+  enable_database_filter: z.boolean(),
+  enable_data_view: z.boolean(),
+  enable_page_tags: z.boolean(),
   enable_drag_handle: z.boolean(),
   enable_surface: z.boolean(),
   enable_block_hub: z.boolean(),
   enable_slash_menu: z.boolean(),
+  enable_toggle_block: z.boolean(),
   enable_edgeless_toolbar: z.boolean(),
   enable_linked_page: z.boolean(),
   enable_bookmark_operation: z.boolean(),
+  enable_note_index: z.boolean(),
+  enable_attachment_block: z.boolean(),
 });
 
 export const runtimeFlagsSchema = z.object({
@@ -80,8 +36,10 @@ export const runtimeFlagsSchema = z.object({
   enableSQLiteProvider: z.boolean(),
   enableNotificationCenter: z.boolean(),
   enableCloud: z.boolean(),
+  enableEnhanceShareMode: z.boolean(),
+  // this is for the electron app
+  serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
-  serverAPI: z.string(),
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),
   editorVersion: z.string(),
@@ -206,35 +164,5 @@ export function setupGlobal() {
   }
   globalThis.environment = environment;
 
-  if (environment.isBrowser) {
-    globalThis.editorVersion = global.editorVersion;
-  }
-
-  let prefixUrl: string;
-  if (!isBrowser || isDesktop) {
-    // SSR or Desktop
-    const serverAPI = runtimeConfig.serverAPI;
-    if (isValidIPAddress(serverAPI.split(':')[0])) {
-      // This is for Server side rendering support
-      prefixUrl = new URL('http://' + runtimeConfig.serverAPI + '/').origin;
-    } else {
-      prefixUrl = serverAPI;
-    }
-    prefixUrl = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
-  } else {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('prefixUrl')) {
-      prefixUrl = params.get('prefixUrl') as string;
-    } else {
-      prefixUrl = window.location.origin + '/';
-    }
-  }
-
-  const apiUrl = new URL(prefixUrl);
-  const wsProtocol = apiUrl.protocol === 'https:' ? 'wss' : 'ws';
-  const websocketPrefixUrl = `${wsProtocol}://${apiUrl.host}`;
-
-  globalThis.prefixUrl = prefixUrl;
-  globalThis.websocketPrefixUrl = websocketPrefixUrl;
   globalThis.$AFFINE_SETUP = true;
 }

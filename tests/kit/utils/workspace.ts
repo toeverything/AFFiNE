@@ -16,12 +16,14 @@ export async function createWorkspace(
   await openWorkspaceListModal(page);
 
   // open create workspace modal
-  await page.locator('.add-icon').click();
+  await page.getByTestId('new-workspace').click();
 
   // input workspace name
   await page.getByPlaceholder('Set a Workspace name').click();
   await page.getByPlaceholder('Set a Workspace name').fill(params.name);
 
   // click create button
-  return page.getByRole('button', { name: 'Create' }).click();
+  return page.getByRole('button', { name: 'Create' }).click({
+    delay: 500,
+  });
 }

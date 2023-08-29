@@ -1,6 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Button } from '@toeverything/components/button';
+import { useCallback, useMemo } from 'react';
 
-import { Button } from '../button';
 import type { ModalProps } from '../modal';
 import { Modal, ModalCloseButton } from '../modal';
 import {
@@ -17,7 +18,7 @@ export type ConfirmProps = {
   confirmText?: string;
   cancelText?: string;
   // TODO: Confirm button's color should depend on confirm type
-  confirmType?: 'primary' | 'warning' | 'danger';
+  confirmType?: 'primary' | 'warning' | 'error';
   buttonDirection?: 'row' | 'column';
   onConfirm?: () => void;
   onCancel?: () => void;
@@ -39,36 +40,37 @@ export const Confirm = ({
   confirmButtonTestId = '',
 }: ConfirmProps) => {
   const t = useAFFiNEI18N();
+  const cancelText_ = useMemo<string>(() => {
+    return cancelText === 'Cancel' ? t['Cancel']() : cancelText;
+  }, [cancelText, t]);
+
+  const handleCancel = useCallback(() => {
+    onCancel?.();
+  }, [onCancel]);
+  const handleConfirm = useCallback(() => {
+    onConfirm?.();
+  }, [onConfirm]);
+
   return (
     <Modal open={open} disablePortal={false}>
       <StyledModalWrapper>
-        <ModalCloseButton
-          onClick={() => {
-            onCancel?.();
-          }}
-        />
+        <ModalCloseButton onClick={handleCancel} />
         <StyledConfirmTitle>{title}</StyledConfirmTitle>
         <StyledConfirmContent>{content}</StyledConfirmContent>
         {buttonDirection === 'row' ? (
           <StyledRowButtonWrapper>
             <Button
-              shape="round"
-              bold={true}
-              onClick={() => {
-                onCancel?.();
-              }}
+              onClick={handleCancel}
+              size="large"
               style={{ marginRight: '24px' }}
               data-testid={cancelButtonTestId}
             >
-              {cancelText === 'Cancel' ? t['Cancel']() : cancelText}
+              {cancelText_}
             </Button>
             <Button
               type={confirmType}
-              shape="round"
-              bold={true}
-              onClick={() => {
-                onConfirm?.();
-              }}
+              onClick={handleConfirm}
+              size="large"
               data-testid={confirmButtonTestId}
             >
               {confirmText}
@@ -78,22 +80,14 @@ export const Confirm = ({
           <StyledColumnButtonWrapper>
             <Button
               type={confirmType}
-              shape="round"
-              bold={true}
-              onClick={() => {
-                onConfirm?.();
-              }}
+              onClick={handleConfirm}
               style={{ width: '284px', height: '38px', textAlign: 'center' }}
               data-testid={confirmButtonTestId}
             >
               {confirmText}
             </Button>
             <Button
-              shape="round"
-              bold={true}
-              onClick={() => {
-                onCancel?.();
-              }}
+              onClick={handleCancel}
               style={{
                 marginTop: '16px',
                 width: '284px',
@@ -102,7 +96,7 @@ export const Confirm = ({
               }}
               data-testid={cancelButtonTestId}
             >
-              {cancelText === 'Cancel' ? t['Cancel']() : cancelText}
+              {cancelText_}
             </Button>
           </StyledColumnButtonWrapper>
         )}

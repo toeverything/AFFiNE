@@ -1,9 +1,8 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Command } from 'cmdk';
-import { startTransition } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { startTransition, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { AllWorkspace } from '../../../shared';
 import { Footer } from './footer';
@@ -14,20 +13,21 @@ import {
   StyledModalDivider,
   StyledModalFooter,
   StyledModalHeader,
+  StyledNotFound,
   StyledShortcut,
 } from './style';
 
-export type QuickSearchModalProps = {
+export interface QuickSearchModalProps {
   workspace: AllWorkspace;
   open: boolean;
   setOpen: (value: boolean) => void;
-};
+}
 
-export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
+export const QuickSearchModal = ({
   open,
   setOpen,
   workspace,
-}) => {
+}: QuickSearchModalProps) => {
   const blockSuiteWorkspace = workspace?.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,19 +37,12 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       _setQuery(query);
     });
   }, []);
-  const location = useLocation();
-  const isPublicWorkspace = useMemo(
-    () => location.pathname.startsWith('/public-workspace'),
-    [location]
-  );
   const [showCreatePage, setShowCreatePage] = useState(true);
-  const isPublicAndNoQuery = useCallback(() => {
-    return isPublicWorkspace && query.length === 0;
-  }, [isPublicWorkspace, query.length]);
   const handleClose = useCallback(() => {
     setOpen(false);
   }, [setOpen]);
-  // Add  ‘⌘+K’ shortcut keys as switches
+
+  // Add ‘⌘+K’ shortcut keys as switches
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
@@ -68,6 +61,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
   }, [open, setOpen, setQuery]);
+
   useEffect(() => {
     if (open) {
       // Waiting for DOM rendering
@@ -77,6 +71,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       });
     }
   }, [open]);
+
   return (
     <Modal
       open={open}
@@ -88,7 +83,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         width={608}
         style={{
           maxHeight: '80vh',
-          minHeight: isPublicAndNoQuery() ? '72px' : '412px',
+          minHeight: '412px',
           top: '80px',
           overflow: 'hidden',
         }}
@@ -134,21 +129,25 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                 : 'Ctrl + K'}
             </StyledShortcut>
           </StyledModalHeader>
-          <StyledModalDivider
-            style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
-          />
+          <StyledModalDivider />
           <Command.List>
-            <StyledContent
-              style={{ display: isPublicAndNoQuery() ? 'none' : '' }}
-            >
-              <Results
-                query={query}
-                onClose={handleClose}
-                workspace={workspace}
-                setShowCreatePage={setShowCreatePage}
-              />
+            <StyledContent>
+              <Suspense
+                fallback={
+                  <StyledNotFound>
+                    <span>{t['com.affine.loading']()}</span>
+                  </StyledNotFound>
+                }
+              >
+                <Results
+                  query={query}
+                  onClose={handleClose}
+                  workspace={workspace}
+                  setShowCreatePage={setShowCreatePage}
+                />
+              </Suspense>
             </StyledContent>
-            {isPublicWorkspace ? null : showCreatePage ? (
+            {showCreatePage ? (
               <>
                 <StyledModalDivider />
                 <StyledModalFooter>

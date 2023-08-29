@@ -1,11 +1,8 @@
-import { IconButton } from '@affine/component';
 import { SendIcon } from '@blocksuite/icons';
-import { rootStore } from '@toeverything/plugin-infra/manager';
-import type { PluginUIAdapter } from '@toeverything/plugin-infra/type';
-import { Provider, useAtomValue, useSetAtom } from 'jotai';
+import { IconButton } from '@toeverything/components/button';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { StrictMode, Suspense, useCallback, useState } from 'react';
-import { createRoot } from 'react-dom/client';
+import { Suspense, useCallback, useState } from 'react';
 
 import { ConversationList } from '../core/components/conversation-list';
 import { FollowingUp } from '../core/components/following-up';
@@ -16,51 +13,6 @@ import {
   sendButtonStyle,
   textareaStyle,
 } from './index.css';
-
-if (typeof window === 'undefined') {
-  import('@blocksuite/blocks')
-    .then(({ FormatQuickBar }) => {
-      FormatQuickBar.customElements.push((_page, getSelection) => {
-        const div = document.createElement('div');
-        const root = createRoot(div);
-
-        const AskAI = (): ReactElement => {
-          const { conversationAtom } = useChatAtoms();
-          const call = useSetAtom(conversationAtom);
-          const onClickAskAI = useCallback(() => {
-            const selection = getSelection();
-            if (selection != null) {
-              const text = selection.models
-                .map(model => {
-                  return model.text?.toString();
-                })
-                .filter((v): v is string => Boolean(v))
-                .join('\n');
-              console.log('selected text:', text);
-              call(
-                `I selected some text from the document: \n"${text}."`
-              ).catch(err => {
-                console.error(err);
-              });
-            }
-          }, [call]);
-
-          return <div onClick={onClickAskAI}>Ask AI</div>;
-        };
-        root.render(
-          <StrictMode>
-            <Provider store={rootStore}>
-              <AskAI />
-            </Provider>
-          </StrictMode>
-        );
-        return div;
-      });
-    })
-    .catch(error => {
-      console.error(error);
-    });
-}
 
 const Actions = () => {
   const { conversationAtom, followingUpAtoms } = useChatAtoms();
@@ -82,9 +34,12 @@ const Actions = () => {
         />
         <IconButton
           className={sendButtonStyle}
-          onClick={useCallback(async () => {
-            await call(input);
-            await generateFollowingUp();
+          onClick={useCallback(() => {
+            call(input)
+              .then(() => generateFollowingUp())
+              .catch(e => {
+                console.error(e);
+              });
           }, [call, generateFollowingUp, input])}
         >
           <SendIcon />
@@ -108,14 +63,8 @@ const DetailContentImpl = () => {
   );
 };
 
-export const DetailContent: PluginUIAdapter['detailContent'] = ({
-  contentLayoutAtom,
-}): ReactElement => {
-  const layout = useAtomValue(contentLayoutAtom);
+export const DetailContent = (): ReactElement => {
   const key = useAtomValue(openAIApiKeyAtom);
-  if (layout === 'editor' || layout.second !== 'com.affine.copilot') {
-    return <></>;
-  }
   if (!key) {
     return <span>Please set OpenAI API Key in the debug panel.</span>;
   }

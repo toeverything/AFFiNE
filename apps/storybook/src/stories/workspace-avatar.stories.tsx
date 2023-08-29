@@ -1,6 +1,7 @@
 import type { WorkspaceAvatarProps } from '@affine/component/workspace-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { Workspace } from '@blocksuite/store';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { Schema, Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 
 export default {
@@ -15,10 +16,18 @@ export default {
       },
     },
   },
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<WorkspaceAvatarProps>;
+
+const schema = new Schema();
+
+schema.register(AffineSchemas).register(__unstableSchemas);
 
 const basicBlockSuiteWorkspace = new Workspace({
   id: 'blocksuite-local',
+  schema,
 });
 
 basicBlockSuiteWorkspace.meta.setName('Hello World');
@@ -33,6 +42,7 @@ Basic.args = {
 
 const avatarBlockSuiteWorkspace = new Workspace({
   id: 'blocksuite-local',
+  schema,
 });
 
 avatarBlockSuiteWorkspace.meta.setName('Hello World');

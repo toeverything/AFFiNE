@@ -2,29 +2,32 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/styles.css
 
-import { keyframes, style, styleVariants } from '@vanilla-extract/css';
-
-const swipeOut = keyframes({
-  '0%': {
-    transform:
-      'translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount)))',
-    opacity: 1,
-  },
-  '100%': {
-    transform:
-      'translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount) + var(--lift) * -100%))',
-    opacity: 0,
-  },
-});
+import { globalStyle, style, styleVariants } from '@vanilla-extract/css';
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
-  bottom: '200px',
-  right: '60px',
+  height: '500px',
+  bottom: '20px',
+  right: '20px',
   width: '380px',
-  margin: 0,
   zIndex: 2147483647,
   outline: 'none',
+  display: 'flex',
+  alignItems: 'flex-end',
+});
+export const notificationMultimediaStyle = style({
+  position: 'relative',
+  width: '100%',
+  height: '230px',
+  borderRadius: '8px 8px 0 0',
+  overflow: 'hidden',
+  marginBottom: '16px',
+});
+globalStyle(`${notificationMultimediaStyle} > *`, {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  cursor: 'unset',
 });
 
 export const notificationStyle = style({
@@ -41,16 +44,7 @@ export const notificationStyle = style({
       opacity: '0 !important',
       pointerEvents: 'none',
     },
-    '&[data-swiping=true]::before': {
-      content: '""',
-      position: 'absolute',
-      left: '0',
-      right: '0',
-      top: '50%',
-      height: '100%',
-      transform: 'scaleY(3) translateY(-50%)',
-    },
-    '&[data-swiping=false][data-removed=true]::before': {
+    '&[data-removed=true]::before': {
       content: '""',
       position: 'absolute',
       inset: '0',
@@ -77,37 +71,28 @@ export const notificationStyle = style({
         '--y': 'translateY(calc(var(--lift) * var(--offset)))',
       },
     },
-    '&[data-removed=true][data-front=true][data-swipe-out=false]': {
+    '&[data-removed=true][data-front=true]': {
       opacity: 0,
       vars: {
         '--y': 'translateY(calc(var(--lift) * -100%))',
       },
     },
-    '&[data-removed=true][data-front=false][data-swipe-out=false][data-expanded=true]':
-      {
-        opacity: 0,
-        vars: {
-          '--y':
-            'translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%))',
-        },
+    '&[data-removed=true][data-front=false][data-expanded=true]': {
+      opacity: 0,
+      vars: {
+        '--y':
+          'translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%))',
       },
-    '&[data-removed=true][data-front=false][data-swipe-out=false][data-expanded=false] ':
-      {
-        transition: 'transform 500ms, opacity 200ms',
-        opacity: 0,
-        vars: {
-          '--y': 'translateY(40%)',
-        },
+    },
+    '&[data-removed=true][data-front=false][data-expanded=false] ': {
+      transition: 'transform 500ms, opacity 200ms',
+      opacity: 0,
+      vars: {
+        '--y': 'translateY(40%)',
       },
+    },
     '&[data-removed=true][data-front=false]::before ': {
       height: 'calc(var(--initial-height) + 20%)',
-    },
-    '&[data-swiping=true]': {
-      transform: 'var(--y) translateY(var(--swipe-amount, 0px))',
-      transition: 'none',
-    },
-    '&[data-swipe-out=true]': {
-      animation: `${swipeOut} 0.3s ease-in-out forwards`,
     },
   },
   vars: {
@@ -128,35 +113,48 @@ export const notificationStyle = style({
 export const notificationIconStyle = style({
   fontSize: '24px',
   marginLeft: '18px',
-  marginRight: '12px',
+  marginRight: '8px',
   color: 'var(--affine-processing-color)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
 });
-export const notificationContentStyle = style({
+export const hasMediaStyle = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
-  padding: '16px 0',
-  width: '100%',
+  paddingTop: '0',
+  paddingBottom: '16px',
+  width: '380px',
   borderRadius: '8px',
   boxShadow: 'var(--affine-shadow-1)',
   border: '1px solid var(--affine-border-color)',
   background: 'var(--affine-white)',
   transition: 'all 0.3s',
 });
+export const notificationContentStyle = style({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  paddingTop: '16px',
+  paddingBottom: '16px',
+  width: '380px',
+  borderRadius: '8px',
+  boxShadow: 'var(--affine-shadow-1)',
+  border: '1px solid var(--affine-black-10)',
+  background: 'var(--affine-white)',
+  transition: 'all 0.3s',
+});
 export const notificationTitleContactStyle = style({
   marginRight: '22px',
   width: '200px',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-  overflow: 'hidden',
-  lineHeight: '1.5',
+  overflow: 'wrap',
+  lineHeight: '24px',
+  fontSize: 'var(--affine-font-base)',
 });
 export const notificationTitleStyle = style({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   width: '100%',
   justifyContent: 'flex-start',
 });
@@ -164,6 +162,7 @@ export const notificationDescriptionStyle = style({
   fontSize: 'var(--affine-font-sm)',
   color: 'var(--affine-text-secondary-color)',
   marginBottom: '4px',
+  lineHeight: '22px',
 });
 export const notificationTimeStyle = style({
   fontSize: 'var(--affine-font-sm)',
@@ -181,6 +180,26 @@ export const closeButtonStyle = style({
 export const closeButtonWithoutUndoStyle = style({
   marginLeft: '92px',
 });
+export const closeButtonWithMediaStyle = style({
+  position: 'absolute',
+  width: '22px',
+  height: '22px',
+  fontSize: '16px',
+  top: '6px',
+  right: '6px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  cursor: 'pointer',
+  borderRadius: '4px',
+  color: 'var(--affine-pure-black)',
+  ':hover': {
+    background: 'var(--affine-hover-color)',
+  },
+});
+export const closeButtonColorStyle = style({
+  color: 'var(--affine-text-primary-color)',
+});
 export const undoButtonStyle = style({
   fontSize: 'var(--affine-font-sm)',
   background: 'var(--affine-hover-color)',
@@ -188,6 +207,10 @@ export const undoButtonStyle = style({
   borderRadius: '4px',
   color: 'var(--affine-processing-color)',
   cursor: 'pointer',
+});
+export const undoButtonWithMediaStyle = style({
+  marginLeft: 'auto',
+  marginRight: '16px',
 });
 export const messageStyle = style({
   fontSize: 'var(--affine-font-sm)',
@@ -237,10 +260,10 @@ export const lightWarningStyle = style({
   borderRadius: '8px',
 });
 export const darkColorStyle = style({
-  color: 'var(--affine-white)',
+  color: 'var(--affine-pure-white)',
 });
 export const lightInfoIconStyle = style({
-  color: 'var(--affine-processing-color)',
+  color: 'var(--affine-icon-color)',
 });
 export const defaultCollapseStyle = styleVariants({
   secondary: {

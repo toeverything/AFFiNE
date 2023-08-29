@@ -7,7 +7,7 @@
   "include": ["e2e"],
   "references": [
     {
-      "path": "./tsconfig.node.json"
+      "path": "../../kit"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "moduleResolution": "Node16",
+    "moduleResolution": "bundler",
     "strict": true,
     "target": "esnext",
     "downlevelIteration": true,
@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   },
   "include": ["src", "entries.ts"],
   "references": [

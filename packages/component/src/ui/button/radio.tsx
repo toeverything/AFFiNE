@@ -10,19 +10,19 @@ import * as styles from './styles.css';
 
 export const RadioButton = forwardRef<
   HTMLButtonElement,
-  RadioGroupItemProps & { bold?: boolean }
->(({ children, bold, className, ...props }, ref) => {
+  RadioGroupItemProps & { spanStyle?: string }
+>(({ children, className, spanStyle, ...props }, ref) => {
   return (
     <RadioGroup.Item
       ref={ref}
       {...props}
       className={clsx(styles.radioButton, className)}
     >
-      <span className={clsx(styles.radioUncheckedButton, { bold })}>
+      <span className={clsx(styles.radioUncheckedButton, spanStyle)}>
         {children}
       </span>
       <RadioGroup.Indicator
-        className={clsx(styles.radioButtonContent, { bold })}
+        className={clsx(styles.radioButtonContent, spanStyle)}
       >
         {children}
       </RadioGroup.Indicator>

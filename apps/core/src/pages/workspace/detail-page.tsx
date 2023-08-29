@@ -7,18 +7,25 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { currentPageIdAtom } from '@toeverything/plugin-infra/manager';
-import { useAtomValue } from 'jotai/index';
-import { useAtom } from 'jotai/react';
-import { type ReactElement, useCallback, useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  contentLayoutAtom,
+  currentPageIdAtom,
+  currentWorkspaceAtom,
+  currentWorkspaceIdAtom,
+  getCurrentStore,
+} from '@toeverything/infra/atom';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { type ReactElement, useCallback } from 'react';
+import type { LoaderFunction } from 'react-router-dom';
+import { redirect } from 'react-router-dom';
 
 import { getUIAdapter } from '../../adapters/workspace';
+import { setPageModeAtom } from '../../atoms';
+import { currentModeAtom } from '../../atoms/mode';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceLayout } from '../../layouts/workspace-layout';
 
-const WorkspaceDetailPageImpl = (): ReactElement => {
+const DetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const currentPageId = useAtomValue(currentPageIdAtom);
   const [currentWorkspace] = useCurrentWorkspace();
@@ -26,13 +33,17 @@ const WorkspaceDetailPageImpl = (): ReactElement => {
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const collectionManager = useCollectionManager(currentWorkspace.id);
+  const mode = useAtomValue(currentModeAtom);
+  const setPageMode = useSetAtom(setPageModeAtom);
+
   const onLoad = useCallback(
-    (page: Page, editor: EditorContainer) => {
+    (_: Page, editor: EditorContainer) => {
+      setPageMode(currentPageId, mode);
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });
       const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
-        await jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+        jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
         collectionManager.backToAll();
         collectionManager.setTemporaryFilter([createTagFilter(tagId)]);
       });
@@ -44,9 +55,12 @@ const WorkspaceDetailPageImpl = (): ReactElement => {
     [
       blockSuiteWorkspace.id,
       collectionManager,
+      currentPageId,
       currentWorkspace.id,
       jumpToSubPath,
+      mode,
       openPage,
+      setPageMode,
     ]
   );
 
@@ -68,55 +82,46 @@ const WorkspaceDetailPageImpl = (): ReactElement => {
   );
 };
 
-const WorkspaceDetailPage = (): ReactElement => {
-  const { workspaceId, pageId } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
+export const DetailPage = (): ReactElement => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const [currentPageId, setCurrentPageId] = useAtom(currentPageIdAtom);
+  const currentPageId = useAtomValue(currentPageIdAtom);
   const page = currentPageId
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;
 
-  //#region check if page is valid
-  useEffect(() => {
-    // if the workspace changed, ignore the page check
-    if (currentWorkspace.id !== workspaceId) {
-      return;
-    }
-    if (typeof pageId === 'string' && currentPageId) {
-      if (currentPageId !== pageId) {
-        setCurrentPageId(pageId);
-      } else {
-        const page =
-          currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
-        if (!page) {
-          navigate('/404');
-        }
-      }
-    }
-  }, [
-    currentPageId,
-    currentWorkspace.blockSuiteWorkspace,
-    currentWorkspace.id,
-    location.pathname,
-    navigate,
-    pageId,
-    setCurrentPageId,
-    workspaceId,
-  ]);
-  //#endregion
-
   if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
-  return <WorkspaceDetailPageImpl />;
+  return <DetailPageImpl />;
+};
+
+export const loader: LoaderFunction = async args => {
+  const rootStore = getCurrentStore();
+  rootStore.set(contentLayoutAtom, 'editor');
+  if (args.params.workspaceId) {
+    localStorage.setItem('last_workspace_id', args.params.workspaceId);
+    rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
+  }
+  if (args.params.pageId) {
+    const pageId = args.params.pageId;
+    localStorage.setItem('last_page_id', pageId);
+    const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
+    const page = currentWorkspace.getPage(pageId);
+    if (!page) {
+      return redirect('/404');
+    }
+    if (page.meta.jumpOnce) {
+      currentWorkspace.setPageMeta(page.id, {
+        jumpOnce: false,
+      });
+    }
+    rootStore.set(currentPageIdAtom, pageId);
+  } else {
+    return redirect('/404');
+  }
+  return null;
 };
 
 export const Component = () => {
-  return (
-    <WorkspaceLayout>
-      <WorkspaceDetailPage />
-    </WorkspaceLayout>
-  );
+  return <DetailPage />;
 };

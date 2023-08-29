@@ -16,9 +16,22 @@ import { Menu, MenuItem } from '../../..';
 import { getContentParser } from './get-content-parser';
 import type { CommonMenuItemProps } from './types';
 
+type ExportMenuItemProps = {
+  iconSize?: number;
+  gap?: string;
+  fontSize?: string;
+};
+const MenuItemStyle = {
+  padding: '4px 12px',
+};
+
 export const ExportToPdfMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'pdf' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'pdf' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -36,7 +49,6 @@ export const ExportToPdfMenuItem = ({
         .then(() => {
           onSelect?.({ type: 'pdf' });
           setPushNotification({
-            key: 'export-to-pdf',
             title: t['com.affine.export.success.title'](),
             message: t['com.affine.export.success.message'](),
             type: 'success',
@@ -45,7 +57,6 @@ export const ExportToPdfMenuItem = ({
         .catch(err => {
           console.error(err);
           setPushNotification({
-            key: 'export-to-pdf',
             title: t['com.affine.export.error.title'](),
             message: t['com.affine.export.error.message'](),
             type: 'error',
@@ -59,7 +70,6 @@ export const ExportToPdfMenuItem = ({
         .then(() => {
           onSelect?.({ type: 'pdf' });
           setPushNotification({
-            key: 'export-to-pdf',
             title: t['com.affine.export.success.title'](),
             message: t['com.affine.export.success.message'](),
             type: 'success',
@@ -68,7 +78,6 @@ export const ExportToPdfMenuItem = ({
         .catch(err => {
           console.error(err);
           setPushNotification({
-            key: 'export-to-pdf',
             title: t['com.affine.export.error.title'](),
             message: t['com.affine.export.error.message'](),
             type: 'error',
@@ -82,6 +91,10 @@ export const ExportToPdfMenuItem = ({
       data-testid="export-to-pdf"
       onClick={onClickDownloadPDF}
       icon={<ExportToPdfIcon />}
+      style={style}
+      iconSize={iconSize}
+      gap={gap}
+      fontSize={fontSize}
     >
       {t['Export to PDF']()}
     </MenuItem>
@@ -90,7 +103,11 @@ export const ExportToPdfMenuItem = ({
 
 export const ExportToHtmlMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'html' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'html' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -104,7 +121,6 @@ export const ExportToHtmlMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'html' });
         setPushNotification({
-          key: 'export-to-html',
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -112,6 +128,11 @@ export const ExportToHtmlMenuItem = ({
       })
       .catch(err => {
         console.error(err);
+        setPushNotification({
+          title: t['com.affine.export.error.title'](),
+          message: t['com.affine.export.error.message'](),
+          type: 'error',
+        });
       });
     onSelect?.({ type: 'html' });
   }, [currentEditor, onSelect, setPushNotification, t]);
@@ -121,6 +142,10 @@ export const ExportToHtmlMenuItem = ({
         data-testid="export-to-html"
         onClick={onClickExportHtml}
         icon={<ExportToHtmlIcon />}
+        style={style}
+        iconSize={iconSize}
+        gap={gap}
+        fontSize={fontSize}
       >
         {t['Export to HTML']()}
       </MenuItem>
@@ -130,7 +155,11 @@ export const ExportToHtmlMenuItem = ({
 
 export const ExportToPngMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'png' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'png' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -146,7 +175,6 @@ export const ExportToPngMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'png' });
         setPushNotification({
-          key: 'export-to-png',
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -155,7 +183,6 @@ export const ExportToPngMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: 'export-to-png',
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
@@ -169,6 +196,10 @@ export const ExportToPngMenuItem = ({
         data-testid="export-to-png"
         onClick={onClickDownloadPNG}
         icon={<ExportToPngIcon />}
+        style={style}
+        iconSize={iconSize}
+        gap={gap}
+        fontSize={fontSize}
       >
         {t['Export to PNG']()}
       </MenuItem>
@@ -178,7 +209,11 @@ export const ExportToPngMenuItem = ({
 
 export const ExportToMarkdownMenuItem = ({
   onSelect,
-}: CommonMenuItemProps<{ type: 'markdown' }>) => {
+  style = MenuItemStyle,
+  iconSize,
+  gap,
+  fontSize,
+}: CommonMenuItemProps<{ type: 'markdown' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -192,7 +227,6 @@ export const ExportToMarkdownMenuItem = ({
       .then(() => {
         onSelect?.({ type: 'markdown' });
         setPushNotification({
-          key: 'export-to-markdown',
           title: t['com.affine.export.success.title'](),
           message: t['com.affine.export.success.message'](),
           type: 'success',
@@ -201,7 +235,6 @@ export const ExportToMarkdownMenuItem = ({
       .catch(err => {
         console.error(err);
         setPushNotification({
-          key: 'export-to-markdown',
           title: t['com.affine.export.error.title'](),
           message: t['com.affine.export.error.message'](),
           type: 'error',
@@ -215,6 +248,10 @@ export const ExportToMarkdownMenuItem = ({
         data-testid="export-to-markdown"
         onClick={onClickExportMarkdown}
         icon={<ExportToMarkdownIcon />}
+        style={style}
+        iconSize={iconSize}
+        gap={gap}
+        fontSize={fontSize}
       >
         {t['Export to Markdown']()}
       </MenuItem>
@@ -229,8 +266,8 @@ export const Export = ({
   return (
     <Menu
       width={248}
-      placement="left"
-      trigger="click"
+      trigger="hover"
+      placement="right-start"
       content={
         <>
           <ExportToPdfMenuItem></ExportToPdfMenuItem>
@@ -239,11 +276,17 @@ export const Export = ({
           <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
         </>
       }
+      menuStyles={{
+        borderRadius: '8px',
+        padding: '8px',
+        background: 'var(--affine-background-overlay-panel-color)',
+      }}
     >
       <MenuItem
         data-testid="export-menu"
         icon={<ExportIcon />}
         endIcon={<ArrowRightSmallIcon />}
+        style={MenuItemStyle}
         onClick={e => {
           e.stopPropagation();
           onItemClick?.();

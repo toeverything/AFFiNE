@@ -1,35 +1,39 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
-import { useSetAtom } from 'jotai';
-import { type CSSProperties, type FC, forwardRef } from 'react';
+import { signIn } from 'next-auth/react';
+import { type CSSProperties, type FC, forwardRef, useCallback } from 'react';
 
-import { openDisableCloudAlertModalAtom } from '../../../atoms';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
+// import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
 import { StyledFooter, StyledSignInButton } from './styles';
-
 export const Footer: FC = () => {
-  const t = useAFFiNEI18N();
-  const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
+  const loginStatus = useCurrentLoginStatus();
+
+  // const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (
     <StyledFooter data-testid="workspace-list-modal-footer">
-      <StyledSignInButton
-        data-testid="sign-in-button"
-        noBorder
-        bold
-        icon={
-          <div className="circle">
-            <CloudWorkspaceIcon />
-          </div>
-        }
-        onClick={async () => {
-          if (!runtimeConfig.enableCloud) {
-            setOpen(true);
-          }
-        }}
-      >
-        {t['Sign in']()}
-      </StyledSignInButton>
+      {loginStatus === 'authenticated' ? null : <SignInButton />}
     </StyledFooter>
+  );
+};
+
+const SignInButton = () => {
+  const t = useAFFiNEI18N();
+
+  return (
+    <StyledSignInButton
+      data-testid="sign-in-button"
+      onClick={useCallback(() => {
+        signIn().catch(console.error);
+      }, [])}
+    >
+      <div className="circle">
+        <CloudWorkspaceIcon />
+      </div>
+
+      {t['Sign in']()}
+    </StyledSignInButton>
   );
 };
 

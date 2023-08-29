@@ -1,8 +1,8 @@
-import { Empty, IconButton, Modal, ModalWrapper } from '@affine/component';
+import { Empty, Modal, ModalWrapper } from '@affine/component';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
-import type React from 'react';
+import { IconButton } from '@toeverything/components/button';
 
 import {
   Content,
@@ -19,10 +19,12 @@ interface TmpDisableAffineCloudModalProps {
   onClose: () => void;
 }
 
-export const TmpDisableAffineCloudModal: React.FC<
-  TmpDisableAffineCloudModalProps
-> = ({ open, onClose }) => {
+export const TmpDisableAffineCloudModal = ({
+  open,
+  onClose,
+}: TmpDisableAffineCloudModalProps) => {
   const t = useAFFiNEI18N();
+
   return (
     <Modal
       data-testid="disable-affine-cloud-modal"
@@ -66,7 +68,7 @@ export const TmpDisableAffineCloudModal: React.FC<
             />
           </StyleImage>
           <StyleButtonContainer>
-            <StyleButton shape="round" type="primary" onClick={onClose}>
+            <StyleButton type="primary" onClick={onClose}>
               {t['Got it']()}
             </StyleButton>
           </StyleButtonContainer>

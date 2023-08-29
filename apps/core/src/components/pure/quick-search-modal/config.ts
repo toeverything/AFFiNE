@@ -1,3 +1,4 @@
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -5,27 +6,36 @@ import {
   SettingsIcon,
 } from '@blocksuite/icons';
 import { useAtom } from 'jotai';
-import type { FC, SVGProps } from 'react';
+import type { ReactElement, SVGProps } from 'react';
 import { useMemo } from 'react';
 
 import { openSettingModalAtom } from '../../../atoms';
-import { pathGenerator } from '../../../shared';
 
-export const useSwitchToConfig = (
-  workspaceId: string
-): {
+type IconComponent = (props: SVGProps<SVGSVGElement>) => ReactElement;
+
+interface ConfigItem {
   title: string;
-  href?: string;
-  onClick?: () => void;
-  icon: FC<SVGProps<SVGSVGElement>>;
-}[] => {
+  icon: IconComponent;
+  onClick: () => void;
+}
+
+interface ConfigPathItem {
+  title: string;
+  icon: IconComponent;
+  subPath: WorkspaceSubPath;
+}
+
+export type Config = ConfigItem | ConfigPathItem;
+
+export const useSwitchToConfig = (workspaceId: string): Config[] => {
   const t = useAFFiNEI18N();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
+
   return useMemo(
     () => [
       {
         title: t['All pages'](),
-        href: pathGenerator.all(workspaceId),
+        subPath: WorkspaceSubPath.ALL,
         icon: FolderIcon,
       },
       {
@@ -41,7 +51,7 @@ export const useSwitchToConfig = (
       },
       {
         title: t['Trash'](),
-        href: pathGenerator.trash(workspaceId),
+        subPath: WorkspaceSubPath.TRASH,
         icon: DeleteTemporarilyIcon,
       },
     ],

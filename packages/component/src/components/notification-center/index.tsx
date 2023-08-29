@@ -2,8 +2,9 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/index.tsx
 
-import { CloseIcon, InformationIcon } from '@blocksuite/icons';
+import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons';
 import * as Toast from '@radix-ui/react-toast';
+import { IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
@@ -16,7 +17,6 @@ import {
   useState,
 } from 'react';
 
-import { IconButton } from '../../ui/button';
 import * as styles from './index.css';
 import type { Notification } from './index.jotai';
 import {
@@ -33,7 +33,7 @@ export {
 };
 type Height = {
   height: number;
-  notificationKey: number | string;
+  notificationKey: number | string | undefined;
 };
 export type NotificationCardProps = {
   notification: Notification;
@@ -46,36 +46,39 @@ const typeColorMap = {
   info: {
     light: styles.lightInfoStyle,
     dark: styles.darkInfoStyle,
+    default: '',
   },
   success: {
     light: styles.lightSuccessStyle,
     dark: styles.darkSuccessStyle,
+    default: '',
   },
   warning: {
     light: styles.lightWarningStyle,
     dark: styles.darkWarningStyle,
+    default: '',
   },
   error: {
     light: styles.lightErrorStyle,
     dark: styles.darkErrorStyle,
+    default: '',
   },
 };
 
 function NotificationCard(props: NotificationCardProps): ReactElement {
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, notifications, setHeights, heights, index } = props;
+
   const [expand, setExpand] = useAtom(expandNotificationCenterAtom);
   // const setNotificationRemoveAnimation = useSetAtom(notificationRemoveAnimationAtom);
   const [mounted, setMounted] = useState<boolean>(false);
   const [removed, setRemoved] = useState<boolean>(false);
-  const [swiping, setSwiping] = useState<boolean>(false);
-  const [swipeOut, setSwipeOut] = useState<boolean>(false);
   const [offsetBeforeRemove, setOffsetBeforeRemove] = useState<number>(0);
   const [initialHeight, setInitialHeight] = useState<number>(0);
   const [animationKey, setAnimationKey] = useState(0);
   const animationRef = useRef<SVGAnimateElement>(null);
   const notificationRef = useRef<HTMLLIElement>(null);
-  const timerIdRef = useRef<NodeJS.Timeout>();
+  const timerIdRef = useRef<number>();
   const isFront = index === 0;
   const isVisible = index + 1 <= 3;
   const progressDuration = notification.timeout || 3000;
@@ -88,7 +91,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   );
   const duration = notification.timeout || 3000;
   const offset = useRef(0);
-  const pointerStartYRef = useRef<number | null>(null);
+
   const notificationsHeightBefore = useMemo(() => {
     return heights.reduce((prev, curr, reducerIndex) => {
       // Calculate offset up until current  notification
@@ -149,7 +152,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   }, [notification.title, notification.key, mounted, setHeights]);
 
   const typeStyle =
-    typeColorMap[notification.type][notification.theme || 'light'];
+    typeColorMap[notification.type][notification.theme || 'dark'];
 
   const onClickRemove = useCallback(() => {
     // Save the offset for the exit swipe animation
@@ -158,7 +161,10 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
     setHeights(h =>
       h.filter(height => height.notificationKey !== notification.key)
     );
-    setTimeout(() => {
+    window.setTimeout(() => {
+      if (!notification.key) {
+        return;
+      }
       removeNotification(notification.key);
     }, 200);
   }, [setHeights, notification.key, removeNotification, offset]);
@@ -168,7 +174,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       clearTimeout(timerIdRef.current);
     }
     if (!expand) {
-      timerIdRef.current = setTimeout(() => {
+      timerIdRef.current = window.setTimeout(() => {
         onClickRemove();
       }, duration);
     }
@@ -181,7 +187,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
 
   const onClickUndo = useCallback(() => {
     if (notification.undo) {
-      return notification.undo();
+      notification.undo().catch(err => {
+        console.error(err);
+      });
     }
     return void 0;
   }, [notification]);
@@ -224,9 +232,8 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       data-visible={isVisible}
       data-index={index}
       data-front={isFront}
-      data-swiping={swiping}
-      data-swipe-out={swipeOut}
       data-expanded={expand}
+      data-testid="affine-notification"
       onMouseEnter={() => {
         setExpand(true);
       }}
@@ -236,6 +243,8 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       onMouseLeave={() => {
         setExpand(false);
       }}
+      onSwipeEnd={event => event.preventDefault()}
+      onSwipeMove={event => event.preventDefault()}
       style={
         {
           '--index': index,
@@ -243,67 +252,41 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           '--z-index': notifications.length - index,
           '--offset': `${removed ? offsetBeforeRemove : offset.current}px`,
           '--initial-height': `${initialHeight}px`,
+          userSelect: 'auto',
         } as React.CSSProperties
       }
-      onPointerDown={event => {
-        setOffsetBeforeRemove(offset.current);
-        (event.target as HTMLElement).setPointerCapture(event.pointerId);
-        if ((event.target as HTMLElement).tagName === 'BUTTON') return;
-        setSwiping(true);
-        pointerStartYRef.current = event.clientY;
-      }}
-      onPointerUp={() => {
-        if (swipeOut) return;
-        const swipeAmount = Number(
-          notificationRef.current?.style
-            .getPropertyValue('--swipe-amount')
-            .replace('px', '') || 0
-        );
-        if (Math.abs(swipeAmount) >= 20) {
-          setOffsetBeforeRemove(offset.current);
-          onClickRemove();
-          setSwipeOut(true);
-          return;
-        }
-
-        notificationRef.current?.style.setProperty('--swipe-amount', '0px');
-        pointerStartYRef.current = null;
-        setSwiping(false);
-      }}
-      onPointerMove={event => {
-        if (!pointerStartYRef.current) return;
-        const yPosition = event.clientY - pointerStartYRef.current;
-
-        const isAllowedToSwipe = yPosition > 0;
-
-        if (!isAllowedToSwipe) {
-          notificationRef.current?.style.setProperty('--swipe-amount', '0px');
-          return;
-        }
-
-        notificationRef.current?.style.setProperty(
-          '--swipe-amount',
-          `${yPosition}px`
-        );
-      }}
     >
       <div
-        className={clsx(styles.notificationContentStyle, {
-          [typeStyle]: notification.theme,
+        className={clsx({
+          [typeStyle]: notification.theme !== 'default',
+          [styles.hasMediaStyle]: notification.multimedia,
+          [styles.notificationContentStyle]: !notification.multimedia,
         })}
       >
+        {notification.multimedia ? (
+          <div className={styles.notificationMultimediaStyle}>
+            <>{notification.multimedia}</>
+            <IconButton className={styles.closeButtonWithMediaStyle}>
+              <CloseIcon onClick={onClickRemove} />
+            </IconButton>
+          </div>
+        ) : null}
         <Toast.Title
           className={clsx(styles.notificationTitleStyle, {
-            [styles.darkColorStyle]: notification.theme === 'dark',
+            [styles.darkColorStyle]:
+              notification.theme !== 'light' &&
+              notification.theme !== 'default',
           })}
         >
           <div
             className={clsx(styles.notificationIconStyle, {
-              [styles.darkColorStyle]: notification.theme === 'dark',
-              [styles.lightInfoIconStyle]: notification.theme !== 'dark',
+              [styles.darkColorStyle]:
+                notification.theme !== 'light' &&
+                notification.theme !== 'default',
+              [styles.lightInfoIconStyle]: notification.theme === 'light',
             })}
           >
-            <InformationIcon />
+            <InformationFillDuotoneIcon />
           </div>
           <div className={styles.notificationTitleContactStyle}>
             {notification.title}
@@ -311,30 +294,38 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
           {notification.undo && (
             <div
               className={clsx(styles.undoButtonStyle, {
-                [styles.darkColorStyle]: notification.theme === 'dark',
+                [styles.darkColorStyle]:
+                  notification.theme !== 'light' &&
+                  notification.theme !== 'default',
+                [styles.undoButtonWithMediaStyle]: notification.multimedia,
               })}
               onClick={onClickUndo}
             >
               UNDO
             </div>
           )}
-          <IconButton
-            className={clsx(styles.closeButtonStyle, {
-              [styles.closeButtonWithoutUndoStyle]: !notification.undo,
-            })}
-            style={{
-              color:
-                notification.theme === 'dark'
-                  ? 'var(--affine-white)'
-                  : 'var(--affine-icon-color)',
-            }}
-          >
-            <CloseIcon onClick={onClickRemove} />
-          </IconButton>
+          {notification.multimedia ? null : (
+            <IconButton
+              className={clsx(styles.closeButtonStyle, {
+                [styles.closeButtonWithoutUndoStyle]: !notification.undo,
+              })}
+              style={{
+                color:
+                  notification.theme !== 'light' &&
+                  notification.theme !== 'default'
+                    ? 'var(--affine-pure-white)'
+                    : 'var(--affine-text-primary-color)',
+              }}
+            >
+              <CloseIcon onClick={onClickRemove} />
+            </IconButton>
+          )}
         </Toast.Title>
         <Toast.Description
           className={clsx(styles.messageStyle, {
-            [styles.darkColorStyle]: notification.theme === 'dark',
+            [styles.darkColorStyle]:
+              notification.theme !== 'light' &&
+              notification.theme !== 'default',
           })}
         >
           {notification.message}
@@ -395,16 +386,18 @@ export function NotificationCenter(): ReactElement {
   if (!notifications.length) return <></>;
   return (
     <Toast.Provider swipeDirection="right">
-      {notifications.map((notification, index) => (
-        <NotificationCard
-          notification={notification}
-          index={index}
-          key={notification.key}
-          notifications={notifications}
-          heights={heights}
-          setHeights={setHeights}
-        />
-      ))}
+      {notifications.map((notification, index) =>
+        notification.key ? (
+          <NotificationCard
+            notification={notification}
+            index={index}
+            key={notification.key}
+            notifications={notifications}
+            heights={heights}
+            setHeights={setHeights}
+          />
+        ) : null
+      )}
       <Toast.Viewport
         tabIndex={-1}
         ref={listRef}

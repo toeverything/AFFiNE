@@ -70,7 +70,6 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
 });
 export const StyledCreateWorkspaceCardPillContainer = styled('div')(() => {
   return {
-    padding: '12px',
     borderRadius: '10px',
     display: 'flex',
     margin: '-8px -4px',
@@ -82,10 +81,28 @@ export const StyledCreateWorkspaceCardPillContainer = styled('div')(() => {
 
 export const StyledCreateWorkspaceCardPill = styled('div')(() => {
   return {
+    borderRadius: '8px',
+    display: 'flex',
+    width: '100%',
+    height: '58px',
+    border: `1px solid var(--affine-border-color)`,
+  };
+});
+
+export const StyledSignInCardPill = styled('div')(() => {
+  return {
+    borderRadius: '8px',
+    display: 'flex',
+    width: '100%',
+    height: '58px',
+  };
+});
+
+export const StyledImportWorkspaceCardPill = styled('div')(() => {
+  return {
     borderRadius: '5px',
     display: 'flex',
-    boxShadow: '0px 0px 6px 0px rgba(0, 0, 0, 0.1)',
-    background: 'var(--affine-background-primary-color)',
+    width: '100%',
   };
 });
 
@@ -94,7 +111,6 @@ export const StyledCreateWorkspaceCardPillContent = styled('div')(() => {
     display: 'flex',
     gap: '12px',
     alignItems: 'center',
-    justifyContent: 'space-between',
   };
 });
 
@@ -106,10 +122,27 @@ export const StyledCreateWorkspaceCardPillIcon = styled('div')(() => {
   };
 });
 
-export const StyledCreateWorkspaceCardPillTextSecondary = styled('div')(() => {
+export const StyledSignInCardPillTextCotainer = styled('div')(() => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+  };
+});
+
+export const StyledSignInCardPillTextSecondary = styled('div')(() => {
   return {
     fontSize: '12px',
     color: 'var(--affine-text-secondary-color)',
+  };
+});
+
+export const StyledSignInCardPillTextPrimary = styled('div')(() => {
+  return {
+    fontSize: 'var(--affine-font-base)',
+    fontWeight: 600,
+    lineHeight: '24px',
+    maxWidth: '200px',
+    ...textEllipsis(1),
   };
 });
 
@@ -120,6 +153,7 @@ export const StyledModalTitle = styled('div')(() => {
   return {
     fontWeight: 600,
     fontSize: 'var(--affine-font-h6)',
+    color: 'var(--affine-text-primary-color)',
   };
 });
 
@@ -134,11 +168,30 @@ export const StyledHelperContainer = styled('div')(() => {
 });
 
 export const StyledModalContent = styled('div')({
-  height: '540px',
-  padding: '8px 40px',
   ...displayFlex('space-between', 'flex-start', 'flex-start'),
   flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  gap: '4px',
 });
+
+export const StyledModalFooterContent = styled('div')({
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
+  flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  marginTop: '12px',
+  backgroundColor: 'var(--affine-background-overlay-panel-color)',
+});
+
+export const StyledModalHeaderContent = styled('div')({
+  ...displayFlex('space-between', 'flex-start', 'flex-start'),
+  flexWrap: 'wrap',
+  flexDirection: 'column',
+  width: '100%',
+  backgroundColor: 'var(--affine-background-overlay-panel-color)',
+});
+
 export const StyledOperationWrapper = styled('div')(() => {
   return {
     ...displayFlex('flex-end', 'center'),
@@ -150,23 +203,42 @@ export const StyleWorkspaceAdd = styled('div')(() => {
     width: '58px',
     height: '58px',
     borderRadius: '100%',
-    background: 'var(--affine-white-80)',
+    background: 'var(--affine-background-overlay-panel-color)',
     border: '1.5px dashed #f4f5fa',
     transition: 'background .2s',
     fontSize: '24px',
     ...displayFlex('center', 'center'),
     borderColor: 'var(--affine-white)',
-    color: 'var(--affine-primary-color)',
+    color: 'var(--affine-background-overlay-panel-color)',
   };
 });
 export const StyledModalHeader = styled('div')(() => {
   return {
     width: '100%',
-    marginTop: '10px',
     left: 0,
     top: 0,
     borderRadius: '24px 24px 0 0',
-    padding: '10px 40px',
+    padding: '0px 14px',
     ...displayFlex('space-between', 'center'),
+  };
+});
+
+export const StyledModalBody = styled('div')(() => {
+  return {
+    display: 'inline-flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '4px',
+    flex: 1,
+    overflowY: 'auto',
+  };
+});
+
+export const StyledWorkspaceFlavourTitle = styled('div')(() => {
+  return {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--affine-text-secondary-color)',
+    lineHeight: '20px',
   };
 });

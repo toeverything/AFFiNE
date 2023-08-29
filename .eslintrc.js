@@ -26,6 +26,22 @@ const createPattern = packageName => [
     message: "Import from '@blocksuite/global/utils'",
     importNames: ['assertExists', 'assertEquals'],
   },
+  {
+    group: ['react-router-dom'],
+    message: 'Use `useNavigateHelper` instead',
+    importNames: ['useNavigate'],
+  },
+  {
+    group: ['next-auth/react'],
+    message: "Import hooks from 'use-current-user.tsx'",
+    // useSession is type unsafe
+    importNames: ['useSession'],
+  },
+  {
+    group: ['yjs'],
+    message: 'Do not use this API because it has a bug',
+    importNames: ['mergeUpdates'],
+  },
 ];
 
 const allPackages = [
@@ -38,7 +54,8 @@ const allPackages = [
   'packages/i18n',
   'packages/jotai',
   'packages/native',
-  'packages/plugin-infra',
+  'packages/infra',
+  'packages/sdk',
   'packages/templates',
   'packages/theme',
   'packages/workspace',
@@ -144,6 +161,22 @@ const config = {
             message: "Import from '@blocksuite/global/utils'",
             importNames: ['assertExists', 'assertEquals'],
           },
+          {
+            group: ['react-router-dom'],
+            message: 'Use `useNavigateHelper` instead',
+            importNames: ['useNavigate'],
+          },
+          {
+            group: ['next-auth/react'],
+            message: "Import hooks from 'use-current-user.tsx'",
+            // useSession is type unsafe
+            importNames: ['useSession'],
+          },
+          {
+            group: ['yjs'],
+            message: 'Do not use this API because it has a bug',
+            importNames: ['mergeUpdates'],
+          },
         ],
       },
     ],
@@ -203,6 +236,7 @@ const config = {
             ignoreIIFE: false,
           },
         ],
+        '@typescript-eslint/no-misused-promises': ['error'],
       },
     })),
     {
@@ -228,6 +262,7 @@ const config = {
           },
         ],
         '@typescript-eslint/no-floating-promises': 0,
+        '@typescript-eslint/no-misused-promises': 0,
       },
     },
   ],

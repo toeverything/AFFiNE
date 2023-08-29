@@ -1,3 +1,4 @@
+import { lightCssVariables } from '@toeverything/theme';
 import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { globalStyle, style } from '@vanilla-extract/css';
 
@@ -35,6 +36,11 @@ export const appStyle = style({
         '--affine-editor-width': '550px',
       },
     },
+    print: {
+      vars: {
+        '--affine-editor-width': '800px',
+      },
+    },
   },
 });
 
@@ -48,6 +54,12 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   vars: {
     '--affine-noise-opacity': '0.1',
   },
+
+  '@media': {
+    print: {
+      vars: lightCssVariables,
+    },
+  },
 });
 
 export const mainContainerStyle = style({
@@ -55,11 +67,10 @@ export const mainContainerStyle = style({
   width: 0,
   flex: 1,
   maxWidth: '100%',
-  zIndex: 2,
   backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
-      margin: '8px',
+      margin: '8px 8px 8px 0',
       borderRadius: '5px',
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',
@@ -86,11 +97,36 @@ export const mainContainerStyle = style({
   },
 } as ComplexStyleRule);
 
+// These styles override the default styles of the react-resizable-panels
+// as the default styles make the overflow part hidden when printing to PDF.
+// See https://github.com/toeverything/AFFiNE/pull/3893
+globalStyle(`${mainContainerStyle} > div[data-panel-group]`, {
+  '@media': {
+    print: {
+      overflow: 'visible !important',
+    },
+  },
+});
+
+// These styles override the default styles of the react-resizable-panels
+// as the default styles make the overflow part hidden when printing to PDF.
+// See https://github.com/toeverything/AFFiNE/pull/3893
+globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
+  '@media': {
+    print: {
+      overflow: 'visible !important',
+    },
+  },
+});
+
 export const toolStyle = style({
   position: 'fixed',
   right: '30px',
   bottom: '30px',
   zIndex: 'var(--affine-z-index-popover)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
   '@media': {
     [breakpoints.down('md', true)]: {
       right: 'calc((100vw - 640px) * 3 / 19 + 14px)',

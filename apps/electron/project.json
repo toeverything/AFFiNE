@@ -9,7 +9,7 @@
       "executor": "nx:run-script",
       "dependsOn": [
         {
-          "projects": ["@affine/bookmark-block"],
+          "projects": ["tag:plugin"],
           "target": "build",
           "params": "ignore"
         },

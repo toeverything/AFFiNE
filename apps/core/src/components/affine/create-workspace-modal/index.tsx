@@ -1,18 +1,22 @@
 import {
-  Button,
   Input,
   Modal,
   ModalCloseButton,
   ModalWrapper,
   toast,
-  Tooltip,
 } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
+import type {
+  LoadDBFileResult,
+  SelectDBFileLocationResult,
+} from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -66,7 +70,7 @@ const NameWorkspaceContent = ({
       <Input
         ref={ref => {
           if (ref) {
-            setTimeout(() => ref.focus(), 0);
+            window.setTimeout(() => ref.focus(), 0);
           }
         }}
         data-testid="create-workspace-input"
@@ -77,11 +81,7 @@ const NameWorkspaceContent = ({
         onChange={setWorkspaceName}
       />
       <div className={style.buttonGroup}>
-        <Button
-          data-testid="create-workspace-close-button"
-          type="light"
-          onClick={onClose}
-        >
+        <Button data-testid="create-workspace-close-button" onClick={onClose}>
           {t.Cancel()}
         </Button>
         <Button
@@ -125,6 +125,7 @@ const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {
   const t = useAFFiNEI18N();
+  const ref = useRef(null);
   const defaultDBLocation = useDefaultDBLocation();
   const [opening, setOpening] = useState(false);
 
@@ -134,12 +135,12 @@ const SetDBLocationContent = ({
     }
     setOpening(true);
     (async function () {
-      const result = await window.apis?.dialog.selectDBFileLocation();
+      const result: SelectDBFileLocationResult =
+        await window.apis?.dialog.selectDBFileLocation();
       setOpening(false);
       if (result?.filePath) {
         onConfirmLocation(result.filePath);
       } else if (result?.error) {
-        // @ts-expect-error: result.error is dynamic so the type is unknown
         toast(t[result.error]());
       }
     })().catch(err => {
@@ -155,17 +156,18 @@ const SetDBLocationContent = ({
         <Button
           disabled={opening}
           data-testid="create-workspace-customize-button"
-          type="light"
+          type="primary"
           onClick={handleSelectDBFileLocation}
         >
           {t['Customize']()}
         </Button>
         <Tooltip
-          zIndex={1000}
           content={t['Default db location hint']({
             location: defaultDBLocation,
           })}
-          placement="top-start"
+          portalOptions={{
+            container: ref.current,
+          }}
         >
           <Button
             data-testid="create-workspace-default-location-button"
@@ -175,6 +177,7 @@ const SetDBLocationContent = ({
             }}
             icon={<HelpIcon />}
             iconPosition="end"
+            ref={ref}
           >
             {t['Default Location']()}
           </Button>
@@ -267,13 +270,12 @@ export const CreateWorkspaceModal = ({
         }
         logger.info('load db file');
         setStep(undefined);
-        const result = await window.apis.dialog.loadDBFile();
+        const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           setAddedId(result.workspaceId);
           setStep('set-syncing-mode');
         } else if (result.error || result.canceled) {
           if (result.error) {
-            // @ts-expect-error: result.error is dynamic so the type is unknown
             toast(t[result.error]());
           }
           onClose();

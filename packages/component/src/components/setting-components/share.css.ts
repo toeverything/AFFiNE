@@ -53,11 +53,23 @@ export const settingRow = style({
     '&:last-of-type': {
       marginBottom: '0',
     },
+    '&.disabled': {
+      position: 'relative',
+    },
+    '&.disabled::after': {
+      content: '',
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(255,255,255,0.5)',
+    },
   },
 });
 
 globalStyle(`${settingRow} .left-col`, {
-  flexShrink: 0,
+  flex: 1,
   maxWidth: '100%',
 });
 globalStyle(`${settingRow}.two-col .left-col`, {
@@ -74,7 +86,7 @@ globalStyle(`${settingRow} .desc`, {
   color: 'var(--affine-text-secondary-color)',
 });
 globalStyle(`${settingRow} .right-col`, {
-  flexGrow: 1,
+  width: '250px',
   display: 'flex',
   justifyContent: 'flex-end',
   paddingLeft: '15px',

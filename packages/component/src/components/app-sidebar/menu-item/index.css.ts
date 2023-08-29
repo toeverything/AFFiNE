@@ -1,16 +1,23 @@
 import { style } from '@vanilla-extract/css';
 
+export const linkItemRoot = style({
+  color: 'inherit',
+  display: 'contents',
+});
+
 export const root = style({
   display: 'inline-flex',
   alignItems: 'center',
   borderRadius: '4px',
+  textAlign: 'left',
+  color: 'inherit',
   width: '100%',
   minHeight: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 8px 0 12px',
+  padding: '0 12px',
   fontSize: 'var(--affine-font-sm)',
-  margin: '2px 0',
+  marginTop: '4px',
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
@@ -30,9 +37,18 @@ export const root = style({
     //     'linear-gradient(0deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04)), rgba(0, 0, 0, 0.04)',
     // },
     '&[data-collapsible="true"]': {
-      width: 'calc(100% + 8px)',
-      transform: 'translateX(-8px)',
-      paddingLeft: '8px',
+      paddingLeft: '4px',
+      paddingRight: '4px',
+    },
+    '&[data-type="collection-list-item"][data-collapsible="false"][data-active="true"],&[data-type="favorite-list-item"][data-collapsible="false"][data-active="true"], &[data-type="favorite-list-item"][data-collapsible="false"]:hover, &[data-type="collection-list-item"][data-collapsible="false"]:hover':
+      {
+        width: 'calc(100% + 8px)',
+        transform: 'translateX(-8px)',
+        paddingLeft: '20px',
+        paddingRight: '12px',
+      },
+    [`${linkItemRoot}:first-of-type &`]: {
+      marginTop: '0px',
     },
   },
 });
@@ -46,6 +62,12 @@ export const content = style({
 
 export const postfix = style({
   justifySelf: 'flex-end',
+  display: 'none',
+  selectors: {
+    [`${root}:hover &`]: {
+      display: 'flex',
+    },
+  },
 });
 
 export const icon = style({
@@ -54,16 +76,21 @@ export const icon = style({
 });
 
 export const collapsedIconContainer = style({
-  width: '12px',
-  height: '12px',
+  width: '16px',
+  height: '16px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '2px',
   transition: 'transform 0.2s',
+  color: 'inherit',
   selectors: {
     '&[data-collapsed="true"]': {
       transform: 'rotate(-90deg)',
+    },
+    '&[data-disabled="true"]': {
+      opacity: 0.3,
+      pointerEvents: 'none',
     },
     '&:hover': {
       background: 'var(--affine-hover-color)',
@@ -79,7 +106,7 @@ export const iconsContainer = style({
   flexShrink: 0,
   selectors: {
     '&[data-collapsible="true"]': {
-      width: '40px',
+      width: '44px',
     },
   },
 });
@@ -95,9 +122,4 @@ export const collapsedIcon = style({
 
 export const spacer = style({
   flex: 1,
-});
-
-export const linkItemRoot = style({
-  color: 'inherit',
-  display: 'contents',
 });

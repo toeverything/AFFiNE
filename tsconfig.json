@@ -11,17 +11,17 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
     // noPropertyAccessFromIndexSignature: false,
     // noUncheckedIndexedAccess: false,
-    // noUnusedLocals: false,
-    // noUnusedParameters: false,
     "useUnknownInCatchVariables": true,
 
     // Modules
-    "module": "ES2022",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
-
+    "types": ["affine__env"],
     // Emit
     "declaration": true,
     "declarationMap": true,
@@ -36,10 +36,12 @@
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
 
     // Language and Environment
-    "jsx": "react-jsx",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "@emotion/react",
+    "lib": ["ESNext", "DOM"],
     "target": "ES2022",
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
@@ -51,9 +53,10 @@
 
     // Completeness
     "skipLibCheck": true, // skip all type checks for .d.ts files
-
     "paths": {
+      "@affine/core/*": ["./packages/core/src/*"],
       "@affine/cli/*": ["./packages/cli/src/*"],
+      "@affine/server/*": ["./apps/server/src/*"],
       "@affine/component": ["./packages/component/src/index"],
       "@affine/component/*": [
         "./packages/component/src/components/*/index",
@@ -76,7 +79,7 @@
       "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
       "@toeverything/hooks/*": ["./packages/hooks/src/*"],
       "@toeverything/infra/*": ["./packages/infra/src/*"],
-      "@toeverything/plugin-infra/*": ["./packages/plugin-infra/src/*"],
+      "@affine/sdk/*": ["./packages/sdk/src/*"],
       "@affine/native": ["./packages/native/index.d.ts"],
       "@affine/native/*": ["./packages/native/*"],
       "@affine/storage": ["./packages/storage/index.d.ts"],
@@ -112,17 +115,29 @@
     },
     // Plugins
     {
-      "path": "./packages/plugin-infra"
+      "path": "./packages/sdk"
     },
     {
-      "path": "./plugins/bookmark-block"
+      "path": "./plugins/bookmark"
     },
     {
       "path": "./plugins/copilot"
     },
+    {
+      "path": "./plugins/hello-world"
+    },
+    {
+      "path": "./plugins/image-preview"
+    },
+    {
+      "path": "./plugins/vue-hello-world"
+    },
     // Packages
     {
       "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/plugin-cli"
     },
     {
       "path": "./packages/component"
@@ -153,9 +168,27 @@
       "path": "./tests/affine-local"
     },
     {
+      "path": "./tests/affine-plugin"
+    },
+    {
+      "path": "./tests/affine-prototype"
+    },
+    {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
+    },
+    {
+      "path": "./tests/affine-cloud"
+    },
+    {
+      "path": "./tests/affine-legacy/0.8.0-canary.7"
     }
   ],
   "files": [],
-  "exclude": ["node_modules", "target", "lib", "test-results"]
+  "exclude": ["node_modules", "target", "lib", "test-results"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "Node"
+    }
+  }
 }

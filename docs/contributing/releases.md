@@ -23,7 +23,7 @@ And Read the semver specification to understand how to version your release. htt
 
 ### 2. Commit changes and push to `master`
 
-```shel
+```shell
 git add .
 # vx.y.z-canary.n
 git commit -m "v0.5.4-canary.5"

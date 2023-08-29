@@ -1,7 +1,7 @@
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { useAtomValue } from 'jotai';
 
-import { IconButton } from '../../..';
 import type { History } from '..';
 import { navHeaderStyle } from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';
@@ -19,11 +19,11 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
   const open = useAtomValue(appSidebarOpenAtom);
   return (
     <div className={navHeaderStyle} data-open={open}>
+      <div style={{ flex: 1 }} />
+      {open && <SidebarSwitch />}
       {environment.isDesktop && (
         <>
-          {environment.isMacOs && <div style={{ flex: 1 }} />}
           <IconButton
-            size="middle"
             data-testid="app-sidebar-arrow-button-back"
             disabled={props.router?.history.current === 0}
             onClick={() => {
@@ -33,7 +33,6 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
             <ArrowLeftSmallIcon />
           </IconButton>
           <IconButton
-            size="middle"
             data-testid="app-sidebar-arrow-button-forward"
             disabled={
               props.router
@@ -52,7 +51,6 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           {!environment.isMacOs && <div style={{ flex: 1 }} />}
         </>
       )}
-      {open && <SidebarSwitch />}
     </div>
   );
 };

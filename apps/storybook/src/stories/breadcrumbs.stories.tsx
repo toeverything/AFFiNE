@@ -7,6 +7,9 @@ import { within } from '@storybook/testing-library';
 export default {
   title: 'AFFiNE/Breadcrumbs',
   component: Breadcrumbs,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } as Meta<typeof Breadcrumbs>;
 
 const Template: StoryFn = args => <Breadcrumbs {...args} />;

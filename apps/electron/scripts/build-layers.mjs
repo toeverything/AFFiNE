@@ -15,7 +15,6 @@ if (process.platform === 'win32') {
 
 async function buildLayers() {
   const common = config();
-  await esbuild.build(common.workers);
   await esbuild.build({
     ...common.layers,
     define: {

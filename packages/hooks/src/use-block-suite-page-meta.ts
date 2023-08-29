@@ -5,22 +5,6 @@ import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
-declare module '@blocksuite/store' {
-  interface PageMeta {
-    favorite?: boolean;
-    subpageIds: string[];
-    // If a page remove to trash, and it is a subpage, it will remove from its parent `subpageIds`, 'trashRelate' is use for save it parent
-    trashRelate?: string;
-    trash?: boolean;
-    trashDate?: number;
-    updatedDate?: number;
-    mode?: 'page' | 'edgeless';
-    jumpOnce?: boolean;
-    // todo: support `number` in the future
-    isPublic?: boolean;
-  }
-}
-
 const weakMap = new WeakMap<Workspace, Atom<PageMeta[]>>();
 
 export function useBlockSuitePageMeta(
@@ -56,6 +40,11 @@ export function usePageMetaHelper(blockSuiteWorkspace: Workspace) {
           pageBlock.title.insert(newTitle, 0);
         });
         blockSuiteWorkspace.meta.setPageMeta(pageId, { title: newTitle });
+      },
+      setPageReadonly: (pageId: string, readonly: boolean) => {
+        const page = blockSuiteWorkspace.getPage(pageId);
+        assertExists(page);
+        page.awarenessStore.setReadonly(page, readonly);
       },
       setPageMeta: (pageId: string, pageMeta: Partial<PageMeta>) => {
         blockSuiteWorkspace.meta.setPageMeta(pageId, pageMeta);

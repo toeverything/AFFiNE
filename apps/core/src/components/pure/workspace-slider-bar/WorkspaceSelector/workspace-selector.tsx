@@ -4,7 +4,6 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import type React from 'react';
 import { useCallback } from 'react';
 
-import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type { AllWorkspace } from '../../../../shared';
 import { workspaceAvatarStyle } from './index.css';
 import {
@@ -14,26 +13,26 @@ import {
   StyledWorkspaceStatus,
 } from './styles';
 
-export type WorkspaceSelectorProps = {
+export interface WorkspaceSelectorProps {
   currentWorkspace: AllWorkspace;
   onClick: () => void;
-};
+}
 
 /**
  * @todo-Doma Co-locate WorkspaceListModal with {@link WorkspaceSelector},
  *            because it's never used elsewhere.
  */
-export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
+export const WorkspaceSelector = ({
   currentWorkspace,
   onClick,
-}) => {
+}: WorkspaceSelectorProps) => {
   const [name] = useBlockSuiteWorkspaceName(
-    currentWorkspace?.blockSuiteWorkspace
+    currentWorkspace.blockSuiteWorkspace
   );
-  const [workspace] = useCurrentWorkspace();
 
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
+  // TODO: Delete this?
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -52,27 +51,26 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       data-testid="current-workspace"
+      id="current-workspace"
     >
       <WorkspaceAvatar
         data-testid="workspace-avatar"
         className={workspaceAvatarStyle}
         size={40}
-        workspace={currentWorkspace?.blockSuiteWorkspace ?? null}
+        workspace={currentWorkspace.blockSuiteWorkspace}
       />
       <StyledSelectorWrapper>
         <StyledWorkspaceName data-testid="workspace-name">
           {name}
         </StyledWorkspaceName>
-        {workspace && (
-          <StyledWorkspaceStatus>
-            {workspace.flavour === 'local' ? (
-              <LocalWorkspaceIcon />
-            ) : (
-              <CloudWorkspaceIcon />
-            )}
-            {workspace.flavour === 'local' ? 'Local' : 'AFFiNE Cloud'}
-          </StyledWorkspaceStatus>
-        )}
+        <StyledWorkspaceStatus>
+          {currentWorkspace.flavour === 'local' ? (
+            <LocalWorkspaceIcon />
+          ) : (
+            <CloudWorkspaceIcon />
+          )}
+          {currentWorkspace.flavour === 'local' ? 'Local' : 'AFFiNE Cloud'}
+        </StyledWorkspaceStatus>
       </StyledSelectorWrapper>
     </StyledSelectorContainer>
   );

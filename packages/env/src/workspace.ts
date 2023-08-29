@@ -1,3 +1,4 @@
+import type { StatusAdapter } from '@affine/y-provider';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type {
@@ -5,13 +6,9 @@ import type {
   PassiveDocProvider,
   Workspace as BlockSuiteWorkspace,
 } from '@blocksuite/store';
-import type { FC, PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 
 import type { Collection } from './filter.js';
-
-export enum WorkspaceVersion {
-  SubDoc = 2,
-}
 
 export enum WorkspaceSubPath {
   ALL = 'all',
@@ -25,16 +22,18 @@ export interface AffineDownloadProvider extends PassiveDocProvider {
 }
 
 /**
- * Download the first binary from local indexeddb
+ * Download the first binary from local IndexedDB
  */
 export interface BroadCastChannelProvider extends PassiveDocProvider {
   flavour: 'broadcast-channel';
 }
 
 /**
- * Long polling provider with local indexeddb
+ * Long polling provider with local IndexedDB
  */
-export interface LocalIndexedDBBackgroundProvider extends PassiveDocProvider {
+export interface LocalIndexedDBBackgroundProvider
+  extends StatusAdapter,
+    PassiveDocProvider {
   flavour: 'local-indexeddb-background';
 }
 
@@ -42,12 +41,16 @@ export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
   flavour: 'local-indexeddb';
 }
 
-export interface SQLiteProvider extends PassiveDocProvider {
+export interface SQLiteProvider extends PassiveDocProvider, StatusAdapter {
   flavour: 'sqlite';
 }
 
 export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
   flavour: 'sqlite-download';
+}
+
+export interface AffineSocketIOProvider extends PassiveDocProvider {
+  flavour: 'affine-socket-io';
 }
 
 type BaseWorkspace = {
@@ -69,10 +72,15 @@ export interface LocalWorkspace extends BaseWorkspace {
 }
 
 export interface AffinePublicWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.PUBLIC;
+  flavour: WorkspaceFlavour.AFFINE_PUBLIC;
   id: string;
   blockSuiteWorkspace: BlockSuiteWorkspace;
 }
+
+export type AffineOfficialWorkspace =
+  | AffineCloudWorkspace
+  | LocalWorkspace
+  | AffinePublicWorkspace;
 
 export enum ReleaseType {
   // if workspace is not released yet, we will not show it in the workspace list
@@ -92,7 +100,7 @@ export enum WorkspaceFlavour {
    */
   AFFINE_CLOUD = 'affine-cloud',
   LOCAL = 'local',
-  PUBLIC = 'affine-public',
+  AFFINE_PUBLIC = 'affine-public',
 }
 
 export const settingPanel = {
@@ -108,7 +116,7 @@ export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 // built-in workspaces
 export interface WorkspaceRegistry {
   [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-  [WorkspaceFlavour.PUBLIC]: AffinePublicWorkspace;
+  [WorkspaceFlavour.AFFINE_PUBLIC]: AffinePublicWorkspace;
   [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
 }
 
@@ -138,7 +146,9 @@ export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
 
 type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
-    onDeleteWorkspace: (id: string) => Promise<void>;
+    onDeleteLocalWorkspace: () => void;
+    onDeleteCloudWorkspace: () => void;
+    onLeaveWorkspace: () => void;
     onTransformWorkspace: <
       From extends keyof WorkspaceRegistry,
       To extends keyof WorkspaceRegistry,
@@ -161,22 +171,25 @@ type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
   collection: Collection;
 };
 
+interface FC<P> {
+  (props: P): ReactNode;
+}
+
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
   PageList: FC<PageListProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
+  LoginCard?: FC<object>;
 }
 
 export interface AppEvents {
   // event there is no workspace
-  // usually used to initialize workspace plugin
+  // usually used to initialize workspace adapter
   'app:init': () => string[];
-  // request to gain access to workspace plugin
-  'workspace:access': () => Promise<void>;
-  // request to revoke access to workspace plugin
-  'workspace:revoke': () => Promise<void>;
+  // event if you have access to workspace adapter
+  'app:access': () => Promise<boolean>;
 }
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {

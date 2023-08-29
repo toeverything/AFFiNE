@@ -2,13 +2,13 @@ import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
+import type { LitBlockSpec } from '@blocksuite/lit';
 import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
 import { use } from 'foxact/use';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -25,6 +25,8 @@ export type EditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  pagePreset?: LitBlockSpec[];
+  edgelessPreset?: LitBlockSpec[];
 };
 
 export type ErrorBoundaryProps = {
@@ -38,14 +40,8 @@ declare global {
   var currentEditor: EditorContainer | undefined;
 }
 
-const ImagePreviewModal = lazy(() =>
-  import('../image-preview-modal').then(module => ({
-    default: module.ImagePreviewModal,
-  }))
-);
-
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
-  const { onLoad, page, mode, style, onInit } = props;
+  const { onLoad, page, mode, style } = props;
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
@@ -59,6 +55,11 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editorRef.current = new JotaiEditorContainer();
     editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
+
+    // set page preset
+    if (props.pagePreset) editorRef.current.pagePreset = props.pagePreset;
+    if (props.edgelessPreset)
+      editorRef.current.edgelessPreset = props.edgelessPreset;
   }
   const editor = editorRef.current;
   assertExists(editorRef, 'editorRef.current should not be null');
@@ -66,14 +67,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editor.mode = mode;
   }
 
-  useEffect(() => {
-    if (editor.page !== page) {
-      editor.page = page;
-      if (page.root === null) {
-        onInit(page, editor);
-      }
-    }
-  }, [editor, page, onInit]);
+  if (editor.page !== page) {
+    editor.page = page;
+  }
 
   useEffect(() => {
     if (editor.page && onLoad) {
@@ -99,32 +95,34 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     if (!container) {
       return;
     }
-    if (page.awarenessStore.getFlag('enable_block_hub')) {
-      editor
-        .createBlockHub()
-        .then(blockHub => {
-          if (blockHubRef.current) {
-            blockHubRef.current.remove();
-          }
-          blockHubRef.current = blockHub;
-          if (setBlockHub) {
-            setBlockHub(blockHub);
-          }
-        })
-        .catch(err => {
-          console.error(err);
-        });
-    }
-
     container.appendChild(editor);
+    return () => {
+      container.removeChild(editor);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    editor
+      .createBlockHub()
+      .then(blockHub => {
+        if (blockHubRef.current) {
+          blockHubRef.current.remove();
+        }
+        blockHubRef.current = blockHub;
+        if (setBlockHub) {
+          setBlockHub(blockHub);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+      });
     return () => {
       if (setBlockHub) {
         setBlockHub(null);
       }
       blockHubRef.current?.remove();
-      container.removeChild(editor);
     };
-  }, [editor, setBlockHub, page]);
+  }, [editor, page.awarenessStore, setBlockHub]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
@@ -186,19 +184,8 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
       )}
     >
       <Suspense fallback={<BlockSuiteFallback />}>
-        <BlockSuiteEditorImpl {...props} />
+        <BlockSuiteEditorImpl key={props.page.id} {...props} />
       </Suspense>
-      {props.page && (
-        <Suspense fallback={null}>
-          {createPortal(
-            <ImagePreviewModal
-              workspace={props.page.workspace}
-              pageId={props.page.id}
-            />,
-            document.body
-          )}
-        </Suspense>
-      )}
     </ErrorBoundary>
   );
 });

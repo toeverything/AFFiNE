@@ -1,0 +1,42 @@
+name: Windows Signer
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+      files:
+        required: true
+        type: string
+jobs:
+  sign:
+    runs-on: [self-hosted, win-signer]
+    env:
+      ARCHIVE_DIR: ${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.artifact-name }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ env.ARCHIVE_DIR }}
+      - name: unzip file
+        shell: cmd
+        # 7za is pre-installed on the signer machine
+        run: |
+          cd ${{ env.ARCHIVE_DIR }}
+          md out
+          7za x archive.zip -y -oout
+      - name: sign
+        shell: cmd
+        run: |
+          cd ${{ env.ARCHIVE_DIR }}/out
+          signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a ${{ inputs.files }}
+      - name: zip file
+        shell: cmd
+        run: |
+          cd ${{ env.ARCHIVE_DIR }}
+          7za a signed.zip .\out\*
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: signed-${{ inputs.artifact-name }}
+          path: ${{ env.ARCHIVE_DIR }}/signed.zip

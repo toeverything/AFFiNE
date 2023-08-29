@@ -7,6 +7,7 @@
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
+    "./affine/gql": "./src/affine/gql.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
@@ -17,23 +18,26 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
+    "@affine/graphql": "workspace:*",
+    "@affine/y-provider": "workspace:*",
     "@toeverything/hooks": "workspace:*",
-    "@toeverything/plugin-infra": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "jotai": "^2.2.2",
+    "jotai": "^2.4.0",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
-    "lib0": "^0.2.78",
+    "lib0": "^0.2.83",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "socket.io-client": "^4.7.2",
+    "swr": "2.2.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.6",
-    "zod": "^3.21.4"
+    "yjs": "^13.6.7",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.7.0-canary.47"
+  "version": "0.9.0-canary.3"
 }

@@ -1,11 +1,22 @@
 import path from 'node:path';
 
 import { ValidationResult } from '@affine/native';
+import type {
+  FakeDialogResult,
+  LoadDBFileResult,
+  MoveDBFileResult,
+  SaveDBFileResult,
+  SelectDBFileLocationResult,
+} from '@toeverything/infra/type';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
 import { ensureSQLiteDB } from '../db/ensure-db';
-import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../db/migration';
+import {
+  copyToTemp,
+  migrateToLatestDatabase,
+  migrateToSubdocAndReplaceDatabase,
+} from '../db/migration';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
@@ -28,13 +39,6 @@ export async function revealDBFile(workspaceId: string) {
   await mainRPC.showItemInFolder(meta.secondaryDBPath ?? meta.mainDBPath);
 }
 
-// provide a backdoor to set dialog path for testing in playwright
-export interface FakeDialogResult {
-  canceled?: boolean;
-  filePath?: string;
-  filePaths?: string[];
-}
-
 // result will be used in the next call to showOpenDialog
 // if it is being read once, it will be reset to undefined
 let fakeDialogResult: FakeDialogResult | undefined = undefined;
@@ -51,23 +55,6 @@ export function setFakeDialogResult(result: FakeDialogResult | undefined) {
   if (result?.filePaths === undefined && result?.filePath !== undefined) {
     result.filePaths = [result.filePath];
   }
-}
-
-const ErrorMessages = [
-  'DB_FILE_ALREADY_LOADED',
-  'DB_FILE_PATH_INVALID',
-  'DB_FILE_INVALID',
-  'DB_FILE_MIGRATION_FAILED',
-  'FILE_ALREADY_EXISTS',
-  'UNKNOWN_ERROR',
-] as const;
-
-type ErrorMessage = (typeof ErrorMessages)[number];
-
-export interface SaveDBFileResult {
-  filePath?: string;
-  canceled?: boolean;
-  error?: ErrorMessage;
 }
 
 const extension = 'affine';
@@ -125,12 +112,6 @@ export async function saveDBFileAs(
   }
 }
 
-export interface SelectDBFileLocationResult {
-  filePath?: string;
-  error?: ErrorMessage;
-  canceled?: boolean;
-}
-
 export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult> {
   try {
     const ret =
@@ -155,12 +136,6 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
       error: (err as any).message,
     };
   }
-}
-
-export interface LoadDBFileResult {
-  workspaceId?: string;
-  error?: ErrorMessage;
-  canceled?: boolean;
 }
 
 /**
@@ -226,7 +201,22 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       }
     }
 
+    if (validationResult === ValidationResult.MissingVersionColumn) {
+      try {
+        const tmpDBPath = await copyToTemp(originalPath);
+        await migrateToLatestDatabase(tmpDBPath);
+        originalPath = tmpDBPath;
+      } catch (error) {
+        logger.warn(
+          `loadDBFile, migration version column failed: ${originalPath}`,
+          error
+        );
+        return { error: 'DB_FILE_MIGRATION_FAILED' };
+      }
+    }
+
     if (
+      validationResult !== ValidationResult.MissingVersionColumn &&
       validationResult !== ValidationResult.MissingDocIdColumn &&
       validationResult !== ValidationResult.Valid
     ) {
@@ -253,12 +243,6 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       error: 'UNKNOWN_ERROR',
     };
   }
-}
-
-export interface MoveDBFileResult {
-  filePath?: string;
-  error?: ErrorMessage;
-  canceled?: boolean;
 }
 
 /**

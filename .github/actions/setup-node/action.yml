@@ -17,10 +17,6 @@ inputs:
     description: 'Download the Electron binary'
     required: false
     default: 'true'
-  npm-token:
-    description: 'The NPM token to use for private packages.'
-    required: false
-    default: ''
   hard-link-nm:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
@@ -48,20 +44,20 @@ runs:
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
       env:
-        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        SENTRYCLI_SKIP_DOWNLOAD: '1'
 
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
       shell: bash
       run: yarn install ${{ inputs.extra-flags }}
       env:
-        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        SENTRYCLI_SKIP_DOWNLOAD: '1'
 
     - name: Get installed Playwright version
       id: playwright-version
@@ -80,7 +76,7 @@ runs:
       if: ${{ inputs.playwright-install == 'true' }}
       with:
         path: '~/.cache/ms-playwright'
-        key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}'
+        key: '${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}'
         # As a fallback, if the Playwright version has changed, try use the
         # most recently cached version. There's a good chance that at least one
         # of the browser binary versions haven't been updated, so Playwright can
@@ -90,7 +86,7 @@ runs:
         # date cache, but still let Playwright decide if it needs to download
         # new binaries or not.
         restore-keys: |
-          ${{ runner.os }}-playwright-
+          ${{ runner.os }}-${{ runner.arch }}-playwright-
 
     # If the Playwright browser binaries weren't able to be restored, we tell
     # paywright to install everything for us.
@@ -111,9 +107,9 @@ runs:
       if: ${{ inputs.electron-install == 'true' }}
       with:
         path: 'node_modules/.cache/electron'
-        key: '${{ runner.os }}-electron-${{ steps.electron-version.outputs.version }}'
+        key: '${{ runner.os }}-{{ runner.arch }}-electron-${{ steps.electron-version.outputs.version }}'
         restore-keys: |
-          ${{ runner.os }}-electron-
+          ${{ runner.os }}-{{ runner.arch }}-electron-
 
     - name: Install Electron binary
       shell: bash
@@ -125,3 +121,7 @@ runs:
     - name: Build Infra
       shell: bash
       run: yarn run build:infra
+
+    - name: Build Plugins
+      shell: bash
+      run: yarn run build:plugins

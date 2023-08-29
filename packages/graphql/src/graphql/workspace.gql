@@ -1,7 +1,0 @@
-query workspaceById($id: String!) {
-  workspace(id: $id) {
-    id
-    public
-    createdAt
-  }
-}
