@@ -4,7 +4,6 @@ import {
   deleteUser,
   getLoginCookie,
 } from '@affine-test/kit/utils/cloud';
-import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
@@ -25,10 +24,7 @@ test.afterEach(async () => {
   await deleteUser(user.email);
 });
 
-test('server exist', async ({ page }) => {
-  await openHomePage(page);
-  await waitEditorLoad(page);
-
+test('server exist', async () => {
   const json = await (await fetch('http://localhost:3010')).json();
   expect(json.compatibility).toMatch(/[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+)?/);
 });
