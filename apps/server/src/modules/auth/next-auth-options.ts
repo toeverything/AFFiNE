@@ -98,7 +98,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               text: text({ url: wrappedUrl, host }),
               html: html({ url: wrappedUrl, host }),
             });
-            logger.debug(
+            logger.log(
               `send verification email success: ${result.accepted.join(', ')}`
             );
             const failed = result.rejected

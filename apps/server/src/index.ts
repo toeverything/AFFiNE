@@ -60,7 +60,7 @@ if (NODE_ENV === 'production') {
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
   bodyParser: true,
-  logger: NODE_ENV === 'production' ? ['warn'] : ['verbose'],
+  logger: NODE_ENV === 'production' ? ['log'] : ['verbose'],
 });
 
 app.use(serverTimingAndCache);
