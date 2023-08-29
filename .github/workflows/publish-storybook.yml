@@ -41,3 +41,10 @@ jobs:
           zip: true
         env:
           NODE_OPTIONS: ${{ env.NODE_OPTIONS }}
+      - name: Upload build-storybook.log
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-storybook.log
+          path: ./apps/storybook/build-storybook.log
+          if-no-files-found: error
