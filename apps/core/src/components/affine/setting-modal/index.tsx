@@ -7,7 +7,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import { Suspense, useCallback } from 'react';
 
-import { useCurrenLoginStatus } from '../../../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
 import {
   GeneralSetting,
@@ -39,7 +39,7 @@ export const SettingModal = ({
   onSettingClick,
 }: SettingModalProps) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
 
   const generalSettingList = useGeneralSettingList();
 

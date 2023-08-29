@@ -156,3 +156,20 @@ ImportPage.parameters = {
     },
   }),
 };
+
+export const OpenAppPage: StoryFn = () => {
+  return <FakeApp />;
+};
+OpenAppPage.decorators = [withRouter];
+OpenAppPage.parameters = {
+  reactRouter: reactRouterParameters({
+    routing: reactRouterOutlets(routes),
+    location: {
+      path: '/open-app',
+      searchParams: {
+        url: 'affine-beta://foo-bar.com',
+        open: 'false',
+      },
+    },
+  }),
+};

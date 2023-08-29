@@ -3,13 +3,13 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
 import { signIn } from 'next-auth/react';
 
-import { useCurrenLoginStatus } from '../../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../hooks/affine/use-current-user';
 import { StyledSignInButton } from '../pure/footer/styles';
 
 export const LoginCard = () => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
   if (loginStatus === 'authenticated') {
     return <UserCard />;
   }
