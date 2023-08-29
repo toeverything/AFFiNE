@@ -1,0 +1,3 @@
+query blobSizes($workspaceId: String!) {
+  collectBlobSizes(workspaceId: $workspaceId)
+}
