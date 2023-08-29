@@ -76,7 +76,7 @@ runs:
       if: ${{ inputs.playwright-install == 'true' }}
       with:
         path: '~/.cache/ms-playwright'
-        key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}'
+        key: '${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}'
         # As a fallback, if the Playwright version has changed, try use the
         # most recently cached version. There's a good chance that at least one
         # of the browser binary versions haven't been updated, so Playwright can
@@ -86,7 +86,7 @@ runs:
         # date cache, but still let Playwright decide if it needs to download
         # new binaries or not.
         restore-keys: |
-          ${{ runner.os }}-playwright-
+          ${{ runner.os }}-${{ runner.arch }}-playwright-
 
     # If the Playwright browser binaries weren't able to be restored, we tell
     # paywright to install everything for us.
@@ -107,9 +107,9 @@ runs:
       if: ${{ inputs.electron-install == 'true' }}
       with:
         path: 'node_modules/.cache/electron'
-        key: '${{ runner.os }}-electron-${{ steps.electron-version.outputs.version }}'
+        key: '${{ runner.os }}-{{ runner.arch }}-electron-${{ steps.electron-version.outputs.version }}'
         restore-keys: |
-          ${{ runner.os }}-electron-
+          ${{ runner.os }}-{{ runner.arch }}-electron-
 
     - name: Install Electron binary
       shell: bash
