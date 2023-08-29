@@ -30,7 +30,7 @@ test('server exist', async ({ page }) => {
   await waitEditorLoad(page);
 
   const json = await (await fetch('http://localhost:3010')).json();
-  expect(json.message).toMatch(/^AFFiNE GraphQL server/);
+  expect(json.compatibility).toMatch(/[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+)?/);
 });
 
 test('enable cloud success', async ({ page, context }) => {
