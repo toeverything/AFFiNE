@@ -297,7 +297,7 @@ __metadata:
     style-loader: ^3.3.3
     swc-loader: ^0.2.3
     swc-plugin-coverage-instrument: ^0.0.20
-    swr: ^2.2.2
+    swr: 2.2.0
     thread-loader: ^4.0.2
     valtio: ^1.11.2
     webpack: ^5.88.2
@@ -469,7 +469,7 @@ __metadata:
     clsx: ^2.0.0
     foxact: ^0.2.20
     react-error-boundary: ^4.0.11
-    swr: ^2.2.2
+    swr: 2.2.0
   languageName: unknown
   linkType: soft
 
@@ -837,7 +837,7 @@ __metadata:
     react: 18.2.0
     react-dom: 18.2.0
     socket.io-client: ^4.7.1
-    swr: ^2.2.2
+    swr: 2.2.0
     ws: ^8.13.0
     y-protocols: ^1.0.5
     yjs: ^13.6.7
@@ -31980,15 +31980,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swr@npm:^2.2.2":
-  version: 2.2.2
-  resolution: "swr@npm:2.2.2"
+"swr@npm:2.2.0":
+  version: 2.2.0
+  resolution: "swr@npm:2.2.0"
   dependencies:
-    client-only: ^0.0.1
     use-sync-external-store: ^1.2.0
   peerDependencies:
     react: ^16.11.0 || ^17.0.0 || ^18.0.0
-  checksum: afb3d4824f7631bc3a045483f4e4beb5ca9bfa82b64690b3d1133cdf0666ad8e4a9a879657fac5b34dbf19ea9a1503cf92c9bde972f3d40cefe434c73bd9627a
+  checksum: 1f04795ff9dff54987cbf8a544afc9e42d1350a99e899be8a7cdc4885f561e3ee464f78245ee2ebc8ced262b04023d134f731e276227319dc2d6e1843389ddd8
   languageName: node
   linkType: hard
 

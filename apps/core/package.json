@@ -2,7 +2,7 @@
   "name": "@affine/core",
   "type": "module",
   "private": true,
-  "version": "0.9.0-canary.1",
+  "version": "0.9.0-canary.2",
   "scripts": {
     "build": "yarn -T run build-core",
     "dev": "yarn -T run dev-core",
@@ -63,7 +63,7 @@
     "react-router-dom": "^6.15.0",
     "rxjs": "^7.8.1",
     "ses": "^0.18.7",
-    "swr": "^2.2.2",
+    "swr": "2.2.0",
     "valtio": "^1.11.2",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",
