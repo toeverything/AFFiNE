@@ -7,6 +7,9 @@ use sqlx::{
   Pool, Row,
 };
 
+// latest version
+const LATEST_VERSION: i32 = 3;
+
 #[napi(object)]
 pub struct BlobRow {
   pub key: String,
@@ -38,6 +41,7 @@ pub struct SqliteConnection {
 pub enum ValidationResult {
   MissingTables,
   MissingDocIdColumn,
+  MissingVersionColumn,
   GeneralError,
   Valid,
 }
@@ -229,6 +233,39 @@ impl SqliteConnection {
   }
 
   #[napi]
+  pub async fn init_version(&self) -> napi::Result<()> {
+    // create version_info table
+    sqlx::query!(
+      "CREATE TABLE IF NOT EXISTS version_info (
+        version NUMBER NOT NULL,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )"
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
+    // `3` is the first version that has version_info table,
+    //  do not modify the version number.
+    sqlx::query!("INSERT INTO version_info (version) VALUES (3)")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn set_version(&self, version: i32) -> napi::Result<()> {
+    if version > LATEST_VERSION {
+      return Err(anyhow::Error::msg("Version is too new").into());
+    }
+    sqlx::query!("UPDATE version_info SET version = ?", version)
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn close(&self) {
     self.pool.close().await;
   }
@@ -261,6 +298,18 @@ impl SqliteConnection {
       Err(_) => return ValidationResult::GeneralError,
     };
 
+    let tables_res = sqlx::query("SELECT name FROM sqlite_master WHERE type='table'")
+      .fetch_all(&pool)
+      .await;
+
+    let version_exist = match tables_res {
+      Ok(res) => {
+        let names: Vec<String> = res.iter().map(|row| row.get(0)).collect();
+        names.contains(&"version_info".to_string())
+      }
+      Err(_) => return ValidationResult::GeneralError,
+    };
+
     let columns_res = sqlx::query("PRAGMA table_info(updates)")
       .fetch_all(&pool)
       .await;
@@ -277,6 +326,8 @@ impl SqliteConnection {
       ValidationResult::MissingTables
     } else if !doc_id_exist {
       ValidationResult::MissingDocIdColumn
+    } else if !version_exist {
+      ValidationResult::MissingVersionColumn
     } else {
       ValidationResult::Valid
     }
