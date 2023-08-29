@@ -689,6 +689,7 @@ __metadata:
     "@prisma/instrumentation": ^5.0.0
     "@socket.io/redis-adapter": ^8.2.1
     "@types/cookie-parser": ^1.4.3
+    "@types/engine.io": ^3.1.7
     "@types/express": ^4.17.17
     "@types/lodash-es": ^4.17.8
     "@types/node": ^18.17.11
@@ -12960,6 +12961,15 @@ __metadata:
   version: 1.39.7
   resolution: "@types/emscripten@npm:1.39.7"
   checksum: 9871e4495358cc06cc45b2798022cd097d8ac2eb5b2fae7c276c6c5cadea05507150fad053c73ed346d4cbd844c50a3438604e5d7c3c2a7446b703cacb1ce172
+  languageName: node
+  linkType: hard
+
+"@types/engine.io@npm:^3.1.7":
+  version: 3.1.7
+  resolution: "@types/engine.io@npm:3.1.7"
+  dependencies:
+    "@types/node": "*"
+  checksum: 62b129eac3fca625cfae4591d4fab56872c44c1f7bb625af2f9e6c1bb28f8210276026e1007dc2da433ee5943972534078402515168135cc155a18c41dfec6a2
   languageName: node
   linkType: hard
 
