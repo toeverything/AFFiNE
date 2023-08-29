@@ -63,6 +63,9 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   logger: NODE_ENV === 'production' ? ['log'] : ['verbose'],
 });
 
+// X-Forwarded-For will be provide by gateway
+app.enable('trust proxy');
+
 app.use(serverTimingAndCache);
 
 app.use(

@@ -440,7 +440,7 @@ async function getInviteInfo(
         `,
     })
     .expect(200);
-  return res.body.data.workspace;
+  return res.body.data.getInviteInfo;
 }
 
 export {
