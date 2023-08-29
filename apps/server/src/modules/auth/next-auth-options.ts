@@ -335,7 +335,7 @@ function html(params: { url: string; host: string }) {
             font-size: 20px;
             font-weight: 600;
             line-height: 28px;
-            font-family: Inter;
+            font-family: inter, Arial, Helvetica, sans-serif;
             color: #444;
             padding-top: 0;
           "
@@ -349,7 +349,7 @@ function html(params: { url: string; host: string }) {
             font-size: 15px;
             font-weight: 400;
             line-height: 24px;
-            font-family: Inter;
+            font-family: inter, Arial, Helvetica, sans-serif;
             color: #444;
             padding-top: 0;
           "
@@ -369,7 +369,7 @@ function html(params: { url: string; host: string }) {
                   target="_blank"
                   style="
                     font-size: 15px;
-                    font-family: Inter;
+                    font-family: inter, Arial, Helvetica, sans-serif;
                     font-weight: 600;
                     line-height: 24px;
                     color: #fff;
@@ -463,7 +463,7 @@ function html(params: { url: string; host: string }) {
             font-size: 12px;
             font-weight: 400;
             line-height: 20px;
-            font-family: Inter;
+            font-family: inter, Arial, Helvetica, sans-serif;
             color: #8e8d91;
             padding-top: 8px;
           "
@@ -477,7 +477,7 @@ function html(params: { url: string; host: string }) {
             font-size: 12px;
             font-weight: 400;
             line-height: 20px;
-            font-family: Inter;
+            font-family: inter, Arial, Helvetica, sans-serif;
             color: #8e8d91;
             padding-top: 8px;
           "
