@@ -5,8 +5,7 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import type React from 'react';
 import { useCallback, useState } from 'react';
 
-import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useSystemOnline } from '../../../../hooks/use-system-online';
+import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
 import type { AllWorkspace } from '../../../../shared';
 import { workspaceAvatarStyle } from './index.css';
 import {
@@ -31,7 +30,6 @@ export const WorkspaceSelector = ({
   const [name] = useBlockSuiteWorkspaceName(
     currentWorkspace.blockSuiteWorkspace
   );
-  const user = useCurrentUser();
   const [isHovered, setIsHovered] = useState(false);
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
@@ -46,43 +44,44 @@ export const WorkspaceSelector = ({
     },
     [onClick]
   );
-  const fakeStatus = 'waitForUpload';
-  const isOnline = useSystemOnline();
-  const tooltipsContentMap = {
-    local: 'Saved locally',
-    cloud: `Synced with ${user.email}`,
-    syncing: `Syncing with ${user.email}`,
-    waitForUpload: 'Sync failed due to server issues, please try again later.',
-    offline: 'Disconnected, please check your network connection',
-    failNoLocalSpace: 'Sync failed due to insufficient local storage space.',
-    failNoCloudSpace: 'Sync failed due to insufficient cloud storage space.',
-  };
-  const tooltipsContent = (() => {
-    if (!isOnline) {
-      return tooltipsContentMap.offline;
-    }
-    if (currentWorkspace.flavour === 'local') {
-      switch (fakeStatus) {
-        case 'failNoLocalSpace':
-          return tooltipsContentMap.failNoLocalSpace;
-        default:
-          return tooltipsContentMap.local;
-      }
-    }
-    if (currentWorkspace.flavour === 'affine-cloud') {
-      switch (fakeStatus) {
-        case 'syncing':
-          return tooltipsContentMap.syncing;
-        case 'waitForUpload':
-          return tooltipsContentMap.waitForUpload;
-        case 'failNoCloudSpace':
-          return tooltipsContentMap.failNoCloudSpace;
-        default:
-          return tooltipsContentMap.cloud;
-      }
-    }
-    return tooltipsContentMap.waitForUpload;
-  })();
+  const loginStatus = useCurrenLoginStatus();
+  // const fakeStatus = 'waitForUpload';
+  // const isOnline = useSystemOnline();
+  // const tooltipsContentMap = {
+  //   local: 'Saved locally',
+  //   cloud: `Synced with ${user.email}`,
+  //   syncing: `Syncing with ${user.email}`,
+  //   waitForUpload: 'Sync failed due to server issues, please try again later.',
+  //   offline: 'Disconnected, please check your network connection',
+  //   failNoLocalSpace: 'Sync failed due to insufficient local storage space.',
+  //   failNoCloudSpace: 'Sync failed due to insufficient cloud storage space.',
+  // };
+  // const tooltipsContent = (() => {
+  //   if (!isOnline) {
+  //     return tooltipsContentMap.offline;
+  //   }
+  //   if (currentWorkspace.flavour === 'local') {
+  //     switch (fakeStatus) {
+  //       case 'failNoLocalSpace':
+  //         return tooltipsContentMap.failNoLocalSpace;
+  //       default:
+  //         return tooltipsContentMap.local;
+  //     }
+  //   }
+  //   if (currentWorkspace.flavour === 'affine-cloud') {
+  //     switch (fakeStatus) {
+  //       case 'syncing':
+  //         return tooltipsContentMap.syncing;
+  //       case 'waitForUpload':
+  //         return tooltipsContentMap.waitForUpload;
+  //       case 'failNoCloudSpace':
+  //         return tooltipsContentMap.failNoCloudSpace;
+  //       default:
+  //         return tooltipsContentMap.cloud;
+  //     }
+  //   }
+  //   return tooltipsContentMap.waitForUpload;
+  // })();
   return (
     <StyledSelectorContainer
       role="button"
@@ -105,7 +104,12 @@ export const WorkspaceSelector = ({
         </StyledWorkspaceName>
         <div style={{ display: 'flex' }}>
           <Tooltip
-            content={tooltipsContent}
+            content={
+              loginStatus === 'authenticated' &&
+              currentWorkspace.flavour === 'affine-cloud'
+                ? `Sync with GG`
+                : 'Saved locally'
+            }
             showArrow
             placement="top"
             style={{ fontSize: 'var(--affine-font-sm)' }}
