@@ -24,6 +24,20 @@ export default {
   },
 } satisfies Meta;
 
+const sharePageMap = new Map<string, boolean>([]);
+// todo: use a real hook
+const useIsSharedPage = (
+  _workspaceId: string,
+  pageId: string
+): [isSharePage: boolean, setIsSharePage: (enable: boolean) => void] => {
+  const [isShared, setIsShared] = useState(sharePageMap.get(pageId) ?? false);
+  const togglePagePublic = (enable: boolean) => {
+    setIsShared(enable);
+    sharePageMap.set(pageId, enable);
+  };
+  return [isShared, togglePagePublic];
+};
+
 async function initPage(page: Page) {
   await page.waitForLoaded();
   // Add page block and surface block at root level
@@ -74,11 +88,10 @@ export const Basic: StoryFn = () => {
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
+      useIsSharedPage={useIsSharedPage}
       workspace={localWorkspace}
       onEnableAffineCloud={unimplemented}
-      onOpenWorkspaceSettings={unimplemented}
       togglePagePublic={unimplemented}
-      toggleWorkspacePublish={unimplemented}
     />
   );
 };
@@ -105,11 +118,10 @@ export const AffineBasic: StoryFn = () => {
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
+      useIsSharedPage={useIsSharedPage}
       workspace={affineWorkspace}
       onEnableAffineCloud={unimplemented}
-      onOpenWorkspaceSettings={unimplemented}
       togglePagePublic={unimplemented}
-      toggleWorkspacePublish={unimplemented}
     />
   );
 };

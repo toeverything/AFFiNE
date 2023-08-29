@@ -70,7 +70,6 @@ export const StyledCreateWorkspaceCard = styled('div')(() => {
 });
 export const StyledCreateWorkspaceCardPillContainer = styled('div')(() => {
   return {
-    padding: '12px',
     borderRadius: '10px',
     display: 'flex',
     margin: '-8px -4px',
@@ -173,6 +172,7 @@ export const StyledModalContent = styled('div')({
   flexWrap: 'wrap',
   flexDirection: 'column',
   width: '100%',
+  gap: '4px',
 });
 
 export const StyledModalFooterContent = styled('div')({
@@ -180,7 +180,7 @@ export const StyledModalFooterContent = styled('div')({
   flexWrap: 'wrap',
   flexDirection: 'column',
   width: '100%',
-  padding: '12px',
+  marginTop: '12px',
   backgroundColor: 'var(--affine-background-overlay-panel-color)',
 });
 
@@ -189,7 +189,6 @@ export const StyledModalHeaderContent = styled('div')({
   flexWrap: 'wrap',
   flexDirection: 'column',
   width: '100%',
-  padding: '12px 12px 0px 12px',
   backgroundColor: 'var(--affine-background-overlay-panel-color)',
 });
 
@@ -219,19 +218,27 @@ export const StyledModalHeader = styled('div')(() => {
     left: 0,
     top: 0,
     borderRadius: '24px 24px 0 0',
-    padding: '12px 14px',
+    padding: '0px 14px',
     ...displayFlex('space-between', 'center'),
   };
 });
 
 export const StyledModalBody = styled('div')(() => {
   return {
-    padding: '0px 12px',
     display: 'inline-flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: '12px',
+    gap: '4px',
     flex: 1,
     overflowY: 'auto',
+  };
+});
+
+export const StyledWorkspaceFlavourTitle = styled('div')(() => {
+  return {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--affine-text-secondary-color)',
+    lineHeight: '20px',
   };
 });

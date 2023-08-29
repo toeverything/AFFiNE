@@ -111,6 +111,7 @@ export const RootAppSidebar = ({
     if (isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
+    return;
   }, [onClickNewPage]);
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);

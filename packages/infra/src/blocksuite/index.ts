@@ -490,9 +490,14 @@ const upgradeV1ToV2 = async (options: UpgradeOptions) => {
   return newWorkspace;
 };
 
-const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<true> => {
+const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<boolean> => {
   const rootDoc = await options.getCurrentRootDoc();
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+  const versions = meta.get('blockVersions') as YMap<number>;
+  if (versions.get('affine:database') === 3) {
+    return false;
+  }
   const schema = options.getSchema();
   spaces.forEach(space => {
     schema.upgradePage(
@@ -511,8 +516,6 @@ const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<true> => {
       space
     );
   });
-  const meta = rootDoc.getMap('meta') as YMap<unknown>;
-  const versions = meta.get('blockVersions') as YMap<number>;
   versions.set('affine:database', 3);
   return true;
 };

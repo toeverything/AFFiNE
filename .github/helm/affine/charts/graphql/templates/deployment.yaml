@@ -35,13 +35,36 @@ spec:
                 key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
-          - name: DATABSE_PASSWORD
+          - name: NO_COLOR
+            value: "1"
+          - name: SERVER_FLAVOR
+            value: "graphql"
+          - name: AFFINE_ENV
+            value: "{{ .Release.Namespace }}"
+          - name: NEXTAUTH_URL
+            value: "{{ .Values.global.ingress.host }}"
+          - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: pg-postgresql
                 key: postgres-password
           - name: DATABASE_URL
-            value: postgres://{{ .Values.database.user }}:$(DATABSE_PASSWORD)@{{ .Values.database.url }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+          - name: REDIS_SERVER_ENABLED
+            value: "true"
+          - name: REDIS_SERVER_HOST
+            value: "{{ .Values.global.redis.host }}"
+          - name: REDIS_SERVER_PORT
+            value: "{{ .Values.global.redis.port }}"
+          - name: REDIS_SERVER_USER
+            value: "{{ .Values.global.redis.username }}"
+          - name: REDIS_SERVER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: redis-password
+          - name: REDIS_SERVER_DATABASE
+            value: "{{ .Values.global.redis.database }}"
           - name: AFFINE_SERVER_PORT
             value: "{{ .Values.service.port }}"
           - name: AFFINE_SERVER_SUB_PATH
@@ -50,6 +73,37 @@ spec:
             value: "{{ .Values.app.host }}"
           - name: ENABLE_R2_OBJECT_STORAGE
             value: "{{ .Values.app.objectStorage.r2.enabled }}"
+          - name: OAUTH_EMAIL_SENDER
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: sender
+          - name: OAUTH_EMAIL_LOGIN
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: login
+          - name: OAUTH_EMAIL_SERVER
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: server
+          - name: OAUTH_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: port
+          - name: OAUTH_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.oauth.email.secretName }}"
+                key: password
+          - name: DOC_MERGE_INTERVAL
+            value: "{{ .Values.app.doc.mergeInterval }}"
+          {{ if .Values.app.experimental.enableJwstCodec }}
+          - name: DOC_MERGE_USE_JWST_CODEC
+            value: "true"
+          {{ end }}
           {{ if .Values.app.objectStorage.r2.enabled }}
           - name: R2_OBJECT_STORAGE_ACCOUNT_ID
             valueFrom:
@@ -112,6 +166,20 @@ spec:
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        {{ if .Values.global.database.gcloud.enabled }}
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0
+          args:
+            - "--structured-logs"
+            - "--auto-iam-authn"
+            - "{{ .Values.global.database.gcloud.connectionName }}"
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+        {{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

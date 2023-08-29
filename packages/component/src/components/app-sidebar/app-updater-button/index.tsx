@@ -14,7 +14,17 @@ import {
   updateReadyAtom,
 } from './index.jotai';
 
-interface AddPageButtonProps {
+export interface AddPageButtonPureProps {
+  onClickUpdate: () => void;
+  onDismissCurrentChangelog: () => void;
+  currentChangelogUnread: boolean;
+  updateReady: boolean;
+  updateAvailable: {
+    version: string;
+    allowAutoUpdate: boolean;
+  } | null;
+  downloadProgress: number | null;
+  appQuitting: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -39,60 +49,18 @@ const currentChangelogUnreadAtom = atom(async get => {
   return false;
 });
 
-// Although it is called an input, it is actually a button.
-export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
+export function AppUpdaterButtonPure({
+  updateReady,
+  onClickUpdate,
+  onDismissCurrentChangelog,
+  currentChangelogUnread,
+  updateAvailable,
+  downloadProgress,
+  appQuitting,
+  className,
+  style,
+}: AddPageButtonPureProps) {
   const t = useAFFiNEI18N();
-
-  const currentChangelogUnread = useAtomValue(currentChangelogUnreadAtom);
-  const updateReady = useAtomValue(updateReadyAtom);
-  const updateAvailable = useAtomValue(updateAvailableAtom);
-  const currentVersion = useAtomValue(currentVersionAtom);
-  const downloadProgress = useAtomValue(downloadProgressAtom);
-  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
-  const [appQuitting, setAppQuitting] = useState(false);
-
-  const onDismissCurrentChangelog = useCallback(() => {
-    if (!currentVersion) {
-      return;
-    }
-    startTransition(() =>
-      setChangelogCheckAtom(mapping => {
-        return {
-          ...mapping,
-          [currentVersion]: true,
-        };
-      })
-    );
-  }, [currentVersion, setChangelogCheckAtom]);
-  const onClickUpdate = useCallback(() => {
-    if (updateReady) {
-      setAppQuitting(true);
-      window.apis?.updater.quitAndInstall().catch(err => {
-        // TODO: add error toast here
-        console.error(err);
-      });
-    } else if (updateAvailable) {
-      if (updateAvailable.allowAutoUpdate) {
-        // wait for download to finish
-      } else {
-        window.open(
-          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-          '_blank'
-        );
-      }
-    } else if (currentChangelogUnread) {
-      window.open(runtimeConfig.changelogUrl, '_blank');
-      onDismissCurrentChangelog();
-    } else {
-      throw new Unreachable();
-    }
-  }, [
-    currentChangelogUnread,
-    currentVersion,
-    onDismissCurrentChangelog,
-    updateAvailable,
-    updateReady,
-  ]);
 
   if (!updateAvailable && !currentChangelogUnread) {
     return null;
@@ -125,7 +93,8 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
     <button
       style={style}
       className={clsx([styles.root, className])}
-      data-has-update={updateAvailable ? 'true' : 'false'}
+      data-has-update={!!updateAvailable}
+      data-updating={appQuitting}
       data-disabled={
         (updateAvailable?.allowAutoUpdate && !updateReady) || appQuitting
       }
@@ -157,7 +126,9 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
           <div className={clsx([styles.installLabelHover])}>
             <ResetIcon className={styles.icon} />
             <span className={styles.ellipsisTextOverflow}>
-              {t['com.affine.updater.restart-to-update']()}
+              {t[
+                appQuitting ? 'Loading' : 'com.affine.updater.restart-to-update'
+              ]()}
             </span>
           </div>
         ) : (
@@ -214,4 +185,77 @@ export function AppUpdaterButton({ className, style }: AddPageButtonProps) {
       </>
     );
   }
+}
+
+// Although it is called an input, it is actually a button.
+export function AppUpdaterButton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const currentChangelogUnread = useAtomValue(currentChangelogUnreadAtom);
+  const updateReady = useAtomValue(updateReadyAtom);
+  const updateAvailable = useAtomValue(updateAvailableAtom);
+  const currentVersion = useAtomValue(currentVersionAtom);
+  const downloadProgress = useAtomValue(downloadProgressAtom);
+  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
+  const [appQuitting, setAppQuitting] = useState(false);
+
+  const onDismissCurrentChangelog = useCallback(() => {
+    if (!currentVersion) {
+      return;
+    }
+    startTransition(() =>
+      setChangelogCheckAtom(mapping => {
+        return {
+          ...mapping,
+          [currentVersion]: true,
+        };
+      })
+    );
+  }, [currentVersion, setChangelogCheckAtom]);
+  const onClickUpdate = useCallback(() => {
+    if (updateReady) {
+      setAppQuitting(true);
+      window.apis?.updater.quitAndInstall().catch(err => {
+        // TODO: add error toast here
+        console.error(err);
+      });
+    } else if (updateAvailable) {
+      if (updateAvailable.allowAutoUpdate) {
+        // wait for download to finish
+      } else {
+        window.open(
+          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
+          '_blank'
+        );
+      }
+    } else if (currentChangelogUnread) {
+      window.open(runtimeConfig.changelogUrl, '_blank');
+      onDismissCurrentChangelog();
+    } else {
+      throw new Unreachable();
+    }
+  }, [
+    currentChangelogUnread,
+    currentVersion,
+    onDismissCurrentChangelog,
+    updateAvailable,
+    updateReady,
+  ]);
+  return (
+    <AppUpdaterButtonPure
+      appQuitting={appQuitting}
+      updateReady={!!updateReady}
+      onClickUpdate={onClickUpdate}
+      onDismissCurrentChangelog={onDismissCurrentChangelog}
+      currentChangelogUnread={currentChangelogUnread}
+      updateAvailable={updateAvailable}
+      downloadProgress={downloadProgress}
+      className={className}
+      style={style}
+    />
+  );
 }

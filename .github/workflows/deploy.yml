@@ -1,0 +1,211 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Build type (canary, beta, internal or stable)'
+        type: string
+        default: canary
+
+env:
+  BUILD_TYPE: canary
+  APP_NAME: affine
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
+jobs:
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+      - name: Build Server
+        run: yarn workspace @affine/server build
+      - name: Upload server dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+          if-no-files-found: error
+  build-core:
+    name: Build @affine/core
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Build Plugins
+        run: yarn run build:plugins
+      - name: Build Core
+        run: yarn nx build @affine/core
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.flavor }}
+          SHOULD_REPORT_TRACE: true
+          TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
+      - name: Upload core artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+          if-no-files-found: error
+
+  build-storage:
+    name: Build Storage
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Setup Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: 'x86_64-unknown-linux-gnu'
+          package: '@affine/storage'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/storage/storage.node
+          if-no-files-found: error
+
+  build-docker:
+    name: Build Docker
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+    needs:
+      - build-server
+      - build-core
+      - build-storage
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download core artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: ./apps/core/dist
+      - name: Download server dist
+        uses: actions/download-artifact@v3
+        with:
+          name: server-dist
+          path: ./apps/server/dist
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./apps/server
+      - name: Setup env
+        run: |
+          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          if [ -z "${{ inputs.flavor }}" ]
+          then
+            echo "RELEASE_FLAVOR=canary" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          logout: false
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build front Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/front/Dockerfile
+          tags: ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
+
+      # setup node without cache configuration
+      # Prisma cache is not compatible with docker build cache
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+
+      - name: Install Node.js dependencies
+        run: yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
+
+      - name: Build graphql Dockerfile
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          pull: true
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          file: .github/deployment/node/Dockerfile
+          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
+
+  deploy:
+    name: Deploy to cluster
+    environment: ${{ github.event.inputs.flavor }}
+    permissions:
+      contents: 'write'
+      id-token: 'write'
+    needs:
+      - build-docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to dev
+        uses: ./.github/actions/deploy
+        with:
+          build-type: ${{ github.event.inputs.flavor }}
+          gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
+          gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
+          service-account: ${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER_NAME }}
+          cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          OAUTH_EMAIL_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
+          OAUTH_EMAIL_LOGIN: ${{ secrets.OAUTH_EMAIL_LOGIN }}
+          OAUTH_EMAIL_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
+          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          GCLOUD_CONNECTION_NAME: ${{ secrets.GCLOUD_CONNECTION_NAME }}
+          GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT: ${{ secrets.GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}

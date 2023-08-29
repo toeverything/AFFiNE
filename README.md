@@ -172,9 +172,9 @@ If you encounter any problems when upgrading the version, please feel free to [c
 | AFFiNE Version | Export/Import workspace | Data auto migration |
 | -------------- | ----------------------- | ------------------- |
 | <= 0.5.4       | ❌️                     | ❌                  |
-| ^0.6.0         | ⚠️                      | ✅                  |
-| ^0.7.0         | ⚠️                      | ✅                  |
-| ^0.8.0         | ✅                      | ✅                  |
+| 0.6.x          | ✅️                     | ✅                  |
+| 0.7.x          | ✅️                     | ✅                  |
+| 0.8.x          | ✅                      | ✅                  |
 
 ## Self-Host
 

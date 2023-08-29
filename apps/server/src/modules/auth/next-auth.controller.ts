@@ -1,141 +1,41 @@
-import { randomUUID } from 'node:crypto';
-
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import {
   All,
   BadRequestException,
   Controller,
+  Inject,
   Next,
+  NotFoundException,
   Query,
   Req,
   Res,
 } from '@nestjs/common';
-import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
+import { hash, verify } from '@node-rs/argon2';
+import type { User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
-import type { AuthAction, AuthOptions } from 'next-auth';
+import { pick } from 'lodash-es';
+import type { AuthAction, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
-import Email from 'next-auth/providers/email';
-import Github from 'next-auth/providers/github';
-import Google from 'next-auth/providers/google';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
-import { getUtcTimestamp, type UserClaim } from './service';
+import { NextAuthOptionsProvide } from './next-auth-options';
+import { AuthService } from './service';
 
 const BASE_URL = '/api/auth/';
 
 @Controller(BASE_URL)
 export class NextAuthController {
-  private readonly nextAuthOptions: AuthOptions;
+  private readonly callbackSession;
 
   constructor(
     readonly config: Config,
-    readonly prisma: PrismaService
+    readonly prisma: PrismaService,
+    private readonly authService: AuthService,
+    @Inject(NextAuthOptionsProvide)
+    private readonly nextAuthOptions: NextAuthOptions
   ) {
-    const prismaAdapter = PrismaAdapter(prisma);
-    // createUser exists in the adapter
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const createUser = prismaAdapter.createUser!.bind(prismaAdapter);
-    prismaAdapter.createUser = async data => {
-      if (data.email && !data.name) {
-        data.name = data.email.split('@')[0];
-      }
-      return createUser(data);
-    };
-    this.nextAuthOptions = {
-      providers: [
-        // @ts-expect-error esm interop issue
-        Email.default({
-          server: {
-            host: config.auth.email.server,
-            port: config.auth.email.port,
-            auth: {
-              user: config.auth.email.sender,
-              pass: config.auth.email.password,
-            },
-          },
-          from: `AFFiNE <no-reply@toeverything.info>`,
-        }),
-      ],
-      // @ts-expect-error Third part library type mismatch
-      adapter: prismaAdapter,
-      debug: !config.prod,
-    };
-
-    if (config.auth.oauthProviders.github) {
-      this.nextAuthOptions.providers.push(
-        // @ts-expect-error esm interop issue
-        Github.default({
-          clientId: config.auth.oauthProviders.github.clientId,
-          clientSecret: config.auth.oauthProviders.github.clientSecret,
-        })
-      );
-    }
-
-    if (config.auth.oauthProviders.google) {
-      this.nextAuthOptions.providers.push(
-        // @ts-expect-error esm interop issue
-        Google.default({
-          clientId: config.auth.oauthProviders.google.clientId,
-          clientSecret: config.auth.oauthProviders.google.clientSecret,
-        })
-      );
-    }
-
-    this.nextAuthOptions.jwt = {
-      encode: async ({ token, maxAge }) => {
-        if (!token?.email) {
-          throw new BadRequestException('Missing email in jwt token');
-        }
-        const user = await this.prisma.user.findFirstOrThrow({
-          where: {
-            email: token.email,
-          },
-        });
-        const now = getUtcTimestamp();
-        return sign(
-          {
-            data: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              createdAt: user.createdAt.toISOString(),
-            },
-            iat: now,
-            exp: now + (maxAge ?? config.auth.accessTokenExpiresIn),
-            iss: this.config.serverId,
-            sub: user.id,
-            aud: user.name,
-            jti: randomUUID({
-              disableEntropyCache: true,
-            }),
-          },
-          this.config.auth.privateKey,
-          {
-            algorithm: Algorithm.ES256,
-          }
-        );
-      },
-      decode: async ({ token }) => {
-        if (!token) {
-          return null;
-        }
-        const { name, email, id } = (
-          await jwtVerify(token, this.config.auth.publicKey, {
-            algorithms: [Algorithm.ES256],
-            iss: [this.config.serverId],
-            leeway: this.config.auth.leeway,
-            requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
-          })
-        ).data as UserClaim;
-        return {
-          name,
-          email,
-          sub: id,
-        };
-      },
-    };
-    this.nextAuthOptions.secret ??= config.auth.nextAuthSecret;
+    this.callbackSession = nextAuthOptions.callbacks!.session;
   }
 
   @All('*')
@@ -145,25 +45,69 @@ export class NextAuthController {
     @Query() query: Record<string, any>,
     @Next() next: NextFunction
   ) {
-    const nextauth = req.url // start with request url
+    const [action, providerId] = req.url // start with request url
       .slice(BASE_URL.length) // make relative to baseUrl
       .replace(/\?.*/, '') // remove query part, use only path part
-      .split('/') as AuthAction[]; // as array of strings;
+      .split('/') as [AuthAction, string]; // as array of strings;
+    if (providerId === 'credentials') {
+      const { email } = req.body;
+      if (email) {
+        const user = await this.prisma.user.findFirst({
+          where: {
+            email,
+          },
+        });
+        if (!user) {
+          req.statusCode = 401;
+          req.statusMessage = 'User not found';
+          req.body = null;
+          throw new NotFoundException(`User not found`);
+        } else {
+          req.body = {
+            ...req.body,
+            name: user.name,
+            email: user.email,
+            image: user.avatarUrl,
+            hashedPassword: user.password,
+          };
+        }
+      }
+    }
+    const options = this.nextAuthOptions;
+    if (req.method === 'POST' && action === 'session') {
+      if (typeof req.body !== 'object' || typeof req.body.data !== 'object') {
+        throw new BadRequestException(`Invalid new session data`);
+      }
+      const user = await this.updateSession(req, req.body.data);
+      // callbacks.session existed
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.callbacks!.session = ({ session }) => {
+        return {
+          user: {
+            ...pick(user, 'id', 'name', 'email'),
+            image: user.avatarUrl,
+            hasPassword: !!user.password,
+          },
+          expires: session.expires,
+        };
+      };
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      options.callbacks!.session = this.callbackSession;
+    }
     const { status, headers, body, redirect, cookies } = await AuthHandler({
       req: {
         body: req.body,
         query: query,
         method: req.method,
-        action: nextauth[0],
-        providerId: nextauth[1],
-        error: query.error ?? nextauth[1],
+        action,
+        providerId,
+        error: query.error ?? providerId,
         cookies: req.cookies,
       },
-      options: this.nextAuthOptions,
+      options,
     });
-    if (status) {
-      res.status(status);
-    }
+
     if (headers) {
       for (const { key, value } of headers) {
         res.setHeader(key, value);
@@ -174,8 +118,32 @@ export class NextAuthController {
         res.cookie(cookie.name, cookie.value, cookie.options);
       }
     }
+
+    if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
+      res.redirect('https://community.affine.pro/c/insider-general/');
+      return;
+    }
+
+    if (status) {
+      res.status(status);
+    }
+
     if (redirect) {
-      res.redirect(redirect);
+      console.log(providerId, action, req.headers);
+      if (providerId === 'credentials') {
+        res.send(JSON.stringify({ ok: true, url: redirect }));
+      } else if (
+        action === 'callback' ||
+        action === 'error' ||
+        (providerId !== 'credentials' &&
+          // login in the next-auth page, /api/auth/signin, auto redirect.
+          // otherwise, return the json value to allow frontend to handle the redirect.
+          req.headers?.referer?.includes?.('/api/auth/signin'))
+      ) {
+        res.redirect(redirect);
+      } else {
+        res.json({ url: redirect });
+      }
     } else if (typeof body === 'string') {
       res.send(body);
     } else if (body && typeof body === 'object') {
@@ -183,5 +151,92 @@ export class NextAuthController {
     } else {
       next();
     }
+  }
+
+  private async updateSession(
+    req: Request,
+    newSession: Partial<Omit<User, 'id'>> & { oldPassword?: string }
+  ): Promise<User> {
+    const { name, email, password, oldPassword } = newSession;
+    if (!name && !email && !password) {
+      throw new BadRequestException(`Invalid new session data`);
+    }
+    if (password) {
+      const user = await this.getUserFromRequest(req);
+      const { password: userPassword } = user;
+      if (!oldPassword) {
+        if (userPassword) {
+          throw new BadRequestException(
+            `Old password is required to update password`
+          );
+        }
+      } else {
+        if (!userPassword) {
+          throw new BadRequestException(`No existed password`);
+        }
+        if (await verify(userPassword, oldPassword)) {
+          await this.prisma.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              ...pick(newSession, 'email', 'name'),
+              password: await hash(password),
+            },
+          });
+        }
+      }
+      return user;
+    } else {
+      const user = await this.getUserFromRequest(req);
+      return this.prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: pick(newSession, 'name', 'email'),
+      });
+    }
+  }
+
+  private async getUserFromRequest(req: Request): Promise<User> {
+    const token = req.headers.authorization;
+    if (!token) {
+      const session = await AuthHandler({
+        req: {
+          cookies: req.cookies,
+          action: 'session',
+          method: 'GET',
+          headers: req.headers,
+        },
+        options: this.nextAuthOptions,
+      });
+
+      const { body } = session;
+      // @ts-expect-error check if body.user exists
+      if (body && body.user && body.user.id) {
+        const user = await this.prisma.user.findUnique({
+          where: {
+            // @ts-expect-error body.user.id exists
+            id: body.user.id,
+          },
+        });
+        if (user) {
+          return user;
+        }
+      }
+    } else {
+      const [type, jwt] = token.split(' ') ?? [];
+
+      if (type === 'Bearer') {
+        const claims = await this.authService.verify(jwt);
+        const user = await this.prisma.user.findUnique({
+          where: { id: claims.id },
+        });
+        if (user) {
+          return user;
+        }
+      }
+    }
+    throw new BadRequestException(`User not found`);
   }
 }

@@ -114,6 +114,12 @@ module.exports = {
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
     ignore: ['e2e', 'tests'],
+    protocols: [
+      {
+        name: productName,
+        schemes: [productName.toLowerCase()],
+      },
+    ],
   },
   makers,
   hooks: {

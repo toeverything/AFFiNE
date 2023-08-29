@@ -51,37 +51,60 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     serverId: 'affine-nestjs-server',
     version: pkg.version,
     ENV_MAP: {
-      AFFINE_SERVER_PORT: 'port',
+      AFFINE_SERVER_PORT: ['port', 'int'],
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
+      AFFINE_ENV: 'affineEnv',
       DATABASE_URL: 'db.url',
       AUTH_PRIVATE_KEY: 'auth.privateKey',
-      ENABLE_R2_OBJECT_STORAGE: 'objectStorage.r2.enabled',
+      ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
       R2_OBJECT_STORAGE_ACCOUNT_ID: 'objectStorage.r2.accountId',
       R2_OBJECT_STORAGE_ACCESS_KEY_ID: 'objectStorage.r2.accessKeyId',
       R2_OBJECT_STORAGE_SECRET_ACCESS_KEY: 'objectStorage.r2.secretAccessKey',
       R2_OBJECT_STORAGE_BUCKET: 'objectStorage.r2.bucket',
+      OAUTH_GOOGLE_ENABLED: ['auth.oauthProviders.google.enabled', 'boolean'],
       OAUTH_GOOGLE_CLIENT_ID: 'auth.oauthProviders.google.clientId',
       OAUTH_GOOGLE_CLIENT_SECRET: 'auth.oauthProviders.google.clientSecret',
+      OAUTH_GITHUB_ENABLED: ['auth.oauthProviders.github.enabled', 'boolean'],
       OAUTH_GITHUB_CLIENT_ID: 'auth.oauthProviders.github.clientId',
       OAUTH_GITHUB_CLIENT_SECRET: 'auth.oauthProviders.github.clientSecret',
+      OAUTH_EMAIL_LOGIN: 'auth.email.login',
       OAUTH_EMAIL_SENDER: 'auth.email.sender',
       OAUTH_EMAIL_SERVER: 'auth.email.server',
-      OAUTH_EMAIL_PORT: 'auth.email.port',
+      OAUTH_EMAIL_PORT: ['auth.email.port', 'int'],
       OAUTH_EMAIL_PASSWORD: 'auth.email.password',
+      REDIS_SERVER_ENABLED: ['redis.enabled', 'boolean'],
+      REDIS_SERVER_HOST: 'redis.host',
+      REDIS_SERVER_PORT: ['redis.port', 'int'],
+      REDIS_SERVER_USER: 'redis.username',
+      REDIS_SERVER_PASSWORD: 'redis.password',
+      REDIS_SERVER_DATABASE: ['redis.database', 'int'],
+      DOC_MERGE_INTERVAL: ['doc.manager.updatePollInterval', 'int'],
+      DOC_MERGE_USE_JWST_CODEC: [
+        'doc.manager.experimentalMergeWithJwstCodec',
+        'boolean',
+      ],
     } satisfies AFFiNEConfig['ENV_MAP'],
+    affineEnv: 'dev',
+    get affine() {
+      const env = this.affineEnv;
+      return {
+        canary: env === 'dev',
+        beta: env === 'beta',
+        stable: env === 'production',
+      };
+    },
     env: process.env.NODE_ENV ?? 'development',
-    get prod() {
-      return this.env === 'production';
-    },
-    get dev() {
-      return this.env === 'development';
-    },
-    get test() {
-      return this.env === 'test';
+    get node() {
+      const env = this.env;
+      return {
+        prod: env === 'production',
+        dev: env === 'development',
+        test: env === 'test',
+      };
     },
     get deploy() {
-      return !this.dev && !this.test;
+      return !this.node.dev && !this.node.test;
     },
     https: false,
     host: 'localhost',
@@ -91,7 +114,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       url: '',
     },
     get origin() {
-      return this.dev
+      return this.node.dev
         ? 'http://localhost:8080'
         : `${this.https ? 'https' : 'http'}://${this.host}${
             this.host === 'localhost' ? `:${this.port}` : ''
@@ -124,6 +147,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       email: {
         server: 'smtp.gmail.com',
         port: 465,
+        login: '',
         sender: '',
         password: '',
       },
@@ -138,6 +162,20 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       },
       fs: {
         path: join(homedir(), '.affine-storage'),
+      },
+    },
+    redis: {
+      enabled: false,
+      host: '127.0.0.1',
+      port: 6379,
+      username: '',
+      password: '',
+      database: 0,
+    },
+    doc: {
+      manager: {
+        updatePollInterval: 3000,
+        experimentalMergeWithJwstCodec: false,
       },
     },
   } satisfies AFFiNEConfig;

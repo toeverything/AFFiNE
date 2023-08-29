@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sync.fullname" . }}
+  labels:
+    {{- include "sync.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sync.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sync.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sync.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: NODE_ENV
+            value: "{{ .Values.env }}"
+          - name: NO_COLOR
+            value: "1"
+          - name: SERVER_FLAVOR
+            value: "sync"
+          - name: NEXTAUTH_URL
+            value: "{{ .Values.global.ingress.host }}"
+          - name: AFFINE_ENV
+            value: "{{ .Release.Namespace }}"
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pg-postgresql
+                key: postgres-password
+          - name: DATABASE_URL
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+          - name: REDIS_SERVER_ENABLED
+            value: "true"
+          - name: REDIS_SERVER_HOST
+            value: "{{ .Values.global.redis.host }}"
+          - name: REDIS_SERVER_PORT
+            value: "{{ .Values.global.redis.port }}"
+          - name: REDIS_SERVER_USER
+            value: "{{ .Values.global.redis.username }}"
+          - name: REDIS_SERVER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis
+                key: redis-password
+          - name: REDIS_SERVER_DATABASE
+            value: "{{ .Values.global.redis.database }}"
+          - name: AFFINE_SERVER_PORT
+            value: "{{ .Values.service.port }}"
+          - name: AFFINE_SERVER_HOST
+            value: "{{ .Values.app.host }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        {{ if .Values.global.database.gcloud.enabled }}
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0
+          args:
+            - "--structured-logs"
+            - "--auto-iam-authn"
+            - "{{ .Values.global.database.gcloud.connectionName }}"
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu:    "1"
+        {{ end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

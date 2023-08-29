@@ -98,26 +98,10 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   list: async () => {
     logger.debug('list');
     const storage = getStorage();
-    let allWorkspaceIDs: string[] = Array.isArray(
-      storage.getItem(kStoreKey, [])
-    )
-      ? (storage.getItem(kStoreKey, []) as z.infer<typeof schema>)
-      : [];
+    const allWorkspaceIDs: string[] = storage.getItem(kStoreKey, []) as z.infer<
+      typeof schema
+    >;
 
-    // workspaces in desktop
-    if (
-      window.apis &&
-      environment.isDesktop &&
-      runtimeConfig.enableSQLiteProvider
-    ) {
-      const desktopIds = (await window.apis.workspace.list()).map(([id]) => id);
-      // the ids maybe a subset of the local storage
-      const moreWorkspaces = desktopIds.filter(
-        id => !allWorkspaceIDs.includes(id)
-      );
-      allWorkspaceIDs = [...allWorkspaceIDs, ...moreWorkspaces];
-      storage.setItem(kStoreKey, allWorkspaceIDs);
-    }
     const workspaces = (
       await Promise.all(allWorkspaceIDs.map(id => CRUD.get(id)))
     ).filter(item => item !== null) as LocalWorkspace[];

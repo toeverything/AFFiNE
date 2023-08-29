@@ -36,6 +36,7 @@
         "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
       ],
       "inputs": [
+        "{workspaceRoot}/i18n/**/*",
         "{workspaceRoot}/infra/**/*",
         "{workspaceRoot}/sdk/**/*",
         {

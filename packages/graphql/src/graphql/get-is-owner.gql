@@ -1,0 +1,3 @@
+query getIsOwner($workspaceId: String!) {
+  isOwner(workspaceId: $workspaceId)
+}

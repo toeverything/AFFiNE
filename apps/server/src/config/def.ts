@@ -78,6 +78,10 @@ export interface AFFiNEConfig {
    */
   readonly version: string;
   /**
+   * Deployment environment
+   */
+  readonly affineEnv: 'dev' | 'beta' | 'production';
+  /**
    * alias to `process.env.NODE_ENV`
    *
    * @default 'production'
@@ -85,11 +89,21 @@ export interface AFFiNEConfig {
    */
   readonly env: string;
   /**
+   * fast AFFiNE environment judge
+   */
+  get affine(): {
+    canary: boolean;
+    beta: boolean;
+    stable: boolean;
+  };
+  /**
    * fast environment judge
    */
-  get prod(): boolean;
-  get dev(): boolean;
-  get test(): boolean;
+  get node(): {
+    prod: boolean;
+    dev: boolean;
+    test: boolean;
+  };
   get deploy(): boolean;
 
   /**
@@ -167,6 +181,28 @@ export interface AFFiNEConfig {
       path: string;
     };
   };
+  /**
+   * Redis Config
+   *
+   * whether to use redis as Socket.IO adapter
+   */
+  redis: {
+    /**
+     * if not enabled, use in-memory adapter by default
+     */
+    enabled: boolean;
+    /**
+     * url of redis host
+     */
+    host: string;
+    /**
+     * port of redis
+     */
+    port: number;
+    username: string;
+    password: string;
+    database: number;
+  };
 
   /**
    * authentication config
@@ -236,8 +272,30 @@ export interface AFFiNEConfig {
     email: {
       server: string;
       port: number;
+      login: string;
       sender: string;
       password: string;
+    };
+  };
+
+  doc: {
+    manager: {
+      /**
+       * How often the [DocManager] will start a new turn of merging pending updates into doc snapshot.
+       *
+       * This is not the latency a new joint client will take to see the latest doc,
+       * but the buffer time we introduced to reduce the load of our service.
+       *
+       * in {ms}
+       */
+      updatePollInterval: number;
+
+      /**
+       * Use JwstCodec to merge updates at the same time when merging using Yjs.
+       *
+       * This is an experimental feature, and aimed to check the correctness of JwstCodec.
+       */
+      experimentalMergeWithJwstCodec: boolean;
     };
   };
 }

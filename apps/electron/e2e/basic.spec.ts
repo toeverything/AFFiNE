@@ -125,18 +125,6 @@ test('app theme', async ({ page, electronApp }) => {
   }
 });
 
-test('affine cloud disabled', async ({ page }) => {
-  await page.getByTestId('new-page-button').click({
-    delay: 100,
-  });
-  await page.waitForSelector('v-line');
-  await page.getByTestId('current-workspace').click();
-  await page.getByTestId('cloud-signin-button').click();
-  await page.getByTestId('disable-affine-cloud-modal').waitFor({
-    state: 'visible',
-  });
-});
-
 test('affine onboarding button', async ({ page }) => {
   await page.getByTestId('help-island').click();
   await page.getByTestId('easy-guide').click();
@@ -181,9 +169,7 @@ test('delete workspace', async ({ page }) => {
     delay: 100,
   });
   await page.waitForTimeout(1000);
-  await page.getByTestId('current-workspace').click();
-  await page.getByTestId('workspace-card').nth(1).hover();
-  await page.getByTestId('workspace-card-setting-button').nth(1).click();
+  await clickSideBarSettingButton(page);
   await page.getByTestId('current-workspace-label').click();
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
     'Delete Me'

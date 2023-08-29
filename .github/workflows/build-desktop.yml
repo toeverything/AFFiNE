@@ -105,6 +105,7 @@ jobs:
         uses: ./.github/actions/build-rust
         with:
           target: ${{ matrix.spec.target }}
+          package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
