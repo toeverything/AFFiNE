@@ -5,8 +5,12 @@ import { CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import debounce from 'lodash.debounce';
-import { useCallback, useState } from 'react';
+import {
+  type KeyboardEvent,
+  startTransition,
+  useCallback,
+  useState,
+} from 'react';
 
 import type { AffineOfficialWorkspace } from '../../../shared';
 import { Upload } from '../../pure/file-upload';
@@ -36,6 +40,25 @@ export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
     },
     [setName, t]
   );
+
+  const handleSetInput = useCallback((value: string) => {
+    startTransition(() => {
+      setInput(value);
+    });
+  }, []);
+
+  const handleKeyUp = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.code === 'Enter' && name !== input) {
+        handleUpdateWorkspaceName(input);
+      }
+    },
+    [handleUpdateWorkspaceName, input, name]
+  );
+
+  const handleClick = useCallback(() => {
+    handleUpdateWorkspaceName(input);
+  }, [handleUpdateWorkspaceName, input]);
 
   return (
     <div className={style.profileWrapper}>
@@ -67,18 +90,13 @@ export const ProfilePanel = ({ workspace }: ProfilePanelProps) => {
             placeholder={t['Workspace Name']()}
             maxLength={64}
             minLength={0}
-            onChange={setInput}
-            onKeyUp={debounce(e => {
-              if (e.code === 'Enter' && name !== input)
-                handleUpdateWorkspaceName(input);
-            }, 1000)}
+            onChange={handleSetInput}
+            onKeyUp={handleKeyUp}
           />
           {input === workspace.blockSuiteWorkspace.meta.name ? null : (
             <IconButton
               data-testid="save-workspace-name"
-              onClick={() => {
-                handleUpdateWorkspaceName(input);
-              }}
+              onClick={handleClick}
               active={true}
               style={{
                 marginLeft: '12px',
