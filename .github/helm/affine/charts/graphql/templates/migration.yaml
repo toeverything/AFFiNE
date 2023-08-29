@@ -5,13 +5,14 @@ metadata:
   labels:
     {{- include "graphql.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation
 
 spec:
   template:
     spec:
+      serviceAccountName: {{ include "graphql.serviceAccountName" . }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -19,13 +20,21 @@ spec:
         env:
           - name: NODE_ENV
             value: "{{ .Values.env }}"
-          - name: DATABSE_PASSWORD
+          - name: AFFINE_ENV
+            value: "{{ .Release.Namespace }}"
+          - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: pg-postgresql
                 key: postgres-password
+          {{ if not .Values.global.database.gcloud.enabled }}
           - name: DATABASE_URL
-            value: postgres://{{ .Values.database.user }}:$(DATABSE_PASSWORD)@{{ .Values.database.url }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+          {{ end }}
+          {{ if .Values.global.database.gcloud.enabled }}
+          - name: DATABASE_URL
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.gcloud.cloudSqlInternal }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+          {{ end }}
         resources:
           requests:
             cpu: '100m'

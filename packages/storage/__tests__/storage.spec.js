@@ -142,13 +142,16 @@ describe('Test jwst storage binding', () => {
   });
 
   test('should be able to store blob', async () => {
-    let workspace = await storage.createWorkspace('test-workspace', init);
+    let workspace = await storage.createWorkspace('test-workspace');
+    await storage.sync(workspace.id, workspace.doc.guid, init);
     const blobId = await storage.uploadBlob(workspace.id, Buffer.from([1]));
 
     assert(blobId !== null);
 
-    let blob = await storage.blob(workspace.id, blobId);
+    let list = await storage.listBlobs(workspace.id);
+    assert.deepEqual(list, [blobId]);
 
+    let blob = await storage.getBlob(workspace.id, blobId);
     assert.deepEqual(blob.data, Buffer.from([1]));
     assert.strictEqual(blob.size, 1);
     assert.equal(blob.contentType, 'application/octet-stream');

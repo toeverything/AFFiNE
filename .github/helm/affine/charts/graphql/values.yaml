@@ -9,16 +9,15 @@ nameOverride: ''
 fullnameOverride: ''
 # map to NODE_ENV environment variable
 env: 'production'
-database:
-  user: 'postgres'
-  url: 'pg-postgresql'
-  port: '5432'
-  name: 'affine'
 app:
+  experimental:
+    enableJwstCodec: true
   # AFFINE_SERVER_SUB_PATH
   path: ''
   # AFFINE_SERVER_HOST
   host: '0.0.0.0'
+  doc:
+    mergeInterval: "3000"
   jwt:
     secretName: jwt-private-key
     # base64 encoded ecdsa private key
@@ -32,6 +31,13 @@ app:
       secretAccessKey: ''
       bucket: ''
   oauth:
+    email:
+      secretName: 'oauth-email'
+      sender: 'noreply@toeverything.info'
+      login: ''
+      password: ''
+      server: 'smtp.gmail.com'
+      port: '465'
     google:
       enabled: false
       secretName: oauth-google
@@ -55,11 +61,11 @@ podSecurityContext:
 
 resources:
   limits:
-    cpu: '2000m'
-    memory: 4Gi
+    cpu: '4'
+    memory: 8Gi
   requests:
-    cpu: '1000m'
-    memory: 2Gi
+    cpu: '2'
+    memory: 4Gi
 
 probe:
   initialDelaySeconds: 20

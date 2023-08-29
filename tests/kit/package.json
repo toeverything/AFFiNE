@@ -7,6 +7,7 @@
     "./utils/*": "./utils/*.ts"
   },
   "devDependencies": {
+    "@node-rs/argon2": "^1.5.2",
     "@playwright/test": "^1.37.1"
   },
   "peerDependencies": {

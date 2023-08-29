@@ -1,7 +1,7 @@
 import { setTimeout } from 'node:timers/promises';
 
 import { describe, expect, test, vi } from 'vitest';
-import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
+import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { createLazyProvider } from '../lazy-provider';
 import type { DatasourceDocAdapter } from '../types';
@@ -36,7 +36,10 @@ const createMemoryDatasource = (rootDoc: Doc) => {
       if (!subdoc) {
         return false;
       }
-      return encodeStateAsUpdate(subdoc, options?.stateVector);
+      return {
+        missing: encodeStateAsUpdate(subdoc, options?.stateVector),
+        state: encodeStateVector(subdoc),
+      };
     },
     sendDocUpdate: async (guid, update) => {
       const subdoc = getDoc(rootDoc, guid);

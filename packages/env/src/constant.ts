@@ -5,6 +5,7 @@ declare global {
   interface Window {
     appInfo: {
       electron: boolean;
+      schema: string;
     };
   }
 }

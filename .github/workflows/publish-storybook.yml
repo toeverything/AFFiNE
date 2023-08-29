@@ -1,5 +1,8 @@
 name: Publish Storybook
 
+env:
+  NODE_OPTIONS: --max-old-space-size=4096
+
 on:
   push:
     branches:
@@ -34,5 +37,7 @@ jobs:
         with:
           workingDir: apps/storybook
           buildScriptName: build
-          onlyChanged: true
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          zip: true
+        env:
+          NODE_OPTIONS: ${{ env.NODE_OPTIONS }}

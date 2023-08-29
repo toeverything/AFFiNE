@@ -11,5 +11,6 @@
         "command": "node ./build.mjs"
       }
     }
-  }
+  },
+  "tags": ["infra"]
 }

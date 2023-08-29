@@ -8,22 +8,27 @@ import { type CSSProperties, forwardRef } from 'react';
 
 import * as styles from './styles.css';
 
-export const RadioButton = forwardRef<HTMLButtonElement, RadioGroupItemProps>(
-  ({ children, className, ...props }, ref) => {
-    return (
-      <RadioGroup.Item
-        ref={ref}
-        {...props}
-        className={clsx(styles.radioButton, className)}
+export const RadioButton = forwardRef<
+  HTMLButtonElement,
+  RadioGroupItemProps & { spanStyle?: string }
+>(({ children, className, spanStyle, ...props }, ref) => {
+  return (
+    <RadioGroup.Item
+      ref={ref}
+      {...props}
+      className={clsx(styles.radioButton, className)}
+    >
+      <span className={clsx(styles.radioUncheckedButton, spanStyle)}>
+        {children}
+      </span>
+      <RadioGroup.Indicator
+        className={clsx(styles.radioButtonContent, spanStyle)}
       >
-        <span className={styles.radioUncheckedButton}>{children}</span>
-        <RadioGroup.Indicator className={styles.radioButtonContent}>
-          {children}
-        </RadioGroup.Indicator>
-      </RadioGroup.Item>
-    );
-  }
-);
+        {children}
+      </RadioGroup.Indicator>
+    </RadioGroup.Item>
+  );
+});
 RadioButton.displayName = 'RadioButton';
 
 export const RadioButtonGroup = forwardRef<

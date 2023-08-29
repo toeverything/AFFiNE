@@ -23,28 +23,36 @@ export const StyledMenuWrapper = styled(StyledPopperContainer, {
   };
 });
 
-export const StyledStartIconWrapper = styled('div')(() => {
+export const StyledStartIconWrapper = styled('div')<{
+  gap?: CSSProperties['gap'];
+  iconSize?: CSSProperties['fontSize'];
+}>(({ gap, iconSize }) => {
   return {
     display: 'flex',
-    marginRight: '12px',
-    fontSize: '20px',
+    marginRight: gap ? gap : '12px',
+    fontSize: iconSize ? iconSize : '20px',
     color: 'var(--affine-icon-color)',
   };
 });
-export const StyledEndIconWrapper = styled('div')(() => {
+export const StyledEndIconWrapper = styled('div')<{
+  gap?: CSSProperties['gap'];
+  iconSize?: CSSProperties['fontSize'];
+}>(({ gap, iconSize }) => {
   return {
     display: 'flex',
-    marginLeft: '12px',
-    fontSize: '20px',
+    marginLeft: gap ? gap : '12px',
+    fontSize: iconSize ? iconSize : '20px',
     color: 'var(--affine-icon-color)',
   };
 });
 
-export const StyledContent = styled('div')(() => {
+export const StyledContent = styled('div')<{
+  fontSize?: CSSProperties['fontSize'];
+}>(({ fontSize }) => {
   return {
     textAlign: 'left',
     flexGrow: 1,
-    fontSize: 'var(--affine-font-base)',
+    fontSize: fontSize ? fontSize : 'var(--affine-font-base)',
     ...textEllipsis(1),
   };
 });

@@ -7,6 +7,7 @@
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
+    "./affine/gql": "./src/affine/gql.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
@@ -17,6 +18,8 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
+    "@affine/graphql": "workspace:*",
+    "@affine/y-provider": "workspace:*",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
@@ -26,6 +29,8 @@
     "lib0": "^0.2.83",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "socket.io-client": "^4.7.1",
+    "swr": "^2.2.1",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",
     "zod": "^3.22.2"

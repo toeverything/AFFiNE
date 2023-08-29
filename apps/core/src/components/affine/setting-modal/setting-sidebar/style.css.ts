@@ -34,7 +34,7 @@ export const sidebarItemsWrapper = style({
   selectors: {
     '&.scroll': {
       flexGrow: 1,
-      overflowY: 'hidden',
+      overflowY: 'auto',
     },
   },
 });
@@ -92,6 +92,8 @@ export const currentWorkspaceLabel = style({
   },
 });
 
+export const sidebarFooter = style({ padding: '0 16px' });
+
 export const accountButton = style({
   height: '42px',
   padding: '4px 8px',
@@ -110,6 +112,20 @@ globalStyle(`${accountButton} .avatar`, {
   border: '1px solid',
   borderColor: 'var(--affine-white)',
   marginRight: '10px',
+  flexShrink: 0,
+});
+
+globalStyle(`${accountButton} .avatar.not-sign`, {
+  width: '28px',
+  height: '28px',
+  borderRadius: '50%',
+  fontSize: '22px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderColor: 'var(--affine-border-color)',
+  color: 'var(--affine-border-color)',
+  background: 'var(--affine-white)',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

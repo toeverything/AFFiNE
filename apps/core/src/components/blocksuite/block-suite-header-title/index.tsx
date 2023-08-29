@@ -1,3 +1,4 @@
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   useBlockSuitePageMeta,
@@ -12,7 +13,6 @@ import {
   useState,
 } from 'react';
 
-import type { AffineOfficialWorkspace } from '../../../shared';
 import { EditorModeSwitch } from '../block-suite-mode-switch';
 import { PageMenu } from './operation-menu';
 import * as styles from './styles.css';
@@ -139,7 +139,7 @@ const BlockSuiteTitleWithRename = (props: BlockSuiteHeaderTitleProps) => {
 };
 
 export const BlockSuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
-  if (props.workspace.flavour === WorkspaceFlavour.PUBLIC) {
+  if (props.workspace.flavour === WorkspaceFlavour.AFFINE_PUBLIC) {
     return <StableTitle {...props} />;
   }
   return <BlockSuiteTitleWithRename {...props} />;

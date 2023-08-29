@@ -1,8 +1,8 @@
-{{- if .Values.ingress.enabled -}}
+{{- if .Values.global.ingress.enabled -}}
 {{- $fullName := include "affine.fullname" . -}}
-{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+{{- if and .Values.global.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.global.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.global.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -17,17 +17,17 @@ metadata:
   name: {{ $fullName }}
   labels:
     {{- include "affine.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+  {{- with .Values.global.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- if and .Values.global.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.global.ingress.className }}
   {{- end }}
-  {{- if .Values.ingress.tls }}
+  {{- if .Values.global.ingress.tls }}
   tls:
-    {{- range .Values.ingress.tls }}
+    {{- range .Values.global.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -36,9 +36,16 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    - host: "{{ .Values.ingress.host }}"
+    - host: "{{ .Values.global.ingress.host }}"
       http:
         paths:
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: affine-sync
+                port:
+                  number: {{ .Values.sync.service.port }}
           - path: /graphql
             pathType: Prefix
             backend:
@@ -60,5 +67,4 @@ spec:
                 name: affine-web
                 port:
                   number: {{ .Values.web.service.port }}
-
 {{- end }}

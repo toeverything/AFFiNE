@@ -1,41 +1,101 @@
-import { ScrollableContainer } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
 } from '@affine/component/setting-components';
+import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { Logo1Icon } from '@blocksuite/icons';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
-import { Suspense, useRef } from 'react';
+import { useAtom, useAtomValue } from 'jotai/react';
+import {
+  type ReactElement,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 
+import { authAtom } from '../../../../atoms';
+import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
+import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
   GeneralSettingKeys,
   GeneralSettingList,
 } from '../general-setting';
 import {
+  accountButton,
   currentWorkspaceLabel,
   settingSlideBar,
+  sidebarFooter,
   sidebarItemsWrapper,
   sidebarSelectItem,
   sidebarSubtitle,
   sidebarTitle,
 } from './style.css';
 
-interface SettingSidebarProps {
-  generalSettingList: GeneralSettingList;
-  onGeneralSettingClick: (key: GeneralSettingKeys) => void;
-  onWorkspaceSettingClick: (workspaceId: string) => void;
-  selectedWorkspaceId: string | null;
-  selectedGeneralKey: string | null;
+export type UserInfoProps = {
   onAccountSettingClick: () => void;
-}
+};
+
+export const UserInfo = ({
+  onAccountSettingClick,
+}: UserInfoProps): ReactElement => {
+  const user = useCurrentUser();
+  return (
+    <div className={accountButton} onClick={onAccountSettingClick}>
+      <UserAvatar
+        size={28}
+        name={user.name}
+        url={user.image}
+        className="avatar"
+      />
+
+      <div className="content">
+        <div className="name" title="xxx">
+          {user.name}
+        </div>
+        <div className="email" title="xxx">
+          {user.email}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const SignInButton = () => {
+  const t = useAFFiNEI18N();
+  const [, setAuthModal] = useAtom(authAtom);
+
+  return (
+    <div
+      className={accountButton}
+      onClick={useCallback(() => {
+        setAuthModal({ openModal: true, state: 'signIn' });
+      }, [setAuthModal])}
+    >
+      <div className="avatar not-sign">
+        <Logo1Icon />
+      </div>
+
+      <div className="content">
+        <div className="name" title={t['com.affine.settings.sign']()}>
+          {t['com.affine.settings.sign']()}
+        </div>
+        <div className="email" title={t['com.affine.setting.sign.message']()}>
+          {t['com.affine.setting.sign.message']()}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const SettingSidebar = ({
   generalSettingList,
@@ -43,9 +103,17 @@ export const SettingSidebar = ({
   onWorkspaceSettingClick,
   selectedWorkspaceId,
   selectedGeneralKey,
-}: SettingSidebarProps) => {
+  onAccountSettingClick,
+}: {
+  generalSettingList: GeneralSettingList;
+  onGeneralSettingClick: (key: GeneralSettingKeys) => void;
+  onWorkspaceSettingClick: (workspaceId: string) => void;
+  selectedWorkspaceId: string | null;
+  selectedGeneralKey: string | null;
+  onAccountSettingClick: () => void;
+}) => {
   const t = useAFFiNEI18N();
-
+  const loginStatus = useCurrenLoginStatus();
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>{t['Settings']()}</div>
@@ -79,32 +147,43 @@ export const SettingSidebar = ({
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
-          <ScrollableContainer>
-            <WorkspaceList
-              onWorkspaceSettingClick={onWorkspaceSettingClick}
-              selectedWorkspaceId={selectedWorkspaceId}
-            />
-          </ScrollableContainer>
+          <WorkspaceList
+            onWorkspaceSettingClick={onWorkspaceSettingClick}
+            selectedWorkspaceId={selectedWorkspaceId}
+          />
         </Suspense>
+      </div>
+
+      <div className={sidebarFooter}>
+        {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
+          <SignInButton />
+        ) : null}
+
+        {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+          <UserInfo onAccountSettingClick={onAccountSettingClick} />
+        ) : null}
       </div>
     </div>
   );
 };
 
-interface WorkspaceListProps {
-  onWorkspaceSettingClick: (workspaceId: string) => void;
-  selectedWorkspaceId: string | null;
-}
-
 export const WorkspaceList = ({
   onWorkspaceSettingClick,
   selectedWorkspaceId,
-}: WorkspaceListProps) => {
+}: {
+  onWorkspaceSettingClick: (workspaceId: string) => void;
+  selectedWorkspaceId: string | null;
+}) => {
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const [currentWorkspace] = useCurrentWorkspace();
+  const workspaceList = useMemo(() => {
+    return workspaces.filter(
+      ({ flavour }) => flavour !== WorkspaceFlavour.AFFINE_PUBLIC
+    );
+  }, [workspaces]);
   return (
     <>
-      {workspaces.map(workspace => {
+      {workspaceList.map(workspace => {
         return (
           <Suspense key={workspace.id} fallback={<WorkspaceListItemSkeleton />}>
             <WorkspaceListItem
@@ -122,19 +201,17 @@ export const WorkspaceList = ({
   );
 };
 
-interface WorkspaceListItemProps {
-  meta: RootWorkspaceMetadata;
-  onClick: () => void;
-  isCurrent: boolean;
-  isActive: boolean;
-}
-
 const WorkspaceListItem = ({
   meta,
   onClick,
   isCurrent,
   isActive,
-}: WorkspaceListItemProps) => {
+}: {
+  meta: RootWorkspaceMetadata;
+  onClick: () => void;
+  isCurrent: boolean;
+  isActive: boolean;
+}) => {
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
   const ref = useRef(null);

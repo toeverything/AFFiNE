@@ -38,6 +38,7 @@
     "@blocksuite/icons": "^2.1.31",
     "@blocksuite/lit": "0.0.0-20230827224823-81f8728e-nightly",
     "@blocksuite/store": "0.0.0-20230827224823-81f8728e-nightly",
+    "@tomfreudenberg/next-auth-mock": "^0.5.6",
     "chromatic": "^6.24.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",

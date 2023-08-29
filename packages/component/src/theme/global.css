@@ -1,11 +1,13 @@
 @import 'react-datepicker/dist/react-datepicker.css';
 @import './fonts.css';
+
 * {
   -webkit-overflow-scrolling: touch;
   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
   box-sizing: border-box;
   /*transition: all 0.1s;*/
 }
+
 html,
 body,
 h1,
@@ -40,6 +42,7 @@ menu {
   margin: 0;
   padding: 0;
 }
+
 header,
 footer,
 section,
@@ -54,15 +57,18 @@ menu,
 details {
   display: block;
 }
+
 table {
   border-collapse: collapse;
   border-spacing: 0;
 }
+
 caption,
 th {
   text-align: left;
   font-weight: normal;
 }
+
 html,
 body,
 fieldset,
@@ -71,6 +77,7 @@ iframe,
 abbr {
   border: 0;
 }
+
 i,
 cite,
 em,
@@ -79,13 +86,16 @@ address,
 dfn {
   font-style: normal;
 }
+
 [hidefocus],
 summary {
   outline: 0;
 }
+
 li {
   list-style: none;
 }
+
 h1,
 h2,
 h3,
@@ -95,32 +105,39 @@ h6,
 small {
   font-size: 100%;
 }
+
 sup,
 sub {
   font-size: 83%;
 }
+
 pre,
 code,
 kbd,
 samp {
   font-family: inherit;
 }
+
 q:before,
 q:after {
   content: none;
 }
+
 textarea {
   overflow: auto;
   resize: none;
 }
+
 label,
 summary {
   cursor: default;
 }
+
 a,
 button {
   cursor: pointer;
 }
+
 h1,
 h2,
 h3,
@@ -131,6 +148,7 @@ strong,
 b {
   font-weight: bold;
 }
+
 del,
 ins,
 u,
@@ -139,6 +157,7 @@ a,
 a:hover {
   text-decoration: none;
 }
+
 body,
 textarea,
 input,
@@ -150,9 +169,9 @@ legend {
   outline: 0;
   border: 0;
   font-size: var(--affine-font-base);
-  line-height: var(--affine-line-height);
   font-family: var(--affine-font-family);
 }
+
 body {
   background: transparent;
   overflow: hidden;
@@ -161,9 +180,12 @@ body {
 input {
   border: none;
   -moz-appearance: none;
-  -webkit-appearance: none; /*Solve the rounded corners of buttons on ios*/
-  border-radius: 0; /*Solve the problem of rounded corners of the input box on ios*/
-  outline: medium; /*Remove the default yellow border on mouse click*/
+  -webkit-appearance: none;
+  /*Solve the rounded corners of buttons on ios*/
+  border-radius: 0;
+  /*Solve the problem of rounded corners of the input box on ios*/
+  outline: medium;
+  /*Remove the default yellow border on mouse click*/
   background-color: transparent;
   caret-color: var(--affine-primary-color);
 }
@@ -183,17 +205,24 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE 10+ */
 }
+
 ::-webkit-scrollbar {
-  width: 0; /* Chrome Safari */
+  width: 0;
+  /* Chrome Safari */
   height: 0;
 }
+
 .affine-doc-viewport::-webkit-scrollbar {
-  width: 20px; /* Chrome Safari */
+  width: 20px;
+  /* Chrome Safari */
   height: 20px;
 }
+
 .affine-doc-viewport::-webkit-scrollbar-thumb {
   border-radius: 12px;
   background-clip: padding-box;
@@ -202,13 +231,16 @@ input[type='number']::-webkit-outer-spin-button {
   border-color: transparent;
   transition: all 0.2s;
 }
+
 .affine-doc-viewport:hover::-webkit-scrollbar-thumb {
   background-color: var(--affine-divider-color);
 }
+
 .affine-doc-viewport:hover::-webkit-scrollbar-thumb:hover {
   background-color: var(--affine-icon-color);
   border-width: 5px;
 }
+
 .editor-wrapper {
   position: relative;
   padding-right: 0;
@@ -233,6 +265,7 @@ input[type='number']::-webkit-outer-spin-button {
 affine-block-hub {
   position: unset !important;
 }
+
 .block-hub-menu-container {
   position: unset !important;
 }
@@ -258,5 +291,9 @@ input,
 select,
 textarea,
 [role='button'] {
+  -webkit-app-region: no-drag;
+}
+
+#webpack-dev-server-client-overlay {
   -webkit-app-region: no-drag;
 }

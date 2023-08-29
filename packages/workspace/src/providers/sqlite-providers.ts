@@ -24,10 +24,18 @@ const createDatasource = (workspaceId: string): DatasourceDocAdapter => {
 
   return {
     queryDocState: async guid => {
-      return window.apis.db.getDocAsUpdates(
+      const update = await window.apis.db.getDocAsUpdates(
         workspaceId,
         workspaceId === guid ? undefined : guid
       );
+
+      if (update) {
+        return {
+          missing: update,
+        };
+      }
+
+      return false;
     },
     sendDocUpdate: async (guid, update) => {
       return window.apis.db.applyDocUpdate(

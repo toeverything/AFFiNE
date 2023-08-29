@@ -8,14 +8,14 @@ export const SIZE_CONFIG = {
   [SIZE_SMALL]: {
     iconSize: 16,
     fontSize: 'var(--affine-font-xs)',
-    borderRadius: 4,
+    borderRadius: 8,
     height: 28,
-    padding: 6,
+    padding: 12,
   },
   [SIZE_MIDDLE]: {
     iconSize: 20,
     fontSize: 'var(--affine-font-sm)',
-    borderRadius: 4,
+    borderRadius: 8,
     height: 32,
     padding: 12,
   },
@@ -24,7 +24,7 @@ export const SIZE_CONFIG = {
     fontSize: 'var(--affine-font-base)',
     height: 38,
     padding: 24,
-    borderRadius: 4,
+    borderRadius: 8,
   },
 } as const;
 
@@ -51,6 +51,7 @@ export const getButtonColors = (
         color: 'var(--affine-white)',
         borderColor: 'var(--affine-primary-color)',
         backgroundBlendMode: 'overlay',
+        opacity: disabled ? '.4' : '1',
         '.affine-button-icon': {
           color: 'var(--affine-white)',
         },
