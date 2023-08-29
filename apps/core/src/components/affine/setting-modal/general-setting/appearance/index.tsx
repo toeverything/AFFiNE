@@ -81,6 +81,7 @@ export const AppearanceSettings = () => {
   const t = useAFFiNEI18N();
 
   const [appSettings, setAppSettings] = useAppSetting();
+
   const changeSwitch = useCallback(
     (key: keyof AppSetting, checked: boolean) => {
       setAppSettings({ [key]: checked });
@@ -131,6 +132,7 @@ export const AppearanceSettings = () => {
             desc={t[
               'com.affine.settings.appearance.border-style-description'
             ]()}
+            data-testid="client-border-style-trigger"
           >
             <Switch
               checked={appSettings.clientBorder}

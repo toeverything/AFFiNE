@@ -63,7 +63,7 @@ export const DeleteLeaveWorkspace = ({
         desc={t['com.affine.settings.remove-workspace-description']()}
         style={{ cursor: 'pointer' }}
         onClick={onLeaveOrDelete}
-        testId="delete-workspace-button"
+        data-testid="delete-workspace-button"
       >
         <ArrowRightSmallIcon />
       </SettingRow>

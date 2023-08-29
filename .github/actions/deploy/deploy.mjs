@@ -33,6 +33,7 @@ const isBeta = buildType === 'beta';
 
 const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
+  const imageTag = `${buildType}${GIT_SHORT_HASH}`;
   const staticIpName = isProduction
     ? 'affine-cluster-production'
     : isBeta
@@ -75,9 +76,9 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string global.ingress.host="${DEPLOY_HOST || CANARY_DEPLOY_HOST}"`,
     ...redisAndPostgres,
     `--set        web.replicaCount=${webReplicaCount}`,
-    `--set-string web.image.tag="${GIT_SHORT_HASH}"`,
+    `--set-string web.image.tag="${imageTag}"`,
     `--set        graphql.replicaCount=${graphqlReplicaCount}`,
-    `--set-string graphql.image.tag="${GIT_SHORT_HASH}"`,
+    `--set-string graphql.image.tag="${imageTag}"`,
     `--set        graphql.app.objectStorage.r2.enabled=true`,
     `--set-string graphql.app.objectStorage.r2.accountId="${R2_ACCOUNT_ID}"`,
     `--set-string graphql.app.objectStorage.r2.accessKeyId="${R2_ACCESS_KEY_ID}"`,
@@ -91,9 +92,9 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.oauth.google.clientSecret="${AFFINE_GOOGLE_CLIENT_SECRET}"`,
     `--set        graphql.app.experimental.enableJwstCodec=true`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
-    `--set-string sync.image.tag="${GIT_SHORT_HASH}"`,
+    `--set-string sync.image.tag="${imageTag}"`,
     ...serviceAnnotations,
-    `--version "0.0.0-alpha.${GIT_SHORT_HASH}" --timeout 10m`,
+    `--version "0.0.0-${buildType}.${GIT_SHORT_HASH}" --timeout 10m`,
     flag,
   ].join(' ');
   return deployCommand;

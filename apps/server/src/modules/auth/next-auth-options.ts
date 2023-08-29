@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { BadRequestException, FactoryProvider } from '@nestjs/common';
+import { BadRequestException, FactoryProvider, Logger } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import { NextAuthOptions } from 'next-auth';
@@ -35,6 +35,7 @@ function wrapUrlWithSchema(url: string, schema: string | null) {
 export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
   useFactory(config: Config, prisma: PrismaService, mailer: MailService) {
+    const logger = new Logger('NextAuth');
     const prismaAdapter = PrismaAdapter(prisma);
     // createUser exists in the adapter
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -97,6 +98,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
               text: text({ url: wrappedUrl, host }),
               html: html({ url: wrappedUrl, host }),
             });
+            logger.debug(
+              `send verification email success: ${result.accepted.join(', ')}`
+            );
             const failed = result.rejected
               .concat(result.pending)
               .filter(Boolean);
@@ -116,39 +120,37 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       logger: console,
     };
 
-    if (!config.node.prod) {
-      nextAuthOptions.providers.push(
-        // @ts-expect-error esm interop issue
-        Credentials.default({
-          name: 'Password',
-          credentials: {
-            email: {
-              label: 'Email',
-              type: 'text',
-              placeholder: 'torvalds@osdl.org',
-            },
-            password: { label: 'Password', type: 'password' },
+    nextAuthOptions.providers.push(
+      // @ts-expect-error esm interop issue
+      Credentials.default({
+        name: 'Password',
+        credentials: {
+          email: {
+            label: 'Email',
+            type: 'text',
+            placeholder: 'torvalds@osdl.org',
           },
-          async authorize(
-            credentials:
-              | Record<'email' | 'password' | 'hashedPassword', string>
-              | undefined
-          ) {
-            if (!credentials) {
-              return null;
-            }
-            const { password, hashedPassword } = credentials;
-            if (!password || !hashedPassword) {
-              return null;
-            }
-            if (!(await verify(hashedPassword, password))) {
-              return null;
-            }
-            return credentials;
-          },
-        })
-      );
-    }
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(
+          credentials:
+            | Record<'email' | 'password' | 'hashedPassword', string>
+            | undefined
+        ) {
+          if (!credentials) {
+            return null;
+          }
+          const { password, hashedPassword } = credentials;
+          if (!password || !hashedPassword) {
+            return null;
+          }
+          if (!(await verify(hashedPassword, password))) {
+            return null;
+          }
+          return credentials;
+        },
+      })
+    );
 
     if (config.auth.oauthProviders.github) {
       nextAuthOptions.providers.push(

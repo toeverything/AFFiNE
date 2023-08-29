@@ -1,11 +1,12 @@
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { WorkspaceSubPath, WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
 import { currentPageIdAtom } from '@toeverything/infra/atom';
+import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

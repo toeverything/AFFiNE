@@ -1,4 +1,4 @@
-import { Menu, MenuItem, Tooltip } from '@affine/component';
+import { Menu, MenuItem } from '@affine/component';
 import {
   InviteModal,
   type InviteModalProps,
@@ -12,8 +12,9 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button, IconButton } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
-import { useSetAtom } from 'jotai/index';
+import { useSetAtom } from 'jotai/react';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -34,10 +35,7 @@ export interface MembersPanelProps extends WorkspaceSettingDetailProps {
 const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
   return (
-    <Tooltip
-      content={t['com.affine.settings.member-tooltip']()}
-      placement="top"
-    >
+    <Tooltip content={t['com.affine.settings.member-tooltip']()}>
       <div className={style.fakeWrapper}>
         <SettingRow name={`${t['Members']()} (0)`} desc={t['Members hint']()}>
           <Button size="large">{t['Invite Members']()}</Button>

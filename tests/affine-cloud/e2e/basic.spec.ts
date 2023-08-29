@@ -47,6 +47,9 @@ test('enable cloud success', async ({ page, context }) => {
   await page.getByTestId('continue-login-button').click({
     delay: 200,
   });
+  await page.getByTestId('sign-in-with-password').click({
+    delay: 200,
+  });
   await page.getByTestId('password-input').type('123456', {
     delay: 50,
   });

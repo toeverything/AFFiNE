@@ -18,21 +18,23 @@ export const root = style({
     '&:hover': {
       background: 'var(--affine-white-60)',
     },
-    '&[data-has-update="true"]:before': {
+    '&[data-disabled="true"]': {
+      pointerEvents: 'none',
+    },
+    '&:after': {
       content: "''",
       position: 'absolute',
-      top: '-3px',
-      right: '-3px',
+      top: '-2px',
+      right: '-2px',
       width: '8px',
       height: '8px',
       backgroundColor: 'var(--affine-primary-color)',
       borderRadius: '50%',
       zIndex: 1,
-      opacity: 1,
-      transition: '0.3s ease',
+      transition: 'opacity 0.3s',
     },
-    '&[data-disabled="true"]': {
-      pointerEvents: 'none',
+    '&:hover:after': {
+      opacity: 0,
     },
   },
   vars: {
@@ -42,7 +44,7 @@ export const root = style({
 
 export const icon = style({
   marginRight: '18px',
-  color: 'var(--affine-primary-color)',
+  color: 'var(--affine-icon-color)',
   fontSize: '24px',
 });
 
@@ -90,7 +92,7 @@ export const installLabelNormal = style([
   {
     justifyContent: 'space-between',
     selectors: {
-      [`${root}:hover &`]: {
+      [`${root}:hover &, ${root}[data-updating=true] &`]: {
         display: 'none',
       },
     },
@@ -102,7 +104,7 @@ export const installLabelHover = style([
   {
     display: 'none',
     selectors: {
-      [`${root}:hover &`]: {
+      [`${root}:hover &, ${root}[data-updating=true] &`]: {
         display: 'flex',
       },
     },
@@ -175,7 +177,7 @@ export const particles = style({
   pointerEvents: 'none',
   display: 'none',
   selectors: {
-    [`${root}:hover &`]: {
+    [`${root}:hover &, ${root}[data-updating=true] &`]: {
       display: 'block',
     },
     '&:before': {
@@ -224,8 +226,10 @@ export const halo = style({
       'radial-gradient(ellipse 30% 45% at bottom, rgba(30, 150, 235, 0.6), transparent)',
   },
   selectors: {
-    '&:hover:before, &:hover:after': {
-      transform: 'translateY(0) scale(1)',
-    },
+    [`${root}:hover &:before, ${root}:hover &:after,
+      ${root}[data-updating=true] &:before, ${root}[data-updating=true] &:after`]:
+      {
+        transform: 'translateY(0) scale(1)',
+      },
   },
 });

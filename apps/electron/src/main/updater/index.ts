@@ -15,7 +15,7 @@ export const updaterHandlers = {
     if (res) {
       const { updateInfo } = res;
       return {
-        updateInfo,
+        version: updateInfo.version,
       };
     }
     return null;

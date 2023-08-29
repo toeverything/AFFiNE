@@ -1,10 +1,10 @@
-import { Tooltip } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtom } from 'jotai';
 import type { CSSProperties } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { pageSettingFamily } from '../../../atoms';
 import type { BlockSuiteWorkspace } from '../../../shared';
@@ -21,12 +21,12 @@ export type EditorModeSwitchProps = {
 const TooltipContent = () => {
   const t = useAFFiNEI18N();
   return (
-    <div>
+    <>
       {t['Switch']()}
       <StyledKeyboardItem>
         {!environment.isServer && environment.isMacOs ? '⌥ + S' : 'Alt + S'}
       </StyledKeyboardItem>
-    </div>
+    </>
   );
 };
 export const EditorModeSwitch = ({
@@ -40,6 +40,7 @@ export const EditorModeSwitch = ({
     meta => meta.id === pageId
   );
   const t = useAFFiNEI18N();
+  const ref = useRef(null);
   assertExists(pageMeta);
   const { trash } = pageMeta;
   useEffect(() => {
@@ -70,11 +71,17 @@ export const EditorModeSwitch = ({
   }, [setSetting, t, trash]);
 
   return (
-    <Tooltip content={<TooltipContent />}>
+    <Tooltip
+      content={<TooltipContent />}
+      portalOptions={{
+        container: ref.current,
+      }}
+    >
       <StyledEditorModeSwitch
         style={style}
         switchLeft={currentMode === 'page'}
         showAlone={trash}
+        ref={ref}
       >
         <PageSwitchItem
           data-testid="switch-page-mode-button"

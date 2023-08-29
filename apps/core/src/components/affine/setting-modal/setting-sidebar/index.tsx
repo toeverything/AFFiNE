@@ -1,4 +1,3 @@
-import { Tooltip } from '@affine/component';
 import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
@@ -10,15 +9,18 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
-import { useAtom } from 'jotai';
-import type { ReactElement } from 'react';
-import { useCallback } from 'react';
-import { Suspense } from 'react';
-import { useMemo } from 'react';
+import { useAtom, useAtomValue } from 'jotai/react';
+import {
+  type ReactElement,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
@@ -212,22 +214,25 @@ const WorkspaceListItem = ({
 }) => {
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
+  const ref = useRef(null);
+
   return (
     <div
       className={clsx(sidebarSelectItem, { active: isActive })}
       title={workspaceName}
       onClick={onClick}
       data-testid="workspace-list-item"
+      ref={ref}
     >
       <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
         <Tooltip
           content="Current"
-          title="Current"
-          offset={[0, -5]}
-          placement="top"
-          disablePortal={false}
+          side="top"
+          portalOptions={{
+            container: ref.current,
+          }}
         >
           <div
             className={currentWorkspaceLabel}

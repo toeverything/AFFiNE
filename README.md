@@ -146,13 +146,41 @@ Thanks a lot to the community for providing such powerful and simple libraries, 
 
 # Contributors
 
+## Current Core members
+
+Team members who are currently maintaining the project:
+
+- [JimmFly](https://github.com/JimmFly) - Jinfei Yang <yangjinfei001@gmail.com> (he/him)
+- [pengx17](https://github.com/pengx17) - Peng Xiao <pengxiao@outlook.com> (he/him)
+- [QiShaoXuan](https://github.com/QiSHaoXuan) - Shaoxuan Qi <qishaoxuan777@gmail.com> (he/him)
+- [himself65](https://github.com/himself65) - Zeyu "Alex" Yang <himself65@outlook.com> (he/him)
+
+## All Contributors
+
 We would like to express our gratitude to all the individuals who have already contributed to AFFiNE! If you have any AFFiNE-related project, documentation, tool or template, please feel free to contribute it by submitting a pull request to our curated list on GitHub: [awesome-affine](https://github.com/toeverything/awesome-affine).
 
 <a href="https://github.com/toeverything/affine/graphs/contributors">
   <img alt="contributors" src="https://opencollective.com/affine/contributors.svg?width=890&button=false" />
 </a>
 
+## Data Compatibility
+
+Data compatibility is a very important issue for us. We will try our best to ensure that the data is compatible with the previous version.
+
+If you encounter any problems when upgrading the version, please feel free to [contact us](mailto:developer@toeverything.info).
+
+| AFFiNE Version | Export/Import workspace | Data auto migration |
+| -------------- | ----------------------- | ------------------- |
+| <= 0.5.4       | ❌️                     | ❌                  |
+| ^0.6.0         | ⚠️                      | ✅                  |
+| ^0.7.0         | ⚠️                      | ✅                  |
+| ^0.8.0         | ✅                      | ✅                  |
+
 ## Self-Host
+
+> We know that the self-host version has been out of date for a long time.
+>
+> We are working hard to get this updated to the latest version, you can try our desktop version first.
 
 Get started with Docker and deploy your own feature-rich, restriction-free deployment of AFFiNE.
 We are working hard to get this updated to the latest version, you can keep an eye on the [latest packages].
