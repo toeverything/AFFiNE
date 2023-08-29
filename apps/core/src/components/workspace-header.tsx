@@ -4,6 +4,7 @@ import {
   SaveCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
+import { Unreachable } from '@affine/env/constant';
 import type { Collection } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import {
@@ -11,8 +12,10 @@ import {
   type WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useSetAtom } from 'jotai/react';
 import { useCallback } from 'react';
 
+import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
 import { SharePageModal } from './affine/share-page-modal';
@@ -76,6 +79,7 @@ export function WorkspaceHeader({
   currentEntry,
 }: WorkspaceHeaderProps<WorkspaceFlavour>) {
   const setting = useCollectionManager(currentWorkspaceId);
+  const setAppHeader = useSetAtom(appHeaderAtom);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
   const getPageInfoById = useGetPageInfoById(
@@ -90,6 +94,8 @@ export function WorkspaceHeader({
     return (
       <>
         <Header
+          mainContainerAtom={mainContainerAtom}
+          ref={setAppHeader}
           left={
             <CollectionList
               setting={setting}
@@ -112,7 +118,13 @@ export function WorkspaceHeader({
     (currentEntry.subPath === WorkspaceSubPath.SHARED ||
       currentEntry.subPath === WorkspaceSubPath.TRASH)
   ) {
-    return <Header center={<WorkspaceModeFilterTab />} />;
+    return (
+      <Header
+        mainContainerAtom={mainContainerAtom}
+        ref={setAppHeader}
+        center={<WorkspaceModeFilterTab />}
+      />
+    );
   }
 
   // route in edit page
@@ -128,6 +140,8 @@ export function WorkspaceHeader({
       ) : null;
     return (
       <Header
+        mainContainerAtom={mainContainerAtom}
+        ref={setAppHeader}
         center={
           <BlockSuiteHeaderTitle
             workspace={currentWorkspace}
@@ -144,5 +158,5 @@ export function WorkspaceHeader({
     );
   }
 
-  return null;
+  throw new Unreachable();
 }
