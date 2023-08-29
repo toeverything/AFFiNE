@@ -8,7 +8,6 @@ _next
 lib
 .eslintrc.js
 packages/i18n/src/i18n-generated.ts
-apps/electron/forge.config.js
 e2e-dist-*
 static
 web-static
