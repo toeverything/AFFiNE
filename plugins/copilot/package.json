@@ -16,10 +16,10 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@toeverything/components": "^0.0.19",
+    "@toeverything/components": "^0.0.24",
     "idb": "^7.1.1",
-    "langchain": "^0.0.134",
-    "marked": "^7.0.4",
+    "langchain": "^0.0.136",
+    "marked": "^7.0.5",
     "marked-gfm-heading-id": "^3.0.6",
     "marked-mangle": "^1.1.2",
     "zod": "^3.22.2"
