@@ -5,11 +5,11 @@ import type {
 import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
+import { Menu } from '@toeverything/components/menu';
 import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
 import { type ReactElement, useRef } from 'react';
 import { useCallback, useState } from 'react';
 
-import { Menu } from '../../ui/menu/menu';
 import { Export } from './export';
 import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
 import { SharePage } from './share-page';
@@ -129,14 +129,9 @@ export const ShareMenu = (props: ShareMenuProps) => {
   );
   return (
     <Menu
-      content={Share}
-      visible={open}
-      placement="bottom"
-      trigger={['click']}
-      width={439}
-      disablePortal={true}
-      onClickAway={() => {
-        setOpen(false);
+      items={Share}
+      rootOptions={{
+        open,
       }}
     >
       <Button

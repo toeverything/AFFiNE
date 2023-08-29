@@ -1,4 +1,4 @@
-import { FlexWrapper, Menu, MenuItem } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -12,14 +12,19 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { Divider } from '@toeverything/components/divider';
+import {
+  Menu,
+  MenuIcon,
+  MenuItem,
+  MenuSeparator,
+} from '@toeverything/components/menu';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtom, useSetAtom } from 'jotai';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
@@ -34,9 +39,10 @@ type PageMenuProps = {
   rename?: () => void;
   pageId: string;
 };
-
+// fixme: refactor this file
 export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
+  const ref = useRef(null);
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
 
@@ -105,17 +111,25 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const EditMenu = (
     <>
       <MenuItem
-        icon={<EditIcon />}
+        preFix={
+          <MenuIcon>
+            <EditIcon />
+          </MenuIcon>
+        }
         data-testid="editor-option-menu-rename"
-        onClick={rename}
+        onSelect={rename}
         style={menuItemStyle}
       >
         {t['Rename']()}
       </MenuItem>
       <MenuItem
-        icon={mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+        preFix={
+          <MenuIcon>
+            {mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+          </MenuIcon>
+        }
         data-testid="editor-option-menu-edgeless"
-        onClick={handleSwitchMode}
+        onSelect={handleSwitchMode}
         style={menuItemStyle}
       >
         {t['Convert to ']()}
@@ -123,14 +137,16 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       </MenuItem>
       <MenuItem
         data-testid="editor-option-menu-favorite"
-        onClick={handleFavorite}
+        onSelect={handleFavorite}
         style={menuItemStyle}
-        icon={
-          favorite ? (
-            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-          ) : (
-            <FavoriteIcon />
-          )
+        preFix={
+          <MenuIcon>
+            {favorite ? (
+              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+            ) : (
+              <FavoriteIcon />
+            )}
+          </MenuIcon>
         }
       >
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
@@ -144,28 +160,36 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
-      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
+      <MenuSeparator />
       <MenuItem
-        icon={<DuplicateIcon />}
+        preFix={
+          <MenuIcon>
+            <DuplicateIcon />
+          </MenuIcon>
+        }
         data-testid="editor-option-menu-duplicate"
-        onClick={duplicate}
+        onSelect={duplicate}
         style={menuItemStyle}
       >
         {t['com.affine.header.option.duplicate']()}
       </MenuItem>
       <MenuItem
-        icon={<ImportIcon />}
+        preFix={
+          <MenuIcon>
+            <ImportIcon />
+          </MenuIcon>
+        }
         data-testid="editor-option-menu-import"
-        onClick={importFile}
+        onSelect={importFile}
         style={menuItemStyle}
       >
         {t['Import']()}
       </MenuItem>
       <Export />
-      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
+      <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"
-        onItemClick={() => {
+        onSelect={() => {
           setOpenConfirm(true);
         }}
       />
@@ -174,21 +198,19 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
 
   return (
     <>
-      <FlexWrapper alignItems="center" justifyContent="center">
+      <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>
         <Menu
-          content={EditMenu}
-          placement="bottom-end"
-          disablePortal={true}
-          trigger="click"
-          menuStyles={{
-            borderRadius: '8px',
-            padding: '8px',
-            background: 'var(--affine-background-overlay-panel-color)',
+          items={EditMenu}
+          portalOptions={{
+            container: ref.current,
           }}
+          // menuStyles={{
+          //   borderRadius: '8px',
+          //   padding: '8px',
+          //   background: 'var(--affine-background-overlay-panel-color)',
+          // }}
         >
-          <div>
-            <HeaderDropDownButton />
-          </div>
+          <HeaderDropDownButton />
         </Menu>
         <MoveToTrash.ConfirmModal
           open={openConfirm}

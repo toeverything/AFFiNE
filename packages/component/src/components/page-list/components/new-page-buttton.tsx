@@ -1,10 +1,11 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
+import { Menu } from '@toeverything/components/menu';
 import { useState } from 'react';
 
-import { DropdownButton } from '../../../ui/button/dropdown';
-import { Menu } from '../../../ui/menu/menu';
+// import { Menu } from '../../../ui/menu/menu';
 import { BlockCard } from '../../card/block-card';
+import { DropdownButton } from './dropdown';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
@@ -59,18 +60,10 @@ export const NewPageButton = ({
   const [open, setOpen] = useState(false);
   return (
     <Menu
-      visible={open}
-      placement="bottom-end"
-      trigger={['click']}
-      disablePortal={true}
-      onClickAway={() => {
-        setOpen(false);
+      rootOptions={{
+        open,
       }}
-      menuStyles={{
-        padding: '0px',
-        background: 'var(--affine-background-overlay-panel-color)',
-      }}
-      content={
+      items={
         <CreateNewPagePopup
           createNewPage={() => {
             createNewPage();

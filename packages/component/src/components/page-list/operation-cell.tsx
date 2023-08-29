@@ -9,10 +9,11 @@ import {
   ResetIcon,
 } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
+import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
 
-import { Confirm, FlexWrapper, Menu, MenuItem } from '../../..';
+import { Confirm, FlexWrapper } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export interface OperationCellProps {
@@ -43,31 +44,40 @@ export const OperationCell = ({
       {isPublic && (
         <DisablePublicSharing
           data-testid="disable-public-sharing"
-          onItemClick={() => {
+          onSelect={() => {
             setOpenDisableShared(true);
           }}
         />
       )}
       <MenuItem
         onClick={onToggleFavoritePage}
-        icon={
-          favorite ? (
-            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-          ) : (
-            <FavoriteIcon />
-          )
+        preFix={
+          <MenuIcon>
+            {favorite ? (
+              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+            ) : (
+              <FavoriteIcon />
+            )}
+          </MenuIcon>
         }
       >
         {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
       </MenuItem>
       {!isDesktop && (
-        <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>
+        <MenuItem
+          onClick={onOpenPageInNewTab}
+          preFix={
+            <MenuIcon>
+              <OpenInNewIcon />
+            </MenuIcon>
+          }
+        >
           {t['Open in new tab']()}
         </MenuItem>
       )}
       <MoveToTrash
         data-testid="move-to-trash"
-        onItemClick={() => {
+        onSelect={() => {
           setOpen(true);
         }}
       />
@@ -76,13 +86,8 @@ export const OperationCell = ({
   return (
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
-        <Menu
-          content={OperationMenu}
-          placement="bottom"
-          disablePortal={true}
-          trigger="click"
-        >
-          <IconButton data-testid="page-list-operation-button">
+        <Menu items={OperationMenu}>
+          <IconButton type="plain" data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>

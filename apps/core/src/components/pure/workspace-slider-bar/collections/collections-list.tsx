@@ -1,5 +1,4 @@
-import { Menu } from '@affine/component';
-import { MenuItem } from '@affine/component/app-sidebar';
+import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import {
   EditCollectionModel,
   useCollectionManager,
@@ -21,6 +20,13 @@ import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
+import { IconButton } from '@toeverything/components/button';
+import {
+  Menu,
+  MenuIcon,
+  MenuItem,
+  type MenuItemProps,
+} from '@toeverything/components/menu';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import type { ReactElement } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -60,7 +66,7 @@ const CollectionOperations = ({
           icon: ReactElement;
           name: string;
           click: () => void;
-          className?: string;
+          type?: MenuItemProps['type'];
           element?: undefined;
         }
       | {
@@ -70,12 +76,20 @@ const CollectionOperations = ({
   >(
     () => [
       {
-        icon: <FilterIcon />,
+        icon: (
+          <MenuIcon>
+            <FilterIcon />
+          </MenuIcon>
+        ),
         name: t['Edit Filter'](),
         click: showUpdateCollection,
       },
       {
-        icon: <UnpinIcon />,
+        icon: (
+          <MenuIcon>
+            <UnpinIcon />
+          </MenuIcon>
+        ),
         name: t['Unpin'](),
         click: () => {
           return setting.updateCollection({
@@ -88,12 +102,16 @@ const CollectionOperations = ({
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
-        icon: <DeleteIcon />,
+        icon: (
+          <MenuIcon>
+            <DeleteIcon />
+          </MenuIcon>
+        ),
         name: t['Delete'](),
         click: () => {
           return setting.deleteCollection(view.id);
         },
-        className: styles.deleteFolder,
+        type: 'danger',
       },
     ],
     [setting, showUpdateCollection, t, view]
@@ -108,8 +126,8 @@ const CollectionOperations = ({
           <MenuItem
             data-testid="collection-option"
             key={action.name}
-            className={action.className}
-            icon={action.icon}
+            type={action.type}
+            preFix={action.icon}
             onClick={action.click}
           >
             {action.name}
@@ -137,7 +155,7 @@ const CollectionRenderer = ({
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
     setting.selectCollection(collection.id);
   }, [jumpToSubPath, workspace.id, setting, collection.id]);
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef, isOver, node } = useDroppable({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {
       addToCollection: (id: string) => {
@@ -181,6 +199,7 @@ const CollectionRenderer = ({
   const pagesToRender = pages.filter(
     page => filterPage(collection, page) && !page.trash
   );
+
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModel
@@ -191,7 +210,7 @@ const CollectionRenderer = ({
         open={show}
         onClose={() => showUpdateCollection(false)}
       />
-      <MenuItem
+      <CollectionItem
         data-testid="collection-item"
         data-type="collection-list-item"
         ref={setNodeRef}
@@ -200,19 +219,24 @@ const CollectionRenderer = ({
         icon={<ViewLayersIcon />}
         postfix={
           <Menu
-            trigger="click"
-            placement="bottom-start"
-            content={
+            items={
               <CollectionOperations
                 view={collection}
                 showUpdateCollection={() => showUpdateCollection(true)}
                 setting={setting}
               />
             }
+            portalOptions={{
+              container: node.current,
+            }}
           >
-            <div data-testid="collection-options" className={styles.more}>
+            <IconButton
+              data-testid="collection-options"
+              type="plain"
+              withoutHoverStyle
+            >
               <MoreHorizontalIcon />
-            </div>
+            </IconButton>
           </Menu>
         }
         collapsed={pagesToRender.length > 0 ? collapsed : undefined}
@@ -227,7 +251,7 @@ const CollectionRenderer = ({
         >
           <div>{collection.name}</div>
         </div>
-      </MenuItem>
+      </CollectionItem>
       <Collapsible.Content className={styles.collapsibleContent}>
         <div style={{ marginLeft: 20, marginTop: -4 }}>
           {pagesToRender.map(page => {
@@ -260,13 +284,13 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const t = useAFFiNEI18N();
   if (pinedCollections.length === 0) {
     return (
-      <MenuItem
+      <CollectionItem
         data-testid="slider-bar-collection-null-description"
         icon={<InformationIcon />}
         disabled
       >
         <span>{t['Create a collection']()}</span>
-      </MenuItem>
+      </CollectionItem>
     );
   }
   return (

@@ -2,23 +2,18 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import {
-  ArrowRightSmallIcon,
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
+import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { Menu, MenuItem } from '../../..';
 import { getContentParser } from './get-content-parser';
 import type { CommonMenuItemProps } from './types';
-
-const MenuItemStyle = {
-  padding: '4px 12px',
-};
 
 export const ExportToPdfMenuItem = ({
   onSelect,
@@ -80,9 +75,12 @@ export const ExportToPdfMenuItem = ({
   return (
     <MenuItem
       data-testid="export-to-pdf"
-      onClick={onClickDownloadPDF}
-      icon={<ExportToPdfIcon />}
-      style={MenuItemStyle}
+      onSelect={onClickDownloadPDF}
+      preFix={
+        <MenuIcon>
+          <ExportToPdfIcon />
+        </MenuIcon>
+      }
     >
       {t['Export to PDF']()}
     </MenuItem>
@@ -124,9 +122,12 @@ export const ExportToHtmlMenuItem = ({
     <>
       <MenuItem
         data-testid="export-to-html"
-        onClick={onClickExportHtml}
-        icon={<ExportToHtmlIcon />}
-        style={MenuItemStyle}
+        onSelect={onClickExportHtml}
+        preFix={
+          <MenuIcon>
+            <ExportToHtmlIcon />
+          </MenuIcon>
+        }
       >
         {t['Export to HTML']()}
       </MenuItem>
@@ -171,9 +172,12 @@ export const ExportToPngMenuItem = ({
     <>
       <MenuItem
         data-testid="export-to-png"
-        onClick={onClickDownloadPNG}
-        icon={<ExportToPngIcon />}
-        style={MenuItemStyle}
+        onSelect={onClickDownloadPNG}
+        preFix={
+          <MenuIcon>
+            <ExportToPngIcon />
+          </MenuIcon>
+        }
       >
         {t['Export to PNG']()}
       </MenuItem>
@@ -216,9 +220,12 @@ export const ExportToMarkdownMenuItem = ({
     <>
       <MenuItem
         data-testid="export-to-markdown"
-        onClick={onClickExportMarkdown}
-        icon={<ExportToMarkdownIcon />}
-        style={MenuItemStyle}
+        onSelect={onClickExportMarkdown}
+        preFix={
+          <MenuIcon>
+            <ExportToMarkdownIcon />
+          </MenuIcon>
+        }
       >
         {t['Export to Markdown']()}
       </MenuItem>
@@ -226,16 +233,12 @@ export const ExportToMarkdownMenuItem = ({
   );
 };
 
-export const Export = ({
-  onItemClick,
-}: CommonMenuItemProps<{ type: 'markdown' | 'html' | 'pdf' | 'png' }>) => {
+// fixme: refactor this file, export function may should be passed by 'props', this file is just a ui component
+export const Export = () => {
   const t = useAFFiNEI18N();
   return (
-    <Menu
-      width={248}
-      trigger="hover"
-      placement="right-start"
-      content={
+    <MenuSub
+      items={
         <>
           <ExportToPdfMenuItem></ExportToPdfMenuItem>
           <ExportToHtmlMenuItem></ExportToHtmlMenuItem>
@@ -243,24 +246,15 @@ export const Export = ({
           <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
         </>
       }
-      menuStyles={{
-        borderRadius: '8px',
-        padding: '8px',
-        background: 'var(--affine-background-overlay-panel-color)',
+      triggerOptions={{
+        preFix: (
+          <MenuIcon>
+            <ExportIcon />
+          </MenuIcon>
+        ),
       }}
     >
-      <MenuItem
-        data-testid="export-menu"
-        icon={<ExportIcon />}
-        endIcon={<ArrowRightSmallIcon />}
-        style={{ padding: '4px 12px' }}
-        onClick={e => {
-          e.stopPropagation();
-          onItemClick?.();
-        }}
-      >
-        {t.Export()}
-      </MenuItem>
-    </Menu>
+      {t.Export()}
+    </MenuSub>
   );
 };
