@@ -53,6 +53,7 @@ export const config = () => {
       },
       assetNames: '[name]',
       treeShaking: true,
+      sourcemap: 'linked',
     },
   };
 };
