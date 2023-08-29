@@ -115,9 +115,9 @@ jobs:
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
           if [ -z "${{ inputs.flavor }}" ]
           then
-            echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
-          else
             echo "RELEASE_FLAVOR=canary" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
           fi
 
       - name: Login to GitHub Container Registry
