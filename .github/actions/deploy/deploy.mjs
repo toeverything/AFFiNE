@@ -33,7 +33,7 @@ const isBeta = buildType === 'beta';
 
 const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
-  const imageTag = `${buildType}${GIT_SHORT_HASH}`;
+  const imageTag = `${buildType}-${GIT_SHORT_HASH}`;
   const staticIpName = isProduction
     ? 'affine-cluster-production'
     : isBeta
