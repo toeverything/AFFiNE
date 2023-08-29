@@ -67,7 +67,7 @@
     "semver": "^7.5.4",
     "socket.io": "^4.7.1",
     "ws": "^8.13.0",
-    "yjs": "^13.6.6"
+    "yjs": "^13.6.7"
   },
   "devDependencies": {
     "@affine/storage": "workspace:*",
