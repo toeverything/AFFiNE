@@ -52,5 +52,5 @@
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
   },
-  "version": "0.9.0-canary.0"
+  "version": "0.9.0-canary.1"
 }
