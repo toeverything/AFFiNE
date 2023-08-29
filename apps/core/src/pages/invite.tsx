@@ -11,7 +11,7 @@ import { useCallback, useEffect } from 'react';
 import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
-import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useAppHelper } from '../hooks/use-workspaces';
 
@@ -45,7 +45,7 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const Component = () => {
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
   const { jumpToSignIn } = useNavigateHelper();
   const { addCloudWorkspace } = useAppHelper();
   const { jumpToSubPath } = useNavigateHelper();

@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs';
 
 export const uiSubjects = {
-  onFinishLogin: new Subject<void>(),
+  onStartLogin: new Subject<{ email: string }>(),
+  onFinishLogin: new Subject<{ success: boolean; email: string }>(),
 };

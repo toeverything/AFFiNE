@@ -173,7 +173,6 @@ export type UIHandlers = {
   handleMinimizeApp: () => Promise<any>;
   handleMaximizeApp: () => Promise<any>;
   handleCloseApp: () => Promise<any>;
-  handleFinishLogin: () => Promise<void>;
   getGoogleOauthCode: () => Promise<any>;
 };
 
@@ -267,7 +266,10 @@ export interface WorkspaceEvents {
 }
 
 export interface UIEvents {
-  onFinishLogin: (fn: () => void) => () => void;
+  onStartLogin: (fn: (options: { email: string }) => void) => () => void;
+  onFinishLogin: (
+    fn: (result: { success: boolean; email: string }) => void
+  ) => () => void;
 }
 
 export interface EventMap {
