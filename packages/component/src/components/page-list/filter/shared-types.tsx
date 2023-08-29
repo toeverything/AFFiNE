@@ -41,7 +41,7 @@ export const variableDefineMap = {
     icon: <FavoriteIcon />,
   },
   Tags: {
-    type: meta => tArray(tTag.create({ tags: meta.tags.options })),
+    type: meta => tArray(tTag.create({ tags: meta.tags?.options ?? [] })),
     icon: <TagsIcon />,
   },
   // Imported: {
