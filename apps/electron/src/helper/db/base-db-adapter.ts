@@ -1,5 +1,10 @@
-import { type InsertRow, SqliteConnection } from '@affine/native';
+import {
+  type InsertRow,
+  SqliteConnection,
+  ValidationResult,
+} from '@affine/native';
 
+import { migrateToLatestDatabase } from '../db/migration';
 import { logger } from '../logger';
 
 /**
@@ -13,6 +18,10 @@ export abstract class BaseSQLiteAdapter {
 
   async connectIfNeeded() {
     if (!this.db) {
+      const validation = await SqliteConnection.validate(this.path);
+      if (validation === ValidationResult.MissingVersionColumn) {
+        await migrateToLatestDatabase(this.path);
+      }
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
       logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
