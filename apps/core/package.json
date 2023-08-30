@@ -52,6 +52,7 @@
     "lit": "^2.8.0",
     "lottie-web": "^5.12.2",
     "mini-css-extract-plugin": "^2.7.6",
+    "msw": "^1.2.5",
     "next-auth": "^4.22.1",
     "next-themes": "^0.2.1",
     "postcss-loader": "^7.3.3",
@@ -61,6 +62,7 @@
     "react-resizable-panels": "^0.0.55",
     "react-router-dom": "^6.15.0",
     "rxjs": "^7.8.1",
+    "semver": "^7.5.4",
     "ses": "^0.18.7",
     "swr": "2.2.0",
     "valtio": "^1.11.2",
@@ -93,5 +95,8 @@
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.9.0"
+  },
+  "msw": {
+    "workerDirectory": "public"
   }
 }

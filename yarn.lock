@@ -280,6 +280,7 @@ __metadata:
     lottie-web: ^5.12.2
     mime-types: ^2.1.35
     mini-css-extract-plugin: ^2.7.6
+    msw: ^1.2.5
     next-auth: ^4.22.1
     next-themes: ^0.2.1
     postcss-loader: ^7.3.3
@@ -290,6 +291,7 @@ __metadata:
     react-resizable-panels: ^0.0.55
     react-router-dom: ^6.15.0
     rxjs: ^7.8.1
+    semver: ^7.5.4
     ses: ^0.18.7
     source-map-loader: ^4.0.1
     style-loader: ^3.3.3

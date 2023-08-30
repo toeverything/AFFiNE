@@ -2,12 +2,19 @@ import { Controller, Get } from '@nestjs/common';
 
 @Controller('/')
 export class AppController {
+  get message() {
+    return {
+      compatibility: AFFiNE.version,
+      message: `AFFiNE ${AFFiNE.version} Server`,
+    };
+  }
+
   @Get()
   info() {
-    const version = AFFiNE.version;
-    return {
-      compatibility: version,
-      message: `AFFiNE ${version} Server`,
-    };
+    return this.message;
+  }
+  @Get('/ping')
+  ping() {
+    return this.message;
   }
 }

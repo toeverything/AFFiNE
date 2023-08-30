@@ -392,6 +392,7 @@ export const createConfiguration: (
           ws: true,
         },
         '/graphql': 'http://localhost:3010',
+        '/ping': 'http://localhost:3010',
       },
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;

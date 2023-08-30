@@ -148,4 +148,27 @@ export async function setup(store: ReturnType<typeof createStore>) {
   await tryMigration();
   await store.get(rootWorkspacesMetadataAtom);
   console.log('setup done');
+
+  const validServer = await fetch('/ping')
+    .then(async response => {
+      if (!response.ok) {
+        return false;
+      } else {
+        const json = await response.json();
+        // todo: semver
+        return (
+          typeof json.compatibility === 'string' &&
+          json.compatibility.startsWith('0.9')
+        );
+      }
+    })
+    .catch(() => false);
+  if (!validServer) {
+    console.warn('no valid server found, use mock server');
+    // mock server
+    import('./mock-msw').then(({ setupMockServer }) => {
+      setupMockServer();
+      console.log('mock server setup done');
+    });
+  }
 }
