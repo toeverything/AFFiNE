@@ -1,9 +1,6 @@
 import { isDesktop } from '@affine/env/constant';
 
-type Action = 'signUp' | 'changePassword' | 'signIn' | 'signUp';
-
-export function buildCallbackUrl(action: Action) {
-  const callbackUrl = `/auth/${action}`;
+export function buildCallbackUrl(callbackUrl: string) {
   const params: string[][] = [];
   if (isDesktop && window.appInfo.schema) {
     params.push(['schema', window.appInfo.schema]);

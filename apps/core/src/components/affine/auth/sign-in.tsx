@@ -1,6 +1,7 @@
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
+import { isDesktop } from '@affine/env/constant';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -68,7 +69,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     if (user) {
       signIn('email', {
         email: email,
-        callbackUrl: buildCallbackUrl('signIn'),
+        callbackUrl: buildCallbackUrl('/auth/signIn'),
         redirect: false,
       })
         .then(res => handleSendEmailError(res, pushNotification))
@@ -77,7 +78,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     } else {
       signIn('email', {
         email: email,
-        callbackUrl: buildCallbackUrl('signUp'),
+        callbackUrl: buildCallbackUrl('/auth/signUp'),
         redirect: false,
       })
         .then(res => handleSendEmailError(res, pushNotification))
@@ -102,7 +103,16 @@ export const SignIn: FC<AuthPanelProps> = ({
         }}
         icon={<GoogleDuotoneIcon />}
         onClick={useCallback(() => {
-          signIn('google').catch(console.error);
+          if (isDesktop) {
+            open(
+              `/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
+                '/open-app/oauth-jwt'
+              )}`,
+              '_target'
+            );
+          } else {
+            signIn('google').catch(console.error);
+          }
         }, [])}
       >
         {t['Continue with Google']()}
