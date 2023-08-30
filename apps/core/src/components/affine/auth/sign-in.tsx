@@ -9,13 +9,14 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { type FC, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
 import { useCallback } from 'react';
 
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -25,14 +26,23 @@ export const SignIn: FC<AuthPanelProps> = ({
   setAuthState,
   setAuthEmail,
   email,
+  onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrentLoginStatus();
+
   const { resendCountDown, allowSendEmail, signIn, signUp, signInWithGoogle } =
     useAuth();
   const { trigger: verifyUser, isMutating } = useMutation({
     mutation: getUserQuery,
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
+
+  useEffect(() => {
+    if (loginStatus === 'authenticated') {
+      onSignedIn();
+    }
+  }, [loginStatus, onSignedIn]);
 
   const onContinue = useCallback(async () => {
     if (!validateEmail(email)) {
@@ -45,13 +55,13 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setAuthEmail(email);
     if (user) {
-      await signIn(email);
-
       setAuthState('afterSignInSendEmail');
-    } else {
-      await signUp(email);
 
+      await signIn(email);
+    } else {
       setAuthState('afterSignUpSendEmail');
+
+      await signUp(email);
     }
   }, [email, setAuthEmail, setAuthState, signIn, signUp, verifyUser]);
 
@@ -102,7 +112,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           loading={isMutating}
           disabled={!allowSendEmail}
           icon={
-            allowSendEmail ? (
+            allowSendEmail || isMutating ? (
               <ArrowDownBigIcon
                 width={20}
                 height={20}

@@ -7,22 +7,33 @@ import {
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
-import { type FC, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
 
-export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
+export const AfterSignInSendEmail = ({
   setAuthState,
   email,
-}) => {
+  onSignedIn,
+}: AuthPanelProps) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrentLoginStatus();
+
   const { resendCountDown, allowSendEmail, signIn } = useAuth();
+
+  useEffect(() => {
+    if (loginStatus === 'authenticated') {
+      onSignedIn();
+    }
+  }, [loginStatus, onSignedIn]);
 
   const onResendClick = useCallback(async () => {
     await signIn(email);
   }, [email, signIn]);
+
   return (
     <>
       <ModalHeader
