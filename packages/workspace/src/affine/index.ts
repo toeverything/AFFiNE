@@ -99,8 +99,9 @@ export const createAffineDataSource = (
       };
       socket.on('server-update', onUpdate);
       const destroyAwareness = setupAffineAwareness(socket, rootDoc, awareness);
-
-      socket.connect();
+      if (globalThis.serverCompatibility !== false) {
+        socket.connect();
+      }
       return () => {
         socket.emit('client-leave', rootDoc.guid);
         socket.off('server-update', onUpdate);

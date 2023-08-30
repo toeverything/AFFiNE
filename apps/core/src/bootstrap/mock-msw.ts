@@ -16,5 +16,8 @@ export async function setupMockServer() {
     })
   );
 
-  await server.start();
+  await server.start({
+    quiet: true,
+    waitUntilReady: true,
+  });
 }
