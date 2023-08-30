@@ -101,8 +101,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             const result = await mailer.sendSignInEmail(wrappedUrl, {
               to: identifier,
               from: provider.from,
-              // Email Text body (fallback for email clients that don't render HTML, e.g. feature phones)
-              text: `Sign in to AFFiNE`,
             });
             logger.log(
               `send verification email success: ${result.accepted.join(', ')}`
@@ -144,6 +142,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             | Record<'email' | 'password' | 'hashedPassword', string>
             | undefined
         ) {
+          console.log('credentials', credentials);
+
           if (!credentials) {
             return null;
           }
@@ -154,6 +154,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           if (!(await verify(hashedPassword, password))) {
             return null;
           }
+          console.log('credentials', credentials);
+
           return credentials;
         },
       })

@@ -8,10 +8,9 @@ export const settingContent = style({
 });
 
 globalStyle(`${settingContent} .wrapper`, {
-  width: '60%',
   padding: '0 15px',
   height: '100%',
-  minWidth: '560px',
+  maxWidth: '560px',
   margin: '0 auto',
   overflowY: 'auto',
 });
