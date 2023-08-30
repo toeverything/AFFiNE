@@ -121,7 +121,7 @@ globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
 
 // Hack margin so that it works normally when sidebar is closed
 globalStyle(
-  `[data-testid=app-sidebar-wrapper][data-open=true][data-is-floating=false]
+  `[data-testid=app-sidebar-wrapper][data-open=true][data-is-floating=false][data-has-background=false]
  ~ ${mainContainerStyle}[data-show-padding="true"]`,
   {
     // transition added here to prevent the transition from being applied on page load
