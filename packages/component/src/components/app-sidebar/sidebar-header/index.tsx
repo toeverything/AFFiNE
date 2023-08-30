@@ -20,7 +20,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
   return (
     <div className={navHeaderStyle} data-open={open}>
       <div style={{ flex: 1 }} />
-      {open && <SidebarSwitch />}
+      <SidebarSwitch show={open} />
       {environment.isDesktop && (
         <>
           <IconButton
