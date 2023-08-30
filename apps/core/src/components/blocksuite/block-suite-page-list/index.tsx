@@ -146,9 +146,11 @@ export const BlockSuitePageList = ({
   const tagOptionMap = useMemo(
     () =>
       Object.fromEntries(
-        blockSuiteWorkspace.meta.properties.tags.options.map(v => [v.id, v])
+        (
+          blockSuiteWorkspace.meta.properties.tags ?? { options: [] }
+        ).options.map(v => [v.id, v])
       ),
-    [blockSuiteWorkspace.meta.properties.tags.options]
+    [blockSuiteWorkspace.meta.properties.tags]
   );
   const list = useMemo(
     () =>
