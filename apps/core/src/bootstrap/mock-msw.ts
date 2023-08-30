@@ -10,6 +10,9 @@ export async function setupMockServer() {
           message: 'AFFiNE Mock Server',
         })
       );
+    }),
+    rest.get('/api/auth/session', (_, res, ctx) => {
+      return res(ctx.delay(200), ctx.status(200), ctx.json({}));
     })
   );
 

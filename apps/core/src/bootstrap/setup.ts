@@ -133,22 +133,6 @@ function createFirstAppData(store: ReturnType<typeof createStore>) {
 }
 
 export async function setup(store: ReturnType<typeof createStore>) {
-  store.set(
-    workspaceAdaptersAtom,
-    WorkspaceAdapters as Record<
-      WorkspaceFlavour,
-      WorkspaceAdapter<WorkspaceFlavour>
-    >
-  );
-
-  console.log('setup global');
-  setupGlobal();
-
-  createFirstAppData(store);
-  await tryMigration();
-  await store.get(rootWorkspacesMetadataAtom);
-  console.log('setup done');
-
   const validServer = await fetch('/ping')
     .then(async response => {
       if (!response.ok) {
@@ -164,11 +148,28 @@ export async function setup(store: ReturnType<typeof createStore>) {
     })
     .catch(() => false);
   if (!validServer) {
+    globalThis.serverCompatibility = false;
     console.warn('no valid server found, use mock server');
     // mock server
-    import('./mock-msw').then(({ setupMockServer }) => {
-      setupMockServer();
+    await import('./mock-msw').then(async ({ setupMockServer }) => {
+      await setupMockServer();
       console.log('mock server setup done');
     });
   }
+
+  store.set(
+    workspaceAdaptersAtom,
+    WorkspaceAdapters as Record<
+      WorkspaceFlavour,
+      WorkspaceAdapter<WorkspaceFlavour>
+    >
+  );
+
+  console.log('setup global');
+  setupGlobal();
+
+  createFirstAppData(store);
+  await tryMigration();
+  await store.get(rootWorkspacesMetadataAtom);
+  console.log('setup done');
 }

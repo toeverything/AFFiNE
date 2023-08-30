@@ -49,9 +49,7 @@ declare global {
   // eslint-disable-next-line no-var
   var editorVersion: string | undefined;
   // eslint-disable-next-line no-var
-  var prefixUrl: string;
-  // eslint-disable-next-line no-var
-  var websocketPrefixUrl: string;
+  var serverCompatibility: boolean | undefined;
 }
 
 declare module '@blocksuite/store' {

@@ -171,6 +171,9 @@ export const gqlFetcherFactory = (endpoint: string) => {
   const gqlFetch = async <Query extends GraphQLQuery>(
     options: QueryOptions<Query>
   ): Promise<QueryResponse<Query>> => {
+    if (globalThis.serverCompatibility === false) {
+      throw new GraphQLError('Server is not compatible');
+    }
     const body = formatRequestBody(options);
 
     const isFormData = body instanceof FormData;
