@@ -39,7 +39,7 @@ const createPattern = packageName => [
   },
   {
     group: ['next-auth/react'],
-    message: "Import hooks from 'cloud-utils.tsx'",
+    message: "Import hooks from 'cloud-utils.ts'",
     // useSession is type unsafe
     importNames: ['signIn', 'signOut'],
   },
@@ -180,7 +180,7 @@ const config = {
           },
           {
             group: ['next-auth/react'],
-            message: "Import hooks from 'cloud-utils.tsx'",
+            message: "Import hooks from 'cloud-utils.ts'",
             // useSession is type unsafe
             importNames: ['signIn', 'signOut'],
           },
