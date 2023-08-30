@@ -2,25 +2,7 @@
 // License on the MIT
 // https://github.com/emilkowalski/sonner/blob/5cb703edc108a23fd74979235c2f3c4005edd2a7/src/styles.css
 
-import {
-  globalStyle,
-  keyframes,
-  style,
-  styleVariants,
-} from '@vanilla-extract/css';
-
-const swipeOut = keyframes({
-  '0%': {
-    transform:
-      'translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount)))',
-    opacity: 1,
-  },
-  '100%': {
-    transform:
-      'translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount) + var(--lift) * -100%))',
-    opacity: 0,
-  },
-});
+import { globalStyle, style, styleVariants } from '@vanilla-extract/css';
 
 export const notificationCenterViewportStyle = style({
   position: 'fixed',
@@ -62,16 +44,7 @@ export const notificationStyle = style({
       opacity: '0 !important',
       pointerEvents: 'none',
     },
-    '&[data-swiping=true]::before': {
-      content: '""',
-      position: 'absolute',
-      left: '0',
-      right: '0',
-      top: '50%',
-      height: '100%',
-      transform: 'scaleY(3) translateY(-50%)',
-    },
-    '&[data-swiping=false][data-removed=true]::before': {
+    '&[data-removed=true]::before': {
       content: '""',
       position: 'absolute',
       inset: '0',
@@ -98,37 +71,28 @@ export const notificationStyle = style({
         '--y': 'translateY(calc(var(--lift) * var(--offset)))',
       },
     },
-    '&[data-removed=true][data-front=true][data-swipe-out=false]': {
+    '&[data-removed=true][data-front=true]': {
       opacity: 0,
       vars: {
         '--y': 'translateY(calc(var(--lift) * -100%))',
       },
     },
-    '&[data-removed=true][data-front=false][data-swipe-out=false][data-expanded=true]':
-      {
-        opacity: 0,
-        vars: {
-          '--y':
-            'translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%))',
-        },
+    '&[data-removed=true][data-front=false][data-expanded=true]': {
+      opacity: 0,
+      vars: {
+        '--y':
+          'translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%))',
       },
-    '&[data-removed=true][data-front=false][data-swipe-out=false][data-expanded=false] ':
-      {
-        transition: 'transform 500ms, opacity 200ms',
-        opacity: 0,
-        vars: {
-          '--y': 'translateY(40%)',
-        },
+    },
+    '&[data-removed=true][data-front=false][data-expanded=false] ': {
+      transition: 'transform 500ms, opacity 200ms',
+      opacity: 0,
+      vars: {
+        '--y': 'translateY(40%)',
       },
+    },
     '&[data-removed=true][data-front=false]::before ': {
       height: 'calc(var(--initial-height) + 20%)',
-    },
-    '&[data-swiping=true]': {
-      transform: 'var(--y) translateY(var(--swipe-amount, 0px))',
-      transition: 'none',
-    },
-    '&[data-swipe-out=true]': {
-      animation: `${swipeOut} 0.3s ease-in-out forwards`,
     },
   },
   vars: {

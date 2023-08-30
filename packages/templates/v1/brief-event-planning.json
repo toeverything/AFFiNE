@@ -19,8 +19,14 @@
     "0n7YghSHPc": {
       "sys:id": "0n7YghSHPc",
       "sys:flavour": "affine:note",
-      "sys:children": ["xKPWSiEpXH", "9slwdYgqgq", "6dH3Amz0rn", "ObsV2gBxUe"],
-      "prop:xywh": "[0,0,800,645]",
+      "sys:children": [
+        "d6Alacwr32",
+        "9slwdYgqgq",
+        "6dH3Amz0rn",
+        "ObsV2gBxUe",
+        "xf1m62_pbc"
+      ],
+      "prop:xywh": "[0,0,800,527]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
@@ -54,15 +60,23 @@
           "mode": "table",
           "columns": [
             {
-              "id": "mGltZNTJmw",
-              "width": 176
+              "id": "ObsV2gBxUe",
+              "hide": false,
+              "width": 246
             },
             {
               "id": "FCYCytB4wx",
+              "hide": false,
               "width": 162
             },
             {
+              "id": "mGltZNTJmw",
+              "hide": false,
+              "width": 176
+            },
+            {
               "id": "ozFBusFd0s",
+              "hide": false,
               "width": 200
             }
           ],
@@ -176,6 +190,20 @@
       "prop:titleColumnName": "Title",
       "prop:titleColumnWidth": 186
     },
+    "xf1m62_pbc": {
+      "sys:id": "xf1m62_pbc",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "d6Alacwr32": {
+      "sys:id": "d6Alacwr32",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
     "pFlIzSXLOj": {
       "sys:id": "pFlIzSXLOj",
       "sys:flavour": "affine:paragraph",
@@ -208,15 +236,6 @@
         }
       ],
       "prop:type": "text"
-    },
-    "xKPWSiEpXH": {
-      "sys:id": "xKPWSiEpXH",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "5Cfem_137WmzR35ZeIC76oTkq5SQt-eHlZwJiLy0hgU=",
-      "prop:caption": "",
-      "prop:width": 352.8000183105469,
-      "prop:height": 198.4499969482422
     }
   }
 }

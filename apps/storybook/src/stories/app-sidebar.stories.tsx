@@ -24,7 +24,7 @@ import { type PropsWithChildren, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 export default {
-  title: 'Components/AppSidebar',
+  title: 'AFFiNE/AppSidebar',
   component: AppSidebar,
 } satisfies Meta;
 

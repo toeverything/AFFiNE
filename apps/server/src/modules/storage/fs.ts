@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -14,10 +15,16 @@ export class FSService {
 
   async writeFile(key: string, file: FileUpload) {
     const dest = this.config.objectStorage.fs.path;
+    const fileName = `${key}-${randomUUID()}`;
+    const prefix = this.config.node.dev
+      ? `${this.config.https ? 'https' : 'http'}://${this.config.host}:${
+          this.config.port
+        }`
+      : '';
     await mkdir(dest, { recursive: true });
-    const destFile = join(dest, key);
+    const destFile = join(dest, fileName);
     await pipeline(file.createReadStream(), createWriteStream(destFile));
 
-    return `/assets/${destFile}`;
+    return `${prefix}/assets/${fileName}`;
   }
 }

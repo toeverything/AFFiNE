@@ -29,47 +29,17 @@
         "VyoH5kUerc",
         "XvCeZ-f-ib"
       ],
-      "prop:xywh": "[0,0,800,465]",
+      "prop:xywh": "[0,0,800,529]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
     },
-    "pp12c2slOV": {
-      "sys:id": "pp12c2slOV",
+    "1KJadeDAj-": {
+      "sys:id": "1KJadeDAj-",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "z_v6LOqNpp"
-            }
-          }
-        },
-        {
-          "insert": " "
-        }
-      ]
-    },
-    "XvCeZ-f-ib": {
-      "sys:id": "XvCeZ-f-ib",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "0N0WzwmtK_"
-            }
-          }
-        }
-      ]
+      "prop:text": []
     },
     "_a8e4OM_PP": {
       "sys:id": "_a8e4OM_PP",
@@ -127,6 +97,26 @@
         }
       ]
     },
+    "pp12c2slOV": {
+      "sys:id": "pp12c2slOV",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "z_v6LOqNpp"
+            }
+          }
+        },
+        {
+          "insert": " "
+        }
+      ]
+    },
     "VyoH5kUerc": {
       "sys:id": "VyoH5kUerc",
       "sys:flavour": "affine:paragraph",
@@ -138,12 +128,22 @@
         }
       ]
     },
-    "1KJadeDAj-": {
-      "sys:id": "1KJadeDAj-",
+    "XvCeZ-f-ib": {
+      "sys:id": "XvCeZ-f-ib",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
-      "prop:text": []
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "0N0WzwmtK_"
+            }
+          }
+        }
+      ]
     }
   }
 }

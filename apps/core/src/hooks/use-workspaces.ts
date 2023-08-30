@@ -1,12 +1,15 @@
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceFlavour, WorkspaceVersion } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import {
+  buildShowcaseWorkspace,
+  WorkspaceVersion,
+} from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -37,6 +40,21 @@ export function useAppHelper() {
         ]);
         logger.debug('imported local workspace', workspaceId);
         return workspaceId;
+      },
+      [set]
+    ),
+    addCloudWorkspace: useCallback(
+      (workspaceId: string) => {
+        getOrCreateWorkspace(workspaceId, WorkspaceFlavour.AFFINE_CLOUD);
+        set(workspaces => [
+          ...workspaces,
+          {
+            id: workspaceId,
+            flavour: WorkspaceFlavour.AFFINE_CLOUD,
+            version: WorkspaceVersion.DatabaseV3,
+          },
+        ]);
+        logger.debug('imported cloud workspace', workspaceId);
       },
       [set]
     ),
@@ -93,6 +111,12 @@ export function useAppHelper() {
         await set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
       },
       [jotaiWorkspaces, set]
+    ),
+    deleteWorkspaceMeta: useCallback(
+      (workspaceId: string) => {
+        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+      },
+      [set]
     ),
   };
 }

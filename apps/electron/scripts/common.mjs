@@ -44,6 +44,7 @@ export const config = () => {
         'electron-updater',
         '@toeverything/plugin-infra',
         'yjs',
+        'semver',
       ],
       define: define,
       format: 'cjs',
@@ -52,6 +53,7 @@ export const config = () => {
       },
       assetNames: '[name]',
       treeShaking: true,
+      sourcemap: 'linked',
     },
   };
 };

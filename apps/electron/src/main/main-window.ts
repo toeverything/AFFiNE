@@ -5,9 +5,11 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
+import { CLOUD_BASE_URL } from './config';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
+import { parseCookie } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
@@ -93,7 +95,13 @@ async function createWindow() {
 
   browserWindow.on('close', e => {
     e.preventDefault();
-    browserWindow.destroy();
+    // close and destroy all windows
+    BrowserWindow.getAllWindows().forEach(w => {
+      if (!w.isDestroyed()) {
+        w.close();
+        w.destroy();
+      }
+    });
     helperConnectionUnsub?.();
     // TODO: gracefully close the app, for example, ask user to save unsaved changes
   });
@@ -108,7 +116,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
+  const pageUrl = CLOUD_BASE_URL; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 
@@ -120,15 +128,13 @@ async function createWindow() {
 }
 
 // singleton
-let browserWindow: Electron.BrowserWindow | undefined;
+let browserWindow: BrowserWindow | undefined;
 
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  browserWindow = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
-
-  if (browserWindow === undefined) {
+  if (!browserWindow || browserWindow.isDestroyed()) {
     browserWindow = await createWindow();
   }
 
@@ -138,4 +144,38 @@ export async function restoreOrCreateWindow() {
   }
 
   return browserWindow;
+}
+
+export async function handleOpenUrlInHiddenWindow(url: string) {
+  const mainExposedMeta = getExposedMeta();
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 600,
+    webPreferences: {
+      preload: join(__dirname, './preload.js'),
+      additionalArguments: [
+        `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
+        // popup window does not need helper process, right?
+      ],
+    },
+    show: false,
+  });
+  win.on('close', e => {
+    e.preventDefault();
+    if (!win.isDestroyed()) {
+      win.destroy();
+    }
+  });
+  logger.info('loading page at', url);
+  await win.loadURL(url);
+  return win;
+}
+
+export function reloadApp() {
+  browserWindow?.reload();
+}
+
+export async function setCookie(origin: string, cookie: string) {
+  const window = await restoreOrCreateWindow();
+  await window.webContents.session.cookies.set(parseCookie(cookie, origin));
 }

@@ -3,6 +3,7 @@ import './security-restrictions';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
+import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { ensureHelperProcess } from './helper-process';
@@ -32,16 +33,6 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', () => {
-  restoreOrCreateWindow().catch(e =>
-    console.error('Failed to restore or create window:', e)
-  );
-});
-
-app.on('open-url', (_, _url) => {
-  // todo: handle `affine://...` urls
-});
-
 /**
  * Shout down background process if all windows was closed
  */
@@ -55,10 +46,12 @@ app.on('window-all-closed', () => {
  * @see https://www.electronjs.org/docs/v14-x-y/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  restoreOrCreateWindow().catch(err => {
-    console.error(err);
-  });
+  restoreOrCreateWindow().catch(e =>
+    console.error('Failed to restore or create window:', e)
+  );
 });
+
+setupDeepLink(app);
 
 /**
  * Create app window when background process will be ready

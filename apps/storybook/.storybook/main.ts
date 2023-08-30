@@ -5,7 +5,6 @@ import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
-import turbosnap from 'vite-plugin-turbosnap';
 
 runCli(
   {
@@ -34,22 +33,23 @@ export default {
   framework: {
     name: '@storybook/react-vite',
   },
-  async viteFinal(config, { configType }) {
+  async viteFinal(config, _options) {
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
       plugins: [
         vanillaExtractPlugin(),
         tsconfigPaths({
           root: fileURLToPath(new URL('../../../', import.meta.url)),
+          ignoreConfigErrors: true,
         }),
-        configType === 'PRODUCTION'
-          ? turbosnap({
-              rootDir: fileURLToPath(new URL('../../../', import.meta.url)),
-            })
-          : null,
       ],
       define: {
         'process.env': {},
+        'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
+        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
+          process.env.SHOULD_REPORT_TRACE
+        )}`,
+        'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         runtimeConfig: getRuntimeConfig({
           distribution: 'browser',
           mode: 'development',

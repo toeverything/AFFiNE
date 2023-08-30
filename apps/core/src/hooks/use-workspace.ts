@@ -1,11 +1,10 @@
+import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
-
-import type { AffineOfficialWorkspace } from '../shared';
 
 const workspaceWeakMap = new WeakMap<
   Workspace,
@@ -18,7 +17,7 @@ export function useWorkspace(workspaceId: string): AffineOfficialWorkspace {
     const baseAtom = atom(async get => {
       const metadata = await get(rootWorkspacesMetadataAtom);
       const flavour = metadata.find(({ id }) => id === workspaceId)?.flavour;
-      assertExists(flavour);
+      assertExists(flavour, 'workspace flavour not found');
       return {
         id: workspaceId,
         flavour,

@@ -22,12 +22,14 @@ import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { useCallback } from 'react';
 
 import { setPageModeAtom } from '../../atoms';
 import {
   BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
+  Provider,
   WorkspaceHeader,
 } from '../shared';
 
@@ -38,6 +40,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   flavour: WorkspaceFlavour.LOCAL,
   loadPriority: LoadPriority.LOW,
   Events: {
+    'app:access': async () => true,
     'app:init': () => {
       const blockSuiteWorkspace = getOrCreateWorkspace(
         nanoid(),
@@ -78,9 +81,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   CRUD,
   UI: {
     Header: WorkspaceHeader,
-    Provider: ({ children }) => {
-      return <>{children}</>;
-    },
+    Provider,
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
       const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
       const page = workspace.getPage(currentPageId);
@@ -91,7 +92,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         <>
           <PageDetailEditor
             pageId={currentPageId}
-            onInit={initEmptyPage}
+            onInit={useCallback(async page => initEmptyPage(page), [])}
             onLoad={onLoadEditor}
             workspace={workspace}
           />
@@ -110,14 +111,19 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
     },
     NewSettingsDetail: ({
       currentWorkspaceId,
-      onDeleteWorkspace,
       onTransformWorkspace,
+      onDeleteLocalWorkspace,
+      onDeleteCloudWorkspace,
+      onLeaveWorkspace,
     }) => {
       return (
         <NewWorkspaceSettingDetail
-          onDeleteWorkspace={onDeleteWorkspace}
+          onDeleteLocalWorkspace={onDeleteLocalWorkspace}
+          onDeleteCloudWorkspace={onDeleteCloudWorkspace}
+          onLeaveWorkspace={onLeaveWorkspace}
           workspaceId={currentWorkspaceId}
           onTransferWorkspace={onTransformWorkspace}
+          isOwner={true}
         />
       );
     },

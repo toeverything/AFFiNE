@@ -1,4 +1,7 @@
+import { pushNotificationAtom } from '@affine/component/notification-center';
+import { isDesktop } from '@affine/env/constant';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -8,10 +11,18 @@ import {
 } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { lazy, Suspense, useCallback, useTransition } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  useTransition,
+} from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
+  authAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
@@ -23,6 +34,17 @@ import { useNavigateHelper } from '../hooks/use-navigate-helper';
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
     default: module.SettingModal,
+  }))
+);
+const Auth = lazy(() =>
+  import('../components/affine/auth').then(module => ({
+    default: module.AuthModal,
+  }))
+);
+
+const DesktopLogin = lazy(() =>
+  import('../components/affine/desktop-login-modal').then(module => ({
+    default: module.DesktopLoginModal,
   }))
 );
 
@@ -82,6 +104,88 @@ export const Setting = () => {
       )}
     />
   );
+};
+
+export const AuthModal = (): ReactElement => {
+  const [
+    { openModal, state, email = '', emailType = 'changePassword' },
+    setAuthAtom,
+  ] = useAtom(authAtom);
+  return (
+    <Auth
+      open={openModal}
+      state={state}
+      email={email}
+      emailType={emailType}
+      setEmailType={useCallback(
+        emailType => {
+          setAuthAtom(prev => ({ ...prev, emailType }));
+        },
+        [setAuthAtom]
+      )}
+      setOpen={useCallback(
+        open => {
+          setAuthAtom(prev => ({ ...prev, openModal: open }));
+        },
+        [setAuthAtom]
+      )}
+      setAuthState={useCallback(
+        state => {
+          setAuthAtom(prev => ({ ...prev, state }));
+        },
+        [setAuthAtom]
+      )}
+      setAuthEmail={useCallback(
+        email => {
+          setAuthAtom(prev => ({ ...prev, email }));
+        },
+        [setAuthAtom]
+      )}
+    />
+  );
+};
+
+export const DesktopLoginModal = (): ReactElement => {
+  const [signingEmail, setSigningEmail] = useState<string>();
+  const setAuthAtom = useSetAtom(authAtom);
+  const pushNotification = useSetAtom(pushNotificationAtom);
+  const t = useAFFiNEI18N();
+
+  // hack for closing the potentially opened auth modal
+  const closeAuthModal = useCallback(() => {
+    setAuthAtom(prev => ({ ...prev, openModal: false }));
+  }, [setAuthAtom]);
+
+  useEffect(() => {
+    return window.events?.ui.onStartLogin(opts => {
+      setSigningEmail(opts.email);
+    });
+  }, []);
+
+  useEffect(() => {
+    return window.events?.ui.onFinishLogin(({ success, email }) => {
+      if (email !== signingEmail) {
+        return;
+      }
+      setSigningEmail(undefined);
+      closeAuthModal();
+      if (success) {
+        pushNotification({
+          title: t['com.affine.auth.toast.title.signed-in'](),
+          message: t['com.affine.auth.toast.message.signed-in'](),
+          type: 'success',
+        });
+      } else {
+        pushNotification({
+          title: t['com.affine.auth.toast.title.failed'](),
+          message: t['com.affine.auth.toast.message.failed'](),
+          type: 'error',
+        });
+      }
+    });
+  }, [closeAuthModal, pushNotification, signingEmail, t]);
+
+  return <DesktopLogin signingEmail={signingEmail} />;
 };
 
 export function CurrentWorkspaceModals() {
@@ -203,22 +307,22 @@ export const AllWorkspaceModals = (): ReactElement => {
           }, [setOpenCreateWorkspaceModal])}
           onCreate={useCallback(
             id => {
-              startTransition(() => {
-                setOpenCreateWorkspaceModal(false);
-                setOpenWorkspacesModal(false);
-                setCurrentWorkspaceId(id);
+              setOpenCreateWorkspaceModal(false);
+              setOpenWorkspacesModal(false);
+              // if jumping immediately, the page may stuck in loading state
+              // not sure why yet .. here is a workaround
+              setTimeout(() => {
                 jumpToSubPath(id, WorkspaceSubPath.ALL);
               });
             },
-            [
-              jumpToSubPath,
-              setCurrentWorkspaceId,
-              setOpenCreateWorkspaceModal,
-              setOpenWorkspacesModal,
-            ]
+            [jumpToSubPath, setOpenCreateWorkspaceModal, setOpenWorkspacesModal]
           )}
         />
       </Suspense>
+      <Suspense>
+        <AuthModal />
+      </Suspense>
+      {isDesktop && <DesktopLoginModal />}
     </>
   );
 };

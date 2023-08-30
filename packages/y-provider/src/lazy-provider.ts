@@ -4,7 +4,6 @@ import {
   type Doc,
   encodeStateAsUpdate,
   encodeStateVector,
-  encodeStateVectorFromUpdate,
 } from 'yjs';
 
 import type { DatasourceDocAdapter, StatusAdapter } from './types';
@@ -52,7 +51,7 @@ export const createLazyProvider = (
   const changeStatus = (newStatus: Status) => {
     // simulate a stack, each syncing and synced should be paired
     if (newStatus.type === 'idle') {
-      if (syncingStack !== 0) {
+      if (connected && syncingStack !== 0) {
         console.error('syncingStatus !== 0, this should not happen');
       }
       syncingStack = 0;
@@ -79,6 +78,9 @@ export const createLazyProvider = (
 
   async function syncDoc(doc: Doc) {
     const guid = doc.guid;
+    if (!connected) {
+      return;
+    }
 
     changeStatus({
       type: 'syncing',
@@ -87,6 +89,18 @@ export const createLazyProvider = (
       .queryDocState(guid, {
         stateVector: encodeStateVector(doc),
       })
+      .then(remoteUpdate => {
+        if (!connected) {
+          changeStatus({
+            type: 'idle',
+          });
+          return;
+        }
+        changeStatus({
+          type: 'synced',
+        });
+        return remoteUpdate;
+      })
       .catch(error => {
         changeStatus({
           type: 'error',
@@ -94,27 +108,26 @@ export const createLazyProvider = (
         });
         throw error;
       });
-    changeStatus({
-      type: 'synced',
-    });
 
     pendingMap.set(guid, []);
 
     if (remoteUpdate) {
-      applyUpdate(doc, remoteUpdate, origin);
+      applyUpdate(doc, remoteUpdate.missing, origin);
     }
-
-    const sv = remoteUpdate
-      ? encodeStateVectorFromUpdate(remoteUpdate)
-      : undefined;
 
     if (!connected) {
       return;
     }
+
     // perf: optimize me
     // it is possible the doc is only in memory but not yet in the datasource
     // we need to send the whole update to the datasource
-    await datasource.sendDocUpdate(guid, encodeStateAsUpdate(doc, sv));
+    await datasource.sendDocUpdate(
+      guid,
+      encodeStateAsUpdate(doc, remoteUpdate ? remoteUpdate.state : undefined)
+    );
+
+    doc.emit('sync', []);
   }
 
   /**
@@ -147,7 +160,11 @@ export const createLazyProvider = (
         });
     };
 
-    const subdocsHandler = (event: { loaded: Set<Doc>; removed: Set<Doc> }) => {
+    const subdocsHandler = (event: {
+      loaded: Set<Doc>;
+      removed: Set<Doc>;
+      added: Set<Doc>;
+    }) => {
       event.loaded.forEach(subdoc => {
         connectDoc(subdoc).catch(console.error);
       });
@@ -171,6 +188,9 @@ export const createLazyProvider = (
    */
   function setupDatasourceListeners() {
     datasourceUnsub = datasource.onDocUpdate?.((guid, update) => {
+      if (!connected) {
+        return;
+      }
       changeStatus({
         type: 'syncing',
       });
@@ -244,16 +264,25 @@ export const createLazyProvider = (
     });
     // root doc should be already loaded,
     // but we want to populate the cache for later update events
-    connectDoc(rootDoc).catch(error => {
-      changeStatus({
-        type: 'error',
-        error,
+    connectDoc(rootDoc)
+      .then(() => {
+        if (!connected) {
+          changeStatus({
+            type: 'idle',
+          });
+          return;
+        }
+        changeStatus({
+          type: 'synced',
+        });
+      })
+      .catch(error => {
+        changeStatus({
+          type: 'error',
+          error,
+        });
+        console.error(error);
       });
-      console.error(error);
-    });
-    changeStatus({
-      type: 'synced',
-    });
     setupDatasourceListeners();
   }
 
@@ -269,6 +298,7 @@ export const createLazyProvider = (
 
   return {
     get status() {
+      console.log('currentStatus', currentStatus);
       return currentStatus;
     },
     subscribeStatusChange(cb: () => void) {

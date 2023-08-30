@@ -1,20 +1,15 @@
 import { clsx } from 'clsx';
-import type {
-  HTMLAttributes,
-  PropsWithChildren,
-  ReactElement,
-  ReactNode,
-} from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
+import { forwardRef } from 'react';
 
 import { AppSidebarFallback } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
-export interface WorkspaceRootProps {
+export type WorkspaceRootProps = PropsWithChildren<{
   resizing?: boolean;
   useNoisyBackground?: boolean;
   useBlurBackground?: boolean;
-  children: ReactNode;
-}
+}>;
 
 export const AppContainer = ({
   resizing,
@@ -42,23 +37,27 @@ export interface MainContainerProps extends HTMLAttributes<HTMLDivElement> {
   padding?: boolean;
 }
 
-export const MainContainer = ({
-  className,
-  padding,
-  children,
-  ...props
-}: PropsWithChildren<MainContainerProps>): ReactElement => {
+export const MainContainer = forwardRef<
+  HTMLDivElement,
+  PropsWithChildren<MainContainerProps>
+>(function MainContainer(
+  { className, padding, children, ...props },
+  ref
+): ReactElement {
   return (
     <div
       {...props}
-      className={clsx(mainContainerStyle, 'main-container', className)}
+      className={clsx(mainContainerStyle, className)}
       data-is-macos={environment.isDesktop && environment.isMacOs}
-      data-show-padding={padding}
+      data-show-padding={!!padding}
+      ref={ref}
     >
       {children}
     </div>
   );
-};
+});
+
+MainContainer.displayName = 'MainContainer';
 
 export const ToolContainer = (props: PropsWithChildren): ReactElement => {
   return <div className={toolStyle}>{props.children}</div>;

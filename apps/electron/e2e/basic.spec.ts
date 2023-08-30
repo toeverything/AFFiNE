@@ -1,5 +1,6 @@
 import { platform } from 'node:os';
 
+import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
 import { test } from './fixture';
@@ -80,6 +81,19 @@ if (platform() === 'darwin') {
   });
 }
 
+test('clientBorder value should disable by default on window', async ({
+  page,
+}) => {
+  await clickSideBarSettingButton(page);
+  await page.waitForTimeout(1000);
+  const settingItem = page.locator(
+    '[data-testid="client-border-style-trigger"]'
+  );
+  expect(await settingItem.locator('input').inputValue()).toEqual(
+    process.platform === 'win32' ? 'off' : 'on'
+  );
+});
+
 test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');
   {
@@ -109,18 +123,6 @@ test('app theme', async ({ page, electronApp }) => {
     });
     expect(theme).toBe('dark');
   }
-});
-
-test('affine cloud disabled', async ({ page }) => {
-  await page.getByTestId('new-page-button').click({
-    delay: 100,
-  });
-  await page.waitForSelector('v-line');
-  await page.getByTestId('current-workspace').click();
-  await page.getByTestId('cloud-signin-button').click();
-  await page.getByTestId('disable-affine-cloud-modal').waitFor({
-    state: 'visible',
-  });
 });
 
 test('affine onboarding button', async ({ page }) => {
@@ -167,9 +169,7 @@ test('delete workspace', async ({ page }) => {
     delay: 100,
   });
   await page.waitForTimeout(1000);
-  await page.getByTestId('current-workspace').click();
-  await page.getByTestId('workspace-card').nth(1).hover();
-  await page.getByTestId('workspace-card-setting-button').nth(1).click();
+  await clickSideBarSettingButton(page);
   await page.getByTestId('current-workspace-label').click();
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
     'Delete Me'

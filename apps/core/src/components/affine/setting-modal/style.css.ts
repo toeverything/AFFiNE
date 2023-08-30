@@ -3,16 +3,17 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const settingContent = style({
   flexGrow: '1',
   height: '100%',
-  padding: '40px 15px 20px',
-  overflow: 'auto',
+  padding: '40px 15px',
+  overflow: 'hidden',
 });
 
 globalStyle(`${settingContent} .wrapper`, {
-  width: '66%',
-  minWidth: '450px',
+  width: '60%',
+  padding: '0 15px',
   height: '100%',
-  maxWidth: '560px',
+  minWidth: '560px',
   margin: '0 auto',
+  overflowY: 'auto',
 });
 
 globalStyle(`${settingContent} .wrapper::-webkit-scrollbar`, {

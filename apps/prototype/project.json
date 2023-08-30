@@ -6,10 +6,52 @@
   "targets": {
     "build": {
       "executor": "nx:run-script",
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        {
+          "projects": ["tag:plugin"],
+          "target": "build",
+          "params": "ignore"
+        },
+        {
+          "projects": ["tag:infra"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
       "options": {
         "script": "build"
       },
+      "inputs": [
+        "{projectRoot}/.webpack/**/*",
+        "{projectRoot}/**/*",
+        "{workspaceRoot}/apps/core/public/**/*",
+        "{workspaceRoot}/packages/**/*",
+        {
+          "env": "BUILD_TYPE"
+        },
+        {
+          "env": "PERFSEE_TOKEN"
+        },
+        {
+          "env": "SENTRY_ORG"
+        },
+        {
+          "env": "SENTRY_PROJECT"
+        },
+        {
+          "env": "SENTRY_AUTH_TOKEN"
+        },
+        {
+          "env": "NEXT_PUBLIC_SENTRY_DSN"
+        },
+        {
+          "env": "DISTRIBUTION"
+        },
+        {
+          "env": "COVERAGE"
+        }
+      ],
       "outputs": ["{projectRoot}/dist"]
     }
   }

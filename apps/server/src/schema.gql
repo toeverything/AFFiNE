@@ -5,25 +5,23 @@
 type UserType {
   id: ID!
 
-  """
-  User name
-  """
+  """User name"""
   name: String!
 
-  """
-  User email
-  """
+  """User email"""
   email: String!
 
-  """
-  User avatar url
-  """
+  """User avatar url"""
   avatarUrl: String
 
-  """
-  User created date
-  """
+  """User email verified"""
+  emailVerified: DateTime
+
+  """User created date"""
   createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
   token: TokenType!
 }
 
@@ -32,48 +30,57 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type DeleteAccount {
+  success: Boolean!
+}
+
+type AddToNewFeaturesWaitingList {
+  email: String!
+
+  """New features kind"""
+  type: NewFeaturesKind!
+}
+
+enum NewFeaturesKind {
+  EarlyAccess
+}
+
 type TokenType {
   token: String!
   refresh: String!
 }
 
-type WorkspaceType {
+type InviteUserType {
+  """User name"""
+  name: String
+
+  """User email"""
+  email: String
+
+  """User avatar url"""
+  avatarUrl: String
+
+  """User email verified"""
+  emailVerified: DateTime
+
+  """User created date"""
+  createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
   id: ID!
 
-  """
-  is Public workspace
-  """
-  public: Boolean!
-
-  """
-  Workspace created date
-  """
-  createdAt: DateTime!
-
-  """
-  Permission of current signed in user in workspace
-  """
+  """User permission in workspace"""
   permission: Permission!
 
-  """
-  member count of workspace
-  """
-  memberCount: Int!
+  """Invite id"""
+  inviteId: String!
 
-  """
-  Owner of workspace
-  """
-  owner: UserType!
-
-  """
-  Members of workspace
-  """
-  members: [UserType!]!
+  """User accepted"""
+  accepted: Boolean!
 }
 
-"""
-User permission in workspace
-"""
+"""User permission in workspace"""
 enum Permission {
   Read
   Write
@@ -81,62 +88,110 @@ enum Permission {
   Owner
 }
 
+type WorkspaceType {
+  id: ID!
+
+  """is Public workspace"""
+  public: Boolean!
+
+  """Workspace created date"""
+  createdAt: DateTime!
+
+  """Members of workspace"""
+  members: [InviteUserType!]!
+
+  """Permission of current signed in user in workspace"""
+  permission: Permission!
+
+  """member count of workspace"""
+  memberCount: Int!
+
+  """Shared pages of workspace"""
+  sharedPages: [String!]!
+
+  """Owner of workspace"""
+  owner: UserType!
+}
+
+type InvitationWorkspaceType {
+  id: ID!
+
+  """Workspace name"""
+  name: String!
+
+  """Base64 encoded avatar"""
+  avatar: String!
+}
+
+type InvitationType {
+  """Workspace information"""
+  workspace: InvitationWorkspaceType!
+
+  """User information"""
+  user: UserType!
+}
+
 type Query {
-  """
-  Get all accessible workspaces for current user
-  """
+  """Get is owner of workspace"""
+  isOwner(workspaceId: String!): Boolean!
+
+  """Get all accessible workspaces for current user"""
   workspaces: [WorkspaceType!]!
 
-  """
-  Get workspace by id
-  """
+  """Get public workspace by id"""
+  publicWorkspace(id: String!): WorkspaceType!
+
+  """Get workspace by id"""
   workspace(id: String!): WorkspaceType!
 
-  """
-  Get user by email
-  """
-  user(email: String!): UserType!
+  """Update workspace"""
+  getInviteInfo(inviteId: String!): InvitationType!
+
+  """List blobs of workspace"""
+  listBlobs(workspaceId: String!): [String!]!
+
+  """Get current user"""
+  currentUser: UserType!
+
+  """Get user by email"""
+  user(email: String!): UserType
 }
 
 type Mutation {
-  register(name: String!, email: String!, password: String!): UserType!
-  signIn(email: String!, password: String!): UserType!
-
-  """
-  Create a new workspace
-  """
+  """Create a new workspace"""
   createWorkspace(init: Upload!): WorkspaceType!
 
-  """
-  Update workspace
-  """
+  """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
   deleteWorkspace(id: String!): Boolean!
-  invite(
-    workspaceId: String!
-    email: String!
-    permission: Permission!
-  ): Boolean!
+  invite(workspaceId: String!, email: String!, permission: Permission!, sendInviteMail: Boolean): String!
   revoke(workspaceId: String!, userId: String!): Boolean!
+  acceptInviteById(workspaceId: String!, inviteId: String!): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
   leaveWorkspace(workspaceId: String!): Boolean!
-  uploadBlob(workspaceId: String!, blob: Upload!): String!
+  sharePage(workspaceId: String!, pageId: String!): Boolean!
+  revokePage(workspaceId: String!, pageId: String!): Boolean!
+  setBlob(workspaceId: String!, blob: Upload!): String!
+  deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
-  """
-  Upload user avatar
-  """
+  """Upload user avatar"""
   uploadAvatar(id: String!, avatar: Upload!): UserType!
+  deleteAccount: DeleteAccount!
+  addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
+  signUp(name: String!, email: String!, password: String!): UserType!
+  signIn(email: String!, password: String!): UserType!
+  changePassword(id: String!, newPassword: String!): UserType!
+  changeEmail(id: String!, email: String!): UserType!
+  sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
+  sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
+  sendChangeEmail(email: String!, callbackUrl: String!): Boolean!
 }
 
-"""
-The `Upload` scalar type represents a file upload.
-"""
+"""The `Upload` scalar type represents a file upload."""
 scalar Upload
 
 input UpdateWorkspaceInput {
-  """
-  is Public workspace
-  """
+  """is Public workspace"""
   public: Boolean
   id: ID!
 }

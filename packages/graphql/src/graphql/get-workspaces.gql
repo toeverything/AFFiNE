@@ -1,0 +1,5 @@
+query getWorkspaces {
+  workspaces {
+    id
+  }
+}

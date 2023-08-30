@@ -158,6 +158,9 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     '@toeverything/components/button': import(
       '@toeverything/components/button'
     ),
+    '@toeverything/components/tooltip': import(
+      '@toeverything/components/tooltip'
+    ),
   });
 
   // pluginName -> module -> importName -> updater[]

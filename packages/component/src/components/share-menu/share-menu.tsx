@@ -1,139 +1,66 @@
 import type {
   AffineCloudWorkspace,
+  AffineOfficialWorkspace,
+  AffinePublicWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
-import { ExportIcon, PublishIcon, ShareIcon } from '@blocksuite/icons';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
-import { useBlockSuiteWorkspacePageIsPublic } from '@toeverything/hooks/use-block-suite-workspace-page-is-public';
-import { type ReactElement, useRef } from 'react';
-import { useCallback, useState } from 'react';
+import { Divider } from '@toeverything/components/divider';
+import { useAtom } from 'jotai';
 
 import { Menu } from '../../ui/menu/menu';
-import { Export } from './export';
-import { containerStyle, indicatorContainerStyle, tabStyle } from './index.css';
+import * as styles from './index.css';
+import { enableShareMenuAtom } from './index.jotai';
+import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
-import { ShareWorkspace } from './share-workspace';
-import { StyledIndicator, TabItem } from './styles';
-
-type SharePanel = 'SharePage' | 'Export' | 'ShareWorkspace';
-type ShareMenuComponent<T> = (props: T) => ReactElement;
-
-const MenuItems: Record<SharePanel, ShareMenuComponent<ShareMenuProps>> = {
-  SharePage: SharePage,
-  Export: Export,
-  ShareWorkspace: ShareWorkspace,
-};
-
-const tabIcons = {
-  SharePage: <ShareIcon />,
-  Export: <ExportIcon />,
-  ShareWorkspace: <PublishIcon />,
-};
 
 export interface ShareMenuProps<
-  Workspace extends AffineCloudWorkspace | LocalWorkspace =
+  Workspace extends AffineOfficialWorkspace =
     | AffineCloudWorkspace
-    | LocalWorkspace,
+    | LocalWorkspace
+    | AffinePublicWorkspace,
 > {
   workspace: Workspace;
   currentPage: Page;
-  onEnableAffineCloud: (workspace: LocalWorkspace) => void;
-  onOpenWorkspaceSettings: (workspace: Workspace) => void;
-  togglePagePublic: (page: Page, isPublic: boolean) => Promise<void>;
-  toggleWorkspacePublish: (
-    workspace: Workspace,
-    publish: boolean
-  ) => Promise<void>;
-}
-
-function assertInstanceOf<T, U extends T>(
-  obj: T,
-  type: new (...args: any[]) => U
-): asserts obj is U {
-  if (!(obj instanceof type)) {
-    throw new Error('Object is not instance of type');
-  }
+  useIsSharedPage: (
+    workspaceId: string,
+    pageId: string
+  ) => [isSharePage: boolean, setIsSharePage: (enable: boolean) => void];
+  onEnableAffineCloud: () => void;
+  togglePagePublic: () => Promise<void>;
 }
 
 export const ShareMenu = (props: ShareMenuProps) => {
-  const [activeItem, setActiveItem] = useState<SharePanel>('SharePage');
-  const [isPublic] = useBlockSuiteWorkspacePageIsPublic(props.currentPage);
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const indicatorRef = useRef<HTMLDivElement | null>(null);
-  const startTransaction = useCallback(() => {
-    if (indicatorRef.current && containerRef.current) {
-      const indicator = indicatorRef.current;
-      const activeTabElement = containerRef.current.querySelector(
-        `[data-tab-key="${activeItem}"]`
-      );
-      assertInstanceOf(activeTabElement, HTMLElement);
-      requestAnimationFrame(() => {
-        indicator.style.left = `${activeTabElement.offsetLeft}px`;
-        indicator.style.width = `${activeTabElement.offsetWidth}px`;
-      });
-    }
-  }, [activeItem]);
-  const handleMenuChange = useCallback(
-    (selectedItem: SharePanel) => {
-      setActiveItem(selectedItem);
-      startTransaction();
-    },
-    [setActiveItem, startTransaction]
+  const { useIsSharedPage } = props;
+  const isSharedPage = useIsSharedPage(
+    props.workspace.id,
+    props.currentPage.id
   );
-
-  const ActiveComponent = MenuItems[activeItem];
-  interface ShareMenuProps {
-    activeItem: SharePanel;
-    onChangeTab: (selectedItem: SharePanel) => void;
-  }
-  const ShareMenu = ({ activeItem, onChangeTab }: ShareMenuProps) => {
-    const handleButtonClick = (itemName: SharePanel) => {
-      onChangeTab(itemName);
-      setActiveItem(itemName);
-    };
-
-    return (
-      <div className={tabStyle} ref={containerRef}>
-        {Object.keys(MenuItems).map(item => (
-          <TabItem
-            isActive={activeItem === item}
-            key={item}
-            data-tab-key={item}
-            onClick={() => handleButtonClick(item as SharePanel)}
-          >
-            {tabIcons[item as SharePanel]}
-            {isPublic ? (item === 'SharePage' ? 'SharedPage' : item) : item}
-          </TabItem>
-        ))}
+  const [open, setOpen] = useAtom(enableShareMenuAtom);
+  const t = useAFFiNEI18N();
+  const content = (
+    <div className={styles.containerStyle}>
+      <SharePage {...props} />
+      <div className={styles.columnContainerStyle}>
+        <Divider dividerColor="var(--affine-border-color)" size="thinner" />
       </div>
-    );
-  };
-  const Share = (
-    <>
-      <ShareMenu activeItem={activeItem} onChangeTab={handleMenuChange} />
-      <div className={indicatorContainerStyle}>
-        <StyledIndicator
-          ref={(ref: HTMLDivElement | null) => {
-            indicatorRef.current = ref;
-            startTransaction();
-          }}
-        />
-      </div>
-
-      <div className={containerStyle}>
-        <ActiveComponent {...props} />
-      </div>
-    </>
+      <ShareExport />
+    </div>
   );
   return (
     <Menu
-      content={Share}
+      menuStyles={{
+        padding: '12px',
+        background: 'var(--affine-background-overlay-panel-color)',
+        transform: 'translateX(-10px)',
+      }}
+      content={content}
       visible={open}
       placement="bottom"
       trigger={['click']}
-      width={439}
+      width={410}
       disablePortal={true}
       onClickAway={() => {
         setOpen(false);
@@ -144,9 +71,19 @@ export const ShareMenu = (props: ShareMenuProps) => {
         onClick={() => {
           setOpen(!open);
         }}
-        type={isPublic ? 'primary' : undefined}
+        type={'plain'}
       >
-        <div>{isPublic ? 'Shared' : 'Share'}</div>
+        <div
+          style={{
+            color: isSharedPage
+              ? 'var(--affine-link-color)'
+              : 'var(--affine-text-primary-color)',
+          }}
+        >
+          {isSharedPage
+            ? t['com.affine.share-menu.sharedButton']()
+            : t['com.affine.share-menu.shareButton']()}
+        </div>
       </Button>
     </Menu>
   );
