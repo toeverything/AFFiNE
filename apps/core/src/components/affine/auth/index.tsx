@@ -2,8 +2,7 @@ import {
   AuthModal as AuthModalBase,
   type AuthModalProps as AuthModalBaseProps,
 } from '@affine/component/auth-components';
-import { atom, useAtom, useSetAtom } from 'jotai';
-import { type FC, useCallback, useEffect, useMemo } from 'react';
+import { type FC, useCallback, useMemo } from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
@@ -56,18 +55,6 @@ export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
   setEmailType,
   emailType,
 }) => {
-  // useEffect(() => {
-  //   if (!open) {
-  //     setAuthStore({
-  //       emailRecord: '',
-  //       hasSentEmail: false,
-  //       allowSendEmail: false,
-  //       resendCountDown: 60,
-  //     });
-  //     setAuthEmail('');
-  //   }
-  // }, [open, setAuthEmail, setAuthStore]);
-
   const onSignedIn = useCallback(() => {
     setOpen(false);
   }, [setOpen]);
