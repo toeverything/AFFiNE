@@ -74,6 +74,8 @@ test('create multi workspace in the workspace list', async ({
   const workspaceName = page.getByTestId('workspace-name');
   await workspaceName.click();
 
+  await page.waitForTimeout(1000);
+
   {
     //check workspace list length
     const workspaceCards = await page.$$('data-testid=workspace-card');

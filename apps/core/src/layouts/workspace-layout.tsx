@@ -33,14 +33,16 @@ import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/reac
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { Map as YMap } from 'yjs';
 
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
@@ -133,6 +135,23 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
 
+  useEffect(() => {
+    // hotfix for blockVersions
+    // this is a mistake in the
+    //    0.8.0 ~ 0.8.1
+    //    0.8.0-beta.0 ~ 0.8.0-beta.3
+    //    0.9.0-canary.0 ~ 0.9.0-canary.3
+    const meta = currentWorkspace.blockSuiteWorkspace.doc.getMap('meta');
+    const blockVersions = meta.get('blockVersions');
+    if (!(blockVersions instanceof YMap)) {
+      console.log('fixing blockVersions');
+      meta.set(
+        'blockVersions',
+        new YMap(Object.entries(blockVersions as Record<string, number>))
+      );
+    }
+  }, [currentWorkspace.blockSuiteWorkspace.doc]);
+
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
@@ -206,6 +225,8 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const { pageId } = useParams();
 
+  const setMainContainer = useSetAtom(mainContainerAtom);
+
   return (
     <>
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
@@ -234,8 +255,11 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
               paths={pathGenerator}
             />
           </Suspense>
-          <Suspense fallback={<MainContainer />}>
-            <MainContainer padding={appSetting.clientBorder}>
+          <Suspense fallback={<MainContainer ref={setMainContainer} />}>
+            <MainContainer
+              ref={setMainContainer}
+              padding={appSetting.clientBorder}
+            >
               {children}
               <ToolContainer>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />

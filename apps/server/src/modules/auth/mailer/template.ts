@@ -39,7 +39,7 @@ export const emailTemplate = ({
               font-size: 20px;
               font-weight: 600;
               line-height: 28px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #444;
               padding-top: 0;
             "
@@ -51,7 +51,7 @@ export const emailTemplate = ({
               font-size: 15px;
               font-weight: 400;
               line-height: 24px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #444;
               padding-top: 0;
             "
@@ -67,7 +67,7 @@ export const emailTemplate = ({
                     target="_blank"
                     style="
                       font-size: 15px;
-                      font-family: Inter;
+                      font-family: inter, Arial, Helvetica, sans-serif;
                       font-weight: 600;
                       line-height: 24px;
                       color: #fff;
@@ -163,7 +163,7 @@ export const emailTemplate = ({
               font-size: 12px;
               font-weight: 400;
               line-height: 20px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #8e8d91;
               padding-top: 8px;
             "
@@ -177,7 +177,7 @@ export const emailTemplate = ({
               font-size: 12px;
               font-weight: 400;
               line-height: 20px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #8e8d91;
               padding-top: 8px;
             "

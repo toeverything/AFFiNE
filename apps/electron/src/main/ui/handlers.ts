@@ -1,10 +1,8 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
-import { closePopup } from '../main-window';
 import type { NamespaceHandlers } from '../type';
 import { getGoogleOauthCode } from './google-auth';
-import { uiSubjects } from './subject';
 
 export const uiHandlers = {
   handleThemeChange: async (_, theme: (typeof nativeTheme)['themeSource']) => {
@@ -37,10 +35,6 @@ export const uiHandlers = {
   },
   handleCloseApp: async () => {
     app.quit();
-  },
-  handleFinishLogin: async () => {
-    closePopup();
-    uiSubjects.onFinishLogin.next();
   },
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();

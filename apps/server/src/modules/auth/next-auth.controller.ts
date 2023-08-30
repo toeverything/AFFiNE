@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Controller,
   Inject,
+  Logger,
   Next,
   NotFoundException,
   Query,
@@ -28,6 +29,8 @@ const BASE_URL = '/api/auth/';
 @Controller(BASE_URL)
 export class NextAuthController {
   private readonly callbackSession;
+
+  private readonly logger = new Logger('NextAuthController');
 
   constructor(
     readonly config: Config,
@@ -124,7 +127,11 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      res.redirect('https://community.affine.pro/c/insider-general/');
+      res.status(403);
+      res.json({
+        url: 'https://community.affine.pro/c/insider-general/',
+        error: `You don't have early access permission`,
+      });
       return;
     }
 
@@ -133,7 +140,7 @@ export class NextAuthController {
     }
 
     if (redirect) {
-      console.log(providerId, action, req.headers);
+      this.logger.debug(providerId, action, req.headers);
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
       } else if (

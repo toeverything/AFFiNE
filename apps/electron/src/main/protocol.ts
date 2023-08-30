@@ -57,7 +57,6 @@ async function handleHttpRequest(request: Request) {
 }
 
 export function registerProtocol() {
-  // it seems that there is some issue to postMessage between renderer with custom protocol & helper process
   protocol.handle('http', request => {
     return handleHttpRequest(request);
   });

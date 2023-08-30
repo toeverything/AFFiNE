@@ -211,12 +211,14 @@ export class WorkspaceResolver {
         user: true,
       },
     });
-    return data.map(({ id, accepted, type, user }) => ({
-      ...user,
-      permission: type,
-      inviteId: id,
-      accepted,
-    }));
+    return data
+      .filter(({ user }) => !!user)
+      .map(({ id, accepted, type, user }) => ({
+        ...user,
+        permission: type,
+        inviteId: id,
+        accepted,
+      }));
   }
 
   @Query(() => Boolean, {
