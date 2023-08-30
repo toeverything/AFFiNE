@@ -28,12 +28,12 @@ export class TokenType {
 
 /**
  * Auth resolver
- * Token rate limit: 10 req/m
- * Sign up/in rate limit: 2 req/m
- * Other rate limit: 1 req/m
+ * Token rate limit: 20 req/m
+ * Sign up/in rate limit: 10 req/m
+ * Other rate limit: 5 req/m
  */
 @UseGuards(CloudThrottlerGuard)
-@Throttle(1, 60)
+@Throttle(5, 60)
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
@@ -41,7 +41,7 @@ export class AuthResolver {
     private auth: AuthService
   ) {}
 
-  @Throttle(10, 60)
+  @Throttle(20, 60)
   @ResolveField(() => TokenType)
   token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
     if (user !== currentUser) {
@@ -54,7 +54,7 @@ export class AuthResolver {
     };
   }
 
-  @Throttle(2, 60)
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signUp(
     @Context() ctx: { req: Request },
@@ -67,7 +67,7 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle(2, 60)
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signIn(
     @Context() ctx: { req: Request },
