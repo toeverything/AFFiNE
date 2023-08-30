@@ -50,9 +50,11 @@ export const migrateToLatestDatabase = async (path: string) => {
     const update = (
       await connection.getUpdates(isRoot ? undefined : doc.guid)
     ).map(update => update.data);
-    // Buffer[] -> Uint8Array
-    const data = new Uint8Array(Buffer.concat(update).buffer);
-    applyUpdate(doc, data);
+    // Buffer[] -> Uint8Array[]
+    const data = update.map(update => new Uint8Array(update));
+    data.forEach(data => {
+      applyUpdate(doc, data);
+    });
     // trigger data manually
     if (isRoot) {
       doc.getMap('meta');
