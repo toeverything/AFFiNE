@@ -26,3 +26,21 @@ export const forgetPasswordButton = style({
   bottom: 0,
   display: 'none',
 });
+
+export const resendWrapper = style({
+  height: 32,
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: 30,
+});
+
+export const resendCountdown = style({ width: 45, textAlign: 'center' });
+export const resendCountdownInButton = style({
+  width: 40,
+  textAlign: 'center',
+  fontSize: 'var(--affine-font-sm)',
+  marginLeft: 16,
+  color: 'var(--affine-blue)',
+  fontWeight: 400,
+});

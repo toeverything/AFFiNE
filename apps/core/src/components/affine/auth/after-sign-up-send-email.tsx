@@ -1,22 +1,27 @@
 import {
   AuthContent,
   BackButton,
+  CountDownRender,
   ModalHeader,
-  ResendButton,
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { signIn } from 'next-auth/react';
+import { Button } from '@toeverything/components/button';
 import { type FC, useCallback } from 'react';
 
-import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
+import { useAuth } from './use-auth';
 
 export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
   setAuthState,
   email,
 }) => {
   const t = useAFFiNEI18N();
+  const { resendCountDown, allowSendEmail, signUp } = useAuth();
+
+  const onResendClick = useCallback(async () => {
+    await signUp(email);
+  }, [email, signUp]);
 
   return (
     <>
@@ -30,15 +35,23 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
         {t['com.affine.auth.sign.sent.email.message.end']()}
       </AuthContent>
 
-      <ResendButton
-        onClick={useCallback(() => {
-          signIn('email', {
-            email: email,
-            callbackUrl: buildCallbackUrl('signUp'),
-            redirect: true,
-          }).catch(console.error);
-        }, [email])}
-      />
+      <div className={style.resendWrapper}>
+        {allowSendEmail ? (
+          <Button type="plain" size="large" onClick={onResendClick}>
+            {t['com.affine.auth.sign.auth.code.resend.hint']()}
+          </Button>
+        ) : (
+          <>
+            <span className="resend-code-hint">
+              {t['com.affine.auth.sign.auth.code.on.resend.hint']()}
+            </span>
+            <CountDownRender
+              className={style.resendCountdown}
+              timeLeft={resendCountDown}
+            />
+          </>
+        )}
+      </div>
 
       <div className={style.authMessage} style={{ marginTop: 20 }}>
         {t['com.affine.auth.sign.auth.code.message']()}

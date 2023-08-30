@@ -140,6 +140,14 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
+      // fallback: {
+      //   timers: require.resolve('timers-browserify'),
+      //   ...(blocksuiteBaseDir === undefined
+      //     ? {}
+      //     : {
+      //       events: false,
+      //     }),
+      // },
       fallback:
         blocksuiteBaseDir === undefined
           ? undefined
