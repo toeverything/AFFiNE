@@ -23,6 +23,7 @@ export const loader: LoaderFunction = async () => {
   const target = (lastId && meta.find(({ id }) => id === lastId)) || meta.at(0);
   if (target) {
     const targetWorkspace = getWorkspace(target.id);
+
     const nonTrashPages = targetWorkspace.meta.pageMetas.filter(
       ({ trash }) => !trash
     );
