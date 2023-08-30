@@ -6,7 +6,7 @@ import { useCallback } from 'react';
 
 import { buildCallbackUrl } from './callback-url';
 
-const COUNT_DOWN_TIME = 20;
+const COUNT_DOWN_TIME = 60;
 const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
 
 function handleSendEmailError(
