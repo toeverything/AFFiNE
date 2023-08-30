@@ -53,7 +53,7 @@ export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
     <>
       <TopTip />
       <div
-        className={clsx(style.header, 'header')}
+        className={style.header}
         // data-has-warning={showWarning}
         data-open={open}
         data-sidebar-floating={appSidebarFloating}

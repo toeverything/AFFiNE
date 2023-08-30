@@ -168,11 +168,10 @@ export const PageList = ({
   fallback,
   getPageInfo,
   propertiesMeta,
+  mainElement,
+  headerElement,
 }: PageListProps) => {
-  const virtualTableHeight = useVirtualTableHeight(
-    '.main-container',
-    '.header'
-  );
+  const virtualTableHeight = useVirtualTableHeight(mainElement, headerElement);
   const sorter = useSorter<ListData>({
     data: list,
     key: DEFAULT_SORT_KEY,
@@ -188,6 +187,8 @@ export const PageList = ({
           createNewEdgeless={onCreateNewEdgeless}
           importFile={onImportFile}
           list={sorter.data}
+          mainElement={mainElement}
+          headerElement={headerElement}
         />
       </ScrollableContainer>
     );

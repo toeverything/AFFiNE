@@ -1,31 +1,31 @@
 import { useEffect, useState } from 'react';
 
 export function useVirtualTableHeight(
-  mainSelectors: string,
-  headSelectors: string
+  mainElement: HTMLElement | null,
+  headerElement: HTMLElement | null
 ) {
   const [virtualTableHeight, setVirtualTableHeight] = useState(0);
   useEffect(() => {
-    const mainEl = document.querySelector(mainSelectors) as HTMLElement;
-    const headEl = document.querySelector(headSelectors) as HTMLElement;
+    if (!mainElement || !headerElement) return;
 
     const resizeObserver = new ResizeObserver(entries => {
       if (entries.length === 0) return;
       for (const entry of entries) {
-        if (entry.target !== mainEl && entry.target !== headEl) return;
+        if (entry.target !== mainElement && entry.target !== headerElement)
+          return;
       }
-      const mainElHeight = mainEl.getBoundingClientRect().height;
-      const headElHeight = headEl.getBoundingClientRect().height;
+      const mainElHeight = mainElement.getBoundingClientRect().height;
+      const headElHeight = headerElement.getBoundingClientRect().height;
       const height = mainElHeight - headElHeight - 52;
       setVirtualTableHeight(height);
     });
-    resizeObserver.observe(mainEl);
-    resizeObserver.observe(headEl);
+    resizeObserver.observe(mainElement);
+    resizeObserver.observe(headerElement);
     return () => {
-      resizeObserver.unobserve(mainEl);
-      resizeObserver.unobserve(headEl);
+      resizeObserver.unobserve(mainElement);
+      resizeObserver.unobserve(headerElement);
     };
-  }, [mainSelectors, headSelectors]);
+  }, [mainElement, headerElement]);
 
   return virtualTableHeight;
 }

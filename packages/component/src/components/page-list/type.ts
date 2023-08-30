@@ -1,6 +1,7 @@
 import type { Tag } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * Get the keys of an object type whose values are of a given type
@@ -47,17 +48,19 @@ export type PageListProps = {
   isPublicWorkspace?: boolean;
   workspaceId: string;
   list: ListData[];
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  mainElement: HTMLElement | null;
+  headerElement: HTMLElement | null;
 };
 
 export type DraggableTitleCellData = {
   pageId: string;
   pageTitle: string;
   pagePreview?: string;
-  icon: React.ReactElement;
+  icon: ReactElement;
 };

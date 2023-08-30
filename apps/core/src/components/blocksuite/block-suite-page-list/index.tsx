@@ -14,6 +14,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { Suspense, useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
+import { appHeaderAtom, mainContainerAtom } from '../../../atoms/element';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
@@ -131,6 +132,8 @@ export const BlockSuitePageList = ({
   collection,
 }: BlockSuitePageListProps) => {
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const headerElement = useAtomValue(appHeaderAtom);
+  const mainElement = useAtomValue(mainContainerAtom);
   const {
     toggleFavorite,
     removeToTrash,
@@ -276,6 +279,8 @@ export const BlockSuitePageList = ({
       isPublicWorkspace={isPublic}
       list={pageList}
       fallback={<PageListEmpty createPage={createPage} listType={listType} />}
+      mainElement={mainElement}
+      headerElement={headerElement}
     />
   );
 };

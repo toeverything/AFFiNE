@@ -57,23 +57,26 @@ const MobileHead = ({
   );
 };
 
+type AllPageListMobileViewProps = {
+  isPublicWorkspace: boolean;
+  list: ListData[];
+  createNewPage: () => void;
+  createNewEdgeless: () => void;
+  importFile: () => void;
+  mainElement: HTMLElement | null;
+  headerElement: HTMLElement | null;
+};
+
 export const AllPageListMobileView = ({
   list,
   isPublicWorkspace,
   createNewPage,
   createNewEdgeless,
   importFile,
-}: {
-  isPublicWorkspace: boolean;
-  list: ListData[];
-  createNewPage: () => void;
-  createNewEdgeless: () => void;
-  importFile: () => void;
-}) => {
-  const virtualTableHeight = useVirtualTableHeight(
-    '.main-container',
-    '.header'
-  );
+  mainElement,
+  headerElement,
+}: AllPageListMobileViewProps) => {
+  const virtualTableHeight = useVirtualTableHeight(mainElement, headerElement);
 
   return (
     <StyledTableContainer>
