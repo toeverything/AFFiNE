@@ -98,7 +98,6 @@ async function createWindow() {
     // close and destroy all windows
     BrowserWindow.getAllWindows().forEach(w => {
       if (!w.isDestroyed()) {
-        w.close();
         w.destroy();
       }
     });
