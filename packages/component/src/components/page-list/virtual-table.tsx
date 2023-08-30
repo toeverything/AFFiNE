@@ -1,5 +1,12 @@
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import React, { type ComponentType, useCallback, useRef } from 'react';
+import {
+  type ComponentType,
+  forwardRef,
+  type HTMLProps,
+  type ReactNode,
+  useCallback,
+  useRef,
+} from 'react';
 import type {
   ListChildComponentProps,
   ListOnItemsRenderedProps,
@@ -10,41 +17,42 @@ import { VariableSizeList as List } from 'react-window';
 
 import { Table, TableBody } from '../..';
 
-const headerAtom = atom<React.ReactNode>(null);
-const footerAtom = atom<React.ReactNode>(null);
+const headerAtom = atom<ReactNode>(null);
+const footerAtom = atom<ReactNode>(null);
 const topAtom = atom<number>(0);
 
-const InnerElement = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLProps<HTMLDivElement>
->(function Inner({ children, ...rest }, ref) {
-  const [header] = useAtom(headerAtom);
-  const [footer] = useAtom(footerAtom);
-  const top = useAtomValue(topAtom);
+const Inner = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement>>(
+  function Inner({ children, ...rest }, ref) {
+    const [header] = useAtom(headerAtom);
+    const [footer] = useAtom(footerAtom);
+    const top = useAtomValue(topAtom);
 
-  return (
-    <div {...rest} ref={ref}>
-      <Table>
-        {header}
-        <TableBody
-          style={{
-            top,
-            position: 'absolute',
-            display: 'table',
-            width: '100%',
-          }}
-        >
-          {children}
-        </TableBody>
-        {footer}
-      </Table>
-    </div>
-  );
-});
+    return (
+      <div {...rest} ref={ref}>
+        <Table>
+          {header}
+          <TableBody
+            style={{
+              top,
+              position: 'absolute',
+              display: 'table',
+              width: '100%',
+            }}
+          >
+            {children}
+          </TableBody>
+          {footer}
+        </Table>
+      </div>
+    );
+  }
+);
+
+Inner.displayName = 'Inner';
 
 type VirtualTableProps<T> = {
-  header?: React.ReactNode;
-  footer?: React.ReactNode;
+  header?: ReactNode;
+  footer?: ReactNode;
   children: ComponentType<ListChildComponentProps<T>>;
 } & Omit<VariableSizeListProps<T>, 'children' | 'innerElementType'>;
 
@@ -56,10 +64,10 @@ export function VirtualTable<T>({
 }: VirtualTableProps<T>) {
   const listRef = useRef<VariableSizeList | null>();
   const setTop = useSetAtom(topAtom);
-  const setHeader = useSetAtom(headerAtom);
-  const setFooter = useSetAtom(footerAtom);
-  setHeader(header);
-  setFooter(footer);
+  const [_header, setHeader] = useAtom(headerAtom);
+  const [_footer, setFooter] = useAtom(footerAtom);
+  if (header !== _header) setHeader(header);
+  if (footer !== _footer) setFooter(footer);
 
   const onItemsRendered = useCallback(
     ({
@@ -92,9 +100,12 @@ export function VirtualTable<T>({
   return (
     <List
       {...rest}
-      innerElementType={InnerElement}
+      innerElementType={Inner}
       onItemsRendered={onItemsRendered}
-      ref={el => (listRef.current = el)}
+      ref={useCallback(
+        (el: VariableSizeList | null) => (listRef.current = el),
+        []
+      )}
     >
       {children}
     </List>
