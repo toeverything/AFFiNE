@@ -27,9 +27,7 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
   }
 
   protected override getTracker(req: Record<string, any>): string {
-    return (
-      req?.getHeader('CF-Connecting-IP') ?? req?.getHeader('CF-ray') ?? req?.ip
-    );
+    return req?.get('CF-Connecting-IP') ?? req?.get('CF-ray') ?? req?.ip;
   }
 }
 
