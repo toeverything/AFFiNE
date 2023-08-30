@@ -2,8 +2,15 @@ import {
   AuthModal as AuthModalBase,
   type AuthModalProps as AuthModalBaseProps,
 } from '@affine/component/auth-components';
-import { atom, useAtom } from 'jotai';
-import { type FC, useCallback, useEffect, useMemo } from 'react';
+import { refreshRootMetadataAtom } from '@affine/workspace/atom';
+import { atom, useAtom, useSetAtom } from 'jotai';
+import {
+  type FC,
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
@@ -79,9 +86,14 @@ export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
     }
   }, [open, setAuthEmail, setAuthStore]);
 
+  const refreshMetadata = useSetAtom(refreshRootMetadataAtom);
+
   const onSignedIn = useCallback(() => {
     setOpen(false);
-  }, [setOpen]);
+    startTransition(() => {
+      refreshMetadata();
+    });
+  }, [refreshMetadata, setOpen]);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>

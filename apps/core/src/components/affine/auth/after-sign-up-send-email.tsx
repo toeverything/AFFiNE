@@ -5,9 +5,9 @@ import {
   ResendButton,
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { signIn } from 'next-auth/react';
 import { type FC, useCallback } from 'react';
 
+import { signInCloud } from '../../../utils/cloud-utils';
 import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
@@ -32,7 +32,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
 
       <ResendButton
         onClick={useCallback(() => {
-          signIn('email', {
+          signInCloud('email', {
             email: email,
             callbackUrl: buildCallbackUrl('signUp'),
             redirect: true,

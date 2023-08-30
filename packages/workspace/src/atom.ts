@@ -7,7 +7,7 @@ import {
   currentWorkspaceIdAtom,
 } from '@toeverything/infra/atom';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
-import { atom } from 'jotai';
+import { type Atom, atom } from 'jotai/vanilla';
 import { z } from 'zod';
 
 import { getOrCreateWorkspace } from './manager';
@@ -68,127 +68,145 @@ const METADATA_STORAGE_KEY = 'jotai-workspaces';
 const rootWorkspacesMetadataPrimitiveAtom = atom<Promise<
   RootWorkspaceMetadata[]
 > | null>(null);
+
+type Getter = <Value>(atom: Atom<Value>) => Value;
+
+type FetchMetadata = (
+  get: Getter,
+  options: { signal: AbortSignal }
+) => Promise<RootWorkspaceMetadata[]>;
+
+/**
+ * @internal
+ */
+const fetchMetadata: FetchMetadata = async (get, { signal }) => {
+  const WorkspaceAdapters = get(workspaceAdaptersAtom);
+  assertExists(WorkspaceAdapters, 'workspace adapter should be defined');
+  const metadata: RootWorkspaceMetadata[] = [];
+
+  // step 1: try load metadata from localStorage.
+  //
+  // we need this step because workspaces have the order.
+  {
+    const loadFromLocalStorage = (): RootWorkspaceMetadata[] => {
+      // don't change this key,
+      // otherwise it will cause the data loss in the production
+      const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
+      if (primitiveMetadata) {
+        try {
+          const items = JSON.parse(primitiveMetadata) as z.infer<
+            typeof rootWorkspaceMetadataArraySchema
+          >;
+          rootWorkspaceMetadataArraySchema.parse(items);
+          return [...items];
+        } catch (e) {
+          console.error('cannot parse worksapce', e);
+        }
+        return [];
+      }
+      return [];
+    };
+
+    const maybeMetadata = loadFromLocalStorage();
+
+    // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
+    if (
+      maybeMetadata.some(meta => !('version' in meta)) &&
+      !globalThis.$migrationDone
+    ) {
+      await new Promise<void>((resolve, reject) => {
+        signal.addEventListener('abort', () => reject(), { once: true });
+        window.addEventListener('migration-done', () => resolve(), {
+          once: true,
+        });
+      });
+    }
+
+    metadata.push(...loadFromLocalStorage());
+  }
+  // step 2: fetch from adapters
+  {
+    const Adapters = Object.values(WorkspaceAdapters).sort(
+      (a, b) => a.loadPriority - b.loadPriority
+    );
+
+    for (const Adapter of Adapters) {
+      const { CRUD, flavour: currentFlavour } = Adapter;
+      if (
+        Adapter.Events['app:access'] &&
+        !(await Adapter.Events['app:access']())
+      ) {
+        // skip the adapter if the user doesn't have access to it
+        const removed = metadata.filter(
+          meta => meta.flavour === currentFlavour
+        );
+        removed.forEach(meta => {
+          metadata.splice(metadata.indexOf(meta), 1);
+        });
+        continue;
+      }
+      try {
+        const item = await CRUD.list();
+        // remove the metadata that is not in the list
+        //  because we treat the workspace adapter as the source of truth
+        {
+          const removed = metadata.filter(
+            meta =>
+              meta.flavour === currentFlavour &&
+              !item.some(x => x.id === meta.id)
+          );
+          removed.forEach(meta => {
+            metadata.splice(metadata.indexOf(meta), 1);
+          });
+        }
+        // sort the metadata by the order of the list
+        if (metadata.length) {
+          item.sort((a, b) => {
+            return (
+              metadata.findIndex(x => x.id === a.id) -
+              metadata.findIndex(x => x.id === b.id)
+            );
+          });
+        }
+        metadata.push(
+          ...item.map(x => ({
+            id: x.id,
+            flavour: x.flavour,
+            version: WorkspaceVersion.DatabaseV3,
+          }))
+        );
+      } catch (e) {
+        console.error('list data error:', e);
+      }
+    }
+  }
+  const metadataMap = new Map(metadata.map(x => [x.id, x]));
+  // init workspace data
+  metadataMap.forEach((meta, id) => {
+    if (
+      meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
+      meta.flavour === WorkspaceFlavour.LOCAL
+    ) {
+      getOrCreateWorkspace(id, meta.flavour);
+    } else {
+      throw new Error(`unknown flavour ${meta.flavour}`);
+    }
+  });
+  const result = Array.from(metadataMap.values());
+  console.info('metadata', result);
+  return result;
+};
+
 const rootWorkspacesMetadataPromiseAtom = atom<
   Promise<RootWorkspaceMetadata[]>
 >(async (get, { signal }) => {
-  const WorkspaceAdapters = get(workspaceAdaptersAtom);
-  assertExists(WorkspaceAdapters, 'workspace adapter should be defined');
   const primitiveMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
   assertEquals(
     primitiveMetadata,
     null,
     'rootWorkspacesMetadataPrimitiveAtom should be null'
   );
-
-  if (environment.isServer) {
-    // return a promise in SSR to avoid the hydration mismatch
-    return Promise.resolve([]);
-  } else {
-    const metadata: RootWorkspaceMetadata[] = [];
-
-    // fixme(himself65): we might not need step 1
-    // step 1: try load metadata from localStorage
-    {
-      const loadFromLocalStorage = (): RootWorkspaceMetadata[] => {
-        // don't change this key,
-        // otherwise it will cause the data loss in the production
-        const primitiveMetadata = localStorage.getItem(METADATA_STORAGE_KEY);
-        if (primitiveMetadata) {
-          try {
-            const items = JSON.parse(primitiveMetadata) as z.infer<
-              typeof rootWorkspaceMetadataArraySchema
-            >;
-            rootWorkspaceMetadataArraySchema.parse(items);
-            return [...items];
-          } catch (e) {
-            console.error('cannot parse worksapce', e);
-          }
-          return [];
-        }
-        return [];
-      };
-
-      const maybeMetadata = loadFromLocalStorage();
-
-      // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
-      if (
-        maybeMetadata.some(meta => !('version' in meta)) &&
-        !globalThis.$migrationDone
-      ) {
-        await new Promise<void>((resolve, reject) => {
-          signal.addEventListener('abort', () => reject(), { once: true });
-          window.addEventListener('migration-done', () => resolve(), {
-            once: true,
-          });
-        });
-      }
-
-      metadata.push(...loadFromLocalStorage());
-    }
-    // step 2: fetch from adapters
-    {
-      const Adapters = Object.values(WorkspaceAdapters).sort(
-        (a, b) => a.loadPriority - b.loadPriority
-      );
-
-      for (const Adapter of Adapters) {
-        const { CRUD, flavour: currentFlavour } = Adapter;
-        if (
-          Adapter.Events['app:access'] &&
-          !(await Adapter.Events['app:access']())
-        ) {
-          // skip the adapter if the user doesn't have access to it
-          continue;
-        }
-        try {
-          const item = await CRUD.list();
-          // remove the metadata that is not in the list
-          //  because we treat the workspace adapter as the source of truth
-          {
-            const removed = metadata.filter(
-              meta =>
-                meta.flavour === currentFlavour &&
-                !item.some(x => x.id === meta.id)
-            );
-            removed.forEach(meta => {
-              metadata.splice(metadata.indexOf(meta), 1);
-            });
-          }
-          // sort the metadata by the order of the list
-          if (metadata.length) {
-            item.sort((a, b) => {
-              return (
-                metadata.findIndex(x => x.id === a.id) -
-                metadata.findIndex(x => x.id === b.id)
-              );
-            });
-          }
-          metadata.push(
-            ...item.map(x => ({
-              id: x.id,
-              flavour: x.flavour,
-              version: WorkspaceVersion.DatabaseV3,
-            }))
-          );
-        } catch (e) {
-          console.error('list data error:', e);
-        }
-      }
-    }
-    const metadataMap = new Map(metadata.map(x => [x.id, x]));
-    // init workspace data
-    metadataMap.forEach((meta, id) => {
-      if (
-        meta.flavour === WorkspaceFlavour.AFFINE_CLOUD ||
-        meta.flavour === WorkspaceFlavour.LOCAL
-      ) {
-        getOrCreateWorkspace(id, meta.flavour);
-      } else {
-        throw new Error(`unknown flavour ${meta.flavour}`);
-      }
-    });
-    return Array.from(metadataMap.values());
-  }
+  return fetchMetadata(get, { signal });
 });
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
@@ -245,6 +263,14 @@ export const rootWorkspacesMetadataAtom = atom<
     });
   }
 );
+
+export const refreshRootMetadataAtom = atom(null, (get, set) => {
+  const abortController = new AbortController();
+  set(
+    rootWorkspacesMetadataPrimitiveAtom,
+    fetchMetadata(get, { signal: abortController.signal })
+  );
+});
 
 // blocksuite atoms,
 // each app should have only one block-hub in the same time
