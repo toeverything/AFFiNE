@@ -3,7 +3,7 @@ import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import type { AllWorkspace } from '../../../../shared';
@@ -32,7 +32,7 @@ export const WorkspaceSelector = ({
     currentWorkspace.blockSuiteWorkspace
   );
   const [isHovered, setIsHovered] = useState(false);
-  const ref = useRef(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
   // TODO: Delete this?
@@ -56,7 +56,7 @@ export const WorkspaceSelector = ({
       disableHoverBackground={isHovered}
       data-testid="current-workspace"
       id="current-workspace"
-      ref={ref}
+      ref={setContainer}
     >
       <WorkspaceAvatar
         data-testid="workspace-avatar"
@@ -77,7 +77,7 @@ export const WorkspaceSelector = ({
                 : 'Saved locally'
             }
             portalOptions={{
-              container: ref.current,
+              container,
             }}
           >
             <StyledWorkspaceStatus
