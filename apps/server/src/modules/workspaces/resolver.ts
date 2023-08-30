@@ -581,6 +581,16 @@ export class WorkspaceResolver {
     return this.storage.listBlobs(workspaceId);
   }
 
+  @Query(() => Number)
+  async collectBlobSizes(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.storage.blobsSize(workspaceId);
+  }
+
   @Mutation(() => String)
   async setBlob(
     @CurrentUser() user: UserType,
