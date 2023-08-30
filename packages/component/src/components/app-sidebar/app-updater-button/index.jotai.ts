@@ -1,4 +1,5 @@
 import { isBrowser } from '@affine/env/constant';
+import type { UpdateMeta } from '@toeverything/infra';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
 
@@ -8,7 +9,7 @@ function rpcToObservable<
   H extends () => Promise<T>,
   E extends (callback: (t: T) => void) => () => void,
 >(
-  initialValue: T,
+  initialValue: T | null,
   {
     event,
     handler,
@@ -18,8 +19,8 @@ function rpcToObservable<
     handler?: H;
     onSubscribe?: () => void;
   }
-) {
-  return new Observable<T>(subscriber => {
+): Observable<T | null> {
+  return new Observable<T | null>(subscriber => {
     subscriber.next(initialValue);
     onSubscribe?.();
     if (!isBrowser || !environment.isDesktop || !event) {
@@ -40,13 +41,13 @@ function rpcToObservable<
 }
 
 export const updateReadyAtom = atomWithObservable(() => {
-  return rpcToObservable(null as any | null, {
+  return rpcToObservable(null as UpdateMeta | null, {
     event: window.events?.updater.onUpdateReady,
   });
 });
 
 export const updateAvailableAtom = atomWithObservable(() => {
-  return rpcToObservable(null as any | null, {
+  return rpcToObservable(null as UpdateMeta | null, {
     event: window.events?.updater.onUpdateAvailable,
     onSubscribe: () => {
       window.apis?.updater.checkForUpdatesAndNotify().catch(err => {
@@ -56,8 +57,8 @@ export const updateAvailableAtom = atomWithObservable(() => {
   });
 });
 
-export const downloadProgressAtom = atomWithObservable<number>(() => {
-  return rpcToObservable(0, {
+export const downloadProgressAtom = atomWithObservable(() => {
+  return rpcToObservable(null as number | null, {
     event: window.events?.updater.onDownloadProgress,
   });
 });

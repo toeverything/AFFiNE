@@ -86,6 +86,7 @@ export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
         setOpen(false);
       });
     }
+    return;
   }, [setOpen]);
 
   const onSignedIn = useCallback(() => {

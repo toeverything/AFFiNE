@@ -5,9 +5,9 @@ import {
   NewIcon,
   NotionIcon,
 } from '@blocksuite/icons';
+import { Tooltip } from '@toeverything/components/tooltip';
 
 import { ModalCloseButton } from '../../ui/modal';
-import { Tooltip } from '../../ui/tooltip';
 import { BlockCard } from '../card/block-card';
 import {
   importPageBodyStyle,
@@ -58,7 +58,6 @@ export const ImportPage = ({
         right={
           <Tooltip
             content={'Learn how to Import your Notion pages into AFFiNE.'}
-            placement="top-start"
           >
             <HelpIcon width={20} height={20} />
           </Tooltip>

@@ -129,10 +129,20 @@ export class NextAuthController {
     }
 
     if (redirect) {
+      console.log(providerId, action, req.headers);
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
+      } else if (
+        action === 'callback' ||
+        action === 'error' ||
+        (providerId !== 'credentials' &&
+          // login in the next-auth page, /api/auth/signin, auto redirect.
+          // otherwise, return the json value to allow frontend to handle the redirect.
+          req.headers?.referer?.includes?.('/api/auth/signin'))
+      ) {
+        res.redirect(redirect);
       } else {
-        res.send(JSON.stringify({ url: redirect }));
+        res.json({ url: redirect });
       }
     } else if (typeof body === 'string') {
       res.send(body);

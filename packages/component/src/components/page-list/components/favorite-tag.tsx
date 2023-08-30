@@ -4,9 +4,8 @@ import {
   IconButton,
   type IconButtonProps,
 } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { forwardRef } from 'react';
-
-import { Tooltip } from '../../..';
 
 export const FavoriteTag = forwardRef<
   HTMLButtonElement,
@@ -16,10 +15,7 @@ export const FavoriteTag = forwardRef<
 >(({ active, onClick, ...props }, ref) => {
   const t = useAFFiNEI18N();
   return (
-    <Tooltip
-      content={active ? t['Favorited']() : t['Favorite']()}
-      placement="top-start"
-    >
+    <Tooltip content={active ? t['Favorited']() : t['Favorite']()} side="top">
       <IconButton
         ref={ref}
         active={active}

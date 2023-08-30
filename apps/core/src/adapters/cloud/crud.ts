@@ -11,11 +11,8 @@ import {
 } from '@affine/graphql';
 import { fetcher } from '@affine/workspace/affine/gql';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
-import {
-  deleteLocalBlobStorage,
-  moveLocalBlobStorage,
-} from '@affine/workspace/migration';
-import { Workspace } from '@blocksuite/store';
+import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
+import { migrateLocalBlobStorage } from '@toeverything/infra/blocksuite';
 import {
   createIndexedDBProvider,
   DEFAULT_DB_NAME,
@@ -24,6 +21,14 @@ import { getSession } from 'next-auth/react';
 import { proxy } from 'valtio/vanilla';
 
 const Y = Workspace.Y;
+
+async function deleteLocalBlobStorage(id: string) {
+  const storage = createIndexeddbStorage(id);
+  const keys = await storage.crud.list();
+  for (const key of keys) {
+    await storage.crud.delete(key);
+  }
+}
 
 // we don't need to persistence the state into local storage
 //  because if a user clicks create multiple time and nothing happened
@@ -74,7 +79,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       DEFAULT_DB_NAME
     );
     provider.connect();
-    moveLocalBlobStorage(blockSuiteWorkspace.id, createWorkspace.id)
+    migrateLocalBlobStorage(blockSuiteWorkspace.id, createWorkspace.id)
       .then(() => deleteLocalBlobStorage(blockSuiteWorkspace.id))
       .catch(e => {
         console.error('error when moving blob storage:', e);

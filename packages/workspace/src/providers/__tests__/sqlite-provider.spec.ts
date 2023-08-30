@@ -55,7 +55,6 @@ vi.stubGlobal('window', {
   },
   events: {
     db: {
-      // @ts-expect-error
       onExternalUpdate: fn => {
         triggerDBUpdate = fn;
         return () => {
@@ -119,7 +118,6 @@ describe('SQLite download provider', () => {
 
     offlineYdoc.getText('text').insert(0, 'sqlite-world');
 
-    // @ts-expect-error
     triggerDBUpdate?.({
       workspaceId: id + '-another-id',
       update: Y.encodeStateAsUpdate(offlineYdoc),
@@ -128,7 +126,6 @@ describe('SQLite download provider', () => {
     // not yet updated (because the workspace id is different)
     expect(workspace.doc.getText('text').toString()).toBe('');
 
-    // @ts-expect-error
     triggerDBUpdate?.({
       workspaceId: id,
       update: Y.encodeStateAsUpdate(offlineYdoc),

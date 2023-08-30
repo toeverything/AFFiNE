@@ -39,3 +39,5 @@ jobs:
           buildScriptName: build
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           zip: true
+        env:
+          NODE_OPTIONS: ${{ env.NODE_OPTIONS }}
