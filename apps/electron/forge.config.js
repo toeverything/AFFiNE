@@ -44,6 +44,7 @@ const makers = [
           },
           { x: 432, y: 192, type: 'link', path: '/Applications' },
         ],
+        iconSize: 118,
         file: path.resolve(
           __dirname,
           'out',
