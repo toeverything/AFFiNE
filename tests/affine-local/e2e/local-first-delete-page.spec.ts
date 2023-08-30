@@ -178,6 +178,7 @@ test('delete multiple pages -> create multiple pages -> refresh', async ({
   await page.getByTestId('all-pages').click();
 
   await page.reload();
+  await page.waitForTimeout(1000);
 
   const currentWorkspace = await workspace.current();
 
