@@ -106,11 +106,11 @@ describe('Workspace Module', () => {
     const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
     const workspace = await createWorkspace(app, user.token.token);
 
-    rejects(
+    await rejects(
       getPublicWorkspace(app, 'not_exists_ws'),
       'must not get not exists workspace'
     );
-    rejects(
+    await rejects(
       getPublicWorkspace(app, workspace.id),
       'must not get private workspace'
     );
