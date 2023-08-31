@@ -25,6 +25,15 @@ export const titleInput = style({
   margin: 'auto',
   width: '100%',
   height: '100%',
+
+  selectors: {
+    '&:focus': {
+      border: '1px solid var(--affine-black-10)',
+      borderRadius: '8px',
+      height: '32px',
+      padding: '6px 8px',
+    },
+  },
 });
 export const shadowTitle = style({
   visibility: 'hidden',
