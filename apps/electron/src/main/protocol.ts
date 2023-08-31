@@ -15,7 +15,6 @@ async function handleHttpRequest(request: Request) {
     bypassCustomProtocolHandlers: true,
   });
   const urlObject = new URL(request.url);
-  console.log(`request.url`, request.url);
   if (isNetworkResource(urlObject.pathname)) {
     // just pass through (proxy)
     return net.fetch(CLOUD_BASE_URL + urlObject.pathname, clonedRequest);
