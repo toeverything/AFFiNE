@@ -1,62 +1,52 @@
-import { AuthInput, ModalHeader } from '@affine/component/auth-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
-import type { Notification } from '@affine/component/notification-center/index.jotai';
-import { isDesktop } from '@affine/env/constant';
+import {
+  AuthInput,
+  CountDownRender,
+  ModalHeader,
+} from '@affine/component/auth-components';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { useSetAtom } from 'jotai';
-import { type SignInResponse } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
-import { signInCloud } from '../../../utils/cloud-utils';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { emailRegex } from '../../../utils/email-regex';
-import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
+import { useAuth } from './use-auth';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
-}
-
-const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
-
-function handleSendEmailError(
-  res: SignInResponse | undefined,
-  pushNotification: (notification: Notification) => void
-) {
-  if (res?.error) {
-    pushNotification({
-      title: 'Send email error',
-      message: 'Please back to home and try again',
-      type: 'error',
-    });
-  }
-  if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-    pushNotification({
-      title: 'Sign up error',
-      message: `You don't have early access permission\nVisit ${INTERNAL_BETA_URL} for more information`,
-      type: 'error',
-    });
-  }
 }
 
 export const SignIn: FC<AuthPanelProps> = ({
   setAuthState,
   setAuthEmail,
   email,
+  onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrentLoginStatus();
+
+  const { resendCountDown, allowSendEmail, signIn, signUp, signInWithGoogle } =
+    useAuth({
+      onNoAccess: useCallback(() => {
+        setAuthState('noAccess');
+      }, [setAuthState]),
+    });
 
   const { trigger: verifyUser, isMutating } = useMutation({
     mutation: getUserQuery,
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
-  const pushNotification = useSetAtom(pushNotificationAtom);
+
+  if (loginStatus === 'authenticated') {
+    onSignedIn?.();
+  }
+
   const onContinue = useCallback(async () => {
     if (!validateEmail(email)) {
       setIsValidEmail(false);
@@ -68,26 +58,16 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setAuthEmail(email);
     if (user) {
-      signInCloud('email', {
-        email: email,
-        callbackUrl: buildCallbackUrl('/auth/signIn'),
-        redirect: false,
-      })
-        .then(res => handleSendEmailError(res, pushNotification))
-        .catch(console.error);
       setAuthState('afterSignInSendEmail');
-    } else {
-      signInCloud('email', {
-        email: email,
-        callbackUrl: buildCallbackUrl('/auth/signUp'),
-        redirect: false,
-      })
-        .then(res => handleSendEmailError(res, pushNotification))
-        .catch(console.error);
 
+      await signIn(email);
+    } else {
       setAuthState('afterSignUpSendEmail');
+
+      await signUp(email);
     }
-  }, [email, setAuthEmail, setAuthState, verifyUser, pushNotification]);
+  }, [email, setAuthEmail, setAuthState, signIn, signUp, verifyUser]);
+
   return (
     <>
       <ModalHeader
@@ -103,18 +83,9 @@ export const SignIn: FC<AuthPanelProps> = ({
           marginTop: 30,
         }}
         icon={<GoogleDuotoneIcon />}
-        onClick={useCallback(() => {
-          if (isDesktop) {
-            open(
-              `/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
-                '/open-app/oauth-jwt'
-              )}`,
-              '_target'
-            );
-          } else {
-            signInCloud('google').catch(console.error);
-          }
-        }, [])}
+        onClick={useCallback(async () => {
+          await signInWithGoogle();
+        }, [signInWithGoogle])}
       >
         {t['Continue with Google']()}
       </Button>
@@ -142,15 +113,23 @@ export const SignIn: FC<AuthPanelProps> = ({
           data-testid="continue-login-button"
           block
           loading={isMutating}
+          disabled={!allowSendEmail}
           icon={
-            <ArrowDownBigIcon
-              width={20}
-              height={20}
-              style={{
-                transform: 'rotate(-90deg)',
-                color: 'var(--affine-blue)',
-              }}
-            />
+            allowSendEmail || isMutating ? (
+              <ArrowDownBigIcon
+                width={20}
+                height={20}
+                style={{
+                  transform: 'rotate(-90deg)',
+                  color: 'var(--affine-blue)',
+                }}
+              />
+            ) : (
+              <CountDownRender
+                className={style.resendCountdownInButton}
+                timeLeft={resendCountDown}
+              />
+            )
           }
           iconPosition="end"
           onClick={onContinue}

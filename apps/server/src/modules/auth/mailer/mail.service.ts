@@ -85,43 +85,65 @@ export class MailService {
       ],
     });
   }
+
+  async sendSignInEmail(url: string, options: Options) {
+    const html = emailTemplate({
+      title: 'Sign in to AFFiNE',
+      content:
+        'Click the button below to securely sign in. The magic link will expire in 30 minutes.',
+      buttonContent: 'Sign in to AFFiNE',
+      buttonUrl: url,
+    });
+    return this.sendMail({
+      html,
+      subject: 'Sign in to AFFiNE',
+      ...options,
+    });
+  }
+
   async sendChangePasswordEmail(to: string, url: string) {
-    const html = `
-      <h1>Change password</h1>
-      <p>Click button to open change password page</p>
-      <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'Modify your AFFiNE password',
+      content:
+        'Click the button below to reset your password. The magic link will expire in 30 minutes.',
+      buttonContent: 'Set new password',
+      buttonUrl: url,
+    });
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Change password`,
+      subject: `Modify your AFFiNE password`,
       html,
     });
   }
 
   async sendSetPasswordEmail(to: string, url: string) {
-    const html = `
-      <h1>Set password</h1>
-      <p>Click button to open set password page</p>
-      <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'Set your AFFiNE password',
+      content:
+        'Click the button below to set your password. The magic link will expire in 30 minutes.',
+      buttonContent: 'Set your password',
+      buttonUrl: url,
+    });
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Change password`,
+      subject: `Set your AFFiNE password`,
       html,
     });
   }
   async sendChangeEmail(to: string, url: string) {
-    const html = `
-      <h1>Change Email</h1>
-      <p>Click button to open change email page</p>
-      <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'Verify your current email for AFFiNE',
+      content:
+        'You recently requested to change the email address associated with your AFFiNE account. To complete this process, please click on the verification link below. This magic link will expire in 30 minutes.',
+      buttonContent: 'Verify and set up a new email address',
+      buttonUrl: url,
+    });
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Change password`,
+      subject: `Verify your current email for AFFiNE`,
       html,
     });
   }
