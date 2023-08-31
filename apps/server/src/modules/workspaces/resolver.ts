@@ -320,13 +320,15 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.snapshot.create({
-      data: {
-        id: workspace.id,
-        workspaceId: workspace.id,
-        blob: buffer,
-      },
-    });
+    if (buffer.length) {
+      await this.prisma.snapshot.create({
+        data: {
+          id: workspace.id,
+          workspaceId: workspace.id,
+          blob: buffer,
+        },
+      });
+    }
 
     return workspace;
   }
