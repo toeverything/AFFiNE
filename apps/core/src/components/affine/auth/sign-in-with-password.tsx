@@ -9,10 +9,11 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
+import { signInCloud } from '../../../utils/cloud-utils';
 import type { AuthPanelProps } from './index';
 import { forgetPasswordButton } from './style.css';
 
@@ -30,7 +31,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   const [passwordError, setPasswordError] = useState(false);
 
   const onSignIn = useCallback(async () => {
-    const res = await signIn('credentials', {
+    const res = await signInCloud('credentials', {
       redirect: false,
       email,
       password,
