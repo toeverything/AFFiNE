@@ -4,15 +4,19 @@ env:
   NODE_OPTIONS: --max-old-space-size=4096
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
-  pull_request_target:
+  pull_request:
     branches:
       - master
     paths-ignore:
       - README.md
       - .github/**
+      - apps/server
+      - apps/docs
+      - apps/electron
       - '!.github/workflows/publish-storybook.yml'
 
 jobs:
@@ -34,6 +38,8 @@ jobs:
         run: yarn run build:plugins
       - uses: chromaui/action-next@v1
         with:
+          workingDir: apps/storybook
+          buildScriptName: build
           exitOnceUploaded: true
           onlyChanged: false
           diagnostics: true
