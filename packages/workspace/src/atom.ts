@@ -176,10 +176,10 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
             version: WorkspaceVersion.DatabaseV3,
           }))
         );
-        Adapter.Events['service:start']?.();
       } catch (e) {
         console.error('list data error:', e);
       }
+      Adapter.Events['service:start']?.();
     }
   }
   const metadataMap = new Map(metadata.map(x => [x.id, x]));
