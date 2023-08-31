@@ -1,10 +1,11 @@
-import { CRUD } from '@affine/workspace/affine/crud';
-import { createCloudBlobStorage } from '@affine/workspace/blob/cloud-blob-storage';
-import { downloadBinaryFromCloud } from '@affine/workspace/providers/cloud';
 import { assertExists } from '@blocksuite/global/utils';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { Doc } from 'yjs';
 import { applyUpdate } from 'yjs';
+
+import { createCloudBlobStorage } from '../blob/cloud-blob-storage';
+import { downloadBinaryFromCloud } from '../providers/cloud';
+import { CRUD } from './crud';
 
 let abortController: AbortController | undefined;
 
