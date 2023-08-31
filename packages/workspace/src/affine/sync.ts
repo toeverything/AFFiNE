@@ -1,5 +1,6 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { createIndexeddbStorage } from '@blocksuite/store';
+import { pushBinary } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
 import { applyUpdate } from 'yjs';
 
@@ -19,7 +20,13 @@ const downloadRecursive = async (
   }
   const binary = await downloadBinaryFromCloud(rootGuid, doc.guid);
   if (typeof binary !== 'boolean') {
-    applyUpdate(doc, new Uint8Array(binary), 'affine-cloud-service');
+    const update = new Uint8Array(binary);
+    if (rootGuid === doc.guid) {
+      // only apply the root doc
+      applyUpdate(doc, update, 'affine-cloud-service');
+    } else {
+      await pushBinary(doc.guid, update);
+    }
   }
   return Promise.all(
     [...doc.subdocs.values()].map(subdoc =>
