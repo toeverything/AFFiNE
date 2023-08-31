@@ -75,7 +75,7 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
 
       const res = await signInCloud('email', {
         email: email,
-        callbackUrl: 'signIn',
+        callbackUrl: '/auth/signIn',
         redirect: false,
       }).catch(console.error);
 
@@ -98,7 +98,7 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
 
       const res = await signInCloud('email', {
         email: email,
-        callbackUrl: 'signUp',
+        callbackUrl: '/auth/signUp',
         redirect: false,
       }).catch(console.error);
 
