@@ -102,8 +102,10 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
             (environment.isDesktop && props.hasBackground),
         })}
         data-open={open}
+        data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
         data-is-floating={appSidebarFloating}
+        data-has-background={props.hasBackground}
         data-enable-animation={enableAnimation && !isResizing}
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">

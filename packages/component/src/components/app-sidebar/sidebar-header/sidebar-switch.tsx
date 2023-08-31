@@ -6,8 +6,9 @@ import { useAtom } from 'jotai';
 import { useRef } from 'react';
 
 import { appSidebarOpenAtom } from '../index.jotai';
+import * as styles from './sidebar-switch.css';
 
-export const SidebarSwitch = () => {
+export const SidebarSwitch = ({ show }: { show: boolean }) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
   const ref = useRef(null);
@@ -18,12 +19,14 @@ export const SidebarSwitch = () => {
   return (
     <Tooltip
       content={tooltipContent + ' ' + collapseKeyboardShortcuts}
-      side="right"
+      side={open ? 'bottom' : 'right'}
       portalOptions={{
         container: ref.current,
       }}
     >
       <IconButton
+        className={styles.sidebarSwitch}
+        data-show={show}
         size="large"
         data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
         style={{

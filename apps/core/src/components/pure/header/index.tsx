@@ -1,4 +1,3 @@
-import { Wrapper } from '@affine/component';
 import {
   appSidebarFloatingAtom,
   appSidebarOpenAtom,
@@ -66,12 +65,8 @@ export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
           })}
         >
           <div className={clsx(style.headerItem, 'top-item')}>
-            <div ref={sidebarSwitchRef}>
-              {!open && (
-                <Wrapper marginRight={20}>
-                  <SidebarSwitch />
-                </Wrapper>
-              )}
+            <div ref={sidebarSwitchRef} style={{ marginRight: open ? 0 : 20 }}>
+              <SidebarSwitch show={!open} />
             </div>
           </div>
           <div className={clsx(style.headerItem, 'left')}>
