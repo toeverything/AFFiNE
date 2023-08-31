@@ -72,6 +72,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       OAUTH_EMAIL_SERVER: 'auth.email.server',
       OAUTH_EMAIL_PORT: ['auth.email.port', 'int'],
       OAUTH_EMAIL_PASSWORD: 'auth.email.password',
+      THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
+      THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
       REDIS_SERVER_ENABLED: ['redis.enabled', 'boolean'],
       REDIS_SERVER_HOST: 'redis.host',
       REDIS_SERVER_PORT: ['redis.port', 'int'],
@@ -168,6 +170,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
+    },
+    rateLimiter: {
+      ttl: 60,
+      limit: 60,
     },
     redis: {
       enabled: false,

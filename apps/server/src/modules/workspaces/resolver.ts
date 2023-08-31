@@ -1,5 +1,10 @@
 import type { Storage } from '@affine/storage';
-import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   Args,
   Field,
@@ -24,6 +29,7 @@ import { applyUpdate, Doc } from 'yjs';
 
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
@@ -113,6 +119,12 @@ export class UpdateWorkspaceInput extends PickType(
   id!: string;
 }
 
+/**
+ * Workspace resolver
+ * Public apis rate limit: 10 req/m
+ * Other rate limit: 120 req/m
+ */
+@UseGuards(CloudThrottlerGuard)
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
@@ -258,10 +270,11 @@ export class WorkspaceResolver {
     });
   }
 
+  @Throttle(10, 30)
+  @Public()
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
   })
-  @Public()
   async publicWorkspace(@Args('id') id: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id },
@@ -463,6 +476,7 @@ export class WorkspaceResolver {
     }
   }
 
+  @Throttle(10, 30)
   @Public()
   @Query(() => InvitationType, {
     description: 'Update workspace',

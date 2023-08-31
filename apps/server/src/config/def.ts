@@ -187,6 +187,25 @@ export interface AFFiNEConfig {
       path: string;
     };
   };
+
+  /**
+   * Rate limiter config
+   */
+  rateLimiter: {
+    /**
+     * How long each request will be throttled (seconds)
+     * @default 60
+     * @env THROTTLE_TTL
+     */
+    ttl: number;
+    /**
+     * How many requests can be made in the given time frame
+     * @default 60
+     * @env THROTTLE_LIMIT
+     */
+    limit: number;
+  };
+
   /**
    * Redis Config
    *

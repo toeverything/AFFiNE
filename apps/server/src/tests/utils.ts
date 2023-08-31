@@ -43,13 +43,14 @@ async function currentUser(app: INestApplication, token: string) {
       query: `
           query {
             currentUser {
-              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword
+              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword,
+              token { token }
             }
           }
         `,
     })
     .expect(200);
-  return res.body?.data?.currentUser;
+  return res.body.data.currentUser;
 }
 
 async function createWorkspace(
@@ -440,7 +441,7 @@ async function getInviteInfo(
         `,
     })
     .expect(200);
-  return res.body.data.workspace;
+  return res.body.data.getInviteInfo;
 }
 
 export {
