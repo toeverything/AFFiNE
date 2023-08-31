@@ -11,12 +11,13 @@ export const appStyle = style({
   display: 'flex',
   flexGrow: '1',
   flexDirection: 'row',
+  backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-is-resizing="true"]': {
       cursor: 'col-resize',
     },
     '&.blur-background': {
-      backgroundColor: 'var(--affine-background-primary-color)',
+      backgroundColor: 'transparent',
     },
     '&.noisy-background::before': {
       content: '""',
