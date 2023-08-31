@@ -613,6 +613,17 @@ export class WorkspaceResolver {
     return this.storage.blobsSize(workspaceId).then(size => ({ size }));
   }
 
+  @Query(() => WorkspaceBlobSizes)
+  async collectAllBlobSizes(@CurrentUser() user: User) {
+    const workspaces = await this.workspaces(user);
+
+    const size = (
+      await Promise.all(workspaces.map(({ id }) => this.storage.blobsSize(id)))
+    ).reduce((prev, curr) => prev + curr, 0);
+
+    return { size };
+  }
+
   @Mutation(() => String)
   async setBlob(
     @CurrentUser() user: UserType,

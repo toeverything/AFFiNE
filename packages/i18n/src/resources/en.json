@@ -530,5 +530,11 @@
   "com.affine.share-menu.ShareViaExportDescription": "Download a static copy of your page to share with others.",
   "com.affine.share-menu.ShareWithLink": "Share with link",
   "com.affine.share-menu.ShareWithLinkDescription": "Create a link you can easily share with anyone. The visitors will open your page in the form od a document",
-  "com.affine.share-menu.ShareMode": "Share mode"
+  "com.affine.share-menu.ShareMode": "Share mode",
+  "com.affine.storage.title": "AFFiNE Cloud Storage",
+  "com.affine.storage.upgrade": "Upgrade to Pro",
+  "com.affine.storage.disabled.hint": "AFFiNE Cloud is currently in early access phase and is not supported for upgrading, please be patient and wait for our pricing plan.",
+  "com.affine.storage.used.hint": "Space used",
+  "com.affine.storage.extend.hint": "The usage has reached its maximum capacity, AFFiNE Cloud is currently in early access phase and is not supported for upgrading, please be patient and wait for our pricing plan. ",
+  "com.affine.storage.extend.link": "To get more information click here."
 }
