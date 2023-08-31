@@ -18,7 +18,6 @@ Note that if you encounter any issues with installing Rust and crates, try follo
 To run AFFiNE Desktop Client Application locally, run the following commands:
 
 ```sh
-
 # in repo root
 yarn install
 yarn dev
@@ -27,7 +26,6 @@ yarn dev
 yarn build
 
 # in apps/electron
-yarn generate-assets
 yarn dev
 ```
 
