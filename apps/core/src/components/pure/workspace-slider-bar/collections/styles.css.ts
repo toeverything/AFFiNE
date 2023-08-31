@@ -77,10 +77,10 @@ export const collapsibleContent = style({
   marginTop: '4px',
   selectors: {
     '&[data-state="open"]': {
-      animation: `${slideDown} 0.2s ease-out`,
+      animation: `${slideDown} 0.2s ease-in-out`,
     },
     '&[data-state="closed"]': {
-      animation: `${slideUp} 0.2s ease-out`,
+      animation: `${slideUp} 0.2s ease-in-out`,
     },
   },
 });

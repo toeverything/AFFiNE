@@ -212,17 +212,19 @@ export const AppearanceSettings = () => {
               }
             />
           </SettingRow>
-          <SettingRow
-            name={t['com.affine.settings.translucent-style']()}
-            desc={t['com.affine.settings.translucent-style-description']()}
-          >
-            <Switch
-              checked={appSettings.enableBlurBackground}
-              onChange={checked =>
-                changeSwitch('enableBlurBackground', checked)
-              }
-            />
-          </SettingRow>
+          {environment.isMacOs && (
+            <SettingRow
+              name={t['com.affine.settings.translucent-style']()}
+              desc={t['com.affine.settings.translucent-style-description']()}
+            >
+              <Switch
+                checked={appSettings.enableBlurBackground}
+                onChange={checked =>
+                  changeSwitch('enableBlurBackground', checked)
+                }
+              />
+            </SettingRow>
+          )}
         </SettingWrapper>
       ) : null}
     </>
