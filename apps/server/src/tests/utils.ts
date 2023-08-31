@@ -342,12 +342,14 @@ async function collectBlobSizes(
     .send({
       query: `
             query {
-              collectBlobSizes(workspaceId: "${workspaceId}")
+              collectBlobSizes(workspaceId: "${workspaceId}") {
+                size
+              }
             }
           `,
     })
     .expect(200);
-  return res.body.data.collectBlobSizes;
+  return res.body.data.collectBlobSizes.size;
 }
 
 async function setBlob(

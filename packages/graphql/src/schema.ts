@@ -77,7 +77,10 @@ export type BlobSizesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
 
-export type BlobSizesQuery = { __typename?: 'Query'; collectBlobSizes: number };
+export type BlobSizesQuery = {
+  __typename?: 'Query';
+  collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
 
 export type ChangeEmailMutationVariables = Exact<{
   id: Scalars['String']['input'];

@@ -47,7 +47,9 @@ export const blobSizesQuery = {
   containsFile: false,
   query: `
 query blobSizes($workspaceId: String!) {
-  collectBlobSizes(workspaceId: $workspaceId)
+  collectBlobSizes(workspaceId: $workspaceId) {
+    size
+  }
 }`,
 };
 
