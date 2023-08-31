@@ -21,6 +21,10 @@ inputs:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
     default: 'true'
+  architecture:
+    description: 'Architecture of the runner'
+    required: false
+    default: 'x64'
 
 runs:
   using: 'composite'
@@ -32,6 +36,7 @@ runs:
         registry-url: https://npm.pkg.github.com
         scope: '@toeverything'
         cache: 'yarn'
+        architecture: ${{ inputs.architecture }}
 
     - name: Set nmMode
       if: ${{ inputs.hard-link-nm == 'true' }}

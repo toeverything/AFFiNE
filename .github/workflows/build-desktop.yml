@@ -101,6 +101,7 @@ jobs:
         with:
           playwright-install: true
           hard-link-nm: false
+          architecture: ${{ matrix.spec.arch }}
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
