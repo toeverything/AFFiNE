@@ -16,7 +16,9 @@ const FLUSH_MAX_WAIT_TIME = 10000;
 // todo: trim db when it is too big
 export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
   role = 'secondary';
-  yDoc = new YDoc();
+  yDoc = new YDoc({
+    guid: this.upstream.workspaceId,
+  });
   firstConnected = false;
   destroyed = false;
 
@@ -33,16 +35,22 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     logger.debug('[SecondaryWorkspaceSQLiteDB] created', this.workspaceId);
   }
 
-  getDoc(docId?: string) {
-    if (!docId) {
+  getDoc(subdocId?: string) {
+    if (!subdocId) {
       return this.yDoc;
     }
     // this should be pretty fast and we don't need to cache it
     for (const subdoc of this.yDoc.subdocs) {
-      if (subdoc.guid === docId) {
+      if (subdoc.guid === subdocId) {
         return subdoc;
       }
     }
+    logger.warn(
+      'WorkspaceSQLiteDB:getDoc',
+      this.workspaceId,
+      subdocId,
+      'doc not found'
+    );
     return null;
   }
 
@@ -114,19 +122,15 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
     }
   }
 
-  setupListener(docId?: string) {
+  setupListener(subdocId: string | undefined) {
     logger.debug(
       'SecondaryWorkspaceSQLiteDB:setupListener',
       this.workspaceId,
-      docId
+      subdocId
     );
-    const doc = this.getDoc(docId);
-    const upstreamDoc = this.upstream.getDoc(docId);
+    const doc = this.getDoc(subdocId);
+    const upstreamDoc = this.upstream.getDoc(subdocId);
     if (!doc || !upstreamDoc) {
-      logger.warn(
-        '[SecondaryWorkspaceSQLiteDB] setupListener: doc not found',
-        docId
-      );
       return;
     }
 
@@ -135,12 +139,12 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
         'SecondaryWorkspaceSQLiteDB:onUpstreamUpdate',
         origin,
         this.workspaceId,
-        docId,
+        subdocId,
         update.length
       );
       if (origin === 'renderer' || origin === 'self') {
         // update to upstream yDoc should be replicated to self yDoc
-        this.applyUpdate(update, 'upstream', docId);
+        this.applyUpdate(update, 'upstream', subdocId);
       }
     };
 
@@ -149,19 +153,19 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
         'SecondaryWorkspaceSQLiteDB:onSelfUpdate',
         origin,
         this.workspaceId,
-        docId,
+        subdocId,
         update.length
       );
       // for self update from upstream, we need to push it to external DB
       if (origin === 'upstream') {
         await this.addUpdateToUpdateQueue({
           data: update,
-          docId,
+          docId: subdocId,
         });
       }
 
       if (origin === 'self') {
-        this.upstream.applyUpdate(update, 'external', docId);
+        this.upstream.applyUpdate(update, 'external', subdocId);
       }
     };
 
@@ -192,7 +196,7 @@ export class SecondaryWorkspaceSQLiteDB extends BaseSQLiteAdapter {
       return;
     }
     this.firstConnected = true;
-    this.setupListener();
+    this.setupListener(undefined);
     // apply all updates from upstream
     // we assume here that the upstream ydoc is already sync'ed
     const syncUpstreamDoc = (docId?: string) => {

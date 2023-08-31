@@ -14,7 +14,7 @@ export const dbHandlers = {
   applyDocUpdate: async (
     workspaceId: string,
     update: Uint8Array,
-    subdocId?: string
+    subdocId: string | undefined
   ) => {
     const workspaceDB = await ensureSQLiteDB(workspaceId);
     return workspaceDB.applyUpdate(update, 'renderer', subdocId);
