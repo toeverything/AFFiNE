@@ -143,6 +143,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
         removed.forEach(meta => {
           metadata.splice(metadata.indexOf(meta), 1);
         });
+        Adapter.Events['service:stop']?.();
         continue;
       }
       try {
@@ -175,6 +176,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
             version: WorkspaceVersion.DatabaseV3,
           }))
         );
+        Adapter.Events['service:start']?.();
       } catch (e) {
         console.error('list data error:', e);
       }
