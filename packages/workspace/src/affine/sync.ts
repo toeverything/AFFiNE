@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import { pushBinary } from '@toeverything/y-indexeddb';
 import type { Doc } from 'yjs';
@@ -90,6 +89,5 @@ export async function startSync() {
 }
 
 export async function stopSync() {
-  assertExists(abortController);
-  abortController.abort();
+  abortController?.abort();
 }
