@@ -105,6 +105,8 @@ export class RedisDocManager extends DocManager {
       .catch(() => null); // safe;
 
     if (!lockResult) {
+      // we failed to acquire the lock, put the pending doc back to queue.
+      await this.redis.sadd(pending, pendingDoc).catch(() => null); // safe
       return;
     }
 
@@ -141,7 +143,10 @@ export class RedisDocManager extends DocManager {
           this.logger.error('Failed to remove merged updates from Redis', e);
         });
     } catch (e) {
-      this.logger.error('Failed to merge updates with snapshot', e);
+      this.logger.error(
+        `Failed to merge updates with snapshot for ${pendingDoc}`,
+        e
+      );
       await this.redis.sadd(pending, `${workspaceId}:${id}`).catch(() => null); // safe
     } finally {
       await this.redis.del(lockKey);

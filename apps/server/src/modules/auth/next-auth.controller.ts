@@ -9,6 +9,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 import type { User } from '@prisma/client';
@@ -19,6 +20,7 @@ import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
@@ -41,6 +43,8 @@ export class NextAuthController {
     this.callbackSession = nextAuthOptions.callbacks!.session;
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(20, 60)
   @All('*')
   async auth(
     @Req() req: Request,

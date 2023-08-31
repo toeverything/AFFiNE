@@ -42,8 +42,6 @@ export class MailService {
       };
     }
   ) {
-    console.log('invitationInfo', invitationInfo);
-
     const buttonUrl = `${this.config.baseUrl}/invite/${inviteId}`;
     const workspaceAvatar = invitationInfo.workspace.avatar;
 

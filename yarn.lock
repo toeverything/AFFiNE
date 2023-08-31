@@ -669,6 +669,7 @@ __metadata:
     "@nestjs/platform-express": ^10.2.2
     "@nestjs/platform-socket.io": ^10.2.2
     "@nestjs/testing": ^10.2.2
+    "@nestjs/throttler": ^4.2.1
     "@nestjs/websockets": ^10.2.2
     "@node-rs/argon2": ^1.5.2
     "@node-rs/crc32": ^1.7.2
@@ -708,6 +709,7 @@ __metadata:
     graphql-upload: ^16.0.2
     ioredis: ^5.3.2
     lodash-es: ^4.17.21
+    nestjs-throttler-storage-redis: ^0.3.3
     next-auth: 4.22.5
     nodemailer: ^6.9.4
     nodemon: ^3.0.1
@@ -7294,6 +7296,19 @@ __metadata:
     "@nestjs/platform-express":
       optional: true
   checksum: 383ac707c7cb307cc08809d7cb8e8d4be4e689905deadd5205e80e84f8ba76f22eb748b86a34f68e59ecd84172875b02bd66b555fb6165bd7f6c1df5b8fa879e
+  languageName: node
+  linkType: hard
+
+"@nestjs/throttler@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "@nestjs/throttler@npm:4.2.1"
+  dependencies:
+    md5: ^2.2.1
+  peerDependencies:
+    "@nestjs/common": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+    "@nestjs/core": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+    reflect-metadata: ^0.1.13
+  checksum: 28b1b1b3ff0623e67ecd51f237bb4a8c22c39134baa5556918a83771c9ebae9b095d0953f3e0e6ba46cc5f7279e4c9cd5c357cbdc00eccffe0e295dc180bcd76
   languageName: node
   linkType: hard
 
@@ -25723,7 +25738,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"md5@npm:^2.3.0":
+"md5@npm:^2.2.1, md5@npm:^2.3.0":
   version: 2.3.0
   resolution: "md5@npm:2.3.0"
   dependencies:
@@ -26519,6 +26534,19 @@ __metadata:
   version: 2.6.2
   resolution: "neo-async@npm:2.6.2"
   checksum: deac9f8d00eda7b2e5cd1b2549e26e10a0faa70adaa6fdadca701cc55f49ee9018e427f424bac0c790b7c7e2d3068db97f3093f1093975f2acb8f8818b936ed9
+  languageName: node
+  linkType: hard
+
+"nestjs-throttler-storage-redis@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "nestjs-throttler-storage-redis@npm:0.3.3"
+  peerDependencies:
+    "@nestjs/common": ">=9.4.1"
+    "@nestjs/core": ">=9.4.1"
+    "@nestjs/throttler": ">=4.0.0"
+    ioredis: ^5.3.2
+    reflect-metadata: ^0.1.13
+  checksum: 23c14767ea77e850a4656a3a1023315d3144639040e1172bc89a090c09498300fa2b13c18f3ef6aabbdf77a98a3c2b4bd84d2da64397fcfa94457ae525c24c13
   languageName: node
   linkType: hard
 
