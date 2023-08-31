@@ -18,8 +18,10 @@ export class ExceptionLogger implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
     const requestId = request?.header(REQUEST_ID);
     this.logger.error(
-      `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
-      exception.stack
+      new Error(
+        `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
+        { cause: exception }
+      )
     );
 
     const response = ctx.getResponse<Response>();

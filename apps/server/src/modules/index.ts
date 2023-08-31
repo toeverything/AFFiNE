@@ -43,7 +43,6 @@ switch (SERVER_FLAVOR) {
 const Providers: Provider[] = [];
 
 if (NODE_ENV === 'production') {
-  console.log('push app filter');
   Providers.push({
     provide: APP_FILTER,
     useClass: ExceptionLogger,
