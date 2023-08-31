@@ -12769,7 +12769,7 @@ __metadata:
     vite-plugin-dts: 3.5.2
     y-indexeddb: ^9.0.11
   peerDependencies:
-    yjs: ^13.5.51
+    yjs: ^13
   languageName: unknown
   linkType: soft
 

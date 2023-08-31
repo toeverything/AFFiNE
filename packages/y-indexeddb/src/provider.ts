@@ -105,6 +105,9 @@ export const createIndexedDBDatasource = ({
   };
 };
 
+/**
+ * We use `doc.guid` as the unique key, please make sure it not changes.
+ */
 export const createIndexedDBProvider = (
   doc: Doc,
   dbName: string = DEFAULT_DB_NAME
