@@ -106,6 +106,12 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     get deploy() {
       return !this.node.dev && !this.node.test;
     },
+    get featureFlags() {
+      return {
+        earlyAccessPreview:
+          this.node.prod && (this.affine.beta || this.affine.canary),
+      };
+    },
     https: false,
     host: 'localhost',
     port: 3010,
