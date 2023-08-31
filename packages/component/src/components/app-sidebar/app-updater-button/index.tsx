@@ -127,7 +127,9 @@ export function AppUpdaterButtonPure({
             <ResetIcon className={styles.icon} />
             <span className={styles.ellipsisTextOverflow}>
               {t[
-                appQuitting ? 'Loading' : 'com.affine.component.appUpdater.installUpdate'
+                appQuitting
+                  ? 'Loading'
+                  : 'com.affine.component.appUpdater.installUpdate'
               ]()}
             </span>
           </div>

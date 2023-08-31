@@ -124,8 +124,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Convert to ']()}
         {mode === 'page'
-          ? t['com.affine.core.pageMode.edgeless']()
-          : t['com.affine.core.pageMode.page']()}
+          ? t['com.affine.component.pageMode.edgeless']()
+          : t['com.affine.component.pageMode.page']()}
       </MenuItem>
       <MenuItem
         data-testid="editor-option-menu-favorite"

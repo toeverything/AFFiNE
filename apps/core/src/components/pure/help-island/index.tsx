@@ -62,7 +62,10 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t['com.affine.component.appUpdater.whatsNew']()} side="left">
+            <Tooltip
+              content={t['com.affine.component.appUpdater.whatsNew']()}
+              side="left"
+            >
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
@@ -74,7 +77,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('contact') && (
-            <Tooltip content={t['com.affine.core.helpIsland.contactUs']()} side="left">
+            <Tooltip
+              content={t['com.affine.core.helpIsland.contactUs']()}
+              side="left"
+            >
               <StyledIconWrapper
                 data-testid="right-bottom-contact-us-icon"
                 onClick={openAbout}
@@ -84,7 +90,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('shortcuts') && (
-            <Tooltip content={t['com.affine.core.keyboardShortcuts.title']()} side="left">
+            <Tooltip
+              content={t['com.affine.core.keyboardShortcuts.title']()}
+              side="left"
+            >
               <StyledIconWrapper
                 data-testid="shortcuts-icon"
                 onClick={() => {
@@ -114,7 +123,10 @@ export const HelpIsland = ({
           )}
         </StyledAnimateWrapper>
 
-        <Tooltip content={t['com.affine.core.helpIsland.helpAndFeedback']()} side="left">
+        <Tooltip
+          content={t['com.affine.core.helpIsland.helpAndFeedback']()}
+          side="left"
+        >
           <MuiFade in={!spread} data-testid="faq-icon">
             <StyledTriggerWrapper>
               <HelpIcon />

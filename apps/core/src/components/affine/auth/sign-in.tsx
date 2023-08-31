@@ -78,7 +78,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     <>
       <ModalHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={t['AFFiNE Cloud']()}
+        subTitle={t['com.affine.core.workspace.cloud']()}
       />
 
       <Button

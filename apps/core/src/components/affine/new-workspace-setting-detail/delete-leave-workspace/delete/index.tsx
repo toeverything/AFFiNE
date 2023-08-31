@@ -40,7 +40,9 @@ export const WorkspaceDeleteModal = ({
     <Modal open={open} onClose={onClose}>
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>{t['com.affine.core.workspaceDelete.title']()}?</StyledModalHeader>
+        <StyledModalHeader>
+          {t['com.affine.core.workspaceDelete.title']()}?
+        </StyledModalHeader>
         {workspace.flavour === WorkspaceFlavour.LOCAL ? (
           <StyledTextContent>
             <Trans i18nKey="com.affine.core.workspaceDelete.description">

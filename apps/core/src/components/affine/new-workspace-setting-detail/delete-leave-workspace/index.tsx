@@ -82,8 +82,8 @@ export const DeleteLeaveWorkspace = ({
           onConfirm={onLeaveConfirm}
           onCancel={onCloseLeaveModal}
           onClose={onCloseLeaveModal}
-            title={`${t['com.affine.core.deleteLeaveWorkspace.leave']()}?`}
-            content={t['com.affine.core.deleteLeaveWorkspace.leaveDescription']()}
+          title={`${t['com.affine.core.deleteLeaveWorkspace.leave']()}?`}
+          content={t['com.affine.core.deleteLeaveWorkspace.leaveDescription']()}
           confirmType="warning"
           confirmText={t['Leave']()}
         />

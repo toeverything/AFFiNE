@@ -24,10 +24,10 @@ export const WorkspaceModeFilterTab = () => {
         {t['com.affine.core.pageMode.all']()}
       </RadioButton>
       <RadioButton value="page">
-        {t['com.affine.core.pageMode.page']()}
+        {t['com.affine.component.pageMode.page']()}
       </RadioButton>
       <RadioButton value="edgeless">
-        {t['com.affine.core.pageMode.edgeless']()}
+        {t['com.affine.component.pageMode.edgeless']()}
       </RadioButton>
     </RadioButtonGroup>
   );
