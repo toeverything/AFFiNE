@@ -83,14 +83,20 @@ export class UserResolver {
     description: 'Get current user',
   })
   async currentUser(@CurrentUser() user: User) {
+    const storedUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+    });
+    if (!storedUser) {
+      throw new BadRequestException(`User ${user.id} not found in db`);
+    }
     return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      hasPassword: !!user.password,
+      id: storedUser.id,
+      name: storedUser.name,
+      email: storedUser.email,
+      emailVerified: storedUser.emailVerified,
+      avatarUrl: storedUser.avatarUrl,
+      createdAt: storedUser.createdAt,
+      hasPassword: !!storedUser.password,
     };
   }
 

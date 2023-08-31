@@ -34,7 +34,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
         onClick={useCallback(() => {
           signInCloud('email', {
             email: email,
-            callbackUrl: buildCallbackUrl('signUp'),
+            callbackUrl: buildCallbackUrl('/auth/signUp'),
             redirect: true,
           }).catch(console.error);
         }, [email])}
