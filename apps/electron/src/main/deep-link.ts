@@ -7,6 +7,7 @@ import { logger } from './logger';
 import {
   handleOpenUrlInHiddenWindow,
   restoreOrCreateWindow,
+  setCookie,
 } from './main-window';
 import { uiSubjects } from './ui';
 
@@ -62,6 +63,8 @@ async function handleAffineUrl(url: string) {
     if (urlToOpen) {
       await handleSignIn(urlToOpen);
     }
+  } else if (urlObj.hostname === 'oauth-jwt') {
+    await handleOauthJwt(url);
   }
 }
 
@@ -98,6 +101,35 @@ async function handleSignIn(url: string) {
         success: ['/auth/signIn', '/auth/signUp'].includes(finalUrl.pathname),
         email,
       });
+    } catch (e) {
+      logger.error('failed to open url in popup', e);
+    }
+  }
+}
+
+async function handleOauthJwt(url: string) {
+  if (url) {
+    try {
+      const mainWindow = await restoreOrCreateWindow();
+      mainWindow.show();
+      const urlObj = new URL(url);
+      const token = urlObj.searchParams.get('token');
+
+      if (!token) {
+        logger.error('no token in url', url);
+        return;
+      }
+
+      // set token to cookie
+      await setCookie({
+        url: new URL(mainWindow.webContents.getURL()).origin,
+        httpOnly: true,
+        value: token,
+        name: 'next-auth.session-token',
+      });
+
+      // force reload app
+      mainWindow.webContents.reload();
     } catch (e) {
       logger.error('failed to open url in popup', e);
     }
