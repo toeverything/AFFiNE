@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.8.3-beta.0",
+  "version": "0.8.3",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
