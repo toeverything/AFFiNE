@@ -2,15 +2,16 @@ import { FlexWrapper, Input } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
+  StorageProgress,
 } from '@affine/component/setting-components';
 import { UserAvatar } from '@affine/component/user-avatar';
-import { uploadAvatarMutation } from '@affine/graphql';
+import { allBlobSizesQuery, uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation } from '@affine/workspace/affine/gql';
+import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
-import { useAtom } from 'jotai/index';
-import { type FC, useCallback, useState } from 'react';
+import { useAtom } from 'jotai';
+import { type FC, Suspense, useCallback, useState } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
@@ -109,6 +110,30 @@ export const AvatarAndName = () => {
   );
 };
 
+const StoragePanel = () => {
+  const t = useAFFiNEI18N();
+
+  const { data } = useQuery({
+    query: allBlobSizesQuery,
+  });
+
+  const onUpgrade = useCallback(() => {}, []);
+
+  return (
+    <SettingRow
+      name={t['com.affine.storage.title']()}
+      desc=""
+      spreadCol={false}
+    >
+      <StorageProgress
+        max={10737418240}
+        value={data.collectAllBlobSizes.size}
+        onUpgrade={onUpgrade}
+      />
+    </SettingRow>
+  );
+};
+
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
@@ -154,7 +179,9 @@ export const AccountSetting: FC = () => {
             : t['com.affine.settings.password.action.set']()}
         </Button>
       </SettingRow>
-
+      <Suspense>
+        <StoragePanel />
+      </Suspense>
       <SettingRow
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}

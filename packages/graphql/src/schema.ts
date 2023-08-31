@@ -82,6 +82,13 @@ export type BlobSizesQuery = {
   collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
 };
 
+export type AllBlobSizesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type AllBlobSizesQuery = {
+  __typename?: 'Query';
+  collectAllBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
+
 export type ChangeEmailMutationVariables = Exact<{
   id: Scalars['String']['input'];
   newEmail: Scalars['String']['input'];
@@ -447,6 +454,11 @@ export type Queries =
       name: 'blobSizesQuery';
       variables: BlobSizesQueryVariables;
       response: BlobSizesQuery;
+    }
+  | {
+      name: 'allBlobSizesQuery';
+      variables: AllBlobSizesQueryVariables;
+      response: AllBlobSizesQuery;
     }
   | {
       name: 'getCurrentUserQuery';

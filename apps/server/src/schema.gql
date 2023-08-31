@@ -154,6 +154,7 @@ type Query {
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]!
   collectBlobSizes(workspaceId: String!): WorkspaceBlobSizes!
+  collectAllBlobSizes: WorkspaceBlobSizes!
 
   """Get current user"""
   currentUser: UserType!

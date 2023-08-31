@@ -53,6 +53,19 @@ query blobSizes($workspaceId: String!) {
 }`,
 };
 
+export const allBlobSizesQuery = {
+  id: 'allBlobSizesQuery' as const,
+  operationName: 'allBlobSizes',
+  definitionName: 'collectAllBlobSizes',
+  containsFile: false,
+  query: `
+query allBlobSizes {
+  collectAllBlobSizes {
+    size
+  }
+}`,
+};
+
 export const changeEmailMutation = {
   id: 'changeEmailMutation' as const,
   operationName: 'changeEmail',
