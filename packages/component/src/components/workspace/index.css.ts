@@ -11,12 +11,13 @@ export const appStyle = style({
   display: 'flex',
   flexGrow: '1',
   flexDirection: 'row',
+  backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-is-resizing="true"]': {
       cursor: 'col-resize',
     },
     '&.blur-background': {
-      backgroundColor: 'var(--affine-background-primary-color)',
+      backgroundColor: 'transparent',
     },
     '&.noisy-background::before': {
       content: '""',
@@ -70,7 +71,7 @@ export const mainContainerStyle = style({
   backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
-      margin: '8px 8px 8px 0',
+      margin: '8px',
       borderRadius: '5px',
       overflow: 'hidden',
       boxShadow: 'var(--affine-shadow-1)',
@@ -118,6 +119,17 @@ globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
     },
   },
 });
+
+// Hack margin so that it works normally when sidebar is closed
+globalStyle(
+  `[data-testid=app-sidebar-wrapper][data-open=true][data-is-floating=false][data-has-background=false]
+ ~ ${mainContainerStyle}[data-show-padding="true"]`,
+  {
+    // transition added here to prevent the transition from being applied on page load
+    transition: 'margin-left .3s ease-in-out',
+    marginLeft: '0',
+  }
+);
 
 export const toolStyle = style({
   position: 'fixed',

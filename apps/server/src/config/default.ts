@@ -56,7 +56,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_SUB_PATH: 'path',
       AFFINE_ENV: 'affineEnv',
       DATABASE_URL: 'db.url',
-      AUTH_PRIVATE_KEY: 'auth.privateKey',
       ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
       R2_OBJECT_STORAGE_ACCOUNT_ID: 'objectStorage.r2.accountId',
       R2_OBJECT_STORAGE_ACCESS_KEY_ID: 'objectStorage.r2.accessKeyId',
@@ -73,6 +72,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       OAUTH_EMAIL_SERVER: 'auth.email.server',
       OAUTH_EMAIL_PORT: ['auth.email.port', 'int'],
       OAUTH_EMAIL_PASSWORD: 'auth.email.password',
+      THROTTLE_TTL: ['rateLimiter.ttl', 'int'],
+      THROTTLE_LIMIT: ['rateLimiter.limit', 'int'],
       REDIS_SERVER_ENABLED: ['redis.enabled', 'boolean'],
       REDIS_SERVER_HOST: 'redis.host',
       REDIS_SERVER_PORT: ['redis.port', 'int'],
@@ -105,6 +106,12 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     },
     get deploy() {
       return !this.node.dev && !this.node.test;
+    },
+    get featureFlags() {
+      return {
+        earlyAccessPreview:
+          this.node.prod && (this.affine.beta || this.affine.canary),
+      };
     },
     https: false,
     host: 'localhost',
@@ -163,6 +170,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
+    },
+    rateLimiter: {
+      ttl: 60,
+      limit: 60,
     },
     redis: {
       enabled: false,

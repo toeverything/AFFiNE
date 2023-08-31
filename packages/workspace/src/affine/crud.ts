@@ -9,8 +9,6 @@ import {
   getWorkspaceQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { fetcher } from '@affine/workspace/affine/gql';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { migrateLocalBlobStorage } from '@toeverything/infra/blocksuite';
 import {
@@ -19,6 +17,9 @@ import {
 } from '@toeverything/y-indexeddb';
 import { getSession } from 'next-auth/react';
 import { proxy } from 'valtio/vanilla';
+
+import { getOrCreateWorkspace } from '../manager';
+import { fetcher } from './gql';
 
 const Y = Workspace.Y;
 

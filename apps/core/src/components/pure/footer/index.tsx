@@ -1,12 +1,12 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
-import { signIn } from 'next-auth/react';
 import { type CSSProperties, type FC, forwardRef, useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
-// import { openDisableCloudAlertModalAtom } from '../../../atoms';
 import { stringToColour } from '../../../utils';
+import { signInCloud } from '../../../utils/cloud-utils';
 import { StyledFooter, StyledSignInButton } from './styles';
+
 export const Footer: FC = () => {
   const loginStatus = useCurrentLoginStatus();
 
@@ -25,7 +25,7 @@ const SignInButton = () => {
     <StyledSignInButton
       data-testid="sign-in-button"
       onClick={useCallback(() => {
-        signIn().catch(console.error);
+        signInCloud().catch(console.error);
       }, [])}
     >
       <div className="circle">

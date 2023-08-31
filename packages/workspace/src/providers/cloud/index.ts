@@ -8,23 +8,30 @@ const Y = Workspace.Y;
 
 const logger = new DebugLogger('affine:cloud');
 
+const hashMap = new Map<string, ArrayBuffer>();
+
 export async function downloadBinaryFromCloud(
   rootGuid: string,
   pageGuid: string
-) {
+): Promise<boolean | ArrayBuffer> {
+  if (hashMap.has(`${rootGuid}/${pageGuid}`)) {
+    return true;
+  }
   const response = await fetchWithReport(
     runtimeConfig.serverUrlPrefix +
       `/api/workspaces/${rootGuid}/docs/${pageGuid}`
   );
   if (response.ok) {
-    return response.arrayBuffer();
+    const arrayBuffer = await response.arrayBuffer();
+    hashMap.set(`${rootGuid}/${pageGuid}`, arrayBuffer);
+    return arrayBuffer;
   }
   return false;
 }
 
 async function downloadBinary(rootGuid: string, doc: Doc) {
   const buffer = await downloadBinaryFromCloud(rootGuid, doc.guid);
-  if (buffer) {
+  if (typeof buffer !== 'boolean') {
     Y.applyUpdate(doc, new Uint8Array(buffer), 'affine-cloud');
   }
 }

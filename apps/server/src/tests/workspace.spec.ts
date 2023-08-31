@@ -12,6 +12,7 @@ import { AppModule } from '../app';
 import {
   acceptInvite,
   createWorkspace,
+  currentUser,
   getPublicWorkspace,
   getWorkspaceSharedPages,
   inviteUser,
@@ -59,6 +60,18 @@ describe('Workspace Module', () => {
     ok(typeof user.id === 'string', 'user.id is not a string');
     ok(user.name === 'u1', 'user.name is not valid');
     ok(user.email === 'u1@affine.pro', 'user.email is not valid');
+  });
+
+  it('should be throttled at call signUp', async () => {
+    let token = '';
+    for (let i = 0; i < 10; i++) {
+      token = (await signUp(app, `u${i}`, `u${i}@affine.pro`, `${i}`)).token
+        .token;
+      // throttles are applied to each endpoint separately
+      await currentUser(app, token);
+    }
+    await rejects(signUp(app, 'u11', 'u11@affine.pro', '11'));
+    await rejects(currentUser(app, token));
   });
 
   it('should create a workspace', async () => {

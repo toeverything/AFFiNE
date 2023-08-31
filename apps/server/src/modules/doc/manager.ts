@@ -67,8 +67,17 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   protected recoverDoc(...updates: Buffer[]): Doc {
     const doc = new Doc();
 
-    updates.forEach(update => {
-      applyUpdate(doc, update);
+    updates.forEach((update, i) => {
+      try {
+        if (update.length) {
+          applyUpdate(doc, update);
+        }
+      } catch (e) {
+        this.logger.error(
+          `Failed to apply updates, index: ${i}`,
+          updates.map(u => u.toString('hex'))
+        );
+      }
     });
 
     return doc;

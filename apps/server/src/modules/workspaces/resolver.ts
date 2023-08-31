@@ -1,5 +1,10 @@
 import type { Storage } from '@affine/storage';
-import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   Args,
   Field,
@@ -24,6 +29,7 @@ import { applyUpdate, Doc } from 'yjs';
 
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
@@ -90,6 +96,12 @@ export class InvitationWorkspaceType {
 }
 
 @ObjectType()
+export class WorkspaceBlobSizes {
+  @Field(() => Int)
+  size!: number;
+}
+
+@ObjectType()
 export class InvitationType {
   @Field({ description: 'Workspace information' })
   workspace!: InvitationWorkspaceType;
@@ -107,6 +119,12 @@ export class UpdateWorkspaceInput extends PickType(
   id!: string;
 }
 
+/**
+ * Workspace resolver
+ * Public apis rate limit: 10 req/m
+ * Other rate limit: 120 req/m
+ */
+@UseGuards(CloudThrottlerGuard)
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
@@ -252,10 +270,11 @@ export class WorkspaceResolver {
     });
   }
 
+  @Throttle(10, 30)
+  @Public()
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
   })
-  @Public()
   async publicWorkspace(@Args('id') id: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id },
@@ -320,13 +339,15 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.snapshot.create({
-      data: {
-        id: workspace.id,
-        workspaceId: workspace.id,
-        blob: buffer,
-      },
-    });
+    if (buffer.length) {
+      await this.prisma.snapshot.create({
+        data: {
+          id: workspace.id,
+          workspaceId: workspace.id,
+          blob: buffer,
+        },
+      });
+    }
 
     return workspace;
   }
@@ -455,6 +476,7 @@ export class WorkspaceResolver {
     }
   }
 
+  @Throttle(10, 30)
   @Public()
   @Query(() => InvitationType, {
     description: 'Update workspace',
@@ -579,6 +601,27 @@ export class WorkspaceResolver {
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.storage.listBlobs(workspaceId);
+  }
+
+  @Query(() => WorkspaceBlobSizes)
+  async collectBlobSizes(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.storage.blobsSize(workspaceId).then(size => ({ size }));
+  }
+
+  @Query(() => WorkspaceBlobSizes)
+  async collectAllBlobSizes(@CurrentUser() user: User) {
+    const workspaces = await this.workspaces(user);
+
+    const size = (
+      await Promise.all(workspaces.map(({ id }) => this.storage.blobsSize(id)))
+    ).reduce((prev, curr) => prev + curr, 0);
+
+    return { size };
   }
 
   @Mutation(() => String)
