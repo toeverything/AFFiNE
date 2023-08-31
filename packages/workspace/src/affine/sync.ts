@@ -35,6 +35,9 @@ const downloadRecursive = async (
 };
 
 export async function startSync() {
+  if (!environment.isDesktop) {
+    return;
+  }
   abortController = new AbortController();
   const signal = abortController.signal;
   const workspaces = await CRUD.list();
