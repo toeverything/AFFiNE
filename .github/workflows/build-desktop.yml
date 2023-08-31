@@ -65,14 +65,14 @@ jobs:
       matrix:
         spec:
           - {
-              os: macos-latest,
+              os: macos-13,
               platform: macos,
               arch: x64,
               target: x86_64-apple-darwin,
               test: true,
             }
           - {
-              os: macos-latest,
+              os: macos-13,
               platform: macos,
               arch: arm64,
               target: aarch64-apple-darwin,
