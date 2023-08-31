@@ -1,6 +1,13 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Global, Module } from '@nestjs/common';
-import { Throttle, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import {
+  Throttle,
+  ThrottlerGuard,
+  ThrottlerModule,
+  ThrottlerModuleOptions,
+} from '@nestjs/throttler';
+import Redis from 'ioredis';
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
 import { Config, ConfigModule } from './config';
 import { getRequestResponseFromContext } from './utils/nestjs';
@@ -11,10 +18,23 @@ import { getRequestResponseFromContext } from './utils/nestjs';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [Config],
-      useFactory: (config: Config) => ({
-        ttl: config.rateLimiter.ttl,
-        limit: config.rateLimiter.limit,
-      }),
+      useFactory: (config: Config): ThrottlerModuleOptions => {
+        const options: ThrottlerModuleOptions = {
+          ttl: config.rateLimiter.ttl,
+          limit: config.rateLimiter.limit,
+        };
+        if (config.redis.enabled) {
+          new Logger(RateLimiterModule.name).log('Use Redis');
+          options.storage = new ThrottlerStorageRedisService(
+            new Redis(config.redis.port, config.redis.host, {
+              username: config.redis.username,
+              password: config.redis.password,
+              db: config.redis.database + 1,
+            })
+          );
+        }
+        return options;
+      },
     }),
   ],
 })

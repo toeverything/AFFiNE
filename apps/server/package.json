@@ -58,6 +58,7 @@
     "graphql-upload": "^16.0.2",
     "ioredis": "^5.3.2",
     "lodash-es": "^4.17.21",
+    "nestjs-throttler-storage-redis": "^0.3.3",
     "next-auth": "4.22.5",
     "nodemailer": "^6.9.4",
     "on-headers": "^1.0.2",

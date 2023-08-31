@@ -709,6 +709,7 @@ __metadata:
     graphql-upload: ^16.0.2
     ioredis: ^5.3.2
     lodash-es: ^4.17.21
+    nestjs-throttler-storage-redis: ^0.3.3
     next-auth: 4.22.5
     nodemailer: ^6.9.4
     nodemon: ^3.0.1
@@ -26533,6 +26534,19 @@ __metadata:
   version: 2.6.2
   resolution: "neo-async@npm:2.6.2"
   checksum: deac9f8d00eda7b2e5cd1b2549e26e10a0faa70adaa6fdadca701cc55f49ee9018e427f424bac0c790b7c7e2d3068db97f3093f1093975f2acb8f8818b936ed9
+  languageName: node
+  linkType: hard
+
+"nestjs-throttler-storage-redis@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "nestjs-throttler-storage-redis@npm:0.3.3"
+  peerDependencies:
+    "@nestjs/common": ">=9.4.1"
+    "@nestjs/core": ">=9.4.1"
+    "@nestjs/throttler": ">=4.0.0"
+    ioredis: ^5.3.2
+    reflect-metadata: ^0.1.13
+  checksum: 23c14767ea77e850a4656a3a1023315d3144639040e1172bc89a090c09498300fa2b13c18f3ef6aabbdf77a98a3c2b4bd84d2da64397fcfa94457ae525c24c13
   languageName: node
   linkType: hard
 
