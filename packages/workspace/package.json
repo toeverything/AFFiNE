@@ -7,7 +7,9 @@
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
+    "./affine/crud": "./src/affine/crud.ts",
     "./affine/gql": "./src/affine/gql.ts",
+    "./affine/sync": "./src/affine/sync.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
