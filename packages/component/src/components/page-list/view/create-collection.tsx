@@ -297,10 +297,10 @@ export const SaveCollectionButton = ({
         size="large"
         style={{ padding: '7px 8px' }}
       >
-        {t['Save As New Collection']()}
+        {t['Save as New Collection']()}
       </Button>
       <EditCollectionModel
-        title={t['Save As New Collection']()}
+        title={t['Save as New Collection']()}
         propertiesMeta={propertiesMeta}
         init={init}
         onConfirm={onConfirm}
