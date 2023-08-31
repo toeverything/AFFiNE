@@ -25,11 +25,11 @@
     "@blocksuite/blocks": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/global": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/store": "0.0.0-20230829150056-df43987c-nightly",
-    "jotai": "^2.4.0",
+    "jotai": "^2.4.1",
     "zod": "^3.22.2"
   },
   "devDependencies": {
     "vite": "^4.4.9",
-    "vite-plugin-dts": "3.5.2"
+    "vite-plugin-dts": "3.5.3"
   }
 }

@@ -3,7 +3,7 @@
   "private": true,
   "main": "./src/index.ts",
   "dependencies": {
-    "jotai": "^2.4.0"
+    "jotai": "^2.4.1"
   },
   "devDependencies": {
     "@blocksuite/block-std": "0.0.0-20230829150056-df43987c-nightly",
