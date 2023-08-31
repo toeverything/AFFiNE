@@ -142,8 +142,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             | Record<'email' | 'password' | 'hashedPassword', string>
             | undefined
         ) {
-          console.log('credentials', credentials);
-
           if (!credentials) {
             return null;
           }
@@ -154,8 +152,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           if (!(await verify(hashedPassword, password))) {
             return null;
           }
-          console.log('credentials', credentials);
-
           return credentials;
         },
       })
