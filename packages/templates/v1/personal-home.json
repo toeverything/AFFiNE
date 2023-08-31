@@ -20,25 +20,61 @@
       "sys:id": "xj7QSmgQgT",
       "sys:flavour": "affine:note",
       "sys:children": [
-        "FmSD4G3M-q",
-        "eEFUDzXh_Y",
-        "4XPao83XJc",
-        "DTdip5VPNu",
-        "LzdFpMEJYL",
-        "h7viwfmLLa",
-        "bp8r2NWcl1",
-        "XYgLIPwHqw"
+        "qlnEliaAwr",
+        "U6w_UTi2p5",
+        "YN7S4Pe19c",
+        "V9nK8F7B0R",
+        "jj-qOseCj-",
+        "hgSgQdYwWJ",
+        "j-qvp7hm9T",
+        "jYvIAUYNyr",
+        "t9fKXZGLWZ"
       ],
-      "prop:xywh": "[0,0,800,449]",
+      "prop:xywh": "[0,0,800,547]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
     },
-    "eEFUDzXh_Y": {
-      "sys:id": "eEFUDzXh_Y",
-      "sys:flavour": "affine:paragraph",
+    "jj-qOseCj-": {
+      "sys:id": "jj-qOseCj-",
+      "sys:flavour": "affine:list",
       "sys:children": [],
-      "prop:type": "text",
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "PqZ7MLlL_9"
+            }
+          }
+        }
+      ],
+      "prop:checked": false
+    },
+    "jYvIAUYNyr": {
+      "sys:id": "jYvIAUYNyr",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": " ",
+          "attributes": {
+            "reference": {
+              "type": "LinkedPage",
+              "pageId": "nQd2Bdvoqz"
+            }
+          }
+        }
+      ],
+      "prop:checked": false
+    },
+    "U6w_UTi2p5": {
+      "sys:id": "U6w_UTi2p5",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
       "prop:text": [
         {
           "insert": " ",
@@ -52,109 +88,46 @@
         {
           "insert": " "
         }
-      ]
-    },
-    "x-SBWl7SBW": {
-      "sys:id": "x-SBWl7SBW",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "yiQgW1-5ub": {
-      "sys:id": "yiQgW1-5ub",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "Zgyg89JKBQ": {
-      "sys:id": "Zgyg89JKBQ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "bmiZGYq9UM": {
-      "sys:id": "bmiZGYq9UM",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "Wh2-yCaNCN": {
-      "sys:id": "Wh2-yCaNCN",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "0PZes5ZdBN": {
-      "sys:id": "0PZes5ZdBN",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "zyo0taXT4j": {
-      "sys:id": "zyo0taXT4j",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Task 1"
-        }
-      ]
-    },
-    "CdpmccWD8R": {
-      "sys:id": "CdpmccWD8R",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Task 2"
-        }
-      ]
-    },
-    "NFE9s5XQ4L": {
-      "sys:id": "NFE9s5XQ4L",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "Task 3"
-        }
-      ]
-    },
-    "h7viwfmLLa": {
-      "sys:id": "h7viwfmLLa",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "nQd2Bdvoqz"
-            }
-          }
-        }
       ],
-      "prop:type": "text"
+      "prop:type": "bulleted",
+      "prop:checked": false
     },
-    "XYgLIPwHqw": {
-      "sys:id": "XYgLIPwHqw",
+    "qlnEliaAwr": {
+      "sys:id": "qlnEliaAwr",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
       "prop:text": []
     },
-    "bp8r2NWcl1": {
-      "sys:id": "bp8r2NWcl1",
+    "V9nK8F7B0R": {
+      "sys:id": "V9nK8F7B0R",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "j-qvp7hm9T": {
+      "sys:id": "j-qvp7hm9T",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "hgSgQdYwWJ": {
+      "sys:id": "hgSgQdYwWJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "An event planning template ",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": "is an efficient framework that details the steps you and your team need to consider taking to plan and execute a successful event."
+        }
+      ]
+    },
+    "t9fKXZGLWZ": {
+      "sys:id": "t9fKXZGLWZ",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "quote",
@@ -173,8 +146,8 @@
         }
       ]
     },
-    "4XPao83XJc": {
-      "sys:id": "4XPao83XJc",
+    "YN7S4Pe19c": {
+      "sys:id": "YN7S4Pe19c",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "quote",
@@ -190,49 +163,6 @@
         },
         {
           "insert": ", so it's easier to search for, retrieve, share, expand upon, and use later on."
-        }
-      ]
-    },
-    "FmSD4G3M-q": {
-      "sys:id": "FmSD4G3M-q",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "D7g-4LMqOsVWBNOD-_kGgCOvJEoc8rcpYbkfDlF2u5U=",
-      "prop:caption": "",
-      "prop:width": 0,
-      "prop:height": 0
-    },
-    "DTdip5VPNu": {
-      "sys:id": "DTdip5VPNu",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "PqZ7MLlL_9"
-            }
-          }
-        }
-      ]
-    },
-    "LzdFpMEJYL": {
-      "sys:id": "LzdFpMEJYL",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "quote",
-      "prop:text": [
-        {
-          "insert": "An event planning template ",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": "is an efficient framework that details the steps you and your team need to consider taking to plan and execute a successful event."
         }
       ]
     }

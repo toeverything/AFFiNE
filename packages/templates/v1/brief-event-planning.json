@@ -1,68 +1,242 @@
 {
   "blocks": {
-    "SMCf2aOH8T": {
-      "sys:id": "SMCf2aOH8T",
+    "mMBWzZtpvM": {
+      "sys:id": "mMBWzZtpvM",
       "sys:flavour": "affine:page",
-      "sys:children": ["_07_dOaECY", "0n7YghSHPc"],
+      "sys:children": ["XSMCxudQf4", "2xxenQgE1-", "ca2-VFQV45"],
       "prop:title": [
         {
-          "insert": "Brief Event planning  "
+          "insert": "Annual Performance Review"
         }
       ]
     },
-    "_07_dOaECY": {
-      "sys:id": "_07_dOaECY",
+    "XSMCxudQf4": {
+      "sys:id": "XSMCxudQf4",
       "sys:flavour": "affine:surface",
       "sys:children": [],
       "prop:elements": {}
     },
-    "0n7YghSHPc": {
-      "sys:id": "0n7YghSHPc",
+    "2xxenQgE1-": {
+      "sys:id": "2xxenQgE1-",
       "sys:flavour": "affine:note",
-      "sys:children": ["xKPWSiEpXH", "9slwdYgqgq", "6dH3Amz0rn", "ObsV2gBxUe"],
-      "prop:xywh": "[0,0,800,645]",
+      "sys:children": ["G7wJk4W9lz"],
+      "prop:xywh": "[0,0,800,91]",
       "prop:background": "--affine-background-secondary-color",
       "prop:index": "a0",
       "prop:hidden": false
     },
-    "9slwdYgqgq": {
-      "sys:id": "9slwdYgqgq",
+    "XPiPjHYnvE": {
+      "sys:id": "XPiPjHYnvE",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
-      "prop:type": "text",
       "prop:text": [
         {
-          "insert": "An event brief outline the goals and key elements needed to plan a successfup event. This AFFiNE Event Planning template will help you gain alignment and kick off your event planning. "
+          "insert": "Employee Information:",
+          "attributes": {
+            "underline": true,
+            "bold": true
+          }
         }
-      ]
+      ],
+      "prop:type": "text"
     },
-    "6dH3Amz0rn": {
-      "sys:id": "6dH3Amz0rn",
+    "ca2-VFQV45": {
+      "sys:id": "ca2-VFQV45",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "viFZDjrBqJ",
+        "XPiPjHYnvE",
+        "qpyYi7g_c6",
+        "NpbigpLTNh",
+        "e1ax4lVFjW",
+        "rEKXjYtGDR",
+        "gYcGYxQ88e",
+        "OyFSyuWbzw",
+        "VcUt-bpjIK",
+        "a0xWifxvFi",
+        "YiQINiDM6W",
+        "Zp-YtzbUUK",
+        "ZMfsmg_5oZ",
+        "XH7xQMlX_0",
+        "mBO-_pWGoi",
+        "X_SNf6rQf4",
+        "0LF9mjFcX9",
+        "d2IrxHbD5D",
+        "IdLESwrZ-U",
+        "6YwnA2HHQM"
+      ],
+      "prop:xywh": "[0,0,800,1719]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
+    "G7wJk4W9lz": {
+      "sys:id": "G7wJk4W9lz",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
       "prop:text": []
     },
-    "ObsV2gBxUe": {
-      "sys:id": "ObsV2gBxUe",
+    "NpbigpLTNh": {
+      "sys:id": "NpbigpLTNh",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Department:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": "  "
+        },
+        {
+          "insert": "[Department Name]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "e1ax4lVFjW": {
+      "sys:id": "e1ax4lVFjW",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Job Title:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "[Job Title]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "rEKXjYtGDR": {
+      "sys:id": "rEKXjYtGDR",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Date of Joining:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": "  "
+        },
+        {
+          "insert": "[Date of Joining]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "gYcGYxQ88e": {
+      "sys:id": "gYcGYxQ88e",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Review Date: ",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        },
+        {
+          "insert": "[Review Date]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "OyFSyuWbzw": {
+      "sys:id": "OyFSyuWbzw",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "VcUt-bpjIK": {
+      "sys:id": "VcUt-bpjIK",
       "sys:flavour": "affine:database",
-      "sys:children": ["pFlIzSXLOj", "4XPamQdWpq", "3uJL-VNu7K"],
+      "sys:children": ["VwZ3681tdd", "jT3Oo2XSeJ", "RviIfLJUPX"],
+      "prop:columns": [
+        {
+          "type": "title",
+          "id": "VcUt-bpjIK",
+          "name": "Title",
+          "data": {}
+        },
+        {
+          "type": "multi-select",
+          "name": "score ",
+          "data": {
+            "options": [
+              {
+                "id": "rwjdYVF3jd",
+                "value": "awsome",
+                "color": "var(--affine-tag-yellow)"
+              },
+              {
+                "id": "4dHxaZ8cKk",
+                "value": "well",
+                "color": "var(--affine-tag-purple)"
+              },
+              {
+                "id": "wgvB2fzMu6",
+                "value": "good",
+                "color": "var(--affine-tag-green)"
+              },
+              {
+                "id": "YGPLhMJkni",
+                "value": "done",
+                "color": "var(--affine-tag-pink)"
+              },
+              {
+                "id": "Q1-TuffR-9",
+                "value": "in progress",
+                "color": "var(--affine-tag-white)"
+              }
+            ]
+          },
+          "id": "teyC7JgUni"
+        }
+      ],
+      "prop:titleColumnName": "Title",
       "prop:views": [
         {
-          "id": "sfIqqrnI2q",
+          "id": "bIFdicaEON",
           "name": "table",
           "mode": "table",
           "columns": [
             {
-              "id": "mGltZNTJmw",
-              "width": 176
+              "id": "VcUt-bpjIK",
+              "hide": false,
+              "width": 260
             },
             {
-              "id": "FCYCytB4wx",
-              "width": 162
-            },
-            {
-              "id": "ozFBusFd0s",
+              "id": "teyC7JgUni",
+              "hide": false,
               "width": 200
             }
           ],
@@ -75,49 +249,72 @@
       ],
       "prop:title": [
         {
-          "insert": "Event Planning"
+          "insert": "Employee's performance "
         }
       ],
       "prop:cells": {
-        "pFlIzSXLOj": {
-          "mGltZNTJmw": {
-            "columnId": "mGltZNTJmw",
-            "value": ["bsTnd_L1aE", "oU49ElCHCG"]
-          },
-          "FCYCytB4wx": {
-            "columnId": "FCYCytB4wx",
-            "value": 100
-          },
-          "ozFBusFd0s": {
-            "columnId": "ozFBusFd0s",
-            "value": "https://affine.pro/blog/free-event-planning-templates-for-professsional-2023"
+        "VwZ3681tdd": {
+          "teyC7JgUni": {
+            "columnId": "teyC7JgUni",
+            "value": ["rwjdYVF3jd"]
           }
         },
-        "4XPamQdWpq": {
-          "mGltZNTJmw": {
-            "columnId": "mGltZNTJmw",
-            "value": ["oU49ElCHCG", "d6riek6K4d"]
-          },
-          "FCYCytB4wx": {
-            "columnId": "FCYCytB4wx",
-            "value": 50
+        "jT3Oo2XSeJ": {
+          "teyC7JgUni": {
+            "columnId": "teyC7JgUni",
+            "value": ["4dHxaZ8cKk"]
           }
         },
-        "3uJL-VNu7K": {
-          "mGltZNTJmw": {
-            "columnId": "mGltZNTJmw",
-            "value": ["bsTnd_L1aE", "z3vOXFIT-T"]
-          },
-          "FCYCytB4wx": {
-            "columnId": "FCYCytB4wx",
-            "value": 8
+        "RviIfLJUPX": {
+          "teyC7JgUni": {
+            "columnId": "teyC7JgUni",
+            "value": ["wgvB2fzMu6"]
           }
         }
       },
+      "prop:titleColumnWidth": 343
+    },
+    "VwZ3681tdd": {
+      "sys:id": "VwZ3681tdd",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 1]"
+        }
+      ]
+    },
+    "jT3Oo2XSeJ": {
+      "sys:id": "jT3Oo2XSeJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 2]"
+        }
+      ]
+    },
+    "RviIfLJUPX": {
+      "sys:id": "RviIfLJUPX",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Employee's Performance Goal 3]"
+        }
+      ]
+    },
+    "a0xWifxvFi": {
+      "sys:id": "a0xWifxvFi",
+      "sys:flavour": "affine:database",
+      "sys:children": ["ZEi_-9SS-Y", "8LPVaagwtP", "lYnANRxW0A"],
       "prop:columns": [
         {
           "type": "title",
-          "id": "ObsV2gBxUe",
+          "id": "a0xWifxvFi",
           "name": "Title",
           "data": {}
         },
@@ -125,98 +322,222 @@
           "type": "multi-select",
           "name": "Tag",
           "data": {
-            "options": [
-              {
-                "id": "z3vOXFIT-T",
-                "value": "not important",
-                "color": "var(--affine-tag-teal)"
-              },
-              {
-                "id": "ZbJHxXJK3L",
-                "value": "nit important",
-                "color": "var(--affine-tag-pink)"
-              },
-              {
-                "id": "d6riek6K4d",
-                "value": "important",
-                "color": "var(--affine-tag-yellow)"
-              },
-              {
-                "id": "oU49ElCHCG",
-                "value": "urgent",
-                "color": "var(--affine-tag-purple)"
-              },
-              {
-                "id": "bsTnd_L1aE",
-                "value": "must",
-                "color": "var(--affine-tag-green)"
-              },
-              {
-                "id": "hHjqAauZu6",
-                "value": "urgent",
-                "color": "var(--affine-tag-gray)"
-              }
-            ]
+            "options": []
           },
-          "id": "mGltZNTJmw"
-        },
-        {
-          "type": "progress",
-          "name": "progress",
-          "data": {},
-          "id": "FCYCytB4wx"
-        },
-        {
-          "type": "link",
-          "name": "additional link ",
-          "data": {},
-          "id": "ozFBusFd0s"
+          "id": "ZdTyvkjQwz"
         }
       ],
       "prop:titleColumnName": "Title",
-      "prop:titleColumnWidth": 186
+      "prop:views": [
+        {
+          "id": "MvodpC_iAj",
+          "name": "table",
+          "mode": "table",
+          "columns": [
+            {
+              "id": "a0xWifxvFi",
+              "hide": false,
+              "width": 260
+            },
+            {
+              "id": "ZdTyvkjQwz",
+              "hide": false,
+              "width": 200
+            }
+          ],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          }
+        }
+      ],
+      "prop:title": [
+        {
+          "insert": "Job responsibility "
+        }
+      ],
+      "prop:cells": {},
+      "prop:titleColumnWidth": 354
     },
-    "pFlIzSXLOj": {
-      "sys:id": "pFlIzSXLOj",
+    "ZEi_-9SS-Y": {
+      "sys:id": "ZEi_-9SS-Y",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 1]"
+        }
+      ]
+    },
+    "8LPVaagwtP": {
+      "sys:id": "8LPVaagwtP",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 2]"
+        }
+      ]
+    },
+    "lYnANRxW0A": {
+      "sys:id": "lYnANRxW0A",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[List Job Responsibility 3]"
+        }
+      ]
+    },
+    "YiQINiDM6W": {
+      "sys:id": "YiQINiDM6W",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Employee's Signature: "
+        }
+      ]
+    },
+    "Zp-YtzbUUK": {
+      "sys:id": "Zp-YtzbUUK",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "research"
+          "insert": "Date: "
         }
       ],
       "prop:type": "text"
     },
-    "4XPamQdWpq": {
-      "sys:id": "4XPamQdWpq",
+    "ZMfsmg_5oZ": {
+      "sys:id": "ZMfsmg_5oZ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "mBO-_pWGoi": {
+      "sys:id": "mBO-_pWGoi",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "book accommondation"
+          "insert": "Date: "
         }
       ],
       "prop:type": "text"
     },
-    "3uJL-VNu7K": {
-      "sys:id": "3uJL-VNu7K",
+    "X_SNf6rQf4": {
+      "sys:id": "X_SNf6rQf4",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "0LF9mjFcX9": {
+      "sys:id": "0LF9mjFcX9",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Company Name]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "d2IrxHbD5D": {
+      "sys:id": "d2IrxHbD5D",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Address]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "IdLESwrZ-U": {
+      "sys:id": "IdLESwrZ-U",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Phone Number]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "6YwnA2HHQM": {
+      "sys:id": "6YwnA2HHQM",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "[Email]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        }
+      ]
+    },
+    "qpyYi7g_c6": {
+      "sys:id": "qpyYi7g_c6",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "arrange transportation "
+          "insert": "Name:",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": "  "
+        },
+        {
+          "insert": "[Employee Name]",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
         }
       ],
       "prop:type": "text"
     },
-    "xKPWSiEpXH": {
-      "sys:id": "xKPWSiEpXH",
+    "viFZDjrBqJ": {
+      "sys:id": "viFZDjrBqJ",
       "sys:flavour": "affine:image",
       "sys:children": [],
-      "prop:sourceId": "5Cfem_137WmzR35ZeIC76oTkq5SQt-eHlZwJiLy0hgU=",
+      "prop:sourceId": "/static/gZLmSgmwumNdgf0eIfOSW44emctrLyFUaZapbk8eZ6s=.png",
       "prop:caption": "",
-      "prop:width": 352.8000183105469,
-      "prop:height": 198.4499969482422
+      "prop:width": 752,
+      "prop:height": 422.9140625
+    },
+    "XH7xQMlX_0": {
+      "sys:id": "XH7xQMlX_0",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "Manager's Signature: "
+        }
+      ],
+      "prop:type": "text"
     }
   }
 }

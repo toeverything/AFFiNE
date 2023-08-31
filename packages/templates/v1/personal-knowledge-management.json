@@ -1,5 +1,71 @@
 {
   "blocks": {
+    "F19ZttSiUA": {
+      "sys:id": "F19ZttSiUA",
+      "sys:flavour": "affine:page",
+      "sys:children": ["OzSHckdEQ6", "f6Owaa00aK", "-tH5D5Hf4J", "W6M-MPQ5-F"],
+      "prop:title": [
+        {
+          "insert": "Personal-Knowledge Management "
+        }
+      ]
+    },
+    "OzSHckdEQ6": {
+      "sys:id": "OzSHckdEQ6",
+      "sys:flavour": "affine:surface",
+      "sys:children": [],
+      "prop:elements": {
+        "aAOeeA4jhz": {
+          "type": "connector",
+          "mode": 1,
+          "strokeWidth": 2,
+          "stroke": "--affine-palette-line-blue",
+          "strokeStyle": "solid",
+          "roughness": 1.4,
+          "source": {
+            "id": "f6Owaa00aK",
+            "position": [0.5, 1]
+          },
+          "target": {
+            "id": "W6M-MPQ5-F"
+          },
+          "controllers": [],
+          "id": "aAOeeA4jhz",
+          "index": "a1",
+          "seed": 1493853178,
+          "xywh": "[181.61467354910715,-359.54656036633406,400,379.64]"
+        },
+        "pMyfZPwXXU": {
+          "type": "connector",
+          "mode": 1,
+          "strokeWidth": 2,
+          "stroke": "--affine-palette-line-black",
+          "strokeStyle": "solid",
+          "roughness": 1.4,
+          "source": {
+            "id": "f6Owaa00aK",
+            "position": [0.5010332476508476, 1]
+          },
+          "target": {
+            "id": "-tH5D5Hf4J"
+          },
+          "controllers": [],
+          "id": "pMyfZPwXXU",
+          "index": "a2",
+          "seed": 1151132732,
+          "xywh": "[581.9546735491072,-359.54656036633406,650.69,379.64]"
+        }
+      }
+    },
+    "f6Owaa00aK": {
+      "sys:id": "f6Owaa00aK",
+      "sys:flavour": "affine:note",
+      "sys:children": ["qyCHSngWfV"],
+      "prop:xywh": "[420.1386841846113,-539.5481469931723,322.9614914325105,102]",
+      "prop:background": "--affine-background-secondary-color",
+      "prop:index": "a0",
+      "prop:hidden": false
+    },
     "qyCHSngWfV": {
       "sys:id": "qyCHSngWfV",
       "sys:flavour": "affine:paragraph",
@@ -20,7 +86,13 @@
     "z3JCtDKEnH": {
       "sys:id": "z3JCtDKEnH",
       "sys:flavour": "affine:database",
-      "sys:children": ["VCBzCpQ4Pj", "8SmLofa6Sa", "z38CbkWI85"],
+      "sys:children": [
+        "VCBzCpQ4Pj",
+        "8SmLofa6Sa",
+        "z38CbkWI85",
+        "gSQczpW-cC",
+        "1GiXKFEQTr"
+      ],
       "prop:title": [
         {
           "insert": "Study Plan"
@@ -30,23 +102,73 @@
       "prop:titleColumnWidth": 200,
       "prop:views": [
         {
-          "id": "chavucKtj6",
-          "name": "table",
-          "mode": "table",
+          "id": "_KB-Dww-OJ",
+          "name": "Kanban View",
+          "mode": "kanban",
           "columns": [
             {
+              "id": "z3JCtDKEnH",
+              "hide": false
+            },
+            {
               "id": "XdrUZWMCAy",
-              "width": 200
+              "hide": false
             },
             {
               "id": "MZ4j6XeWN2",
-              "width": 200
+              "hide": false
             }
           ],
           "filter": {
             "type": "group",
             "op": "and",
             "conditions": []
+          },
+          "groupBy": {
+            "type": "groupBy",
+            "columnId": "XdrUZWMCAy",
+            "name": "multi-select"
+          },
+          "header": {
+            "titleColumn": "z3JCtDKEnH",
+            "iconColumn": "type"
+          },
+          "groupProperties": [
+            {
+              "key": "Ungroups",
+              "hide": false,
+              "manuallyCardSort": ["m7Wa1L5dzo"]
+            },
+            {
+              "key": "7MeJP6tYbY",
+              "hide": false,
+              "manuallyCardSort": ["z38CbkWI85"]
+            },
+            {
+              "key": "UzOiUYq0f5",
+              "hide": false,
+              "manuallyCardSort": []
+            },
+            {
+              "key": "s28YFoSwsn",
+              "hide": false,
+              "manuallyCardSort": []
+            }
+          ]
+        },
+        {
+          "id": "vyeVaTiV6v",
+          "name": "Table View",
+          "mode": "table",
+          "columns": [],
+          "filter": {
+            "type": "group",
+            "op": "and",
+            "conditions": []
+          },
+          "header": {
+            "titleColumn": "z3JCtDKEnH",
+            "iconColumn": "type"
           }
         }
       ],
@@ -76,6 +198,24 @@
             "columnId": "XdrUZWMCAy",
             "value": ["7MeJP6tYbY"]
           }
+        },
+        "m7Wa1L5dzo": {
+          "XdrUZWMCAy": {
+            "columnId": "XdrUZWMCAy",
+            "value": [null]
+          }
+        },
+        "gSQczpW-cC": {
+          "XdrUZWMCAy": {
+            "columnId": "XdrUZWMCAy",
+            "value": []
+          }
+        },
+        "1GiXKFEQTr": {
+          "XdrUZWMCAy": {
+            "columnId": "XdrUZWMCAy",
+            "value": []
+          }
         }
       },
       "prop:columns": [
@@ -93,17 +233,17 @@
               {
                 "id": "7MeJP6tYbY",
                 "value": "not started",
-                "color": "var(--affine-tag-purple)"
+                "color": "var(--affine-tag-orange)"
               },
               {
                 "id": "s28YFoSwsn",
                 "value": "finished",
-                "color": "var(--affine-tag-gray)"
+                "color": "var(--affine-tag-blue)"
               },
               {
                 "id": "UzOiUYq0f5",
                 "value": "in-progress",
-                "color": "var(--affine-tag-white)"
+                "color": "var(--affine-tag-green)"
               }
             ]
           },
@@ -150,318 +290,6 @@
         }
       ]
     },
-    "QQcLzkXuC8": {
-      "sys:id": "QQcLzkXuC8",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "h6",
-      "prop:text": [
-        {
-          "insert": "Reading list"
-        }
-      ]
-    },
-    "ck64DLwqW_": {
-      "sys:id": "ck64DLwqW_",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "F19ZttSiUA": {
-      "sys:id": "F19ZttSiUA",
-      "sys:flavour": "affine:page",
-      "sys:children": ["OzSHckdEQ6", "f6Owaa00aK"],
-      "prop:title": [
-        {
-          "insert": "Personal-Knowledge Management "
-        }
-      ]
-    },
-    "OzSHckdEQ6": {
-      "sys:id": "OzSHckdEQ6",
-      "sys:flavour": "affine:surface",
-      "sys:children": [],
-      "prop:elements": {}
-    },
-    "f6Owaa00aK": {
-      "sys:id": "f6Owaa00aK",
-      "sys:flavour": "affine:note",
-      "sys:children": [
-        "qyCHSngWfV",
-        "n1kvV428zI",
-        "z3JCtDKEnH",
-        "QQcLzkXuC8",
-        "ufWf2CW9Hv",
-        "AdnfXJuEnD",
-        "L0wkiKeVji",
-        "ODbeT24gNt",
-        "tTTi-Au4mw",
-        "7enGUyfuBc",
-        "kMY3ZLkWoq",
-        "Nyg_qtK7hp",
-        "ck64DLwqW_"
-      ],
-      "prop:xywh": "[0,0,800,1239]",
-      "prop:background": "--affine-background-secondary-color",
-      "prop:index": "a0",
-      "prop:hidden": false
-    },
-    "n1kvV428zI": {
-      "sys:id": "n1kvV428zI",
-      "sys:flavour": "affine:image",
-      "sys:children": [],
-      "prop:sourceId": "fb0SNPtMpQlzBQ90_PB7vCu34WpiSUJbNKocFkL2vIo=",
-      "prop:caption": "",
-      "prop:width": 0,
-      "prop:height": 0
-    },
-    "Nyg_qtK7hp": {
-      "sys:id": "Nyg_qtK7hp",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "kMY3ZLkWoq": {
-      "sys:id": "kMY3ZLkWoq",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "lMu_xf4xVF": {
-      "sys:id": "lMu_xf4xVF",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "THE CANDY HOUSE",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Jennifer Egan",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": ". "
-        }
-      ]
-    },
-    "WrMjzOnJH3": {
-      "sys:id": "WrMjzOnJH3",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": [
-        {
-          "insert": "AN IMMENSE WORLD",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Ed Yong",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": ". "
-        }
-      ]
-    },
-    "vFgr3oyqOJ": {
-      "sys:id": "vFgr3oyqOJ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "CHECKOUT 19",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Claire-Louise Bennett",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": "."
-        }
-      ],
-      "prop:type": "text"
-    },
-    "1TYjc-QdZj": {
-      "sys:id": "1TYjc-QdZj",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": " "
-        },
-        {
-          "insert": "DEMON COPPERHEAD",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Barbara Kingsolver",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": ". "
-        }
-      ],
-      "prop:type": "text"
-    },
-    "ROpYva-V1J": {
-      "sys:id": "ROpYva-V1J",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "THE FURROWS",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Namwali Serpell",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": ". "
-        }
-      ],
-      "prop:type": "text"
-    },
-    "CXTh8uALzr": {
-      "sys:id": "CXTh8uALzr",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "TRUST",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Hernan Diaz",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": "."
-        }
-      ],
-      "prop:type": "text"
-    },
-    "R__nq8e75I": {
-      "sys:id": "R__nq8e75I",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "STAY TRUE",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Hua Hsu",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": ". "
-        }
-      ],
-      "prop:type": "text"
-    },
-    "XeJ1gW0QDw": {
-      "sys:id": "XeJ1gW0QDw",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [
-        {
-          "insert": "STRANGERS TO OURSELVES",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": " "
-        },
-        {
-          "insert": "By Rachel Aviv",
-          "attributes": {
-            "italic": true
-          }
-        },
-        {
-          "insert": ". "
-        }
-      ],
-      "prop:type": "text"
-    },
-    "7enGUyfuBc": {
-      "sys:id": "7enGUyfuBc",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:text": [],
-      "prop:type": "text"
-    },
-    "ODbeT24gNt": {
-      "sys:id": "ODbeT24gNt",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
-    "tTTi-Au4mw": {
-      "sys:id": "tTTi-Au4mw",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "text",
-      "prop:text": []
-    },
     "L0wkiKeVji": {
       "sys:id": "L0wkiKeVji",
       "sys:flavour": "affine:database",
@@ -493,6 +321,12 @@
           "name": "Additional information ",
           "data": {},
           "id": "ppQS-BaKNB"
+        },
+        {
+          "type": "rich-text",
+          "name": "Author",
+          "data": {},
+          "id": "scBkEETna6"
         }
       ],
       "prop:titleColumnName": "Readlist ",
@@ -503,11 +337,23 @@
           "mode": "table",
           "columns": [
             {
+              "id": "L0wkiKeVji",
+              "hide": false,
+              "width": 302
+            },
+            {
+              "id": "scBkEETna6",
+              "hide": false,
+              "width": 180
+            },
+            {
               "id": "QmfyAdToer",
+              "hide": false,
               "width": 169
             },
             {
               "id": "ppQS-BaKNB",
+              "hide": false,
               "width": 200
             }
           ],
@@ -532,6 +378,14 @@
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": ""
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Jennifer Egan"
+              }
+            ]
           }
         },
         "vFgr3oyqOJ": {
@@ -542,6 +396,14 @@
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Claire-Louise Bennett"
+              }
+            ]
           }
         },
         "1TYjc-QdZj": {
@@ -552,6 +414,14 @@
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Barbara Kingsolver"
+              }
+            ]
           }
         },
         "ROpYva-V1J": {
@@ -562,6 +432,14 @@
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Namwali Serpell"
+              }
+            ]
           }
         },
         "CXTh8uALzr": {
@@ -572,6 +450,14 @@
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Hernan Diaz"
+              }
+            ]
           }
         },
         "WrMjzOnJH3": {
@@ -582,38 +468,410 @@
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Ed Yong"
+              }
+            ]
           }
         },
         "R__nq8e75I": {
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Hua Hsu"
+              }
+            ]
           }
         },
         "XeJ1gW0QDw": {
           "ppQS-BaKNB": {
             "columnId": "ppQS-BaKNB",
             "value": null
+          },
+          "scBkEETna6": {
+            "columnId": "scBkEETna6",
+            "value": [
+              {
+                "insert": "Rachel Aviv"
+              }
+            ]
           }
         }
       },
       "prop:titleColumnWidth": 361
     },
-    "AdnfXJuEnD": {
-      "sys:id": "AdnfXJuEnD",
+    "lMu_xf4xVF": {
+      "sys:id": "lMu_xf4xVF",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "THE CANDY HOUSE",
+          "attributes": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    "vFgr3oyqOJ": {
+      "sys:id": "vFgr3oyqOJ",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "CHECKOUT 19",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "1TYjc-QdZj": {
+      "sys:id": "1TYjc-QdZj",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": " "
+        },
+        {
+          "insert": "DEMON COPPERHEAD",
+          "attributes": {
+            "bold": true
+          }
+        }
+      ],
+      "prop:type": "text"
+    },
+    "ROpYva-V1J": {
+      "sys:id": "ROpYva-V1J",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "THE FURROWS",
+          "attributes": {
+            "bold": true
+          }
+        }
+      ],
+      "prop:type": "text"
+    },
+    "CXTh8uALzr": {
+      "sys:id": "CXTh8uALzr",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "TRUST",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "WrMjzOnJH3": {
+      "sys:id": "WrMjzOnJH3",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "AN IMMENSE WORLD",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        }
+      ]
+    },
+    "R__nq8e75I": {
+      "sys:id": "R__nq8e75I",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "STAY TRUE",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "XeJ1gW0QDw": {
+      "sys:id": "XeJ1gW0QDw",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "STRANGERS TO OURSELVES",
+          "attributes": {
+            "bold": true
+          }
+        },
+        {
+          "insert": " "
+        }
+      ],
+      "prop:type": "text"
+    },
+    "s7EitB9S6F": {
+      "sys:id": "s7EitB9S6F",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "quote",
+      "prop:text": [
+        {
+          "insert": "Using a form view, you can clearly list the reading status of all books. This can give you a direct understanding of the overall progress. Make good use of your time and read more books!"
+        }
+      ]
+    },
+    "uZTvHIo1eH": {
+      "sys:id": "uZTvHIo1eH",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "Using a "
+        },
+        {
+          "insert": "kanban",
+          "attributes": {
+            "link": "https://en.wikipedia.org/wiki/Kanban_(development)"
+          }
+        },
+        {
+          "insert": " system to manage your tasks is a very effective method."
+        }
+      ]
+    },
+    "m7Wa1L5dzo": {
+      "sys:id": "m7Wa1L5dzo",
       "sys:flavour": "affine:paragraph",
       "sys:children": [],
       "prop:type": "text",
       "prop:text": []
     },
-    "ufWf2CW9Hv": {
-      "sys:id": "ufWf2CW9Hv",
+    "gSQczpW-cC": {
+      "sys:id": "gSQczpW-cC",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "New Task"
+        }
+      ]
+    },
+    "1GiXKFEQTr": {
+      "sys:id": "1GiXKFEQTr",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": [
+        {
+          "insert": "New Task 2"
+        }
+      ]
+    },
+    "YsMF9PplY6": {
+      "sys:id": "YsMF9PplY6",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "Ungroups",
+          "attributes": {
+            "background": "var(--affine-text-highlight-grey)"
+          }
+        },
+        {
+          "insert": ": Your study task inbox."
+        }
+      ],
+      "prop:checked": false
+    },
+    "aMVed60Zxh": {
+      "sys:id": "aMVed60Zxh",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "not started:",
+          "attributes": {
+            "background": "var(--affine-text-highlight-orange)"
+          }
+        },
+        {
+          "insert": " Tasks in your plan that haven't been started yet."
+        }
+      ],
+      "prop:checked": false
+    },
+    "G_hTd1c1Xr": {
+      "sys:id": "G_hTd1c1Xr",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:type": "bulleted",
+      "prop:text": [
+        {
+          "insert": "in-progress:",
+          "attributes": {
+            "background": "var(--affine-text-highlight-green)"
+          }
+        },
+        {
+          "insert": " The tasks you are currently working on can have their progress indicated by updating a progress bar to show the approximate completion."
+        }
+      ],
+      "prop:checked": false
+    },
+    "mcg7ZXEIUL": {
+      "sys:id": "mcg7ZXEIUL",
+      "sys:flavour": "affine:list",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "finished:",
+          "attributes": {
+            "background": "var(--affine-text-highlight-blue)"
+          }
+        },
+        {
+          "insert": " List the tasks that have been completed. Here, you can easily review what you've learned."
+        }
+      ],
+      "prop:type": "bulleted",
+      "prop:checked": false
+    },
+    "0H9dtAEA7G": {
+      "sys:id": "0H9dtAEA7G",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "Bm3PQLWdKK": {
+      "sys:id": "Bm3PQLWdKK",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "📖 Reading list"
+        }
+      ],
+      "prop:type": "h3"
+    },
+    "ir2DPxrZN9": {
+      "sys:id": "ir2DPxrZN9",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "lfXQ_rY3fA": {
+      "sys:id": "lfXQ_rY3fA",
+      "sys:flavour": "affine:divider",
+      "sys:children": []
+    },
+    "NzeIqA5Q6j": {
+      "sys:id": "NzeIqA5Q6j",
       "sys:flavour": "affine:image",
       "sys:children": [],
-      "prop:sourceId": "sNVNYDBzUDN2J9OFVJdLJlryBLzRZBLl-4MTNoPF1tA=",
-      "prop:caption": "",
-      "prop:width": 0,
-      "prop:height": 0
+      "prop:sourceId": "/static/9vXwWGEX5W9v5pzwpu0eK4pf22DZ_sCloO0zCH1aVQ4=.png",
+      "prop:caption": "A goal without a plan is just a wish",
+      "prop:width": 752,
+      "prop:height": 501.328125
+    },
+    "rLuDwMETvq": {
+      "sys:id": "rLuDwMETvq",
+      "sys:flavour": "affine:image",
+      "sys:children": [],
+      "prop:sourceId": "/static/pIqdA3pM1la1gKzxOmAcpLmTh3yXBrL9mGTz_hGj5xE=.png",
+      "prop:caption": "Books are a uniquely portable magic",
+      "prop:width": 752,
+      "prop:height": 501.328125
+    },
+    "n5t18a4pCF": {
+      "sys:id": "n5t18a4pCF",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:text": [
+        {
+          "insert": "📑 Study Plan"
+        }
+      ],
+      "prop:type": "h3"
+    },
+    "A-XAaszL_S": {
+      "sys:id": "A-XAaszL_S",
+      "sys:flavour": "affine:paragraph",
+      "sys:children": [],
+      "prop:type": "text",
+      "prop:text": []
+    },
+    "-tH5D5Hf4J": {
+      "sys:id": "-tH5D5Hf4J",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "ir2DPxrZN9",
+        "Bm3PQLWdKK",
+        "rLuDwMETvq",
+        "s7EitB9S6F",
+        "L0wkiKeVji",
+        "lfXQ_rY3fA"
+      ],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[832.6496028098738,20.093439633665938,800,1296]",
+      "prop:index": "a01",
+      "prop:hidden": false
+    },
+    "W6M-MPQ5-F": {
+      "sys:id": "W6M-MPQ5-F",
+      "sys:flavour": "affine:note",
+      "sys:children": [
+        "A-XAaszL_S",
+        "n5t18a4pCF",
+        "NzeIqA5Q6j",
+        "uZTvHIo1eH",
+        "YsMF9PplY6",
+        "aMVed60Zxh",
+        "G_hTd1c1Xr",
+        "mcg7ZXEIUL",
+        "0H9dtAEA7G",
+        "z3JCtDKEnH"
+      ],
+      "prop:background": "--affine-background-secondary-color",
+      "prop:xywh": "[-218.38057009913342,20.089515493697448,800,1444]",
+      "prop:index": "a01",
+      "prop:hidden": false
     }
   }
 }
