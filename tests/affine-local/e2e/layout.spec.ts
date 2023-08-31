@@ -6,7 +6,9 @@ import { expect } from '@playwright/test';
 test('Collapse Sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
-  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  await page
+    .locator('[data-testid=app-sidebar-arrow-button-collapse][data-show=true]')
+    .click();
   const sliderBarArea = page.getByTestId('app-sidebar');
   await expect(sliderBarArea).not.toBeInViewport();
 });
@@ -14,7 +16,9 @@ test('Collapse Sidebar', async ({ page }) => {
 test('Expand Sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitEditorLoad(page);
-  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  await page
+    .locator('[data-testid=app-sidebar-arrow-button-collapse][data-show=true]')
+    .click();
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).not.toBeInViewport();
 
