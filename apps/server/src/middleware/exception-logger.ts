@@ -21,7 +21,8 @@ export class ExceptionLogger implements ExceptionFilter {
       new Error(
         `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
         { cause: exception }
-      )
+      ),
+      exception.stack
     );
 
     const response = ctx.getResponse<Response>();
