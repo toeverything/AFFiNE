@@ -11,6 +11,7 @@ import { MetricsModule } from '../metrics';
 import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
+import { RateLimiterModule } from '../throttler';
 
 let auth: AuthService;
 let module: TestingModule;
@@ -36,6 +37,7 @@ beforeEach(async () => {
       GqlModule,
       AuthModule,
       MetricsModule,
+      RateLimiterModule,
     ],
   }).compile();
   auth = module.get(AuthService);

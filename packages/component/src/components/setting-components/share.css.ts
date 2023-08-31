@@ -92,3 +92,55 @@ globalStyle(`${settingRow} .right-col`, {
   paddingLeft: '15px',
   flexShrink: 0,
 });
+
+export const storageProgressContainer = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+});
+
+export const storageProgressWrapper = style({
+  flexGrow: 1,
+  marginRight: '20px',
+});
+
+globalStyle(`${storageProgressWrapper} .storage-progress-desc`, {
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-secondary-color)',
+  height: '20px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 2,
+});
+globalStyle(`${storageProgressWrapper} .storage-progress-bar-wrapper`, {
+  height: '8px',
+  borderRadius: '4px',
+  backgroundColor: 'var(--affine-pure-black-10)',
+  overflow: 'hidden',
+});
+export const storageProgressBar = style({
+  height: '100%',
+  backgroundColor: 'var(--affine-processing-color)',
+  selectors: {
+    '&.warning': {
+      // Wait for design
+      backgroundColor: '#FF7C09',
+    },
+    '&.danger': {
+      backgroundColor: 'var(--affine-error-color)',
+    },
+  },
+});
+export const storageExtendHint = style({
+  borderRadius: '4px',
+  padding: '4px 8px',
+  backgroundColor: 'var(--affine-background-secondary-color)',
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: 'var(--affine-font-xs)',
+  lineHeight: '20px',
+  marginTop: 8,
+});
+globalStyle(`${storageExtendHint} a`, {
+  color: 'var(--affine-link-color)',
+});

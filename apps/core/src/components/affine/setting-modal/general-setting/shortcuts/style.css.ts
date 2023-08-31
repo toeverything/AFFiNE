@@ -24,11 +24,8 @@ export const shortcutKey = style({
   alignItems: 'center',
   justifyContent: 'center',
   padding: '0 6px',
-  border: '1px solid var(--affine-border-color)',
   borderRadius: '4px',
   background: 'var(--affine-background-tertiary-color)',
-  boxShadow:
-    '0px 6px 4px 0px rgba(255, 255, 255, 0.24) inset, 0px 0px 0px 0.5px rgba(0, 0, 0, 0.10) inset',
   fontSize: 'var(--affine-font-xs)',
   selectors: {
     '&:not(:last-of-type)': {
