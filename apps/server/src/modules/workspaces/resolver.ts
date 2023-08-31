@@ -90,6 +90,12 @@ export class InvitationWorkspaceType {
 }
 
 @ObjectType()
+export class WorkspaceBlobSizes {
+  @Field(() => Int)
+  size!: number;
+}
+
+@ObjectType()
 export class InvitationType {
   @Field({ description: 'Workspace information' })
   workspace!: InvitationWorkspaceType;
@@ -579,6 +585,16 @@ export class WorkspaceResolver {
     await this.permissionProvider.check(workspaceId, user.id);
 
     return this.storage.listBlobs(workspaceId);
+  }
+
+  @Query(() => WorkspaceBlobSizes)
+  async collectBlobSizes(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    await this.permissionProvider.check(workspaceId, user.id);
+
+    return this.storage.blobsSize(workspaceId).then(size => ({ size }));
   }
 
   @Mutation(() => String)

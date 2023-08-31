@@ -40,6 +40,19 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 }`,
 };
 
+export const blobSizesQuery = {
+  id: 'blobSizesQuery' as const,
+  operationName: 'blobSizes',
+  definitionName: 'collectBlobSizes',
+  containsFile: false,
+  query: `
+query blobSizes($workspaceId: String!) {
+  collectBlobSizes(workspaceId: $workspaceId) {
+    size
+  }
+}`,
+};
+
 export const changeEmailMutation = {
   id: 'changeEmailMutation' as const,
   operationName: 'changeEmail',

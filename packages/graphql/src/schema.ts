@@ -73,6 +73,15 @@ export type SetBlobMutationVariables = Exact<{
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
 
+export type BlobSizesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type BlobSizesQuery = {
+  __typename?: 'Query';
+  collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
+
 export type ChangeEmailMutationVariables = Exact<{
   id: Scalars['String']['input'];
   newEmail: Scalars['String']['input'];
@@ -433,6 +442,11 @@ export type Queries =
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;
       response: ListBlobsQuery;
+    }
+  | {
+      name: 'blobSizesQuery';
+      variables: BlobSizesQueryVariables;
+      response: BlobSizesQuery;
     }
   | {
       name: 'getCurrentUserQuery';
