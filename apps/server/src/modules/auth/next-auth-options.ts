@@ -273,7 +273,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         return session;
       },
       signIn: async ({ profile, user }) => {
-        if (!config.affine.beta || !config.node.prod) {
+        if (!config.featureFlags.earlyAccessPreview) {
           return true;
         }
         const email = profile?.email ?? user.email;

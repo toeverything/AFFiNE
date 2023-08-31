@@ -125,6 +125,9 @@ query getCurrentUser {
     emailVerified
     avatarUrl
     createdAt
+    token {
+      token
+    }
   }
 }`,
 };
