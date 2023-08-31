@@ -58,52 +58,8 @@ async function handleAffineUrl(url: string) {
   logger.info('handle affine schema action', urlObj.hostname);
   // handle more actions here
   // hostname is the action name
-  if (urlObj.hostname === 'sign-in') {
-    const urlToOpen = urlObj.search.slice(1);
-    if (urlToOpen) {
-      await handleSignIn(urlToOpen);
-    }
-  } else if (urlObj.hostname === 'oauth-jwt') {
+  if (urlObj.hostname === 'oauth-jwt') {
     await handleOauthJwt(url);
-  }
-}
-
-// todo: move to another place?
-async function handleSignIn(url: string) {
-  if (url) {
-    try {
-      const mainWindow = await restoreOrCreateWindow();
-      mainWindow.show();
-      const urlObj = new URL(url);
-      const email = urlObj.searchParams.get('email');
-
-      if (!email) {
-        logger.error('no email in url', url);
-        return;
-      }
-
-      uiSubjects.onStartLogin.next({
-        email,
-      });
-      const window = await handleOpenUrlInHiddenWindow(url);
-      logger.info('opened url in hidden window', window.webContents.getURL());
-      // check path
-      // - if path === /auth/{signIn,signUp}, we know sign in succeeded
-      // - if path === expired, we know sign in failed
-      const finalUrl = new URL(window.webContents.getURL());
-      console.log('final url', finalUrl);
-      // hack: wait for the hidden window to send broadcast message to the main window
-      // that's how next-auth works for cross-tab communication
-      setTimeout(() => {
-        window.destroy();
-      }, 3000);
-      uiSubjects.onFinishLogin.next({
-        success: ['/auth/signIn', '/auth/signUp'].includes(finalUrl.pathname),
-        email,
-      });
-    } catch (e) {
-      logger.error('failed to open url in popup', e);
-    }
   }
 }
 

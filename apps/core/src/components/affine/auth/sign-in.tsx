@@ -1,7 +1,6 @@
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
-import { isDesktop } from '@affine/env/constant';
 import { getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -15,7 +14,6 @@ import { useCallback } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';
 import { emailRegex } from '../../../utils/email-regex';
-import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
@@ -70,7 +68,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     if (user) {
       signInCloud('email', {
         email: email,
-        callbackUrl: buildCallbackUrl('/auth/signIn'),
+        callbackUrl: '/auth/signIn',
         redirect: false,
       })
         .then(res => handleSendEmailError(res, pushNotification))
@@ -79,7 +77,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     } else {
       signInCloud('email', {
         email: email,
-        callbackUrl: buildCallbackUrl('/auth/signUp'),
+        callbackUrl: '/auth/signUp',
         redirect: false,
       })
         .then(res => handleSendEmailError(res, pushNotification))
@@ -104,16 +102,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         }}
         icon={<GoogleDuotoneIcon />}
         onClick={useCallback(() => {
-          if (isDesktop) {
-            open(
-              `/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
-                '/open-app/oauth-jwt'
-              )}`,
-              '_target'
-            );
-          } else {
-            signInCloud('google').catch(console.error);
-          }
+          signInCloud('google').catch(console.error);
         }, [])}
       >
         {t['Continue with Google']()}

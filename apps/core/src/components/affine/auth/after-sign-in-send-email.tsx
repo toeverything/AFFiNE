@@ -9,7 +9,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { type FC, useCallback } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';
-import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
@@ -35,7 +34,7 @@ export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
         onClick={useCallback(() => {
           signInCloud('email', {
             email,
-            callbackUrl: buildCallbackUrl('/auth/signIn'),
+            callbackUrl: '/auth/signIn',
             redirect: true,
           }).catch(console.error);
         }, [email])}
