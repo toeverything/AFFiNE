@@ -9,7 +9,7 @@ export const sidebarSwitch = style({
   selectors: {
     '&[data-show=true]': {
       opacity: 1,
-      width: 'auto',
+      width: '32px',
       pointerEvents: 'auto',
     },
   },
