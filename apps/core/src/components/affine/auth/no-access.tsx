@@ -22,7 +22,7 @@ export const NoAccess: FC<AuthPanelProps> = ({ setAuthState, onSignedIn }) => {
   return (
     <>
       <ModalHeader
-        title={t['AFFiNE Cloud']()}
+        title={t['com.affine.brand.affineCloud']()}
         subTitle={t['Early Access Stage']()}
       />
       <AuthContent style={{ height: 162 }}>

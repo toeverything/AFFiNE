@@ -215,7 +215,9 @@ export const AppearanceSettings = () => {
           {environment.isMacOs && (
             <SettingRow
               name={t['com.affine.appearanceSettings.translucentUI.title']()}
-              desc={t['com.affine.appearanceSettings.translucentUI.description']()}
+              desc={t[
+                'com.affine.appearanceSettings.translucentUI.description'
+              ]()}
             >
               <Switch
                 checked={appSettings.enableBlurBackground}
