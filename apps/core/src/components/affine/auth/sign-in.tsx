@@ -9,10 +9,11 @@ import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
-import { signIn, type SignInResponse } from 'next-auth/react';
+import { type SignInResponse } from 'next-auth/react';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
+import { signInCloud } from '../../../utils/cloud-utils';
 import { emailRegex } from '../../../utils/email-regex';
 import { buildCallbackUrl } from './callback-url';
 import type { AuthPanelProps } from './index';
@@ -67,7 +68,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setAuthEmail(email);
     if (user) {
-      signIn('email', {
+      signInCloud('email', {
         email: email,
         callbackUrl: buildCallbackUrl('/auth/signIn'),
         redirect: false,
@@ -76,7 +77,7 @@ export const SignIn: FC<AuthPanelProps> = ({
         .catch(console.error);
       setAuthState('afterSignInSendEmail');
     } else {
-      signIn('email', {
+      signInCloud('email', {
         email: email,
         callbackUrl: buildCallbackUrl('/auth/signUp'),
         redirect: false,
@@ -111,7 +112,7 @@ export const SignIn: FC<AuthPanelProps> = ({
               '_target'
             );
           } else {
-            signIn('google').catch(console.error);
+            signInCloud('google').catch(console.error);
           }
         }, [])}
       >

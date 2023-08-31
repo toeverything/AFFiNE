@@ -1,6 +1,7 @@
-import { signIn, type SignInResponse } from 'next-auth/react';
 import type { LoaderFunction } from 'react-router-dom';
 import { z } from 'zod';
+
+import { signInCloud } from '../utils/cloud-utils';
 
 const supportedProvider = z.enum(['google']);
 
@@ -15,12 +16,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   const maybeProvider = supportedProvider.safeParse(provider);
   if (maybeProvider.success) {
     const provider = maybeProvider.data;
-    await signIn(provider, {
+    await signInCloud(provider, {
       callbackUrl: callback_url,
-    }).catch((res: SignInResponse | undefined) => {
-      if (res?.error) {
-        console.error(res.error);
-      }
     });
   }
   return null;

@@ -38,6 +38,11 @@ const createPattern = packageName => [
     importNames: ['useSession'],
   },
   {
+    group: ['next-auth/react'],
+    message: "Import hooks from 'cloud-utils.ts'",
+    importNames: ['signIn', 'signOut'],
+  },
+  {
     group: ['yjs'],
     message: 'Do not use this API because it has a bug',
     importNames: ['mergeUpdates'],
@@ -171,6 +176,11 @@ const config = {
             message: "Import hooks from 'use-current-user.tsx'",
             // useSession is type unsafe
             importNames: ['useSession'],
+          },
+          {
+            group: ['next-auth/react'],
+            message: "Import hooks from 'cloud-utils.ts'",
+            importNames: ['signIn', 'signOut'],
           },
           {
             group: ['yjs'],
