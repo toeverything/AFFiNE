@@ -34,11 +34,11 @@ export interface DatasourceDocAdapter extends Partial<StatusAdapter> {
  *  bindDataSource(socketIO, sqlite)
  */
 export async function syncDataSource(
-  listDocGuids: () => Promise<string[]>,
+  listDocGuids: () => string[],
   remoteDataSource: DatasourceDocAdapter,
   localDataSource: DatasourceDocAdapter
 ) {
-  const guids = await listDocGuids();
+  const guids = listDocGuids();
   await Promise.all(
     guids.map(guid => {
       return localDataSource.queryDocState(guid).then(async docState => {
@@ -52,6 +52,11 @@ export async function syncDataSource(
           }
         })();
         if (remoteDocState) {
+          const missing = remoteDocState.missing;
+          if (missing.length === 2 && missing[0] === 0 && missing[1] === 0) {
+            // empty update
+            return;
+          }
           await localDataSource.sendDocUpdate(guid, remoteDocState.missing);
         }
       });
