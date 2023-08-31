@@ -107,7 +107,7 @@ export class UserResolver {
   })
   @Public()
   async user(@Args('email') email: string) {
-    if (this.config.node.prod && this.config.affine.beta) {
+    if (this.config.featureFlags.earlyAccessPreview) {
       const hasEarlyAccess = await this.prisma.newFeaturesWaitingList
         .findUnique({
           where: { email, type: NewFeaturesKind.EarlyAccess },

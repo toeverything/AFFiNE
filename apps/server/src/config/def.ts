@@ -158,6 +158,12 @@ export interface AFFiNEConfig {
    */
   graphql: ApolloDriverConfig;
   /**
+   * app features flag
+   */
+  featureFlags: {
+    earlyAccessPreview: boolean;
+  };
+  /**
    * object storage Config
    *
    * all artifacts and logs will be stored on instance disk,
