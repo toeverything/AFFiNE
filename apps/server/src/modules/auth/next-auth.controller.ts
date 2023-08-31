@@ -18,6 +18,7 @@ import type { AuthAction, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
+import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
@@ -35,7 +36,8 @@ export class NextAuthController {
     readonly prisma: PrismaService,
     private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
-    private readonly nextAuthOptions: NextAuthOptions
+    private readonly nextAuthOptions: NextAuthOptions,
+    private readonly metrics: Metrics
   ) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.callbackSession = nextAuthOptions.callbacks!.session;
@@ -48,6 +50,7 @@ export class NextAuthController {
     @Query() query: Record<string, any>,
     @Next() next: NextFunction
   ) {
+    this.metrics.authCounter(1, {});
     const [action, providerId] = req.url // start with request url
       .slice(BASE_URL.length) // make relative to baseUrl
       .replace(/\?.*/, '') // remove query part, use only path part
@@ -79,6 +82,7 @@ export class NextAuthController {
     const options = this.nextAuthOptions;
     if (req.method === 'POST' && action === 'session') {
       if (typeof req.body !== 'object' || typeof req.body.data !== 'object') {
+        this.metrics.authFailCounter(1, { reason: 'invalid_session_data' });
         throw new BadRequestException(`Invalid new session data`);
       }
       const user = await this.updateSession(req, req.body.data);
@@ -123,6 +127,9 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
+      this.metrics.authFailCounter(1, {
+        reason: 'no_early_access_permission',
+      });
       res.status(403);
       res.json({
         url: 'https://community.affine.pro/c/insider-general/',
