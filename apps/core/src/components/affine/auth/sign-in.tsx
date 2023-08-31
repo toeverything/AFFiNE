@@ -9,7 +9,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
@@ -38,11 +38,9 @@ export const SignIn: FC<AuthPanelProps> = ({
   });
   const [isValidEmail, setIsValidEmail] = useState(true);
 
-  useEffect(() => {
-    if (loginStatus === 'authenticated') {
-      onSignedIn?.();
-    }
-  }, [loginStatus, onSignedIn]);
+  if (loginStatus === 'authenticated') {
+    onSignedIn?.();
+  }
 
   const onContinue = useCallback(async () => {
     if (!validateEmail(email)) {
