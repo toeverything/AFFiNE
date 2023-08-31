@@ -49,7 +49,7 @@ export const fontStyleOptions = [
 }[];
 
 const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
-  clientBorder: globalThis.platform !== 'win32',
+  clientBorder: environment.isDesktop ? !environment.isWindows : false,
   fullWidthLayout: false,
   windowFrameStyle: 'frameless',
   fontStyle: 'Sans',
