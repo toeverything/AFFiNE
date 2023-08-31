@@ -95,7 +95,6 @@ export const WorkspaceSelector = ({
       disableHoverBackground={isHovered}
       data-testid="current-workspace"
       id="current-workspace"
-      ref={setContainer}
     >
       <WorkspaceAvatar
         data-testid="workspace-avatar"
@@ -118,6 +117,7 @@ export const WorkspaceSelector = ({
               onMouseEnter={() => {
                 setIsHovered(true);
               }}
+              ref={setContainer}
               onMouseLeave={() => setIsHovered(false)}
               onClick={e => e.stopPropagation()}
             >

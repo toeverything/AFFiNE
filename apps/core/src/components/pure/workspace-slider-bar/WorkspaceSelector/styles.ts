@@ -44,6 +44,7 @@ export const StyledWorkspaceStatus = styled('div')(() => {
     userSelect: 'none',
     padding: '0 4px',
     gap: '4px',
+    zIndex: '1',
     svg: {
       color: 'var(--affine-icon-color)',
       fontSize: 'var(--affine-font-base)',
