@@ -133,28 +133,30 @@ function createFirstAppData(store: ReturnType<typeof createStore>) {
 }
 
 export async function setup(store: ReturnType<typeof createStore>) {
-  const validServer = await fetch('/ping')
-    .then(async response => {
-      if (!response.ok) {
-        return false;
-      } else {
-        const json = await response.json();
-        // todo: semver
-        return (
-          typeof json.compatibility === 'string' &&
-          json.compatibility.startsWith('0.9')
-        );
-      }
-    })
-    .catch(() => false);
-  if (!validServer) {
-    globalThis.serverCompatibility = false;
-    console.warn('no valid server found, use mock server');
-    // mock server
-    await import('./mock-msw').then(async ({ setupMockServer }) => {
-      await setupMockServer();
-      console.log('mock server setup done');
-    });
+  if (process.env.NODE_ENV === 'development') {
+    const validServer = await fetch('/ping')
+      .then(async response => {
+        if (!response.ok) {
+          return false;
+        } else {
+          const json = await response.json();
+          // todo: semver
+          return (
+            typeof json.compatibility === 'string' &&
+            json.compatibility.startsWith('0.9')
+          );
+        }
+      })
+      .catch(() => false);
+    if (!validServer) {
+      globalThis.serverCompatibility = false;
+      console.warn('no valid server found, use mock server');
+      // mock server
+      await import('./mock-msw').then(async ({ setupMockServer }) => {
+        await setupMockServer();
+        console.log('mock server setup done');
+      });
+    }
   }
 
   store.set(
