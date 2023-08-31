@@ -13,8 +13,12 @@ const formatTime = (time: number): string => {
 export const CountDownRender = forwardRef<
   HTMLDivElement,
   { timeLeft: number } & HTMLAttributes<HTMLDivElement>
->(({ timeLeft, ...props }) => {
-  return <div {...props}>{formatTime(timeLeft)}</div>;
+>(({ timeLeft, ...props }, ref) => {
+  return (
+    <div {...props} ref={ref}>
+      {formatTime(timeLeft)}
+    </div>
+  );
 });
 
 CountDownRender.displayName = 'CountDownRender';
