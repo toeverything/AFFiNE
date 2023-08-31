@@ -114,6 +114,7 @@ async function handleOauthJwt(url: string) {
       mainWindow.show();
       const urlObj = new URL(url);
       const token = urlObj.searchParams.get('token');
+      const mainOrigin = new URL(mainWindow.webContents.getURL()).origin;
 
       if (!token) {
         logger.error('no token in url', url);
@@ -122,14 +123,22 @@ async function handleOauthJwt(url: string) {
 
       // set token to cookie
       await setCookie({
-        url: new URL(mainWindow.webContents.getURL()).origin,
+        url: mainOrigin,
         httpOnly: true,
         value: token,
         name: 'next-auth.session-token',
       });
 
-      // force reload app
-      mainWindow.webContents.reload();
+      // hacks to refresh auth state in the main window
+      const window = await handleOpenUrlInHiddenWindow(
+        mainOrigin + '/auth/signIn'
+      );
+      uiSubjects.onFinishLogin.next({
+        success: true,
+      });
+      setTimeout(() => {
+        window.destroy();
+      }, 3000);
     } catch (e) {
       logger.error('failed to open url in popup', e);
     }
