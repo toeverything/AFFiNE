@@ -66,9 +66,9 @@ const NameWorkspaceContent = ({
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>
-        {t['com.affine.core.nameWorkspace.title']()}
+        {t['com.affine.nameWorkspace.title']()}
       </div>
-      <p>{t['com.affine.core.nameWorkspace.description']()}</p>
+      <p>{t['com.affine.nameWorkspace.description']()}</p>
       <Input
         ref={ref => {
           if (ref) {
@@ -77,14 +77,14 @@ const NameWorkspaceContent = ({
         }}
         data-testid="create-workspace-input"
         onKeyDown={handleKeyDown}
-        placeholder={t['com.affine.core.nameWorkspace.placeholder']()}
+        placeholder={t['com.affine.nameWorkspace.placeholder']()}
         maxLength={64}
         minLength={0}
         onChange={setWorkspaceName}
       />
       <div className={style.buttonGroup}>
         <Button data-testid="create-workspace-close-button" onClick={onClose}>
-          {t['com.affine.core.nameWorkspace.button.cancel']()}
+          {t['com.affine.nameWorkspace.button.cancel']()}
         </Button>
         <Button
           data-testid="create-workspace-create-button"
@@ -95,7 +95,7 @@ const NameWorkspaceContent = ({
           type="primary"
           onClick={handleCreateWorkspace}
         >
-          {t['com.affine.core.nameWorkspace.button.create']()}
+          {t['com.affine.nameWorkspace.button.create']()}
         </Button>
       </div>
     </div>
@@ -153,9 +153,9 @@ const SetDBLocationContent = ({
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>
-        {t['com.affine.core.setDBLocation.title']()}
+        {t['com.affine.setDBLocation.title']()}
       </div>
-      <p>{t['com.affine.core.setDBLocation.description']()}</p>
+      <p>{t['com.affine.setDBLocation.description']()}</p>
       <div className={style.buttonGroup}>
         <Button
           disabled={opening}
@@ -163,10 +163,10 @@ const SetDBLocationContent = ({
           type="primary"
           onClick={handleSelectDBFileLocation}
         >
-          {t['com.affine.core.setDBLocation.button.customize']()}
+          {t['com.affine.setDBLocation.button.customize']()}
         </Button>
         <Tooltip
-          content={t['com.affine.core.setDBLocation.tooltip.defaultLocation']({
+          content={t['com.affine.setDBLocation.tooltip.defaultLocation']({
             location: defaultDBLocation,
           })}
           portalOptions={{
@@ -183,7 +183,7 @@ const SetDBLocationContent = ({
             iconPosition="end"
             ref={ref}
           >
-            {t['com.affine.core.setDBLocation.button.defaultLocation']()}
+            {t['com.affine.setDBLocation.button.defaultLocation']()}
           </Button>
         </Tooltip>
       </div>
@@ -206,8 +206,8 @@ const SetSyncingModeContent = ({
     <div className={style.content}>
       <div className={style.contentTitle}>
         {mode === 'new'
-          ? t['com.affine.core.setSyncingMode.title.created']()
-          : t['com.affine.core.setSyncingMode.title.added']()}
+          ? t['com.affine.setSyncingMode.title.created']()
+          : t['com.affine.setSyncingMode.title.added']()}
       </div>
 
       <div className={style.radioGroup}>
@@ -218,7 +218,7 @@ const SetSyncingModeContent = ({
             readOnly
             checked={!enableCloudSyncing}
           />
-          {t['com.affine.core.setSyncingMode.deviceOnly']()}
+          {t['com.affine.setSyncingMode.deviceOnly']()}
         </label>
         <label onClick={() => setEnableCloudSyncing(true)}>
           <input
@@ -227,7 +227,7 @@ const SetSyncingModeContent = ({
             readOnly
             checked={enableCloudSyncing}
           />
-          {t['com.affine.core.setSyncingMode.cloud']()}
+          {t['com.affine.setSyncingMode.cloud']()}
         </label>
       </div>
 
@@ -239,7 +239,7 @@ const SetSyncingModeContent = ({
             onConfirmMode(enableCloudSyncing);
           }}
         >
-          {t['com.affine.core.setSyncingMode.button.continue']()}
+          {t['com.affine.setSyncingMode.button.continue']()}
         </Button>
       </div>
     </div>

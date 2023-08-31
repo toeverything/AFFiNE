@@ -56,10 +56,10 @@ export const EditorModeSwitch = ({
         e.preventDefault();
         setSetting(setting => {
           if (setting?.mode !== 'page') {
-            toast(t['com.affine.core.toastMessage.pageMode']());
+            toast(t['com.affine.toastMessage.pageMode']());
             return { ...setting, mode: 'page' };
           } else {
-            toast(t['com.affine.core.toastMessage.edgelessMode']());
+            toast(t['com.affine.toastMessage.edgelessMode']());
             return { ...setting, mode: 'edgeless' };
           }
         });
@@ -91,7 +91,7 @@ export const EditorModeSwitch = ({
           onClick={() => {
             setSetting(setting => {
               if (setting?.mode !== 'page') {
-                toast(t['com.affine.core.toastMessage.pageMode']());
+                toast(t['com.affine.toastMessage.pageMode']());
               }
               return { ...setting, mode: 'page' };
             });
@@ -105,7 +105,7 @@ export const EditorModeSwitch = ({
           onClick={() => {
             setSetting(setting => {
               if (setting?.mode !== 'edgeless') {
-                toast(t['com.affine.core.toastMessage.edgelessMode']());
+                toast(t['com.affine.toastMessage.edgelessMode']());
               }
               return { ...setting, mode: 'edgeless' };
             });

@@ -39,7 +39,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     },
     {
       key: 'shortcuts',
-      title: t['com.affine.core.keyboardShortcuts.title'](),
+      title: t['com.affine.keyboardShortcuts.title'](),
       icon: KeyboardIcon,
       testId: 'shortcuts-panel-trigger',
     },
@@ -51,7 +51,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     },
     {
       key: 'about',
-      title: t['com.affine.core.aboutAFFiNE.title'](),
+      title: t['com.affine.aboutAFFiNE.title'](),
       icon: InformationIcon,
       testId: 'about-panel-trigger',
     },

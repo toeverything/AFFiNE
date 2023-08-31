@@ -33,13 +33,13 @@ export const ThemeSettings = () => {
       )}
     >
       <RadioButton value="system" data-testid="system-theme-trigger">
-        {t['com.affine.core.themeSettings.system']()}
+        {t['com.affine.themeSettings.system']()}
       </RadioButton>
       <RadioButton value="light" data-testid="light-theme-trigger">
-        {t['com.affine.core.themeSettings.light']()}
+        {t['com.affine.themeSettings.light']()}
       </RadioButton>
       <RadioButton value="dark" data-testid="dark-theme-trigger">
-        {t['com.affine.core.themeSettings.dark']()}
+        {t['com.affine.themeSettings.dark']()}
       </RadioButton>
     </RadioButtonGroup>
   );
@@ -91,28 +91,26 @@ export const AppearanceSettings = () => {
   return (
     <>
       <SettingHeader
-        title={t['com.affine.core.appearanceSettings.title']()}
-        subtitle={t['com.affine.core.appearanceSettings.subtitle']()}
+        title={t['com.affine.appearanceSettings.title']()}
+        subtitle={t['com.affine.appearanceSettings.subtitle']()}
       />
 
-      <SettingWrapper
-        title={t['com.affine.core.appearanceSettings.theme.title']()}
-      >
+      <SettingWrapper title={t['com.affine.appearanceSettings.theme.title']()}>
         <SettingRow
-          name={t['com.affine.core.appearanceSettings.color.title']()}
-          desc={t['com.affine.core.appearanceSettings.color.description']()}
+          name={t['com.affine.appearanceSettings.color.title']()}
+          desc={t['com.affine.appearanceSettings.color.description']()}
         >
           <ThemeSettings />
         </SettingRow>
         <SettingRow
-          name={t['com.affine.core.appearanceSettings.font.title']()}
-          desc={t['com.affine.core.appearanceSettings.font.description']()}
+          name={t['com.affine.appearanceSettings.font.title']()}
+          desc={t['com.affine.appearanceSettings.font.description']()}
         >
           <FontFamilySettings />
         </SettingRow>
         <SettingRow
-          name={t['com.affine.core.appearanceSettings.language.title']()}
-          desc={t['com.affine.core.appearanceSettings.language.description']()}
+          name={t['com.affine.appearanceSettings.language.title']()}
+          desc={t['com.affine.appearanceSettings.language.description']()}
         >
           <div className={settingWrapper}>
             <LanguageMenu
@@ -130,10 +128,8 @@ export const AppearanceSettings = () => {
         </SettingRow>
         {environment.isDesktop ? (
           <SettingRow
-            name={t['com.affine.core.appearanceSettings.clientBorder.title']()}
-            desc={t[
-              'com.affine.core.appearanceSettings.clientBorder.description'
-            ]()}
+            name={t['com.affine.appearanceSettings.clientBorder.title']()}
+            desc={t['com.affine.appearanceSettings.clientBorder.description']()}
             data-testid="client-border-style-trigger"
           >
             <Switch
@@ -144,8 +140,8 @@ export const AppearanceSettings = () => {
         ) : null}
 
         <SettingRow
-          name={t['com.affine.core.appearanceSettings.fullWidth.title']()}
-          desc={t['com.affine.core.appearanceSettings.fullWidth.description']()}
+          name={t['com.affine.appearanceSettings.fullWidth.title']()}
+          desc={t['com.affine.appearanceSettings.fullWidth.description']()}
         >
           <Switch
             data-testid="full-width-layout-trigger"
@@ -155,10 +151,8 @@ export const AppearanceSettings = () => {
         </SettingRow>
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
           <SettingRow
-            name={t['com.affine.core.appearanceSettings.windowFrame.title']()}
-            desc={t[
-              'com.affine.core.appearanceSettings.windowFrame.description'
-            ]()}
+            name={t['com.affine.appearanceSettings.windowFrame.title']()}
+            desc={t['com.affine.appearanceSettings.windowFrame.description']()}
           >
             <RadioButtonGroup
               className={settingWrapper}
@@ -171,9 +165,7 @@ export const AppearanceSettings = () => {
               {windowFrameStyleOptions.map(option => {
                 return (
                   <RadioButton value={option} key={option}>
-                    {t[
-                      `com.affine.core.appearanceSettings.windowFrame.${option}`
-                    ]()}
+                    {t[`com.affine.appearanceSettings.windowFrame.${option}`]()}
                   </RadioButton>
                 );
               })}
@@ -182,24 +174,18 @@ export const AppearanceSettings = () => {
         ) : null}
       </SettingWrapper>
       {runtimeConfig.enableNewSettingUnstableApi ? (
-        <SettingWrapper
-          title={t['com.affine.core.appearanceSettings.date.title']()}
-        >
+        <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>
           <SettingRow
-            name={t['com.affine.core.appearanceSettings.dateFormat.title']()}
-            desc={t[
-              'com.affine.core.appearanceSettings.dateFormat.description'
-            ]()}
+            name={t['com.affine.appearanceSettings.dateFormat.title']()}
+            desc={t['com.affine.appearanceSettings.dateFormat.description']()}
           >
             <div className={settingWrapper}>
               <DateFormatSetting />
             </div>
           </SettingRow>
           <SettingRow
-            name={t['com.affine.core.appearanceSettings.startWeek.title']()}
-            desc={t[
-              'com.affine.core.appearanceSettings.startWeek.description'
-            ]()}
+            name={t['com.affine.appearanceSettings.startWeek.title']()}
+            desc={t['com.affine.appearanceSettings.startWeek.description']()}
           >
             <Switch
               checked={appSettings.startWeekOnMonday}
@@ -210,10 +196,14 @@ export const AppearanceSettings = () => {
       ) : null}
 
       {environment.isDesktop ? (
-        <SettingWrapper title={t['com.affine.core.appearanceSettings.sidebar.title']()}>
+        <SettingWrapper
+          title={t['com.affine.appearanceSettings.sidebar.title']()}
+        >
           <SettingRow
-            name={t['com.affine.core.appearanceSettings.noisyBackground.title']()}
-            desc={t['com.affine.core.appearanceSettings.noisyBackground.description']()}
+            name={t['com.affine.appearanceSettings.noisyBackground.title']()}
+            desc={t[
+              'com.affine.appearanceSettings.noisyBackground.description'
+            ]()}
           >
             <Switch
               checked={appSettings.enableNoisyBackground}
@@ -224,8 +214,8 @@ export const AppearanceSettings = () => {
           </SettingRow>
           {environment.isMacOs && (
             <SettingRow
-              name={t['com.affine.core.appearanceSettings.translucentUI.title']()}
-              desc={t['com.affine.core.appearanceSettings.translucentUI.description']()}
+              name={t['com.affine.appearanceSettings.translucentUI.title']()}
+              desc={t['com.affine.appearanceSettings.translucentUI.description']()}
             >
               <Switch
                 checked={appSettings.enableBlurBackground}

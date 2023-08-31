@@ -31,7 +31,7 @@ export const NotFoundPage = () => {
     <StyledContainer data-testid="notFound">
       <img alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
 
-      <p>{t['com.affine.core.notFoundPage.title']()}</p>
+      <p>{t['com.affine.notFoundPage.title']()}</p>
       <Button
         onClick={() => {
           const id = localStorage.getItem('last_workspace_id');
@@ -42,7 +42,7 @@ export const NotFoundPage = () => {
           }
         }}
       >
-        {t['com.affine.component.backButton']()}
+        {t['com.affine.backButton']()}
       </Button>
     </StyledContainer>
   );

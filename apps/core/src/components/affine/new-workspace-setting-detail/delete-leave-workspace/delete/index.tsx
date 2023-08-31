@@ -41,11 +41,11 @@ export const WorkspaceDeleteModal = ({
       <StyledModalWrapper>
         <ModalCloseButton onClick={onClose} />
         <StyledModalHeader>
-          {t['com.affine.core.workspaceDelete.title']()}?
+          {t['com.affine.workspaceDelete.title']()}?
         </StyledModalHeader>
         {workspace.flavour === WorkspaceFlavour.LOCAL ? (
           <StyledTextContent>
-            <Trans i18nKey="com.affine.core.workspaceDelete.description">
+            <Trans i18nKey="com.affine.workspaceDelete.description">
               Deleting (
               <StyledWorkspaceName>
                 {{ workspace: workspaceName } as any}
@@ -56,7 +56,7 @@ export const WorkspaceDeleteModal = ({
           </StyledTextContent>
         ) : (
           <StyledTextContent>
-            <Trans i18nKey="com.affine.core.workspaceDelete.description2">
+            <Trans i18nKey="com.affine.workspaceDelete.description2">
               Deleting (
               <StyledWorkspaceName>
                 {{ workspace: workspaceName } as any}
@@ -75,14 +75,14 @@ export const WorkspaceDeleteModal = ({
             }}
             onChange={setDeleteStr}
             data-testid="delete-workspace-input"
-            placeholder={t['com.affine.core.workspaceDelete.placeholder']()}
+            placeholder={t['com.affine.workspaceDelete.placeholder']()}
             width={315}
             height={42}
           />
         </StyledInputContent>
         <StyledButtonContent>
           <Button onClick={onClose} size="large">
-            {t['com.affine.core.workspaceDelete.button.cancel']()}
+            {t['com.affine.workspaceDelete.button.cancel']()}
           </Button>
           <Button
             data-testid="delete-workspace-confirm-button"
@@ -92,7 +92,7 @@ export const WorkspaceDeleteModal = ({
             type="error"
             style={{ marginLeft: '24px' }}
           >
-            {t['com.affine.core.workspaceDelete.button.delete']()}
+            {t['com.affine.workspaceDelete.button.delete']()}
           </Button>
         </StyledButtonContent>
       </StyledModalWrapper>

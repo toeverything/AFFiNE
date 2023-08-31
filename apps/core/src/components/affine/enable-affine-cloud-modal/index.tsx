@@ -32,9 +32,7 @@ export const EnableAffineCloudModal = ({
           <ButtonContainer>
             <div>
               <Button onClick={onClose} block>
-                {t[
-                  'com.affine.component.enableAffineCloudModal.button.cancel'
-                ]()}
+                {t['com.affine.enableAffineCloudModal.button.cancel']()}
               </Button>
             </div>
             <div>

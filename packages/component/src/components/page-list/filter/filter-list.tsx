@@ -68,7 +68,7 @@ export const FilterList = ({
             iconPosition="end"
             style={{ fontSize: 'var(--affine-font-xs)', padding: '0 8px' }}
           >
-            {t['com.affine.component.filterList.button.add']()}
+            {t['com.affine.filterList.button.add']()}
           </Button>
         ) : (
           <IconButton size="small">

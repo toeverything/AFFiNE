@@ -205,14 +205,14 @@ export const BlockSuitePageList = ({
         onRestorePage: () => {
           restoreFromTrash(pageMeta.id);
           toast(
-            t['com.affine.core.toastMessage.restored']({
+            t['com.affine.toastMessage.restored']({
               title: pageMeta.title || 'Untitled',
             })
           );
         },
         onPermanentlyDeletePage: () => {
           permanentlyDeletePage(pageMeta.id);
-          toast(t['com.affine.core.toastMessage.permanentlyDeleted']());
+          toast(t['com.affine.toastMessage.permanentlyDeleted']());
         },
       };
     });
@@ -247,12 +247,12 @@ export const BlockSuitePageList = ({
       },
       removeToTrash: () => {
         removeToTrash(pageMeta.id);
-        toast(t['com.affine.core.toastMessage.successfullyDeleted']());
+        toast(t['com.affine.toastMessage.successfullyDeleted']());
       },
       onRestorePage: () => {
         restoreFromTrash(pageMeta.id);
         toast(
-          t['com.affine.core.toastMessage.restored']({
+          t['com.affine.toastMessage.restored']({
             title: pageMeta.title || 'Untitled',
           })
         );
@@ -262,8 +262,8 @@ export const BlockSuitePageList = ({
         toggleFavorite(pageMeta.id);
         toast(
           status
-            ? t['com.affine.core.toastMessage.removedFavorites']()
-            : t['com.affine.core.toastMessage.addedFavorites']()
+            ? t['com.affine.toastMessage.removedFavorites']()
+            : t['com.affine.toastMessage.addedFavorites']()
         );
       },
       onDisablePublicSharing: () => {

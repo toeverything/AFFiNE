@@ -114,8 +114,8 @@ export function AppUpdaterButtonPure({
         <div className={clsx([styles.installLabelNormal])}>
           <span className={styles.ellipsisTextOverflow}>
             {!updateReady
-              ? t['com.affine.component.appUpdater.downloading']()
-              : t['com.affine.component.appUpdater.updateAvailable']()}
+              ? t['com.affine.appUpdater.downloading']()
+              : t['com.affine.appUpdater.updateAvailable']()}
           </span>
           <span className={styles.versionLabel}>
             {updateAvailable?.version}
@@ -127,9 +127,7 @@ export function AppUpdaterButtonPure({
             <ResetIcon className={styles.icon} />
             <span className={styles.ellipsisTextOverflow}>
               {t[
-                appQuitting
-                  ? 'Loading'
-                  : 'com.affine.component.appUpdater.installUpdate'
+                appQuitting ? 'Loading' : 'com.affine.appUpdater.installUpdate'
               ]()}
             </span>
           </div>
@@ -150,7 +148,7 @@ export function AppUpdaterButtonPure({
       <>
         <div className={clsx([styles.installLabelNormal])}>
           <span className={styles.ellipsisTextOverflow}>
-            {t['com.affine.component.appUpdater.updateAvailable']()}
+            {t['com.affine.appUpdater.updateAvailable']()}
           </span>
           <span className={styles.versionLabel}>
             {updateAvailable?.version}
@@ -159,7 +157,7 @@ export function AppUpdaterButtonPure({
 
         <div className={clsx([styles.installLabelHover])}>
           <span className={styles.ellipsisTextOverflow}>
-            {t['com.affine.component.appUpdater.openDownloadPage']()}
+            {t['com.affine.appUpdater.openDownloadPage']()}
           </span>
         </div>
       </>
@@ -172,7 +170,7 @@ export function AppUpdaterButtonPure({
         <div className={clsx([styles.whatsNewLabel])}>
           <NewIcon className={styles.icon} />
           <span className={styles.ellipsisTextOverflow}>
-            {t['com.affine.component.appUpdater.whatsNew']()}
+            {t['com.affine.appUpdater.whatsNew']()}
           </span>
         </div>
         <div

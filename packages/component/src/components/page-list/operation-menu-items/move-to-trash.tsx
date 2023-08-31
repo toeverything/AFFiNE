@@ -24,7 +24,7 @@ export const MoveToTrash = ({
         icon={<DeleteTemporarilyIcon />}
         className={moveToTrashStyle}
       >
-        {t['com.affine.component.moveToTrash.title']()}
+        {t['com.affine.moveToTrash.title']()}
       </MenuItem>
     </>
   );
@@ -40,8 +40,8 @@ const ConfirmModal = ({
 
   return (
     <Confirm
-      title={t['com.affine.component.moveToTrash.confirmModal.title']()}
-      content={t['com.affine.component.moveToTrash.confirmModal.description']({
+      title={t['com.affine.moveToTrash.confirmModal.title']()}
+      content={t['com.affine.moveToTrash.confirmModal.description']({
         title: title || 'Untitled',
       })}
       confirmButtonTestId="confirm-delete-page"

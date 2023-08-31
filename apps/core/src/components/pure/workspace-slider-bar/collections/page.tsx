@@ -78,7 +78,7 @@ export const PageOperations = ({
       },
       {
         icon: <DeleteIcon />,
-        name: t['com.affine.component.trashOperation.delete'](),
+        name: t['com.affine.trashOperation.delete'](),
         click: () => {
           removeToTrash(page.id);
         },

@@ -49,7 +49,7 @@ const useKeyboardShortcutsI18N = () => {
   const t = useAFFiNEI18N();
   return useCallback(
     (key: KeyboardShortcutsI18NKeys) =>
-      t[`com.affine.core.keyboardShortcuts.${key}`](),
+      t[`com.affine.keyboardShortcuts.${key}`](),
     [t]
   );
 };
@@ -58,8 +58,7 @@ const useKeyboardShortcutsI18N = () => {
 const useHeadingKeyboardShortcutsI18N = () => {
   const t = useAFFiNEI18N();
   return useCallback(
-    (number: string) =>
-      t['com.affine.core.keyboardShortcuts.heading']({ number }),
+    (number: string) => t['com.affine.keyboardShortcuts.heading']({ number }),
     [t]
   );
 };
@@ -286,7 +285,7 @@ export const useMarkdownShortcuts = (): ShortcutsInfo => {
   const winMarkdownShortcuts = useWinMarkdownShortcuts();
   const isMac = environment.isBrowser && environment.isMacOs;
   return {
-    title: t['com.affine.core.shortcutsTitle.markdownSyntax'](),
+    title: t['com.affine.shortcutsTitle.markdownSyntax'](),
     shortcuts: isMac ? macMarkdownShortcuts : winMarkdownShortcuts,
   };
 };
@@ -298,7 +297,7 @@ export const usePageShortcuts = (): ShortcutsInfo => {
   const winPageShortcuts = useWinPageKeyboardShortcuts();
   const isMac = environment.isBrowser && environment.isMacOs;
   return {
-    title: t['com.affine.core.shortcutsTitle.page'](),
+    title: t['com.affine.shortcutsTitle.page'](),
     shortcuts: isMac ? macPageShortcuts : winPageShortcuts,
   };
 };
@@ -310,7 +309,7 @@ export const useEdgelessShortcuts = (): ShortcutsInfo => {
   const winEdgelessShortcuts = useWinEdgelessKeyboardShortcuts();
   const isMac = environment.isBrowser && environment.isMacOs;
   return {
-    title: t['com.affine.core.shortcutsTitle.edgeless'](),
+    title: t['com.affine.shortcutsTitle.edgeless'](),
     shortcuts: isMac ? macEdgelessShortcuts : winEdgelessShortcuts,
   };
 };
@@ -322,7 +321,7 @@ export const useGeneralShortcuts = (): ShortcutsInfo => {
   const winGeneralShortcuts = useWinGeneralKeyboardShortcuts();
   const isMac = environment.isBrowser && environment.isMacOs;
   return {
-    title: t['com.affine.core.shortcutsTitle.general'](),
+    title: t['com.affine.shortcutsTitle.general'](),
     shortcuts: isMac ? macGeneralShortcuts : winGeneralShortcuts,
   };
 };

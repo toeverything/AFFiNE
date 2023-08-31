@@ -28,9 +28,9 @@ const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
     return (
       <p
         style={{ fontSize: '10px' }}
-        title={t['com.affine.component.workspaceType.local']()}
+        title={t['com.affine.workspaceType.local']()}
       >
-        <span>{t['com.affine.component.workspaceType.local']()}</span>
+        <span>{t['com.affine.workspaceType.local']()}</span>
       </p>
     );
   }
@@ -38,16 +38,16 @@ const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
   return isOwner ? (
     <p
       style={{ fontSize: '10px' }}
-      title={t['com.affine.component.workspaceType.cloud']()}
+      title={t['com.affine.workspaceType.cloud']()}
     >
-      <span>{t['com.affine.component.workspaceType.cloud']()}</span>
+      <span>{t['com.affine.workspaceType.cloud']()}</span>
     </p>
   ) : (
     <p
       style={{ fontSize: '10px' }}
-      title={t['com.affine.component.workspaceType.joined']()}
+      title={t['com.affine.workspaceType.joined']()}
     >
-      <span>{t['com.affine.component.workspaceType.joined']()}</span>
+      <span>{t['com.affine.workspaceType.joined']()}</span>
     </p>
   );
 };
@@ -95,7 +95,7 @@ export const WorkspaceCard = ({
           </StyledSettingLink>
         </StyledWorkspaceTitleArea>
         {/* {meta.flavour === WorkspaceFlavour.LOCAL && (
-          <p title={t['com.affine.component.workspaceType.offline']()}>
+          <p title={t['com.affine.workspaceType.offline']()}>
             <LocalDataIcon />
             <WorkspaceType flavour={meta.flavour} />
           </p>

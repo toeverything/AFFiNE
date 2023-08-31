@@ -121,10 +121,10 @@ export const SettingSidebar = ({
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>
-        {t['com.affine.core.settingSidebar.title']()}
+        {t['com.affine.settingSidebar.title']()}
       </div>
       <div className={sidebarSubtitle}>
-        {t['com.affine.core.settingSidebar.settings.general']()}
+        {t['com.affine.settingSidebar.settings.general']()}
       </div>
       <div className={sidebarItemsWrapper}>
         {generalSettingList.map(({ title, icon, key, testId }) => {
@@ -151,7 +151,7 @@ export const SettingSidebar = ({
       </div>
 
       <div className={sidebarSubtitle}>
-        {t['com.affine.core.settingSidebar.settings.workspace']()}
+        {t['com.affine.settingSidebar.settings.workspace']()}
       </div>
       <div className={clsx(sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>

@@ -42,7 +42,7 @@ export const Confirm = ({
   const t = useAFFiNEI18N();
   const cancelText_ = useMemo<string>(() => {
     return cancelText === 'Cancel'
-      ? t['com.affine.component.confirmModal.button.cancel']()
+      ? t['com.affine.confirmModal.button.cancel']()
       : cancelText;
   }, [cancelText, t]);
 

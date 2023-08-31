@@ -181,7 +181,7 @@ export const RootAppSidebar = ({
             onClick={backToAll}
           >
             <span data-testid="all-pages">
-              {t['com.affine.core.workspaceSubPath.all']()}
+              {t['com.affine.workspaceSubPath.all']()}
             </span>
           </RouteMenuLinkItem>
           {runtimeConfig.enableNewSettingModal ? (
@@ -191,26 +191,20 @@ export const RootAppSidebar = ({
               onClick={onOpenSettingModal}
             >
               <span data-testid="settings-modal-trigger">
-                {t['com.affine.core.settingSidebar.title']()}
+                {t['com.affine.settingSidebar.title']()}
               </span>
             </MenuItem>
           ) : null}
         </SidebarContainer>
 
         <SidebarScrollableContainer>
-          <CategoryDivider
-            label={t['com.affine.core.rootAppSidebar.favorites']()}
-          />
+          <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()} />
           <FavoriteList workspace={blockSuiteWorkspace} />
-          <CategoryDivider
-            label={t['com.affine.core.rootAppSidebar.collections']()}
-          >
+          <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
             <AddCollectionButton workspace={blockSuiteWorkspace} />
           </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
-          <CategoryDivider
-            label={t['com.affine.core.rootAppSidebar.others']()}
-          />
+          <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
           {/* fixme: remove the following spacer */}
           <div style={{ height: '4px' }} />
           <RouteMenuLinkItem
@@ -221,7 +215,7 @@ export const RootAppSidebar = ({
             path={paths.trash(currentWorkspaceId)}
           >
             <span data-testid="trash-page">
-              {t['com.affine.core.workspaceSubPath.trash']()}
+              {t['com.affine.workspaceSubPath.trash']()}
             </span>
           </RouteMenuLinkItem>
           {blockSuiteWorkspace && (

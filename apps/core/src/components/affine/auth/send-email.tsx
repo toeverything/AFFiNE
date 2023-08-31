@@ -148,7 +148,7 @@ export const SendEmail = ({
   return (
     <>
       <ModalHeader
-        title={t['com.affine.core.workspace.cloud']()}
+        title={t['com.affine.brand.affineCloud']()}
         subTitle={title}
       />
       <AuthContent>{t['com.affine.auth.reset.password.message']()}</AuthContent>

@@ -56,8 +56,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     setPageMeta(pageId, { favorite: !favorite });
     toast(
       favorite
-        ? t['com.affine.core.toastMessage.removedFavorites']()
-        : t['com.affine.core.toastMessage.addedFavorites']()
+        ? t['com.affine.toastMessage.removedFavorites']()
+        : t['com.affine.toastMessage.addedFavorites']()
     );
   }, [favorite, pageId, setPageMeta, t]);
   const handleSwitchMode = useCallback(() => {
@@ -66,13 +66,13 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     }));
     toast(
       mode === 'page'
-        ? t['com.affine.core.toastMessage.edgelessMode']()
-        : t['com.affine.core.toastMessage.pageMode']()
+        ? t['com.affine.toastMessage.edgelessMode']()
+        : t['com.affine.toastMessage.pageMode']()
     );
   }, [mode, setSetting, t]);
   const handleOnConfirm = useCallback(() => {
     removeToTrash(pageId);
-    toast(t['com.affine.core.toastMessage.movedTrash']());
+    toast(t['com.affine.toastMessage.movedTrash']());
     setOpenConfirm(false);
   }, [pageId, removeToTrash, t]);
   const menuItemStyle = {
@@ -124,8 +124,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Convert to ']()}
         {mode === 'page'
-          ? t['com.affine.component.pageMode.edgeless']()
-          : t['com.affine.component.pageMode.page']()}
+          ? t['com.affine.pageMode.edgeless']()
+          : t['com.affine.pageMode.page']()}
       </MenuItem>
       <MenuItem
         data-testid="editor-option-menu-favorite"
@@ -140,8 +140,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         }
       >
         {favorite
-          ? t['com.affine.component.favoritePageOperation.remove']()
-          : t['com.affine.component.favoritePageOperation.add']()}
+          ? t['com.affine.favoritePageOperation.remove']()
+          : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {/* {TODO: add tag and duplicate function support} */}
       {/* <MenuItem
