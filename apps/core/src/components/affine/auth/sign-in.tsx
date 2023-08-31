@@ -32,7 +32,12 @@ export const SignIn: FC<AuthPanelProps> = ({
   const loginStatus = useCurrentLoginStatus();
 
   const { resendCountDown, allowSendEmail, signIn, signUp, signInWithGoogle } =
-    useAuth();
+    useAuth({
+      onNoAccess: useCallback(() => {
+        setAuthState('noAccess');
+      }, [setAuthState]),
+    });
+
   const { trigger: verifyUser, isMutating } = useMutation({
     mutation: getUserQuery,
   });

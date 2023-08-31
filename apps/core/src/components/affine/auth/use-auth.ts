@@ -22,13 +22,13 @@ function handleSendEmailError(
       type: 'error',
     });
   }
-  if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-    pushNotification({
-      title: 'Sign up error',
-      message: `You don't have early access permission\nVisit ${INTERNAL_BETA_URL} for more information`,
-      type: 'error',
-    });
-  }
+  // if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+  //   pushNotification({
+  //     title: 'Sign up error',
+  //     message: `You don't have early access permission\nVisit ${INTERNAL_BETA_URL} for more information`,
+  //     type: 'error',
+  //   });
+  // }
 }
 
 type AuthStoreAtom = {
@@ -62,7 +62,7 @@ const countDownAtom = atom(
   }
 );
 
-export const useAuth = () => {
+export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
   const pushNotification = useSetAtom(pushNotificationAtom);
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
   const startResendCountDown = useSetAtom(countDownAtom);
@@ -82,8 +82,12 @@ export const useAuth = () => {
       }).catch(console.error);
 
       handleSendEmailError(res, pushNotification);
+
+      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+        onNoAccess();
+      }
     },
-    [pushNotification, setAuthStore, startResendCountDown]
+    [onNoAccess, pushNotification, setAuthStore, startResendCountDown]
   );
 
   const signUp = useCallback(
@@ -101,8 +105,12 @@ export const useAuth = () => {
       }).catch(console.error);
 
       handleSendEmailError(res, pushNotification);
+
+      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+        onNoAccess();
+      }
     },
-    [pushNotification, setAuthStore, startResendCountDown]
+    [onNoAccess, pushNotification, setAuthStore, startResendCountDown]
   );
 
   const signInWithGoogle = useCallback(() => {

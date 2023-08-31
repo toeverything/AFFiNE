@@ -44,3 +44,14 @@ export const resendCountdownInButton = style({
   color: 'var(--affine-blue)',
   fontWeight: 400,
 });
+
+export const accessMessage = style({
+  textAlign: 'center',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: 'var(--affine-font-xs)',
+  fontWeight: 500,
+  marginTop: 65,
+  marginBottom: 40,
+});
