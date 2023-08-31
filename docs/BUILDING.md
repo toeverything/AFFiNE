@@ -34,7 +34,7 @@ install [Node LTS version](https://nodejs.org/en/download)
 install [fnm](https://github.com/Schniz/fnm)
 
 ```sh
-nvm use
+fnm use
 ```
 
 ### Install Rust Tools
