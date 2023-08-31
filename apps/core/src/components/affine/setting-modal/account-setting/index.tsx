@@ -9,12 +9,12 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
-import { useSetAtom } from 'jotai/index';
-import { signOut } from 'next-auth/react';
+import { useSetAtom } from 'jotai';
 import { type FC, useCallback, useState } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { signOutCloud } from '../../../../utils/cloud-utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
@@ -161,7 +161,7 @@ export const AccountSetting: FC = () => {
         desc={t['com.affine.setting.sign.out.message']()}
         style={{ cursor: 'pointer' }}
         onClick={useCallback(() => {
-          signOut().catch(console.error);
+          signOutCloud().catch(console.error);
         }, [])}
       >
         <ArrowRightSmallIcon />

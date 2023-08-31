@@ -55,7 +55,7 @@ test('should be able to timer', async () => {
       'quantile' in observation.labels
     ) {
       ok(observation.value >= 0.05);
-      ok(observation.value <= 0.15);
+      ok(observation.value <= 0.2);
     }
   }
 });

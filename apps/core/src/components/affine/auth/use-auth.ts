@@ -1,9 +1,10 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
 import { atom, useAtom, useSetAtom } from 'jotai';
-import { signIn as nextAuthSignIn, type SignInResponse } from 'next-auth/react';
+import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
 
+import { signInCloud } from '../../../utils/cloud-utils';
 import { buildCallbackUrl } from './callback-url';
 
 const COUNT_DOWN_TIME = 60;
@@ -73,7 +74,7 @@ export const useAuth = () => {
       }));
       startResendCountDown();
 
-      const res = await nextAuthSignIn('email', {
+      const res = await signInCloud('email', {
         email: email,
         callbackUrl: buildCallbackUrl('signIn'),
         redirect: false,
@@ -92,7 +93,7 @@ export const useAuth = () => {
       });
       startResendCountDown();
 
-      const res = await nextAuthSignIn('email', {
+      const res = await signInCloud('email', {
         email: email,
         callbackUrl: buildCallbackUrl('signUp'),
         redirect: false,
@@ -104,7 +105,7 @@ export const useAuth = () => {
   );
 
   const signInWithGoogle = useCallback(() => {
-    nextAuthSignIn('google').catch(console.error);
+    signInCloud('google').catch(console.error);
   }, []);
 
   return {

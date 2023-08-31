@@ -33,8 +33,9 @@ import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/reac
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { Map as YMap } from 'yjs';
 
 import {
   openQuickSearchModalAtom,
@@ -133,6 +134,23 @@ export const WorkspaceLayout = function WorkspacesSuspense({
 export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
+
+  useEffect(() => {
+    // hotfix for blockVersions
+    // this is a mistake in the
+    //    0.8.0 ~ 0.8.1
+    //    0.8.0-beta.0 ~ 0.8.0-beta.3
+    //    0.9.0-canary.0 ~ 0.9.0-canary.3
+    const meta = currentWorkspace.blockSuiteWorkspace.doc.getMap('meta');
+    const blockVersions = meta.get('blockVersions');
+    if (!(blockVersions instanceof YMap)) {
+      console.log('fixing blockVersions');
+      meta.set(
+        'blockVersions',
+        new YMap(Object.entries(blockVersions as Record<string, number>))
+      );
+    }
+  }, [currentWorkspace.blockSuiteWorkspace.doc]);
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 

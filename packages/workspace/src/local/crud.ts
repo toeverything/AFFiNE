@@ -98,9 +98,16 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
   list: async () => {
     logger.debug('list');
     const storage = getStorage();
-    const allWorkspaceIDs: string[] = storage.getItem(kStoreKey, []) as z.infer<
+    let allWorkspaceIDs: string[] = storage.getItem(kStoreKey, []) as z.infer<
       typeof schema
     >;
+
+    // fixme: remove this once desktop data migration is done
+    if (window.apis && environment.isDesktop) {
+      const desktopIds = (await window.apis.workspace.list()).map(v => v[0]);
+      allWorkspaceIDs = [...new Set([...allWorkspaceIDs, ...desktopIds])];
+      storage.setItem(kStoreKey, allWorkspaceIDs);
+    }
 
     const workspaces = (
       await Promise.all(allWorkspaceIDs.map(id => CRUD.get(id)))
