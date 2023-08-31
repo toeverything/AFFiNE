@@ -14,7 +14,7 @@
     "@graphql-codegen/cli": "5.0.0",
     "@graphql-codegen/typescript": "^4.0.1",
     "@graphql-codegen/typescript-operations": "^4.0.1",
-    "@types/lodash-es": "^4.17.8",
+    "@types/lodash-es": "^4.17.9",
     "lodash-es": "^4.17.21",
     "prettier": "^3.0.3"
   },
