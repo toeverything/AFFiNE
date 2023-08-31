@@ -6,7 +6,8 @@ import {
   encodeStateVector,
 } from 'yjs';
 
-import type { DatasourceDocAdapter, StatusAdapter } from './types';
+import type { DatasourceDocAdapter } from './data-source';
+import type { StatusAdapter } from './types';
 import type { Status } from './types';
 
 function getDoc(doc: Doc, guid: string): Doc | undefined {

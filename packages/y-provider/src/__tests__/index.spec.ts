@@ -3,8 +3,8 @@ import { setTimeout } from 'node:timers/promises';
 import { describe, expect, test, vi } from 'vitest';
 import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
+import type { DatasourceDocAdapter } from '../data-source';
 import { createLazyProvider } from '../lazy-provider';
-import type { DatasourceDocAdapter } from '../types';
 import { getDoc } from '../utils';
 
 const createMemoryDatasource = (rootDoc: Doc) => {
