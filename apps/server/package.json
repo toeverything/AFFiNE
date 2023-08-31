@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.8.2",
+  "version": "0.8.3-beta.0",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {

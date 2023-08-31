@@ -23,5 +23,5 @@
     "@blocksuite/store": "*",
     "lottie-web": "*"
   },
-  "version": "0.8.2"
+  "version": "0.8.3-beta.0"
 }

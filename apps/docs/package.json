@@ -1,6 +1,6 @@
 {
   "name": "@affine/docs",
-  "version": "0.8.2",
+  "version": "0.8.3-beta.0",
   "type": "module",
   "private": true,
   "scripts": {
