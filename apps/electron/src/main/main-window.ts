@@ -5,7 +5,6 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
-import { CLOUD_BASE_URL } from './config';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
@@ -115,7 +114,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = CLOUD_BASE_URL; // see protocol.ts
+  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 

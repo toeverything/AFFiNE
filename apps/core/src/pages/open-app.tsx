@@ -76,8 +76,10 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
     if (!urlToOpen || lastOpened === urlToOpen || !autoOpen) {
       return;
     }
-    lastOpened = urlToOpen;
-    open(urlToOpen, '_blank');
+    setTimeout(() => {
+      lastOpened = urlToOpen;
+      open(urlToOpen, '_blank');
+    }, 1000);
   }, [urlToOpen, autoOpen]);
 
   if (!urlToOpen) {

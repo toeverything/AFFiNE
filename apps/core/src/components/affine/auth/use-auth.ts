@@ -1,12 +1,10 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
-import { isDesktop } from '@affine/env/constant';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';
-import { buildCallbackUrl } from './callback-url';
 
 const COUNT_DOWN_TIME = 60;
 const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
@@ -77,7 +75,7 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
 
       const res = await signInCloud('email', {
         email: email,
-        callbackUrl: buildCallbackUrl('signIn'),
+        callbackUrl: '/auth/signIn',
         redirect: false,
       }).catch(console.error);
 
@@ -100,7 +98,7 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
 
       const res = await signInCloud('email', {
         email: email,
-        callbackUrl: buildCallbackUrl('signUp'),
+        callbackUrl: '/auth/signUp',
         redirect: false,
       }).catch(console.error);
 
@@ -114,16 +112,7 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
   );
 
   const signInWithGoogle = useCallback(() => {
-    if (isDesktop) {
-      open(
-        `/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
-          '/open-app/oauth-jwt'
-        )}`,
-        '_target'
-      );
-    } else {
-      signInCloud('google').catch(console.error);
-    }
+    signInCloud('google').catch(console.error);
   }, []);
 
   return {

@@ -20,23 +20,6 @@ import { getUtcTimestamp, UserClaim } from './service';
 
 export const NextAuthOptionsProvide = Symbol('NextAuthOptions');
 
-function getSchemaFromCallbackUrl(origin: string, callbackUrl: string) {
-  const { searchParams } = new URL(callbackUrl, origin);
-  return searchParams.has('schema') ? searchParams.get('schema') : null;
-}
-
-function wrapUrlWithOpenApp(
-  origin: string,
-  url: string,
-  schema: string | null
-) {
-  if (schema) {
-    const urlWithSchema = `${schema}://sign-in?${url}`;
-    return `${origin}/open-app?url=${encodeURIComponent(urlWithSchema)}`;
-  }
-  return url;
-}
-
 export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
   useFactory(config: Config, prisma: PrismaService, mailer: MailService) {
@@ -88,17 +71,12 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           from: config.auth.email.sender,
           async sendVerificationRequest(params: SendVerificationRequestParams) {
             const { identifier, url, provider } = params;
-            const { searchParams, origin } = new URL(url);
+            const { searchParams } = new URL(url);
             const callbackUrl = searchParams.get('callbackUrl') || '';
             if (!callbackUrl) {
               throw new Error('callbackUrl is not set');
             }
-
-            const schema = getSchemaFromCallbackUrl(origin, callbackUrl);
-            const wrappedUrl = wrapUrlWithOpenApp(origin, url, schema);
-
-            // hack: check if link is opened via desktop
-            const result = await mailer.sendSignInEmail(wrappedUrl, {
+            const result = await mailer.sendSignInEmail(url, {
               to: identifier,
               from: provider.from,
             });

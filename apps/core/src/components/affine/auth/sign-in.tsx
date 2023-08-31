@@ -83,8 +83,8 @@ export const SignIn: FC<AuthPanelProps> = ({
           marginTop: 30,
         }}
         icon={<GoogleDuotoneIcon />}
-        onClick={useCallback(async () => {
-          await signInWithGoogle();
+        onClick={useCallback(() => {
+          signInWithGoogle();
         }, [signInWithGoogle])}
       >
         {t['Continue with Google']()}
