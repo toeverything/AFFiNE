@@ -50,7 +50,7 @@ async function currentUser(app: INestApplication, token: string) {
         `,
     })
     .expect(200);
-  return res.body?.data?.currentUser;
+  return res.body.data.currentUser;
 }
 
 async function createWorkspace(

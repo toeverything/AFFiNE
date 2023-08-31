@@ -65,17 +65,12 @@ describe('Workspace Module', () => {
   it('should be throttled at call signUp', async () => {
     let token = '';
     for (let i = 0; i < 10; i++) {
-      console.error(`u${i}`);
       token = (await signUp(app, `u${i}`, `u${i}@affine.pro`, `${i}`)).token
         .token;
+      // throttles are applied to each endpoint separately
       await currentUser(app, token);
     }
     await rejects(signUp(app, 'u11', 'u11@affine.pro', '11'));
-
-    // throttles are applied to each endpoint separately
-    for (let i = 0; i < 20; i++) {
-      await currentUser(app, token);
-    }
     await rejects(currentUser(app, token));
   });
 
