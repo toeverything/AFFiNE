@@ -77,15 +77,15 @@ jobs:
   make-distribution:
     environment: production
     strategy:
-      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # all combinations: macos-13 x64, macos-13 arm64, ubuntu-latest x64
       # For windows, we need a separate approach
       matrix:
         spec:
-          - runner: macos-latest
+          - runner: macos-13
             platform: darwin
             arch: x64
             target: x86_64-apple-darwin
-          - runner: macos-latest
+          - runner: macos-13
             platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
@@ -157,7 +157,7 @@ jobs:
   package-distribution-windows:
     environment: production
     strategy:
-      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # all combinations: macos-13 x64, macos-13 arm64, ubuntu-latest x64
       # For windows, we need a separate approach
       matrix:
         spec:
@@ -228,7 +228,7 @@ jobs:
     environment: production
     needs: sign-packaged-artifacts-windows
     strategy:
-      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # all combinations: macos-13 x64, macos-13 arm64, ubuntu-latest x64
       # For windows, we need a separate approach
       matrix:
         spec:
@@ -282,7 +282,7 @@ jobs:
     environment: production
     needs: sign-installer-artifacts-windows
     strategy:
-      # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
+      # all combinations: macos-13 x64, macos-13 arm64, ubuntu-latest x64
       # For windows, we need a separate approach
       matrix:
         spec:
