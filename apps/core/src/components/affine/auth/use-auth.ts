@@ -1,5 +1,6 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
+import { isDesktop } from '@affine/env/constant';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
@@ -105,7 +106,16 @@ export const useAuth = () => {
   );
 
   const signInWithGoogle = useCallback(() => {
-    signInCloud('google').catch(console.error);
+    if (isDesktop) {
+      open(
+        `/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
+          '/open-app/oauth-jwt'
+        )}`,
+        '_target'
+      );
+    } else {
+      signInCloud('google').catch(console.error);
+    }
   }, []);
 
   return {

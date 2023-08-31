@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { BrowserWindow, nativeTheme } from 'electron';
+import { BrowserWindow, type CookiesSetDetails, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
@@ -174,7 +174,22 @@ export function reloadApp() {
   browserWindow?.reload();
 }
 
-export async function setCookie(origin: string, cookie: string) {
+export async function setCookie(cookie: CookiesSetDetails): Promise<void>;
+export async function setCookie(origin: string, cookie: string): Promise<void>;
+
+export async function setCookie(
+  arg0: CookiesSetDetails | string,
+  arg1?: string
+) {
   const window = await restoreOrCreateWindow();
-  await window.webContents.session.cookies.set(parseCookie(cookie, origin));
+  const details =
+    typeof arg1 === 'string' && typeof arg0 === 'string'
+      ? parseCookie(arg0, arg1)
+      : arg0;
+
+  if (typeof details !== 'object') {
+    throw new Error('invalid cookie details');
+  }
+
+  await window.webContents.session.cookies.set(details);
 }

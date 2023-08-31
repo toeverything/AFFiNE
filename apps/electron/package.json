@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.9.0-canary.5",
+  "version": "0.9.0-canary.6",
   "author": "affine",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",

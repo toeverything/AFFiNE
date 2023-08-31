@@ -34,7 +34,7 @@ export class AuthResolver {
 
   @ResolveField(() => TokenType)
   token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
-    if (user !== currentUser) {
+    if (user.id !== currentUser.id) {
       throw new ForbiddenException();
     }
 
