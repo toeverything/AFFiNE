@@ -119,7 +119,6 @@ export class UpdateWorkspaceInput extends PickType(
  * Other rate limit: 120 req/m
  */
 @UseGuards(CloudThrottlerGuard)
-@Throttle(120, 60)
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
@@ -266,10 +265,10 @@ export class WorkspaceResolver {
   }
 
   @Throttle(10, 30)
+  @Public()
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
   })
-  @Public()
   async publicWorkspace(@Args('id') id: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id },

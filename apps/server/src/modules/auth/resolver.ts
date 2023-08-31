@@ -33,7 +33,6 @@ export class TokenType {
  * Other rate limit: 5 req/m
  */
 @UseGuards(CloudThrottlerGuard)
-@Throttle(5, 60)
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
@@ -79,6 +78,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => UserType)
   async changePassword(
     @Context() ctx: { req: Request },
@@ -90,6 +90,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => UserType)
   async changeEmail(
     @Context() ctx: { req: Request },
@@ -101,6 +102,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendChangePasswordEmail(
     @Args('email') email: string,
@@ -111,6 +113,7 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendSetPasswordEmail(
     @Args('email') email: string,
@@ -121,6 +124,7 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @Args('email') email: string,

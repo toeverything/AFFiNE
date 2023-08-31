@@ -43,7 +43,8 @@ async function currentUser(app: INestApplication, token: string) {
       query: `
           query {
             currentUser {
-              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword
+              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword,
+              token { token }
             }
           }
         `,
