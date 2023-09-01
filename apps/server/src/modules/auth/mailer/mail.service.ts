@@ -42,26 +42,35 @@ export class MailService {
       };
     }
   ) {
-    const buttonUrl = `${this.config.baseUrl}/invite/${inviteId}`;
+    // TODO: use callback url when need support desktop app
+    const buttonUrl = `${this.config.origin}/invite/${inviteId}`;
     const workspaceAvatar = invitationInfo.workspace.avatar;
 
-    const content = `  <img
+    const content = `${
+      invitationInfo.user.avatar
+        ? `<img
     src="${invitationInfo.user.avatar}"
     alt=""
     width="24px"
     height="24px"
-    style="border-radius: 12px;object-fit: cover;vertical-align: middle"
-  />
-  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.user.name}</span>
+    style="width:24px; height:24px; border-radius: 12px;object-fit: cover;vertical-align: middle"
+  />`
+        : ''
+    }
+  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${
+    invitationInfo.user.name
+  }</span>
   <span>invited you to join</span>
   <img
     src="cid:workspaceAvatar"
     alt=""
     width="24px"
     height="24px"
-    style="margin-left:10px;border-radius: 12px;object-fit: cover;vertical-align: middle"
+    style="width:24px; height:24px; margin-left:10px;border-radius: 12px;object-fit: cover;vertical-align: middle"
   />
-  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.workspace.name}</span>`;
+  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${
+    invitationInfo.workspace.name
+  }</span>`;
 
     const html = emailTemplate({
       title: 'You are invited!',
