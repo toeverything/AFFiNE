@@ -90,6 +90,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.oauth.google.enabled=true`,
     `--set-string graphql.app.oauth.google.clientId="${AFFINE_GOOGLE_CLIENT_ID}"`,
     `--set-string graphql.app.oauth.google.clientSecret="${AFFINE_GOOGLE_CLIENT_SECRET}"`,
+    `--set-string graphql.app.host="${DEPLOY_HOST || CANARY_DEPLOY_HOST}"`,
     `--set        graphql.app.experimental.enableJwstCodec=true`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${imageTag}"`,
