@@ -79,7 +79,7 @@ app.use(cookieParser());
 
 const config = app.get(Config);
 
-const host = config.host ?? 'localhost';
+const host = config.node.prod ? '0.0.0.0' : 'localhost';
 const port = config.port ?? 3010;
 
 if (!config.objectStorage.r2.enabled) {
