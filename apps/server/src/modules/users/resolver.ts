@@ -25,6 +25,7 @@ import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 import { NewFeaturesKind } from './types';
+import { isStaff } from './utils';
 
 registerEnumType(NewFeaturesKind, {
   name: 'NewFeaturesKind',
@@ -116,7 +117,7 @@ export class UserResolver {
   })
   @Public()
   async user(@Args('email') email: string) {
-    if (this.config.featureFlags.earlyAccessPreview) {
+    if (this.config.featureFlags.earlyAccessPreview && !isStaff(email)) {
       const hasEarlyAccess = await this.prisma.newFeaturesWaitingList
         .findUnique({
           where: { email, type: NewFeaturesKind.EarlyAccess },

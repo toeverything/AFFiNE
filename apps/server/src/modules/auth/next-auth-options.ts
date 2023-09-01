@@ -15,6 +15,7 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { NewFeaturesKind } from '../users/types';
+import { isStaff } from '../users/utils';
 import { MailService } from './mailer';
 import { getUtcTimestamp, UserClaim } from './service';
 
@@ -255,6 +256,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         const email = profile?.email ?? user.email;
         if (email) {
+          if (isStaff(email)) {
+            return true;
+          }
           return prisma.newFeaturesWaitingList
             .findUnique({
               where: {

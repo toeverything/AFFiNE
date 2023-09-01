@@ -127,11 +127,15 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      res.status(403);
-      res.json({
-        url: 'https://community.affine.pro/c/insider-general/',
-        error: `You don't have early access permission`,
-      });
+      if (!req.headers?.referer) {
+        res.redirect('https://community.affine.pro/c/insider-general/');
+      } else {
+        res.status(403);
+        res.json({
+          url: 'https://community.affine.pro/c/insider-general/',
+          error: `You don't have early access permission`,
+        });
+      }
       return;
     }
 
