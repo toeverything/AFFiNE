@@ -2,8 +2,11 @@ import { equal } from 'node:assert';
 import { resolve } from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { Schema, Workspace } from '@blocksuite/store';
 import {
   migrateToSubdoc,
+  migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
@@ -34,15 +37,19 @@ export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
   await db.close();
 };
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Schema, Workspace } from '@blocksuite/store';
-import { migrateWorkspace } from '@toeverything/infra/blocksuite';
-
 // v1 v2 -> v3
-export const migrateToLatestDatabase = async (path: string) => {
+// v3 -> v4
+export const migrateToLatest = async (
+  path: string,
+  version: WorkspaceVersion
+) => {
   const connection = new SqliteConnection(path);
   await connection.connect();
-  await connection.initVersion();
+  if (version === WorkspaceVersion.SubDoc) {
+    await connection.initVersion();
+  } else {
+    await connection.setVersion(version);
+  }
   const schema = new Schema();
   schema.register(AffineSchemas).register(__unstableSchemas);
   const rootDoc = new YDoc();
@@ -69,7 +76,7 @@ export const migrateToLatestDatabase = async (path: string) => {
     );
   };
   await downloadBinary(rootDoc, true);
-  const result = await migrateWorkspace(WorkspaceVersion.SubDoc, {
+  const result = await migrateWorkspace(version, {
     getSchema: () => schema,
     getCurrentRootDoc: () => Promise.resolve(rootDoc),
     createWorkspace: () =>
