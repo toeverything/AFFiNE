@@ -1,5 +1,4 @@
 /// <reference types="./global.d.ts" />
-import { ExceptionLogger } from '@affine/server/middleware/exception-logger';
 import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { NestFactory } from '@nestjs/core';
@@ -25,6 +24,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
+import { ExceptionLogger } from './middleware/exception-logger';
 import { serverTimingAndCache } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
