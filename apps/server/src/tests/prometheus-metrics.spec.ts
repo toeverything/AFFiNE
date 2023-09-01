@@ -1,7 +1,7 @@
 import { ok } from 'node:assert';
-import { afterEach, beforeEach, test } from 'node:test';
 
 import { Test, TestingModule } from '@nestjs/testing';
+import test from 'ava';
 import { register } from 'prom-client';
 
 import { MetricsModule } from '../metrics';
@@ -11,7 +11,7 @@ import { PrismaModule } from '../prisma';
 let metrics: Metrics;
 let module: TestingModule;
 
-beforeEach(async () => {
+test.beforeEach(async () => {
   module = await Test.createTestingModule({
     imports: [MetricsModule, PrismaModule],
   }).compile();
@@ -19,11 +19,11 @@ beforeEach(async () => {
   metrics = module.get(Metrics);
 });
 
-afterEach(async () => {
+test.afterEach(async () => {
   await module.close();
 });
 
-test('should be able to increment counter', async () => {
+test('should be able to increment counter', async t => {
   metrics.socketIOEventCounter(1, { event: 'client-handshake' });
   const socketIOCounterMetric =
     await register.getSingleMetric('socket_io_counter');
@@ -33,9 +33,10 @@ test('should be able to increment counter', async () => {
     JSON.stringify((await socketIOCounterMetric.get()).values) ===
       '[{"value":1,"labels":{"event":"client-handshake"}}]'
   );
+  t.pass();
 });
 
-test('should be able to timer', async () => {
+test('should be able to timer', async t => {
   let minimum: number;
   {
     const endTimer = metrics.socketIOEventTimer({ event: 'client-handshake' });
@@ -76,4 +77,5 @@ test('should be able to timer', async () => {
       );
     }
   }
+  t.pass();
 });
