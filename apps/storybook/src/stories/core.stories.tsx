@@ -38,7 +38,7 @@ export const SettingPage: StoryFn = () => {
 SettingPage.play = async ({ canvasElement, step }) => {
   const canvas = within(canvasElement);
   await waitFor(
-    async () => {
+    () => {
       assertExists(canvasElement.querySelector('v-line'));
     },
     {
@@ -117,7 +117,7 @@ export const SearchPage: StoryFn = () => {
 SearchPage.play = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await waitFor(
-    async () => {
+    () => {
       assertExists(canvasElement.querySelector('v-line'));
     },
     {
@@ -180,7 +180,7 @@ OpenAppPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
     location: {
-      path: '/open-app',
+      path: '/open-app/url',
       searchParams: {
         url: 'affine-beta://foo-bar.com',
         open: 'false',

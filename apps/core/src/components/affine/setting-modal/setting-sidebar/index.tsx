@@ -59,10 +59,10 @@ export const UserInfo = ({
       />
 
       <div className="content">
-        <div className="name" title="xxx">
+        <div className="name" title={user.name}>
           {user.name}
         </div>
-        <div className="email" title="xxx">
+        <div className="email" title={user.email}>
           {user.email}
         </div>
       </div>

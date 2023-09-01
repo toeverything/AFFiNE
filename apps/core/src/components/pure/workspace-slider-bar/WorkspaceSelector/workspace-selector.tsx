@@ -1,9 +1,16 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { CloudWorkspaceIcon, LocalWorkspaceIcon } from '@blocksuite/icons';
+import {
+  CloudWorkspaceIcon,
+  LocalWorkspaceIcon,
+  NoNetworkIcon,
+} from '@blocksuite/icons';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
+import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
 import { workspaceAvatarStyle } from './index.css';
 import {
@@ -29,7 +36,8 @@ export const WorkspaceSelector = ({
   const [name] = useBlockSuiteWorkspaceName(
     currentWorkspace.blockSuiteWorkspace
   );
-
+  const [isHovered, setIsHovered] = useState(false);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
   // TODO: Delete this?
@@ -43,13 +51,48 @@ export const WorkspaceSelector = ({
     },
     [onClick]
   );
+  const loginStatus = useCurrentLoginStatus();
+  const isOnline = useSystemOnline();
+  const content = useMemo(() => {
+    if (!isOnline) {
+      return 'Disconnected, please check your network connection';
+    }
+    if (
+      loginStatus === 'authenticated' &&
+      currentWorkspace.flavour !== 'local'
+    ) {
+      return 'Sync with AFFiNE Cloud';
+    }
+    return 'Saved locally';
+  }, [currentWorkspace.flavour, isOnline, loginStatus]);
 
+  const WorkspaceStatus = () => {
+    if (!isOnline) {
+      return (
+        <>
+          <NoNetworkIcon />
+          Offline
+        </>
+      );
+    }
+    return (
+      <>
+        {currentWorkspace.flavour === 'local' ? (
+          <LocalWorkspaceIcon />
+        ) : (
+          <CloudWorkspaceIcon />
+        )}
+        {currentWorkspace.flavour === 'local' ? 'Local' : 'AFFiNE Cloud'}
+      </>
+    );
+  };
   return (
     <StyledSelectorContainer
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={handleKeyDown}
+      disableHoverBackground={isHovered}
       data-testid="current-workspace"
       id="current-workspace"
     >
@@ -63,14 +106,25 @@ export const WorkspaceSelector = ({
         <StyledWorkspaceName data-testid="workspace-name">
           {name}
         </StyledWorkspaceName>
-        <StyledWorkspaceStatus>
-          {currentWorkspace.flavour === 'local' ? (
-            <LocalWorkspaceIcon />
-          ) : (
-            <CloudWorkspaceIcon />
-          )}
-          {currentWorkspace.flavour === 'local' ? 'Local' : 'AFFiNE Cloud'}
-        </StyledWorkspaceStatus>
+        <div style={{ display: 'flex' }}>
+          <Tooltip
+            content={content}
+            portalOptions={{
+              container,
+            }}
+          >
+            <StyledWorkspaceStatus
+              onMouseEnter={() => {
+                setIsHovered(true);
+              }}
+              ref={setContainer}
+              onMouseLeave={() => setIsHovered(false)}
+              onClick={e => e.stopPropagation()}
+            >
+              <WorkspaceStatus />
+            </StyledWorkspaceStatus>
+          </Tooltip>
+        </div>
       </StyledSelectorWrapper>
     </StyledSelectorContainer>
   );

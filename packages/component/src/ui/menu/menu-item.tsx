@@ -15,6 +15,7 @@ export type IconMenuProps = PropsWithChildren<{
   disabled?: boolean;
   active?: boolean;
   disableHover?: boolean;
+  userFocused?: boolean;
   gap?: string;
   fontSize?: string;
 }> &

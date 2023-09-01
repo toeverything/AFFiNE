@@ -73,6 +73,22 @@ export type SetBlobMutationVariables = Exact<{
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
 
+export type BlobSizesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type BlobSizesQuery = {
+  __typename?: 'Query';
+  collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
+
+export type AllBlobSizesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type AllBlobSizesQuery = {
+  __typename?: 'Query';
+  collectAllBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
+
 export type ChangeEmailMutationVariables = Exact<{
   id: Scalars['String']['input'];
   newEmail: Scalars['String']['input'];
@@ -147,6 +163,7 @@ export type GetCurrentUserQuery = {
     emailVerified: string | null;
     avatarUrl: string | null;
     createdAt: string | null;
+    token: { __typename?: 'TokenType'; token: string };
   };
 };
 
@@ -432,6 +449,16 @@ export type Queries =
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;
       response: ListBlobsQuery;
+    }
+  | {
+      name: 'blobSizesQuery';
+      variables: BlobSizesQueryVariables;
+      response: BlobSizesQuery;
+    }
+  | {
+      name: 'allBlobSizesQuery';
+      variables: AllBlobSizesQueryVariables;
+      response: AllBlobSizesQuery;
     }
   | {
       name: 'getCurrentUserQuery';

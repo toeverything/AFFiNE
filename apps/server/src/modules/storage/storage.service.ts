@@ -2,6 +2,8 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Inject, Injectable } from '@nestjs/common';
 import { crc32 } from '@node-rs/crc32';
 import { fileTypeFromBuffer } from 'file-type';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - no types
 import { getStreamAsBuffer } from 'get-stream';
 
 import { Config } from '../../config';

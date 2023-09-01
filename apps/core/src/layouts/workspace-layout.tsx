@@ -140,11 +140,14 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
     // this is a mistake in the
     //    0.8.0 ~ 0.8.1
     //    0.8.0-beta.0 ~ 0.8.0-beta.3
-    //    0.9.0-canary.0 ~ 0.9.0-canary.3
+    //    0.8.0-canary.17 ~ 0.9.0-canary.3
     const meta = currentWorkspace.blockSuiteWorkspace.doc.getMap('meta');
     const blockVersions = meta.get('blockVersions');
-    if (!(blockVersions instanceof YMap)) {
-      console.log('fixing blockVersions');
+    if (
+      !(blockVersions instanceof YMap) &&
+      blockVersions != null &&
+      typeof blockVersions === 'object'
+    ) {
       meta.set(
         'blockVersions',
         new YMap(Object.entries(blockVersions as Record<string, number>))

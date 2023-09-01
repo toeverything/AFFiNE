@@ -3,8 +3,8 @@ import { setTimeout } from 'node:timers/promises';
 import { describe, expect, test, vi } from 'vitest';
 import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
+import type { DatasourceDocAdapter } from '../data-source';
 import { createLazyProvider } from '../lazy-provider';
-import type { DatasourceDocAdapter } from '../types';
 import { getDoc } from '../utils';
 
 const createMemoryDatasource = (rootDoc: Doc) => {
@@ -92,6 +92,16 @@ describe('y-provider', () => {
     remotesubdoc.getText('text').insert(0, 'prefix-');
     await setTimeout();
     expect(subdoc.getText('text').toJSON()).toBe('prefix-test-subdoc-value');
+
+    // disconnect then reconnect
+    provider.disconnect();
+    remotesubdoc.getText('text').delete(0, 'prefix-'.length);
+    await setTimeout();
+    expect(subdoc.getText('text').toJSON()).toBe('prefix-test-subdoc-value');
+
+    provider.connect();
+    await setTimeout();
+    expect(subdoc.getText('text').toJSON()).toBe('test-subdoc-value');
   });
 
   test('should sync a shouldLoad=true subdoc on connect', async () => {
@@ -195,5 +205,31 @@ describe('y-provider', () => {
     remoteRootDoc.getText('text').insert(0, 'test-value');
 
     expect(spy).not.toBeCalled();
+  });
+
+  test('only sync', async () => {
+    const remoteRootDoc = new Doc(); // this is the remote doc lives in remote
+    const datasource = createMemoryDatasource(remoteRootDoc);
+    remoteRootDoc.getText().insert(0, 'hello, world!');
+
+    const rootDoc = new Doc({ guid: remoteRootDoc.guid }); // this is the doc that we want to sync
+    const provider = createLazyProvider(rootDoc, datasource);
+
+    await provider.sync(true);
+    expect(rootDoc.getText().toJSON()).toBe('hello, world!');
+
+    const remotesubdoc = new Doc();
+    remotesubdoc.getText('text').insert(0, 'test-subdoc-value');
+    remoteRootDoc.getMap('map').set('subdoc', remotesubdoc);
+    expect(rootDoc.subdocs.size).toBe(0);
+
+    await provider.sync(true);
+    expect(rootDoc.subdocs.size).toBe(1);
+    const subdoc = rootDoc.getMap('map').get('subdoc') as Doc;
+    expect(subdoc.getText('text').toJSON()).toBe('');
+    await provider.sync(true);
+    expect(subdoc.getText('text').toJSON()).toBe('');
+    await provider.sync(false);
+    expect(subdoc.getText('text').toJSON()).toBe('test-subdoc-value');
   });
 });

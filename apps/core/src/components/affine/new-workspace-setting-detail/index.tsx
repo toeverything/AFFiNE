@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
+import { LabelsPanel } from './labels';
 import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
@@ -69,6 +70,7 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
           spreadCol={false}
         >
           <ProfilePanel workspace={workspace} {...props} />
+          <LabelsPanel workspace={workspace} {...props} />
         </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['AFFiNE Cloud']()}>

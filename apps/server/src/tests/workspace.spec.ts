@@ -12,6 +12,7 @@ import { AppModule } from '../app';
 import {
   acceptInvite,
   createWorkspace,
+  currentUser,
   getPublicWorkspace,
   getWorkspaceSharedPages,
   inviteUser,
@@ -61,6 +62,18 @@ describe('Workspace Module', () => {
     ok(user.email === 'u1@affine.pro', 'user.email is not valid');
   });
 
+  it('should be throttled at call signUp', async () => {
+    let token = '';
+    for (let i = 0; i < 10; i++) {
+      token = (await signUp(app, `u${i}`, `u${i}@affine.pro`, `${i}`)).token
+        .token;
+      // throttles are applied to each endpoint separately
+      await currentUser(app, token);
+    }
+    await rejects(signUp(app, 'u11', 'u11@affine.pro', '11'));
+    await rejects(currentUser(app, token));
+  });
+
   it('should create a workspace', async () => {
     const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
@@ -93,11 +106,11 @@ describe('Workspace Module', () => {
     const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
     const workspace = await createWorkspace(app, user.token.token);
 
-    rejects(
+    await rejects(
       getPublicWorkspace(app, 'not_exists_ws'),
       'must not get not exists workspace'
     );
-    rejects(
+    await rejects(
       getPublicWorkspace(app, workspace.id),
       'must not get private workspace'
     );

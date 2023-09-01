@@ -6,14 +6,14 @@ import { uiSubjects } from './subject';
  */
 export const uiEvents = {
   onFinishLogin: (
-    fn: (result: { success: boolean; email: string }) => void
+    fn: (result: { success: boolean; email?: string }) => void
   ) => {
     const sub = uiSubjects.onFinishLogin.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };
   },
-  onStartLogin: (fn: (opts: { email: string }) => void) => {
+  onStartLogin: (fn: (opts: { email?: string }) => void) => {
     const sub = uiSubjects.onStartLogin.subscribe(fn);
     return () => {
       sub.unsubscribe();
