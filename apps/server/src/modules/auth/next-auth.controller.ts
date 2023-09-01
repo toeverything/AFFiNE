@@ -44,7 +44,7 @@ export class NextAuthController {
   }
 
   @UseGuards(CloudThrottlerGuard)
-  @Throttle(20, 60)
+  @Throttle(60, 60)
   @All('*')
   async auth(
     @Req() req: Request,
