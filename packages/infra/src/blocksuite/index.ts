@@ -1,6 +1,7 @@
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
+import type { Doc} from 'yjs';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 export async function buildShowcaseWorkspace(
@@ -475,7 +476,7 @@ export async function upgradePage(options: UpgradeOptions): Promise<boolean> {
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
   const oldVersions = versions.toJSON();
-  spaces.forEach(space => {
+  spaces.forEach((space: Doc) => {
     schema.upgradePage(oldVersions, space);
   });
   const newVersions = getLatestVersions(schema);
@@ -491,15 +492,8 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
-  if ('affine:database' in versions) {
-    if (versions['affine:database'] === 3) {
-      return false;
-    }
-  } else if (versions.get('affine:database') === 3) {
-    return false;
-  }
   const schema = options.getSchema();
-  spaces.forEach(space => {
+  spaces.forEach((space: Doc) => {
     schema.upgradePage(
       {
         'affine:note': 1,
