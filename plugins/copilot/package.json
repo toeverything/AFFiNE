@@ -16,7 +16,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@toeverything/components": "^0.0.24",
+    "@toeverything/components": "^0.0.25",
     "idb": "^7.1.1",
     "langchain": "^0.0.138",
     "marked": "^7.0.5",
