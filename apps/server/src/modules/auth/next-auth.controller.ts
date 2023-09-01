@@ -44,7 +44,7 @@ export class NextAuthController {
   }
 
   @UseGuards(CloudThrottlerGuard)
-  @Throttle(20, 60)
+  @Throttle(60, 60)
   @All('*')
   async auth(
     @Req() req: Request,
@@ -127,11 +127,15 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      res.status(403);
-      res.json({
-        url: 'https://community.affine.pro/c/insider-general/',
-        error: `You don't have early access permission`,
-      });
+      if (!req.headers?.referer) {
+        res.redirect('https://community.affine.pro/c/insider-general/');
+      } else {
+        res.status(403);
+        res.json({
+          url: 'https://community.affine.pro/c/insider-general/',
+          error: `You don't have early access permission`,
+        });
+      }
       return;
     }
 
@@ -140,7 +144,6 @@ export class NextAuthController {
     }
 
     if (redirect) {
-      this.logger.debug(providerId, action, req.headers);
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
       } else if (

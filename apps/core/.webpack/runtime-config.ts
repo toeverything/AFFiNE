@@ -48,7 +48,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     get beta() {
       return {
         ...this.stable,
-        serverUrlPrefix: 'https://ambassador.affine.pro',
+        serverUrlPrefix: 'https://insider.affine.pro',
       };
     },
     get internal() {

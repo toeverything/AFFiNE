@@ -22,6 +22,9 @@ import { getRequestResponseFromContext } from './utils/nestjs';
         const options: ThrottlerModuleOptions = {
           ttl: config.rateLimiter.ttl,
           limit: config.rateLimiter.limit,
+          skipIf: () => {
+            return !config.node.prod || config.affine.canary;
+          },
         };
         if (config.redis.enabled) {
           new Logger(RateLimiterModule.name).log('Use Redis');

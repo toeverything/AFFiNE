@@ -7,7 +7,7 @@ import {
 } from 'yjs';
 
 import type { DatasourceDocAdapter } from './data-source';
-import type { StatusAdapter } from './types';
+import type { DataSourceAdapter } from './types';
 import type { Status } from './types';
 
 function getDoc(doc: Doc, guid: string): Doc | undefined {
@@ -45,7 +45,7 @@ export const createLazyProvider = (
   rootDoc: Doc,
   datasource: DatasourceDocAdapter,
   options: LazyProviderOptions = {}
-): DocProvider & StatusAdapter => {
+): DocProvider & DataSourceAdapter => {
   let connected = false;
   const pendingMap = new Map<string, Uint8Array[]>(); // guid -> pending-updates
   const disposableMap = new Map<string, Set<() => void>>();
@@ -62,21 +62,17 @@ export const createLazyProvider = (
   const callbackSet = new Set<() => void>();
   const changeStatus = (newStatus: Status) => {
     // simulate a stack, each syncing and synced should be paired
-    if (newStatus.type === 'idle') {
-      if (connected && syncingStack !== 0) {
-        console.error('syncingStatus !== 0, this should not happen');
-      }
-      syncingStack = 0;
-    }
     if (newStatus.type === 'syncing') {
       syncingStack++;
-    }
-    if (newStatus.type === 'synced' || newStatus.type === 'error') {
+    } else if (newStatus.type === 'synced' || newStatus.type === 'error') {
       syncingStack--;
     }
 
     if (syncingStack < 0) {
-      console.error('syncingStatus < 0, this should not happen');
+      console.error(
+        'syncingStatus < 0, this should not happen',
+        options.origin
+      );
     }
 
     if (syncingStack === 0) {
@@ -84,6 +80,17 @@ export const createLazyProvider = (
     }
     if (newStatus.type !== 'synced') {
       currentStatus = newStatus;
+    }
+    if (syncingStack === 0) {
+      if (!connected) {
+        currentStatus = {
+          type: 'idle',
+        };
+      } else {
+        currentStatus = {
+          type: 'synced',
+        };
+      }
     }
     callbackSet.forEach(cb => cb());
   };
@@ -102,12 +109,6 @@ export const createLazyProvider = (
         stateVector: encodeStateVector(doc),
       })
       .then(remoteUpdate => {
-        if (!connected) {
-          changeStatus({
-            type: 'idle',
-          });
-          return;
-        }
         changeStatus({
           type: 'synced',
         });
@@ -201,9 +202,6 @@ export const createLazyProvider = (
   function setupDatasourceListeners() {
     assertExists(abortController, 'abortController should be defined');
     const unsubscribe = datasource.onDocUpdate?.((guid, update) => {
-      if (!connected) {
-        return;
-      }
       changeStatus({
         type: 'syncing',
       });
@@ -283,12 +281,6 @@ export const createLazyProvider = (
     // but we want to populate the cache for later update events
     connectDoc(rootDoc)
       .then(() => {
-        if (!connected) {
-          changeStatus({
-            type: 'idle',
-          });
-          return;
-        }
         changeStatus({
           type: 'synced',
         });
@@ -305,9 +297,6 @@ export const createLazyProvider = (
 
   async function disconnect() {
     connected = false;
-    changeStatus({
-      type: 'idle',
-    });
     disposeAll();
     assertExists(abortController, 'abortController should be defined');
     abortController.abort();
@@ -349,5 +338,7 @@ export const createLazyProvider = (
     passive: true,
     connect,
     disconnect,
+
+    datasource,
   };
 };

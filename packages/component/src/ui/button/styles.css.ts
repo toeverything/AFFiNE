@@ -86,6 +86,8 @@ export const radioButtonContent = style({
 export const radioUncheckedButton = style([
   radioButtonContent,
   {
+    color: 'var(--affine-text-secondary-color)',
+    filter: 'none',
     selectors: {
       '[data-state="checked"] > &': {
         display: 'none',

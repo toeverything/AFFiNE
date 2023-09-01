@@ -1,3 +1,5 @@
+import type { DatasourceDocAdapter } from './data-source';
+
 export type Status =
   | {
       type: 'idle';
@@ -10,11 +12,13 @@ export type Status =
     }
   | {
       type: 'error';
-      error: Error;
+      error: unknown;
     };
 
-export interface StatusAdapter {
+export interface DataSourceAdapter {
+  datasource: DatasourceDocAdapter;
   readonly status: Status;
+
   subscribeStatusChange(onStatusChange: () => void): () => void;
 }
 

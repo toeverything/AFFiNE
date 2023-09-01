@@ -35,6 +35,7 @@ export const TrashButtonGroup = () => {
     <div className={group}>
       <div className={buttonContainer}>
         <Button
+          data-testid="page-restore-button"
           type="primary"
           onClick={() => {
             restoreFromTrash(pageId);

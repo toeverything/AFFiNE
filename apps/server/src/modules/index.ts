@@ -10,7 +10,6 @@ import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
 
 const { SERVER_FLAVOR } = process.env;
-const { NODE_ENV } = process.env;
 
 const BusinessModules: (Type | DynamicModule)[] = [];
 
@@ -40,13 +39,11 @@ switch (SERVER_FLAVOR) {
     break;
 }
 
-const Providers: Provider[] = [];
-
-if (NODE_ENV !== 'test') {
-  Providers.push({
+const Providers: Provider[] = [
+  {
     provide: APP_FILTER,
     useClass: ExceptionLogger,
-  });
-}
+  },
+];
 
 export { BusinessModules, Providers };

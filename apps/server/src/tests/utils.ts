@@ -339,7 +339,6 @@ async function collectBlobSizes(
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
             query {
@@ -351,6 +350,26 @@ async function collectBlobSizes(
     })
     .expect(200);
   return res.body.data.collectBlobSizes.size;
+}
+
+async function collectAllBlobSizes(
+  app: INestApplication,
+  token: string
+): Promise<number> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+            query {
+              collectAllBlobSizes {
+                size
+              }
+            }
+          `,
+    })
+    .expect(200);
+  return res.body.data.collectAllBlobSizes.size;
 }
 
 async function setBlob(
@@ -447,6 +466,7 @@ async function getInviteInfo(
 export {
   acceptInvite,
   acceptInviteById,
+  collectAllBlobSizes,
   collectBlobSizes,
   createTestApp,
   createWorkspace,
