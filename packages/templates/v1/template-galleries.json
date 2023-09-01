@@ -14,7 +14,10 @@
       "sys:id": "PCxQvHuwt1",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "PMY4JPuq4o": {
       "sys:id": "PMY4JPuq4o",
