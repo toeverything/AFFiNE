@@ -76,11 +76,18 @@ async function tryMigration() {
                 newMetadata[index] = {
                   ...oldMeta,
                   id: newId,
-                  version: WorkspaceVersion.DatabaseV3,
+                  version: WorkspaceVersion.Surface,
                 };
                 await migrateLocalBlobStorage(workspace.id, newId);
                 console.log('workspace migrated', oldMeta.id, newId);
               } else if (workspace) {
+                const index = newMetadata.findIndex(
+                  meta => meta.id === oldMeta.id
+                );
+                newMetadata[index] = {
+                  ...oldMeta,
+                  version: WorkspaceVersion.Surface,
+                };
                 console.log('workspace migrated', oldMeta.id);
               }
             })

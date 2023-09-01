@@ -6,6 +6,7 @@ import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 export async function buildShowcaseWorkspace(
   workspace: Workspace,
   options: {
+    schema: Schema;
     atoms: {
       pageMode: WritableAtom<
         undefined,
@@ -16,18 +17,7 @@ export async function buildShowcaseWorkspace(
     store: ReturnType<typeof createStore>;
   }
 ) {
-  const showcaseWorkspaceVersions = {
-    'affine:code': 1,
-    'affine:paragraph': 1,
-    'affine:page': 2,
-    'affine:list': 1,
-    'affine:note': 1,
-    'affine:divider': 1,
-    'affine:image': 1,
-    'affine:surface': 3,
-    'affine:bookmark': 1,
-    'affine:database': 2,
-  };
+  const showcaseWorkspaceVersions = getLatestVersions(options.schema);
   workspace.doc
     .getMap('meta')
     .set('blockVersions', new YMap(Object.entries(showcaseWorkspaceVersions)));
@@ -210,6 +200,16 @@ type XYWH = [number, number, number, number];
 function deserializeXYWH(xywh: string): XYWH {
   return JSON.parse(xywh) as XYWH;
 }
+
+const getLatestVersions = (schema: Schema): Record<string, number> => {
+  return [...schema.flavourSchemaMap.entries()].reduce(
+    (record, [flavour, schema]) => {
+      record[flavour] = schema.version;
+      return record;
+    },
+    {} as Record<string, number>
+  );
+};
 
 function migrateDatabase(data: YMap<unknown>) {
   data.delete('prop:mode');
@@ -492,7 +492,8 @@ const upgradeV1ToV2 = async (options: UpgradeOptions) => {
   return newWorkspace;
 };
 
-const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<boolean> => {
+// database from 2 to 3
+async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
   const rootDoc = await options.getCurrentRootDoc();
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
@@ -523,18 +524,57 @@ const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<boolean> => {
     );
   });
   if ('affine:database' in versions) {
-    versions['affine:database'] = 3;
-    meta.set('blockVersions', new YMap(Object.entries(versions)));
+    meta.set(
+      'blockVersions',
+      new YMap(Object.entries(getLatestVersions(schema)))
+    );
   } else {
-    versions.set('affine:database', 3);
+    Object.entries(getLatestVersions(schema)).map(([flavour, version]) =>
+      versions.set(flavour, version)
+    );
   }
   return true;
-};
+}
+
+// surface from 3 to 5
+export async function upgradeV3ToV4(options: UpgradeOptions) {
+  const rootDoc = await options.getCurrentRootDoc();
+  const spaces = rootDoc.getMap('spaces') as YMap<any>;
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+  const versions = meta.get('blockVersions') as YMap<number>;
+  if (versions.get('affine:page') === 2) {
+    const schema = options.getSchema();
+    spaces.forEach(space => {
+      schema.upgradePage(
+        {
+          'affine:note': 1,
+          'affine:bookmark': 1,
+          'affine:database': 3,
+          'affine:divider': 1,
+          'affine:image': 1,
+          'affine:list': 1,
+          'affine:code': 1,
+          'affine:page': 2,
+          'affine:paragraph': 1,
+          'affine:surface': 3,
+        },
+        space
+      );
+    });
+    Object.entries(getLatestVersions(schema)).map(([flavour, version]) =>
+      versions.set(flavour, version)
+    );
+    return true;
+  } else {
+    return false;
+  }
+}
 
 export enum WorkspaceVersion {
   // v1 is treated as undefined
   SubDoc = 2,
   DatabaseV3 = 3,
+  Surface = 4,
 }
 
 /**
@@ -557,6 +597,8 @@ export async function migrateWorkspace(
   }
   if (currentVersion === WorkspaceVersion.SubDoc) {
     return upgradeV2ToV3(options);
+  } else if (currentVersion === WorkspaceVersion.DatabaseV3) {
+    return upgradeV3ToV4(options);
   } else {
     return false;
   }
