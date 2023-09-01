@@ -9,7 +9,7 @@ import { Config } from './config';
 export class SessionService {
   private readonly cache: Keyv;
   private readonly prefix = 'session:';
-  private readonly sessionTtl = 30 * 60; // 30 min
+  private readonly sessionTtl = 30 * 60 * 1000; // 30 min
 
   constructor(protected readonly config: Config) {
     if (config.redis.enabled) {
@@ -40,11 +40,11 @@ export class SessionService {
    * set session
    * @param key session key
    * @param value session value
-   * @param sessionTtl session ttl, default 30 min
+   * @param sessionTtl session ttl (ms), default 30 min
    * @returns return true if success
    */
   async set(key: string, value?: any, sessionTtl = this.sessionTtl) {
-    return this.cache.set(this.prefix + key, value, Date.now() + sessionTtl);
+    return this.cache.set(this.prefix + key, value, sessionTtl);
   }
 
   async delete(key: string) {
