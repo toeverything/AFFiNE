@@ -36,15 +36,27 @@ test('should be able to increment counter', async () => {
 });
 
 test('should be able to timer', async () => {
-  const endTimer = metrics.socketIOEventTimer({ event: 'client-handshake' });
-  await new Promise(resolve => setTimeout(resolve, 50));
-  endTimer();
+  let minimum: number;
+  {
+    const endTimer = metrics.socketIOEventTimer({ event: 'client-handshake' });
+    const a = performance.now();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const b = performance.now();
+    minimum = b - a;
+    endTimer();
+  }
 
-  const endTimer2 = metrics.socketIOEventTimer({ event: 'client-handshake' });
-  await new Promise(resolve => setTimeout(resolve, 100));
-  endTimer2();
+  let maximum: number;
+  {
+    const a = performance.now();
+    const endTimer = metrics.socketIOEventTimer({ event: 'client-handshake' });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    endTimer();
+    const b = performance.now();
+    maximum = b - a;
+  }
 
-  const socketIOTimerMetric = await register.getSingleMetric('socket_io_timer');
+  const socketIOTimerMetric = register.getSingleMetric('socket_io_timer');
   ok(socketIOTimerMetric);
 
   const observations = (await socketIOTimerMetric.get()).values;
@@ -54,8 +66,14 @@ test('should be able to timer', async () => {
       observation.labels.event === 'client-handshake' &&
       'quantile' in observation.labels
     ) {
-      ok(observation.value >= 0.05);
-      ok(observation.value <= 0.2);
+      ok(
+        observation.value >= minimum / 1000,
+        'observation.value should be greater than minimum'
+      );
+      ok(
+        observation.value <= maximum / 1000,
+        'observation.value should be less than maximum'
+      );
     }
   }
 });
