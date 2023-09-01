@@ -164,7 +164,7 @@ export const DesktopLoginModal = (): ReactElement => {
 
   useEffect(() => {
     return window.events?.ui.onFinishLogin(({ success, email }) => {
-      if (email !== signingEmail) {
+      if (email && email !== signingEmail) {
         return;
       }
       setSigningEmail(undefined);

@@ -15,7 +15,7 @@ import { AppModule } from '../app';
 
 const gql = '/graphql';
 
-describe('AppModule', () => {
+describe('AppModule', async () => {
   let app: INestApplication;
 
   // cleanup database before each test
@@ -54,7 +54,7 @@ describe('AppModule', () => {
     await app.close();
   });
 
-  test('should init app', async () => {
+  await test('should init app', async () => {
     ok(typeof app === 'object');
     await request(app.getHttpServer())
       .post(gql)
@@ -85,7 +85,7 @@ describe('AppModule', () => {
       });
   });
 
-  test('should find default user', async () => {
+  await test('should find default user', async () => {
     const { token } = await createToken(app);
     await request(app.getHttpServer())
       .post(gql)
@@ -106,7 +106,7 @@ describe('AppModule', () => {
       });
   });
 
-  test('should be able to upload avatar', async () => {
+  await test('should be able to upload avatar', async () => {
     const { token, id } = await createToken(app);
     const png = await Transformer.fromRgbaPixels(
       Buffer.alloc(400 * 400 * 4).fill(255),

@@ -1,23 +1,39 @@
 import {
   AuthContent,
   BackButton,
+  CountDownRender,
   ModalHeader,
-  ResendButton,
 } from '@affine/component/auth-components';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { type FC, useCallback } from 'react';
+import { Button } from '@toeverything/components/button';
+import { useCallback } from 'react';
 
-import { signInCloud } from '../../../utils/cloud-utils';
-import { buildCallbackUrl } from './callback-url';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
+import { useAuth } from './use-auth';
 
-export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
+export const AfterSignInSendEmail = ({
   setAuthState,
   email,
-}) => {
+  onSignedIn,
+}: AuthPanelProps) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrentLoginStatus();
+
+  const { resendCountDown, allowSendEmail, signIn } = useAuth({
+    onNoAccess: useCallback(() => {
+      setAuthState('noAccess');
+    }, [setAuthState]),
+  });
+  if (loginStatus === 'authenticated') {
+    onSignedIn?.();
+  }
+
+  const onResendClick = useCallback(async () => {
+    await signIn(email);
+  }, [email, signIn]);
 
   return (
     <>
@@ -31,15 +47,23 @@ export const AfterSignInSendEmail: FC<AuthPanelProps> = ({
         {t['com.affine.auth.sign.sent.email.message.end']()}
       </AuthContent>
 
-      <ResendButton
-        onClick={useCallback(() => {
-          signInCloud('email', {
-            email,
-            callbackUrl: buildCallbackUrl('/auth/signIn'),
-            redirect: true,
-          }).catch(console.error);
-        }, [email])}
-      />
+      <div className={style.resendWrapper}>
+        {allowSendEmail ? (
+          <Button type="plain" size="large" onClick={onResendClick}>
+            {t['com.affine.auth.sign.auth.code.resend.hint']()}
+          </Button>
+        ) : (
+          <>
+            <span className="resend-code-hint">
+              {t['com.affine.auth.sign.auth.code.on.resend.hint']()}
+            </span>
+            <CountDownRender
+              className={style.resendCountdown}
+              timeLeft={resendCountDown}
+            />
+          </>
+        )}
+      </div>
 
       <div className={style.authMessage} style={{ marginTop: 20 }}>
         {/*prettier-ignore*/}

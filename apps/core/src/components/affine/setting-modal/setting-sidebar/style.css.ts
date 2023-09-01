@@ -123,8 +123,8 @@ globalStyle(`${accountButton} .avatar.not-sign`, {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  borderColor: 'var(--affine-border-color)',
-  color: 'var(--affine-border-color)',
+  borderColor: 'var(--affine-icon-secondary)',
+  color: 'var(--affine-icon-secondary)',
   background: 'var(--affine-white)',
 });
 globalStyle(`${accountButton} .content`, {

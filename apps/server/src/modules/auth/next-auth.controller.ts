@@ -9,6 +9,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 import type { User } from '@prisma/client';
@@ -20,6 +21,7 @@ import { AuthHandler } from 'next-auth/core';
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
@@ -43,6 +45,8 @@ export class NextAuthController {
     this.callbackSession = nextAuthOptions.callbacks!.session;
   }
 
+  @UseGuards(CloudThrottlerGuard)
+  @Throttle(60, 60)
   @All('*')
   async auth(
     @Req() req: Request,
@@ -127,14 +131,18 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      this.metrics.authFailCounter(1, {
-        reason: 'no_early_access_permission',
-      });
-      res.status(403);
-      res.json({
-        url: 'https://community.affine.pro/c/insider-general/',
-        error: `You don't have early access permission`,
-      });
+      if (!req.headers?.referer) {
+        res.redirect('https://community.affine.pro/c/insider-general/');
+      } else {
+        this.metrics.authFailCounter(1, {
+          reason: 'no_early_access_permission',
+        });
+        res.status(403);
+        res.json({
+          url: 'https://community.affine.pro/c/insider-general/',
+          error: `You don't have early access permission`,
+        });
+      }
       return;
     }
 

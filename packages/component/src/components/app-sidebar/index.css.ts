@@ -13,7 +13,7 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  zIndex: 1,
+  zIndex: 3,
   paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
@@ -33,7 +33,7 @@ export const navWrapperStyle = style({
       marginLeft: `calc(${navWidthVar} * -1)`,
     },
     '&[data-enable-animation="true"]': {
-      transition: 'margin-left .3s, width .3s',
+      transition: 'margin-left .3s .05s, width .3s .05s',
     },
     '&.has-background': {
       backgroundColor: 'var(--affine-white-60)',

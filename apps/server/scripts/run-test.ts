@@ -2,12 +2,13 @@
 import { resolve } from 'node:path';
 
 import * as p from '@clack/prompts';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { readdir } from 'fs/promises';
 import * as process from 'process';
 import { fileURLToPath } from 'url';
 
 import pkg from '../package.json' assert { type: 'json' };
+
 const root = fileURLToPath(new URL('..', import.meta.url));
 const testDir = resolve(root, 'src', 'tests');
 const files = await readdir(testDir);
@@ -28,14 +29,14 @@ const env = {
 };
 
 if (process.argv[2] === 'all') {
-  const cp = spawn('node', [...sharedArgs, resolve(testDir, '*')], {
-    cwd: root,
-    env,
-    stdio: 'inherit',
-    shell: true,
-  });
-  cp.on('exit', code => {
-    process.exit(code ?? 0);
+  files.forEach(file => {
+    const path = resolve(testDir, file);
+    spawnSync('node', [...sharedArgs, path], {
+      cwd: root,
+      env,
+      stdio: 'inherit',
+      shell: true,
+    });
   });
 } else {
   const result = await p.group({

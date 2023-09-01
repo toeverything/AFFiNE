@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -12,6 +12,7 @@ import {
 import type { Request } from 'express';
 
 import { Config } from '../../config';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import { UserType } from '../users/resolver';
 import { CurrentUser } from './guard';
 import { AuthService } from './service';
@@ -25,6 +26,13 @@ export class TokenType {
   refresh!: string;
 }
 
+/**
+ * Auth resolver
+ * Token rate limit: 20 req/m
+ * Sign up/in rate limit: 10 req/m
+ * Other rate limit: 5 req/m
+ */
+@UseGuards(CloudThrottlerGuard)
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
@@ -32,6 +40,7 @@ export class AuthResolver {
     private auth: AuthService
   ) {}
 
+  @Throttle(20, 60)
   @ResolveField(() => TokenType)
   token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
     if (user.id !== currentUser.id) {
@@ -44,6 +53,7 @@ export class AuthResolver {
     };
   }
 
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signUp(
     @Context() ctx: { req: Request },
@@ -56,6 +66,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signIn(
     @Context() ctx: { req: Request },
@@ -67,6 +78,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => UserType)
   async changePassword(
     @Context() ctx: { req: Request },
@@ -78,6 +90,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => UserType)
   async changeEmail(
     @Context() ctx: { req: Request },
@@ -89,6 +102,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendChangePasswordEmail(
     @Args('email') email: string,
@@ -99,6 +113,7 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendSetPasswordEmail(
     @Args('email') email: string,
@@ -109,6 +124,7 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @Args('email') email: string,

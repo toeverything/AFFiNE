@@ -244,7 +244,7 @@
   "Retain cached cloud data": "Retain cached cloud data",
   "Retain local cached data": "Retain local cached data",
   "Save": "Save",
-  "Save As New Collection": "Save As New Collection",
+  "Save as New Collection": "Save as New Collection",
   "Saved then enable AFFiNE Cloud": "All changes are saved locally, click to enable AFFiNE Cloud.",
   "Select": "Select",
   "Select All": "Select All",
@@ -433,6 +433,10 @@
   "com.affine.auth.sign.sent.email.message.end": " You can click the link to create an account automatically.",
   "com.affine.auth.sign.up.success.title": "Your account has been created and you’re now signed in!",
   "com.affine.auth.sign.up.success.subtitle": "The app will automatically open or redirect to the web version. If you encounter any issues, you can also click the button below to manually open the AFFiNE app.",
+  "Early Access Stage": "Early Access Stage",
+  "com.affine.auth.sign.no.access.hint": "AFFiNE Cloud is in early access. Check out this link to learn more about the benefits of becoming an AFFiNE Cloud Early Supporter: ",
+  "com.affine.auth.sign.no.access.link": "AFFiNE Cloud Early Access",
+  "com.affine.auth.sign.no.access.wait": "Wait for public release",
   "com.affine.auth.page.sent.email.title": "Welcome to AFFiNE Cloud, you are almost there!",
   "com.affine.auth.page.sent.email.subtitle": "Please set a password of 8-20 characters with both letters and numbers to continue signing up with ",
   "com.affine.auth.later": "Later",
@@ -530,5 +534,11 @@
   "com.affine.share-menu.ShareViaExportDescription": "Download a static copy of your page to share with others.",
   "com.affine.share-menu.ShareWithLink": "Share with link",
   "com.affine.share-menu.ShareWithLinkDescription": "Create a link you can easily share with anyone. The visitors will open your page in the form od a document",
-  "com.affine.share-menu.ShareMode": "Share mode"
+  "com.affine.share-menu.ShareMode": "Share mode",
+  "com.affine.storage.title": "AFFiNE Cloud Storage",
+  "com.affine.storage.upgrade": "Upgrade to Pro",
+  "com.affine.storage.disabled.hint": "AFFiNE Cloud is currently in early access phase and is not supported for upgrading, please be patient and wait for our pricing plan.",
+  "com.affine.storage.used.hint": "Space used",
+  "com.affine.storage.extend.hint": "The usage has reached its maximum capacity, AFFiNE Cloud is currently in early access phase and is not supported for upgrading, please be patient and wait for our pricing plan. ",
+  "com.affine.storage.extend.link": "To get more information click here."
 }

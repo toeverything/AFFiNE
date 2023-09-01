@@ -1,4 +1,4 @@
-import type { PassiveDocProvider } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/global/utils';
 import {
   applyUpdate,
   type Doc,
@@ -6,7 +6,8 @@ import {
   encodeStateVector,
 } from 'yjs';
 
-import type { DatasourceDocAdapter, StatusAdapter } from './types';
+import type { DatasourceDocAdapter } from './data-source';
+import type { DataSourceAdapter } from './types';
 import type { Status } from './types';
 
 function getDoc(doc: Doc, guid: string): Doc | undefined {
@@ -26,6 +27,17 @@ interface LazyProviderOptions {
   origin?: string;
 }
 
+export type DocProvider = {
+  // backport from `@blocksuite/store`
+  passive: true;
+
+  sync(onlyRootDoc?: boolean): Promise<void>;
+
+  get connected(): boolean;
+  connect(): void;
+  disconnect(): void;
+};
+
 /**
  * Creates a lazy provider that connects to a datasource and synchronizes a root document.
  */
@@ -33,12 +45,12 @@ export const createLazyProvider = (
   rootDoc: Doc,
   datasource: DatasourceDocAdapter,
   options: LazyProviderOptions = {}
-): Omit<PassiveDocProvider, 'flavour'> & StatusAdapter => {
+): DocProvider & DataSourceAdapter => {
   let connected = false;
   const pendingMap = new Map<string, Uint8Array[]>(); // guid -> pending-updates
   const disposableMap = new Map<string, Set<() => void>>();
   const connectedDocs = new Set<string>();
-  let datasourceUnsub: (() => void) | undefined;
+  let abortController: AbortController | null = null;
 
   const { origin = 'lazy-provider' } = options;
 
@@ -50,21 +62,17 @@ export const createLazyProvider = (
   const callbackSet = new Set<() => void>();
   const changeStatus = (newStatus: Status) => {
     // simulate a stack, each syncing and synced should be paired
-    if (newStatus.type === 'idle') {
-      if (connected && syncingStack !== 0) {
-        console.error('syncingStatus !== 0, this should not happen');
-      }
-      syncingStack = 0;
-    }
     if (newStatus.type === 'syncing') {
       syncingStack++;
-    }
-    if (newStatus.type === 'synced' || newStatus.type === 'error') {
+    } else if (newStatus.type === 'synced' || newStatus.type === 'error') {
       syncingStack--;
     }
 
     if (syncingStack < 0) {
-      console.error('syncingStatus < 0, this should not happen');
+      console.error(
+        'syncingStatus < 0, this should not happen',
+        options.origin
+      );
     }
 
     if (syncingStack === 0) {
@@ -72,6 +80,17 @@ export const createLazyProvider = (
     }
     if (newStatus.type !== 'synced') {
       currentStatus = newStatus;
+    }
+    if (syncingStack === 0) {
+      if (!connected) {
+        currentStatus = {
+          type: 'idle',
+        };
+      } else {
+        currentStatus = {
+          type: 'synced',
+        };
+      }
     }
     callbackSet.forEach(cb => cb());
   };
@@ -90,12 +109,6 @@ export const createLazyProvider = (
         stateVector: encodeStateVector(doc),
       })
       .then(remoteUpdate => {
-        if (!connected) {
-          changeStatus({
-            type: 'idle',
-          });
-          return;
-        }
         changeStatus({
           type: 'synced',
         });
@@ -187,10 +200,8 @@ export const createLazyProvider = (
    * Specifically, listens for updates to documents and applies them to the corresponding Yjs document.
    */
   function setupDatasourceListeners() {
-    datasourceUnsub = datasource.onDocUpdate?.((guid, update) => {
-      if (!connected) {
-        return;
-      }
+    assertExists(abortController, 'abortController should be defined');
+    const unsubscribe = datasource.onDocUpdate?.((guid, update) => {
       changeStatus({
         type: 'syncing',
       });
@@ -208,12 +219,15 @@ export const createLazyProvider = (
         // This case happens when the father doc is not yet updated,
         //  so that the child doc is not yet created.
         //  We need to put it into cache so that it can be applied later.
-        console.warn('idb: doc not found', guid);
+        console.warn('doc not found', guid);
         pendingMap.set(guid, (pendingMap.get(guid) ?? []).concat(update));
       }
       changeStatus({
         type: 'synced',
       });
+    });
+    abortController.signal.addEventListener('abort', () => {
+      unsubscribe?.();
     });
   }
 
@@ -258,6 +272,7 @@ export const createLazyProvider = (
    */
   function connect() {
     connected = true;
+    abortController = new AbortController();
 
     changeStatus({
       type: 'syncing',
@@ -266,12 +281,6 @@ export const createLazyProvider = (
     // but we want to populate the cache for later update events
     connectDoc(rootDoc)
       .then(() => {
-        if (!connected) {
-          changeStatus({
-            type: 'idle',
-          });
-          return;
-        }
         changeStatus({
           type: 'synced',
         });
@@ -288,17 +297,33 @@ export const createLazyProvider = (
 
   async function disconnect() {
     connected = false;
-    changeStatus({
-      type: 'idle',
-    });
     disposeAll();
-    datasourceUnsub?.();
-    datasourceUnsub = undefined;
+    assertExists(abortController, 'abortController should be defined');
+    abortController.abort();
+    abortController = null;
   }
 
+  const syncDocRecursive = async (doc: Doc) => {
+    await syncDoc(doc);
+    await Promise.all(
+      [...doc.subdocs.values()].map(subdoc => syncDocRecursive(subdoc))
+    );
+  };
+
   return {
+    sync: async onlyRootDoc => {
+      connected = true;
+      try {
+        if (onlyRootDoc) {
+          await syncDoc(rootDoc);
+        } else {
+          await syncDocRecursive(rootDoc);
+        }
+      } finally {
+        connected = false;
+      }
+    },
     get status() {
-      console.log('currentStatus', currentStatus);
       return currentStatus;
     },
     subscribeStatusChange(cb: () => void) {
@@ -313,5 +338,7 @@ export const createLazyProvider = (
     passive: true,
     connect,
     disconnect,
+
+    datasource,
   };
 };

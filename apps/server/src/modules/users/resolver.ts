@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   HttpException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   Args,
@@ -19,10 +20,12 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 import { NewFeaturesKind } from './types';
+import { isStaff } from './utils';
 
 registerEnumType(NewFeaturesKind, {
   name: 'NewFeaturesKind',
@@ -69,6 +72,11 @@ export class AddToNewFeaturesWaitingList {
   type!: NewFeaturesKind;
 }
 
+/**
+ * User resolver
+ * All op rate limit: 10 req/m
+ */
+@UseGuards(CloudThrottlerGuard)
 @Auth()
 @Resolver(() => UserType)
 export class UserResolver {
@@ -78,6 +86,7 @@ export class UserResolver {
     private readonly config: Config
   ) {}
 
+  @Throttle(10, 60)
   @Query(() => UserType, {
     name: 'currentUser',
     description: 'Get current user',
@@ -100,6 +109,7 @@ export class UserResolver {
     };
   }
 
+  @Throttle(10, 60)
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
@@ -107,7 +117,7 @@ export class UserResolver {
   })
   @Public()
   async user(@Args('email') email: string) {
-    if (this.config.featureFlags.earlyAccessPreview) {
+    if (this.config.featureFlags.earlyAccessPreview && !isStaff(email)) {
       const hasEarlyAccess = await this.prisma.newFeaturesWaitingList
         .findUnique({
           where: { email, type: NewFeaturesKind.EarlyAccess },
@@ -135,6 +145,7 @@ export class UserResolver {
     return user;
   }
 
+  @Throttle(10, 60)
   @Mutation(() => UserType, {
     name: 'uploadAvatar',
     description: 'Upload user avatar',
@@ -155,6 +166,7 @@ export class UserResolver {
     });
   }
 
+  @Throttle(10, 60)
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
     await this.prisma.user.delete({
@@ -172,6 +184,7 @@ export class UserResolver {
     };
   }
 
+  @Throttle(10, 60)
   @Mutation(() => AddToNewFeaturesWaitingList)
   async addToNewFeaturesWaitingList(
     @CurrentUser() user: UserType,

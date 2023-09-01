@@ -43,13 +43,14 @@ async function currentUser(app: INestApplication, token: string) {
       query: `
           query {
             currentUser {
-              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword
+              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword,
+              token { token }
             }
           }
         `,
     })
     .expect(200);
-  return res.body?.data?.currentUser;
+  return res.body.data.currentUser;
 }
 
 async function createWorkspace(
@@ -330,6 +331,28 @@ async function listBlobs(
   return res.body.data.listBlobs;
 }
 
+async function collectBlobSizes(
+  app: INestApplication,
+  token: string,
+  workspaceId: string
+): Promise<number> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+            query {
+              collectBlobSizes(workspaceId: "${workspaceId}") {
+                size
+              }
+            }
+          `,
+    })
+    .expect(200);
+  return res.body.data.collectBlobSizes.size;
+}
+
 async function setBlob(
   app: INestApplication,
   token: string,
@@ -418,12 +441,13 @@ async function getInviteInfo(
         `,
     })
     .expect(200);
-  return res.body.data.workspace;
+  return res.body.data.getInviteInfo;
 }
 
 export {
   acceptInvite,
   acceptInviteById,
+  collectBlobSizes,
   createTestApp,
   createWorkspace,
   currentUser,

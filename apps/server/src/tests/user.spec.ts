@@ -1,4 +1,4 @@
-import { ok } from 'node:assert';
+import { ok, rejects } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
@@ -71,7 +71,6 @@ describe('User Module', () => {
         `,
       })
       .expect(200);
-    const current = await currentUser(app, user.token.token);
-    ok(current == null);
+    rejects(currentUser(app, user.token.token));
   });
 });

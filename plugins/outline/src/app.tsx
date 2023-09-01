@@ -50,10 +50,17 @@ export const HeaderItem = ({
   const [open, setOpen] = useState(false);
   const pushLayout = useSetAtom(pushLayoutAtom);
   const deleteLayout = useSetAtom(deleteLayoutAtom);
+  const [container, setContainer] = useState<HTMLButtonElement | null>(null);
 
   return (
-    <Tooltip content={`${open ? 'Collapse' : 'Expand'} table of contents`}>
+    <Tooltip
+      content={`${open ? 'Collapse' : 'Expand'} table of contents`}
+      portalOptions={{
+        container,
+      }}
+    >
       <IconButton
+        ref={setContainer}
         onClick={useCallback(() => {
           if (!open) {
             setOpen(true);
