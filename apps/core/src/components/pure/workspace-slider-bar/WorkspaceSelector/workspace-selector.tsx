@@ -116,6 +116,20 @@ const WorkspaceStatus = ({
       return CloudWorkspaceStatus();
     }
   }, [forceSyncStatus.type]);
+
+  const handleClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      if (
+        currentWorkspace.flavour === WorkspaceFlavour.LOCAL ||
+        forceSyncStatus.type === 'syncing'
+      ) {
+        return;
+      }
+      startForceSync();
+    },
+    [currentWorkspace.flavour, forceSyncStatus.type, startForceSync]
+  );
   return (
     <div style={{ display: 'flex' }}>
       <Tooltip
@@ -130,13 +144,7 @@ const WorkspaceStatus = ({
           }}
           ref={setContainer}
           onMouseLeave={() => setIsHovered(false)}
-          onClick={useCallback(
-            (e: MouseEvent<HTMLDivElement>) => {
-              e.stopPropagation();
-              startForceSync();
-            },
-            [startForceSync]
-          )}
+          onClick={handleClick}
         >
           {currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
             !isOnline ? (
