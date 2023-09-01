@@ -33,6 +33,10 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   if (!valB) {
     return 1 * revertSymbol;
   }
+
+  if (Array.isArray(valA) && Array.isArray(valB)) {
+    return valA.length - valB.length * revertSymbol;
+  }
   console.warn(
     'Unsupported sorting type! Please use custom sorting function.',
     valA,
