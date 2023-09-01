@@ -60,7 +60,9 @@ export const emailTemplate = ({
           >${content}</td>
         </tr>
         <tr>
-          <td style="margin-left: 24px; padding-top: 0; padding-bottom: 64px">
+          <td style="margin-left: 24px; padding-top: 0; padding-bottom: ${
+            subContent ? '0' : '64px'
+          }">
             <table border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td style="border-radius: 8px" bgcolor="#1E96EB">
@@ -84,13 +86,16 @@ export const emailTemplate = ({
                   >
                 </td>
               </tr>
-              ${
-                subContent
-                  ? `<tr>
+            </table>
+          </td>
+        </tr>
+         ${
+           subContent
+             ? `<tr>
                 <td
                   style="
                     font-size: 12px;
-                    font-weight: 600;
+                    font-weight: 400;
                     line-height: 20px;
                     font-family: inter, Arial, Helvetica, sans-serif;
                     color: #444;
@@ -100,11 +105,8 @@ export const emailTemplate = ({
                  ${subContent}
                 </td>
               </tr>`
-                  : ''
-              }
-            </table>
-          </td>
-        </tr>
+             : ''
+         }
       </table>
       <table
         width="100%"
