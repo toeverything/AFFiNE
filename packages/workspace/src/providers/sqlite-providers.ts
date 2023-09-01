@@ -54,11 +54,12 @@ export const createSQLiteProvider: DocProviderCreator = (
   id,
   rootDoc
 ): SQLiteProvider => {
-  let datasource: ReturnType<typeof createDatasource> | null = null;
+  const datasource = createDatasource(id);
   let provider: ReturnType<typeof createLazyProvider> | null = null;
   let connected = false;
   return {
     flavour: 'sqlite',
+    datasource,
     passive: true,
     get status() {
       assertExists(provider);
@@ -69,14 +70,12 @@ export const createSQLiteProvider: DocProviderCreator = (
       return provider.subscribeStatusChange(onStatusChange);
     },
     connect: () => {
-      datasource = createDatasource(id);
       provider = createLazyProvider(rootDoc, datasource, { origin: 'sqlite' });
       provider.connect();
       connected = true;
     },
     disconnect: () => {
       provider?.disconnect();
-      datasource = null;
       provider = null;
       connected = false;
     },

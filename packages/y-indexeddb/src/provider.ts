@@ -4,6 +4,7 @@ import {
   writeOperation,
 } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
+import type { IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
 import type { Doc } from 'yjs';
 import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
@@ -31,13 +32,20 @@ export const createIndexedDBDatasource = ({
   dbName: string;
   mergeCount?: number;
 }) => {
-  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
-    upgrade: upgradeDB,
-  });
+  let dbPromise: Promise<IDBPDatabase<BlockSuiteBinaryDB>> | null = null;
+  const getDb = async () => {
+    if (dbPromise === null) {
+      dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+        upgrade: upgradeDB,
+      });
+    }
+    return dbPromise;
+  };
+
   const adapter = {
     queryDocState: async (guid, options) => {
       try {
-        const db = await dbPromise;
+        const db = await getDb();
         const store = db
           .transaction('workspace', 'readonly')
           .objectStore('workspace');
@@ -64,7 +72,7 @@ export const createIndexedDBDatasource = ({
     },
     sendDocUpdate: async (guid, update) => {
       try {
-        const db = await dbPromise;
+        const db = await getDb();
         const store = db
           .transaction('workspace', 'readwrite')
           .objectStore('workspace');
@@ -96,10 +104,15 @@ export const createIndexedDBDatasource = ({
   return {
     ...adapter,
     disconnect: () => {
-      dbPromise.then(db => db.close()).catch(console.error);
+      getDb()
+        .then(db => db.close())
+        .then(() => {
+          dbPromise = null;
+        })
+        .catch(console.error);
     },
     cleanup: async () => {
-      const db = await dbPromise;
+      const db = await getDb();
       await db.clear('workspace');
     },
   };
@@ -112,7 +125,7 @@ export const createIndexedDBProvider = (
   doc: Doc,
   dbName: string = DEFAULT_DB_NAME
 ): IndexedDBProvider => {
-  let datasource: ReturnType<typeof createIndexedDBDatasource> | null = null;
+  const datasource = createIndexedDBDatasource({ dbName, mergeCount });
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
   const apis = {
@@ -128,14 +141,12 @@ export const createIndexedDBProvider = (
       if (apis.connected) {
         apis.disconnect();
       }
-      datasource = createIndexedDBDatasource({ dbName, mergeCount });
       provider = createLazyProvider(doc, datasource, { origin: 'idb' });
       provider.connect();
     },
     disconnect: () => {
       datasource?.disconnect();
       provider?.disconnect();
-      datasource = null;
       provider = null;
     },
     cleanup: async () => {
@@ -144,6 +155,7 @@ export const createIndexedDBProvider = (
     get connected() {
       return provider?.connected || false;
     },
+    datasource,
   } satisfies IndexedDBProvider;
 
   return apis;
