@@ -66,7 +66,7 @@ Before we tell you how to get started with AFFiNE, we'd like to shamelessly plug
 
 ⚠️ Please note that AFFiNE is still under active development and is not yet ready for production use. ⚠️
 
-[![affine.pro](https://img.shields.io/static/v1?label=Try%20it%20Online&logo=affine&message=%E2%86%92&style=for-the-badge)](https://app.affine.pro) No installation or registration required! Head over to our website and try it out now.
+[![affine.pro](https://img.shields.io/static/v1?label=Try%20it%20Online&logo=affine&message=%E2%86%92&style=for-the-badge)](https://insider.affine.pro) No installation or registration required! Head over to our website and try it out now.
 
 [![community.affine.pro](https://img.shields.io/static/v1?label=Join%20the%20community&message=%E2%86%92&style=for-the-badge)](https://community.affine.pro) Our wonderful community, where you can meet and engage with the team, developers and other like-minded enthusiastic user of AFFiNE.
 
