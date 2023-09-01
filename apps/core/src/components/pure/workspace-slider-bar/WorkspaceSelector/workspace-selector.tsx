@@ -4,6 +4,7 @@ import {
   CloudWorkspaceIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
+  UnsyncIcon,
 } from '@blocksuite/icons';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
@@ -16,11 +17,11 @@ import {
   useState,
 } from 'react';
 
-import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useDatasourceSync } from '../../../../hooks/use-datasource-sync';
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
 import { workspaceAvatarStyle } from './index.css';
+import { Loading } from './loading-icon';
 import {
   StyledSelectorContainer,
   StyledSelectorWrapper,
@@ -40,6 +41,22 @@ const CloudWorkspaceStatus = () => {
     <>
       <CloudWorkspaceIcon />
       AFFiNE Cloud
+    </>
+  );
+};
+const SyncingWorkspaceStatus = () => {
+  return (
+    <>
+      <Loading />
+      Syncing...
+    </>
+  );
+};
+const UnSyncWorkspaceStatus = () => {
+  return (
+    <>
+      <UnsyncIcon />
+      Wait for upload
     </>
   );
 };
@@ -68,26 +85,37 @@ const WorkspaceStatus = ({
   currentWorkspace: AllWorkspace;
 }) => {
   const isOnline = useSystemOnline();
-  const loginStatus = useCurrentLoginStatus();
+  // todo: finish display sync status
+  const [forceSyncStatus, startForceSync] = useDatasourceSync(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const setIsHovered = useSetAtom(hoverAtom);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const content = useMemo(() => {
+    if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
+      return 'Saved locally';
+    }
     if (!isOnline) {
       return 'Disconnected, please check your network connection';
     }
-    if (
-      loginStatus === 'authenticated' &&
-      currentWorkspace.flavour !== 'local'
-    ) {
-      return 'Sync with AFFiNE Cloud';
+    switch (forceSyncStatus.type) {
+      case 'syncing':
+        return 'Syncing with AFFiNE Cloud';
+      case 'error':
+        return 'Sync failed due to server issues, please try again later.';
+      default:
+        return 'Sync with AFFiNE Cloud';
     }
-    return 'Saved locally';
-  }, [currentWorkspace.flavour, isOnline, loginStatus]);
-  // todo: finish display sync status
-  const [_forceSyncStatus, startForceSync] = useDatasourceSync(
-    currentWorkspace.blockSuiteWorkspace
-  );
-
-  const setIsHovered = useSetAtom(hoverAtom);
-  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  }, [currentWorkspace.flavour, forceSyncStatus.type, isOnline]);
+  const CloudWorkspaceSyncStatus = useCallback(() => {
+    if (forceSyncStatus.type === 'syncing') {
+      return SyncingWorkspaceStatus();
+    } else if (forceSyncStatus.type === 'error') {
+      return UnSyncWorkspaceStatus();
+    } else {
+      return CloudWorkspaceStatus();
+    }
+  }, [forceSyncStatus.type]);
   return (
     <div style={{ display: 'flex' }}>
       <Tooltip
@@ -114,7 +142,7 @@ const WorkspaceStatus = ({
             !isOnline ? (
               <OfflineStatus />
             ) : (
-              <CloudWorkspaceStatus />
+              <CloudWorkspaceSyncStatus />
             )
           ) : (
             <LocalWorkspaceStatus />
