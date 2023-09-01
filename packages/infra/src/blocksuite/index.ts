@@ -1,7 +1,7 @@
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
-import type { Doc} from 'yjs';
+import type { Doc } from 'yjs';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 export async function buildShowcaseWorkspace(
