@@ -24,7 +24,7 @@ export function setMergeCount(count: number) {
   mergeCount = count;
 }
 
-const createDatasource = ({
+export const createIndexedDBDatasource = ({
   dbName,
   mergeCount,
 }: {
@@ -105,11 +105,14 @@ const createDatasource = ({
   };
 };
 
+/**
+ * We use `doc.guid` as the unique key, please make sure it not changes.
+ */
 export const createIndexedDBProvider = (
   doc: Doc,
   dbName: string = DEFAULT_DB_NAME
 ): IndexedDBProvider => {
-  let datasource: ReturnType<typeof createDatasource> | null = null;
+  let datasource: ReturnType<typeof createIndexedDBDatasource> | null = null;
   let provider: ReturnType<typeof createLazyProvider> | null = null;
 
   const apis = {
@@ -125,7 +128,7 @@ export const createIndexedDBProvider = (
       if (apis.connected) {
         apis.disconnect();
       }
-      datasource = createDatasource({ dbName, mergeCount });
+      datasource = createIndexedDBDatasource({ dbName, mergeCount });
       provider = createLazyProvider(doc, datasource, { origin: 'idb' });
       provider.connect();
     },

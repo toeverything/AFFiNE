@@ -3,6 +3,19 @@ import { join } from 'path';
 
 import { CLOUD_BASE_URL } from './config';
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'assets',
+    privileges: {
+      secure: false,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      standard: true,
+      bypassCSP: true,
+    },
+  },
+]);
+
 const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
 const webStaticDir = join(__dirname, '../resources/web-static');
 
@@ -10,7 +23,7 @@ function isNetworkResource(pathname: string) {
   return NETWORK_REQUESTS.some(opt => pathname.startsWith(opt));
 }
 
-async function handleHttpRequest(request: Request) {
+async function handleFileRequest(request: Request) {
   const clonedRequest = Object.assign(request.clone(), {
     bypassCustomProtocolHandlers: true,
   });
@@ -34,7 +47,11 @@ async function handleHttpRequest(request: Request) {
 
 export function registerProtocol() {
   protocol.handle('file', request => {
-    return handleHttpRequest(request);
+    return handleFileRequest(request);
+  });
+
+  protocol.handle('assets', request => {
+    return handleFileRequest(request);
   });
 
   // hack for CORS

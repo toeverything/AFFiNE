@@ -129,10 +129,6 @@ export const getMilestones = async (
   return milestone.milestone;
 };
 
-/**
- * We use `doc.guid` as the unique key, please make sure it not changes.
- */
-
 export * from './provider';
 export * from './shared';
 export * from './utils';

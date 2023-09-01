@@ -25,7 +25,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "jotai": "^2.4.0",
+    "jotai": "^2.4.1",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.83",
