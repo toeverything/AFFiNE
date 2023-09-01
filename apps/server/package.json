@@ -11,11 +11,8 @@
     "build": "tsc",
     "start": "node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
-    "test": "yarn exec ts-node-esm ./scripts/run-test.ts all",
-    "test:select": "yarn exec ts-node-esm ./scripts/run-test.ts",
-    "test:watch": "yarn exec ts-node-esm ./scripts/run-test.ts all --watch",
-    "test:select:watch": "yarn exec ts-node-esm ./scripts/run-test.ts --watch",
-    "test:coverage": "c8 yarn exec ts-node-esm ./scripts/run-test.ts all",
+    "test": "ava --concurrency 1 --serial",
+    "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -90,12 +87,34 @@
     "@types/sinon": "^10.0.16",
     "@types/supertest": "^2.0.12",
     "@types/ws": "^8.5.5",
+    "ava": "^5.3.1",
     "c8": "^8.0.1",
     "nodemon": "^3.0.1",
     "sinon": "^15.2.0",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader",
+      "ts-node/esm.mjs",
+      "--es-module-specifier-resolution",
+      "node"
+    ],
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "require": [
+      "./src/prelude.ts"
+    ],
+    "environmentVariables": {
+      "TS_NODE_PROJECT": "./tsconfig.json",
+      "NODE_ENV": "test"
+    }
   },
   "nodemonConfig": {
     "exec": "node",

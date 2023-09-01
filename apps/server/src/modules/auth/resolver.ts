@@ -43,7 +43,7 @@ export class TokenType {
 export class AuthResolver {
   constructor(
     private readonly config: Config,
-    private auth: AuthService,
+    private readonly auth: AuthService,
     private readonly session: SessionService
   ) {}
 

@@ -1,8 +1,6 @@
-import { DynamicModule, Provider, Type } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { DynamicModule, Type } from '@nestjs/common';
 
 import { GqlModule } from '../graphql.module';
-import { ExceptionLogger } from '../middleware/exception-logger';
 import { AuthModule } from './auth';
 import { DocModule } from './doc';
 import { SyncModule } from './sync';
@@ -39,11 +37,4 @@ switch (SERVER_FLAVOR) {
     break;
 }
 
-const Providers: Provider[] = [
-  {
-    provide: APP_FILTER,
-    useClass: ExceptionLogger,
-  },
-];
-
-export { BusinessModules, Providers };
+export { BusinessModules };
