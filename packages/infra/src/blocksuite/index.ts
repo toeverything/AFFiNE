@@ -447,30 +447,6 @@ export function migrateToSubdoc(oldDoc: YDoc): YDoc {
   return newDoc;
 }
 
-export async function migrateDatabaseBlockTo3(rootDoc: YDoc, schema: Schema) {
-  const spaces = rootDoc.getMap('spaces') as YMap<any>;
-  spaces.forEach(space => {
-    schema.upgradePage(
-      {
-        'affine:note': 1,
-        'affine:bookmark': 1,
-        'affine:database': 2,
-        'affine:divider': 1,
-        'affine:image': 1,
-        'affine:list': 1,
-        'affine:code': 1,
-        'affine:page': 2,
-        'affine:paragraph': 1,
-        'affine:surface': 3,
-      },
-      space
-    );
-  });
-  const meta = rootDoc.getMap('meta') as YMap<unknown>;
-  const versions = meta.get('blockVersions') as YMap<number>;
-  versions.set('affine:database', 3);
-}
-
 export type UpgradeOptions = {
   getCurrentRootDoc: () => Promise<YDoc>;
   createWorkspace: () => Promise<Workspace>;
@@ -491,6 +467,23 @@ const upgradeV1ToV2 = async (options: UpgradeOptions) => {
   });
   return newWorkspace;
 };
+
+export async function upgradePage(options: UpgradeOptions): Promise<boolean> {
+  const rootDoc = await options.getCurrentRootDoc();
+  const spaces = rootDoc.getMap('spaces') as YMap<any>;
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+  const versions = meta.get('blockVersions') as YMap<number>;
+  const schema = options.getSchema();
+  const oldVersions = versions.toJSON();
+  spaces.forEach(space => {
+    schema.upgradePage(oldVersions, space);
+  });
+  const newVersions = getLatestVersions(schema);
+  meta.set('blockVersions', new YMap(Object.entries(newVersions)));
+  return Object.entries(oldVersions).some(
+    ([flavour, version]) => newVersions[flavour] !== version
+  );
+}
 
 // database from 2 to 3
 async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
@@ -536,40 +529,6 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
   return true;
 }
 
-// surface from 3 to 5
-export async function upgradeV3ToV4(options: UpgradeOptions) {
-  const rootDoc = await options.getCurrentRootDoc();
-  const spaces = rootDoc.getMap('spaces') as YMap<any>;
-  const meta = rootDoc.getMap('meta') as YMap<unknown>;
-  const versions = meta.get('blockVersions') as YMap<number>;
-  if (versions.get('affine:page') === 2) {
-    const schema = options.getSchema();
-    spaces.forEach(space => {
-      schema.upgradePage(
-        {
-          'affine:note': 1,
-          'affine:bookmark': 1,
-          'affine:database': 3,
-          'affine:divider': 1,
-          'affine:image': 1,
-          'affine:list': 1,
-          'affine:code': 1,
-          'affine:page': 2,
-          'affine:paragraph': 1,
-          'affine:surface': 3,
-        },
-        space
-      );
-    });
-    Object.entries(getLatestVersions(schema)).map(([flavour, version]) =>
-      versions.set(flavour, version)
-    );
-    return true;
-  } else {
-    return false;
-  }
-}
-
 export enum WorkspaceVersion {
   // v1 is treated as undefined
   SubDoc = 2,
@@ -598,7 +557,8 @@ export async function migrateWorkspace(
   if (currentVersion === WorkspaceVersion.SubDoc) {
     return upgradeV2ToV3(options);
   } else if (currentVersion === WorkspaceVersion.DatabaseV3) {
-    return upgradeV3ToV4(options);
+    // surface from 3 to 5
+    return upgradePage(options);
   } else {
     return false;
   }
