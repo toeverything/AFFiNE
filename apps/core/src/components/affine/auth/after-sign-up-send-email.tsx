@@ -21,11 +21,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
 
-  const { resendCountDown, allowSendEmail, signUp } = useAuth({
-    onNoAccess: useCallback(() => {
-      setAuthState('noAccess');
-    }, [setAuthState]),
-  });
+  const { resendCountDown, allowSendEmail, signUp } = useAuth();
 
   if (loginStatus === 'authenticated') {
     onSignedIn?.();

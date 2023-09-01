@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import { signInCloud } from '../../../utils/cloud-utils';
 
 const COUNT_DOWN_TIME = 60;
-const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
+export const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
 
 function handleSendEmailError(
   res: SignInResponse | undefined | void,
@@ -20,21 +20,16 @@ function handleSendEmailError(
       type: 'error',
     });
   }
-  // if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-  //   pushNotification({
-  //     title: 'Sign up error',
-  //     message: `You don't have early access permission\nVisit ${INTERNAL_BETA_URL} for more information`,
-  //     type: 'error',
-  //   });
-  // }
 }
 
 type AuthStoreAtom = {
   allowSendEmail: boolean;
   resendCountDown: number;
+  isMutating: boolean;
 };
 
 export const authStoreAtom = atom<AuthStoreAtom>({
+  isMutating: false,
   allowSendEmail: true,
   resendCountDown: COUNT_DOWN_TIME,
 });
@@ -46,6 +41,7 @@ const countDownAtom = atom(
       const countDown = get(authStoreAtom).resendCountDown;
       if (countDown === 0) {
         set(authStoreAtom, {
+          isMutating: false,
           allowSendEmail: true,
           resendCountDown: COUNT_DOWN_TIME,
         });
@@ -53,6 +49,7 @@ const countDownAtom = atom(
         return;
       }
       set(authStoreAtom, {
+        isMutating: false,
         resendCountDown: countDown - 1,
         allowSendEmail: false,
       });
@@ -60,18 +57,19 @@ const countDownAtom = atom(
   }
 );
 
-export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
+export const useAuth = () => {
   const pushNotification = useSetAtom(pushNotificationAtom);
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
   const startResendCountDown = useSetAtom(countDownAtom);
 
   const signIn = useCallback(
     async (email: string) => {
-      setAuthStore(() => ({
-        allowSendEmail: false,
-        resendCountDown: COUNT_DOWN_TIME,
-      }));
-      startResendCountDown();
+      setAuthStore(prev => {
+        return {
+          ...prev,
+          isMutating: true,
+        };
+      });
 
       const res = await signInCloud('email', {
         email: email,
@@ -81,20 +79,27 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
 
       handleSendEmailError(res, pushNotification);
 
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        onNoAccess();
-      }
+      setAuthStore({
+        isMutating: false,
+        allowSendEmail: false,
+        resendCountDown: COUNT_DOWN_TIME,
+      });
+
+      startResendCountDown();
+
+      return res;
     },
-    [onNoAccess, pushNotification, setAuthStore, startResendCountDown]
+    [pushNotification, setAuthStore, startResendCountDown]
   );
 
   const signUp = useCallback(
     async (email: string) => {
-      setAuthStore({
-        allowSendEmail: false,
-        resendCountDown: COUNT_DOWN_TIME,
+      setAuthStore(prev => {
+        return {
+          ...prev,
+          isMutating: true,
+        };
       });
-      startResendCountDown();
 
       const res = await signInCloud('email', {
         email: email,
@@ -104,11 +109,17 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
 
       handleSendEmailError(res, pushNotification);
 
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        onNoAccess();
-      }
+      setAuthStore({
+        isMutating: false,
+        allowSendEmail: false,
+        resendCountDown: COUNT_DOWN_TIME,
+      });
+
+      startResendCountDown();
+
+      return res;
     },
-    [onNoAccess, pushNotification, setAuthStore, startResendCountDown]
+    [pushNotification, setAuthStore, startResendCountDown]
   );
 
   const signInWithGoogle = useCallback(() => {
@@ -118,6 +129,7 @@ export const useAuth = ({ onNoAccess }: { onNoAccess: () => void }) => {
   return {
     allowSendEmail: authStore.allowSendEmail,
     resendCountDown: authStore.resendCountDown,
+    isMutating: authStore.isMutating,
     signUp,
     signIn,
     signInWithGoogle,

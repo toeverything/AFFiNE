@@ -22,11 +22,7 @@ export const AfterSignInSendEmail = ({
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
 
-  const { resendCountDown, allowSendEmail, signIn } = useAuth({
-    onNoAccess: useCallback(() => {
-      setAuthState('noAccess');
-    }, [setAuthState]),
-  });
+  const { resendCountDown, allowSendEmail, signIn } = useAuth();
   if (loginStatus === 'authenticated') {
     onSignedIn?.();
   }
