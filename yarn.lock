@@ -661,6 +661,7 @@ __metadata:
     "@aws-sdk/client-s3": ^3.400.0
     "@google-cloud/opentelemetry-cloud-monitoring-exporter": ^0.17.0
     "@google-cloud/opentelemetry-cloud-trace-exporter": ^2.1.0
+    "@keyv/redis": ^2.7.0
     "@napi-rs/image": ^1.6.1
     "@nestjs/apollo": ^12.0.7
     "@nestjs/common": ^10.2.4
@@ -708,6 +709,7 @@ __metadata:
     graphql-type-json: ^0.3.2
     graphql-upload: ^16.0.2
     ioredis: ^5.3.2
+    keyv: ^4.5.3
     lodash-es: ^4.17.21
     nestjs-throttler-storage-redis: ^0.3.3
     next-auth: 4.22.5
@@ -6383,6 +6385,15 @@ __metadata:
   version: 3.4.0
   resolution: "@juggle/resize-observer@npm:3.4.0"
   checksum: 2505028c05cc2e17639fcad06218b1c4b60f932a4ebb4b41ab546ef8c157031ae377e3f560903801f6d01706dbefd4943b6c4704bf19ed86dfa1c62f1473a570
+  languageName: node
+  linkType: hard
+
+"@keyv/redis@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "@keyv/redis@npm:2.7.0"
+  dependencies:
+    ioredis: ^5.3.2
+  checksum: 2bf16d99f54fa5177c375eb170f46076715e6a17fd65840d10638e441af8a4dd065927a18b45abb9531746ddab54f865884347c80f7e188c981a40f8245269ab
   languageName: node
   linkType: hard
 
