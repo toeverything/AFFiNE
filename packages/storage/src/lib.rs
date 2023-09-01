@@ -9,7 +9,6 @@ use std::{
 use jwst::BlobStorage;
 use jwst_codec::Doc;
 use jwst_storage::{BlobStorageType, JwstStorage, JwstStorageError};
-
 use napi::{bindgen_prelude::*, Error, Result, Status};
 
 #[macro_use]
@@ -112,7 +111,11 @@ impl Storage {
       (id, ext.map(|ext| HashMap::from([("format".into(), ext)])))
     };
 
-    let Ok(meta) = self.blobs().get_metadata(Some(workspace_id.clone()), id.clone(), params.clone()).await else {
+    let Ok(meta) = self
+      .blobs()
+      .get_metadata(Some(workspace_id.clone()), id.clone(), params.clone())
+      .await
+    else {
       return Ok(None);
     };
 
@@ -144,12 +147,13 @@ impl Storage {
 
   /// Workspace size taken by blobs.
   #[napi]
-  pub async fn blobs_size(&self, workspace_id: String) -> Result<i64> {
-    map_err!(self.blobs().get_blobs_size(workspace_id).await)
+  pub async fn blobs_size(&self, workspaces: Vec<String>) -> Result<i64> {
+    map_err!(self.blobs().get_blobs_size(workspaces).await)
   }
 }
 
-/// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the result binary.
+/// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
+/// result binary.
 #[napi(catch_unwind)]
 pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
   let mut doc = Doc::default();

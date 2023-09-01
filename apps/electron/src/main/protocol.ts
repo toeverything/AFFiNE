@@ -2,6 +2,8 @@ import { net, protocol, session } from 'electron';
 import { join } from 'path';
 
 import { CLOUD_BASE_URL } from './config';
+import { logger } from './logger';
+import { getCookie } from './main-window';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -70,9 +72,49 @@ export function registerProtocol() {
           'DELETE',
           'OPTIONS',
         ];
+        // replace SameSite=Lax with SameSite=None
+        const originalCookie =
+          responseHeaders['set-cookie'] || responseHeaders['Set-Cookie'];
+
+        if (originalCookie) {
+          delete responseHeaders['set-cookie'];
+          delete responseHeaders['Set-Cookie'];
+          responseHeaders['Set-Cookie'] = originalCookie.map(cookie => {
+            let newCookie = cookie.replace(/SameSite=Lax/gi, 'SameSite=None');
+
+            // if the cookie is not secure, set it to secure
+            if (!newCookie.includes('Secure')) {
+              newCookie = newCookie + '; Secure';
+            }
+            return newCookie;
+          });
+        }
       }
 
       callback({ responseHeaders });
     }
   );
+
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    (async () => {
+      const url = new URL(details.url);
+      const pathname = url.pathname;
+      // if sending request to the cloud, attach the session cookie
+      if (isNetworkResource(pathname)) {
+        const cookie = await getCookie(CLOUD_BASE_URL);
+        const cookieString = cookie.map(c => `${c.name}=${c.value}`).join('; ');
+        details.requestHeaders['cookie'] = cookieString;
+      }
+      callback({
+        cancel: false,
+        requestHeaders: details.requestHeaders,
+      });
+    })().catch(e => {
+      logger.error('failed to attach cookie', e);
+      callback({
+        cancel: false,
+        requestHeaders: details.requestHeaders,
+      });
+    });
+  });
 }

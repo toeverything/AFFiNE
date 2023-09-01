@@ -10,6 +10,7 @@ import request from 'supertest';
 
 import { AppModule } from '../app';
 import {
+  collectAllBlobSizes,
   collectBlobSizes,
   createWorkspace,
   listBlobs,
@@ -107,5 +108,26 @@ describe('Workspace Module - Blobs', () => {
 
     const size = await collectBlobSizes(app, u1.token.token, workspace.id);
     ok(size === 4, 'failed to collect blob sizes');
+  });
+
+  it('should calc all blobs size', async () => {
+    const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+
+    const workspace1 = await createWorkspace(app, u1.token.token);
+
+    const buffer1 = Buffer.from([0, 0]);
+    await setBlob(app, u1.token.token, workspace1.id, buffer1);
+    const buffer2 = Buffer.from([0, 1]);
+    await setBlob(app, u1.token.token, workspace1.id, buffer2);
+
+    const workspace2 = await createWorkspace(app, u1.token.token);
+
+    const buffer3 = Buffer.from([0, 0]);
+    await setBlob(app, u1.token.token, workspace2.id, buffer3);
+    const buffer4 = Buffer.from([0, 1]);
+    await setBlob(app, u1.token.token, workspace2.id, buffer4);
+
+    const size = await collectAllBlobSizes(app, u1.token.token);
+    ok(size === 8, 'failed to collect all blob sizes');
   });
 });
