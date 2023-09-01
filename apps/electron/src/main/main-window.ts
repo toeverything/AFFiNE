@@ -15,6 +15,8 @@ const IS_DEV: boolean =
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
 
+export const mainWindowOrigin = process.env.DEV_SERVER_URL || 'file://.';
+
 async function createWindow() {
   logger.info('create window');
   const mainWindowState = electronWindowState({
@@ -114,7 +116,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
+  const pageUrl = mainWindowOrigin; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 
@@ -126,22 +128,22 @@ async function createWindow() {
 }
 
 // singleton
-let browserWindow: BrowserWindow | undefined;
+let browserWindow$: Promise<BrowserWindow> | undefined;
 
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  if (!browserWindow || browserWindow.isDestroyed()) {
-    browserWindow = await createWindow();
+  if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
+    browserWindow$ = createWindow();
   }
+  const mainWindow = await browserWindow$;
 
-  if (browserWindow.isMinimized()) {
-    browserWindow.restore();
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
     logger.info('restore main window');
   }
-
-  return browserWindow;
+  return mainWindow;
 }
 
 export async function handleOpenUrlInHiddenWindow(url: string) {
@@ -169,10 +171,6 @@ export async function handleOpenUrlInHiddenWindow(url: string) {
   return win;
 }
 
-export function reloadApp() {
-  browserWindow?.reload();
-}
-
 export async function setCookie(cookie: CookiesSetDetails): Promise<void>;
 export async function setCookie(origin: string, cookie: string): Promise<void>;
 
@@ -186,9 +184,20 @@ export async function setCookie(
       ? parseCookie(arg0, arg1)
       : arg0;
 
+  logger.info('setting cookie to main window', details);
+
   if (typeof details !== 'object') {
     throw new Error('invalid cookie details');
   }
 
   await window.webContents.session.cookies.set(details);
+}
+
+export async function getCookie(url?: string, name?: string) {
+  const window = await restoreOrCreateWindow();
+  const cookies = await window.webContents.session.cookies.get({
+    url,
+    name,
+  });
+  return cookies;
 }

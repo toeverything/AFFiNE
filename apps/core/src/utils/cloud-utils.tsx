@@ -17,26 +17,30 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
         '_target'
       );
       return;
-    } else if (provider === 'email') {
+    } else {
       const [options, ...tail] = rest;
+      const callbackUrl =
+        runtimeConfig.serverUrlPrefix +
+        (provider === 'email' ? '/open-app/oauth-jwt' : location.pathname);
       return signIn(
         provider,
         {
           ...options,
-          callbackUrl: buildCallbackUrl('/open-app/oauth-jwt'),
+          callbackUrl: buildCallbackUrl(callbackUrl),
         },
         ...tail
       );
-    } else {
-      throw new Error('Unsupported provider');
     }
   } else {
     return signIn(provider, ...rest);
   }
 };
 
-export const signOutCloud: typeof signOut = async (...args) => {
-  return signOut(...args).then(result => {
+export const signOutCloud: typeof signOut = async options => {
+  return signOut({
+    ...options,
+    callbackUrl: '/',
+  }).then(result => {
     if (result) {
       startTransition(() => {
         getCurrentStore().set(refreshRootMetadataAtom);
