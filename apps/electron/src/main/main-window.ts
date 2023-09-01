@@ -147,16 +147,11 @@ export async function restoreOrCreateWindow() {
 }
 
 export async function handleOpenUrlInHiddenWindow(url: string) {
-  const mainExposedMeta = getExposedMeta();
   const win = new BrowserWindow({
     width: 1200,
     height: 600,
     webPreferences: {
       preload: join(__dirname, './preload.js'),
-      additionalArguments: [
-        `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
-        // popup window does not need helper process, right?
-      ],
     },
     show: false,
   });
