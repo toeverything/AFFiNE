@@ -1,4 +1,5 @@
 /// <reference types="./global.d.ts" />
+import { ExceptionLogger } from '@affine/server/middleware/exception-logger';
 import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { NestFactory } from '@nestjs/core';
@@ -75,6 +76,7 @@ app.use(
   })
 );
 
+app.useGlobalFilters(new ExceptionLogger());
 app.use(cookieParser());
 
 const config = app.get(Config);

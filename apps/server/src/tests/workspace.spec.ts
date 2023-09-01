@@ -131,47 +131,46 @@ test('should share a page', async t => {
   const workspace = await createWorkspace(app, u1.token.token);
 
   const share = await sharePage(app, u1.token.token, workspace.id, 'page1');
-  ok(share === true, 'failed to share page');
+  t.true(share === true, 'failed to share page');
   const pages = await getWorkspaceSharedPages(
     app,
     u1.token.token,
     workspace.id
   );
-  ok(pages.length === 1, 'failed to get shared pages');
-  ok(pages[0] === 'page1', 'failed to get shared page: page1');
+  t.true(pages.length === 1, 'failed to get shared pages');
+  t.true(pages[0] === 'page1', 'failed to get shared page: page1');
 
   const msg1 = await sharePage(app, u2.token.token, workspace.id, 'page2');
-  ok(msg1 === 'Permission denied', 'unauthorized user can share page');
+  t.true(msg1 === 'Permission denied', 'unauthorized user can share page');
   const msg2 = await revokePage(app, u2.token.token, 'not_exists_ws', 'page2');
-  ok(msg2 === 'Permission denied', 'unauthorized user can share page');
+  t.true(msg2 === 'Permission denied', 'unauthorized user can share page');
 
   await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
   await acceptInvite(app, u2.token.token, workspace.id);
   const invited = await sharePage(app, u2.token.token, workspace.id, 'page2');
-  ok(invited === true, 'failed to share page');
+  t.true(invited === true, 'failed to share page');
 
   const revoke = await revokePage(app, u1.token.token, workspace.id, 'page1');
-  ok(revoke === true, 'failed to revoke page');
+  t.true(revoke === true, 'failed to revoke page');
   const pages2 = await getWorkspaceSharedPages(
     app,
     u1.token.token,
     workspace.id
   );
-  ok(pages2.length === 1, 'failed to get shared pages');
-  ok(pages2[0] === 'page2', 'failed to get shared page: page2');
+  t.true(pages2.length === 1, 'failed to get shared pages');
+  t.true(pages2[0] === 'page2', 'failed to get shared page: page2');
 
   const msg3 = await revokePage(app, u1.token.token, workspace.id, 'page3');
-  ok(msg3 === false, 'can revoke non-exists page');
+  t.true(msg3 === false, 'can revoke non-exists page');
 
   const msg4 = await revokePage(app, u1.token.token, workspace.id, 'page2');
-  ok(msg4 === true, 'failed to revoke page');
+  t.true(msg4 === true, 'failed to revoke page');
   const page3 = await getWorkspaceSharedPages(
     app,
     u1.token.token,
     workspace.id
   );
-  ok(page3.length === 0, 'failed to get shared pages');
-  t.pass();
+  t.true(page3.length === 0, 'failed to get shared pages');
 });
 
 test('should can get workspace doc', async t => {
