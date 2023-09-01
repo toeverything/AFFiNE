@@ -688,6 +688,7 @@ __metadata:
     "@prisma/client": ^5.2.0
     "@prisma/instrumentation": ^5.2.0
     "@socket.io/redis-adapter": ^8.2.1
+    "@toeverything/infra": "workspace:*"
     "@types/cookie-parser": ^1.4.3
     "@types/engine.io": ^3.1.7
     "@types/express": ^4.17.17
