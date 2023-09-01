@@ -27,6 +27,7 @@ import type { User, Workspace } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -130,6 +131,7 @@ export class UpdateWorkspaceInput extends PickType(
 export class WorkspaceResolver {
   constructor(
     private readonly auth: AuthService,
+    private readonly config: Config,
     private readonly mailer: MailService,
     private readonly prisma: PrismaService,
     private readonly permissionProvider: PermissionService,
@@ -610,17 +612,28 @@ export class WorkspaceResolver {
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
 
-    return this.storage.blobsSize(workspaceId).then(size => ({ size }));
+    return this.storage.blobsSize([workspaceId]).then(size => ({ size }));
   }
 
   @Query(() => WorkspaceBlobSizes)
-  async collectAllBlobSizes(@CurrentUser() user: User) {
-    const workspaces = await this.workspaces(user);
+  async collectAllBlobSizes(@CurrentUser() user: UserType) {
+    const workspaces = await this.prisma.userWorkspacePermission
+      .findMany({
+        where: {
+          userId: user.id,
+          accepted: true,
+        },
+        select: {
+          workspace: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      })
+      .then(data => data.map(({ workspace }) => workspace.id));
 
-    const size = (
-      await Promise.all(workspaces.map(({ id }) => this.storage.blobsSize(id)))
-    ).reduce((prev, curr) => prev + curr, 0);
-
+    const size = await this.storage.blobsSize(workspaces);
     return { size };
   }
 
@@ -632,6 +645,12 @@ export class WorkspaceResolver {
     blob: FileUpload
   ) {
     await this.permissionProvider.check(workspaceId, user.id, Permission.Write);
+    const quota = this.config.objectStorage.quota;
+    const { size } = await this.collectAllBlobSizes(user);
+
+    if (size > quota) {
+      throw new ForbiddenException('storage size limit exceeded');
+    }
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
@@ -644,6 +663,10 @@ export class WorkspaceResolver {
         resolve(Buffer.concat(chunks));
       });
     });
+
+    if (size + buffer.length > quota) {
+      throw new ForbiddenException('storage size limit exceeded');
+    }
 
     return this.storage.uploadBlob(workspaceId, buffer);
   }

@@ -1695,7 +1695,7 @@ dependencies = [
 [[package]]
 name = "jwst"
 version = "0.1.1"
-source = "git+https://github.com/toeverything/OctoBase.git#b026b44f67e1043e83f31a21360a0baee122e819"
+source = "git+https://github.com/toeverything/OctoBase.git#58f3bbdf97f391a535e772d32828a484376c4159"
 dependencies = [
  "async-trait",
  "base64 0.21.3",
@@ -1723,7 +1723,7 @@ dependencies = [
 [[package]]
 name = "jwst-codec"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git#b026b44f67e1043e83f31a21360a0baee122e819"
+source = "git+https://github.com/toeverything/OctoBase.git#58f3bbdf97f391a535e772d32828a484376c4159"
 dependencies = [
  "arbitrary",
  "bitvec",
@@ -1743,7 +1743,7 @@ dependencies = [
 [[package]]
 name = "jwst-logger"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git#b026b44f67e1043e83f31a21360a0baee122e819"
+source = "git+https://github.com/toeverything/OctoBase.git#58f3bbdf97f391a535e772d32828a484376c4159"
 dependencies = [
  "chrono",
  "nu-ansi-term",
@@ -1756,7 +1756,7 @@ dependencies = [
 [[package]]
 name = "jwst-storage"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git#b026b44f67e1043e83f31a21360a0baee122e819"
+source = "git+https://github.com/toeverything/OctoBase.git#58f3bbdf97f391a535e772d32828a484376c4159"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1786,7 +1786,7 @@ dependencies = [
 [[package]]
 name = "jwst-storage-migration"
 version = "0.1.0"
-source = "git+https://github.com/toeverything/OctoBase.git#b026b44f67e1043e83f31a21360a0baee122e819"
+source = "git+https://github.com/toeverything/OctoBase.git#58f3bbdf97f391a535e772d32828a484376c4159"
 dependencies = [
  "sea-orm-migration",
  "tokio",
