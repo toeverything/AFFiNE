@@ -18,9 +18,9 @@ import {
   migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
-import { downloadBinary } from '@toeverything/y-indexeddb';
+import { downloadBinary, overwriteBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
-import { Doc } from 'yjs';
+import { Doc, encodeStateAsUpdate } from 'yjs';
 import { applyUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
@@ -34,37 +34,40 @@ async function tryMigration() {
       const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
         if (oldMeta.flavour === WorkspaceFlavour.LOCAL) {
+          let rootDoc: Doc | undefined;
+          const options = {
+            getCurrentRootDoc: async () => {
+              const doc = new Doc({
+                guid: oldMeta.id,
+              });
+              const downloadWorkspace = async (doc: Doc): Promise<void> => {
+                const binary = await downloadBinary(doc.guid);
+                if (binary) {
+                  applyUpdate(doc, binary);
+                }
+                return Promise.all(
+                  [...doc.subdocs.values()].map(subdoc =>
+                    downloadWorkspace(subdoc)
+                  )
+                ).then();
+              };
+              await downloadWorkspace(doc);
+              rootDoc = doc;
+              return doc;
+            },
+            createWorkspace: async () =>
+              getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
+            getSchema: () => globalBlockSuiteSchema,
+          };
           promises.push(
             migrateWorkspace(
               'version' in oldMeta ? oldMeta.version : undefined,
-              {
-                getCurrentRootDoc: async () => {
-                  const doc = new Doc({
-                    guid: oldMeta.id,
-                  });
-                  const downloadWorkspace = async (doc: Doc): Promise<void> => {
-                    const binary = await downloadBinary(doc.guid);
-                    if (binary) {
-                      applyUpdate(doc, binary);
-                    }
-                    return Promise.all(
-                      [...doc.subdocs.values()].map(subdoc =>
-                        downloadWorkspace(subdoc)
-                      )
-                    ).then();
-                  };
-                  await downloadWorkspace(doc);
-                  return doc;
-                },
-                createWorkspace: async () =>
-                  getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
-                getSchema: () => globalBlockSuiteSchema,
-              }
-            ).then(async workspace => {
-              if (typeof workspace !== 'boolean') {
+              options
+            ).then(async status => {
+              if (typeof status !== 'boolean') {
                 const adapter = WorkspaceAdapters[oldMeta.flavour];
                 const oldWorkspace = await adapter.CRUD.get(oldMeta.id);
-                const newId = await adapter.CRUD.create(workspace);
+                const newId = await adapter.CRUD.create(status);
                 assertExists(
                   oldWorkspace,
                   'workspace should exist after migrate'
@@ -78,9 +81,10 @@ async function tryMigration() {
                   id: newId,
                   version: WorkspaceVersion.Surface,
                 };
-                await migrateLocalBlobStorage(workspace.id, newId);
+                await migrateLocalBlobStorage(status.id, newId);
                 console.log('workspace migrated', oldMeta.id, newId);
-              } else if (workspace) {
+              } else if (status) {
+                assertExists(rootDoc);
                 const index = newMetadata.findIndex(
                   meta => meta.id === oldMeta.id
                 );
@@ -88,6 +92,13 @@ async function tryMigration() {
                   ...oldMeta,
                   version: WorkspaceVersion.Surface,
                 };
+                const overWrite = async (doc: Doc): Promise<void> => {
+                  await overwriteBinary(doc.guid, encodeStateAsUpdate(doc));
+                  return Promise.all(
+                    [...doc.subdocs.values()].map(subdoc => overWrite(subdoc))
+                  ).then();
+                };
+                await overWrite(rootDoc);
                 console.log('workspace migrated', oldMeta.id);
               }
             })
