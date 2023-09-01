@@ -82,9 +82,15 @@ export const createLazyProvider = (
       currentStatus = newStatus;
     }
     if (syncingStack === 0) {
-      currentStatus = {
-        type: 'idle',
-      };
+      if (!connected) {
+        currentStatus = {
+          type: 'idle',
+        };
+      } else {
+        currentStatus = {
+          type: 'synced',
+        };
+      }
     }
     callbackSet.forEach(cb => cb());
   };
