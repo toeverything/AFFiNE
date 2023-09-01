@@ -11,7 +11,14 @@ import { getCurrentStore } from '@toeverything/infra/atom';
 import { signIn, signOut } from 'next-auth/react';
 import { startTransition } from 'react';
 
-function genTraceParams() {
+type TraceParams = {
+  startTime: string;
+  spanId: string;
+  traceId: string;
+  event: string;
+};
+
+function genTraceParams(): TraceParams {
   const startTime = new Date().toISOString();
   const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
   const traceId = generateRandUTF16Chars(TRACE_ID_BYTES);
@@ -19,25 +26,28 @@ function genTraceParams() {
   return { startTime, spanId, traceId, event };
 }
 
-function onResolveHandleTrace<T>(res: Promise<T> | T): Promise<T> | T {
-  const { startTime, spanId, traceId, event } = genTraceParams();
+function onResolveHandleTrace<T>(
+  res: Promise<T> | T,
+  params: TraceParams
+): Promise<T> | T {
+  const { startTime, spanId, traceId, event } = params;
   traceReporter &&
     traceReporter.cacheTrace(traceId, spanId, startTime, { event });
   return res;
 }
 
-function onRejectHandleTrace<T>(res: Promise<T> | T): Promise<T> {
-  const { startTime, spanId, traceId, event } = genTraceParams();
+function onRejectHandleTrace<T>(
+  res: Promise<T> | T,
+  params: TraceParams
+): Promise<T> {
+  const { startTime, spanId, traceId, event } = params;
   traceReporter &&
     traceReporter.uploadTrace(traceId, spanId, startTime, { event });
   return Promise.reject(res);
 }
 
-function getTraceHandler(success = true) {
-  return success ? onResolveHandleTrace : onRejectHandleTrace;
-}
-
 export const signInCloud: typeof signIn = async (provider, ...rest) => {
+  const traceParams = genTraceParams();
   if (isDesktop) {
     if (provider === 'google') {
       open(
@@ -59,19 +69,20 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
         },
         ...tail
       )
-        .then(getTraceHandler(true))
-        .catch(getTraceHandler(false));
+        .then(res => onResolveHandleTrace(res, traceParams))
+        .catch(err => onRejectHandleTrace(err, traceParams));
     } else {
       throw new Error('Unsupported provider');
     }
   } else {
     return signIn(provider, ...rest)
-      .then(getTraceHandler(true))
-      .catch(getTraceHandler(false));
+      .then(res => onResolveHandleTrace(res, traceParams))
+      .catch(err => onRejectHandleTrace(err, traceParams));
   }
 };
 
 export const signOutCloud: typeof signOut = async (...args) => {
+  const traceParams = genTraceParams();
   return signOut(...args)
     .then(result => {
       if (result) {
@@ -79,9 +90,9 @@ export const signOutCloud: typeof signOut = async (...args) => {
           getCurrentStore().set(refreshRootMetadataAtom);
         });
       }
-      return getTraceHandler(true)(result);
+      return onResolveHandleTrace(result, traceParams);
     })
-    .catch(getTraceHandler(false));
+    .catch(err => onRejectHandleTrace(err, traceParams));
 };
 
 export function buildCallbackUrl(callbackUrl: string) {
