@@ -14,7 +14,10 @@
       "sys:id": "f7o2Osxfa_",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "NDAzEfCZnv": {
       "sys:id": "NDAzEfCZnv",
