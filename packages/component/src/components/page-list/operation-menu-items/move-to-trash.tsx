@@ -43,6 +43,7 @@ const ConfirmModal = ({
       content={t['will be moved to Trash']({
         title: title || 'Untitled',
       })}
+      confirmButtonTestId="confirm-delete-page"
       confirmText={t.Delete()}
       confirmType="error"
       {...confirmModalProps}

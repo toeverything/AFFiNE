@@ -1,6 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
   waitEditorLoad,
@@ -42,4 +43,22 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.flavour).toContain('local');
+});
+
+test('New a page , then delete it in page, blockHub and option menu will not appear ', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitEditorLoad(page);
+  await newPage(page);
+  const title = getBlockSuiteEditorTitle(page);
+  await title.type('test');
+  await clickPageMoreActions(page);
+  await page.getByTestId('editor-option-menu-delete').click();
+  await page.getByTestId('confirm-delete-page').click();
+  await expect(page.getByTestId('header-dropDownButton')).not.toBeVisible();
+  await expect(page.getByTestId('block-hub')).not.toBeVisible();
+  await page.getByTestId('page-restore-button').click();
+  await expect(page.getByTestId('header-dropDownButton')).toBeVisible();
+  await expect(page.getByTestId('block-hub')).toBeVisible();
 });
