@@ -24,6 +24,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
 import { Config } from './config';
+import { ExceptionLogger } from './middleware/exception-logger';
 import { serverTimingAndCache } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
 
@@ -75,6 +76,7 @@ app.use(
   })
 );
 
+app.useGlobalFilters(new ExceptionLogger());
 app.use(cookieParser());
 
 const config = app.get(Config);
