@@ -1,4 +1,4 @@
-import type { StatusAdapter } from '@affine/y-provider';
+import type { DataSourceAdapter } from '@affine/y-provider';
 import type { DBSchema, IDBPDatabase } from 'idb';
 
 export const dbVersion = 1;
@@ -9,7 +9,7 @@ export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
   db.createObjectStore('milestone', { keyPath: 'id' });
 }
 
-export interface IndexedDBProvider extends StatusAdapter {
+export interface IndexedDBProvider extends DataSourceAdapter {
   connect: () => void;
   disconnect: () => void;
   cleanup: () => Promise<void>;

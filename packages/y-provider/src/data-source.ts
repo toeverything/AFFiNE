@@ -1,6 +1,6 @@
-import type { DocState, StatusAdapter } from './types';
+import type { DocState } from './types';
 
-export interface DatasourceDocAdapter extends Partial<StatusAdapter> {
+export interface DatasourceDocAdapter {
   /**
    * request diff update from other clients
    */
