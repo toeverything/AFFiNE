@@ -9,7 +9,9 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
   if (isDesktop) {
     if (provider === 'google') {
       open(
-        `/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
+        `${
+          runtimeConfig.serverUrlPrefix
+        }/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
           '/open-app/oauth-jwt'
         )}`,
         '_target'
