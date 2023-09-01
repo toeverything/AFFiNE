@@ -72,8 +72,8 @@ export const changeEmailMutation = {
   definitionName: 'changeEmail',
   containsFile: false,
   query: `
-mutation changeEmail($id: String!, $newEmail: String!) {
-  changeEmail(id: $id, email: $newEmail) {
+mutation changeEmail($token: String!, $newEmail: String!) {
+  changeEmail(token: $token, email: $newEmail) {
     id
     name
     avatarUrl
@@ -88,8 +88,8 @@ export const changePasswordMutation = {
   definitionName: 'changePassword',
   containsFile: false,
   query: `
-mutation changePassword($id: String!, $newPassword: String!) {
-  changePassword(id: $id, newPassword: $newPassword) {
+mutation changePassword($token: String!, $newPassword: String!) {
+  changePassword(token: $token, newPassword: $newPassword) {
     id
     name
     avatarUrl

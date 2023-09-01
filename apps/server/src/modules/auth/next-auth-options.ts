@@ -4,6 +4,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { BadRequestException, FactoryProvider, Logger } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
+import { nanoid } from 'nanoid';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Email, {
@@ -14,6 +15,7 @@ import Google from 'next-auth/providers/google';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { SessionService } from '../../session';
 import { NewFeaturesKind } from '../users/types';
 import { isStaff } from '../users/utils';
 import { MailService } from './mailer';
@@ -23,7 +25,12 @@ export const NextAuthOptionsProvide = Symbol('NextAuthOptions');
 
 export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
-  useFactory(config: Config, prisma: PrismaService, mailer: MailService) {
+  useFactory(
+    config: Config,
+    prisma: PrismaService,
+    mailer: MailService,
+    session: SessionService
+  ) {
     const logger = new Logger('NextAuth');
     const prismaAdapter = PrismaAdapter(prisma);
     // createUser exists in the adapter
@@ -72,15 +79,31 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           from: config.auth.email.sender,
           async sendVerificationRequest(params: SendVerificationRequestParams) {
             const { identifier, url, provider } = params;
-            const { searchParams } = new URL(url);
-            const callbackUrl = searchParams.get('callbackUrl') || '';
+            const urlWithToken = new URL(url);
+            const callbackUrl =
+              urlWithToken.searchParams.get('callbackUrl') || '';
             if (!callbackUrl) {
               throw new Error('callbackUrl is not set');
+            } else {
+              const newCallbackUrl = new URL(callbackUrl, config.origin);
+
+              const token = nanoid();
+              await session.set(token, identifier);
+              newCallbackUrl.searchParams.set('token', token);
+
+              urlWithToken.searchParams.set(
+                'callbackUrl',
+                newCallbackUrl.toString()
+              );
             }
-            const result = await mailer.sendSignInEmail(url, {
-              to: identifier,
-              from: provider.from,
-            });
+
+            const result = await mailer.sendSignInEmail(
+              urlWithToken.toString(),
+              {
+                to: identifier,
+                from: provider.from,
+              }
+            );
             logger.log(
               `send verification email success: ${result.accepted.join(', ')}`
             );
@@ -277,5 +300,5 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     };
     return nextAuthOptions;
   },
-  inject: [Config, PrismaService, MailService],
+  inject: [Config, PrismaService, MailService, SessionService],
 };

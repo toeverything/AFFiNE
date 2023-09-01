@@ -127,7 +127,6 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      this.logger.debug(req.headers);
       if (!req.headers?.referer) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
@@ -145,7 +144,6 @@ export class NextAuthController {
     }
 
     if (redirect) {
-      this.logger.debug(providerId, action, req.headers);
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
       } else if (
