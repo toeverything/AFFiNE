@@ -1,16 +1,21 @@
 import { ok } from 'node:assert';
 
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
 import { Config, ConfigModule } from '../config';
 
+let module: TestingModule;
 let config: Config;
 test.beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  await Test.createTestingModule({
     imports: [ConfigModule.forRoot()],
   }).compile();
   config = module.get(Config);
+});
+
+test.afterEach(async () => {
+  await module.close();
 });
 
 test('should be able to get config', t => {
