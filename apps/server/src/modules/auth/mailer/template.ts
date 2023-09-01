@@ -3,11 +3,13 @@ export const emailTemplate = ({
   content,
   buttonContent,
   buttonUrl,
+  subContent,
 }: {
   title: string;
   content: string;
   buttonContent: string;
   buttonUrl: string;
+  subContent?: string;
 }) => {
   return `<body style="background: #f6f7fb; overflow: hidden">
       <table
@@ -82,6 +84,24 @@ export const emailTemplate = ({
                   >
                 </td>
               </tr>
+              ${
+                subContent
+                  ? `<tr>
+                <td
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    line-height: 20px;
+                    font-family: inter, Arial, Helvetica, sans-serif;
+                    color: #444;
+                    padding-top: 24px;
+                  "
+                >
+                 ${subContent}
+                </td>
+              </tr>`
+                  : ''
+              }
             </table>
           </td>
         </tr>
