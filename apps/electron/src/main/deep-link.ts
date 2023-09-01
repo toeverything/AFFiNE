@@ -77,12 +77,17 @@ async function handleOauthJwt(url: string) {
         return;
       }
 
+      const isSecure = CLOUD_BASE_URL.startsWith('https://');
+
       // set token to cookie
       await setCookie({
         url: CLOUD_BASE_URL,
         httpOnly: true,
         value: token,
-        name: 'next-auth.session-token',
+        secure: true,
+        name: isSecure
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token',
         expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
       });
 
