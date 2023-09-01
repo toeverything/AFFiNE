@@ -102,6 +102,9 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   }, [editor]);
 
   useEffect(() => {
+    if (page.meta.trash) {
+      return;
+    }
     editor
       .createBlockHub()
       .then(blockHub => {
@@ -122,7 +125,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       }
       blockHubRef.current?.remove();
     };
-  }, [editor, page.awarenessStore, setBlockHub]);
+  }, [editor, page.awarenessStore, page.meta.trash, setBlockHub]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
