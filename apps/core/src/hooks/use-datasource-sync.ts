@@ -1,3 +1,4 @@
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import type {
   AffineSocketIOProvider,
   LocalIndexedDBBackgroundProvider,
@@ -6,12 +7,14 @@ import type {
 import { type Status, syncDataSource } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
+import { useSetAtom } from 'jotai';
 import { startTransition, useCallback, useMemo, useState } from 'react';
 
 export function useDatasourceSync(workspace: Workspace) {
   const [status, setStatus] = useState<Status>({
     type: 'idle',
   });
+  const pushNotification = useSetAtom(pushNotificationAtom);
   const providers = workspace.providers;
   const remoteProvider: AffineSocketIOProvider | undefined = useMemo(() => {
     return providers.find(
@@ -55,6 +58,10 @@ export function useDatasourceSync(workspace: Workspace) {
             setStatus({
               type: 'synced',
             });
+            pushNotification({
+              title: 'Synced successfully',
+              type: 'success',
+            });
           });
         })
         .catch(error => {
@@ -63,13 +70,19 @@ export function useDatasourceSync(workspace: Workspace) {
               type: 'error',
               error,
             });
+            pushNotification({
+              title: 'Unable to Sync',
+              message: 'Server error, please try again later.',
+              type: 'error',
+            });
           });
         });
     }, [
       remoteProvider,
-      localProvider,
+      localProvider.datasource,
       workspace.doc.guid,
       workspace.doc.subdocs,
+      pushNotification,
     ]),
   ] as const;
 }
