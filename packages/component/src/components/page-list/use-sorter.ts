@@ -41,7 +41,7 @@ const defaultSortingFn: SorterConfig['sortingFn'] = (ctx, a, b) => {
   }
 
   if (Array.isArray(valA) && Array.isArray(valB)) {
-    return valA.length - valB.length * revertSymbol;
+    return (valA.length - valB.length) * revertSymbol;
   }
   console.warn(
     'Unsupported sorting type! Please use custom sorting function.',
