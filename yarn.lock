@@ -570,8 +570,6 @@ __metadata:
     "@types/node": ^18.17.12
     "@types/uuid": ^9.0.3
     ava: ^5.3.1
-    cross-env: ^7.0.3
-    rxjs: ^7.8.1
     ts-node: ^10.9.1
     typescript: ^5.2.2
     uuid: ^9.0.0
@@ -17542,7 +17540,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cross-env@npm:7.0.3, cross-env@npm:^7.0.3":
+"cross-env@npm:7.0.3":
   version: 7.0.3
   resolution: "cross-env@npm:7.0.3"
   dependencies:

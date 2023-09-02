@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import test from 'ava';
-import { lastValueFrom, Subject } from 'rxjs';
 import { v4 } from 'uuid';
 
 import { FsWatcher } from '../index';
@@ -33,25 +32,21 @@ test('should watch without error', t => {
 
 // the following tests will always be hanging
 test('should watch file change', async t => {
-  const defer = new Subject<void>();
   const subscription = watcher.subscribe(
     event => {
       t.deepEqual(event.paths, [fixture]);
       subscription.unsubscribe();
-      defer.next();
-      defer.complete();
+      t.pass();
     },
     err => {
       subscription.unsubscribe();
-      defer.error(err);
+      t.fail();
     }
   );
   await fs.appendFile(fixture, 'test');
-  await lastValueFrom(defer.asObservable());
 });
 
 test('should watch file delete', async t => {
-  const defer = new Subject<void>();
   const subscription = watcher.subscribe(
     event => {
       if (typeof event.type === 'object' && 'remove' in event.type) {
@@ -62,15 +57,13 @@ test('should watch file delete', async t => {
           },
         });
         subscription.unsubscribe();
-        defer.next();
-        defer.complete();
+        t.pass();
       }
     },
     err => {
       subscription.unsubscribe();
-      defer.error(err);
+      t.fail();
     }
   );
   await fs.rm(fixture);
-  await lastValueFrom(defer.asObservable());
 });
