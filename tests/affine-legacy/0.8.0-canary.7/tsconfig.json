@@ -4,5 +4,13 @@
     "esModuleInterop": true,
     "outDir": "lib"
   },
-  "include": ["e2e"]
+  "include": ["e2e"],
+  "references": [
+    {
+      "path": "../../fixtures"
+    },
+    {
+      "path": "../../kit"
+    }
+  ]
 }

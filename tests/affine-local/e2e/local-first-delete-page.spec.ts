@@ -3,7 +3,7 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
@@ -12,7 +12,7 @@ test('page delete -> refresh page -> it should be disappear', async ({
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page delete');
@@ -55,7 +55,7 @@ test('page delete -> create new page -> refresh page -> new page should be appea
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page delete');
@@ -113,7 +113,7 @@ test('delete multiple pages -> create multiple pages -> refresh', async ({
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   // create 1st page
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();

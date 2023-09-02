@@ -4,7 +4,7 @@ import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { waitForLogMessage } from '@affine-test/kit/utils/utils';
 import { expect } from '@playwright/test';
@@ -14,7 +14,7 @@ test('New a page and open it ,then favorite it', async ({
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
@@ -35,7 +35,7 @@ test('New a page and open it ,then favorite it', async ({
 
 test('Export to html, markdown and png', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   {
     await clickPageMoreActions(page);
     await page.getByTestId('export-menu').click();
@@ -69,7 +69,7 @@ test.skip('Export to pdf', async ({ page }) => {
     });
   });
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   {
     await clickPageMoreActions(page);
     await page.getByTestId('export-menu').click();
@@ -80,7 +80,7 @@ test.skip('Export to pdf', async ({ page }) => {
 
 test('Cancel favorite', async ({ page, workspace }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');

@@ -4,13 +4,13 @@ import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 test('Duplicate page should work', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   const title = getBlockSuiteEditorTitle(page);
   await title.type('test');
