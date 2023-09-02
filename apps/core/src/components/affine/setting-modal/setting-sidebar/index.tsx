@@ -50,7 +50,11 @@ export const UserInfo = ({
 }: UserInfoProps): ReactElement => {
   const user = useCurrentUser();
   return (
-    <div className={accountButton} onClick={onAccountSettingClick}>
+    <div
+      data-testid="user-info-card"
+      className={accountButton}
+      onClick={onAccountSettingClick}
+    >
       <UserAvatar
         size={28}
         name={user.name}
