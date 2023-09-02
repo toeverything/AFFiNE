@@ -14,7 +14,7 @@ export async function waitForAllPagesLoad(page: Page) {
   });
 }
 
-export async function newPage(page: Page) {
+export async function clickNewPageButton(page: Page) {
   // fixme(himself65): if too fast, the page will crash
   await page.getByTestId('new-page-button').click({
     delay: 100,

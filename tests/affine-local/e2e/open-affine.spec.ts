@@ -1,13 +1,13 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
-import { createWorkspace } from '@affine-test/kit/utils/workspace';
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 test('Open last workspace when back to affine', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await createWorkspace({ name: 'New Workspace 2' }, page);
+  await createLocalWorkspace({ name: 'New Workspace 2' }, page);
   await waitForEditorLoad(page);
   // show workspace list
   await page.getByTestId('workspace-name').click();

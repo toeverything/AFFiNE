@@ -132,13 +132,18 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           readOnly
         />
         {isPublic ? (
-          <Button onClick={onClickCopyLink} style={{ padding: '4px 12px' }}>
+          <Button
+            onClick={onClickCopyLink}
+            data-testid="share-menu-copy-link-button"
+            style={{ padding: '4px 12px' }}
+          >
             {t.Copy()}
           </Button>
         ) : (
           <Button
             onClick={onClickCreateLink}
             type="primary"
+            data-testid="share-menu-create-link-button"
             style={{ padding: '4px 12px' }}
           >
             {t.Create()}

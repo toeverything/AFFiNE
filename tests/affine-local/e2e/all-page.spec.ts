@@ -15,8 +15,8 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
-  newPage,
   waitForAllPagesLoad,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
@@ -88,7 +88,7 @@ test('allow creation of filters by favorite', async ({ page }) => {
 test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
@@ -123,7 +123,7 @@ test('creation of filters by created time, then click date picker to modify the 
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();

@@ -8,7 +8,7 @@ import {
   openSettingModal,
   openShortcutsPanel,
 } from '@affine-test/kit/utils/setting';
-import { createWorkspace } from '@affine-test/kit/utils/workspace';
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 test('Open settings modal', async ({ page }) => {
@@ -118,8 +118,8 @@ test('Different workspace should have different name in the setting panel', asyn
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await createWorkspace({ name: 'New Workspace 2' }, page);
-  await createWorkspace({ name: 'New Workspace 3' }, page);
+  await createLocalWorkspace({ name: 'New Workspace 2' }, page);
+  await createLocalWorkspace({ name: 'New Workspace 3' }, page);
   await openSettingModal(page);
   await page.getByTestId('current-workspace-label').click();
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
