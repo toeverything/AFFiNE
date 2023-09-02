@@ -25,7 +25,7 @@ const App = () => {
     <div>
       <div>{t['Workspace Settings']()}</div>
       <>
-        {LOCALES.map((option) => {
+        {LOCALES.map(option => {
           return (
             <button
               key={option.name}
