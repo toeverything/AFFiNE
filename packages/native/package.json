@@ -21,6 +21,7 @@
     "@napi-rs/cli": "^2.16.2",
     "@types/node": "^18.17.12",
     "@types/uuid": "^9.0.3",
+    "ava": "^5.3.1",
     "cross-env": "^7.0.3",
     "rxjs": "^7.8.1",
     "ts-node": "^10.9.1",
@@ -35,8 +36,26 @@
     "build": "napi build --platform --release --no-const-enum",
     "build:debug": "napi build --platform --no-const-enum",
     "universal": "napi universal",
-    "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 TS_NODE_PROJECT=./tsconfig.json node --test --loader ts-node/esm --experimental-specifier-resolution=node ./__tests__/**/*.mts",
+    "test": "ava --concurrency 1 --serial",
+    "test:coverage": "c8 ava --concurrency 1 --serial",
     "version": "napi version"
+  },
+  "ava": {
+    "extensions": {
+      "mts": "module"
+    },
+    "nodeArguments": [
+      "--loader",
+      "ts-node/esm.mjs",
+      "--es-module-specifier-resolution",
+      "node"
+    ],
+    "files": [
+      "__tests__/*.spec.mts"
+    ],
+    "environmentVariables": {
+      "TS_NODE_PROJECT": "./tsconfig.json"
+    }
   },
   "version": "0.9.0-canary.8"
 }

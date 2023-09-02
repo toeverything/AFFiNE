@@ -2,12 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
+    "target": "ESNext",
+    "module": "ESNext",
     "outDir": "lib",
     "composite": true
   },
-  "include": ["index.d.ts", "__tests__/**/*.mts"],
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  }
+  "include": ["index.d.ts", "__tests__/**/*.ts"]
 }
