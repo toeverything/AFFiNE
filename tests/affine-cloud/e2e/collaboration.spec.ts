@@ -1,15 +1,20 @@
 import { test } from '@affine-test/kit/playwright';
-import { createRandomUser, loginUser } from '@affine-test/kit/utils/cloud';
+import {
+  addUserToWorkspace,
+  createRandomUser,
+  enableCloudWorkspace,
+  loginUser,
+} from '@affine-test/kit/utils/cloud';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 let user: {
+  id: string;
   name: string;
   email: string;
   password: string;
@@ -20,7 +25,7 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await loginUser(page, user);
+  await loginUser(page, user.email);
 });
 
 test.describe('collaboration', () => {
@@ -33,14 +38,7 @@ test.describe('collaboration', () => {
       },
       page
     );
-    await clickSideBarSettingButton(page);
-    await page.getByTestId('current-workspace-label').click();
-    await page.getByTestId('publish-enable-affine-cloud-button').click();
-    await page.getByTestId('confirm-enable-affine-cloud-button').click();
-    // wait for upload and delete local workspace
-    await page.waitForTimeout(2000);
-    await waitForEditorLoad(page);
-    await clickNewPageButton(page);
+    await enableCloudWorkspace(page);
     const title = getBlockSuiteEditorTitle(page);
     await title.type('TEST TITLE', {
       delay: 50,
@@ -65,6 +63,41 @@ test.describe('collaboration', () => {
       expect(await page2.textContent('affine-paragraph')).toContain(
         'TEST CONTENT'
       );
+    }
+  });
+
+  test('can collaborate with other user', async ({ page, browser }) => {
+    await page.reload();
+    await waitForEditorLoad(page);
+    await createLocalWorkspace(
+      {
+        name: 'test',
+      },
+      page
+    );
+    await enableCloudWorkspace(page);
+    await clickNewPageButton(page);
+    const currentUrl = page.url();
+    // format: http://localhost:8080/workspace/${workspaceId}/xxx
+    const workspaceId = currentUrl.split('/')[4];
+    const userB = await createRandomUser();
+    const context = await browser.newContext();
+    const page2 = await context.newPage();
+    await loginUser(page2, userB.email);
+    await addUserToWorkspace(workspaceId, userB.id, 1 /* READ */);
+    await page2.reload();
+    await waitForEditorLoad(page2);
+    await page2.goto(currentUrl);
+    {
+      const title = getBlockSuiteEditorTitle(page);
+      await title.type('TEST TITLE', {
+        delay: 50,
+      });
+    }
+    await page2.waitForTimeout(200);
+    {
+      const title = getBlockSuiteEditorTitle(page2);
+      expect(await title.innerText()).toBe('TEST TITLE');
     }
   });
 });

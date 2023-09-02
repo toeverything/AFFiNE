@@ -20,7 +20,7 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page, context }) => {
-  await loginUser(page, user, {
+  await loginUser(page, user.email, {
     beforeLogin: async () => {
       expect(await getLoginCookie(context)).toBeUndefined();
     },
