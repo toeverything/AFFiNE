@@ -11,7 +11,7 @@ import { FsWatcher } from '../index';
 let watcher: FsWatcher;
 let fixture: string;
 
-test.beforeEach(async () => {
+test.before(async () => {
   const fixtureName = `fs-${v4()}.fixture`;
   const __dirname = fileURLToPath(new URL('.', import.meta.url));
   fixture = resolve(__dirname, 'fixtures', fixtureName);
@@ -19,10 +19,11 @@ test.beforeEach(async () => {
   watcher = FsWatcher.watch(fixture);
 });
 
-test.afterEach(async () => {
+test.after(async () => {
   FsWatcher.close();
   await fs.rm(fixture).catch(() => false);
 });
+
 test('should watch without error', t => {
   t.notThrows(() => {
     const subscription = watcher.subscribe(() => {});
@@ -31,49 +32,45 @@ test('should watch without error', t => {
 });
 
 // the following tests will always be hanging
-test.skip('should watch file change', t => {
-  return (async () => {
-    const defer = new Subject<void>();
-    const subscription = watcher.subscribe(
-      event => {
-        t.deepEqual(event.paths, [fixture]);
-        subscription.unsubscribe();
-        defer.next();
-        defer.complete();
-      },
-      err => {
-        subscription.unsubscribe();
-        defer.error(err);
-      }
-    );
-    await fs.appendFile(fixture, 'test');
-    await lastValueFrom(defer.asObservable());
-  })();
+test('should watch file change', async t => {
+  const defer = new Subject<void>();
+  const subscription = watcher.subscribe(
+    event => {
+      t.deepEqual(event.paths, [fixture]);
+      subscription.unsubscribe();
+      defer.next();
+      defer.complete();
+    },
+    err => {
+      subscription.unsubscribe();
+      defer.error(err);
+    }
+  );
+  await fs.appendFile(fixture, 'test');
+  await lastValueFrom(defer.asObservable());
 });
 
-test.skip('should watch file delete', t => {
-  return (async () => {
-    const defer = new Subject<void>();
-    const subscription = watcher.subscribe(
-      event => {
-        if (typeof event.type === 'object' && 'rename' in event.type) {
-          t.deepEqual(event.paths, [fixture]);
-          t.deepEqual(event.type, {
-            remove: {
-              kind: 'file',
-            },
-          });
-        }
+test('should watch file delete', async t => {
+  const defer = new Subject<void>();
+  const subscription = watcher.subscribe(
+    event => {
+      if (typeof event.type === 'object' && 'remove' in event.type) {
+        t.deepEqual(event.paths, [fixture]);
+        t.deepEqual(event.type, {
+          remove: {
+            kind: 'file',
+          },
+        });
         subscription.unsubscribe();
         defer.next();
         defer.complete();
-      },
-      err => {
-        subscription.unsubscribe();
-        defer.error(err);
       }
-    );
-    await fs.unlink(fixture);
-    return lastValueFrom(defer.asObservable());
-  })();
+    },
+    err => {
+      subscription.unsubscribe();
+      defer.error(err);
+    }
+  );
+  await fs.rm(fixture);
+  await lastValueFrom(defer.asObservable());
 });
