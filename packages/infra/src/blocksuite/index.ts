@@ -184,7 +184,11 @@ export async function buildShowcaseWorkspace(
   await Promise.all(
     data.map(async ([id, promise]) => {
       const { default: template } = await promise;
-      await workspace.importPageSnapshot(structuredClone(template), id);
+      await workspace
+        .importPageSnapshot(structuredClone(template), id)
+        .catch(error => {
+          console.error('error importing page', id, error);
+        });
       workspace.setPageMeta(id, pageMetas[id]);
     })
   );
