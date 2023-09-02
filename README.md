@@ -31,6 +31,7 @@
 [![blocksuite-icon]](https://github.com/toeverything/blocksuite)
 [![Rust-version-icon]](https://www.rust-lang.org/)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_shield)
+[![Deploy](https://github.com/toeverything/AFFiNE/actions/workflows/deploy.yml/badge.svg)](https://github.com/toeverything/AFFiNE/actions/workflows/deploy.yml)
 
 </div>
 
@@ -106,11 +107,12 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Ecosystem
 
-| Name                                                      |                                    |                                                                                                                                                     |
-| --------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [@affine/component](https://affine-storybook.vercel.app/) | AFFiNE Component Resources         | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
-| [@toeverything/y-indexeddb](packages/y-indexeddb)         | IndexedDB database adapter for Yjs | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
-| [@toeverything/theme](packages/theme)                     | AFFiNE theme                       | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
+| Name                                                                                            |                                         |                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [@toeverything/component](https://github.com/toeverything/design/tree/main/packages/components) | Toeverything Shared Component Resources |                                                                                                                                                     |
+| [@affine/component](packages/component)                                                         | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
+| [@toeverything/y-indexeddb](packages/y-indexeddb)                                               | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
+| [@toeverything/theme](packages/theme)                                                           | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
 
 ## Plugins
 
@@ -121,11 +123,12 @@ If you have questions, you are welcome to contact us. One of the best places to 
 - [@affine/sdk](./packages/sdk) - SDK for developing plugins
 - [@affine/plugin-cli](./packages/plugin-cli) - CLI for developing plugins
 
-| Official Plugin                                       | Description                               |
-| ----------------------------------------------------- | ----------------------------------------- |
-| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         |
-| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing |
-| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         |
+| Official Plugin                                       | Description                               | Status |
+| ----------------------------------------------------- | ----------------------------------------- | ------ |
+| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         | ✅     |
+| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing | 🚧     |
+| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         | ✅     |
+| [@affine/outline](plugins/outline)                    | Outline for your document                 | ✅     |
 
 ## Upstreams
 
@@ -169,12 +172,17 @@ Data compatibility is a very important issue for us. We will try our best to ens
 
 If you encounter any problems when upgrading the version, please feel free to [contact us](mailto:developer@toeverything.info).
 
-| AFFiNE Version | Export/Import workspace | Data auto migration |
-| -------------- | ----------------------- | ------------------- |
-| <= 0.5.4       | ❌️                     | ❌                  |
-| 0.6.x          | ✅️                     | ✅                  |
-| 0.7.x          | ✅️                     | ✅                  |
-| 0.8.x          | ✅                      | ✅                  |
+| AFFiNE Version  | Export/Import workspace | Data auto migration |
+| --------------- | ----------------------- | ------------------- |
+| <= 0.5.4        | ❌️                     | ❌                  |
+| 0.6.x           | ✅️                     | ✅                  |
+| 0.7.x           | ✅️                     | ✅                  |
+| 0.8.x (current) | ✅                      | ✅                  |
+| 0.9.x (next)    | 🚧                      | 🚧                  |
+
+- ❌️: Not compatible
+- ✅: Compatible
+- 🚧: Work in progress
 
 ## Self-Host
 
