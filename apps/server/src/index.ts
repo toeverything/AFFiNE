@@ -104,9 +104,21 @@ await app.listen(port, host);
 
 console.log(`Listening on http://${host}:${port}`);
 
+function closeServer() {
+  app
+    .close()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error(error);
+      process.exit(1);
+    });
+}
+
 if (process.env.NODE_ENV !== 'production') {
-  process.on('SIGINT', () => {
-    // trigger c8 coverage when the user presses ctrl+c
-    process.exit(0);
-  });
+  // trigger c8 coverage when the user presses ctrl+c and CI close.
+  process.on('SIGINT', closeServer);
+  process.on('SIGQUIT', closeServer);
+  process.on('SIGTERM', closeServer);
 }
