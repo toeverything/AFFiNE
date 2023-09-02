@@ -746,6 +746,7 @@ __metadata:
   resolution: "@affine/storage@workspace:packages/storage"
   dependencies:
     "@napi-rs/cli": ^3.0.0-alpha.5
+    ava: ^5.3.1
     lib0: ^0.2.83
     yjs: ^13.6.7
   languageName: unknown
