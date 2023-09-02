@@ -7,7 +7,7 @@
 
 ```tsx
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-
+import { LOCALES, useI18N } from '@affine/i18n';
 // src/resources/en.json
 // {
 //     'Text': 'some text',
@@ -16,7 +16,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 const App = () => {
   const t = useAFFiNEI18N();
-
+  const i18n = useI18N();
   const changeLanguage = (language: string) => {
     i18n.changeLanguage(language);
   };
@@ -24,9 +24,20 @@ const App = () => {
   return (
     <div>
       <div>{t['Workspace Settings']()}</div>
-
-      <button onClick={() => changeLanguage('en')}>{t('Switch to language', { language: 'en' })}</button>
-      <button onClick={() => changeLanguage('zh-Hans')}>{t('Switch to language', { language: 'zh-Hans' })}</button>
+      <>
+        {LOCALES.map(option => {
+          return (
+            <button
+              key={option.name}
+              onClick={() => {
+                changeLanguage(option.tag);
+              }}
+            >
+              {option.originalName}
+            </button>
+          );
+        })}
+      </>
     </div>
   );
 };
