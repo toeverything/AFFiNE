@@ -50,6 +50,7 @@ const config: PlaywrightTestConfig = {
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',
+        ENABLE_LOCAL_EMAIL: process.env.ENABLE_LOCAL_EMAIL ?? 'true',
         NEXTAUTH_URL: 'http://localhost:8080',
         OAUTH_EMAIL_SENDER: 'noreply@toeverything.info',
       },

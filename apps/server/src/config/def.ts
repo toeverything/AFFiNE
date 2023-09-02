@@ -308,6 +308,11 @@ export interface AFFiNEConfig {
         }
       >
     >;
+    /**
+     * whether to use local email service to send email
+     * local debug only
+     */
+    localEmail: boolean;
     email: {
       server: string;
       port: number;
