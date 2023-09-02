@@ -75,6 +75,11 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
     steps:
       - uses: actions/checkout@v3
 
@@ -112,6 +117,7 @@ jobs:
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+          ENABLE_LOCAL_EMAIL: true
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
@@ -139,6 +145,11 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
     steps:
       - uses: actions/checkout@v3
 
@@ -181,6 +192,7 @@ jobs:
         env:
           COVERAGE: true
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+          ENABLE_LOCAL_EMAIL: true
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
