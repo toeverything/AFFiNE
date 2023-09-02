@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import { clickNewPageButton,getBlockSuiteEditorTitle } from './page-logic';
+import { clickNewPageButton, getBlockSuiteEditorTitle } from './page-logic';
 
 const monthNames = [
   'Jan',
