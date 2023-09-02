@@ -1,8 +1,8 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
-  newPage,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
@@ -13,7 +13,7 @@ test('page delete -> refresh page -> it should be disappear', async ({
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page delete');
   const newPageId = page.url().split('/').reverse()[0];
@@ -56,7 +56,7 @@ test('page delete -> create new page -> refresh page -> new page should be appea
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page delete');
   const newPageDeleteId = page.url().split('/').reverse()[0];
@@ -87,12 +87,12 @@ test('page delete -> create new page -> refresh page -> new page should be appea
   expect(page.getByText("There's no page here yet")).not.toBeUndefined();
   await page.getByTestId('all-pages').click();
 
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page1');
   const newPageId1 = page.url().split('/').reverse()[0];
   await page.getByTestId('all-pages').click();
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page2');
   const newPageId2 = page.url().split('/').reverse()[0];
@@ -115,13 +115,13 @@ test('delete multiple pages -> create multiple pages -> refresh', async ({
   await openHomePage(page);
   await waitForEditorLoad(page);
   // create 1st page
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page1');
   const newPageId1 = page.url().split('/').reverse()[0];
   await page.getByTestId('all-pages').click();
   // create 2nd page
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page2');
   const newPageId2 = page.url().split('/').reverse()[0];

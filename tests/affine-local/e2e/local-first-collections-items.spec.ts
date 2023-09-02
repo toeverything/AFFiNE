@@ -5,8 +5,8 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
-  newPage,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
@@ -20,7 +20,7 @@ const createAndPinCollection = async (
 ) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
   await page.getByTestId('all-pages').click();
@@ -141,7 +141,7 @@ test('edit collection and change filter date', async ({ page }) => {
 test('create temporary filter by click tag', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
   await page.locator('affine-page-meta-data').click();
@@ -163,7 +163,7 @@ test('create temporary filter by click tag', async ({ page }) => {
 test('add collection from sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
   await page.getByTestId('all-pages').click();

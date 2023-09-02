@@ -9,6 +9,7 @@ import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 import { useAtom } from 'jotai';
+import { useCallback } from 'react';
 
 import { Menu } from '../../ui/menu/menu';
 import * as styles from './index.css';
@@ -62,15 +63,15 @@ export const ShareMenu = (props: ShareMenuProps) => {
       trigger={['click']}
       width={410}
       disablePortal={true}
-      onClickAway={() => {
+      onClickAway={useCallback(() => {
         setOpen(false);
-      }}
+      }, [setOpen])}
     >
       <Button
         data-testid="share-menu-button"
-        onClick={() => {
-          setOpen(!open);
-        }}
+        onClick={useCallback(() => {
+          setOpen(value => !value);
+        }, [setOpen])}
         type={'plain'}
       >
         <div

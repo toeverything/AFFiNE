@@ -1,9 +1,9 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
-  newPage,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { waitForLogMessage } from '@affine-test/kit/utils/utils';
@@ -15,7 +15,7 @@ test('New a page and open it ,then favorite it', async ({
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   await page.getByTestId('all-pages').click();
@@ -81,7 +81,7 @@ test.skip('Export to pdf', async ({ page }) => {
 test('Cancel favorite', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   await page.getByTestId('all-pages').click();

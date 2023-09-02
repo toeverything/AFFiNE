@@ -1,7 +1,10 @@
 import { resolve } from 'node:path';
 
 import { test } from '@affine-test/kit/playwright';
-import { newPage, waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  waitForEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import {
   check8080Available,
   setupProxyServer,
@@ -17,7 +20,7 @@ test('init page', async ({ page, context }) => {
   await check8080Available(context);
   await page.goto('http://localhost:8081/');
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   const locator = page.locator('v-line').nth(0);
   await locator.fill('hello');
 

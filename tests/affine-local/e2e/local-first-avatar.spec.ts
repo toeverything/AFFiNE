@@ -2,7 +2,10 @@ import { resolve } from 'node:path';
 
 import { rootDir, test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { newPage, waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  waitForEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 test('should create a page with a local first avatar', async ({
@@ -11,7 +14,7 @@ test('should create a page with a local first avatar', async ({
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await newPage(page);
+  await clickNewPageButton(page);
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('new-workspace').click({ delay: 50 });
   await page
