@@ -194,6 +194,15 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./apps/server/.coverage/lcov.info
+          flags: server-e2e
+          name: affine
+          fail_ci_if_error: false
+
       - name: Upload test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3

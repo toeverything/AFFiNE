@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "start:coverage": "c8 node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/index.ts",
     "start": "node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
     "test": "ava --concurrency 1 --serial",

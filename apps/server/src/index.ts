@@ -103,3 +103,10 @@ if (config.redis.enabled) {
 await app.listen(port, host);
 
 console.log(`Listening on http://${host}:${port}`);
+
+if (process.env.NODE_ENV !== 'production') {
+  process.on('SIGINT', () => {
+    // trigger c8 coverage when the user presses ctrl+c
+    process.exit(0);
+  });
+}

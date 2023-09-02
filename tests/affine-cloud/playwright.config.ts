@@ -35,7 +35,7 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
-      command: 'yarn workspace @affine/server start',
+      command: 'yarn workspace @affine/server start:coverage',
       port: 3010,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
