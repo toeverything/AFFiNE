@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-export async function waitEditorLoad(page: Page) {
+export async function waitForEditorLoad(page: Page) {
   await page.waitForSelector('v-line', {
     timeout: 10000,
   });
@@ -19,7 +19,7 @@ export async function newPage(page: Page) {
   await page.getByTestId('new-page-button').click({
     delay: 100,
   });
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {
@@ -28,11 +28,6 @@ export function getBlockSuiteEditorTitle(page: Page) {
 
 export async function type(page: Page, content: string, delay = 50) {
   await page.keyboard.type(content, { delay });
-}
-
-export async function pressEnter(page: Page) {
-  // avoid flaky test by simulate real user input
-  await page.keyboard.press('Enter', { delay: 50 });
 }
 
 export const createLinkedPage = async (page: Page, pageName?: string) => {

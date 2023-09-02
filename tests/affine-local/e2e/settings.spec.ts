@@ -1,6 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import {
   openAboutPanel,
   openAppearancePanel,
@@ -13,7 +13,7 @@ import { expect } from '@playwright/test';
 
 test('Open settings modal', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
 
   const modal = await page.getByTestId('setting-modal');
@@ -22,7 +22,7 @@ test('Open settings modal', async ({ page }) => {
 
 test('change language using keyboard', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
 
   const locator = page.getByTestId('language-menu-button');
@@ -55,7 +55,7 @@ test('change language using keyboard', async ({ page }) => {
 
 test('Change theme', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
   await openAppearancePanel(page);
   const root = page.locator('html');
@@ -75,7 +75,7 @@ test('Change theme', async ({ page }) => {
 
 test('Change layout width', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
   await openAppearancePanel(page);
 
@@ -88,7 +88,7 @@ test('Change layout width', async ({ page }) => {
 
 test('Open shortcuts panel', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
   await openShortcutsPanel(page);
   const title = await page.getByTestId('keyboard-shortcuts-title');
@@ -97,7 +97,7 @@ test('Open shortcuts panel', async ({ page }) => {
 
 test('Open plugins panel', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
   await openPluginsPanel(page);
   const title = await page.getByTestId('plugins-title');
@@ -106,7 +106,7 @@ test('Open plugins panel', async ({ page }) => {
 
 test('Open about panel', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openSettingModal(page);
   await openAboutPanel(page);
   const title = await page.getByTestId('about-title');
@@ -117,7 +117,7 @@ test('Different workspace should have different name in the setting panel', asyn
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
   await createWorkspace({ name: 'New Workspace 3' }, page);
   await openSettingModal(page);

@@ -2,7 +2,7 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   getBlockSuiteEditorTitle,
   newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
@@ -42,7 +42,7 @@ async function closeImagePreviewModal(page: Page) {
 
 test('image preview should be shown', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   const title = await getBlockSuiteEditorTitle(page);
   await title.click();
@@ -57,7 +57,7 @@ test('image preview should be shown', async ({ page }) => {
 
 test('image go left and right', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -104,7 +104,7 @@ test('image go left and right', async ({ page }) => {
 
 test('image able to zoom in and out with mouse scroll', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -157,7 +157,7 @@ test('image able to zoom in and out with mouse scroll', async ({ page }) => {
 
 test('image able to zoom in and out with button click', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -203,7 +203,7 @@ test('image able to zoom in and out with button click', async ({ page }) => {
 
 test('image should able to go left and right by buttons', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -257,7 +257,7 @@ test('image should able to go left and right by buttons', async ({ page }) => {
 
 test('image able to fit to screen by button', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -314,7 +314,7 @@ test('image able to fit to screen by button', async ({ page }) => {
 
 test('image able to reset zoom to 100%', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -367,7 +367,7 @@ test('image able to reset zoom to 100%', async ({ page }) => {
 
 test('image able to copy to clipboard', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -394,7 +394,7 @@ test('image able to copy to clipboard', async ({ page }) => {
 
 test('image able to download', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -426,7 +426,7 @@ test('image should only able to move when image is larger than viewport', async 
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -483,7 +483,7 @@ test('image should able to delete and when delete, it will move to previous/next
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -558,7 +558,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   let blobId: string;
   {
@@ -653,7 +653,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
 
 test('keypress esc should close the modal', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   const title = await getBlockSuiteEditorTitle(page);
   await title.click();
@@ -671,7 +671,7 @@ test('when mouse moves outside, the modal should be closed', async ({
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   const title = await getBlockSuiteEditorTitle(page);
   await title.click();
@@ -692,7 +692,7 @@ test('caption should be visible and different styles were applied if image zoome
 }) => {
   const sampleCaption = 'affine owns me and all';
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   const title = await getBlockSuiteEditorTitle(page);
   await title.click();

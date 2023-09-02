@@ -4,7 +4,7 @@ import {
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
   newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
@@ -13,7 +13,7 @@ test.skip('New a page ,then open it and export html', async ({
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await newPage(page);
   await getBlockSuiteEditorTitle(page).click();
   await page

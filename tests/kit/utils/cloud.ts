@@ -1,5 +1,5 @@
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
 import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
@@ -76,7 +76,7 @@ export async function loginUser(
   }
 ) {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
 
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('cloud-signin-button').click({

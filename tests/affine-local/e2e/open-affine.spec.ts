@@ -1,14 +1,14 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { createWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 test('Open last workspace when back to affine', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await createWorkspace({ name: 'New Workspace 2' }, page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   // show workspace list
   await page.getByTestId('workspace-name').click();
 
@@ -46,7 +46,7 @@ test.skip('Download client tip', async ({ page }) => {
 test('Check the class name for the scrollbar', async ({ page }) => {
   //Because the scroll bar in page mode depends on the class name of blocksuite
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   const affineDocViewport = page.locator('.affine-doc-viewport');
   await expect(affineDocViewport).toBeVisible();
 });

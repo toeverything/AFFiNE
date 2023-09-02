@@ -5,7 +5,7 @@ import {
   getLoginCookie,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 let user: {
@@ -37,7 +37,7 @@ test('enable cloud success', async ({ page, context }) => {
     afterLogin: async () => {
       expect(await getLoginCookie(context)).toBeTruthy();
       await page.reload();
-      await waitEditorLoad(page);
+      await waitForEditorLoad(page);
       expect(await getLoginCookie(context)).toBeTruthy();
     },
   });

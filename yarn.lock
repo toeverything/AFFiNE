@@ -105,8 +105,12 @@ __metadata:
   dependencies:
     "@node-rs/argon2": ^1.5.2
     "@playwright/test": ^1.37.1
+    express: ^4.18.2
+    http-proxy-middleware: ^3.0.0-beta.1
   peerDependencies:
     "@playwright/test": "*"
+    express: "*"
+    http-proxy-middleware: "*"
   languageName: unknown
   linkType: soft
 
