@@ -6,7 +6,7 @@ import Keyv from 'keyv';
 import { Config } from './config';
 
 @Injectable()
-export class Session {
+export class SessionService {
   private readonly cache: Keyv;
   private readonly prefix = 'session:';
   private readonly sessionTtl = 30 * 60; // 30 min
@@ -14,7 +14,13 @@ export class Session {
   constructor(protected readonly config: Config) {
     if (config.redis.enabled) {
       this.cache = new Keyv({
-        store: new KeyvRedis(new Redis(config.redis)),
+        store: new KeyvRedis(
+          new Redis(config.redis.port, config.redis.host, {
+            username: config.redis.username,
+            password: config.redis.password,
+            db: config.redis.database + 2,
+          })
+        ),
       });
     } else {
       this.cache = new Keyv();
@@ -38,13 +44,17 @@ export class Session {
    * @returns return true if success
    */
   async set(key: string, value?: any, sessionTtl = this.sessionTtl) {
-    return this.cache.set(this.prefix + key, value, sessionTtl);
+    return this.cache.set(this.prefix + key, value, Date.now() + sessionTtl);
+  }
+
+  async delete(key: string) {
+    return this.cache.delete(this.prefix + key);
   }
 }
 
 @Global()
 @Module({
-  providers: [Session],
-  exports: [Session],
+  providers: [SessionService],
+  exports: [SessionService],
 })
 export class SessionModule {}

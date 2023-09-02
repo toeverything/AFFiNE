@@ -231,6 +231,15 @@ export interface AFFiNEConfig {
     port: number;
     username: string;
     password: string;
+    /**
+     * redis database index
+     *
+     * Rate Limiter scope: database + 1
+     *
+     * Session scope: database + 2
+     *
+     * @default 0
+     */
     database: number;
   };
 

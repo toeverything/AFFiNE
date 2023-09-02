@@ -90,7 +90,7 @@ export type AllBlobSizesQuery = {
 };
 
 export type ChangeEmailMutationVariables = Exact<{
-  id: Scalars['String']['input'];
+  token: Scalars['String']['input'];
   newEmail: Scalars['String']['input'];
 }>;
 
@@ -106,7 +106,7 @@ export type ChangeEmailMutation = {
 };
 
 export type ChangePasswordMutationVariables = Exact<{
-  id: Scalars['String']['input'];
+  token: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
 }>;
 
