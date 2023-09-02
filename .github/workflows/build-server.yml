@@ -127,6 +127,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: build-storage
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
     services:
       postgres:
         image: postgres
@@ -176,7 +180,7 @@ jobs:
           path: ./apps/server
 
       - name: Run playwright tests
-        run: yarn e2e --forbid-only
+        run: yarn e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         working-directory: tests/affine-cloud
         env:
           COVERAGE: true
@@ -198,6 +202,6 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
-          name: test-results-e2e-server
+          name: test-results-e2e-server-${{ matrix.shard }}
           path: ./tests/affine-cloud/test-results
           if-no-files-found: ignore
