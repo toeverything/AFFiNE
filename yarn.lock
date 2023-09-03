@@ -3560,6 +3560,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/react@workspace:packages/blocksuite/react":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/react@workspace:packages/blocksuite/react"
+  dependencies:
+    foxact: ^0.2.20
+    react: ^18.2.0
+    react-error-boundary: ^4.0.11
+    vite: ^4.4.9
+    vite-plugin-dts: 3.5.3
+  peerDependencies:
+    "@blocksuite/store": "*"
+    foxact: ^0.2.20
+    react: ^18
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/store@npm:0.0.0-20230829150056-df43987c-nightly":
   version: 0.0.0-20230829150056-df43987c-nightly
   resolution: "@blocksuite/store@npm:0.0.0-20230829150056-df43987c-nightly"

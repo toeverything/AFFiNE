@@ -157,6 +157,9 @@
     {
       "path": "./packages/y-indexeddb"
     },
+    {
+      "path": "./packages/blocksuite/react"
+    },
     // Tests
     {
       "path": "./tests/kit"

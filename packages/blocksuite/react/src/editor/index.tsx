@@ -1,21 +1,13 @@
-import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
-import type { EditorContainer } from '@blocksuite/editor';
+import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { LitBlockSpec } from '@blocksuite/lit';
 import type { Page } from '@blocksuite/store';
-import { Skeleton } from '@mui/material';
 import { use } from 'foxact/use';
-import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
-
-import {
-  blockSuiteEditorHeaderStyle,
-  blockSuiteEditorStyle,
-} from './index.css';
 
 export type EditorProps = {
   page: Page;
@@ -33,28 +25,17 @@ export type ErrorBoundaryProps = {
   onReset?: () => void;
 };
 
-declare global {
-  // eslint-disable-next-line no-var
-  var currentPage: Page | undefined;
-  // eslint-disable-next-line no-var
-  var currentEditor: EditorContainer | undefined;
-}
-
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const { onLoad, page, mode, style } = props;
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
-  const JotaiEditorContainer = useAtomValue(
-    editorContainerModuleAtom
-  ) as typeof EditorContainer;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new JotaiEditorContainer();
+    editorRef.current = new EditorContainer();
     editorRef.current.autofocus = true;
-    globalThis.currentEditor = editorRef.current;
 
     // set page preset
     if (props.pagePreset) editorRef.current.pagePreset = props.pagePreset;
@@ -150,29 +131,16 @@ const BlockSuiteErrorFallback = (
       <div>{props.error.message}</div>
       <button
         data-testid="error-fallback-reset-button"
-        onClick={() => {
+        onClick={useCallback(() => {
           props.onReset?.();
           props.resetErrorBoundary();
-        }}
+        }, [props])}
       >
         Try again
       </button>
     </div>
   );
 };
-
-export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
-  return (
-    <div className={blockSuiteEditorStyle}>
-      <Skeleton
-        className={blockSuiteEditorHeaderStyle}
-        animation="wave"
-        height={50}
-      />
-      <Skeleton animation="wave" height={30} width="40%" />
-    </div>
-  );
-});
 
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
@@ -186,9 +154,7 @@ export const BlockSuiteEditor = memo(function BlockSuiteEditor(
         [props.onReset]
       )}
     >
-      <Suspense fallback={<BlockSuiteFallback />}>
-        <BlockSuiteEditorImpl key={props.page.id} {...props} />
-      </Suspense>
+      <BlockSuiteEditorImpl key={props.page.id} {...props} />
     </ErrorBoundary>
   );
 });

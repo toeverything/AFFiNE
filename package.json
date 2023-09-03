@@ -9,6 +9,7 @@
     "apps/*",
     "plugins/*",
     "packages/*",
+    "packages/blocksuite/*",
     "packages/@types/*",
     "tests/fixtures",
     "tests/kit",

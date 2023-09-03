@@ -2,7 +2,7 @@ import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
 import type { LayoutNode } from '@affine/sdk//entry';
-import { rootBlockHubAtom } from '@affine/workspace/atom';
+import { rootBlockHubAtom, rootEditorAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
@@ -62,6 +62,7 @@ const EditorWrapper = memo(function EditorWrapper({
   const currentMode = pageSetting?.mode ?? 'page';
 
   const setBlockHub = useSetAtom(rootBlockHubAtom);
+  const setEditor = useSetAtom(rootEditorAtom);
   const [appSettings] = useAppSetting();
 
   assertExists(meta);
@@ -95,6 +96,7 @@ const EditorWrapper = memo(function EditorWrapper({
         setBlockHub={setBlockHub}
         onLoad={useCallback(
           (page: Page, editor: EditorContainer) => {
+            setEditor(editor);
             page.workspace.setPageMeta(page.id, {
               updatedDate: Date.now(),
             });
@@ -128,7 +130,7 @@ const EditorWrapper = memo(function EditorWrapper({
               });
             };
           },
-          [onLoad]
+          [setEditor, onLoad]
         )}
       />
       {meta.trash && <TrashButtonGroup />}

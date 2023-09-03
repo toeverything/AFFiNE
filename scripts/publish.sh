@@ -18,3 +18,11 @@ for package in "${packages[@]}"; do
 
   cd ../../
 done
+
+yarn nx build @blocksuite/react
+cd "packages/blocksuite/react"
+if [ "$NIGHTLY" = "true" ]; then
+  yarn npm publish --no-git-checks --tag nightly
+else
+  yarn npm publish
+fi

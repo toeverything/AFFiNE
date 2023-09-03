@@ -1,6 +1,7 @@
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { BlockHub } from '@blocksuite/blocks';
+import type { EditorContainer } from '@blocksuite/editor';
 import { assertEquals, assertExists } from '@blocksuite/global/utils';
 import {
   currentPageIdAtom,
@@ -277,4 +278,5 @@ export const refreshRootMetadataAtom = atom(null, (get, set) => {
 // blocksuite atoms,
 // each app should have only one block-hub in the same time
 export const rootBlockHubAtom = atom<Readonly<BlockHub> | null>(null);
+export const rootEditorAtom = atom<EditorContainer | null>(null);
 //#endregion

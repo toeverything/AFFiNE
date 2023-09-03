@@ -1,5 +1,6 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { rootEditorAtom } from '@affine/workspace/atom';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import {
   ArrowRightSmallIcon,
@@ -9,7 +10,7 @@ import {
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { Menu, MenuItem } from '../../..';
@@ -33,7 +34,7 @@ export const ExportToPdfMenuItem = ({
   fontSize,
 }: CommonMenuItemProps<{ type: 'pdf' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
+  const currentEditor = useAtomValue(rootEditorAtom);
   const setPushNotification = useSetAtom(pushNotificationAtom);
 
   const onClickDownloadPDF = useCallback(() => {
@@ -109,7 +110,7 @@ export const ExportToHtmlMenuItem = ({
   fontSize,
 }: CommonMenuItemProps<{ type: 'html' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
+  const currentEditor = useAtomValue(rootEditorAtom);
   const setPushNotification = useSetAtom(pushNotificationAtom);
   const onClickExportHtml = useCallback(() => {
     if (!currentEditor) {
@@ -161,7 +162,7 @@ export const ExportToPngMenuItem = ({
   fontSize,
 }: CommonMenuItemProps<{ type: 'png' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
+  const currentEditor = useAtomValue(rootEditorAtom);
   const setPushNotification = useSetAtom(pushNotificationAtom);
 
   const onClickDownloadPNG = useCallback(() => {
@@ -215,7 +216,7 @@ export const ExportToMarkdownMenuItem = ({
   fontSize,
 }: CommonMenuItemProps<{ type: 'markdown' }> & ExportMenuItemProps) => {
   const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
+  const currentEditor = useAtomValue(rootEditorAtom);
   const setPushNotification = useSetAtom(pushNotificationAtom);
   const onClickExportMarkdown = useCallback(() => {
     if (!currentEditor) {

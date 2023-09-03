@@ -1,11 +1,11 @@
 import { BlockHubWrapper } from '@affine/component/block-hub';
-import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
 import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { ImagePreviewModal } from '@affine/image-preview-plugin/src/component';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import { BlockSuiteEditor } from '@blocksuite/react/editor';
 import type { Meta } from '@storybook/react';
 import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
