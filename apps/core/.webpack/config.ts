@@ -90,7 +90,6 @@ export const createConfiguration: (
   runtimeConfig: RuntimeConfig
 ) => Promise<webpack.Configuration> = async (buildFlags, runtimeConfig) => {
   const plugins = await readdir(resolve(projectRoot, 'plugins'));
-  console.log('plugins', plugins);
   const copyPatterns = plugins.map(plugin => {
     return {
       from: resolve(projectRoot, 'plugins', plugin, 'dist', 'core'),
