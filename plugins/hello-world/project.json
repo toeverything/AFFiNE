@@ -16,10 +16,7 @@
       },
       "dependsOn": ["^build"],
       "inputs": ["default"],
-      "outputs": [
-        "{projectRoot}/dist",
-        "{workspaceRoot}/apps/electron/dist/plugins/hello-world"
-      ]
+      "outputs": ["{projectRoot}/dist"]
     }
   },
   "tags": ["plugin"]
