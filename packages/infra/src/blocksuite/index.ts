@@ -1,7 +1,25 @@
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
+
+export async function initEmptyPage(page: Page, title?: string) {
+  await page.waitForLoaded();
+  const pageBlockId = page.addBlock('affine:page', {
+    title: new page.Text(title ?? ''),
+  });
+  page.addBlock('affine:surface', {}, pageBlockId);
+  const noteBlockId = page.addBlock('affine:note', {}, pageBlockId);
+  page.addBlock('affine:paragraph', {}, noteBlockId);
+}
+
+export async function buildEmptyBlockSuite(workspace: Workspace) {
+  const page = workspace.createPage();
+  await initEmptyPage(page);
+  workspace.setPageMeta(page.id, {
+    jumpOnce: true,
+  });
+}
 
 export async function buildShowcaseWorkspace(
   workspace: Workspace,
