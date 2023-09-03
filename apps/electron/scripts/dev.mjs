@@ -1,10 +1,15 @@
 /* eslint-disable no-async-promise-executor */
 import { spawn } from 'node:child_process';
+import { cp } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
 import { config } from './common.mjs';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -63,6 +68,20 @@ async function watchLayers() {
         {
           name: 'electron-dev:reload-app-on-layers-change',
           setup(build) {
+            build.onStart(async () => {
+              console.log(`[layers] has changed, copy bookmark plugin`);
+              await cp(
+                path.resolve(
+                  __dirname,
+                  '../../../plugins/bookmark/dist/desktop'
+                ),
+                path.resolve(__dirname, '../dist/plugins/bookmark'),
+                {
+                  recursive: true,
+                  force: true,
+                }
+              );
+            });
             build.onEnd(() => {
               if (initialBuild) {
                 console.log(`[layers] has changed, [re]launching electron...`);
