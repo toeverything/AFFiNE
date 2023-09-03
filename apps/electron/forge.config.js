@@ -87,7 +87,7 @@ const makers = [
 ].filter(Boolean);
 
 /**
- * @type {import('@electron-forge/shared-types').ForgeConfig}
+ * @type {import("@electron-forge/shared-types").ForgeConfig}
  */
 module.exports = {
   buildIdentifier: buildType,

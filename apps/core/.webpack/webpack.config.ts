@@ -14,7 +14,7 @@ export default async function (cli_env: any, _: any) {
   console.log('build flags', flags);
   const runtimeConfig = getRuntimeConfig(flags);
   console.log('runtime config', runtimeConfig);
-  const config = createConfiguration(flags, runtimeConfig);
+  const config = await createConfiguration(flags, runtimeConfig);
   return merge(config, {
     entry: {
       'polyfill/intl-segmenter': {

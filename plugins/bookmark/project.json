@@ -17,7 +17,7 @@
       "dependsOn": ["^build"],
       "inputs": ["default"],
       "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/bookmark",
+        "{projectRoot}/dist",
         "{workspaceRoot}/apps/electron/dist/plugins/bookmark"
       ]
     }

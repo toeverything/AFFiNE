@@ -16,10 +16,7 @@
       },
       "dependsOn": ["^build"],
       "inputs": ["default"],
-      "outputs": [
-        "{workspaceRoot}/apps/core/public/plugins/outline",
-        "{workspaceRoot}/apps/electron/dist/plugins/outline"
-      ]
+      "outputs": ["{projectRoot}/dist"]
     }
   },
   "tags": ["plugin"]

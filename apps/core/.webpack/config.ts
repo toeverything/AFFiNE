@@ -19,6 +19,7 @@ import { projectRoot } from '@affine/cli/config';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import type { RuntimeConfig } from '@affine/env/global';
 import { WebpackS3Plugin, gitShortHash } from './s3-plugin.js';
+import { readdir } from 'node:fs/promises';
 
 const IN_CI = !!process.env.CI;
 
@@ -87,7 +88,16 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
 export const createConfiguration: (
   buildFlags: BuildFlags,
   runtimeConfig: RuntimeConfig
-) => webpack.Configuration = (buildFlags, runtimeConfig) => {
+) => Promise<webpack.Configuration> = async (buildFlags, runtimeConfig) => {
+  const plugins = await readdir(resolve(projectRoot, 'plugins'));
+  console.log('plugins', plugins);
+  const copyPatterns = plugins.map(plugin => {
+    return {
+      from: resolve(projectRoot, 'plugins', plugin, 'dist', 'core'),
+      to: resolve(rootPath, 'dist', 'plugins', plugin),
+    };
+  });
+
   const blocksuiteBaseDir = buildFlags.localBlockSuite;
 
   const config = {
@@ -364,6 +374,7 @@ export const createConfiguration: (
             from: resolve(rootPath, 'public'),
             to: resolve(rootPath, 'dist'),
           },
+          ...copyPatterns,
         ],
       }),
       buildFlags.mode === 'production' && process.env.R2_SECRET_ACCESS_KEY

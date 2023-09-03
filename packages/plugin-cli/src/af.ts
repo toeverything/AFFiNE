@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { StaticModuleRecord } from '@endo/static-module-record';
@@ -14,8 +13,6 @@ import react from '@vitejs/plugin-react-swc';
 import vue from '@vitejs/plugin-vue';
 import { build, type PluginOption } from 'vite';
 import type { z } from 'zod';
-
-const projectRoot = fileURLToPath(new URL('../../..', import.meta.url));
 
 const args = process.argv.splice(2);
 
@@ -69,23 +66,17 @@ const external = [
   'link-preview-js',
 ];
 
-const allPluginDir = path.resolve(projectRoot, 'plugins');
-
-const getPluginDir = (plugin: string) => path.resolve(allPluginDir, plugin);
-const pluginDir = getPluginDir(plugin);
+const pluginDir = path.resolve(process.cwd());
 const packageJsonFile = path.resolve(pluginDir, 'package.json');
 
-const json: z.infer<typeof packageJsonInputSchema> = await readFile(
-  packageJsonFile,
-  {
-    encoding: 'utf-8',
-  }
-)
+const json = await readFile(packageJsonFile, {
+  encoding: 'utf-8',
+})
   .then(text => JSON.parse(text))
   .then(async json => {
     const result = await packageJsonInputSchema.safeParseAsync(json);
     if (result.success) {
-      return json;
+      return json as z.infer<typeof packageJsonInputSchema>;
     } else {
       throw new Error('invalid package.json', result.error);
     }
@@ -99,18 +90,10 @@ const metadata: Metadata = {
   assets: new Set(),
 };
 
-const outDir = path.resolve(projectRoot, 'apps', 'core', 'public', 'plugins');
+const outDir = path.resolve(process.cwd(), 'dist');
+const coreOutDir = path.resolve(outDir, 'core');
 
-const coreOutDir = path.resolve(outDir, plugin);
-
-const serverOutDir = path.resolve(
-  projectRoot,
-  'apps',
-  'electron',
-  'dist',
-  'plugins',
-  plugin
-);
+const serverOutDir = path.resolve(outDir, 'desktop');
 
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
 
