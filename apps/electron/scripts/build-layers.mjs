@@ -1,9 +1,12 @@
 #!/usr/bin/env zx
 import 'zx/globals';
 
+import { cp } from 'node:fs/promises';
+import path from 'node:path';
+
 import * as esbuild from 'esbuild';
 
-import { config } from './common.mjs';
+import { config, electronDir, projectRoot } from './common.mjs';
 
 const NODE_ENV =
   process.env.NODE_ENV === 'development' ? 'development' : 'production';
@@ -15,6 +18,14 @@ if (process.platform === 'win32') {
 
 async function buildLayers() {
   const common = config();
+  await cp(
+    path.resolve(projectRoot, './plugins/bookmark/dist/desktop'),
+    path.resolve(electronDir, './dist/plugins/bookmark'),
+    {
+      recursive: true,
+      force: true,
+    }
+  );
   await esbuild.build({
     ...common.layers,
     define: {
