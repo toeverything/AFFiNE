@@ -716,6 +716,7 @@ __metadata:
     ioredis: ^5.3.2
     keyv: ^4.5.3
     lodash-es: ^4.17.21
+    nanoid: ^4.0.2
     nestjs-throttler-storage-redis: ^0.3.3
     next-auth: 4.22.5
     nodemailer: ^6.9.4
