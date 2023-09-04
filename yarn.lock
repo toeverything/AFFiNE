@@ -367,7 +367,7 @@ __metadata:
     "@electron-forge/maker-squirrel": ^6.4.1
     "@electron-forge/maker-zip": ^6.4.1
     "@electron-forge/shared-types": ^6.4.1
-    "@electron/remote": 2.0.10
+    "@electron/remote": 2.0.11
     "@reforged/maker-appimage": ^3.3.1
     "@toeverything/infra": "workspace:*"
     "@types/fs-extra": ^11.0.1
@@ -4254,12 +4254,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/remote@npm:2.0.10":
-  version: 2.0.10
-  resolution: "@electron/remote@npm:2.0.10"
+"@electron/remote@npm:2.0.11":
+  version: 2.0.11
+  resolution: "@electron/remote@npm:2.0.11"
   peerDependencies:
     electron: ">= 13.0.0"
-  checksum: 74ab6fca7973f43d45e3372dc3bbd35552f63ba10f5673d08ec9d9fd06e74d5b2da696a9b297dae5baeaf5cd991fc65c4ee25582991f8c18316bd18ae1bed6a9
+  checksum: 5ba6ddce183fdb6afc3c83b4d15433a5506fcd69b969b76c4a2fae69a1e9493a41494332d325209cbf934aa870e20417f54723c26c3969eea6e19558b96089b0
   languageName: node
   linkType: hard
 
