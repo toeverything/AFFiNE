@@ -7,15 +7,14 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-jwst = { git = "https://github.com/toeverything/OctoBase.git" }
 jwst-codec = { git = "https://github.com/toeverything/OctoBase.git" }
+jwst-core = { git = "https://github.com/toeverything/OctoBase.git" }
 jwst-storage = { git = "https://github.com/toeverything/OctoBase.git" }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",
 ] }
 napi-derive = { version = "2", features = ["type-def"] }
-yrs = { version = "0.16.5" }
 
 [build-dependencies]
 napi-build = "2"
