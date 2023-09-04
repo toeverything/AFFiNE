@@ -37,7 +37,7 @@ async function createWindow() {
       : isWindows()
       ? 'hidden'
       : 'default',
-    trafficLightPosition: { x: 20, y: 18 },
+    trafficLightPosition: { x: 20, y: 16 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
