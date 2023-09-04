@@ -12,7 +12,7 @@
     "@affine/component": "workspace:*",
     "@blocksuite/block-std": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/blocks": "0.0.0-20230829150056-df43987c-nightly",
-    "@blocksuite/editor": "0.0.0-20230829150056-df43987c-nightly",
+    "@blocksuite/editor": "0.8.0",
     "@blocksuite/global": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/lit": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/store": "0.0.0-20230829150056-df43987c-nightly",
