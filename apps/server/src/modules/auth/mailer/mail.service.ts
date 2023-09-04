@@ -160,4 +160,27 @@ export class MailService {
       html,
     });
   }
+  async sendAcceptedEmail(
+    to: string,
+    {
+      inviteeName,
+      workspaceName,
+    }: {
+      inviteeName: string;
+      workspaceName: string;
+    }
+  ) {
+    const title = `${inviteeName} accepted your invitation`;
+
+    const html = emailTemplate({
+      title,
+      content: `${inviteeName} has joined ${workspaceName}`,
+    });
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: title,
+      html,
+    });
+  }
 }

@@ -108,6 +108,8 @@ export class InvitationType {
   workspace!: InvitationWorkspaceType;
   @Field({ description: 'User information' })
   user!: UserType;
+  @Field({ description: 'Invitee information' })
+  invitee!: UserType;
 }
 
 @InputType()
@@ -512,6 +514,19 @@ export class WorkspaceResolver {
         user: true,
       },
     });
+    const invitee = await this.prisma.userWorkspacePermission.findUniqueOrThrow(
+      {
+        where: {
+          id: inviteId,
+          workspaceId: permission.workspaceId,
+        },
+        include: {
+          user: true,
+        },
+      }
+    );
+
+    console.log('invitee', invitee);
 
     let avatar = '';
 
@@ -530,6 +545,7 @@ export class WorkspaceResolver {
         id: permission.workspaceId,
       },
       user: owner.user,
+      invitee: invitee.user,
     };
   }
 
@@ -550,6 +566,23 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('inviteId') inviteId: string
   ) {
+    const {
+      invitee,
+      user: inviter,
+      workspace,
+    } = await this.getInviteInfo(inviteId);
+
+    if (!inviter || !invitee) {
+      throw new ForbiddenException(
+        `can not find inviter/invitee by inviteId: ${inviteId}`
+      );
+    }
+
+    await this.mailer.sendAcceptedEmail(inviter.email, {
+      inviteeName: invitee.name,
+      workspaceName: workspace.name,
+    });
+
     return this.permissionProvider.acceptById(workspaceId, inviteId);
   }
 
