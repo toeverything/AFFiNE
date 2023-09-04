@@ -1,4 +1,3 @@
-import type { Schema } from '@blocksuite/store';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,7 +9,6 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
-import { Doc as YDoc, Map as YMap } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
 import { trimGuid } from '../../../utils/doc';
@@ -22,7 +20,6 @@ import { DocManager } from '../../doc';
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private connectionCount = 0;
-  private schema: Schema | null = null;
 
   constructor(
     private readonly docManager: DocManager,
@@ -106,58 +103,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!doc) {
       endTimer();
       return false;
-    }
-
-    // check migration in the rootDoc
-    if (message.workspaceId === message.guid) {
-      const blockVersions = doc.getMap('meta').get('blockVersions');
-      if (blockVersions instanceof YMap) {
-        const currentVersions = blockVersions.toJSON() as Record<
-          string,
-          number
-        >;
-        if (!this.schema) {
-          const { Schema } = await import('@blocksuite/store');
-          const { AffineSchemas, __unstableSchemas } = await import(
-            '@blocksuite/blocks/models'
-          );
-          this.schema = new Schema();
-          this.schema.register(AffineSchemas).register(__unstableSchemas);
-        }
-        const needUpgrade = [...this.schema.flavourSchemaMap.entries()].some(
-          ([key, value]) => {
-            const currentVersion = currentVersions[key];
-            return currentVersion !== value.version;
-          }
-        );
-        if (needUpgrade) {
-          const schema = this.schema;
-          const subdocs = await Promise.all(
-            [...doc.subdocs.values()].map(subdoc =>
-              this.docManager.getLatest(message.workspaceId, subdoc.guid)
-            )
-          );
-
-          await Promise.all(
-            subdocs
-              .filter((v): v is YDoc => !!v)
-              // always upgrade the page doc to the latest version
-              .map(subdoc => schema.upgradePage(currentVersions, subdoc))
-          ).then(() =>
-            subdocs
-              .filter((v): v is YDoc => !!v)
-              .map(subdoc =>
-                this.docManager.push(
-                  message.workspaceId,
-                  subdoc.guid,
-                  Buffer.from(encodeStateAsUpdate(subdoc))
-                )
-              )
-          );
-
-          await this.docManager.apply();
-        }
-      }
     }
 
     const missing = Buffer.from(
