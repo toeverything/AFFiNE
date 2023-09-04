@@ -155,7 +155,7 @@ const CollectionRenderer = ({
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
     setting.selectCollection(collection.id);
   }, [jumpToSubPath, workspace.id, setting, collection.id]);
-  const { setNodeRef, isOver, node } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {
       addToCollection: (id: string) => {
@@ -226,9 +226,6 @@ const CollectionRenderer = ({
                 setting={setting}
               />
             }
-            portalOptions={{
-              container: node.current,
-            }}
           >
             <IconButton
               data-testid="collection-options"

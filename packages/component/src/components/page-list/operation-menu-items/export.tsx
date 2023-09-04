@@ -252,6 +252,7 @@ export const Export = () => {
             <ExportIcon />
           </MenuIcon>
         ),
+        ['data-testid' as string]: 'export-menu',
       }}
     >
       {t.Export()}

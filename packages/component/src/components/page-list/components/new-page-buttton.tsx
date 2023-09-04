@@ -33,18 +33,21 @@ export const CreateNewPagePopup = ({
         desc={t['com.affine.write_with_a_blank_page']()}
         right={<PageIcon width={20} height={20} />}
         onClick={createNewPage}
+        data-testid="new-page-button-in-all-page"
       />
       <BlockCard
         title={t['com.affine.new_edgeless']()}
         desc={t['com.affine.draw_with_a_blank_whiteboard']()}
         right={<EdgelessIcon width={20} height={20} />}
         onClick={createNewEdgeless}
+        data-testid="new-edgeless-button-in-all-page"
       />
       <BlockCard
         title={t['com.affine.new_import']()}
         desc={t['com.affine.import_file']()}
         right={<ImportIcon width={20} height={20} />}
         onClick={importFile}
+        data-testid="import-button-in-all-page"
       />
       {/* TODO Import */}
     </div>

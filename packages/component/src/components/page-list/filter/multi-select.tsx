@@ -37,7 +37,7 @@ export const MultiSelect = ({
             };
             return (
               <MenuItem
-                data-testid="select-option"
+                data-testid={`multi-select-${option.label}`}
                 checked={selected}
                 onClick={click}
                 key={option.value}
