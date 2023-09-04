@@ -116,7 +116,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       };
     },
     get https() {
-      return this.node.dev ? false : true;
+      return !this.node.dev;
     },
     host: 'localhost',
     port: 3010,
