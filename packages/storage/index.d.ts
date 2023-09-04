@@ -16,7 +16,7 @@ export class Storage {
   /** Delete a blob from workspace storage. */
   deleteBlob(workspaceId: string, hash: string): Promise<boolean>;
   /** Workspace size taken by blobs. */
-  blobsSize(workspaceId: string): Promise<number>;
+  blobsSize(workspaces: Array<string>): Promise<number>;
 }
 
 export interface Blob {
@@ -26,5 +26,8 @@ export interface Blob {
   data: Buffer;
 }
 
-/** Merge updates in form like `Y.applyUpdate(doc, update)` way and return the result binary. */
+/**
+ * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
+ * result binary.
+ */
 export function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer;

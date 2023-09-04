@@ -155,7 +155,13 @@ export const RootAppSidebar = ({
     <>
       <AppSidebar
         router={router}
-        hasBackground={!appSettings.enableBlurBackground}
+        hasBackground={
+          !(
+            appSettings.enableBlurBackground &&
+            environment.isDesktop &&
+            environment.isMacOs
+          )
+        }
       >
         <SidebarContainer>
           <NoSsr>

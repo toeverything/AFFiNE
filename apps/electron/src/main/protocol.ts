@@ -2,8 +2,21 @@ import { net, protocol, session } from 'electron';
 import { join } from 'path';
 
 import { CLOUD_BASE_URL } from './config';
-import { setCookie } from './main-window';
-import { simpleGet } from './utils';
+import { logger } from './logger';
+import { getCookie } from './main-window';
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'assets',
+    privileges: {
+      secure: false,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      standard: true,
+      bypassCSP: true,
+    },
+  },
+]);
 
 const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
 const webStaticDir = join(__dirname, '../resources/web-static');
@@ -12,42 +25,20 @@ function isNetworkResource(pathname: string) {
   return NETWORK_REQUESTS.some(opt => pathname.startsWith(opt));
 }
 
-async function handleHttpRequest(request: Request) {
+async function handleFileRequest(request: Request) {
   const clonedRequest = Object.assign(request.clone(), {
     bypassCustomProtocolHandlers: true,
   });
-  const { pathname, origin } = new URL(request.url);
-  if (
-    !origin.startsWith(CLOUD_BASE_URL) ||
-    isNetworkResource(pathname) ||
-    process.env.DEV_SERVER_URL // when debugging locally
-  ) {
-    // note: I don't find a good way to get over with 302 redirect
-    // by default in net.fetch, or don't know if there is a way to
-    // bypass http request handling to browser instead ...
-    if (pathname.startsWith('/api/auth/callback')) {
-      const originResponse = await simpleGet(request.url);
-      // hack: use window.webContents.session.cookies to set cookies
-      // since return set-cookie header in response doesn't work here
-      for (const [, cookie] of originResponse.headers.filter(
-        p => p[0] === 'set-cookie'
-      )) {
-        await setCookie(origin, cookie);
-      }
-      return new Response(originResponse.body, {
-        headers: originResponse.headers,
-        status: originResponse.statusCode,
-      });
-    } else {
-      // just pass through (proxy)
-      return net.fetch(request.url, clonedRequest);
-    }
+  const urlObject = new URL(request.url);
+  if (isNetworkResource(urlObject.pathname)) {
+    // just pass through (proxy)
+    return net.fetch(CLOUD_BASE_URL + urlObject.pathname, clonedRequest);
   } else {
     // this will be file types (in the web-static folder)
     let filepath = '';
     // if is a file type, load the file in resources
-    if (pathname.split('/').at(-1)?.includes('.')) {
-      filepath = join(webStaticDir, decodeURIComponent(pathname));
+    if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
+      filepath = join(webStaticDir, decodeURIComponent(urlObject.pathname));
     } else {
       // else, fallback to load the index.html instead
       filepath = join(webStaticDir, 'index.html');
@@ -57,13 +48,12 @@ async function handleHttpRequest(request: Request) {
 }
 
 export function registerProtocol() {
-  // it seems that there is some issue to postMessage between renderer with custom protocol & helper process
-  protocol.handle('http', request => {
-    return handleHttpRequest(request);
+  protocol.handle('file', request => {
+    return handleFileRequest(request);
   });
 
-  protocol.handle('https', request => {
-    return handleHttpRequest(request);
+  protocol.handle('assets', request => {
+    return handleFileRequest(request);
   });
 
   // hack for CORS
@@ -82,9 +72,49 @@ export function registerProtocol() {
           'DELETE',
           'OPTIONS',
         ];
+        // replace SameSite=Lax with SameSite=None
+        const originalCookie =
+          responseHeaders['set-cookie'] || responseHeaders['Set-Cookie'];
+
+        if (originalCookie) {
+          delete responseHeaders['set-cookie'];
+          delete responseHeaders['Set-Cookie'];
+          responseHeaders['Set-Cookie'] = originalCookie.map(cookie => {
+            let newCookie = cookie.replace(/SameSite=Lax/gi, 'SameSite=None');
+
+            // if the cookie is not secure, set it to secure
+            if (!newCookie.includes('Secure')) {
+              newCookie = newCookie + '; Secure';
+            }
+            return newCookie;
+          });
+        }
       }
 
       callback({ responseHeaders });
     }
   );
+
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    (async () => {
+      const url = new URL(details.url);
+      const pathname = url.pathname;
+      // if sending request to the cloud, attach the session cookie
+      if (isNetworkResource(pathname)) {
+        const cookie = await getCookie(CLOUD_BASE_URL);
+        const cookieString = cookie.map(c => `${c.name}=${c.value}`).join('; ');
+        details.requestHeaders['cookie'] = cookieString;
+      }
+      callback({
+        cancel: false,
+        requestHeaders: details.requestHeaders,
+      });
+    })().catch(e => {
+      logger.error('failed to attach cookie', e);
+      callback({
+        cancel: false,
+        requestHeaders: details.requestHeaders,
+      });
+    });
+  });
 }

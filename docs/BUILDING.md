@@ -31,11 +31,10 @@ install [Node LTS version](https://nodejs.org/en/download)
 
 #### Option 2: Use node version manager
 
-install [nvm](https://github.com/nvm-sh/nvm)
+install [fnm](https://github.com/Schniz/fnm)
 
 ```sh
-nvm install 18
-nvm use 18
+fnm use
 ```
 
 ### Install Rust Tools
@@ -68,29 +67,23 @@ Note: use `strip` from system instead of `binutils` if you are running MacOS. [s
 yarn workspace @affine/native build
 ```
 
+### Build Infra
+
+```sh
+yarn run build:infra
+```
+
 ### Build Plugins
 
-```
+```sh
 yarn run build:plugins
 ```
 
-## Debugging the Electron App
+### Build Server Dependencies
 
-You need to run two scripts to run the app in development mode
-
-Firstly, run the web app which is served at :8080
-
+```sh
+yarn workspace @affine/storage build
 ```
-yarn dev # you may want to chose `dev - 100.84.105.99:11001` when selecting the dev server
-```
-
-Secondly, bring up the electron app
-
-```
-yarn workspace @affine/electron dev
-```
-
-If everything goes well, you should see the AFFiNE App window popping up in a few seconds. 🎉
 
 ## Testing
 
@@ -98,16 +91,19 @@ Adding test cases is strongly encouraged when you contribute new features and bu
 
 We use [Playwright](https://playwright.dev/) for E2E test, and [vitest](https://vitest.dev/) for unit test.
 To test locally, please make sure browser binaries are already installed via `npx playwright install`.
-Also make sure you have built the `@affine/web` workspace before running E2E tests.
+Also make sure you have built the `@affine/core` workspace before running E2E tests.
+
+### Unit Test
 
 ```sh
-yarn  build
-# run tests in headless mode in another terminal window
 yarn test
 ```
 
-## Troubleshooting
+### E2E Test
 
-> I ran `yarn start -p 8080` after `yarn build` but the index page returned 404.
-
-Try stopping your development server (initialized by `yarn dev:local` or something) and running `yarn build` again.
+```shell
+# there are `affine-local`, `affine-legacy/*`, `affine-local`, `affine-plugin`, `affine-prototype` e2e tests,
+#   which are run under different situations.
+cd tests/affine-local
+yarn e2e
+```

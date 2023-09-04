@@ -195,7 +195,9 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       />
     </>
   );
-
+  if (pageMeta.trash) {
+    return null;
+  }
   return (
     <>
       <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>

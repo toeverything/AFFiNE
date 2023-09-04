@@ -10,3 +10,15 @@ export async function checkBlockHub(page: Page) {
   if (!box2) throw new Error('block-hub not found');
   expect(box2.height).toBeGreaterThan(box.height);
 }
+
+export async function clickEdgelessModeButton(page: Page) {
+  await page.getByTestId('switch-edgeless-mode-button').click({
+    delay: 50,
+  });
+}
+
+export async function clickPageModeButton(page: Page) {
+  return page.getByTestId('switch-page-mode-button').click({
+    delay: 50,
+  });
+}

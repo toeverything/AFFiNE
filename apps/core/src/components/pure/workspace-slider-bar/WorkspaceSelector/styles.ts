@@ -1,6 +1,10 @@
 import { displayFlex, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
-export const StyledSelectorContainer = styled('div')(() => {
+export const StyledSelectorContainer = styled('div')(({
+  disableHoverBackground,
+}: {
+  disableHoverBackground: boolean;
+}) => {
   return {
     height: '58px',
     display: 'flex',
@@ -10,7 +14,7 @@ export const StyledSelectorContainer = styled('div')(() => {
     color: 'var(--affine-text-primary-color)',
     ':hover': {
       cursor: 'pointer',
-      background: 'var(--affine-hover-color)',
+      background: disableHoverBackground ? '' : 'var(--affine-hover-color)',
     },
   };
 });
@@ -38,10 +42,17 @@ export const StyledWorkspaceStatus = styled('div')(() => {
     fontSize: 'var(--affine-font-sm)',
     color: 'var(--affine-text-secondary-color)',
     userSelect: 'none',
+    padding: '0 4px',
+    gap: '4px',
+    zIndex: '1',
     svg: {
       color: 'var(--affine-icon-color)',
       fontSize: 'var(--affine-font-base)',
-      marginRight: '4px',
+    },
+    ':hover': {
+      cursor: 'pointer',
+      borderRadius: '4px',
+      background: 'var(--affine-hover-color)',
     },
   };
 });

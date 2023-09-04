@@ -3,11 +3,13 @@ export const emailTemplate = ({
   content,
   buttonContent,
   buttonUrl,
+  subContent,
 }: {
   title: string;
   content: string;
   buttonContent: string;
   buttonUrl: string;
+  subContent?: string;
 }) => {
   return `<body style="background: #f6f7fb; overflow: hidden">
       <table
@@ -39,7 +41,7 @@ export const emailTemplate = ({
               font-size: 20px;
               font-weight: 600;
               line-height: 28px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #444;
               padding-top: 0;
             "
@@ -51,14 +53,16 @@ export const emailTemplate = ({
               font-size: 15px;
               font-weight: 400;
               line-height: 24px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #444;
               padding-top: 0;
             "
           >${content}</td>
         </tr>
         <tr>
-          <td style="margin-left: 24px; padding-top: 0; padding-bottom: 64px">
+          <td style="margin-left: 24px; padding-top: 0; padding-bottom: ${
+            subContent ? '0' : '64px'
+          }">
             <table border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td style="border-radius: 8px" bgcolor="#1E96EB">
@@ -67,7 +71,7 @@ export const emailTemplate = ({
                     target="_blank"
                     style="
                       font-size: 15px;
-                      font-family: Inter;
+                      font-family: inter, Arial, Helvetica, sans-serif;
                       font-weight: 600;
                       line-height: 24px;
                       color: #fff;
@@ -85,6 +89,24 @@ export const emailTemplate = ({
             </table>
           </td>
         </tr>
+         ${
+           subContent
+             ? `<tr>
+                <td
+                  style="
+                    font-size: 12px;
+                    font-weight: 400;
+                    line-height: 20px;
+                    font-family: inter, Arial, Helvetica, sans-serif;
+                    color: #444;
+                    padding-top: 24px;
+                  "
+                >
+                 ${subContent}
+                </td>
+              </tr>`
+             : ''
+         }
       </table>
       <table
         width="100%"
@@ -163,7 +185,7 @@ export const emailTemplate = ({
               font-size: 12px;
               font-weight: 400;
               line-height: 20px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #8e8d91;
               padding-top: 8px;
             "
@@ -177,7 +199,7 @@ export const emailTemplate = ({
               font-size: 12px;
               font-weight: 400;
               line-height: 20px;
-              font-family: Inter;
+              font-family: inter, Arial, Helvetica, sans-serif;
               color: #8e8d91;
               padding-top: 8px;
             "

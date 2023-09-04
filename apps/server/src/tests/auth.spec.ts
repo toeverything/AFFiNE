@@ -1,9 +1,9 @@
 /// <reference types="../global.d.ts" />
 import { equal } from 'node:assert';
-import { afterEach, beforeEach, test } from 'node:test';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
+import test from 'ava';
 
 import { ConfigModule } from '../config';
 import { GqlModule } from '../graphql.module';
@@ -11,18 +11,19 @@ import { MetricsModule } from '../metrics';
 import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
+import { RateLimiterModule } from '../throttler';
 
 let auth: AuthService;
 let module: TestingModule;
 
 // cleanup database before each test
-beforeEach(async () => {
+test.beforeEach(async () => {
   const client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
 });
 
-beforeEach(async () => {
+test.beforeEach(async () => {
   module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -36,21 +37,23 @@ beforeEach(async () => {
       GqlModule,
       AuthModule,
       MetricsModule,
+      RateLimiterModule,
     ],
   }).compile();
   auth = module.get(AuthService);
 });
 
-afterEach(async () => {
+test.afterEach(async () => {
   await module.close();
 });
 
-test('should be able to register and signIn', async () => {
+test('should be able to register and signIn', async t => {
   await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
+  t.pass();
 });
 
-test('should be able to verify', async () => {
+test('should be able to verify', async t => {
   await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   await auth.signIn('alexyang@example.org', '123456');
   const date = new Date();
@@ -81,4 +84,5 @@ test('should be able to verify', async () => {
     equal(claim.emailVerified?.toISOString(), date.toISOString());
     equal(claim.createdAt.toISOString(), date.toISOString());
   }
+  t.pass();
 });

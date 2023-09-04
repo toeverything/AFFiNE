@@ -7,7 +7,12 @@ import { IconButton } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import {
+  type KeyboardEvent,
+  startTransition,
+  useCallback,
+  useState,
+} from 'react';
 
 import { Upload } from '../../pure/file-upload';
 import { type WorkspaceSettingDetailProps } from './index';
@@ -37,6 +42,25 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
     },
     [setName, t]
   );
+
+  const handleSetInput = useCallback((value: string) => {
+    startTransition(() => {
+      setInput(value);
+    });
+  }, []);
+
+  const handleKeyUp = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.code === 'Enter' && name !== input) {
+        handleUpdateWorkspaceName(input);
+      }
+    },
+    [handleUpdateWorkspaceName, input, name]
+  );
+
+  const handleClick = useCallback(() => {
+    handleUpdateWorkspaceName(input);
+  }, [handleUpdateWorkspaceName, input]);
 
   return (
     <div className={style.profileWrapper}>
@@ -69,14 +93,13 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
             placeholder={t['Workspace Name']()}
             maxLength={64}
             minLength={0}
-            onChange={setInput}
+            onChange={handleSetInput}
+            onKeyUp={handleKeyUp}
           />
           {input === workspace.blockSuiteWorkspace.meta.name ? null : (
             <IconButton
               data-testid="save-workspace-name"
-              onClick={() => {
-                handleUpdateWorkspaceName(input);
-              }}
+              onClick={handleClick}
               active={true}
               style={{
                 marginLeft: '12px',

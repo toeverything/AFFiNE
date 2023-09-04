@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import { AuthPanel } from '../components/affine/auth';
-import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 
 interface LocationState {
   state: {
@@ -18,7 +18,7 @@ export const Component = () => {
     { state, email = '', emailType = 'changePassword', onceSignedIn },
     setAuthAtom,
   ] = useAtom(authAtom);
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
   const location = useLocation() as LocationState;
   const navigate = useNavigate();
 

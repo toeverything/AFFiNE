@@ -31,6 +31,7 @@
 [![blocksuite-icon]](https://github.com/toeverything/blocksuite)
 [![Rust-version-icon]](https://www.rust-lang.org/)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftoeverything%2FAFFiNE?ref=badge_shield)
+[![Deploy](https://github.com/toeverything/AFFiNE/actions/workflows/deploy.yml/badge.svg)](https://github.com/toeverything/AFFiNE/actions/workflows/deploy.yml)
 
 </div>
 
@@ -77,7 +78,7 @@ Star us, and you will receive all releases notifications from GitHub without any
 
 - **Hyper merged** — Write, draw and plan all at once. Assemble any blocks you love on any canvas you like to enjoy seamless transitions between workflows with AFFiNE.
 - **Privacy focussed** — AFFiNE is built with your privacy in mind and is one of our key concerns. We want you to keep control of your data, allowing you to store it as you like, where you like while still being able to freely edit and view your data on-demand.
-- **Offline-first** - With your privacy in mind we also decided to go offline-first. This means that AFFiNE can be used offline, whether you want to view or edit, with support for conflict-free merging when you are back online.
+- **Offline-first** — With your privacy in mind we also decided to go offline-first. This means that AFFiNE can be used offline, whether you want to view or edit, with support for conflict-free merging when you are back online.
 - **Clean, intuitive design** — With AFFiNE you can concentrate on editing with a clean and modern interface. Which is responsive, so it looks great on tablets too, and mobile support is coming in the future.
 - **Modern Block Editor with Markdown support** — A modern block editor can help you not only for docs, but slides and tables as well. When you write in AFFiNE you can use Markdown syntax which helps create an easier editing experience, that can be experienced with just a keyboard. And this allows you to export your data cleanly into Markdown.
 - **Collaboration** — Whether you want to collaborate with yourself across multiple devices, or work together with others, support for collaboration and multiplayer is out-of-the-box, which makes it easy for teams to get started with AFFiNE.
@@ -106,11 +107,12 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Ecosystem
 
-| Name                                                      |                                    |                                                                                                                                                     |
-| --------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [@affine/component](https://affine-storybook.vercel.app/) | AFFiNE Component Resources         | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
-| [@toeverything/y-indexeddb](packages/y-indexeddb)         | IndexedDB database adapter for Yjs | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
-| [@toeverything/theme](packages/theme)                     | AFFiNE theme                       | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
+| Name                                                                                            |                                         |                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [@toeverything/component](https://github.com/toeverything/design/tree/main/packages/components) | Toeverything Shared Component Resources |                                                                                                                                                     |
+| [@affine/component](packages/component)                                                         | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
+| [@toeverything/y-indexeddb](packages/y-indexeddb)                                               | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
+| [@toeverything/theme](packages/theme)                                                           | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
 
 ## Plugins
 
@@ -121,11 +123,12 @@ If you have questions, you are welcome to contact us. One of the best places to 
 - [@affine/sdk](./packages/sdk) - SDK for developing plugins
 - [@affine/plugin-cli](./packages/plugin-cli) - CLI for developing plugins
 
-| Official Plugin                                       | Description                               |
-| ----------------------------------------------------- | ----------------------------------------- |
-| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         |
-| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing |
-| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         |
+| Official Plugin                                       | Description                               | Status |
+| ----------------------------------------------------- | ----------------------------------------- | ------ |
+| [@affine/bookmark-plugin](plugins/bookmark)           | A block for bookmarking a website         | ✅     |
+| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing | 🚧     |
+| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         | ✅     |
+| [@affine/outline](plugins/outline)                    | Outline for your document                 | ✅     |
 
 ## Upstreams
 
@@ -169,12 +172,17 @@ Data compatibility is a very important issue for us. We will try our best to ens
 
 If you encounter any problems when upgrading the version, please feel free to [contact us](mailto:developer@toeverything.info).
 
-| AFFiNE Version | Export/Import workspace | Data auto migration |
-| -------------- | ----------------------- | ------------------- |
-| <= 0.5.4       | ❌️                     | ❌                  |
-| 0.6.x          | ✅️                     | ✅                  |
-| 0.7.x          | ✅️                     | ✅                  |
-| 0.8.x          | ✅                      | ✅                  |
+| AFFiNE Version  | Export/Import workspace | Data auto migration |
+| --------------- | ----------------------- | ------------------- |
+| <= 0.5.4        | ❌️                     | ❌                  |
+| 0.6.x           | ✅️                     | ✅                  |
+| 0.7.x           | ✅️                     | ✅                  |
+| 0.8.x (current) | ✅                      | ✅                  |
+| 0.9.x (next)    | 🚧                      | 🚧                  |
+
+- ❌️: Not compatible
+- ✅: Compatible
+- 🚧: Work in progress
 
 ## Self-Host
 

@@ -16,10 +16,10 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@toeverything/components": "^0.0.24",
+    "@toeverything/components": "^0.0.25",
     "idb": "^7.1.1",
-    "langchain": "^0.0.134",
-    "marked": "^7.0.4",
+    "langchain": "^0.0.138",
+    "marked": "^7.0.5",
     "marked-gfm-heading-id": "^3.0.6",
     "marked-mangle": "^1.1.2",
     "zod": "^3.22.2"
@@ -27,7 +27,7 @@
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^5.0.1",
-    "jotai": "^2.4.0",
+    "jotai": "^2.4.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
@@ -35,5 +35,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.9.0-canary.1"
+  "version": "0.9.0-canary.8"
 }

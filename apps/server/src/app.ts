@@ -5,7 +5,9 @@ import { ConfigModule } from './config';
 import { MetricsModule } from './metrics';
 import { BusinessModules } from './modules';
 import { PrismaModule } from './prisma';
+import { SessionModule } from './session';
 import { StorageModule } from './storage';
+import { RateLimiterModule } from './throttler';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { StorageModule } from './storage';
     ConfigModule.forRoot(),
     StorageModule.forRoot(),
     MetricsModule,
+    SessionModule,
+    RateLimiterModule,
     ...BusinessModules,
   ],
   controllers: [AppController],

@@ -236,10 +236,9 @@ export const StyledModalBody = styled('div')(() => {
 
 export const StyledWorkspaceFlavourTitle = styled('div')(() => {
   return {
-    fontSize: '12px',
-    fontWeight: 600,
+    fontSize: 'var(--affine-font-xs)',
     color: 'var(--affine-text-secondary-color)',
-    lineHeight: '20px',
+    marginBottom: '4px',
   };
 });
 export const StyledItem = styled('button')<{

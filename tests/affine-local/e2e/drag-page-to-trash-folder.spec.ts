@@ -1,6 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 test('drag a page from "All pages" list onto the "Trash" folder in the sidebar to move it to trash list', async ({
@@ -10,7 +10,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   // Init test db with known workspaces and open "All Pages" page via url directly
   {
     await openHomePage(page);
-    await waitEditorLoad(page);
+    await waitForEditorLoad(page);
     await page.getByText('All Pages').click();
     await page.waitForTimeout(500);
   }

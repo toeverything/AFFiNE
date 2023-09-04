@@ -33,12 +33,6 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.on('second-instance', () => {
-  restoreOrCreateWindow().catch(e =>
-    console.error('Failed to restore or create window:', e)
-  );
-});
-
 /**
  * Shout down background process if all windows was closed
  */

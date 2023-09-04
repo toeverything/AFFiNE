@@ -2,6 +2,7 @@ import {
   AppSidebar,
   AppSidebarFallback,
   appSidebarOpenAtom,
+  SidebarSwitch,
 } from '@affine/component/app-sidebar';
 import { AddPageButton } from '@affine/component/app-sidebar';
 import { CategoryDivider } from '@affine/component/app-sidebar';
@@ -12,13 +13,8 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import {
-  DeleteTemporarilyIcon,
-  SettingsIcon,
-  SidebarIcon,
-} from '@blocksuite/icons';
+import { DeleteTemporarilyIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
-import { IconButton } from '@toeverything/components/button';
 import { useAtom } from 'jotai';
 import { type PropsWithChildren, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -45,20 +41,11 @@ const Container = ({ children }: PropsWithChildren) => (
   </MemoryRouter>
 );
 const Main = () => {
-  const [open, setOpen] = useAtom(appSidebarOpenAtom);
+  const [open] = useAtom(appSidebarOpenAtom);
   return (
     <div>
       <div className={navHeaderStyle}>
-        {!open && (
-          <IconButton
-            size="large"
-            onClick={() => {
-              setOpen(true);
-            }}
-          >
-            <SidebarIcon width={24} height={24} />
-          </IconButton>
-        )}
+        <SidebarSwitch show={!open} />
       </div>
     </div>
   );

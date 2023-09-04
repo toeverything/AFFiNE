@@ -114,9 +114,9 @@ const CloudWorkSpaceList = ({
     <>
       <StyledModalHeader>
         <StyledModalHeaderLeft>
-          <StyledModalTitle>
+          <StyledWorkspaceFlavourTitle>
             {t['com.affine.workspace.cloud']()}
-          </StyledModalTitle>
+          </StyledWorkspaceFlavourTitle>
         </StyledModalHeaderLeft>
       </StyledModalHeader>
       <StyledModalContent>

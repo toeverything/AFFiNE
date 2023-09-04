@@ -5,15 +5,19 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { isDesktop } from '@affine/env/constant';
 import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
-import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
+import {
+  type LoaderFunction,
+  redirect,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { z } from 'zod';
 
-import { useCurrenLoginStatus } from '../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
@@ -28,6 +32,7 @@ const authTypeSchema = z.enum([
 export const AuthPage = (): ReactElement | null => {
   const user = useCurrentUser();
   const { authType } = useParams();
+  const [searchParams] = useSearchParams();
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
   });
@@ -40,29 +45,25 @@ export const AuthPage = (): ReactElement | null => {
   const onChangeEmail = useCallback(
     async (email: string) => {
       const res = await changeEmail({
-        id: user.id,
+        token: searchParams.get('token') || '',
         newEmail: email,
       });
       return !!res?.changeEmail;
     },
-    [changeEmail, user.id]
+    [changeEmail, searchParams]
   );
 
   const onSetPassword = useCallback(
     (password: string) => {
       changePassword({
-        id: user.id,
+        token: searchParams.get('token') || '',
         newPassword: password,
       }).catch(console.error);
     },
-    [changePassword, user.id]
+    [changePassword, searchParams]
   );
   const onOpenAffine = useCallback(() => {
-    if (isDesktop) {
-      window.apis.ui.handleFinishLogin();
-    } else {
-      jumpToIndex(RouteLogic.REPLACE);
-    }
+    jumpToIndex(RouteLogic.REPLACE);
   }, [jumpToIndex]);
 
   switch (authType) {
@@ -119,7 +120,7 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 export const Component = () => {
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
   const { jumpToExpired } = useNavigateHelper();
 
   if (loginStatus === 'unauthenticated') {

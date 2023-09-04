@@ -31,10 +31,12 @@ globalThis.console.debug = mainThread.log;
 globalThis.console.warn = mainThread.log;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const bookmarkPluginModule = require(join(
-  process.env.PLUGIN_DIR ?? resolve(__dirname, './plugins'),
-  './bookmark/index.cjs'
-));
+const bookmarkPluginModule = require(
+  join(
+    process.env.PLUGIN_DIR ?? resolve(__dirname, './plugins'),
+    './bookmark/index.cjs'
+  )
+);
 
 const serverContext: ServerContext = {
   registerCommand: (command, fn) => {

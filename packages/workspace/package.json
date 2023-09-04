@@ -7,7 +7,9 @@
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
+    "./affine/crud": "./src/affine/crud.ts",
     "./affine/gql": "./src/affine/gql.ts",
+    "./affine/sync": "./src/affine/sync.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
@@ -23,14 +25,14 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "jotai": "^2.4.0",
+    "jotai": "^2.4.1",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.83",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "socket.io-client": "^4.7.1",
-    "swr": "^2.2.2",
+    "socket.io-client": "^4.7.2",
+    "swr": "2.2.0",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",
     "zod": "^3.22.2"
@@ -39,5 +41,5 @@
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.9.0-canary.1"
+  "version": "0.9.0-canary.8"
 }

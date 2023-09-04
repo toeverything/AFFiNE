@@ -1,4 +1,4 @@
-import type { INestApplication, LoggerService } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
@@ -9,28 +9,6 @@ import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { InvitationType, WorkspaceType } from '../modules/workspaces';
-
-export class NestDebugLogger implements LoggerService {
-  log(message: string): any {
-    console.log(message);
-  }
-
-  error(message: string, trace: string): any {
-    console.error(message, trace);
-  }
-
-  warn(message: string): any {
-    console.warn(message);
-  }
-
-  debug(message: string): any {
-    console.debug(message);
-  }
-
-  verbose(message: string): any {
-    console.log(message);
-  }
-}
 
 const gql = '/graphql';
 
@@ -65,13 +43,14 @@ async function currentUser(app: INestApplication, token: string) {
       query: `
           query {
             currentUser {
-              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword
+              id, name, email, emailVerified, avatarUrl, createdAt, hasPassword,
+              token { token }
             }
           }
         `,
     })
     .expect(200);
-  return res.body?.data?.currentUser;
+  return res.body.data.currentUser;
 }
 
 async function createWorkspace(
@@ -352,6 +331,47 @@ async function listBlobs(
   return res.body.data.listBlobs;
 }
 
+async function collectBlobSizes(
+  app: INestApplication,
+  token: string,
+  workspaceId: string
+): Promise<number> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+            query {
+              collectBlobSizes(workspaceId: "${workspaceId}") {
+                size
+              }
+            }
+          `,
+    })
+    .expect(200);
+  return res.body.data.collectBlobSizes.size;
+}
+
+async function collectAllBlobSizes(
+  app: INestApplication,
+  token: string
+): Promise<number> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `
+            query {
+              collectAllBlobSizes {
+                size
+              }
+            }
+          `,
+    })
+    .expect(200);
+  return res.body.data.collectAllBlobSizes.size;
+}
+
 async function setBlob(
   app: INestApplication,
   token: string,
@@ -440,12 +460,14 @@ async function getInviteInfo(
         `,
     })
     .expect(200);
-  return res.body.data.workspace;
+  return res.body.data.getInviteInfo;
 }
 
 export {
   acceptInvite,
   acceptInviteById,
+  collectAllBlobSizes,
+  collectBlobSizes,
   createTestApp,
   createWorkspace,
   currentUser,

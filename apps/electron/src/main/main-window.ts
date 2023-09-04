@@ -1,11 +1,10 @@
 import assert from 'node:assert';
 
-import { BrowserWindow, nativeTheme } from 'electron';
+import { BrowserWindow, type CookiesSetDetails, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
-import { CLOUD_BASE_URL } from './config';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
@@ -15,6 +14,8 @@ const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
+
+export const mainWindowOrigin = process.env.DEV_SERVER_URL || 'file://.';
 
 async function createWindow() {
   logger.info('create window');
@@ -95,7 +96,12 @@ async function createWindow() {
 
   browserWindow.on('close', e => {
     e.preventDefault();
-    browserWindow.destroy();
+    // close and destroy all windows
+    BrowserWindow.getAllWindows().forEach(w => {
+      if (!w.isDestroyed()) {
+        w.destroy();
+      }
+    });
     helperConnectionUnsub?.();
     // TODO: gracefully close the app, for example, ask user to save unsaved changes
   });
@@ -110,7 +116,7 @@ async function createWindow() {
   /**
    * URL for main window.
    */
-  const pageUrl = CLOUD_BASE_URL; // see protocol.ts
+  const pageUrl = mainWindowOrigin; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 
@@ -122,74 +128,71 @@ async function createWindow() {
 }
 
 // singleton
-let browserWindow: BrowserWindow | undefined;
-let popup: BrowserWindow | undefined;
-
-function createPopupWindow() {
-  if (!popup || popup?.isDestroyed()) {
-    const mainExposedMeta = getExposedMeta();
-    popup = new BrowserWindow({
-      width: 1200,
-      height: 600,
-      alwaysOnTop: true,
-      resizable: false,
-      webPreferences: {
-        preload: join(__dirname, './preload.js'),
-        additionalArguments: [
-          `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
-          // popup window does not need helper process, right?
-        ],
-      },
-    });
-    popup.on('close', e => {
-      e.preventDefault();
-      popup?.destroy();
-      popup = undefined;
-    });
-    browserWindow?.webContents.once('did-finish-load', () => {
-      closePopup();
-    });
-  }
-  return popup;
-}
+let browserWindow$: Promise<BrowserWindow> | undefined;
 
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  browserWindow =
-    browserWindow || BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
-
-  if (browserWindow === undefined) {
-    browserWindow = await createWindow();
+  if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
+    browserWindow$ = createWindow();
   }
+  const mainWindow = await browserWindow$;
 
-  if (browserWindow.isMinimized()) {
-    browserWindow.restore();
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
     logger.info('restore main window');
   }
-
-  return browserWindow;
+  return mainWindow;
 }
 
-export async function handleOpenUrlInPopup(url: string) {
-  const popup = createPopupWindow();
-  await popup.loadURL(url);
+export async function handleOpenUrlInHiddenWindow(url: string) {
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 600,
+    webPreferences: {
+      preload: join(__dirname, './preload.js'),
+    },
+    show: false,
+  });
+  win.on('close', e => {
+    e.preventDefault();
+    if (!win.isDestroyed()) {
+      win.destroy();
+    }
+  });
+  logger.info('loading page at', url);
+  await win.loadURL(url);
+  return win;
 }
 
-export function closePopup() {
-  if (!popup?.isDestroyed()) {
-    popup?.close();
-    popup?.destroy();
-    popup = undefined;
-  }
-}
+export async function setCookie(cookie: CookiesSetDetails): Promise<void>;
+export async function setCookie(origin: string, cookie: string): Promise<void>;
 
-export function reloadApp() {
-  browserWindow?.reload();
-}
-
-export async function setCookie(origin: string, cookie: string) {
+export async function setCookie(
+  arg0: CookiesSetDetails | string,
+  arg1?: string
+) {
   const window = await restoreOrCreateWindow();
-  await window.webContents.session.cookies.set(parseCookie(cookie, origin));
+  const details =
+    typeof arg1 === 'string' && typeof arg0 === 'string'
+      ? parseCookie(arg0, arg1)
+      : arg0;
+
+  logger.info('setting cookie to main window', details);
+
+  if (typeof details !== 'object') {
+    throw new Error('invalid cookie details');
+  }
+
+  await window.webContents.session.cookies.set(details);
+}
+
+export async function getCookie(url?: string, name?: string) {
+  const window = await restoreOrCreateWindow();
+  const cookies = await window.webContents.session.cookies.get({
+    url,
+    name,
+  });
+  return cookies;
 }

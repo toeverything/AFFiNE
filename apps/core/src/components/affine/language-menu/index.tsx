@@ -2,8 +2,9 @@ import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
 import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import type { ReactElement } from 'react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
+// Fixme: keyboard focus should be supported by Menu component
 const LanguageMenuContent = ({
   currentLanguage,
   onSelect,
@@ -32,7 +33,10 @@ const LanguageMenuContent = ({
 export const LanguageMenu = () => {
   const i18n = useI18N();
   const ref = useRef(null);
-  const currentLanguage = LOCALES.find(item => item.tag === i18n.language);
+  const currentLanguage = useMemo(
+    () => LOCALES.find(item => item.tag === i18n.language),
+    [i18n.language]
+  );
   const onSelect = useCallback(
     (event: string) => {
       return i18n.changeLanguage(event);
@@ -59,7 +63,7 @@ export const LanguageMenu = () => {
         style={{ textTransform: 'capitalize', fontWeight: 600 }}
         block={true}
       >
-        {currentLanguage?.originalName}
+        {currentLanguage?.originalName || ''}
       </MenuTrigger>
     </Menu>
   );

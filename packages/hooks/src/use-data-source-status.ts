@@ -1,4 +1,4 @@
-import type { Status, StatusAdapter } from '@affine/y-provider';
+import type { DataSourceAdapter, Status } from '@affine/y-provider';
 import { useCallback, useSyncExternalStore } from 'react';
 
 type UIStatus =
@@ -7,9 +7,9 @@ type UIStatus =
       type: 'unknown';
     };
 
-export function useDataSourceStatus(datasource: StatusAdapter): UIStatus {
+export function useDataSourceStatus(provider: DataSourceAdapter): UIStatus {
   return useSyncExternalStore(
-    datasource.subscribeStatusChange,
-    useCallback(() => datasource.status, [datasource])
+    provider.subscribeStatusChange,
+    useCallback(() => provider.status, [provider])
   );
 }

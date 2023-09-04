@@ -32,3 +32,7 @@ downloadBinary(yDoc.guid).then(blob => {
   }
 });
 ```
+
+## LICENSE
+
+[MPL-2.0](https://github.com/toeverything/AFFiNE/blob/master/LICENSE-MPL2.0)

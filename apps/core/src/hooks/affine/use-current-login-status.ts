@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 
-export function useCurrenLoginStatus():
+export function useCurrentLoginStatus():
   | 'authenticated'
   | 'unauthenticated'
   | 'loading' {

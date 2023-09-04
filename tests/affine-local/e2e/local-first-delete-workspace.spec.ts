@@ -1,6 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { openWorkspaceSettingPanel } from '@affine-test/kit/utils/setting';
 import { openSettingModal } from '@affine-test/kit/utils/setting';
 import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
@@ -8,7 +8,7 @@ import { expect } from '@playwright/test';
 
 test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
   await page
@@ -49,7 +49,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
 //FIXME: this test is broken
 test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   const workspaceNameDom = await page.getByTestId('workspace-name');
   const currentWorkspaceName = await workspaceNameDom.evaluate(
     node => node.textContent

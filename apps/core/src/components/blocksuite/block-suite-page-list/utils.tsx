@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
-import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

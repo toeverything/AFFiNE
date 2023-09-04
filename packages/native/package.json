@@ -19,8 +19,8 @@
   "license": "MPL-2.0",
   "devDependencies": {
     "@napi-rs/cli": "^2.16.2",
-    "@types/node": "^18.17.11",
-    "@types/uuid": "^9.0.2",
+    "@types/node": "^18.17.12",
+    "@types/uuid": "^9.0.3",
     "cross-env": "^7.0.3",
     "rxjs": "^7.8.1",
     "ts-node": "^10.9.1",
@@ -38,5 +38,5 @@
     "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 TS_NODE_PROJECT=./tsconfig.json node --test --loader ts-node/esm --experimental-specifier-resolution=node ./__tests__/**/*.mts",
     "version": "napi version"
   },
-  "version": "0.9.0-canary.1"
+  "version": "0.9.0-canary.8"
 }

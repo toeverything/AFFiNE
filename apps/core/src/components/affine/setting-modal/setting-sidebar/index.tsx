@@ -23,7 +23,7 @@ import {
 } from 'react';
 
 import { authAtom } from '../../../../atoms';
-import { useCurrenLoginStatus } from '../../../../hooks/affine/use-curren-login-status';
+import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
@@ -50,7 +50,11 @@ export const UserInfo = ({
 }: UserInfoProps): ReactElement => {
   const user = useCurrentUser();
   return (
-    <div className={accountButton} onClick={onAccountSettingClick}>
+    <div
+      data-testid="user-info-card"
+      className={accountButton}
+      onClick={onAccountSettingClick}
+    >
       <UserAvatar
         size={28}
         name={user.name}
@@ -59,10 +63,10 @@ export const UserInfo = ({
       />
 
       <div className="content">
-        <div className="name" title="xxx">
+        <div className="name" title={user.name}>
           {user.name}
         </div>
-        <div className="email" title="xxx">
+        <div className="email" title={user.email}>
           {user.email}
         </div>
       </div>
@@ -113,7 +117,7 @@ export const SettingSidebar = ({
   onAccountSettingClick: () => void;
 }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrenLoginStatus();
+  const loginStatus = useCurrentLoginStatus();
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>{t['Settings']()}</div>

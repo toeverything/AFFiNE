@@ -49,6 +49,14 @@ export const routes = [
     lazy: () => import('./pages/sign-in'),
   },
   {
+    path: '/open-app/:action',
+    lazy: () => import('./pages/open-app'),
+  },
+  {
+    path: '/desktop-signin',
+    lazy: () => import('./pages/desktop-signin'),
+  },
+  {
     path: '*',
     lazy: () => import('./pages/404'),
   },

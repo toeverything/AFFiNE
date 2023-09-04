@@ -158,6 +158,12 @@ export interface AFFiNEConfig {
    */
   graphql: ApolloDriverConfig;
   /**
+   * app features flag
+   */
+  featureFlags: {
+    earlyAccessPreview: boolean;
+  };
+  /**
    * object storage Config
    *
    * all artifacts and logs will be stored on instance disk,
@@ -180,7 +186,31 @@ export interface AFFiNEConfig {
     fs: {
       path: string;
     };
+    /**
+     * Free user storage quota
+     * @default 10 * 1024 * 1024 (10GB)
+     */
+    quota: number;
   };
+
+  /**
+   * Rate limiter config
+   */
+  rateLimiter: {
+    /**
+     * How long each request will be throttled (seconds)
+     * @default 60
+     * @env THROTTLE_TTL
+     */
+    ttl: number;
+    /**
+     * How many requests can be made in the given time frame
+     * @default 60
+     * @env THROTTLE_LIMIT
+     */
+    limit: number;
+  };
+
   /**
    * Redis Config
    *
@@ -201,6 +231,15 @@ export interface AFFiNEConfig {
     port: number;
     username: string;
     password: string;
+    /**
+     * redis database index
+     *
+     * Rate Limiter scope: database + 1
+     *
+     * Session scope: database + 2
+     *
+     * @default 0
+     */
     database: number;
   };
 
@@ -269,6 +308,11 @@ export interface AFFiNEConfig {
         }
       >
     >;
+    /**
+     * whether to use local email service to send email
+     * local debug only
+     */
+    localEmail: boolean;
     email: {
       server: string;
       port: number;

@@ -1,4 +1,4 @@
-import { createConfiguration, rootPath, publicPath } from './config.js';
+import { createConfiguration, rootPath, getPublicPath } from './config.js';
 import { merge } from 'webpack-merge';
 import { join, resolve } from 'node:path';
 import type { BuildFlags } from '@affine/cli/config';
@@ -55,7 +55,7 @@ export default async function (cli_env: any, _: any) {
         inject: 'body',
         scriptLoading: 'module',
         minify: false,
-        publicPath,
+        publicPath: getPublicPath(flags),
         chunks: [
           '_plugin/index.test',
           'plugin',
