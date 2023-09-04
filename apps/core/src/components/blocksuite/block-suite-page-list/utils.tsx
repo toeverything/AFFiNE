@@ -24,6 +24,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
       initEmptyPage(page); // we don't need to wait it to be loaded right?
       setPageMode(page.id, mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
+      return page.id;
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
   );
