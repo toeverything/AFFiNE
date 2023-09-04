@@ -103,7 +103,7 @@ async function tryMigration() {
   }
 }
 
-function createFirstAppData(store: ReturnType<typeof createStore>) {
+export function createFirstAppData(store: ReturnType<typeof createStore>) {
   const createFirst = (): RootWorkspaceMetadataV2[] => {
     const Plugins = Object.values(WorkspaceAdapters).sort(
       (a, b) => a.loadPriority - b.loadPriority
@@ -141,7 +141,6 @@ export async function setup(store: ReturnType<typeof createStore>) {
   console.log('setup global');
   setupGlobal();
 
-  createFirstAppData(store);
   await store.get(rootWorkspacesMetadataAtom);
   await tryMigration();
   console.log('setup done');
