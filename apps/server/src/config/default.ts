@@ -86,6 +86,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         'doc.manager.experimentalMergeWithJwstCodec',
         'boolean',
       ],
+      ENABLE_LOCAL_EMAIL: ['auth.localEmail', 'boolean'],
     } satisfies AFFiNEConfig['ENV_MAP'],
     affineEnv: 'dev',
     get affine() {
@@ -114,7 +115,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
           this.node.prod && (this.affine.beta || this.affine.canary),
       };
     },
-    https: false,
+    get https() {
+      return !this.node.dev;
+    },
     host: 'localhost',
     port: 3010,
     path: '',
@@ -152,6 +155,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         return this.privateKey;
       },
       oauthProviders: {},
+      localEmail: false,
       email: {
         server: 'smtp.gmail.com',
         port: 465,

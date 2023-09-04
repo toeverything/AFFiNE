@@ -2,9 +2,9 @@ import { test } from '@affine-test/kit/playwright';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
-  newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
 
@@ -38,8 +38,8 @@ async function titleIsFocused(page: Page) {
 
 test('Click slider bar button', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   const quickSearchButton = page.locator(
     '[data-testid=slider-bar-quick-search-button]'
   );
@@ -50,8 +50,8 @@ test('Click slider bar button', async ({ page }) => {
 
 test('Click arrowDown icon after title', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   const quickSearchButton = page.locator(
     '[data-testid=slider-bar-quick-search-button]'
   );
@@ -62,8 +62,8 @@ test('Click arrowDown icon after title', async ({ page }) => {
 
 test('Press the shortcut key cmd+k', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   const quickSearch = page.locator('[data-testid=quickSearch]');
   await expect(quickSearch).toBeVisible();
@@ -71,8 +71,8 @@ test('Press the shortcut key cmd+k', async ({ page }) => {
 
 test('Create a new page without keyword', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
   await addNewPage.click();
@@ -82,8 +82,8 @@ test('Create a new page without keyword', async ({ page }) => {
 
 test('Create a new page with keyword', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
@@ -94,8 +94,8 @@ test('Create a new page with keyword', async ({ page }) => {
 
 test('Enter a keyword to search for', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
   const actual = await page.locator('[cmdk-input]').inputValue();
@@ -104,8 +104,8 @@ test('Enter a keyword to search for', async ({ page }) => {
 
 test('Create a new page and search this page', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   // input title and create new page
   await page.keyboard.insertText('test123456');
@@ -124,7 +124,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await assertTitle(page, 'test123456');
 
   await page.reload();
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
   await page.waitForTimeout(300);
@@ -146,8 +146,8 @@ test('Navigate to the 404 page and try to open quick search', async ({
 
 test('Open quick search on local page', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   const publishedSearchResults = page.locator('[publishedSearchResults]');
   await expect(publishedSearchResults).toBeVisible({ visible: false });
@@ -155,8 +155,8 @@ test('Open quick search on local page', async ({ page }) => {
 
 test('Autofocus input after opening quick search', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   const locator = page.locator('[cmdk-input]');
   await expect(locator).toBeVisible();
@@ -164,8 +164,8 @@ test('Autofocus input after opening quick search', async ({ page }) => {
 });
 test('Autofocus input after select', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.press('ArrowUp');
   const locator = page.locator('[cmdk-input]');
@@ -174,8 +174,8 @@ test('Autofocus input after select', async ({ page }) => {
 });
 test('Focus title after creating a new page', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
   await addNewPage.click();
@@ -186,7 +186,7 @@ test('Not show navigation path if page is not a subpage or current page is not i
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   expect(await page.getByTestId('navigation-path').count()).toBe(0);
 });
@@ -195,10 +195,10 @@ test('assert the recent browse pages are on the recent list', async ({
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
 
   // create first page
-  await newPage(page);
+  await clickNewPageButton(page);
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.type('sgtokidoki', {
@@ -242,7 +242,7 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create forth page, and check does the recent page list only contains three pages
   await page.reload();
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   {
     const addNewPage = page.getByTestId('quick-search-add-new-page');

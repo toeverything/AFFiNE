@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import { getBlockSuiteEditorTitle, newPage } from './page-logic';
+import { clickNewPageButton, getBlockSuiteEditorTitle } from './page-logic';
 
 const monthNames = [
   'Jan',
@@ -189,7 +189,7 @@ export const createPageWithTag = async (
   }
 ) => {
   await page.getByTestId('all-pages').click();
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
   await page.locator('affine-page-meta-data').click();

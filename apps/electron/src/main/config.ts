@@ -17,7 +17,7 @@ export const isDev = mode === 'development';
 
 const API_URL_MAPPING = {
   stable: `https://app.affine.pro`,
-  beta: `https://ambassador.affine.pro`,
+  beta: `https://insider.affine.pro`,
   canary: `https://affine.fail`,
   internal: `https://affine.fail`,
 };

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cargo update -p jwst -p jwst-codec -p jwst-storage
+cargo update -p jwst-codec -p jwst-core -p jwst-storage

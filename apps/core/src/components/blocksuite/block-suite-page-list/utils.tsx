@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
-import { initEmptyPage } from '@affine/env/blocksuite';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
@@ -19,11 +19,14 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   );
   const setPageMode = useSetAtom(setPageModeAtom);
   const createPageAndOpen = useCallback(
-    (id?: string, mode?: 'page' | 'edgeless') => {
+    (id?: string, mode?: 'page' | 'edgeless'): string => {
       const page = createPage(id);
-      initEmptyPage(page); // we don't need to wait it to be loaded right?
+      initEmptyPage(page).catch(error => {
+        toast(`Failed to initialize Page: ${error.message}`);
+      });
       setPageMode(page.id, mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
+      return page.id;
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
   );

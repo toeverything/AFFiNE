@@ -16,7 +16,7 @@ import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-s
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
-import { useAuth } from './use-auth';
+import { INTERNAL_BETA_URL, useAuth } from './use-auth';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -31,12 +31,14 @@ export const SignIn: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
 
-  const { resendCountDown, allowSendEmail, signIn, signUp, signInWithGoogle } =
-    useAuth({
-      onNoAccess: useCallback(() => {
-        setAuthState('noAccess');
-      }, [setAuthState]),
-    });
+  const {
+    isMutating: isSigningIn,
+    resendCountDown,
+    allowSendEmail,
+    signIn,
+    signUp,
+    signInWithGoogle,
+  } = useAuth();
 
   const { trigger: verifyUser, isMutating } = useMutation({
     mutation: getUserQuery,
@@ -55,16 +57,20 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setIsValidEmail(true);
     const { user } = await verifyUser({ email });
-
     setAuthEmail(email);
+
     if (user) {
+      const res = await signIn(email);
+      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+        return setAuthState('noAccess');
+      }
       setAuthState('afterSignInSendEmail');
-
-      await signIn(email);
     } else {
+      const res = await signUp(email);
+      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+        return setAuthState('noAccess');
+      }
       setAuthState('afterSignUpSendEmail');
-
-      await signUp(email);
     }
   }, [email, setAuthEmail, setAuthState, signIn, signUp, verifyUser]);
 
@@ -112,7 +118,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           size="extraLarge"
           data-testid="continue-login-button"
           block
-          loading={isMutating}
+          loading={isMutating || isSigningIn}
           disabled={!allowSendEmail}
           icon={
             allowSendEmail || isMutating ? (

@@ -1,7 +1,7 @@
-import { initEmptyPage } from '@affine/env/blocksuite';
 import { PageNotFoundError } from '@affine/env/constant';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { type WorkspaceUISchema } from '@affine/env/workspace';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useCallback } from 'react';
 
 import { useWorkspace } from '../../hooks/use-workspace';

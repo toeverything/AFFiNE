@@ -1,10 +1,10 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
-  newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
@@ -13,8 +13,8 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   const newPageId = page.url().split('/').reverse()[0];
@@ -49,8 +49,8 @@ test('New a page , then delete it in page, blockHub and option menu will not app
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   const title = getBlockSuiteEditorTitle(page);
   await title.type('test');
   await clickPageMoreActions(page);

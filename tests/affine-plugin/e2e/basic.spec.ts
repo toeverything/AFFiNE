@@ -1,6 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage, openPluginPage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 test('plugin map should valid', async ({ page }) => {
@@ -10,7 +10,7 @@ test('plugin map should valid', async ({ page }) => {
 
 test('plugin should exist', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await page.route('**/plugins/**/package.json', route => route.fetch(), {
     times: 5,
   });

@@ -1,10 +1,10 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
-  newPage,
-  waitEditorLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
@@ -13,8 +13,8 @@ test.skip('New a page ,then open it and export html', async ({
   workspace,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await page
     .getByPlaceholder('Title')
@@ -48,7 +48,7 @@ test.skip('New a page ,then open it and export markdown', async ({
   page,
   workspace,
 }) => {
-  await newPage(page);
+  await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await page
     .getByPlaceholder('Title')
