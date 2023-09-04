@@ -473,7 +473,16 @@ const upgradeV1ToV2 = async (options: UpgradeOptions) => {
   return newWorkspace;
 };
 
-export async function upgradePages(
+/**
+ * Force upgrade block schema to the latest.
+ * Don't force to upgrade the pages without the check.
+ *
+ * Please note that this function will not upgrade the workspace version.
+ *
+ * @returns true if any schema is upgraded.
+ * @returns false if no schema is upgraded.
+ */
+export async function forceUpgradePages(
   options: Omit<UpgradeOptions, 'createWorkspace'>
 ): Promise<boolean> {
   const rootDoc = await options.getCurrentRootDoc();
@@ -558,7 +567,7 @@ export async function migrateWorkspace(
     return upgradeV2ToV3(options);
   } else if (currentVersion === WorkspaceVersion.DatabaseV3) {
     // surface from 3 to 5
-    return upgradePages(options);
+    return forceUpgradePages(options);
   } else {
     return false;
   }
