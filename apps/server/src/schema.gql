@@ -133,6 +133,9 @@ type InvitationType {
 
   """User information"""
   user: UserType!
+
+  """Invitee information"""
+  invitee: UserType!
 }
 
 type Query {

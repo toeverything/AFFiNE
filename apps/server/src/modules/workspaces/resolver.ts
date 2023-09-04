@@ -526,8 +526,6 @@ export class WorkspaceResolver {
       }
     );
 
-    console.log('invitee', invitee);
-
     let avatar = '';
 
     if (metaJSON.avatar) {
@@ -600,6 +598,39 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
+
+    const owner = await this.prisma.userWorkspacePermission.findFirstOrThrow({
+      where: {
+        workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!owner.user) {
+      throw new ForbiddenException(
+        `can not find owner by workspaceId: ${workspaceId}`
+      );
+    }
+
+    const snapshot = await this.prisma.snapshot.findFirstOrThrow({
+      where: {
+        id: workspaceId,
+        workspaceId: workspaceId,
+      },
+    });
+
+    const doc = new Doc();
+
+    applyUpdate(doc, new Uint8Array(snapshot.blob));
+    const metaJSON = doc.getMap('meta').toJSON();
+
+    await this.mailer.sendLeaveWorkspaceEmail(owner.user.email, {
+      workspaceName: metaJSON.name || '',
+      inviteeName: user.name,
+    });
 
     return this.permissionProvider.revoke(workspaceId, user.id);
   }

@@ -183,4 +183,27 @@ export class MailService {
       html,
     });
   }
+  async sendLeaveWorkspaceEmail(
+    to: string,
+    {
+      inviteeName,
+      workspaceName,
+    }: {
+      inviteeName: string;
+      workspaceName: string;
+    }
+  ) {
+    const title = `${inviteeName} left ${workspaceName}`;
+
+    const html = emailTemplate({
+      title,
+      content: `${inviteeName} has left your workspace`,
+    });
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: title,
+      html,
+    });
+  }
 }
