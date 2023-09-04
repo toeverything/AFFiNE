@@ -97,6 +97,7 @@ export const windowAppControl = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '0',
+  color: 'var(--affine-icon-color)',
   selectors: {
     '&[data-type="close"]': {
       width: '56px',
