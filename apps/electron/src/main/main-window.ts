@@ -8,6 +8,7 @@ import { isMacOS, isWindows } from '../shared/utils';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
+import { uiSubjects } from './ui';
 import { parseCookie } from './utils';
 
 const IS_DEV: boolean =
@@ -111,6 +112,20 @@ async function createWindow() {
     const size = browserWindow.getSize();
     browserWindow.setSize(size[0] + 1, size[1] + 1);
     browserWindow.setSize(size[0], size[1]);
+    uiSubjects.onMaximized.next(false);
+  });
+
+  browserWindow.on('maximize', () => {
+    uiSubjects.onMaximized.next(true);
+  });
+
+  // full-screen == maximized in UI on windows
+  browserWindow.on('enter-full-screen', () => {
+    uiSubjects.onMaximized.next(true);
+  });
+
+  browserWindow.on('unmaximize', () => {
+    uiSubjects.onMaximized.next(false);
   });
 
   /**
