@@ -1,3 +1,4 @@
+import { MainContainer } from '@affine/component/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { assertExists } from '@blocksuite/global/utils';
@@ -8,6 +9,7 @@ import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useSearchParams } from 'react-router-dom';
 
+import { AppContainer } from '../components/affine/app-container';
 import { useWorkspace } from '../hooks/use-workspace';
 
 export const loader: LoaderFunction = async args => {
@@ -42,9 +44,11 @@ const MigrationPage = function MigrationPage(props: MigrationPageProps) {
       });
   }, [workspace.blockSuiteWorkspace.doc, workspace.blockSuiteWorkspace.schema]);
   return (
-    <div>
-      <Button onClick={handleClick}>Upgrade Workspace</Button>
-    </div>
+    <AppContainer>
+      <MainContainer>
+        <Button onClick={handleClick}>Upgrade Workspace</Button>
+      </MainContainer>
+    </AppContainer>
   );
 };
 
