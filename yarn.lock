@@ -186,7 +186,7 @@ __metadata:
     jotai: ^2.4.1
     lit: ^2.8.0
     lottie-web: ^5.12.2
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-datepicker: ^4.16.0
     react-dom: 18.2.0
     react-error-boundary: ^4.0.11
@@ -220,7 +220,7 @@ __metadata:
     marked: ^7.0.5
     marked-gfm-heading-id: ^3.0.6
     marked-mangle: ^1.1.2
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.2.0
     zod: ^3.22.2
   peerDependencies:
@@ -288,7 +288,7 @@ __metadata:
     next-themes: ^0.2.1
     postcss-loader: ^7.3.3
     raw-loader: ^4.0.2
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.2.0
     react-is: 18.2.0
     react-resizable-panels: ^0.0.55
@@ -339,7 +339,7 @@ __metadata:
     autoprefixer: ^10.4.15
     express: ^4.18.2
     jotai: ^2.4.1
-    react: 18.3.0-canary-7118f5dd7-20230705
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.3.0-canary-7118f5dd7-20230705
     react-server-dom-webpack: 18.3.0-canary-7118f5dd7-20230705
     tailwindcss: ^3.3.3
@@ -405,7 +405,7 @@ __metadata:
   dependencies:
     "@blocksuite/global": 0.0.0-20230829150056-df43987c-nightly
     lit: ^2.8.0
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.2.0
     zod: ^3.22.2
   peerDependencies:
@@ -587,7 +587,7 @@ __metadata:
     "@blocksuite/icons": ^2.1.31
     "@toeverything/components": ^0.0.25
     jotai: ^2.4.1
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.2.0
   languageName: unknown
   linkType: soft
@@ -634,7 +634,7 @@ __metadata:
     "@types/react": ^18.2.21
     "@types/react-dom": ^18.2.7
     "@vitejs/plugin-react-swc": ^3.3.2
-    react: ^18.2.0
+    react: ^18.3.0-next-992911981-20220718
     react-dom: ^18.2.0
     typescript: ^5.2.2
     vite: ^4.4.9
@@ -781,7 +781,7 @@ __metadata:
     chromatic: ^6.24.1
     concurrently: ^8.2.1
     jest-mock: ^29.6.3
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.2.0
     serve: ^14.2.1
     ses: ^0.18.7
@@ -842,7 +842,7 @@ __metadata:
     js-base64: ^3.7.5
     ky: ^0.33.3
     lib0: ^0.2.83
-    react: 18.2.0
+    react: 18.3.0-next-992911981-20220718
     react-dom: 18.2.0
     socket.io-client: ^4.7.2
     swr: 2.2.0
@@ -12522,7 +12522,7 @@ __metadata:
     async-call-rpc: ^6.3.1
     electron: "link:../../apps/electron/node_modules/electron"
     jotai: ^2.4.1
-    react: ^18.2.0
+    react: ^18.3.0-next-992911981-20220718
     vite: ^4.4.9
     vite-plugin-dts: 3.5.3
     yjs: ^13.6.7
@@ -29792,21 +29792,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:18.2.0, react@npm:^18.2.0":
-  version: 18.2.0
-  resolution: "react@npm:18.2.0"
+"react@npm:18.3.0-next-992911981-20220718":
+  version: 18.3.0-next-992911981-20220718
+  resolution: "react@npm:18.3.0-next-992911981-20220718"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: 88e38092da8839b830cda6feef2e8505dec8ace60579e46aa5490fc3dc9bba0bd50336507dc166f43e3afc1c42939c09fe33b25fae889d6f402721dcd78fca1b
+  checksum: 86f22ee479d1b638d6e329e6dfecc510675b314336a83b4d3a176cad761e40e0d419767d41b669e0934c14907a8b599b095258192224ca4c6989f416caf52d35
   languageName: node
   linkType: hard
 
-"react@npm:18.3.0-canary-7118f5dd7-20230705":
-  version: 18.3.0-canary-7118f5dd7-20230705
-  resolution: "react@npm:18.3.0-canary-7118f5dd7-20230705"
+"react@npm:^18.3.0-next-992911981-20220718":
+  version: 18.3.0-next-fecc288b7-20221025
+  resolution: "react@npm:18.3.0-next-fecc288b7-20221025"
   dependencies:
     loose-envify: ^1.1.0
-  checksum: f8d6c697aa57afbd28faae4c7f82a1b38180fa6e2ac9e45fdd9eedddf65753742eb744e7b9d30a1e173f45510f2b38a29e61786a1d3254a46f39f9172a85ace5
+  checksum: 860e2a595be0f3c75707ae4850490b367f1e6fb4275c1af9a33f234a9d47d9202ad49c51366a3b9d43d145c6fe106dde1089d93d7227efaadcaa4b8432122cb7
   languageName: node
   linkType: hard
 

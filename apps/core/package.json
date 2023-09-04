@@ -55,7 +55,7 @@
     "next-auth": "^4.22.1",
     "next-themes": "^0.2.1",
     "postcss-loader": "^7.3.3",
-    "react": "18.2.0",
+    "react": "18.3.0-next-992911981-20220718",
     "react-dom": "18.2.0",
     "react-is": "18.2.0",
     "react-resizable-panels": "^0.0.55",

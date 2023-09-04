@@ -27,7 +27,7 @@
     "@blocksuite/store": "0.0.0-20230829150056-df43987c-nightly",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
-    "react": "^18.2.0",
+    "react": "^18.3.0-next-992911981-20220718",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {

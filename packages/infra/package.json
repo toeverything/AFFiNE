@@ -61,7 +61,7 @@
     "@blocksuite/lit": "0.0.0-20230829150056-df43987c-nightly",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../apps/electron/node_modules/electron",
-    "react": "^18.2.0",
+    "react": "^18.3.0-next-992911981-20220718",
     "vite": "^4.4.9",
     "vite-plugin-dts": "3.5.3",
     "yjs": "^13.6.7"
