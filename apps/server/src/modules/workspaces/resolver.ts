@@ -595,7 +595,8 @@ export class WorkspaceResolver {
   @Mutation(() => Boolean)
   async leaveWorkspace(
     @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string
+    @Args('workspaceId') workspaceId: string,
+    @Args('workspaceName') workspaceName: string
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
 
@@ -615,20 +616,8 @@ export class WorkspaceResolver {
       );
     }
 
-    const snapshot = await this.prisma.snapshot.findFirstOrThrow({
-      where: {
-        id: workspaceId,
-        workspaceId: workspaceId,
-      },
-    });
-
-    const doc = new Doc();
-
-    applyUpdate(doc, new Uint8Array(snapshot.blob));
-    const metaJSON = doc.getMap('meta').toJSON();
-
     await this.mailer.sendLeaveWorkspaceEmail(owner.user.email, {
-      workspaceName: metaJSON.name || '',
+      workspaceName,
       inviteeName: user.name,
     });
 

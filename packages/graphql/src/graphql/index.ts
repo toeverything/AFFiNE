@@ -301,8 +301,8 @@ export const leaveWorkspaceMutation = {
   definitionName: 'leaveWorkspace',
   containsFile: false,
   query: `
-mutation leaveWorkspace($workspaceId: String!) {
-  leaveWorkspace(workspaceId: $workspaceId)
+mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!) {
+  leaveWorkspace(workspaceId: $workspaceId, workspaceName: $workspaceName)
 }`,
 };
 

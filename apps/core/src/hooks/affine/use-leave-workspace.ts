@@ -12,10 +12,12 @@ export function useLeaveWorkspace() {
   });
 
   return useCallback(
-    async (workspaceId: string) => {
+    async (workspaceId: string, workspaceName: string) => {
       deleteWorkspaceMeta(workspaceId);
+
       await leaveWorkspace({
         workspaceId,
+        workspaceName,
       });
     },
     [deleteWorkspaceMeta, leaveWorkspace]

@@ -177,7 +177,7 @@ type Mutation {
   revoke(workspaceId: String!, userId: String!): Boolean!
   acceptInviteById(workspaceId: String!, inviteId: String!): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
-  leaveWorkspace(workspaceId: String!): Boolean!
+  leaveWorkspace(workspaceId: String!, workspaceName: String!): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean!
   revokePage(workspaceId: String!, pageId: String!): Boolean!
   setBlob(workspaceId: String!, blob: Upload!): String!

@@ -279,6 +279,7 @@ export type GetWorkspacesQuery = {
 
 export type LeaveWorkspaceMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  workspaceName: Scalars['String']['input'];
 }>;
 
 export type LeaveWorkspaceMutation = {
