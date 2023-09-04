@@ -34,6 +34,9 @@ export const headerItem = style({
     '&.top-item': {
       height: '52px',
     },
+    '&.top-item-visible': {
+      marginRight: '20px',
+    },
     '&.left': {
       justifyContent: 'left',
     },
