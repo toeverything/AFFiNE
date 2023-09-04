@@ -14,14 +14,16 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import {
+  enablePassiveProviders,
+  getActiveBlockSuiteWorkspaceAtom,
+} from '@toeverything/infra/__internal__/workspace';
+import { getCurrentStore } from '@toeverything/infra/atom';
+import {
   migrateLocalBlobStorage,
   migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
-import { downloadBinary, overwriteBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
-import { Doc, encodeStateAsUpdate } from 'yjs';
-import { applyUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -34,26 +36,13 @@ async function tryMigration() {
       const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
         if (oldMeta.flavour === WorkspaceFlavour.LOCAL) {
-          let rootDoc: Doc | undefined;
           const options = {
             getCurrentRootDoc: async () => {
-              const doc = new Doc({
-                guid: oldMeta.id,
-              });
-              const downloadWorkspace = async (doc: Doc): Promise<void> => {
-                const binary = await downloadBinary(doc.guid);
-                if (binary) {
-                  applyUpdate(doc, binary);
-                }
-                return Promise.all(
-                  [...doc.subdocs.values()].map(subdoc =>
-                    downloadWorkspace(subdoc)
-                  )
-                ).then();
-              };
-              await downloadWorkspace(doc);
-              rootDoc = doc;
-              return doc;
+              const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(
+                oldMeta.id
+              );
+              const workspace = await getCurrentStore().get(workspaceAtom);
+              return workspace.doc;
             },
             createWorkspace: async () =>
               getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
@@ -84,21 +73,11 @@ async function tryMigration() {
                 await migrateLocalBlobStorage(status.id, newId);
                 console.log('workspace migrated', oldMeta.id, newId);
               } else if (status) {
-                assertExists(rootDoc);
-                const index = newMetadata.findIndex(
-                  meta => meta.id === oldMeta.id
+                const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(
+                  oldMeta.id
                 );
-                newMetadata[index] = {
-                  ...oldMeta,
-                  version: WorkspaceVersion.Surface,
-                };
-                const overWrite = async (doc: Doc): Promise<void> => {
-                  await overwriteBinary(doc.guid, encodeStateAsUpdate(doc));
-                  return Promise.all(
-                    [...doc.subdocs.values()].map(subdoc => overWrite(subdoc))
-                  ).then();
-                };
-                await overWrite(rootDoc);
+                const workspace = await getCurrentStore().get(workspaceAtom);
+                enablePassiveProviders(workspace);
                 console.log('workspace migrated', oldMeta.id);
               }
             })
@@ -163,7 +142,7 @@ export async function setup(store: ReturnType<typeof createStore>) {
   setupGlobal();
 
   createFirstAppData(store);
-  await tryMigration();
   await store.get(rootWorkspacesMetadataAtom);
+  await tryMigration();
   console.log('setup done');
 }

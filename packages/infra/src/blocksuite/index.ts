@@ -473,7 +473,9 @@ const upgradeV1ToV2 = async (options: UpgradeOptions) => {
   return newWorkspace;
 };
 
-export async function upgradePage(options: UpgradeOptions): Promise<boolean> {
+export async function upgradePages(
+  options: Omit<UpgradeOptions, 'createWorkspace'>
+): Promise<boolean> {
   const rootDoc = await options.getCurrentRootDoc();
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
@@ -556,7 +558,7 @@ export async function migrateWorkspace(
     return upgradeV2ToV3(options);
   } else if (currentVersion === WorkspaceVersion.DatabaseV3) {
     // surface from 3 to 5
-    return upgradePage(options);
+    return upgradePages(options);
   } else {
     return false;
   }

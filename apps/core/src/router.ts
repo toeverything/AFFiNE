@@ -25,6 +25,10 @@ export const routes = [
     ],
   },
   {
+    path: '/migration',
+    lazy: () => import('./pages/migration'),
+  },
+  {
     path: '/share/:workspaceId/:pageId',
     lazy: () => import('./pages/share/detail-page'),
   },
