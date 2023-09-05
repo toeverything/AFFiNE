@@ -180,6 +180,9 @@
       "path": "./tests/affine-cloud"
     },
     {
+      "path": "./tests/affine-desktop"
+    },
+    {
       "path": "./tests/affine-legacy/0.8.0-canary.7"
     }
   ],

@@ -1,4 +1,3 @@
-/* eslint-disable no-empty-pattern */
 import crypto from 'node:crypto';
 import { join, resolve } from 'node:path';
 
@@ -12,6 +11,9 @@ import type { Page } from '@playwright/test';
 import fs from 'fs-extra';
 import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
+
+const projectRoot = resolve(__dirname, '..', '..', '..');
+const electronRoot = resolve(projectRoot, 'apps', 'electron');
 
 function generateUUID() {
   return crypto.randomUUID();
@@ -69,15 +71,16 @@ export const test = base.extend<{
     }
     await page.close();
   },
+  // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use) => {
     // a random id to avoid conflicts between tests
     const id = generateUUID();
     const ext = process.platform === 'win32' ? '.cmd' : '';
-    const dist = resolve(__dirname, '..', 'dist');
-    const clonedDist = resolve(__dirname, '../e2e-dist-' + id);
+    const dist = resolve(electronRoot, 'dist');
+    const clonedDist = resolve(electronRoot, 'e2e-dist-' + id);
     await fs.copy(dist, clonedDist);
     const packageJson = await fs.readJSON(
-      resolve(__dirname, '..', 'package.json')
+      resolve(electronRoot, 'package.json')
     );
     // overwrite the app name
     packageJson.name = 'affine-test-' + id;
@@ -89,8 +92,7 @@ export const test = base.extend<{
     const electronApp = await electron.launch({
       args: [clonedDist],
       executablePath: resolve(
-        __dirname,
-        '..',
+        electronRoot,
         'node_modules',
         '.bin',
         `electron${ext}`
