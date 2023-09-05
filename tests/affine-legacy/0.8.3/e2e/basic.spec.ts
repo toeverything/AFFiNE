@@ -32,10 +32,11 @@ test('surface migration', async ({ page, context }) => {
   await page.getByTestId('switch-edgeless-mode-button').click({
     delay: 50,
   });
+  const url = page.url();
 
   await switchToNext();
   await page.waitForTimeout(1000);
-  await page.goto('http://localhost:8081/');
+  await page.goto(url);
   await waitForEditorLoad(page);
 
   // check edgeless mode is correct

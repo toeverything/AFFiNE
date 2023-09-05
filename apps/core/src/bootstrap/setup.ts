@@ -14,18 +14,13 @@ import {
 import { assertExists } from '@blocksuite/global/utils';
 import { nanoid } from '@blocksuite/store';
 import {
-  enablePassiveProviders,
-  getActiveBlockSuiteWorkspaceAtom,
-} from '@toeverything/infra/__internal__/workspace';
-import { getCurrentStore } from '@toeverything/infra/atom';
-import {
   migrateLocalBlobStorage,
   migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
-import { downloadBinary } from '@toeverything/y-indexeddb';
+import { downloadBinary, overwriteBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
-import { applyUpdate, Doc as YDoc } from 'yjs';
+import { applyUpdate, Doc as YDoc,encodeStateAsUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -38,9 +33,10 @@ async function tryMigration() {
       const newMetadata = [...metadata];
       metadata.forEach(oldMeta => {
         if (oldMeta.flavour === WorkspaceFlavour.LOCAL) {
+          let doc: YDoc;
           const options = {
             getCurrentRootDoc: async () => {
-              const doc = new YDoc({
+              doc = new YDoc({
                 guid: oldMeta.id,
               });
               const downloadWorkspace = async (doc: YDoc): Promise<void> => {
@@ -93,14 +89,13 @@ async function tryMigration() {
                   ...oldMeta,
                   version: WorkspaceVersion.Surface,
                 };
-                const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(
-                  oldMeta.id
-                );
-                const workspace = await getCurrentStore().get(workspaceAtom);
-                enablePassiveProviders(workspace);
-                await new Promise<void>(resolve => {
-                  setTimeout(() => resolve(), 3000);
-                });
+                const overWrite = async (doc: YDoc): Promise<void> => {
+                  await overwriteBinary(doc.guid, encodeStateAsUpdate(doc));
+                  return Promise.all(
+                    [...doc.subdocs.values()].map(subdoc => overWrite(subdoc))
+                  ).then();
+                };
+                await overWrite(doc);
                 console.log('workspace migrated', oldMeta.id);
               }
             })

@@ -32,9 +32,11 @@ test('database migration', async ({ page, context }) => {
   await page.keyboard.press('a', { delay: 50 });
   await page.keyboard.press('Enter', { delay: 50 });
 
+  const url = page.url();
+
   await switchToNext();
   await page.waitForTimeout(1000);
-  await page.goto('http://localhost:8081/');
+  await page.goto(url);
   await waitForEditorLoad(page);
   // check page mode is correct
   expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
