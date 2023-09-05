@@ -20,6 +20,17 @@ export class ExceptionLogger implements ExceptionFilter {
     // TODO: temporary, remove this after stable
     if (host.getType() !== 'http') {
       this.logger.error(`Unexpected request type caught: ${host.getType()}`);
+      if (host.getType() === 'ws') {
+        const ctx = host.switchToWs();
+        this.logger.error(
+          `WebSocket context: ${JSON.stringify(
+            ctx.getClient()
+          )} ${JSON.stringify(ctx.getPattern())}`
+        );
+      } else if (host.getType() === 'rpc') {
+        const ctx = host.switchToRpc();
+        this.logger.error(`RPC context: ${JSON.stringify(ctx.getContext())}`);
+      }
       return;
     }
 
