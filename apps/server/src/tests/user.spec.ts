@@ -1,5 +1,3 @@
-import { ok, rejects } from 'node:assert';
-
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -41,20 +39,18 @@ test.afterEach(async () => {
 
 test('should register a user', async t => {
   const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
-  ok(typeof user.id === 'string', 'user.id is not a string');
-  ok(user.name === 'u1', 'user.name is not valid');
-  ok(user.email === 'u1@affine.pro', 'user.email is not valid');
-  t.pass();
+  t.is(typeof user.id, 'string', 'user.id is not a string');
+  t.is(user.name, 'u1', 'user.name is not valid');
+  t.is(user.email, 'u1@affine.pro', 'user.email is not valid');
 });
 
 test('should get current user', async t => {
   const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
   const currUser = await currentUser(app, user.token.token);
-  ok(currUser.id === user.id, 'user.id is not valid');
-  ok(currUser.name === user.name, 'user.name is not valid');
-  ok(currUser.email === user.email, 'user.email is not valid');
-  ok(currUser.hasPassword, 'currUser.hasPassword is not valid');
-  t.pass();
+  t.is(currUser.id, user.id, 'user.id is not valid');
+  t.is(currUser.name, user.name, 'user.name is not valid');
+  t.is(currUser.email, user.email, 'user.email is not valid');
+  t.true(currUser.hasPassword, 'currUser.hasPassword is not valid');
 });
 
 test('should be able to delete user', async t => {
@@ -72,6 +68,6 @@ test('should be able to delete user', async t => {
         `,
     })
     .expect(200);
-  await rejects(currentUser(app, user.token.token));
+  await t.throwsAsync(() => currentUser(app, user.token.token));
   t.pass();
 });
