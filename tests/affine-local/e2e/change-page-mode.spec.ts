@@ -67,7 +67,7 @@ test('Able to insert the title of an untitled page', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   const titleBarTextContent = await page.getByTestId('title-edit-button');
-  await titleBarTextContent.click({ delay: 100 });
+  await titleBarTextContent.dblclick({ delay: 100 });
   const titleContent = await page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
@@ -78,12 +78,12 @@ test('Able to edit the title of an existing page', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   const titleBarTextContent = await page.getByTestId('title-edit-button');
-  await titleBarTextContent.click({ delay: 100 });
+  await titleBarTextContent.dblclick({ delay: 100 });
   const titleContent = await page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
-  await titleBarTextContent.click({ delay: 100 });
+  await titleBarTextContent.dblclick({ delay: 100 });
   await titleContent.fill('Sample text 2');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('Sample text 2');
@@ -95,12 +95,12 @@ test('Clearing out the title bar will remove the page title', async ({
   await openHomePage(page);
   await waitForEditorLoad(page);
   const titleBarTextContent = await page.getByTestId('title-edit-button');
-  await titleBarTextContent.click({ delay: 100 });
+  await titleBarTextContent.dblclick({ delay: 100 });
   const titleContent = await page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
-  await titleBarTextContent.click({ delay: 100 });
+  await titleBarTextContent.dblclick({ delay: 100 });
   await titleContent.fill('');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('Untitled');
