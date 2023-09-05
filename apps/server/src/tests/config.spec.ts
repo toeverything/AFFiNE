@@ -1,5 +1,3 @@
-import { ok } from 'node:assert';
-
 import { Test } from '@nestjs/testing';
 import test from 'ava';
 
@@ -28,6 +26,5 @@ test('should be able to override config', async t => {
   }).compile();
   const config = module.get(Config);
 
-  ok(config.host, 'testing');
-  t.pass();
+  t.is(config.host, 'testing');
 });
