@@ -225,6 +225,7 @@ jobs:
         spec:
           - { package: 0.7.0-canary.18 }
           - { package: 0.8.0-canary.7 }
+          - { package: 0.8.3 }
     steps:
       - uses: actions/checkout@v3
       - name: Setup Node.js
