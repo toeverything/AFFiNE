@@ -90,6 +90,12 @@ export const test = base.extend<{
     // write to the cloned dist
     await fs.writeJSON(resolve(clonedDist, 'package.json'), packageJson);
 
+    const env = {} as Record<string, string>;
+
+    if (process.env.DEV_SERVER_URL) {
+      env.DEV_SERVER_URL = process.env.DEV_SERVER_URL;
+    }
+
     const electronApp = await electron.launch({
       args: [clonedDist],
       executablePath: resolve(
@@ -98,6 +104,7 @@ export const test = base.extend<{
         '.bin',
         `electron${ext}`
       ),
+      env,
       recordVideo: {
         dir: testResultDir,
       },

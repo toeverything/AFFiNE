@@ -12,6 +12,7 @@ let user: {
   email: string;
   password: string;
 };
+
 test.beforeEach(async () => {
   user = await createRandomUser();
 });
