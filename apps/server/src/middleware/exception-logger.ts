@@ -16,6 +16,13 @@ export class ExceptionLogger implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
     // with useGlobalFilters, the context is always HTTP
     const ctx = host.switchToHttp();
+
+    // TODO: temporary, remove this after stable
+    if (host.getType() !== 'http') {
+      this.logger.error(`Unexpected request type caught: ${host.getType()}`);
+      return;
+    }
+
     const request = ctx.getRequest<Request>();
     const requestId = request?.header(REQUEST_ID);
     this.logger.error(
