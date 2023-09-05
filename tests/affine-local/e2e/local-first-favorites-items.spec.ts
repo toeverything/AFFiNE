@@ -127,3 +127,18 @@ test("Deleted page's reference will not be shown in sidebar", async ({
 
   expect(currentWorkspace.flavour).toContain('local');
 });
+
+test('Add new favorite page via sidebar', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await page.getByTestId('slider-bar-add-favorite-button').click();
+  await waitForEditorLoad(page);
+
+  // enter random page title
+  await getBlockSuiteEditorTitle(page).fill('this is a new fav page');
+  // check if the page title is shown in the favorite list
+  const favItem = page.locator(
+    '[data-type=favorite-list-item] >> text=this is a new fav page'
+  );
+  await expect(favItem).toBeVisible();
+});

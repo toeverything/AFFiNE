@@ -270,6 +270,7 @@ export interface UIEvents {
   onFinishLogin: (
     fn: (result: { success: boolean; email?: string }) => void
   ) => () => void;
+  onMaximized: (fn: (maximized: boolean) => void) => () => void;
 }
 
 export interface EventMap {

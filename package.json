@@ -117,7 +117,7 @@
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.2.0"
   },
-  "packageManager": "yarn@3.6.0",
+  "packageManager": "yarn@3.6.3",
   "resolutions": {
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@latest",
     "array-includes": "npm:@nolyfill/array-includes@latest",

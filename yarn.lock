@@ -173,7 +173,7 @@ __metadata:
     "@radix-ui/react-scroll-area": ^1.0.4
     "@radix-ui/react-toast": ^1.1.4
     "@toeverything/hooks": "workspace:*"
-    "@toeverything/theme": ^0.7.13
+    "@toeverything/theme": ^0.7.15
     "@types/react": ^18.2.21
     "@types/react-datepicker": ^4.15.0
     "@types/react-dnd": ^3.0.2
@@ -367,7 +367,7 @@ __metadata:
     "@electron-forge/maker-squirrel": ^6.4.1
     "@electron-forge/maker-zip": ^6.4.1
     "@electron-forge/shared-types": ^6.4.1
-    "@electron/remote": 2.0.10
+    "@electron/remote": 2.0.11
     "@reforged/maker-appimage": ^3.3.1
     "@toeverything/infra": "workspace:*"
     "@types/fs-extra": ^11.0.1
@@ -467,7 +467,7 @@ __metadata:
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.31
     "@toeverything/components": ^0.0.25
-    "@toeverything/theme": ^0.7.13
+    "@toeverything/theme": ^0.7.15
     clsx: ^2.0.0
     foxact: ^0.2.20
     react-error-boundary: ^4.0.11
@@ -695,6 +695,7 @@ __metadata:
     "@types/cookie-parser": ^1.4.3
     "@types/engine.io": ^3.1.7
     "@types/express": ^4.17.17
+    "@types/keyv": ^4.2.0
     "@types/lodash-es": ^4.17.9
     "@types/node": ^18.17.12
     "@types/nodemailer": ^6.4.9
@@ -4253,12 +4254,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/remote@npm:2.0.10":
-  version: 2.0.10
-  resolution: "@electron/remote@npm:2.0.10"
+"@electron/remote@npm:2.0.11":
+  version: 2.0.11
+  resolution: "@electron/remote@npm:2.0.11"
   peerDependencies:
     electron: ">= 13.0.0"
-  checksum: 74ab6fca7973f43d45e3372dc3bbd35552f63ba10f5673d08ec9d9fd06e74d5b2da696a9b297dae5baeaf5cd991fc65c4ee25582991f8c18316bd18ae1bed6a9
+  checksum: 5ba6ddce183fdb6afc3c83b4d15433a5506fcd69b969b76c4a2fae69a1e9493a41494332d325209cbf934aa870e20417f54723c26c3969eea6e19558b96089b0
   languageName: node
   linkType: hard
 
@@ -12553,10 +12554,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^0.7.13":
-  version: 0.7.13
-  resolution: "@toeverything/theme@npm:0.7.13"
-  checksum: 1b6ee23f0aafd0430bbe3e06e0c789b9594848a91ed769ef7304e858ab63aa700490399beaf331dd44f80030fa1ff04a097aa545355c58276376a350969a958f
+"@toeverything/theme@npm:^0.7.15":
+  version: 0.7.15
+  resolution: "@toeverything/theme@npm:0.7.15"
+  checksum: 5736e1948e739c4700fcd82dc669635bb91cac3528aa8dece68bc22a1a5c035c8c2ab53f6df679848d8ebe37400ea35bbb8422fa4073ff86f5fcf12f0bce651a
   languageName: node
   linkType: hard
 
@@ -13118,6 +13119,15 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: e009a2bfb50e90ca9b7c6e8f648f8464067271fd99116f881073fa6fa76dc8d0133181dd65e6614d5fb1220d671d67b0124aef7d97dc02d7e342ab143a47779d
+  languageName: node
+  linkType: hard
+
+"@types/keyv@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "@types/keyv@npm:4.2.0"
+  dependencies:
+    keyv: "*"
+  checksum: 8713da9382b9346d664866a6cab2f91b0fd479f61379af891303a618e9a2abad6f347adc38a0850540e3f2dad278427de24e7555339264fddb04d1d17d3b50e0
   languageName: node
   linkType: hard
 
@@ -24515,7 +24525,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keyv@npm:^4.0.0, keyv@npm:^4.5.3":
+"keyv@npm:*, keyv@npm:^4.0.0, keyv@npm:^4.5.3":
   version: 4.5.3
   resolution: "keyv@npm:4.5.3"
   dependencies:
@@ -33174,11 +33184,11 @@ __metadata:
 
 "typescript@patch:typescript@^4.6.4 || ^5.0.0#~builtin<compat/typescript>, typescript@patch:typescript@^5.2.2#~builtin<compat/typescript>":
   version: 5.2.2
-  resolution: "typescript@patch:typescript@npm%3A5.2.2#~builtin<compat/typescript>::version=5.2.2&hash=5da071"
+  resolution: "typescript@patch:typescript@npm%3A5.2.2#~builtin<compat/typescript>::version=5.2.2&hash=f3b441"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 07106822b4305de3f22835cbba949a2b35451cad50888759b6818421290ff95d522b38ef7919e70fb381c5fe9c1c643d7dea22c8b31652a717ddbd57b7f4d554
+  checksum: 0f4da2f15e6f1245e49db15801dbee52f2bbfb267e1c39225afdab5afee1a72839cd86000e65ee9d7e4dfaff12239d28beaf5ee431357fcced15fb08583d72ca
   languageName: node
   linkType: hard
 
