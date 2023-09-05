@@ -188,7 +188,7 @@ export interface AFFiNEConfig {
     };
     /**
      * Free user storage quota
-     * @default 10 * 1024 * 1024 (10GB)
+     * @default 10 * 1024 * 1024 * 1024 (10GB)
      */
     quota: number;
   };
