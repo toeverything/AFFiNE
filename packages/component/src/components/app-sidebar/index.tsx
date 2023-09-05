@@ -2,6 +2,7 @@ import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
+import debounce from 'lodash/debounce';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -77,10 +78,10 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
       setAppSidebarFloating(isFloating && !!open);
     }
 
-    onResize();
-    window.addEventListener('resize', onResize);
+    const dOnResize = debounce(onResize, 50);
+    window.addEventListener('resize', dOnResize);
     return () => {
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', dOnResize);
     };
   }, [appSidebarWidth, open, setAppSidebarFloating, setOpen]);
 
