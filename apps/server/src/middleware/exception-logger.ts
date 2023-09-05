@@ -4,10 +4,13 @@ import {
   ExceptionFilter,
   HttpException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { REQUEST_ID } from '../constants';
+
+const TrivialExceptions = [NotFoundException];
 
 @Catch()
 export class ExceptionLogger implements ExceptionFilter {
@@ -36,13 +39,14 @@ export class ExceptionLogger implements ExceptionFilter {
 
     const request = ctx.getRequest<Request>();
     const requestId = request?.header(REQUEST_ID);
+    const ifVerboseLog = !TrivialExceptions.some((e) => exception instanceof e);
     this.logger.error(
       new Error(
         `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
         { cause: exception }
       ),
-      exception.stack
     );
+    ifVerboseLog && this.logger.error(exception.stack);
 
     const response = ctx.getResponse<Response>();
     if (exception instanceof HttpException) {
