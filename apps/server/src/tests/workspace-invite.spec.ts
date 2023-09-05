@@ -1,5 +1,3 @@
-import { ok } from 'node:assert';
-
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -72,8 +70,7 @@ test('should invite a user', async t => {
     u2.email,
     'Admin'
   );
-  ok(!!invite, 'failed to invite user');
-  t.pass();
+  t.truthy(invite, 'failed to invite user');
 });
 
 test('should accept an invite', async t => {
@@ -84,13 +81,13 @@ test('should accept an invite', async t => {
   await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
 
   const accept = await acceptInvite(app, u2.token.token, workspace.id);
-  ok(accept === true, 'failed to accept invite');
+  t.is(accept, true, 'failed to accept invite');
 
   const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
   const currMember = currWorkspace.members.find(u => u.email === u2.email);
-  ok(currMember !== undefined, 'failed to invite user');
-  ok(currMember.id === u2.id, 'failed to invite user');
-  ok(!currMember.accepted, 'failed to invite user');
+  t.not(currMember, undefined, 'failed to invite user');
+  t.is(currMember!.id, u2.id, 'failed to invite user');
+  t.true(!currMember!.accepted, 'failed to invite user');
   t.pass();
 });
 
@@ -103,8 +100,7 @@ test('should leave a workspace', async t => {
   await acceptInvite(app, u2.token.token, workspace.id);
 
   const leave = await leaveWorkspace(app, u2.token.token, workspace.id);
-  ok(leave === true, 'failed to leave workspace');
-  t.pass();
+  t.true(leave, 'failed to leave workspace');
 });
 
 test('should revoke a user', async t => {
@@ -115,11 +111,10 @@ test('should revoke a user', async t => {
   await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
 
   const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
-  ok(currWorkspace.members.length === 2, 'failed to invite user');
+  t.is(currWorkspace.members.length, 2, 'failed to invite user');
 
   const revoke = await revokeUser(app, u1.token.token, workspace.id, u2.id);
-  ok(revoke === true, 'failed to revoke user');
-  t.pass();
+  t.true(revoke, 'failed to revoke user');
 });
 
 test('should create user if not exist', async t => {
@@ -130,9 +125,8 @@ test('should create user if not exist', async t => {
   await inviteUser(app, u1.token.token, workspace.id, 'u2@affine.pro', 'Admin');
 
   const user = await auth.getUserByEmail('u2@affine.pro');
-  ok(user !== undefined, 'failed to create user');
-  ok(user?.name === 'Unnamed', 'failed to create user');
-  t.pass();
+  t.not(user, undefined, 'failed to create user');
+  t.is(user?.name, 'Unnamed', 'failed to create user');
 });
 
 test('should invite a user by link', async t => {
@@ -150,7 +144,7 @@ test('should invite a user by link', async t => {
   );
 
   const accept = await acceptInviteById(app, workspace.id, invite);
-  ok(accept === true, 'failed to accept invite');
+  t.true(accept, 'failed to accept invite');
 
   const invite1 = await inviteUser(
     app,
@@ -160,13 +154,12 @@ test('should invite a user by link', async t => {
     'Admin'
   );
 
-  ok(invite === invite1, 'repeat the invitation must return same id');
+  t.is(invite, invite1, 'repeat the invitation must return same id');
 
   const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
   const currMember = currWorkspace.members.find(u => u.email === u2.email);
-  ok(currMember !== undefined, 'failed to invite user');
-  ok(currMember.inviteId === invite, 'failed to check invite id');
-  t.pass();
+  t.not(currMember, undefined, 'failed to invite user');
+  t.is(currMember?.inviteId, invite, 'failed to check invite id');
 });
 
 test('should send invite email', async t => {
