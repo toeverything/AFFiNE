@@ -622,6 +622,7 @@ export class WorkspaceResolver {
         where: {
           userId: user.id,
           accepted: true,
+          type: Permission.Owner,
         },
         select: {
           workspace: {
