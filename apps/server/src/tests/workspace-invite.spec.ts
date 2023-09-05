@@ -100,25 +100,8 @@ test('should leave a workspace', async t => {
   const workspace = await createWorkspace(app, u1.token.token);
   await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
   await acceptInvite(app, u2.token.token, workspace.id);
-  const primitiveMailCount = await getCurrentMailMessageCount();
 
   const leave = await leaveWorkspace(app, u2.token.token, workspace.id);
-
-  const afterLeaveMailCount = await getCurrentMailMessageCount();
-  t.is(
-    primitiveMailCount + 1,
-    afterLeaveMailCount,
-    'failed to send leave email to owner'
-  );
-  const leaveEmailContent = await getLatestMailMessage();
-  t.not(
-    // @ts-expect-error Third part library type mismatch
-    leaveEmailContent.To.find(item => {
-      return item.Mailbox === 'u1';
-    }),
-    undefined,
-    'accept email address was incorrectly sent'
-  );
 
   t.pass();
   t.true(leave, 'failed to leave workspace');
@@ -155,51 +138,17 @@ test('should invite a user by link', async t => {
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
   const workspace = await createWorkspace(app, u1.token.token);
-  const primitiveMailCount = await getCurrentMailMessageCount();
 
   const invite = await inviteUser(
     app,
     u1.token.token,
     workspace.id,
     u2.email,
-    'Admin',
-    true
-  );
-
-  const afterInviteMailCount = await getCurrentMailMessageCount();
-  t.is(
-    primitiveMailCount + 1,
-    afterInviteMailCount,
-    'failed to send invite email'
-  );
-  const inviteEmailContent = await getLatestMailMessage();
-  t.not(
-    // @ts-expect-error Third part library type mismatch
-    inviteEmailContent.To.find(item => {
-      return item.Mailbox === 'u2';
-    }),
-    undefined,
-    'invite email address was incorrectly sent'
+    'Admin'
   );
 
   const accept = await acceptInviteById(app, workspace.id, invite);
   t.true(accept, 'failed to accept invite');
-
-  const afterAcceptMailCount = await getCurrentMailMessageCount();
-  t.is(
-    afterInviteMailCount + 1,
-    afterAcceptMailCount,
-    'failed to send accepted email to owner'
-  );
-  const acceptEmailContent = await getLatestMailMessage();
-  t.not(
-    // @ts-expect-error Third part library type mismatch
-    acceptEmailContent.To.find(item => {
-      return item.Mailbox === 'u1';
-    }),
-    undefined,
-    'accept email address was incorrectly sent'
-  );
 
   const invite1 = await inviteUser(
     app,
@@ -217,19 +166,75 @@ test('should invite a user by link', async t => {
   t.is(currMember?.inviteId, invite, 'failed to check invite id');
 });
 
-test('should send invite email', async t => {
+test('should send email', async t => {
   if (mail.hasConfigured()) {
     const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
     const u2 = await signUp(app, 'test', 'production@toeverything.info', '1');
 
     const workspace = await createWorkspace(app, u1.token.token);
-    await inviteUser(
+    const primitiveMailCount = await getCurrentMailMessageCount();
+
+    const invite = await inviteUser(
       app,
       u1.token.token,
       workspace.id,
       u2.email,
       'Admin',
       true
+    );
+
+    const afterInviteMailCount = await getCurrentMailMessageCount();
+    t.is(
+      primitiveMailCount + 1,
+      afterInviteMailCount,
+      'failed to send invite email'
+    );
+    const inviteEmailContent = await getLatestMailMessage();
+
+    t.not(
+      // @ts-expect-error Third part library type mismatch
+      inviteEmailContent.To.find(item => {
+        return item.Mailbox === 'production';
+      }),
+      undefined,
+      'invite email address was incorrectly sent'
+    );
+
+    const accept = await acceptInviteById(app, workspace.id, invite);
+    t.true(accept, 'failed to accept invite');
+
+    const afterAcceptMailCount = await getCurrentMailMessageCount();
+    t.is(
+      afterInviteMailCount + 1,
+      afterAcceptMailCount,
+      'failed to send accepted email to owner'
+    );
+    const acceptEmailContent = await getLatestMailMessage();
+    t.not(
+      // @ts-expect-error Third part library type mismatch
+      acceptEmailContent.To.find(item => {
+        return item.Mailbox === 'u1';
+      }),
+      undefined,
+      'accept email address was incorrectly sent'
+    );
+
+    await leaveWorkspace(app, u2.token.token, workspace.id);
+
+    const afterLeaveMailCount = await getCurrentMailMessageCount();
+    t.is(
+      afterAcceptMailCount + 1,
+      afterLeaveMailCount,
+      'failed to send leave email to owner'
+    );
+    const leaveEmailContent = await getLatestMailMessage();
+    t.not(
+      // @ts-expect-error Third part library type mismatch
+      leaveEmailContent.To.find(item => {
+        return item.Mailbox === 'u1';
+      }),
+      undefined,
+      'leave email address was incorrectly sent'
     );
   }
   t.pass();
