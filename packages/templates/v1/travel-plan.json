@@ -235,7 +235,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Accomedation "
+          "insert": "Accommodation "
         }
       ],
       "prop:checked": false
@@ -291,7 +291,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Vaccinations/immuzations "
+          "insert": "Vaccinations / Immunizations "
         }
       ],
       "prop:checked": false

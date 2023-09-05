@@ -1,5 +1,3 @@
-import { ok } from 'node:assert';
-
 import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 import { register } from 'prom-client';
@@ -27,10 +25,10 @@ test('should be able to increment counter', async t => {
   metrics.socketIOEventCounter(1, { event: 'client-handshake' });
   const socketIOCounterMetric =
     await register.getSingleMetric('socket_io_counter');
-  ok(socketIOCounterMetric);
+  t.truthy(socketIOCounterMetric);
 
-  ok(
-    JSON.stringify((await socketIOCounterMetric.get()).values) ===
+  t.truthy(
+    JSON.stringify((await socketIOCounterMetric!.get()).values) ===
       '[{"value":1,"labels":{"event":"client-handshake"}}]'
   );
   t.pass();
@@ -58,20 +56,20 @@ test('should be able to timer', async t => {
   }
 
   const socketIOTimerMetric = register.getSingleMetric('socket_io_timer');
-  ok(socketIOTimerMetric);
+  t.truthy(socketIOTimerMetric);
 
-  const observations = (await socketIOTimerMetric.get()).values;
+  const observations = (await socketIOTimerMetric!.get()).values;
 
   for (const observation of observations) {
     if (
       observation.labels.event === 'client-handshake' &&
       'quantile' in observation.labels
     ) {
-      ok(
+      t.truthy(
         observation.value >= minimum / 1000,
         'observation.value should be greater than minimum'
       );
-      ok(
+      t.truthy(
         observation.value <= maximum / 1000,
         'observation.value should be less than maximum'
       );
