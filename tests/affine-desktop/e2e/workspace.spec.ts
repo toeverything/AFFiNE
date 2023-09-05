@@ -1,9 +1,8 @@
 import path from 'node:path';
 
+import { test } from '@affine-test/kit/electron';
 import { expect } from '@playwright/test';
 import fs from 'fs-extra';
-
-import { test } from './fixture';
 
 test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const w = await workspace.current();

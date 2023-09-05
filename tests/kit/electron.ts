@@ -1,18 +1,19 @@
 import crypto from 'node:crypto';
 import { join, resolve } from 'node:path';
 
-import {
-  enableCoverage,
-  istanbulTempDir,
-  test as base,
-  testResultDir,
-} from '@affine-test/kit/playwright';
 import type { Page } from '@playwright/test';
 import fs from 'fs-extra';
 import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
 
-const projectRoot = resolve(__dirname, '..', '..', '..');
+import {
+  enableCoverage,
+  istanbulTempDir,
+  test as base,
+  testResultDir,
+} from './playwright';
+
+const projectRoot = resolve(__dirname, '..', '..');
 const electronRoot = resolve(projectRoot, 'apps', 'electron');
 
 function generateUUID() {
