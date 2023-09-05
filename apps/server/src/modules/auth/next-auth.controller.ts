@@ -23,7 +23,7 @@ import { AuthHandler } from 'next-auth/core';
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
+import { AuthThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
@@ -47,7 +47,7 @@ export class NextAuthController {
     this.callbackSession = nextAuthOptions.callbacks!.session;
   }
 
-  @UseGuards(CloudThrottlerGuard)
+  @UseGuards(AuthThrottlerGuard)
   @Throttle(60, 60)
   @All('*')
   async auth(
