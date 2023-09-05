@@ -73,7 +73,7 @@ test('should include callbackUrl in sending email', async t => {
   if (skip) {
     return t.pass();
   }
-  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
+  // await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   for (const fn of [
     'sendSetPasswordEmail',
     'sendChangeEmail',
