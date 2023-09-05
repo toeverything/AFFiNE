@@ -243,6 +243,14 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
+          hard-link-nm: false
+
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
+          package: '@affine/native'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
       - name: Initialize database
         run: |
