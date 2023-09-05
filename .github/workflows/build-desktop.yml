@@ -133,15 +133,13 @@ jobs:
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn e2e
-        working-directory: ./tests/affine-desktop
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/affine-desktop e2e
         env:
           COVERAGE: true
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn e2e
-        working-directory: ./tests/affine-desktop
+        run: yarn workspace @affine/affine-desktop e2e
         env:
           COVERAGE: true
 
