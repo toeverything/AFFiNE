@@ -45,6 +45,18 @@ export const navWrapperStyle = style({
   },
 });
 
+export const navHeaderButton = style({
+  width: '32px',
+  height: '32px',
+  flexShrink: 0,
+});
+
+export const navHeaderNavigationButtons = style({
+  display: 'flex',
+  alignItems: 'center',
+  columnGap: '32px',
+});
+
 export const navStyle = style({
   position: 'relative',
   width: '100%',
@@ -61,11 +73,10 @@ export const navHeaderStyle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  gap: '32px',
   WebkitAppRegion: 'drag',
   selectors: {
     '&[data-is-macos-electron="true"]': {
-      justifyContent: 'flex-end',
+      paddingLeft: '90px',
     },
   },
 } as ComplexStyleRule);

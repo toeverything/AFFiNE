@@ -115,7 +115,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
           this.node.prod && (this.affine.beta || this.affine.canary),
       };
     },
-    https: false,
+    get https() {
+      return !this.node.dev;
+    },
     host: 'localhost',
     port: 3010,
     path: '',

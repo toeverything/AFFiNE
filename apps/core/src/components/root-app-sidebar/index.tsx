@@ -30,6 +30,7 @@ import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
+import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 import ImportPage from './import-page';
@@ -198,7 +199,9 @@ export const RootAppSidebar = ({
         </SidebarContainer>
 
         <SidebarScrollableContainer>
-          <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()} />
+          <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
+            <AddFavouriteButton workspace={blockSuiteWorkspace} />
+          </CategoryDivider>
           <FavoriteList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
             <AddCollectionButton workspace={blockSuiteWorkspace} />

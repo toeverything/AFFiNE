@@ -19,11 +19,14 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   );
   const setPageMode = useSetAtom(setPageModeAtom);
   const createPageAndOpen = useCallback(
-    (id?: string, mode?: 'page' | 'edgeless') => {
+    (id?: string, mode?: 'page' | 'edgeless'): string => {
       const page = createPage(id);
-      initEmptyPage(page); // we don't need to wait it to be loaded right?
+      initEmptyPage(page).catch(error => {
+        toast(`Failed to initialize Page: ${error.message}`);
+      });
       setPageMode(page.id, mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
+      return page.id;
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
   );

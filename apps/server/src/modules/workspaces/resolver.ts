@@ -2,6 +2,7 @@ import type { Storage } from '@affine/storage';
 import {
   ForbiddenException,
   Inject,
+  Logger,
   NotFoundException,
   UseGuards,
 } from '@nestjs/common';
@@ -129,6 +130,8 @@ export class UpdateWorkspaceInput extends PickType(
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
+  private readonly logger = new Logger('WorkspaceResolver');
+
   constructor(
     private readonly auth: AuthService,
     private readonly config: Config,
@@ -404,7 +407,6 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
     @Args('permission', { type: () => Permission }) permission: Permission,
-    // TODO: add rate limit
     @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
   ) {
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
@@ -622,6 +624,7 @@ export class WorkspaceResolver {
         where: {
           userId: user.id,
           accepted: true,
+          type: Permission.Owner,
         },
         select: {
           workspace: {
@@ -649,6 +652,7 @@ export class WorkspaceResolver {
     const { size } = await this.collectAllBlobSizes(user);
 
     if (size > quota) {
+      this.logger.log(`storage size limit exceeded: ${size} > ${quota}`);
       throw new ForbiddenException('storage size limit exceeded');
     }
 
