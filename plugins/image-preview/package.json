@@ -16,9 +16,9 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "^2.1.32",
+    "@blocksuite/icons": "^2.1.31",
     "@toeverything/components": "^0.0.30",
-    "@toeverything/theme": "^0.7.13",
+    "@toeverything/theme": "^0.7.15",
     "clsx": "^2.0.0",
     "foxact": "^0.2.20",
     "react-error-boundary": "^4.0.11",
