@@ -5,6 +5,7 @@ import {
   getLoginCookie,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
@@ -20,6 +21,8 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page, context }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
   await loginUser(page, user.email, {
     beforeLogin: async () => {
       expect(await getLoginCookie(context)).toBeUndefined();

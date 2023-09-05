@@ -5,6 +5,7 @@ import {
   enableCloudWorkspace,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
@@ -25,6 +26,8 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
   await loginUser(page, user.email);
 });
 
