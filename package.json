@@ -15,6 +15,7 @@
     "tests/affine-legacy/*",
     "tests/affine-local",
     "tests/affine-desktop",
+    "tests/affine-desktop-cloud",
     "tests/affine-plugin",
     "tests/affine-prototype",
     "tests/affine-cloud"
