@@ -12,6 +12,18 @@ import type { InvitationType, WorkspaceType } from '../modules/workspaces';
 
 const gql = '/graphql';
 
+export async function getCurrentMailMessageCount() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.total;
+}
+
+export async function getLatestMailMessage() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.items[0];
+}
+
 async function signUp(
   app: INestApplication,
   name: string,
@@ -240,7 +252,7 @@ async function leaveWorkspace(
     .send({
       query: `
           mutation {
-            leaveWorkspace(workspaceId: "${workspaceId}")
+            leaveWorkspace(workspaceId: "${workspaceId}", workspaceName: "test workspace")
           }
         `,
     })
