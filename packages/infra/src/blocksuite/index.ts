@@ -36,10 +36,6 @@ export async function buildShowcaseWorkspace(
     store: ReturnType<typeof createStore>;
   }
 ) {
-  const showcaseWorkspaceVersions = getLatestVersions(options.schema);
-  workspace.doc
-    .getMap('meta')
-    .set('blockVersions', new YMap(Object.entries(showcaseWorkspaceVersions)));
   const prototypes = {
     tags: {
       options: [
