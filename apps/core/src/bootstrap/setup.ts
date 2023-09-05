@@ -20,7 +20,7 @@ import {
 } from '@toeverything/infra/blocksuite';
 import { downloadBinary, overwriteBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
-import { applyUpdate, Doc as YDoc,encodeStateAsUpdate } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -159,7 +159,8 @@ export async function setup(store: ReturnType<typeof createStore>) {
   console.log('setup global');
   setupGlobal();
 
-  await store.get(rootWorkspacesMetadataAtom);
   await tryMigration();
+  // do not read `rootWorkspacesMetadataAtom` before migration
+  await store.get(rootWorkspacesMetadataAtom);
   console.log('setup done');
 }
