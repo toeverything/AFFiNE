@@ -23,7 +23,9 @@ import {
   migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
+import { downloadBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
+import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 
@@ -38,11 +40,22 @@ async function tryMigration() {
         if (oldMeta.flavour === WorkspaceFlavour.LOCAL) {
           const options = {
             getCurrentRootDoc: async () => {
-              const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(
-                oldMeta.id
-              );
-              const workspace = await getCurrentStore().get(workspaceAtom);
-              return workspace.doc;
+              const doc = new YDoc({
+                guid: oldMeta.id,
+              });
+              const downloadWorkspace = async (doc: YDoc): Promise<void> => {
+                const binary = await downloadBinary(doc.guid);
+                if (binary) {
+                  applyUpdate(doc, binary);
+                }
+                await Promise.all(
+                  [...doc.subdocs.values()].map(subdoc =>
+                    downloadWorkspace(subdoc)
+                  )
+                );
+              };
+              await downloadWorkspace(doc);
+              return doc;
             },
             createWorkspace: async () =>
               getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
@@ -73,11 +86,21 @@ async function tryMigration() {
                 await migrateLocalBlobStorage(status.id, newId);
                 console.log('workspace migrated', oldMeta.id, newId);
               } else if (status) {
+                const index = newMetadata.findIndex(
+                  meta => meta.id === oldMeta.id
+                );
+                newMetadata[index] = {
+                  ...oldMeta,
+                  version: WorkspaceVersion.Surface,
+                };
                 const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(
                   oldMeta.id
                 );
                 const workspace = await getCurrentStore().get(workspaceAtom);
                 enablePassiveProviders(workspace);
+                await new Promise<void>(resolve => {
+                  setTimeout(() => resolve(), 3000);
+                });
                 console.log('workspace migrated', oldMeta.id);
               }
             })

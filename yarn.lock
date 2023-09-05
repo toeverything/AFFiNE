@@ -53,6 +53,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-legacy/0.8.3@workspace:tests/affine-legacy/0.8.3":
+  version: 0.0.0-use.local
+  resolution: "@affine-legacy/0.8.3@workspace:tests/affine-legacy/0.8.3"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@blocksuite/block-std": 0.0.0-20230903053104-ef722e5c-nightly
+    "@blocksuite/blocks": 0.0.0-20230903053104-ef722e5c-nightly
+    "@blocksuite/global": 0.0.0-20230903053104-ef722e5c-nightly
+    "@blocksuite/store": 0.0.0-20230903053104-ef722e5c-nightly
+    "@playwright/test": ^1.37.1
+    express: ^4.18.2
+    http-proxy-middleware: ^3.0.0-beta.1
+    serve: ^14.2.1
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/affine-cloud@workspace:tests/affine-cloud":
   version: 0.0.0-use.local
   resolution: "@affine-test/affine-cloud@workspace:tests/affine-cloud"
