@@ -34,21 +34,6 @@ export async function buildShowcaseWorkspace(
     store: ReturnType<typeof createStore>;
   }
 ) {
-  const showcaseWorkspaceVersions = {
-    'affine:code': 1,
-    'affine:paragraph': 1,
-    'affine:page': 2,
-    'affine:list': 1,
-    'affine:note': 1,
-    'affine:divider': 1,
-    'affine:image': 1,
-    'affine:surface': 3,
-    'affine:bookmark': 1,
-    'affine:database': 2,
-  };
-  workspace.doc
-    .getMap('meta')
-    .set('blockVersions', new YMap(Object.entries(showcaseWorkspaceVersions)));
   const prototypes = {
     tags: {
       options: [
