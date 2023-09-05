@@ -39,19 +39,21 @@ export class ExceptionLogger implements ExceptionFilter {
 
     const request = ctx.getRequest<Request>();
     const requestId = request?.header(REQUEST_ID);
-    const ifVerboseLog = !TrivialExceptions.some((e) => exception instanceof e);
+    const ifVerboseLog = !TrivialExceptions.some(e => exception instanceof e);
     this.logger.error(
       new Error(
         `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
         { cause: exception }
-      ),
+      )
     );
     ifVerboseLog && this.logger.error(exception.stack);
 
     const response = ctx.getResponse<Response>();
     if (exception instanceof HttpException) {
       if (!response.status) {
-        this.logger.warn(`Unexpected: response has no status method, request info:\n url: ${request.url} \n method: ${request.method} \n body: ${request.body}`);
+        this.logger.warn(
+          `Unexpected: response has no status method, request info:\n url: ${request.url} \n method: ${request.method} \n body: ${request.body}`
+        );
       } else {
         response.status(exception.getStatus());
       }
