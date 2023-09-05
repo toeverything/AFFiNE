@@ -1,60 +1,20 @@
 import { resolve } from 'node:path';
 
+import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  check8080Available,
+  setupProxyServer,
+} from '@affine-test/kit/utils/proxy';
 import { expect, test } from '@playwright/test';
-import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
 
-let app: express.Express;
-let server: ReturnType<express.Express['listen']>;
-
-process.env.DEBUG = 'http-proxy-middleware*';
-
-async function switchToNext() {
-  // close previous express server
-  await new Promise<void>((resolve, reject) => {
-    server.close(err => {
-      if (err) {
-        reject(err);
-      }
-      resolve();
-    });
-  });
-  app = express();
-  app.use(
-    createProxyMiddleware({
-      target: 'http://localhost:8080',
-      pathFilter: ['**'],
-      changeOrigin: true,
-    })
-  );
-  return new Promise<void>(resolve => {
-    server = app.listen(8081, () => {
-      console.log('proxy to next.js server');
-      resolve();
-    });
-  });
-}
-
-test.beforeEach(() => {
-  app = express();
-  app.use(express.static(resolve(__dirname, '..', 'static')));
-  server = app.listen(8081);
-});
-
-test.afterEach(() => {
-  server.close();
-});
+const { switchToNext } = setupProxyServer(
+  test,
+  resolve(__dirname, '..', 'static')
+);
 
 test('database migration', async ({ page, context }) => {
-  {
-    // make sure 8080 is ready
-    const page = await context.newPage();
-    await page.goto('http://localhost:8080/');
-    await page.waitForSelector('v-line', {
-      timeout: 10000,
-    });
-    await page.close();
-  }
+  await check8080Available(context);
   await page.goto('http://localhost:8081/');
   await page.waitForSelector('v-line', {
     timeout: 10000,
@@ -76,9 +36,14 @@ test('database migration', async ({ page, context }) => {
   await page.waitForTimeout(1000);
   await page.goto('http://localhost:8081/');
   await page.click('text=hello');
-  await page.waitForSelector('v-line', {
-    timeout: 10000,
-  });
+  await waitForEditorLoad(page);
+  // check page mode is correct
   expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
+  expect(await page.locator('affine-database').isVisible()).toBe(true);
+
+  // check edgeless mode is correct
+  await page.getByTestId('switch-edgeless-mode-button').click();
+  await clickEdgelessModeButton(page);
+  await page.waitForTimeout(200);
   expect(await page.locator('affine-database').isVisible()).toBe(true);
 });

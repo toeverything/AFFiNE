@@ -3,7 +3,11 @@ import { IconButton } from '@toeverything/components/button';
 import { useAtomValue } from 'jotai';
 
 import type { History } from '..';
-import { navHeaderStyle } from '../index.css';
+import {
+  navHeaderButton,
+  navHeaderNavigationButtons,
+  navHeaderStyle,
+} from '../index.css';
 import { appSidebarOpenAtom } from '../index.jotai';
 import { SidebarSwitch } from './sidebar-switch';
 
@@ -18,15 +22,16 @@ export type SidebarHeaderProps = {
 export const SidebarHeader = (props: SidebarHeaderProps) => {
   const open = useAtomValue(appSidebarOpenAtom);
   return (
-    <div className={navHeaderStyle} data-open={open}>
-      {environment.isDesktop && environment.isMacOs && (
-        <div style={{ flex: 1 }} />
-      )}
+    <div
+      className={navHeaderStyle}
+      data-open={open}
+      data-is-macos-electron={environment.isDesktop && environment.isMacOs}
+    >
       <SidebarSwitch show={open} />
       {environment.isDesktop && (
-        <>
-          {!environment.isMacOs && <div style={{ flex: 1 }} />}
+        <div className={navHeaderNavigationButtons}>
           <IconButton
+            className={navHeaderButton}
             data-testid="app-sidebar-arrow-button-back"
             disabled={props.router?.history.current === 0}
             onClick={() => {
@@ -36,6 +41,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
             <ArrowLeftSmallIcon />
           </IconButton>
           <IconButton
+            className={navHeaderButton}
             data-testid="app-sidebar-arrow-button-forward"
             disabled={
               props.router
@@ -50,7 +56,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           >
             <ArrowRightSmallIcon />
           </IconButton>
-        </>
+        </div>
       )}
     </div>
   );

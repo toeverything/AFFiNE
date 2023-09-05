@@ -1,16 +1,20 @@
 {
   "name": "@affine-test/kit",
   "private": true,
-  "version": "0.9.0-canary.7",
+  "version": "0.9.0-canary.8",
   "exports": {
     "./playwright": "./playwright.ts",
     "./utils/*": "./utils/*.ts"
   },
   "devDependencies": {
     "@node-rs/argon2": "^1.5.2",
-    "@playwright/test": "^1.37.1"
+    "@playwright/test": "^1.37.1",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^3.0.0-beta.1"
   },
   "peerDependencies": {
-    "@playwright/test": "*"
+    "@playwright/test": "*",
+    "express": "*",
+    "http-proxy-middleware": "*"
   }
 }

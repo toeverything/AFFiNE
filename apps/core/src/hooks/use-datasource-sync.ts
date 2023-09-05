@@ -53,16 +53,19 @@ export function useDatasourceSync(workspace: Workspace) {
         remoteProvider.datasource,
         localProvider.datasource
       )
-        .then(() => {
-          startTransition(() => {
-            setStatus({
-              type: 'synced',
+        .then(async () => {
+          // by default, the syncing status will show for 2.4s
+          setTimeout(() => {
+            startTransition(() => {
+              setStatus({
+                type: 'synced',
+              });
+              pushNotification({
+                title: 'Synced successfully',
+                type: 'success',
+              });
             });
-            pushNotification({
-              title: 'Synced successfully',
-              type: 'success',
-            });
-          });
+          }, 2400);
         })
         .catch(error => {
           startTransition(() => {

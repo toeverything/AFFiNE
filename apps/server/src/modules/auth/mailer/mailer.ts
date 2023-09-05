@@ -15,6 +15,17 @@ export const MAILER: FactoryProvider<
 > = {
   provide: MAILER_SERVICE,
   useFactory: (config: Config) => {
+    if (config.auth.localEmail) {
+      return createTransport({
+        host: '0.0.0.0',
+        port: 1025,
+        secure: false,
+        auth: {
+          user: config.auth.email.login,
+          pass: config.auth.email.password,
+        },
+      });
+    }
     return createTransport({
       service: 'gmail',
       auth: {

@@ -151,7 +151,6 @@ export class NextAuthController {
     }
 
     if (redirect) {
-      this.logger.debug(providerId, action, req.headers);
       if (providerId === 'credentials') {
         res.send(JSON.stringify({ ok: true, url: redirect }));
       } else if (

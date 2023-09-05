@@ -59,20 +59,21 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
         '_target'
       );
       return;
-    } else if (provider === 'email') {
+    } else {
       const [options, ...tail] = rest;
+      const callbackUrl =
+        runtimeConfig.serverUrlPrefix +
+        (provider === 'email' ? '/open-app/oauth-jwt' : location.pathname);
       return signIn(
         provider,
         {
           ...options,
-          callbackUrl: buildCallbackUrl('/open-app/oauth-jwt'),
+          callbackUrl: buildCallbackUrl(callbackUrl),
         },
         ...tail
       )
         .then(res => onResolveHandleTrace(res, traceParams))
         .catch(err => onRejectHandleTrace(err, traceParams));
-    } else {
-      throw new Error('Unsupported provider');
     }
   } else {
     return signIn(provider, ...rest)
@@ -81,9 +82,12 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
   }
 };
 
-export const signOutCloud: typeof signOut = async (...args) => {
+export const signOutCloud: typeof signOut = async options => {
   const traceParams = genTraceParams();
-  return signOut(...args)
+  return signOut({
+    ...options,
+    callbackUrl: '/',
+  })
     .then(result => {
       if (result) {
         startTransition(() => {

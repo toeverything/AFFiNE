@@ -8,12 +8,15 @@ import { isMacOS, isWindows } from '../shared/utils';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
+import { uiSubjects } from './ui';
 import { parseCookie } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
+
+export const mainWindowOrigin = process.env.DEV_SERVER_URL || 'file://.';
 
 async function createWindow() {
   logger.info('create window');
@@ -35,7 +38,7 @@ async function createWindow() {
       : isWindows()
       ? 'hidden'
       : 'default',
-    trafficLightPosition: { x: 20, y: 18 },
+    trafficLightPosition: { x: 20, y: 16 },
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
@@ -109,12 +112,26 @@ async function createWindow() {
     const size = browserWindow.getSize();
     browserWindow.setSize(size[0] + 1, size[1] + 1);
     browserWindow.setSize(size[0], size[1]);
+    uiSubjects.onMaximized.next(false);
+  });
+
+  browserWindow.on('maximize', () => {
+    uiSubjects.onMaximized.next(true);
+  });
+
+  // full-screen == maximized in UI on windows
+  browserWindow.on('enter-full-screen', () => {
+    uiSubjects.onMaximized.next(true);
+  });
+
+  browserWindow.on('unmaximize', () => {
+    uiSubjects.onMaximized.next(false);
   });
 
   /**
    * URL for main window.
    */
-  const pageUrl = process.env.DEV_SERVER_URL || 'file://.'; // see protocol.ts
+  const pageUrl = mainWindowOrigin; // see protocol.ts
 
   logger.info('loading page at', pageUrl);
 
@@ -126,35 +143,30 @@ async function createWindow() {
 }
 
 // singleton
-let browserWindow: BrowserWindow | undefined;
+let browserWindow$: Promise<BrowserWindow> | undefined;
 
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
 export async function restoreOrCreateWindow() {
-  if (!browserWindow || browserWindow.isDestroyed()) {
-    browserWindow = await createWindow();
+  if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
+    browserWindow$ = createWindow();
   }
+  const mainWindow = await browserWindow$;
 
-  if (browserWindow.isMinimized()) {
-    browserWindow.restore();
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
     logger.info('restore main window');
   }
-
-  return browserWindow;
+  return mainWindow;
 }
 
 export async function handleOpenUrlInHiddenWindow(url: string) {
-  const mainExposedMeta = getExposedMeta();
   const win = new BrowserWindow({
     width: 1200,
     height: 600,
     webPreferences: {
       preload: join(__dirname, './preload.js'),
-      additionalArguments: [
-        `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
-        // popup window does not need helper process, right?
-      ],
     },
     show: false,
   });
@@ -167,10 +179,6 @@ export async function handleOpenUrlInHiddenWindow(url: string) {
   logger.info('loading page at', url);
   await win.loadURL(url);
   return win;
-}
-
-export function reloadApp() {
-  browserWindow?.reload();
 }
 
 export async function setCookie(cookie: CookiesSetDetails): Promise<void>;
@@ -186,9 +194,20 @@ export async function setCookie(
       ? parseCookie(arg0, arg1)
       : arg0;
 
+  logger.info('setting cookie to main window', details);
+
   if (typeof details !== 'object') {
     throw new Error('invalid cookie details');
   }
 
   await window.webContents.session.cookies.set(details);
+}
+
+export async function getCookie(url?: string, name?: string) {
+  const window = await restoreOrCreateWindow();
+  const cookies = await window.webContents.session.cookies.get({
+    url,
+    name,
+  });
+  return cookies;
 }

@@ -67,18 +67,20 @@ const createHelmCommand = ({ isDryRun }) => {
   const graphqlReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
   const syncReplicaCount = isProduction ? 6 : isBeta ? 3 : 2;
   const namespace = isProduction ? 'production' : isBeta ? 'beta' : 'dev';
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const host = DEPLOY_HOST || CANARY_DEPLOY_HOST;
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
     `--namespace  ${namespace}`,
     `--set        global.ingress.enabled=true`,
     `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${staticIpName}\\" }\"`,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    `--set-string global.ingress.host="${DEPLOY_HOST || CANARY_DEPLOY_HOST}"`,
+    `--set-string global.ingress.host="${host}"`,
     ...redisAndPostgres,
     `--set        web.replicaCount=${webReplicaCount}`,
     `--set-string web.image.tag="${imageTag}"`,
     `--set        graphql.replicaCount=${graphqlReplicaCount}`,
     `--set-string graphql.image.tag="${imageTag}"`,
+    `--set        graphql.app.host=${host}`,
     `--set        graphql.app.objectStorage.r2.enabled=true`,
     `--set-string graphql.app.objectStorage.r2.accountId="${R2_ACCOUNT_ID}"`,
     `--set-string graphql.app.objectStorage.r2.accessKeyId="${R2_ACCESS_KEY_ID}"`,

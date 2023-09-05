@@ -5,11 +5,12 @@ interface CreateWorkspaceParams {
 }
 
 export async function openWorkspaceListModal(page: Page) {
-  const workspaceName = page.getByTestId('workspace-name');
-  await workspaceName.click();
+  await page.getByTestId('workspace-name').click({
+    delay: 50,
+  });
 }
 
-export async function createWorkspace(
+export async function createLocalWorkspace(
   params: CreateWorkspaceParams,
   page: Page
 ) {

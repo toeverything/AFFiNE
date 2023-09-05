@@ -64,8 +64,14 @@ export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
             block: isTinyScreen,
           })}
         >
-          <div className={clsx(style.headerItem, 'top-item')}>
-            <div ref={sidebarSwitchRef} style={{ marginRight: open ? 0 : 20 }}>
+          <div
+            className={clsx(
+              style.headerItem,
+              'top-item',
+              !open ? 'top-item-visible' : ''
+            )}
+          >
+            <div ref={sidebarSwitchRef}>
               <SidebarSwitch show={!open} />
             </div>
           </div>

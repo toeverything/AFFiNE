@@ -2,6 +2,7 @@ import type { Storage } from '@affine/storage';
 import {
   ForbiddenException,
   Inject,
+  Logger,
   NotFoundException,
   UseGuards,
 } from '@nestjs/common';
@@ -27,6 +28,7 @@ import type { User, Workspace } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -128,8 +130,11 @@ export class UpdateWorkspaceInput extends PickType(
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
+  private readonly logger = new Logger('WorkspaceResolver');
+
   constructor(
     private readonly auth: AuthService,
+    private readonly config: Config,
     private readonly mailer: MailService,
     private readonly prisma: PrismaService,
     private readonly permissionProvider: PermissionService,
@@ -402,7 +407,6 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
     @Args('permission', { type: () => Permission }) permission: Permission,
-    // TODO: add rate limit
     @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
   ) {
     await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
@@ -610,17 +614,29 @@ export class WorkspaceResolver {
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
 
-    return this.storage.blobsSize(workspaceId).then(size => ({ size }));
+    return this.storage.blobsSize([workspaceId]).then(size => ({ size }));
   }
 
   @Query(() => WorkspaceBlobSizes)
-  async collectAllBlobSizes(@CurrentUser() user: User) {
-    const workspaces = await this.workspaces(user);
+  async collectAllBlobSizes(@CurrentUser() user: UserType) {
+    const workspaces = await this.prisma.userWorkspacePermission
+      .findMany({
+        where: {
+          userId: user.id,
+          accepted: true,
+          type: Permission.Owner,
+        },
+        select: {
+          workspace: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      })
+      .then(data => data.map(({ workspace }) => workspace.id));
 
-    const size = (
-      await Promise.all(workspaces.map(({ id }) => this.storage.blobsSize(id)))
-    ).reduce((prev, curr) => prev + curr, 0);
-
+    const size = await this.storage.blobsSize(workspaces);
     return { size };
   }
 
@@ -632,6 +648,13 @@ export class WorkspaceResolver {
     blob: FileUpload
   ) {
     await this.permissionProvider.check(workspaceId, user.id, Permission.Write);
+    const quota = this.config.objectStorage.quota;
+    const { size } = await this.collectAllBlobSizes(user);
+
+    if (size > quota) {
+      this.logger.log(`storage size limit exceeded: ${size} > ${quota}`);
+      throw new ForbiddenException('storage size limit exceeded');
+    }
 
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
@@ -644,6 +667,15 @@ export class WorkspaceResolver {
         resolve(Buffer.concat(chunks));
       });
     });
+
+    if (size + buffer.length > quota) {
+      this.logger.log(
+        `storage size limit exceeded after blob set: ${size} > ${
+          buffer.length > quota
+        }`
+      );
+      throw new ForbiddenException('storage size limit exceeded');
+    }
 
     return this.storage.uploadBlob(workspaceId, buffer);
   }

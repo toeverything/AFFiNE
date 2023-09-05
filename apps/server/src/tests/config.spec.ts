@@ -1,24 +1,24 @@
-import { equal, ok } from 'node:assert';
-import { beforeEach, test } from 'node:test';
+import { ok } from 'node:assert';
 
 import { Test } from '@nestjs/testing';
+import test from 'ava';
 
 import { Config, ConfigModule } from '../config';
 
 let config: Config;
-beforeEach(async () => {
+test.beforeEach(async () => {
   const module = await Test.createTestingModule({
     imports: [ConfigModule.forRoot()],
   }).compile();
   config = module.get(Config);
 });
 
-test('should be able to get config', () => {
-  ok(typeof config.host === 'string');
-  equal(config.env, 'test');
+test('should be able to get config', t => {
+  t.true(typeof config.host === 'string');
+  t.is(config.env, 'test');
 });
 
-test('should be able to override config', async () => {
+test('should be able to override config', async t => {
   const module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -29,4 +29,5 @@ test('should be able to override config', async () => {
   const config = module.get(Config);
 
   ok(config.host, 'testing');
+  t.pass();
 });

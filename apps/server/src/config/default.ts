@@ -55,6 +55,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
       AFFINE_ENV: 'affineEnv',
+      AFFINE_FREE_USER_QUOTA: 'objectStorage.quota',
       DATABASE_URL: 'db.url',
       ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
       R2_OBJECT_STORAGE_ACCOUNT_ID: 'objectStorage.r2.accountId',
@@ -85,6 +86,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         'doc.manager.experimentalMergeWithJwstCodec',
         'boolean',
       ],
+      ENABLE_LOCAL_EMAIL: ['auth.localEmail', 'boolean'],
     } satisfies AFFiNEConfig['ENV_MAP'],
     affineEnv: 'dev',
     get affine() {
@@ -113,7 +115,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
           this.node.prod && (this.affine.beta || this.affine.canary),
       };
     },
-    https: false,
+    get https() {
+      return !this.node.dev;
+    },
     host: 'localhost',
     port: 3010,
     path: '',
@@ -151,6 +155,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         return this.privateKey;
       },
       oauthProviders: {},
+      localEmail: false,
       email: {
         server: 'smtp.gmail.com',
         port: 465,
@@ -170,6 +175,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
+      quota: 10 * 1024 * 1024,
     },
     rateLimiter: {
       ttl: 60,

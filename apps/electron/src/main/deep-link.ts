@@ -2,10 +2,11 @@ import path from 'node:path';
 
 import type { App } from 'electron';
 
-import { buildType, isDev } from './config';
+import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { logger } from './logger';
 import {
   handleOpenUrlInHiddenWindow,
+  mainWindowOrigin,
   restoreOrCreateWindow,
   setCookie,
 } from './main-window';
@@ -70,24 +71,36 @@ async function handleOauthJwt(url: string) {
       mainWindow.show();
       const urlObj = new URL(url);
       const token = urlObj.searchParams.get('token');
-      const mainOrigin = new URL(mainWindow.webContents.getURL()).origin;
 
       if (!token) {
         logger.error('no token in url', url);
         return;
       }
 
+      const isSecure = CLOUD_BASE_URL.startsWith('https://');
+
       // set token to cookie
       await setCookie({
-        url: mainOrigin,
+        url: CLOUD_BASE_URL,
         httpOnly: true,
         value: token,
-        name: 'next-auth.session-token',
+        secure: true,
+        name: isSecure
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token',
+        expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
+      });
+
+      // force reset next-auth.callback-url
+      await setCookie({
+        url: CLOUD_BASE_URL,
+        httpOnly: true,
+        name: 'next-auth.callback-url',
       });
 
       // hacks to refresh auth state in the main window
       const window = await handleOpenUrlInHiddenWindow(
-        mainOrigin + '/auth/signIn'
+        mainWindowOrigin + '/auth/signIn'
       );
       uiSubjects.onFinishLogin.next({
         success: true,

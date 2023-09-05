@@ -1,9 +1,9 @@
-import { initEmptyPage } from '@affine/env/blocksuite';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertEquals } from '@blocksuite/global/utils';
 import { PlusIcon } from '@blocksuite/icons';
 import { nanoid } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { Command } from 'cmdk';
 import { useCallback } from 'react';
 

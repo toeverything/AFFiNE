@@ -10,6 +10,10 @@ const cwd = path.resolve(projectRoot, 'apps', 'core');
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const buildType = process.env.BUILD_TYPE_OVERRIDE || process.env.BUILD_TYPE;
 
+if (process.env.BUILD_TYPE_OVERRIDE) {
+  process.env.BUILD_TYPE = process.env.BUILD_TYPE_OVERRIDE;
+}
+
 const getChannel = () => {
   switch (buildType) {
     case 'canary':

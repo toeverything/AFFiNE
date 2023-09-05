@@ -91,7 +91,7 @@ export class UserResolver {
     name: 'currentUser',
     description: 'Get current user',
   })
-  async currentUser(@CurrentUser() user: User) {
+  async currentUser(@CurrentUser() user: UserType) {
     const storedUser = await this.prisma.user.findUnique({
       where: { id: user.id },
     });
