@@ -35,14 +35,12 @@ test('database migration', async ({ page, context }) => {
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto('http://localhost:8081/');
-  await page.click('text=hello');
   await waitForEditorLoad(page);
   // check page mode is correct
   expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
   expect(await page.locator('affine-database').isVisible()).toBe(true);
 
   // check edgeless mode is correct
-  await page.getByTestId('switch-edgeless-mode-button').click();
   await clickEdgelessModeButton(page);
   await page.waitForTimeout(200);
   expect(await page.locator('affine-database').isVisible()).toBe(true);
