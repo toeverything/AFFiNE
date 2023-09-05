@@ -26,8 +26,8 @@ body:
         - Windows x64
         - Linux
         - Web (app.affine.pro)
-        - Web (stage.affine.pro)
-        - Web (dev.affine.live)
+        - Web (affine.fail)
+        - Web (insider.affine.pro)
     validations:
       required: true
   - type: dropdown
