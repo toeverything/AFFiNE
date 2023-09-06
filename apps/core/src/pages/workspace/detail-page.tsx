@@ -15,6 +15,7 @@ import {
   getCurrentStore,
 } from '@toeverything/infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
+import { getSession } from 'next-auth/react';
 import { type ReactElement, useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
@@ -102,10 +103,10 @@ export const loader: LoaderFunction = async args => {
     localStorage.setItem('last_workspace_id', args.params.workspaceId);
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
   }
+  const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
   if (args.params.pageId) {
     const pageId = args.params.pageId;
     localStorage.setItem('last_page_id', pageId);
-    const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
     const page = currentWorkspace.getPage(pageId);
     if (!page) {
       return redirect('/404');
@@ -119,6 +120,11 @@ export const loader: LoaderFunction = async args => {
   } else {
     return redirect('/404');
   }
+  const session = await getSession();
+  const name = session?.user.name;
+  currentWorkspace.awarenessStore.awareness.setLocalStateField('user', {
+    name: name ?? 'Anonymous User',
+  });
   return null;
 };
 
