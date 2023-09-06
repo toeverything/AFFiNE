@@ -48,6 +48,12 @@ export const runPrisma = async <T>(
   }
 };
 
+export const execRawSqlUnsafe = async (sql: string) => {
+  await runPrisma(async client => {
+    await client.$executeRawUnsafe(sql);
+  });
+};
+
 export async function addUserToWorkspace(
   workspaceId: string,
   userId: string,
