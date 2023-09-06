@@ -297,7 +297,7 @@
   "com.affine.settings.storage.description": "Check or change storage location",
   "com.affine.settings.storage.description-alt": "Check or change storage location. Click path to edit location.",
   "com.affine.settings.suggestion": "Need more customization options? Tell us in the community.",
-  "com.affine.settings.workspace.description": "You can customise your workspace here.",
+  "com.affine.settings.workspace.description": "You can view current workspace's information here.",
   "com.affine.settings.workspace.not-owner": "Only an owner can edit the the Workspace avatar and name.Changes will be shown for everyone.",
   "com.affine.settings.workspace.publish-tooltip": "Enable AFFiNE Cloud to publish this Workspace",
   "com.affine.settings.workspace.storage.tip": "Click to move storage location.",
