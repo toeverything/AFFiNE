@@ -1,4 +1,5 @@
 import {
+  checkBlobSizesQuery,
   deleteBlobMutation,
   fetchWithTraceReport,
   listBlobsQuery,
@@ -18,6 +19,20 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
         ).then(res => res.blob());
       },
       set: async (key, value) => {
+        const {
+          checkBlobSize: { size },
+        } = await fetcher({
+          query: checkBlobSizesQuery,
+          variables: {
+            workspaceId,
+            size: value.size,
+          },
+        });
+
+        if (size <= 0) {
+          throw new Error('Blob size limit exceeded');
+        }
+
         const result = await fetcher({
           query: setBlobMutation,
           variables: {

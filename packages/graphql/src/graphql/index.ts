@@ -7,6 +7,19 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
+export const checkBlobSizesQuery = {
+  id: 'checkBlobSizesQuery' as const,
+  operationName: 'checkBlobSizes',
+  definitionName: 'checkBlobSize',
+  containsFile: false,
+  query: `
+query checkBlobSizes($workspaceId: String!, $size: Float!) {
+  checkBlobSize(workspaceId: $workspaceId, size: $size) {
+    size
+  }
+}`,
+};
+
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   operationName: 'deleteBlob',

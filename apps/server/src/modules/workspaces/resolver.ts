@@ -9,6 +9,7 @@ import {
 import {
   Args,
   Field,
+  Float,
   ID,
   InputType,
   Int,
@@ -697,6 +698,38 @@ export class WorkspaceResolver {
 
     const size = await this.storage.blobsSize(workspaces);
     return { size };
+  }
+
+  @Query(() => WorkspaceBlobSizes)
+  async checkBlobSize(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string,
+    @Args('size', { type: () => Float }) size: number
+  ) {
+    const canWrite = await this.permissionProvider.tryCheck(
+      workspaceId,
+      user.id,
+      Permission.Write
+    );
+    if (canWrite) {
+      const { user } =
+        await this.prisma.userWorkspacePermission.findFirstOrThrow({
+          where: {
+            workspaceId,
+            type: Permission.Owner,
+          },
+          include: {
+            user: true,
+          },
+        });
+      if (user) {
+        const quota = this.config.objectStorage.quota;
+        const { size: currentSize } = await this.collectAllBlobSizes(user);
+
+        return { size: quota - (size + currentSize) };
+      }
+    }
+    return false;
   }
 
   @Mutation(() => String)
