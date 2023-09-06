@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { getStorageQuota } from './gates';
 import { NewFeaturesKind } from './types';
 import { isStaff } from './utils';
 
@@ -22,6 +23,23 @@ export class UsersService {
     } else {
       return true;
     }
+  }
+
+  async getStorageQuotaById(id: string) {
+    const features = await this.prisma.user
+      .findUnique({
+        where: { id },
+        select: {
+          features: {
+            select: {
+              feature: true,
+            },
+          },
+        },
+      })
+      .then(user => user?.features.map(f => f.feature) ?? []);
+
+    return getStorageQuota(features) || this.config.objectStorage.quota;
   }
 
   async findUserByEmail(email: string) {
