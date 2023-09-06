@@ -1,5 +1,3 @@
-import { deepEqual, ok } from 'node:assert';
-
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -67,15 +65,14 @@ test('should set blobs', async t => {
     .auth(u1.token.token, { type: 'bearer' })
     .buffer();
 
-  deepEqual(response1.body, buffer1, 'failed to get blob');
+  t.deepEqual(response1.body, buffer1, 'failed to get blob');
 
   const response2 = await request(server)
     .get(`/api/workspaces/${workspace.id}/blobs/${hash2}`)
     .auth(u1.token.token, { type: 'bearer' })
     .buffer();
 
-  deepEqual(response2.body, buffer2, 'failed to get blob');
-  t.pass();
+  t.deepEqual(response2.body, buffer2, 'failed to get blob');
 });
 
 test('should list blobs', async t => {
@@ -83,7 +80,7 @@ test('should list blobs', async t => {
 
   const workspace = await createWorkspace(app, u1.token.token);
   const blobs = await listBlobs(app, u1.token.token, workspace.id);
-  ok(blobs.length === 0, 'failed to list blobs');
+  t.is(blobs.length, 0, 'failed to list blobs');
 
   const buffer1 = Buffer.from([0, 0]);
   const hash1 = await setBlob(app, u1.token.token, workspace.id, buffer1);
@@ -91,10 +88,9 @@ test('should list blobs', async t => {
   const hash2 = await setBlob(app, u1.token.token, workspace.id, buffer2);
 
   const ret = await listBlobs(app, u1.token.token, workspace.id);
-  ok(ret.length === 2, 'failed to list blobs');
-  ok(ret[0] === hash1, 'failed to list blobs');
-  ok(ret[1] === hash2, 'failed to list blobs');
-  t.pass();
+  t.is(ret.length, 2, 'failed to list blobs');
+  t.is(ret[0], hash1, 'failed to list blobs');
+  t.is(ret[1], hash2, 'failed to list blobs');
 });
 
 test('should calc blobs size', async t => {
@@ -108,8 +104,7 @@ test('should calc blobs size', async t => {
   await setBlob(app, u1.token.token, workspace.id, buffer2);
 
   const size = await collectBlobSizes(app, u1.token.token, workspace.id);
-  ok(size === 4, 'failed to collect blob sizes');
-  t.pass();
+  t.is(size, 4, 'failed to collect blob sizes');
 });
 
 test('should calc all blobs size', async t => {
@@ -130,6 +125,5 @@ test('should calc all blobs size', async t => {
   await setBlob(app, u1.token.token, workspace2.id, buffer4);
 
   const size = await collectAllBlobSizes(app, u1.token.token);
-  ok(size === 8, 'failed to collect all blob sizes');
-  t.pass();
+  t.is(size, 8, 'failed to collect all blob sizes');
 });

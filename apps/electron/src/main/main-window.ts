@@ -203,6 +203,11 @@ export async function setCookie(
   await window.webContents.session.cookies.set(details);
 }
 
+export async function removeCookie(url: string, name: string): Promise<void> {
+  const window = await restoreOrCreateWindow();
+  await window.webContents.session.cookies.remove(url, name);
+}
+
 export async function getCookie(url?: string, name?: string) {
   const window = await restoreOrCreateWindow();
   const cookies = await window.webContents.session.cookies.get({
