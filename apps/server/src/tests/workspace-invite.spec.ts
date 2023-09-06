@@ -200,7 +200,7 @@ test('should send email', async t => {
       'invite email address was incorrectly sent'
     );
 
-    const accept = await acceptInviteById(app, workspace.id, invite);
+    const accept = await acceptInviteById(app, workspace.id, invite, true);
     t.true(accept, 'failed to accept invite');
 
     const afterAcceptMailCount = await getCurrentMailMessageCount();
@@ -219,7 +219,7 @@ test('should send email', async t => {
       'accept email address was incorrectly sent'
     );
 
-    await leaveWorkspace(app, u2.token.token, workspace.id);
+    await leaveWorkspace(app, u2.token.token, workspace.id, true);
 
     const afterLeaveMailCount = await getCurrentMailMessageCount();
     t.is(

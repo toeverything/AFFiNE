@@ -564,7 +564,8 @@ export class WorkspaceResolver {
   @Public()
   async acceptInviteById(
     @Args('workspaceId') workspaceId: string,
-    @Args('inviteId') inviteId: string
+    @Args('inviteId') inviteId: string,
+    @Args('sendAcceptMail', { nullable: true }) sendAcceptMail: boolean
   ) {
     const {
       invitee,
@@ -578,10 +579,12 @@ export class WorkspaceResolver {
       );
     }
 
-    await this.mailer.sendAcceptedEmail(inviter.email, {
-      inviteeName: invitee.name,
-      workspaceName: workspace.name,
-    });
+    if (sendAcceptMail) {
+      await this.mailer.sendAcceptedEmail(inviter.email, {
+        inviteeName: invitee.name,
+        workspaceName: workspace.name,
+      });
+    }
 
     return this.permissionProvider.acceptById(workspaceId, inviteId);
   }
@@ -598,7 +601,8 @@ export class WorkspaceResolver {
   async leaveWorkspace(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
-    @Args('workspaceName') workspaceName: string
+    @Args('workspaceName') workspaceName: string,
+    @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
 
@@ -618,10 +622,12 @@ export class WorkspaceResolver {
       );
     }
 
-    await this.mailer.sendLeaveWorkspaceEmail(owner.user.email, {
-      workspaceName,
-      inviteeName: user.name,
-    });
+    if (sendLeaveMail) {
+      await this.mailer.sendLeaveWorkspaceEmail(owner.user.email, {
+        workspaceName,
+        inviteeName: user.name,
+      });
+    }
 
     return this.permissionProvider.revoke(workspaceId, user.id);
   }

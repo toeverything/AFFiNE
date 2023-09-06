@@ -175,9 +175,9 @@ type Mutation {
   deleteWorkspace(id: String!): Boolean!
   invite(workspaceId: String!, email: String!, permission: Permission!, sendInviteMail: Boolean): String!
   revoke(workspaceId: String!, userId: String!): Boolean!
-  acceptInviteById(workspaceId: String!, inviteId: String!): Boolean!
+  acceptInviteById(workspaceId: String!, inviteId: String!, sendAcceptMail: Boolean): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
-  leaveWorkspace(workspaceId: String!, workspaceName: String!): Boolean!
+  leaveWorkspace(workspaceId: String!, workspaceName: String!, sendLeaveMail: Boolean): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean!
   revokePage(workspaceId: String!, pageId: String!): Boolean!
   setBlob(workspaceId: String!, blob: Upload!): String!

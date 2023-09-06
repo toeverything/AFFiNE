@@ -18,6 +18,7 @@ export function useLeaveWorkspace() {
       await leaveWorkspace({
         workspaceId,
         workspaceName,
+        sendLeaveMail: true,
       });
     },
     [deleteWorkspaceMeta, leaveWorkspace]
