@@ -5,10 +5,10 @@ import type {
   VariableMap,
 } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { MenuIcon, MenuItem } from '@toeverything/components/menu';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
-import { MenuItem } from '../../../ui/menu';
 import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { tBoolean, tDate, tTag } from './logical/custom-type';
@@ -92,7 +92,7 @@ export const VariableSelect = ({
         // .filter(v => !selected.find(filter => filter.left.name === v.name))
         .map(v => (
           <MenuItem
-            icon={variableDefineMap[v.name].icon}
+            preFix={<MenuIcon>{variableDefineMap[v.name].icon}</MenuIcon>}
             key={v.name}
             onClick={() => {
               onSelect(createDefaultFilter(v, propertiesMeta));

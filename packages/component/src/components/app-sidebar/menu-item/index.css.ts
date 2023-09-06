@@ -62,10 +62,10 @@ export const content = style({
 
 export const postfix = style({
   justifySelf: 'flex-end',
-  display: 'none',
+  visibility: 'hidden',
   selectors: {
     [`${root}:hover &`]: {
-      display: 'flex',
+      visibility: 'visible',
     },
   },
 });

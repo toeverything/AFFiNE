@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { fetchWithReport } from '@affine/graphql';
+import { fetchWithTraceReport } from '@affine/graphql';
 import type { ActiveDocProvider, DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import type { Doc } from 'yjs';
@@ -17,7 +17,7 @@ export async function downloadBinaryFromCloud(
   if (hashMap.has(`${rootGuid}/${pageGuid}`)) {
     return true;
   }
-  const response = await fetchWithReport(
+  const response = await fetchWithTraceReport(
     runtimeConfig.serverUrlPrefix +
       `/api/workspaces/${rootGuid}/docs/${pageGuid}`
   );

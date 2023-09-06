@@ -16,10 +16,16 @@ type TraceSpan = {
   endTime: string;
   attributes: {
     attributeMap: {
-      requestId: {
+      requestId?: {
         stringValue: {
           value: string;
           truncatedByteCount: number;
+        };
+      };
+      event?: {
+        stringValue: {
+          value: string;
+          truncatedByteCount: 0;
         };
       };
     };
@@ -65,14 +71,17 @@ export class TraceReporter {
   public cacheTrace(
     traceId: string,
     spanId: string,
-    requestId: string,
-    startTime: string
+    startTime: string,
+    attributes: {
+      requestId?: string;
+      event?: string;
+    }
   ) {
     const span = TraceReporter.createTraceSpan(
       traceId,
       spanId,
-      requestId,
-      startTime
+      startTime,
+      attributes
     );
     this.spansCache.push(span);
     if (this.spansCache.length <= 1) {
@@ -83,14 +92,17 @@ export class TraceReporter {
   public uploadTrace(
     traceId: string,
     spanId: string,
-    requestId: string,
-    startTime: string
+    startTime: string,
+    attributes: {
+      requestId?: string;
+      event?: string;
+    }
   ) {
     const span = TraceReporter.createTraceSpan(
       traceId,
       spanId,
-      requestId,
-      startTime
+      startTime,
+      attributes
     );
     TraceReporter.reportToTraceEndpoint(JSON.stringify({ spans: [span] }));
   }
@@ -114,26 +126,46 @@ export class TraceReporter {
   public static createTraceSpan(
     traceId: string,
     spanId: string,
-    requestId: string,
-    startTime: string
+    startTime: string,
+    attributes: {
+      requestId?: string;
+      event?: string;
+    }
   ): TraceSpan {
+    const requestId = attributes.requestId;
+    const event = attributes.event;
+
     return {
       name: `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`,
       spanId,
       displayName: {
-        value: 'fetch',
+        value: 'AFFiNE_REQUEST',
         truncatedByteCount: 0,
       },
       startTime,
       endTime: new Date().toISOString(),
       attributes: {
         attributeMap: {
-          requestId: {
-            stringValue: {
-              value: requestId,
-              truncatedByteCount: 0,
-            },
-          },
+          ...(!requestId
+            ? {}
+            : {
+                requestId: {
+                  stringValue: {
+                    value: requestId,
+                    truncatedByteCount: 0,
+                  },
+                },
+              }),
+          ...(!event
+            ? {}
+            : {
+                event: {
+                  stringValue: {
+                    value: event,
+                    truncatedByteCount: 0,
+                  },
+                },
+              }),
         },
         droppedAttributesCount: 0,
       },

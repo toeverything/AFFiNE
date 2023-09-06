@@ -113,17 +113,7 @@ export const AppearanceSettings = () => {
           desc={t['com.affine.appearanceSettings.language.description']()}
         >
           <div className={settingWrapper}>
-            <LanguageMenu
-              triggerContainerStyle={{ width: '100%' }}
-              triggerProps={{
-                style: {
-                  width: '100%',
-                  justifyContent: 'space-between',
-                  fontWeight: 600,
-                  padding: '0 10px',
-                },
-              }}
-            />
+            <LanguageMenu />
           </div>
         </SettingRow>
         {environment.isDesktop ? (

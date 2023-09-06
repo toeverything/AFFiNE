@@ -4,8 +4,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { IconButton } from '@toeverything/components/button';
+import { Menu } from '@toeverything/components/menu';
 
-import { Menu } from '../../..';
 import { Condition } from './condition';
 import * as styles from './index.css';
 import { CreateFilterMenu } from './vars';
@@ -53,8 +53,7 @@ export const FilterList = ({
         );
       })}
       <Menu
-        trigger={'click'}
-        content={
+        items={
           <CreateFilterMenu
             value={value}
             onChange={onChange}

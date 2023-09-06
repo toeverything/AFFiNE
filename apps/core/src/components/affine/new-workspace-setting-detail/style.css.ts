@@ -92,7 +92,7 @@ export const membersList = style({
   borderRadius: '12px',
   background: 'var(--affine-background-primary-color)',
   maxHeight: '464px',
-  overflow: 'hidden',
+  overflow: 'auto',
 });
 
 export const listItem = style({

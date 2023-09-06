@@ -4000,7 +4000,7 @@
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "Destnation"
+          "insert": "Destination"
         }
       ],
       "prop:type": "h6"
@@ -4036,7 +4036,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Accomedation "
+          "insert": "Accommodation "
         }
       ],
       "prop:checked": false
@@ -4075,7 +4075,7 @@
       "prop:type": "h6",
       "prop:text": [
         {
-          "insert": "Pre-Departure Check list Check list "
+          "insert": "Pre-Departure Check List"
         }
       ]
     },
@@ -4086,7 +4086,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Vaccinations/immuzations "
+          "insert": "Vaccinations / Immunizations "
         }
       ],
       "prop:checked": false
@@ -4230,7 +4230,7 @@
       "prop:type": "h6",
       "prop:text": [
         {
-          "insert": "Departure information "
+          "insert": "Departure Information "
         }
       ]
     },
@@ -4241,7 +4241,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "date "
+          "insert": "date"
         }
       ],
       "prop:checked": false
@@ -4265,7 +4265,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "airin"
+          "insert": "airline"
         }
       ],
       "prop:checked": false
@@ -4286,7 +4286,7 @@
       "prop:type": "h6",
       "prop:text": [
         {
-          "insert": "Return information "
+          "insert": "Return Information "
         }
       ]
     },
@@ -4297,7 +4297,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "date "
+          "insert": "date"
         }
       ],
       "prop:checked": false

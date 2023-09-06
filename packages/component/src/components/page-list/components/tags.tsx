@@ -1,8 +1,9 @@
 import type { Tag } from '@affine/env/filter';
+import { Menu } from '@toeverything/components/menu';
 
-import Menu from '../../../ui/menu/menu';
 import * as styles from './tags.css';
 
+// fixme: This component should use popover instead of menu
 export const Tags = ({ value }: { value: Tag[] }) => {
   const list = value.map(tag => {
     return (
@@ -16,10 +17,7 @@ export const Tags = ({ value }: { value: Tag[] }) => {
     );
   });
   return (
-    <Menu
-      pointerEnterDelay={500}
-      content={<div className={styles.tagListFull}>{list}</div>}
-    >
+    <Menu items={<div className={styles.tagListFull}>{list}</div>}>
       <div className={styles.tagList}>{list}</div>
     </Menu>
   );
