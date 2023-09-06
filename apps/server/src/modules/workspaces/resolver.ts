@@ -487,17 +487,21 @@ export class WorkspaceResolver {
     description: 'Update workspace',
   })
   async getInviteInfo(@Args('inviteId') inviteId: string) {
-    const permission =
-      await this.prisma.userWorkspacePermission.findUniqueOrThrow({
+    const workspaceId = await this.prisma.userWorkspacePermission
+      .findUniqueOrThrow({
         where: {
           id: inviteId,
         },
-      });
+        select: {
+          workspaceId: true,
+        },
+      })
+      .then(({ workspaceId }) => workspaceId);
 
     const snapshot = await this.prisma.snapshot.findFirstOrThrow({
       where: {
-        id: permission.workspaceId,
-        workspaceId: permission.workspaceId,
+        id: workspaceId,
+        workspaceId,
       },
     });
 
@@ -506,32 +510,17 @@ export class WorkspaceResolver {
     applyUpdate(doc, new Uint8Array(snapshot.blob));
     const metaJSON = doc.getMap('meta').toJSON();
 
-    const owner = await this.prisma.userWorkspacePermission.findFirstOrThrow({
-      where: {
-        workspaceId: permission.workspaceId,
-        type: Permission.Owner,
-      },
-      include: {
-        user: true,
-      },
-    });
-    const invitee = await this.prisma.userWorkspacePermission.findUniqueOrThrow(
-      {
-        where: {
-          id: inviteId,
-          workspaceId: permission.workspaceId,
-        },
-        include: {
-          user: true,
-        },
-      }
+    const owner = await this.permissions.getWorkspaceOwner(workspaceId);
+    const invitee = await this.permissions.getInvitationById(
+      inviteId,
+      workspaceId
     );
 
     let avatar = '';
 
     if (metaJSON.avatar) {
       const avatarBlob = await this.storage.getBlob(
-        permission.workspaceId,
+        workspaceId,
         metaJSON.avatar
       );
       avatar = avatarBlob?.data.toString('base64') || '';
@@ -541,7 +530,7 @@ export class WorkspaceResolver {
       workspace: {
         name: metaJSON.name || '',
         avatar: avatar || defaultWorkspaceAvatar,
-        id: permission.workspaceId,
+        id: workspaceId,
       },
       user: owner.user,
       invitee: invitee.user,
@@ -702,18 +691,9 @@ export class WorkspaceResolver {
       Permission.Write
     );
     if (canWrite) {
-      const { user } =
-        await this.prisma.userWorkspacePermission.findFirstOrThrow({
-          where: {
-            workspaceId,
-            type: Permission.Owner,
-          },
-          include: {
-            user: true,
-          },
-        });
+      const { user } = await this.permissions.getWorkspaceOwner(workspaceId);
       if (user) {
-        const quota = this.config.objectStorage.quota;
+        const quota = await this.users.getStorageQuotaById(user.id);
         const { size: currentSize } = await this.collectAllBlobSizes(user);
 
         return { size: quota - (size + currentSize) };
@@ -730,14 +710,28 @@ export class WorkspaceResolver {
     blob: FileUpload
   ) {
     await this.permissions.check(workspaceId, user.id, Permission.Write);
-    const quota = this.config.objectStorage.quota;
-    const { size } = await this.collectAllBlobSizes(user);
 
-    if (size > quota) {
-      this.logger.log(`storage size limit exceeded: ${size} > ${quota}`);
+    // quota was apply to owner's account
+    const { user: owner } =
+      await this.permissions.getWorkspaceOwner(workspaceId);
+    if (!owner) return new NotFoundException('Workspace owner not found');
+    const quota = await this.users.getStorageQuotaById(owner.id);
+    const { size } = await this.collectAllBlobSizes(owner);
+
+    const checkExceeded = (recvSize: number) => {
+      if (size + recvSize > quota) {
+        this.logger.log(
+          `storage size limit exceeded: ${size + recvSize} > ${quota}`
+        );
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    if (checkExceeded(0)) {
       throw new ForbiddenException('storage size limit exceeded');
     }
-
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
       const chunks: Uint8Array[] = [];
@@ -746,12 +740,7 @@ export class WorkspaceResolver {
 
         // check size after receive each chunk to avoid unnecessary memory usage
         const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
-        if (size + bufferSize > quota) {
-          this.logger.log(
-            `storage size limit exceeded after blob set: ${
-              size + bufferSize
-            } > ${quota}`
-          );
+        if (checkExceeded(bufferSize)) {
           reject(new ForbiddenException('storage size limit exceeded'));
         }
       });
@@ -759,12 +748,7 @@ export class WorkspaceResolver {
       stream.on('end', () => {
         const buffer = Buffer.concat(chunks);
 
-        if (size + buffer.length > quota) {
-          this.logger.log(
-            `storage size limit exceeded after blob set: ${
-              size + buffer.length
-            } > ${quota}`
-          );
+        if (checkExceeded(buffer.length)) {
           reject(new ForbiddenException('storage size limit exceeded'));
         } else {
           resolve(buffer);

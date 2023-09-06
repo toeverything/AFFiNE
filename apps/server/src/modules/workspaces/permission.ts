@@ -21,6 +21,18 @@ export class PermissionService {
     return data?.type as Permission;
   }
 
+  async getWorkspaceOwner(workspaceId: string) {
+    return this.prisma.userWorkspacePermission.findFirstOrThrow({
+      where: {
+        workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+  }
+
   async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
     if (user) {
       return await this.tryCheck(ws, user);
