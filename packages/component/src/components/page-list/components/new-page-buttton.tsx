@@ -3,9 +3,9 @@ import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import { Menu } from '@toeverything/components/menu';
 import { useState } from 'react';
 
-// import { Menu } from '../../../ui/menu/menu';
 import { BlockCard } from '../../card/block-card';
 import { DropdownButton } from './dropdown';
+import { menuContent } from './dropdown.css';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
@@ -63,9 +63,6 @@ export const NewPageButton = ({
   const [open, setOpen] = useState(false);
   return (
     <Menu
-      rootOptions={{
-        open,
-      }}
       items={
         <CreateNewPagePopup
           createNewPage={() => {
@@ -82,6 +79,17 @@ export const NewPageButton = ({
           }}
         />
       }
+      rootOptions={{
+        open,
+      }}
+      contentOptions={{
+        className: menuContent,
+        align: 'end',
+        hideWhenDetached: true,
+        onInteractOutside: () => {
+          setOpen(false);
+        },
+      }}
     >
       <DropdownButton
         onClick={() => {
