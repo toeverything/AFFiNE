@@ -98,6 +98,7 @@ export const CloudWorkspaceMembersPanel = ({
       <SettingRow
         name={`${t['Members']()} (${memberCount})`}
         desc={t['Members hint']()}
+        spreadCol={isOwner}
       >
         {isOwner ? (
           <>
