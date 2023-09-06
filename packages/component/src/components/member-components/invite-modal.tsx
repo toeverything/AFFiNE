@@ -135,7 +135,7 @@ export const InviteModal = ({
         </div>
         <div className={styles.inviteModalButtonContainer}>
           <Button style={{ marginRight: 20 }} onClick={handleCancel}>
-            {t['Cancel']()}
+            {t['com.affine.inviteModal.button.cancel']()}
           </Button>
           <Button type="primary" onClick={handleConfirm} loading={isMutating}>
             {t['Invite']()}

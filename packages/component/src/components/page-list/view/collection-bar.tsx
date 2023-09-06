@@ -96,7 +96,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
           style={{ border: 'none', position: 'static' }}
           onClick={() => setting.backToAll()}
         >
-          {t['Back to all']()}
+          {t['com.affine.collectionBar.backToAll']()}
         </Button>
       </td>
     </tr>

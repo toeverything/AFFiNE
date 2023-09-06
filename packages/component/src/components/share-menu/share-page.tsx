@@ -160,14 +160,14 @@ export const AffineSharePage = (props: ShareMenuProps) => {
                 value={'page'}
                 spanStyle={styles.spanStyle}
               >
-                {t['Page']()}
+                {t['com.affine.pageMode.page']()}
               </RadioButton>
               <RadioButton
                 className={styles.radioButton}
                 value={'edgeless'}
                 spanStyle={styles.spanStyle}
               >
-                {t['Edgeless']()}
+                {t['com.affine.pageMode.edgeless']()}
               </RadioButton>
             </RadioButtonGroup>
           </div>

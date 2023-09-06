@@ -61,7 +61,9 @@ export const OperationCell = ({
           </MenuIcon>
         }
       >
-        {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
+        {favorite
+          ? t['com.affine.favoritePageOperation.remove']()
+          : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {!isDesktop && (
         <MenuItem
@@ -72,7 +74,7 @@ export const OperationCell = ({
             </MenuIcon>
           }
         >
-          {t['Open in new tab']()}
+          {t['com.affine.openPageOperation.newTab']()}
         </MenuItem>
       )}
       <MoveToTrash
@@ -131,7 +133,7 @@ export const TrashOperationCell = ({
   const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>
-      <Tooltip content={t['Restore it']()} side="top">
+      <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
         <IconButton
           style={{ marginRight: '12px' }}
           onClick={() => {
@@ -141,7 +143,11 @@ export const TrashOperationCell = ({
           <ResetIcon />
         </IconButton>
       </Tooltip>
-      <Tooltip content={t['Delete permanently']()} side="top" align="end">
+      <Tooltip
+        content={t['com.affine.trashOperation.deletePermanently']()}
+        side="top"
+        align="end"
+      >
         <IconButton
           onClick={() => {
             setOpen(true);
@@ -151,9 +157,9 @@ export const TrashOperationCell = ({
         </IconButton>
       </Tooltip>
       <Confirm
-        title={`${t['Delete permanently']()}?`}
-        content={t['TrashButtonGroupDescription']()}
-        confirmText={t['Delete']()}
+        title={`${t['com.affine.trashOperation.deletePermanently']()}?`}
+        content={t['com.affine.trashOperation.deleteDescription']()}
+        confirmText={t['com.affine.trashOperation.delete']()}
         confirmType="error"
         open={open}
         onConfirm={() => {

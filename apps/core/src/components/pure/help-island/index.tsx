@@ -24,6 +24,7 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
 ];
 const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST, 'guide'];
 export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
+
 export const HelpIsland = ({
   showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
 }: {
@@ -61,7 +62,10 @@ export const HelpIsland = ({
           style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}
         >
           {showList.includes('whatNew') && (
-            <Tooltip content={t["Discover what's new!"]()} side="left">
+            <Tooltip
+              content={t['com.affine.appUpdater.whatsNew']()}
+              side="left"
+            >
               <StyledIconWrapper
                 data-testid="right-bottom-change-log-icon"
                 onClick={() => {
@@ -73,7 +77,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('contact') && (
-            <Tooltip content={t['Contact Us']()} side="left">
+            <Tooltip
+              content={t['com.affine.helpIsland.contactUs']()}
+              side="left"
+            >
               <StyledIconWrapper
                 data-testid="right-bottom-contact-us-icon"
                 onClick={openAbout}
@@ -83,7 +90,10 @@ export const HelpIsland = ({
             </Tooltip>
           )}
           {showList.includes('shortcuts') && (
-            <Tooltip content={t['Keyboard Shortcuts']()} side="left">
+            <Tooltip
+              content={t['com.affine.keyboardShortcuts.title']()}
+              side="left"
+            >
               <StyledIconWrapper
                 data-testid="shortcuts-icon"
                 onClick={() => {
@@ -113,7 +123,10 @@ export const HelpIsland = ({
           )}
         </StyledAnimateWrapper>
 
-        <Tooltip content={t['Help and Feedback']()} side="left">
+        <Tooltip
+          content={t['com.affine.helpIsland.helpAndFeedback']()}
+          side="left"
+        >
           <MuiFade in={!spread} data-testid="faq-icon">
             <StyledTriggerWrapper>
               <HelpIcon />
