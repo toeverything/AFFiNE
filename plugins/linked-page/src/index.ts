@@ -7,8 +7,6 @@ type LinkedPageItem = {
   key: string;
   name: string;
   icon: string;
-  // suffix?: TemplateResult<1>;
-  // disabled?: boolean;
   action: () => void;
 };
 
@@ -57,12 +55,6 @@ export const entry = (context: PluginContext) => {
   }
 
   context.register('editor', (root, editor) => {
-    const pageBlockSpec = editor.pagePreset.find(isPageBlock);
-    if (!pageBlockSpec) {
-      console.error('no page block found', editor.pagePreset);
-      return () => {};
-    }
-
     const LinkedPageWidget = customElements.get('affine-linked-page-widget');
     if (!LinkedPageWidget) {
       console.error('no page block found', LinkedPageWidget);
@@ -122,6 +114,11 @@ export const entry = (context: PluginContext) => {
       customElements.define(CUSTOM_LINKED_PAGE_TAG, CustomLinkedPage);
     }
 
+    const pageBlockSpec = editor.pagePreset.find(isPageBlock);
+    if (!pageBlockSpec) {
+      console.error('no page block found in page spec', editor.pagePreset);
+      return () => {};
+    }
     if (!pageBlockSpec.view.widgets) {
       pageBlockSpec.view.widgets = {};
     }
@@ -129,9 +126,30 @@ export const entry = (context: PluginContext) => {
     // const originalLinkedPage = pageBlockSpec.view.widgets['linkedPage'];
     pageBlockSpec.view.widgets['linkedPage'] =
       fakeLiteral`${CUSTOM_LINKED_PAGE_TAG}` as any;
+
+    const edgelessPageBlockSpec = editor.edgelessPreset.find(isPageBlock);
+    if (!edgelessPageBlockSpec) {
+      console.error(
+        'no page block found in edgeless spec',
+        editor.edgelessPreset
+      );
+      return () => {};
+    }
+    if (!edgelessPageBlockSpec.view.widgets) {
+      edgelessPageBlockSpec.view.widgets = {};
+    }
+    // const originalEdgelessLinkedPage =
+    //   edgelessPageBlockSpec.view.widgets['linkedPage'];
+    edgelessPageBlockSpec.view.widgets['linkedPage'] =
+      fakeLiteral`${CUSTOM_LINKED_PAGE_TAG}` as any;
+
     return () => {
       // if (originalLinkedPage && pageBlockSpec.view.widgets) {
       //   pageBlockSpec.view.widgets['linkedPage'] = originalLinkedPage;
+      // }
+      // if (originalEdgelessLinkedPage && edgelessPageBlockSpec.view.widgets) {
+      //   edgelessPageBlockSpec.view.widgets['linkedPage'] =
+      //     originalEdgelessLinkedPage;
       // }
     };
   });
