@@ -1,5 +1,3 @@
-import { deepEqual, ok, rejects } from 'node:assert';
-
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -56,9 +54,9 @@ test.afterEach(async () => {
 
 test('should register a user', async t => {
   const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
-  t.true(typeof user.id === 'string', 'user.id is not a string');
-  t.true(user.name === 'u1', 'user.name is not valid');
-  t.true(user.email === 'u1@affine.pro', 'user.email is not valid');
+  t.is(typeof user.id, 'string', 'user.id is not a string');
+  t.is(user.name, 'u1', 'user.name is not valid');
+  t.is(user.email, 'u1@affine.pro', 'user.email is not valid');
 });
 
 test.skip('should be throttled at call signUp', async t => {
@@ -69,17 +67,15 @@ test.skip('should be throttled at call signUp', async t => {
     // throttles are applied to each endpoint separately
     await currentUser(app, token);
   }
-  await rejects(signUp(app, 'u11', 'u11@affine.pro', '11'));
-  await rejects(currentUser(app, token));
-  t.pass();
+  await t.throwsAsync(() => signUp(app, 'u11', 'u11@affine.pro', '11'));
+  await t.throwsAsync(() => currentUser(app, token));
 });
 
 test('should create a workspace', async t => {
   const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
   const workspace = await createWorkspace(app, user.token.token);
-  ok(typeof workspace.id === 'string', 'workspace.id is not a string');
-  t.pass();
+  t.is(typeof workspace.id, 'string', 'workspace.id is not a string');
 });
 
 test('should can publish workspace', async t => {
@@ -92,7 +88,7 @@ test('should can publish workspace', async t => {
     workspace.id,
     true
   );
-  ok(isPublic === true, 'failed to publish workspace');
+  t.true(isPublic, 'failed to publish workspace');
 
   const isPrivate = await updateWorkspace(
     app,
@@ -100,28 +96,20 @@ test('should can publish workspace', async t => {
     workspace.id,
     false
   );
-  ok(isPrivate === false, 'failed to unpublish workspace');
-  t.pass();
+  t.false(isPrivate, 'failed to unpublish workspace');
 });
 
 test('should can read published workspace', async t => {
   const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const workspace = await createWorkspace(app, user.token.token);
 
-  await rejects(
-    getPublicWorkspace(app, 'not_exists_ws'),
-    'must not get not exists workspace'
-  );
-  await rejects(
-    getPublicWorkspace(app, workspace.id),
-    'must not get private workspace'
-  );
+  await t.throwsAsync(() => getPublicWorkspace(app, 'not_exists_ws'));
+  await t.throwsAsync(() => getPublicWorkspace(app, workspace.id));
 
   await updateWorkspace(app, user.token.token, workspace.id, true);
 
   const publicWorkspace = await getPublicWorkspace(app, workspace.id);
-  ok(publicWorkspace.id === workspace.id, 'failed to get public workspace');
-  t.pass();
+  t.is(publicWorkspace.id, workspace.id, 'failed to get public workspace');
 });
 
 test('should share a page', async t => {
@@ -131,46 +119,46 @@ test('should share a page', async t => {
   const workspace = await createWorkspace(app, u1.token.token);
 
   const share = await sharePage(app, u1.token.token, workspace.id, 'page1');
-  t.true(share === true, 'failed to share page');
+  t.true(share, 'failed to share page');
   const pages = await getWorkspaceSharedPages(
     app,
     u1.token.token,
     workspace.id
   );
-  t.true(pages.length === 1, 'failed to get shared pages');
-  t.true(pages[0] === 'page1', 'failed to get shared page: page1');
+  t.is(pages.length, 1, 'failed to get shared pages');
+  t.is(pages[0], 'page1', 'failed to get shared page: page1');
 
   const msg1 = await sharePage(app, u2.token.token, workspace.id, 'page2');
-  t.true(msg1 === 'Permission denied', 'unauthorized user can share page');
+  t.is(msg1, 'Permission denied', 'unauthorized user can share page');
   const msg2 = await revokePage(app, u2.token.token, 'not_exists_ws', 'page2');
-  t.true(msg2 === 'Permission denied', 'unauthorized user can share page');
+  t.is(msg2, 'Permission denied', 'unauthorized user can share page');
 
   await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
   await acceptInvite(app, u2.token.token, workspace.id);
   const invited = await sharePage(app, u2.token.token, workspace.id, 'page2');
-  t.true(invited === true, 'failed to share page');
+  t.true(invited, 'failed to share page');
 
   const revoke = await revokePage(app, u1.token.token, workspace.id, 'page1');
-  t.true(revoke === true, 'failed to revoke page');
+  t.true(revoke, 'failed to revoke page');
   const pages2 = await getWorkspaceSharedPages(
     app,
     u1.token.token,
     workspace.id
   );
-  t.true(pages2.length === 1, 'failed to get shared pages');
-  t.true(pages2[0] === 'page2', 'failed to get shared page: page2');
+  t.is(pages2.length, 1, 'failed to get shared pages');
+  t.is(pages2[0], 'page2', 'failed to get shared page: page2');
 
   const msg3 = await revokePage(app, u1.token.token, workspace.id, 'page3');
-  t.true(msg3 === false, 'can revoke non-exists page');
+  t.false(msg3, 'can revoke non-exists page');
 
   const msg4 = await revokePage(app, u1.token.token, workspace.id, 'page2');
-  t.true(msg4 === true, 'failed to revoke page');
+  t.true(msg4, 'failed to revoke page');
   const page3 = await getWorkspaceSharedPages(
     app,
     u1.token.token,
     workspace.id
   );
-  t.true(page3.length === 0, 'failed to get shared pages');
+  t.is(page3.length, 0, 'failed to get shared pages');
 });
 
 test('should can get workspace doc', async t => {
@@ -184,7 +172,11 @@ test('should can get workspace doc', async t => {
     .expect(200)
     .type('application/octet-stream');
 
-  deepEqual(res1.body, Buffer.from([0, 0]), 'failed to get doc with u1 token');
+  t.deepEqual(
+    res1.body,
+    Buffer.from([0, 0]),
+    'failed to get doc with u1 token'
+  );
 
   await request(app.getHttpServer())
     .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
@@ -207,8 +199,11 @@ test('should can get workspace doc', async t => {
     .expect(200)
     .type('application/octet-stream');
 
-  deepEqual(res2.body, Buffer.from([0, 0]), 'failed to get doc with u2 token');
-  t.pass();
+  t.deepEqual(
+    res2.body,
+    Buffer.from([0, 0]),
+    'failed to get doc with u2 token'
+  );
 });
 
 test('should be able to get public workspace doc', async t => {
@@ -222,13 +217,12 @@ test('should be able to get public workspace doc', async t => {
     true
   );
 
-  ok(isPublic === true, 'failed to publish workspace');
+  t.true(isPublic, 'failed to publish workspace');
 
   const res = await request(app.getHttpServer())
     .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(200)
     .type('application/octet-stream');
 
-  deepEqual(res.body, Buffer.from([0, 0]), 'failed to get public doc');
-  t.pass();
+  t.deepEqual(res.body, Buffer.from([0, 0]), 'failed to get public doc');
 });

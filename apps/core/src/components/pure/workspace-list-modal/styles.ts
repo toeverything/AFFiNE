@@ -241,3 +241,32 @@ export const StyledWorkspaceFlavourTitle = styled('div')(() => {
     marginBottom: '4px',
   };
 });
+export const StyledItem = styled('button')<{
+  active?: boolean;
+}>(({ active = false }) => {
+  return {
+    height: 'auto',
+    padding: '8px 12px',
+    width: '100%',
+    borderRadius: '5px',
+    fontSize: 'var(--affine-font-sm)',
+    ...displayFlex('flex-start', 'center'),
+    cursor: 'pointer',
+    position: 'relative',
+    backgroundColor: 'transparent',
+    color: 'var(--affine-text-primary-color)',
+    svg: {
+      color: 'var(--affine-icon-color)',
+    },
+
+    ':hover': {
+      backgroundColor: 'var(--affine-hover-color)',
+    },
+
+    ...(active
+      ? {
+          backgroundColor: 'var(--affine-hover-color)',
+        }
+      : {}),
+  };
+});

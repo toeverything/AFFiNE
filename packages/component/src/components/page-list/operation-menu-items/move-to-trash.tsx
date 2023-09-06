@@ -1,31 +1,29 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteTemporarilyIcon } from '@blocksuite/icons';
+import {
+  MenuIcon,
+  MenuItem,
+  type MenuItemProps,
+} from '@toeverything/components/menu';
 
 import type { ConfirmProps } from '../../..';
-import { Confirm, MenuItem } from '../../..';
-import { moveToTrashStyle } from './index.css';
-import type { CommonMenuItemProps } from './types';
-export const MoveToTrash = ({
-  onSelect,
-  onItemClick,
-  ...props
-}: CommonMenuItemProps) => {
+import { Confirm } from '../../..';
+
+export const MoveToTrash = (props: MenuItemProps) => {
   const t = useAFFiNEI18N();
 
   return (
-    <>
-      <MenuItem
-        {...props}
-        onClick={() => {
-          onItemClick?.();
-          onSelect?.();
-        }}
-        icon={<DeleteTemporarilyIcon />}
-        className={moveToTrashStyle}
-      >
-        {t['Move to Trash']()}
-      </MenuItem>
-    </>
+    <MenuItem
+      preFix={
+        <MenuIcon>
+          <DeleteTemporarilyIcon />
+        </MenuIcon>
+      }
+      type="danger"
+      {...props}
+    >
+      {t['com.affine.moveToTrash.title']()}
+    </MenuItem>
   );
 };
 
@@ -39,8 +37,8 @@ const ConfirmModal = ({
 
   return (
     <Confirm
-      title={t['Delete page?']()}
-      content={t['will be moved to Trash']({
+      title={t['com.affine.moveToTrash.confirmModal.title']()}
+      content={t['com.affine.moveToTrash.confirmModal.description']({
         title: title || 'Untitled',
       })}
       confirmButtonTestId="confirm-delete-page"

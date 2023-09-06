@@ -55,7 +55,7 @@
     "@blocksuite/blocks": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/editor": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/global": "0.0.0-20230829150056-df43987c-nightly",
-    "@blocksuite/icons": "^2.1.31",
+    "@blocksuite/icons": "^2.1.32",
     "@blocksuite/lit": "0.0.0-20230829150056-df43987c-nightly",
     "@blocksuite/store": "0.0.0-20230829150056-df43987c-nightly",
     "@types/react": "^18.2.21",
@@ -67,5 +67,5 @@
     "vite": "^4.4.9",
     "yjs": "^13.6.7"
   },
-  "version": "0.9.0-canary.8"
+  "version": "0.9.0-canary.9"
 }

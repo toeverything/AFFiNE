@@ -1,48 +1,27 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ShareIcon } from '@blocksuite/icons';
+import {
+  MenuIcon,
+  MenuItem,
+  type MenuItemProps,
+} from '@toeverything/components/menu';
 
-import { MenuItem, styled } from '../../../';
 import { PublicLinkDisableModal } from '../../share-menu';
-import type { CommonMenuItemProps } from './types';
 
-const StyledMenuItem = styled(MenuItem)(({ theme }) => {
-  return {
-    div: {
-      color: theme.palette.error.main,
-      svg: {
-        color: theme.palette.error.main,
-      },
-    },
-    ':hover': {
-      div: {
-        color: theme.palette.error.main,
-        svg: {
-          color: theme.palette.error.main,
-        },
-      },
-    },
-  };
-});
-export const DisablePublicSharing = ({
-  onSelect,
-  onItemClick,
-  ...props
-}: CommonMenuItemProps) => {
+export const DisablePublicSharing = (props: MenuItemProps) => {
   const t = useAFFiNEI18N();
   return (
-    <>
-      <StyledMenuItem
-        {...props}
-        onClick={() => {
-          onItemClick?.();
-          onSelect?.();
-        }}
-        style={{ color: 'red' }}
-        icon={<ShareIcon />}
-      >
-        {t['Disable Public Sharing']()}
-      </StyledMenuItem>
-    </>
+    <MenuItem
+      type="danger"
+      preFix={
+        <MenuIcon>
+          <ShareIcon />
+        </MenuIcon>
+      }
+      {...props}
+    >
+      {t['Disable Public Sharing']()}
+    </MenuItem>
   );
 };
 

@@ -669,6 +669,11 @@ export class WorkspaceResolver {
     });
 
     if (size + buffer.length > quota) {
+      this.logger.log(
+        `storage size limit exceeded after blob set: ${size} > ${
+          buffer.length > quota
+        }`
+      );
       throw new ForbiddenException('storage size limit exceeded');
     }
 

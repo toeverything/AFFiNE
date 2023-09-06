@@ -1,7 +1,7 @@
 {
   "name": "@affine/bookmark-plugin",
   "type": "module",
-  "version": "0.9.0-canary.8",
+  "version": "0.9.0-canary.9",
   "description": "Bookmark Plugin",
   "affinePlugin": {
     "release": true,
@@ -20,7 +20,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "^2.1.31",
+    "@blocksuite/icons": "^2.1.32",
     "foxact": "^0.2.20",
     "link-preview-js": "^3.0.5"
   },

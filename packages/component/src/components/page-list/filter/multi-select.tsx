@@ -1,8 +1,7 @@
-import { DoneIcon } from '@blocksuite/icons';
+import { Menu, MenuItem } from '@toeverything/components/menu';
 import type { MouseEvent } from 'react';
 import { useMemo } from 'react';
 
-import Menu from '../../../ui/menu/menu';
 import * as styles from './multi-select.css';
 
 export const MultiSelect = ({
@@ -21,10 +20,10 @@ export const MultiSelect = ({
     () => Object.fromEntries(options.map(v => [v.value, v])),
     [options]
   );
+
   return (
     <Menu
-      trigger="click"
-      content={
+      items={
         <div data-testid="multi-select" className={styles.optionList}>
           {options.map(option => {
             const selected = value.includes(option.value);
@@ -37,25 +36,14 @@ export const MultiSelect = ({
               }
             };
             return (
-              <div
-                className={styles.selectOption}
-                data-testid="select-option"
-                style={{
-                  backgroundColor: selected
-                    ? 'var(--affine-hover-color)'
-                    : undefined,
-                }}
+              <MenuItem
+                data-testid={`multi-select-${option.label}`}
+                checked={selected}
                 onClick={click}
                 key={option.value}
               >
-                <div className={styles.optionLabel}>{option.label}</div>
-                <div
-                  style={{ opacity: selected ? 1 : 0 }}
-                  className={styles.done}
-                >
-                  <DoneIcon />
-                </div>
-              </div>
+                {option.label}
+              </MenuItem>
             );
           })}
         </div>

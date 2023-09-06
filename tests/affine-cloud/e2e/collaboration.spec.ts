@@ -11,6 +11,11 @@ import {
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { clickUserInfoCard } from '@affine-test/kit/utils/setting';
+import {
+  clickSideBarAllPageButton,
+  clickSideBarSettingButton,
+} from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
@@ -102,5 +107,24 @@ test.describe('collaboration', () => {
       const title = getBlockSuiteEditorTitle(page2);
       expect(await title.innerText()).toBe('TEST TITLE');
     }
+  });
+
+  test('exit successfully and re-login', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    const url = page.url();
+    await createLocalWorkspace(
+      {
+        name: 'test',
+      },
+      page
+    );
+    await enableCloudWorkspace(page);
+    await clickSideBarSettingButton(page);
+    await clickUserInfoCard(page);
+    await page.getByTestId('sign-out-button').click();
+    await page.waitForTimeout(5000);
+    expect(page.url()).toBe(url);
   });
 });

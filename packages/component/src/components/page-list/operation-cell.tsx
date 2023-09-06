@@ -9,10 +9,11 @@ import {
   ResetIcon,
 } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
+import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
 
-import { Confirm, FlexWrapper, Menu, MenuItem } from '../../..';
+import { Confirm, FlexWrapper } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export interface OperationCellProps {
@@ -43,31 +44,42 @@ export const OperationCell = ({
       {isPublic && (
         <DisablePublicSharing
           data-testid="disable-public-sharing"
-          onItemClick={() => {
+          onSelect={() => {
             setOpenDisableShared(true);
           }}
         />
       )}
       <MenuItem
         onClick={onToggleFavoritePage}
-        icon={
-          favorite ? (
-            <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
-          ) : (
-            <FavoriteIcon />
-          )
+        preFix={
+          <MenuIcon>
+            {favorite ? (
+              <FavoritedIcon style={{ color: 'var(--affine-primary-color)' }} />
+            ) : (
+              <FavoriteIcon />
+            )}
+          </MenuIcon>
         }
       >
-        {favorite ? t['Remove from favorites']() : t['Add to Favorites']()}
+        {favorite
+          ? t['com.affine.favoritePageOperation.remove']()
+          : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {!isDesktop && (
-        <MenuItem onClick={onOpenPageInNewTab} icon={<OpenInNewIcon />}>
-          {t['Open in new tab']()}
+        <MenuItem
+          onClick={onOpenPageInNewTab}
+          preFix={
+            <MenuIcon>
+              <OpenInNewIcon />
+            </MenuIcon>
+          }
+        >
+          {t['com.affine.openPageOperation.newTab']()}
         </MenuItem>
       )}
       <MoveToTrash
         data-testid="move-to-trash"
-        onItemClick={() => {
+        onSelect={() => {
           setOpen(true);
         }}
       />
@@ -76,13 +88,8 @@ export const OperationCell = ({
   return (
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
-        <Menu
-          content={OperationMenu}
-          placement="bottom"
-          disablePortal={true}
-          trigger="click"
-        >
-          <IconButton data-testid="page-list-operation-button">
+        <Menu items={OperationMenu}>
+          <IconButton type="plain" data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
@@ -126,7 +133,7 @@ export const TrashOperationCell = ({
   const [open, setOpen] = useState(false);
   return (
     <FlexWrapper>
-      <Tooltip content={t['Restore it']()} side="top">
+      <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
         <IconButton
           style={{ marginRight: '12px' }}
           onClick={() => {
@@ -136,7 +143,11 @@ export const TrashOperationCell = ({
           <ResetIcon />
         </IconButton>
       </Tooltip>
-      <Tooltip content={t['Delete permanently']()} side="top" align="end">
+      <Tooltip
+        content={t['com.affine.trashOperation.deletePermanently']()}
+        side="top"
+        align="end"
+      >
         <IconButton
           onClick={() => {
             setOpen(true);
@@ -146,9 +157,9 @@ export const TrashOperationCell = ({
         </IconButton>
       </Tooltip>
       <Confirm
-        title={`${t['Delete permanently']()}?`}
-        content={t['TrashButtonGroupDescription']()}
-        confirmText={t['Delete']()}
+        title={`${t['com.affine.trashOperation.deletePermanently']()}?`}
+        content={t['com.affine.trashOperation.deleteDescription']()}
+        confirmText={t['com.affine.trashOperation.delete']()}
         confirmType="error"
         open={open}
         onConfirm={() => {
