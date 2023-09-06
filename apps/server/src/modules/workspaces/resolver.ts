@@ -753,21 +753,34 @@ export class WorkspaceResolver {
       const chunks: Uint8Array[] = [];
       stream.on('data', chunk => {
         chunks.push(chunk);
+
+        // check size after receive each chunk to avoid unnecessary memory usage
+        const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
+        if (size + bufferSize > quota) {
+          this.logger.log(
+            `storage size limit exceeded after blob set: ${
+              size + bufferSize
+            } > ${quota}`
+          );
+          reject(new ForbiddenException('storage size limit exceeded'));
+        }
       });
       stream.on('error', reject);
       stream.on('end', () => {
-        resolve(Buffer.concat(chunks));
+        const buffer = Buffer.concat(chunks);
+
+        if (size + buffer.length > quota) {
+          this.logger.log(
+            `storage size limit exceeded after blob set: ${
+              size + buffer.length
+            } > ${quota}`
+          );
+          reject(new ForbiddenException('storage size limit exceeded'));
+        } else {
+          resolve(buffer);
+        }
       });
     });
-
-    if (size + buffer.length > quota) {
-      this.logger.log(
-        `storage size limit exceeded after blob set: ${size} > ${
-          buffer.length > quota
-        }`
-      );
-      throw new ForbiddenException('storage size limit exceeded');
-    }
 
     return this.storage.uploadBlob(workspaceId, buffer);
   }
