@@ -1,3 +1,5 @@
+import { URLSearchParams } from 'node:url';
+
 import {
   All,
   BadRequestException,
@@ -54,6 +56,14 @@ export class NextAuthController {
     @Query() query: Record<string, any>,
     @Next() next: NextFunction
   ) {
+    if (req.path === '/api/auth/signin' && req.method === 'GET') {
+      const query = req.query
+        ? // @ts-expect-error req.query is satisfy with the Record<string, any>
+          `?${new URLSearchParams(req.query).toString()}`
+        : '';
+      res.redirect(`/signin${query}`);
+      return;
+    }
     this.metrics.authCounter(1, {});
     const [action, providerId] = req.url // start with request url
       .slice(BASE_URL.length) // make relative to baseUrl
@@ -135,7 +145,10 @@ export class NextAuthController {
       this.metrics.authFailCounter(1, {
         reason: 'no_early_access_permission',
       });
-      if (!req.headers?.referer) {
+      if (
+        !req.headers?.referer ||
+        req.headers.referer.startsWith('https://accounts.google.com')
+      ) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
         res.status(403);
