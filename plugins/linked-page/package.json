@@ -15,7 +15,8 @@
     }
   },
   "dependencies": {
-    "@toeverything/plugin-infra": "workspace:*"
+    "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*"
