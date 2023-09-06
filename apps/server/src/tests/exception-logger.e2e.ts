@@ -76,6 +76,7 @@ test('should get response', async t => {
     });
 
   t.is(response.status, 200);
+  t.is(response.body.errors[0].message, 'exception from graphql');
 });
 
 test('should get response from rest api', async t => {
