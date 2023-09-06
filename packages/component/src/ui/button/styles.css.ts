@@ -13,7 +13,7 @@ export const dropdownBtn = style({
   boxShadow: 'var(--affine-float-button-shadow)',
   borderRadius: '8px',
   fontSize: 'var(--affine-font-sm)',
-  // width: '100%',
+  width: '100%',
   height: '32px',
   userSelect: 'none',
   whiteSpace: 'nowrap',

@@ -66,6 +66,7 @@ export const NewPageButton = ({
       onClickAway={() => {
         setOpen(false);
       }}
+      triggerContainerStyle={{ justifyContent: 'center' }}
       menuStyles={{
         padding: '0px',
         background: 'var(--affine-background-overlay-panel-color)',

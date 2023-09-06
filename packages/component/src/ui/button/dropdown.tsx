@@ -20,17 +20,19 @@ export const DropdownButton = forwardRef<
     onClickDropDown?.(e);
   };
   return (
-    <button ref={ref} className={styles.dropdownBtn} {...props}>
-      <span>{children}</span>
-      <span className={styles.divider} />
-      <span className={styles.dropdownWrapper} onClick={handleClickDropDown}>
-        <ArrowDownSmallIcon
-          className={styles.dropdownIcon}
-          width={16}
-          height={16}
-        />
-      </span>
-    </button>
+    <div>
+      <button ref={ref} className={styles.dropdownBtn} {...props}>
+        <span>{children}</span>
+        <span className={styles.divider} />
+        <span className={styles.dropdownWrapper} onClick={handleClickDropDown}>
+          <ArrowDownSmallIcon
+            className={styles.dropdownIcon}
+            width={16}
+            height={16}
+          />
+        </span>
+      </button>
+    </div>
   );
 });
 DropdownButton.displayName = 'DropdownButton';
