@@ -17,26 +17,10 @@ export const ShareExport = () => {
         {t['com.affine.share-menu.ShareViaExport']()}
       </div>
       <div>
-        <ExportToPdfMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
-        <ExportToHtmlMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
-        <ExportToPngMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
-        <ExportToMarkdownMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
+        <ExportToPdfMenuItem />
+        <ExportToHtmlMenuItem />
+        <ExportToPngMenuItem />
+        <ExportToMarkdownMenuItem />
       </div>
       <div className={styles.columnContainerStyle}>
         <div className={styles.descriptionStyle}>

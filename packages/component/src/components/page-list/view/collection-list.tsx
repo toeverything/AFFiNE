@@ -6,13 +6,12 @@ import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import type { MouseEvent } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
-import { MenuItem } from '../../..';
-import Menu from '../../../ui/menu/menu';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
@@ -40,7 +39,11 @@ const CollectionOption = ({
   return (
     <MenuItem
       data-testid="collection-select-option"
-      icon={<ViewLayersIcon></ViewLayersIcon>}
+      preFix={
+        <MenuIcon>
+          <ViewLayersIcon />
+        </MenuIcon>
+      }
       onClick={selectCollection}
       key={collection.id}
       className={styles.viewMenu}
@@ -107,6 +110,7 @@ export const CollectionList = ({
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
 }) => {
+  const ref = useRef(null);
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
@@ -134,14 +138,20 @@ export const CollectionList = ({
     [closeUpdateCollectionModal, setting]
   );
   return (
-    <FlexWrapper alignItems="center">
+    <FlexWrapper alignItems="center" ref={ref}>
       {setting.savedCollections.length > 0 && (
         <Menu
-          trigger="click"
-          content={
+          portalOptions={{
+            container: ref.current,
+          }}
+          items={
             <div style={{ minWidth: 150 }}>
               <MenuItem
-                icon={<FolderIcon></FolderIcon>}
+                preFix={
+                  <MenuIcon>
+                    <FolderIcon />
+                  </MenuIcon>
+                }
                 onClick={setting.backToAll}
                 className={styles.viewMenu}
               >
@@ -184,17 +194,22 @@ export const CollectionList = ({
         </Menu>
       )}
       <Menu
-        trigger="click"
-        placement="bottom-start"
-        content={
+        items={
           <CreateFilterMenu
             propertiesMeta={propertiesMeta}
             value={setting.currentCollection.filterList}
             onChange={onChange}
           />
         }
+        portalOptions={{
+          container: ref.current,
+        }}
       >
-        <Button icon={<FilteredIcon />} data-testid="create-first-filter">
+        <Button
+          type="default"
+          icon={<FilteredIcon />}
+          data-testid="create-first-filter"
+        >
           {t['com.affine.filter']()}
         </Button>
       </Menu>

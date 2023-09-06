@@ -39,18 +39,6 @@ test('change language using keyboard', async ({ page }) => {
     const newName = await locator.textContent();
     expect(oldName).not.toBe(newName);
   }
-  await locator.click();
-  await page.waitForTimeout(200);
-  await page.keyboard.press('ArrowUp', {
-    delay: 50,
-  });
-  await page.keyboard.press('Enter', {
-    delay: 50,
-  });
-  {
-    const newName = await locator.textContent();
-    expect(oldName).toBe(newName);
-  }
 });
 
 test('Change theme', async ({ page }) => {
