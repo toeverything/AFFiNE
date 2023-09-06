@@ -15,6 +15,7 @@ import { type FC, Suspense, useCallback, useState } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { signOutCloud } from '../../../../utils/cloud-utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
@@ -137,6 +138,7 @@ const StoragePanel = () => {
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
+  const { jumpToIndex } = useNavigateHelper();
   const setAuthModal = useSetAtom(authAtom);
 
   const onChangeEmail = useCallback(() => {
@@ -187,9 +189,14 @@ export const AccountSetting: FC = () => {
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}
         style={{ cursor: 'pointer' }}
+        data-testid="sign-out-button"
         onClick={useCallback(() => {
-          signOutCloud().catch(console.error);
-        }, [])}
+          signOutCloud()
+            .then(() => {
+              jumpToIndex();
+            })
+            .catch(console.error);
+        }, [jumpToIndex])}
       >
         <ArrowRightSmallIcon />
       </SettingRow>
