@@ -20,16 +20,13 @@ export interface PageCollectionDBV1 extends DBSchema {
 }
 
 const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
-  typeof window === 'undefined'
-    ? // never resolve in SSR
-      new Promise<any>(() => {})
-    : openDB<PageCollectionDBV1>('page-view', 1, {
-        upgrade(database) {
-          database.createObjectStore('view', {
-            keyPath: 'id',
-          });
-        },
+  openDB<PageCollectionDBV1>('page-view', 1, {
+    upgrade(database) {
+      database.createObjectStore('view', {
+        keyPath: 'id',
       });
+    },
+  });
 
 const defaultCollection = {
   id: NIL,
