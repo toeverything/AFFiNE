@@ -1,32 +1,20 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import type { DBSchema } from 'idb';
-import type { IDBPDatabase } from 'idb';
-import { openDB } from 'idb';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { atomWithReset, RESET } from 'jotai/utils';
-import { useCallback } from 'react';
-import useSWRImmutable from 'swr/immutable';
+import type { Atom } from 'jotai/vanilla';
+import { useCallback, useEffect, useState } from 'react';
 import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 
-type PersistenceCollection = Collection;
-
-export interface PageCollectionDBV1 extends DBSchema {
-  view: {
-    key: PersistenceCollection['id'];
-    value: PersistenceCollection;
-  };
+export interface StorageCRUD<Value> {
+  get: (key: string) => Promise<Value | null>;
+  set: (key: string, value: Value) => Promise<string>;
+  delete: (key: string) => Promise<void>;
+  list: () => Promise<string[]>;
 }
 
-const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
-  openDB<PageCollectionDBV1>('page-view', 1, {
-    upgrade(database) {
-      database.createObjectStore('view', {
-        keyPath: 'id',
-      });
-    },
-  });
+type StorageCRUDAtom = Atom<StorageCRUD<Collection>>;
 
 const defaultCollection = {
   id: NIL,
@@ -42,69 +30,86 @@ const collectionAtom = atomWithReset<{
   defaultCollection: defaultCollection,
 });
 
-export const useSavedCollections = (workspaceId: string) => {
-  const { data: savedCollections, mutate } = useSWRImmutable<Collection[]>(
-    ['affine', 'page-collection', workspaceId],
-    {
-      fetcher: async () => {
-        const db = await pageCollectionDBPromise;
-        const t = db.transaction('view').objectStore('view');
-        const all = await t.getAll();
-        return all.filter(v => v.workspaceId === workspaceId);
-      },
-      suspense: true,
-      fallbackData: [],
-      revalidateOnMount: true,
-    }
-  );
+const refreshCollection = (
+  storage: StorageCRUD<Collection>,
+  signal?: AbortSignal
+): Promise<Collection[]> => {
+  return storage
+    .list()
+    .then(async keys => {
+      if (signal?.aborted) {
+        return [];
+      }
+      return await Promise.all(keys.map(key => storage.get(key))).then(v =>
+        v.filter((v): v is Collection => v !== null)
+      );
+    })
+    .catch(error => {
+      console.error('Failed to load collections', error);
+      return [];
+    });
+};
+
+export const useSavedCollections = (storageAtom: StorageCRUDAtom) => {
+  const storage = useAtomValue(storageAtom);
+  const [savedCollections, setSavedCollections] = useState<Collection[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    refreshCollection(storage, controller.signal)
+      .then(setSavedCollections)
+      .catch(error => {
+        console.error('Failed to load collections', error);
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [storage]);
+
   const saveCollection = useCallback(
     async (collection: Collection) => {
       if (collection.id === NIL) {
         return;
       }
-      const db = await pageCollectionDBPromise;
-      const t = db.transaction('view', 'readwrite').objectStore('view');
-      await t.put(collection);
-      await mutate();
+      await storage.set(collection.id, collection);
+      setSavedCollections(await refreshCollection(storage));
     },
-    [mutate]
+    [storage]
   );
   const deleteCollection = useCallback(
     async (id: string) => {
       if (id === NIL) {
         return;
       }
-      const db = await pageCollectionDBPromise;
-      const t = db.transaction('view', 'readwrite').objectStore('view');
-      await t.delete(id);
-      await mutate();
+      await storage.delete(id);
+      setSavedCollections(await refreshCollection(storage));
     },
-    [mutate]
+    [storage]
   );
   const addPage = useCallback(
     async (collectionId: string, pageId: string) => {
-      const collection = savedCollections?.find(v => v.id === collectionId);
+      const collection = await storage.get(collectionId);
       if (!collection) {
         return;
       }
-      await saveCollection({
+      await storage.set(collectionId, {
         ...collection,
         allowList: [pageId, ...(collection.allowList ?? [])],
       });
+      setSavedCollections(await refreshCollection(storage));
     },
-    [saveCollection, savedCollections]
+    [storage]
   );
   return {
-    savedCollections: savedCollections ?? [],
+    savedCollections,
     saveCollection,
     deleteCollection,
     addPage,
   };
 };
 
-export const useCollectionManager = (workspaceId: string) => {
+export const useCollectionManager = (storageAtom: StorageCRUDAtom) => {
   const { savedCollections, saveCollection, deleteCollection, addPage } =
-    useSavedCollections(workspaceId);
+    useSavedCollections(storageAtom);
   const [collectionData, setCollectionData] = useAtom(collectionAtom);
 
   const updateCollection = useCallback(
