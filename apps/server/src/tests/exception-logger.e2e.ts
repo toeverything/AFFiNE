@@ -58,7 +58,7 @@ test.afterEach(async () => {
   await app.close();
 });
 
-test('should get response', async t => {
+test('should get response from graphql', async t => {
   const id = 'workspace';
 
   const response = await request(app.getHttpServer())
@@ -83,4 +83,5 @@ test('should get response from rest api', async t => {
   const response = await request(app.getHttpServer()).get(rest);
 
   t.is(response.status, 500);
+  t.is(response.body.error, 'exception from rest api');
 });
