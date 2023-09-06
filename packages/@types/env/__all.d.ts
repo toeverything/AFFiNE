@@ -63,6 +63,9 @@ declare module '@blocksuite/store' {
     trash?: boolean;
     trashDate?: number;
     updatedDate?: number;
+    /**
+     * @deprecated No longer used
+     */
     mode?: 'page' | 'edgeless';
     jumpOnce?: boolean;
     // todo: support `number` in the future
