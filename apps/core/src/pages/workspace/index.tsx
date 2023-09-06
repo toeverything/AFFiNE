@@ -8,7 +8,12 @@ import {
   getCurrentStore,
 } from '@toeverything/infra/atom';
 import type { ReactElement } from 'react';
-import { type LoaderFunction, Outlet, redirect } from 'react-router-dom';
+import {
+  type LoaderFunction,
+  Outlet,
+  redirect,
+  useLoaderData,
+} from 'react-router-dom';
 
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 
@@ -29,7 +34,7 @@ export const loader: LoaderFunction = async args => {
   if (currentMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(currentMetadata.id);
     const workspace = await rootStore.get(workspaceAtom);
-    const incompatible = (() => {
+    return (() => {
       const blockVersions = workspace.meta.blockVersions;
       assertExists(blockVersions, 'blockVersions should not be null');
       for (const [flavour, schema] of workspace.schema.flavourSchemaMap) {
@@ -39,16 +44,14 @@ export const loader: LoaderFunction = async args => {
       }
       return false;
     })();
-    if (incompatible) {
-      return redirect('/migration?workspace_id=' + args.params.workspaceId);
-    }
   }
   return null;
 };
 
 export const Component = (): ReactElement => {
+  const incompatible = useLoaderData();
   return (
-    <WorkspaceLayout>
+    <WorkspaceLayout incompatible={!!incompatible}>
       <Outlet />
     </WorkspaceLayout>
   );

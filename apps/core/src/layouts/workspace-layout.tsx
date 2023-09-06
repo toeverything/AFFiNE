@@ -47,6 +47,7 @@ import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { MigrationFallback } from '../components/migration-fallback';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
@@ -112,9 +113,14 @@ export const CurrentWorkspaceContext = ({
   return <>{children}</>;
 };
 
+type WorkspaceLayoutProps = {
+  incompatible?: boolean;
+};
+
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
-}: PropsWithChildren) {
+  incompatible = false,
+}: PropsWithChildren<WorkspaceLayoutProps>) {
   return (
     <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
@@ -124,14 +130,19 @@ export const WorkspaceLayout = function WorkspacesSuspense({
           <CurrentWorkspaceModals />
         </Suspense>
         <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+          <WorkspaceLayoutInner incompatible={incompatible}>
+            {children}
+          </WorkspaceLayoutInner>
         </Suspense>
       </CurrentWorkspaceContext>
     </AdapterProviderWrapper>
   );
 };
 
-export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+export const WorkspaceLayoutInner = ({
+  children,
+  incompatible = false,
+}: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
 
@@ -263,7 +274,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
               ref={setMainContainer}
               padding={appSetting.clientBorder}
             >
-              {children}
+              {incompatible ? <MigrationFallback /> : children}
               <ToolContainer>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
                 <HelpIsland showList={pageId ? undefined : showList} />

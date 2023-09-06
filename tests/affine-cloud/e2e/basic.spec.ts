@@ -5,13 +5,19 @@ import { test } from '@affine-test/kit/playwright';
 import {
   createRandomUser,
   deleteUser,
+  enableCloudWorkspace,
   getLoginCookie,
   loginUser,
   runPrisma,
 } from '@affine-test/kit/utils/cloud';
+import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { coreUrl } from '@affine-test/kit/utils/load-page';
-import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  waitForEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 let user: {
@@ -46,79 +52,61 @@ test.afterEach(async () => {
 });
 
 test.describe('basic', () => {
-  test('migration', async ({ page }) => {
-    const sqls = (
-      await readFile(
-        resolve(__dirname, 'fixtures', '0.9.0-canary.9-snapshots.sql'),
-        'utf-8'
-      )
-    ).split('\n');
-    await runPrisma(async client => {
-      const snapshot = await client.snapshot.findFirst({
-        where: {
-          workspaceId: '2bc0b6c8-f68d-4dd3-98a8-be746754f9e1',
-          id: '2bc0b6c8-f68d-4dd3-98a8-be746754f9e1',
+  test('migration', async ({ page, browser }) => {
+    let workspaceId: string;
+    {
+      // create the old cloud workspace in another browser
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await loginUser(page, user.email);
+      await page.reload();
+      await createLocalWorkspace(
+        {
+          name: 'test',
         },
-      });
-      if (snapshot != null) {
+        page
+      );
+      await enableCloudWorkspace(page);
+      await clickNewPageButton(page);
+      await waitForEditorLoad(page);
+      // http://localhost:8080/workspace/2bc0b6c8-f68d-4dd3-98a8-be746754f9e1/xxx
+      workspaceId = page.url().split('/')[4];
+      await runPrisma(async client => {
+        const sqls = (
+          await readFile(
+            resolve(__dirname, 'fixtures', '0.9.0-canary.9-snapshots.sql'),
+            'utf-8'
+          )
+        )
+          .replaceAll('2bc0b6c8-f68d-4dd3-98a8-be746754f9e1', workspaceId)
+          .split('\n');
         await client.snapshot.deleteMany({
           where: {
-            workspaceId: '2bc0b6c8-f68d-4dd3-98a8-be746754f9e1',
+            workspaceId,
           },
         });
-      }
-      for (const sql of sqls) {
-        await client.$executeRawUnsafe(sql);
-      }
 
-      if (
-        (await client.workspace.findUnique({
-          where: {
-            id: '2bc0b6c8-f68d-4dd3-98a8-be746754f9e1',
-          },
-        })) !== null
-      ) {
-        await client.workspace.delete({
-          where: {
-            id: '2bc0b6c8-f68d-4dd3-98a8-be746754f9e1',
-          },
-        });
-      }
-
-      // add workspace add give it to a user
-      await client.workspace.create({
-        data: {
-          id: '2bc0b6c8-f68d-4dd3-98a8-be746754f9e1',
-          public: false,
-          users: {
-            create: {
-              type: 99,
-              user: {
-                connect: {
-                  id: user.id,
-                },
-              },
-              accepted: true,
-            },
-          },
-        },
+        for (const sql of sqls) {
+          await client.$executeRawUnsafe(sql);
+        }
       });
-    });
+      await page.close();
+    }
     await page.reload();
     await page.waitForTimeout(1000);
+    await page.goto(`${coreUrl}/workspace/${workspaceId}/all`);
+    await page.getByTestId('upgrade-workspace').click();
+    await expect(page.getByText('Done, please refresh the page.')).toBeVisible({
+      timeout: 60000,
+    });
     await page.goto(
-      `${coreUrl}/workspace/2bc0b6c8-f68d-4dd3-98a8-be746754f9e1/all`
+      `${coreUrl}/workspace/${workspaceId}/gc5FeppNDv-hello-world`
     );
-    await page.waitForTimeout(1000);
-    const url = page.url();
-    expect(
-      url.endsWith(
-        '/migration?workspace_id=2bc0b6c8-f68d-4dd3-98a8-be746754f9e1'
-      ),
-      {
-        message: 'should be in migration page, but got ' + url,
-      }
-    ).toBeTruthy();
+    await waitForEditorLoad(page);
+    await clickEdgelessModeButton(page);
+    await expect(page.locator('affine-edgeless-page')).toBeVisible({
+      timeout: 1000,
+    });
   });
 
   test('can see and change email and password in setting panel', async ({

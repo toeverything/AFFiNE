@@ -44,6 +44,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ) {
+    console.log('1', workspaceId);
     this.metric.socketIOEventCounter(1, { event: 'client-handshake' });
     const endTimer = this.metric.socketIOEventTimer({
       event: 'client-handshake',
@@ -57,6 +58,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ) {
+    console.log('2');
     this.metric.socketIOEventCounter(1, { event: 'client-leave' });
     const endTimer = this.metric.socketIOEventTimer({
       event: 'client-leave',
@@ -75,6 +77,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
     @ConnectedSocket() client: Socket
   ) {
+    console.log('3');
     this.metric.socketIOEventCounter(1, { event: 'client-update' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
     const update = Buffer.from(message.update, 'base64');
@@ -95,6 +98,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       targetClientId?: number;
     }
   ): Promise<{ missing: string; state?: string } | false> {
+    console.log('4');
     this.metric.socketIOEventCounter(1, { event: 'doc-load' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
     const guid = trimGuid(message.workspaceId, message.guid);
@@ -127,6 +131,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ) {
+    console.log('5');
     this.metric.socketIOEventCounter(1, { event: 'awareness-init' });
     const endTimer = this.metric.socketIOEventTimer({
       event: 'init-awareness',
@@ -140,6 +145,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() message: { workspaceId: string; awarenessUpdate: string },
     @ConnectedSocket() client: Socket
   ) {
+    console.log('6');
     this.metric.socketIOEventCounter(1, { event: 'awareness-update' });
     const endTimer = this.metric.socketIOEventTimer({
       event: 'awareness-update',
