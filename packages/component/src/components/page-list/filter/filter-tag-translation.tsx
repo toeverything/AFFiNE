@@ -4,7 +4,7 @@ type FilterTagProps = {
   name: string;
 };
 
-export const FilterTag = ({ name }: FilterTagProps) => {
+const useFilterTag = ({ name }: FilterTagProps) => {
   const t = useAFFiNEI18N();
   switch (name) {
     case 'Created':
@@ -40,4 +40,10 @@ export const FilterTag = ({ name }: FilterTagProps) => {
     default:
       return name;
   }
+};
+
+export const FilterTag = ({ name }: FilterTagProps) => {
+  const tag = useFilterTag({ name });
+
+  return <span data-testid={`filler-tag-${tag}`}>{tag}</span>;
 };

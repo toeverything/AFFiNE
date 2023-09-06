@@ -1,5 +1,4 @@
-import { Menu } from '@affine/component';
-import { MenuItem } from '@affine/component/app-sidebar';
+import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
@@ -11,6 +10,13 @@ import {
 } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
+import { IconButton } from '@toeverything/components/button';
+import {
+  Menu,
+  MenuIcon,
+  MenuItem,
+  type MenuItemProps,
+} from '@toeverything/components/menu';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai/index';
 import type { ReactElement } from 'react';
@@ -46,7 +52,7 @@ export const PageOperations = ({
           icon: ReactElement;
           name: string;
           click: () => void;
-          className?: string;
+          type?: MenuItemProps['type'];
           element?: undefined;
         }
       | {
@@ -58,7 +64,11 @@ export const PageOperations = ({
       ...(inAllowList
         ? [
             {
-              icon: <FilterMinusIcon />,
+              icon: (
+                <MenuIcon>
+                  <FilterMinusIcon />
+                </MenuIcon>
+              ),
               name: t['Remove special filter'](),
               click: () => removeFromAllowList(page.id),
             },
@@ -67,7 +77,11 @@ export const PageOperations = ({
       ...(!inExcludeList
         ? [
             {
-              icon: <FilterUndoIcon />,
+              icon: (
+                <MenuIcon>
+                  <FilterUndoIcon />
+                </MenuIcon>
+              ),
               name: t['Exclude from filter'](),
               click: () => addToExcludeList(page.id),
             },
@@ -77,12 +91,16 @@ export const PageOperations = ({
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
       {
-        icon: <DeleteIcon />,
+        icon: (
+          <MenuIcon>
+            <DeleteIcon />
+          </MenuIcon>
+        ),
         name: t['Delete'](),
         click: () => {
           removeToTrash(page.id);
         },
-        className: styles.deleteFolder,
+        type: 'danger',
       },
     ],
     [
@@ -105,8 +123,8 @@ export const PageOperations = ({
           <MenuItem
             data-testid="collection-page-option"
             key={action.name}
-            className={action.className}
-            icon={action.icon}
+            type={action.type}
+            preFix={action.icon}
             onClick={action.click}
           >
             {action.name}
@@ -133,6 +151,7 @@ export const Page = ({
   workspace: Workspace;
   allPageMeta: Record<string, PageMeta>;
 }) => {
+  const ref = React.useRef(null);
   const [collapsed, setCollapsed] = React.useState(true);
   const params = useParams();
   const { jumpToPage } = useNavigateHelper();
@@ -148,7 +167,7 @@ export const Page = ({
   const referencesToRender = references.filter(id => !allPageMeta[id]?.trash);
   return (
     <Collapsible.Root open={!collapsed}>
-      <MenuItem
+      <CollectionItem
         data-testid="collection-page"
         data-type="collection-list-item"
         icon={icon}
@@ -157,31 +176,35 @@ export const Page = ({
         active={active}
         collapsed={referencesToRender.length > 0 ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
+        ref={ref}
         postfix={
           <Menu
-            trigger="click"
-            placement="bottom-start"
-            content={
-              <div style={{ width: 220 }}>
-                <PageOperations
-                  inAllowList={inAllowList}
-                  removeFromAllowList={removeFromAllowList}
-                  inExcludeList={inExcludeList}
-                  addToExcludeList={addToExcludeList}
-                  page={page}
-                  workspace={workspace}
-                />
-              </div>
+            items={
+              <PageOperations
+                inAllowList={inAllowList}
+                removeFromAllowList={removeFromAllowList}
+                inExcludeList={inExcludeList}
+                addToExcludeList={addToExcludeList}
+                page={page}
+                workspace={workspace}
+              />
             }
+            portalOptions={{
+              container: ref.current,
+            }}
           >
-            <div data-testid="collection-page-options" className={styles.more}>
-              <MoreHorizontalIcon></MoreHorizontalIcon>
-            </div>
+            <IconButton
+              data-testid="collection-page-options"
+              type="plain"
+              withoutHoverStyle
+            >
+              <MoreHorizontalIcon />
+            </IconButton>
           </Menu>
         }
       >
         {page.title || t['Untitled']()}
-      </MenuItem>
+      </CollectionItem>
       <Collapsible.Content className={styles.collapsibleContent}>
         {referencesToRender.map(id => {
           return (

@@ -38,7 +38,7 @@ test('Export to html, markdown and png', async ({ page }) => {
   await waitForEditorLoad(page);
   {
     await clickPageMoreActions(page);
-    await page.getByTestId('export-menu').click();
+    await page.getByTestId('export-menu').hover();
     const downloadPromise = page.waitForEvent('download');
     await page.getByTestId('export-to-markdown').click();
     await downloadPromise;

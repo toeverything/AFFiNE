@@ -1,6 +1,6 @@
-import { Menu, MenuItem, MenuTrigger } from '@affine/component';
+import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import dayjs from 'dayjs';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 import {
   dateFormatOptions,
@@ -23,10 +23,8 @@ const DateFormatMenuContent = ({
         return (
           <MenuItem
             key={option}
-            active={currentOption === option}
-            onClick={() => {
-              onSelect(option);
-            }}
+            selected={currentOption === option}
+            onSelect={() => onSelect(option)}
           >
             {dayjs(new Date()).format(option)}
           </MenuItem>
@@ -37,6 +35,7 @@ const DateFormatMenuContent = ({
 };
 
 export const DateFormatSetting = () => {
+  const ref = useRef(null);
   const [appearanceSettings, setAppSettings] = useAppSetting();
   const handleSelect = useCallback(
     (option: DateFormats) => {
@@ -47,17 +46,15 @@ export const DateFormatSetting = () => {
 
   return (
     <Menu
-      content={
+      items={
         <DateFormatMenuContent
           onSelect={handleSelect}
           currentOption={appearanceSettings.dateFormat}
         />
       }
-      placement="bottom-end"
-      trigger="click"
-      disablePortal={true}
+      portalOptions={{ container: ref.current }}
     >
-      <MenuTrigger data-testid="date-format-menu-trigger">
+      <MenuTrigger ref={ref} data-testid="date-format-menu-trigger" block>
         {dayjs(new Date()).format(appearanceSettings.dateFormat)}
       </MenuTrigger>
     </Menu>
