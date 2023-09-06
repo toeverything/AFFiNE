@@ -4,6 +4,7 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
@@ -19,6 +20,7 @@ import { getSession } from 'next-auth/react';
 import { type ReactElement, useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
+import type { Map as YMap } from 'yjs';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
@@ -38,7 +40,24 @@ const DetailPageImpl = (): ReactElement => {
   const setPageMode = useSetAtom(setPageModeAtom);
 
   const onLoad = useCallback(
-    (_: Page, editor: EditorContainer) => {
+    (page: Page, editor: EditorContainer) => {
+      try {
+        const surfaceBlock = page.getBlockByFlavour('affine:surface')[0];
+        // hotfix for old page
+        if (
+          surfaceBlock &&
+          (surfaceBlock.yBlock.get('prop:elements') as YMap<any>).get(
+            'type'
+          ) !== '$blocksuite:internal:native$'
+        ) {
+          globalBlockSuiteSchema.upgradePage(
+            {
+              'affine:surface': 3,
+            },
+            page.spaceDoc
+          );
+        }
+      } catch {}
       setPageMode(currentPageId, mode);
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
