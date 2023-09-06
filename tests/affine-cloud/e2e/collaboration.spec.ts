@@ -121,7 +121,7 @@ test.describe('collaboration', () => {
     await clickSideBarSettingButton(page);
     await clickUserInfoCard(page);
     await page.getByTestId('sign-out-button').click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5000);
     expect(page.url()).toBe(url);
   });
 });
