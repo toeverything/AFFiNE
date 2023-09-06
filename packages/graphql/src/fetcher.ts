@@ -181,13 +181,14 @@ export const gqlFetcherFactory = (endpoint: string) => {
     if (!isFormData) {
       headers['content-type'] = 'application/json';
     }
-    const ret = fetchWithReport(
+    const ret = fetchWithTraceReport(
       endpoint,
       merge(options.context, {
         method: 'POST',
         headers,
         body: isFormData ? body : JSON.stringify(body),
-      })
+      }),
+      { event: 'GraphQLRequest' }
     ).then(async res => {
       if (res.headers.get('content-type')?.startsWith('application/json')) {
         const result = (await res.json()) as ExecutionResult;
@@ -214,9 +215,10 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-export const fetchWithReport = (
+export const fetchWithTraceReport = (
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: RequestInit,
+  traceOptions?: { event: string }
 ): Promise<Response> => {
   const startTime = new Date().toISOString();
   const spanId = generateRandUTF16Chars(SPAN_ID_BYTES);
@@ -225,6 +227,7 @@ export const fetchWithReport = (
   init = init || {};
   init.headers = init.headers || new Headers();
   const requestId = nanoid();
+  const event = traceOptions?.event;
   if (init.headers instanceof Headers) {
     init.headers.append('x-request-id', requestId);
     init.headers.append('traceparent', traceparent);
@@ -241,12 +244,18 @@ export const fetchWithReport = (
   return fetch(input, init)
     .then(response => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      traceReporter!.cacheTrace(traceId, spanId, requestId, startTime);
+      traceReporter!.cacheTrace(traceId, spanId, startTime, {
+        requestId,
+        ...(event ? { event } : {}),
+      });
       return response;
     })
     .catch(err => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      traceReporter!.uploadTrace(traceId, spanId, requestId, startTime);
+      traceReporter!.uploadTrace(traceId, spanId, startTime, {
+        requestId,
+        ...(event ? { event } : {}),
+      });
       return Promise.reject(err);
     });
 };
