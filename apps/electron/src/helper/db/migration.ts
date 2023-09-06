@@ -3,10 +3,10 @@ import { resolve } from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Schema, Workspace } from '@blocksuite/store';
+import { Schema } from '@blocksuite/store';
 import {
+  forceUpgradePages,
   migrateToSubdoc,
-  migrateWorkspace,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
@@ -76,24 +76,11 @@ export const migrateToLatest = async (
     );
   };
   await downloadBinary(rootDoc, true);
-  const result = await migrateWorkspace(version, {
+  const result = await forceUpgradePages({
     getSchema: () => schema,
     getCurrentRootDoc: () => Promise.resolve(rootDoc),
-    createWorkspace: () =>
-      Promise.resolve(
-        new Workspace({
-          id: nanoid(10),
-          schema,
-          blobStorages: [],
-          providerCreators: [],
-        })
-      ),
   });
-  equal(
-    typeof result,
-    'boolean',
-    'migrateWorkspace should return boolean value'
-  );
+  equal(result, true, 'migrateWorkspace should return boolean value');
   const uploadBinary = async (doc: YDoc, isRoot: boolean) => {
     await connection.replaceUpdates(doc.guid, [
       { docId: isRoot ? undefined : doc.guid, data: encodeStateAsUpdate(doc) },
