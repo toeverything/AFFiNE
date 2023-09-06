@@ -1,12 +1,10 @@
-import { editorContainerModuleAtom } from '@affine/jotai';
 import type { BlockHub } from '@blocksuite/blocks';
-import type { EditorContainer } from '@blocksuite/editor';
+import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { LitBlockSpec } from '@blocksuite/lit';
 import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
 import { use } from 'foxact/use';
-import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
@@ -45,14 +43,11 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
-  const JotaiEditorContainer = useAtomValue(
-    editorContainerModuleAtom
-  ) as typeof EditorContainer;
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new JotaiEditorContainer();
+    editorRef.current = new EditorContainer();
     editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
 

@@ -17,6 +17,8 @@ const logger = new DebugLogger('index-page');
 
 export const loader: LoaderFunction = async () => {
   const rootStore = getCurrentStore();
+  const { createFirstAppData } = await import('../bootstrap/setup');
+  createFirstAppData(rootStore);
   const meta = await rootStore.get(rootWorkspacesMetadataAtom);
   const lastId = localStorage.getItem('last_workspace_id');
   const lastPageId = localStorage.getItem('last_page_id');
@@ -52,9 +54,5 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const Component = () => {
-  return (
-    <>
-      <AllWorkspaceModals />
-    </>
-  );
+  return <AllWorkspaceModals />;
 };

@@ -181,6 +181,9 @@
     },
     {
       "path": "./tests/affine-legacy/0.8.0-canary.7"
+    },
+    {
+      "path": "./tests/affine-legacy/0.8.3"
     }
   ],
   "files": [],

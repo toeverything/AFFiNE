@@ -14,7 +14,10 @@
       "sys:id": "_07_dOaECY",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "0n7YghSHPc": {
       "sys:id": "0n7YghSHPc",

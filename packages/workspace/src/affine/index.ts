@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type { DatasourceDocAdapter } from '@affine/y-provider';
 import type { Socket } from 'socket.io-client';
 import { Manager } from 'socket.io-client';
@@ -15,6 +16,7 @@ import {
 } from './utils';
 
 let ioManager: Manager | null = null;
+
 // use lazy initialization to avoid global side effect
 function getIoManager(): Manager {
   if (ioManager) {
@@ -27,6 +29,8 @@ function getIoManager(): Manager {
   return ioManager;
 }
 
+const logger = new DebugLogger('affine:sync');
+
 export const createAffineDataSource = (
   id: string,
   rootDoc: Doc,
@@ -36,6 +40,7 @@ export const createAffineDataSource = (
     console.warn('important!! please use doc.guid as roomName');
   }
 
+  logger.debug('createAffineDataSource', id, rootDoc.guid, awareness);
   const socket = getIoManager().socket('/');
 
   return {
@@ -48,6 +53,11 @@ export const createAffineDataSource = (
         : undefined;
 
       return new Promise((resolve, reject) => {
+        logger.debug('doc-load', {
+          workspaceId: rootDoc.guid,
+          guid,
+          stateVector,
+        });
         socket.emit(
           'doc-load',
           {
@@ -56,6 +66,12 @@ export const createAffineDataSource = (
             stateVector,
           },
           (docState: Error | { missing: string; state: string } | null) => {
+            logger.debug('doc-load callback', {
+              workspaceId: rootDoc.guid,
+              guid,
+              stateVector,
+              docState,
+            });
             if (docState instanceof Error) {
               reject(docState);
               return;
@@ -76,6 +92,11 @@ export const createAffineDataSource = (
       });
     },
     sendDocUpdate: async (guid: string, update: Uint8Array) => {
+      logger.debug('client-update', {
+        workspaceId: rootDoc.guid,
+        guid,
+        update,
+      });
       socket.emit('client-update', {
         workspaceId: rootDoc.guid,
         guid,

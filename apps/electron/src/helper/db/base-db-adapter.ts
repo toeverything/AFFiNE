@@ -3,8 +3,9 @@ import {
   SqliteConnection,
   ValidationResult,
 } from '@affine/native';
+import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 
-import { migrateToLatestDatabase } from '../db/migration';
+import { migrateToLatest } from '../db/migration';
 import { logger } from '../logger';
 
 /**
@@ -20,10 +21,14 @@ export abstract class BaseSQLiteAdapter {
     if (!this.db) {
       const validation = await SqliteConnection.validate(this.path);
       if (validation === ValidationResult.MissingVersionColumn) {
-        await migrateToLatestDatabase(this.path);
+        await migrateToLatest(this.path, WorkspaceVersion.SubDoc);
       }
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
+      const maxVersion = await this.db.getMaxVersion();
+      if (maxVersion !== WorkspaceVersion.Surface) {
+        await migrateToLatest(this.path, WorkspaceVersion.Surface);
+      }
       logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
     }
     return this.db;
