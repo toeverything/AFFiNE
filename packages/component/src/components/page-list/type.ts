@@ -21,6 +21,8 @@ export type ListData = {
   createDate: Date;
   updatedDate: Date;
   isPublicPage: boolean;
+  selected: boolean;
+  onSelected: () => void;
   onClickPage: () => void;
   onOpenPageInNewTab: () => void;
   bookmarkPage: () => void;
@@ -48,6 +50,8 @@ export type PageListProps = {
   workspaceId: string;
   list: ListData[];
   fallback?: React.ReactNode;
+  getSelectAll: () => boolean;
+  onSelectedAll: () => void;
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;

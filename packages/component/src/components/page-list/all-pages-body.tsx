@@ -8,6 +8,7 @@ import { TableBody, TableCell } from '../../ui/table';
 import { FavoriteTag } from './components/favorite-tag';
 import { Tags } from './components/tags';
 import { TitleCell } from './components/title-cell';
+import * as style from './index.css';
 import { OperationCell } from './operation-cell';
 import { StyledTableBodyRow } from './styles';
 import type { DateKey, DraggableTitleCellData, ListData } from './type';
@@ -58,7 +59,9 @@ export const AllPagesBody = ({
             favorite,
             createDate,
             updatedDate,
+            selected,
             onClickPage,
+            onSelected,
             bookmarkPage,
             onOpenPageInNewTab,
             removeToTrash,
@@ -74,6 +77,16 @@ export const AllPagesBody = ({
                   dataWithGroup[index - 1].groupName !== groupName) && (
                   <GroupRow>{groupName}</GroupRow>
                 )}
+              <tr style={{ position: 'relative' }}>
+                <td>
+                  <input
+                    type="checkbox"
+                    onChange={onSelected}
+                    className={style.checkboxStyle}
+                    checked={selected}
+                  />
+                </td>
+              </tr>
               <StyledTableBodyRow data-testid={`page-list-item-${pageId}`}>
                 <DraggableTitleCell
                   pageId={pageId}

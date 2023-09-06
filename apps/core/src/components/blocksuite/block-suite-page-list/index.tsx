@@ -10,6 +10,7 @@ import { type PageMeta, type Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
+import { usePageSelection } from '@toeverything/hooks/use-page-list-select';
 import { useAtom, useAtomValue } from 'jotai';
 import { Suspense, useCallback, useMemo } from 'react';
 
@@ -139,10 +140,19 @@ export const BlockSuitePageList = ({
     cancelPublicPage,
   } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const [filterMode] = useAtom(allPageModeSelectAtom);
+  const {
+    getSelect,
+    setSelect,
+    getSelectAll,
+    onSelectedAll,
+    getSelectedPageIds,
+  } = usePageSelection(blockSuiteWorkspace);
   const { createPage, createEdgeless, importFile, isPreferredEdgeless } =
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const getPageInfo = useGetPageInfoById(blockSuiteWorkspace);
+  console.log('selected id:', getSelectedPageIds());
+
   const tagOptionMap = useMemo(
     () =>
       Object.fromEntries(
@@ -233,9 +243,11 @@ export const BlockSuitePageList = ({
         page?.meta.tags?.map(id => tagOptionMap[id]).filter(v => v != null) ??
         [],
       favorite: !!pageMeta.favorite,
+      selected: getSelect(pageMeta.id),
       isPublicPage: !!pageMeta.isPublic,
       createDate: new Date(pageMeta.createDate),
       updatedDate: new Date(pageMeta.updatedDate ?? pageMeta.createDate),
+      onSelected: () => setSelect(pageMeta.id, !getSelect(pageMeta.id)),
       onClickPage: () => onOpenPage(pageMeta.id),
       onOpenPageInNewTab: () => onOpenPage(pageMeta.id, true),
       onClickRestore: () => {
@@ -274,6 +286,8 @@ export const BlockSuitePageList = ({
       onCreateNewEdgeless={createEdgeless}
       onImportFile={importFile}
       isPublicWorkspace={isPublic}
+      getSelectAll={getSelectAll}
+      onSelectedAll={onSelectedAll}
       list={pageList}
       fallback={<PageListEmpty createPage={createPage} listType={listType} />}
     />

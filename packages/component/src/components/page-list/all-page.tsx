@@ -21,6 +21,7 @@ import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scrol
 import { AllPagesBody } from './all-pages-body';
 import { NewPageButton } from './components/new-page-buttton';
 import { TitleCell } from './components/title-cell';
+import * as style from './index.css';
 import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer } from './styles';
@@ -37,6 +38,7 @@ interface AllPagesHeadProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   workspaceId: string;
+  onSelectAll?: () => void;
 }
 
 const AllPagesHead = ({
@@ -93,7 +95,7 @@ const AllPagesHead = ({
           width: '140px',
         } satisfies CSSProperties,
         styles: {
-          justifyContent: 'flex-end',
+          justifyContent: 'center',
         } satisfies CSSProperties,
       },
     ],
@@ -163,6 +165,8 @@ export const PageList = ({
   onCreateNewPage,
   onCreateNewEdgeless,
   onImportFile,
+  getSelectAll,
+  onSelectedAll,
   fallback,
   getPageInfo,
   propertiesMeta,
@@ -174,6 +178,7 @@ export const PageList = ({
   });
   const [hasScrollTop, ref] = useHasScrollTop();
   const isSmallDevices = useIsSmallDevices();
+  const check = getSelectAll();
   if (isSmallDevices) {
     return (
       <ScrollableContainer inTableView>
@@ -201,6 +206,14 @@ export const PageList = ({
   ) : (
     <ScrollableContainer inTableView>
       <StyledTableContainer ref={ref}>
+        <div style={{ position: 'relative' }}>
+          <input
+            type="checkbox"
+            onChange={onSelectedAll}
+            className={style.checkboxStyle}
+            checked={check}
+          />
+        </div>
         <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
           <AllPagesHead
             workspaceId={workspaceId}
