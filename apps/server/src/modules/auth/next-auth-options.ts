@@ -4,6 +4,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { BadRequestException, FactoryProvider, Logger } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
+import { assign, omit } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -123,8 +124,24 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       session: {
         strategy: config.node.prod ? 'database' : 'jwt',
       },
-      // @ts-expect-error Third part library type mismatch
-      logger: console,
+      logger: {
+        debug(code, metadata) {
+          logger.debug(`${code}: ${JSON.stringify(metadata)}`);
+        },
+        error(code, metadata) {
+          if (metadata instanceof Error) {
+            // @ts-expect-error assign code to error
+            metadata.code = code;
+            logger.error(metadata);
+          } else if (metadata.error instanceof Error) {
+            assign(metadata.error, omit(metadata, 'error'), { code });
+            logger.error(metadata.error);
+          }
+        },
+        warn(code) {
+          logger.warn(code);
+        },
+      },
     };
 
     nextAuthOptions.providers.push(

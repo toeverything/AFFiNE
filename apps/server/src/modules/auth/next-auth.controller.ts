@@ -131,12 +131,13 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
+      this.logger.log('Early access redirect headers ', req.headers);
+      this.metrics.authFailCounter(1, {
+        reason: 'no_early_access_permission',
+      });
       if (!req.headers?.referer) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
-        this.metrics.authFailCounter(1, {
-          reason: 'no_early_access_permission',
-        });
         res.status(403);
         res.json({
           url: 'https://community.affine.pro/c/insider-general/',
