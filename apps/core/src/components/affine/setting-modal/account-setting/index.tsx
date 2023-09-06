@@ -189,6 +189,7 @@ export const AccountSetting: FC = () => {
         name={t[`Sign out`]()}
         desc={t['com.affine.setting.sign.out.message']()}
         style={{ cursor: 'pointer' }}
+        data-testid="sign-out-button"
         onClick={useCallback(() => {
           signOutCloud()
             .then(() => {
