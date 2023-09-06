@@ -15,49 +15,45 @@ export interface InviteModalProps {
   isMutating: boolean;
 }
 
-const PermissionMenu = ({
-  currentPermission,
-  onChange,
-}: {
-  currentPermission: Permission;
-  onChange: (permission: Permission) => void;
-}) => {
-  console.log('currentPermission', currentPermission);
-  console.log('onChange', onChange);
-
-  return null;
-  // return (
-  //   <Menu
-  //     trigger="click"
-  //     content={
-  //       <>
-  //         {Object.entries(Permission).map(([permission]) => {
-  //           return (
-  //             <MenuItem
-  //               key={permission}
-  //               onClick={() => {
-  //                 onChange(permission as Permission);
-  //               }}
-  //             >
-  //               {permission}
-  //             </MenuItem>
-  //           );
-  //         })}
-  //       </>
-  //     }
-  //   >
-  //     <MenuTrigger
-  //       type="plain"
-  //       style={{
-  //         marginRight: -10,
-  //         height: '100%',
-  //       }}
-  //     >
-  //       {currentPermission}
-  //     </MenuTrigger>
-  //   </Menu>
-  // );
-};
+// const PermissionMenu = ({
+//   currentPermission,
+//   onChange,
+// }: {
+//   currentPermission: Permission;
+//   onChange: (permission: Permission) => void;
+// }) => {
+//   return (
+//     <Menu
+//       trigger="click"
+//       content={
+//         <>
+//           {Object.entries(Permission).map(([permission]) => {
+//             return (
+//               <MenuItem
+//                 key={permission}
+//                 onClick={() => {
+//                   onChange(permission as Permission);
+//                 }}
+//               >
+//                 {permission}
+//               </MenuItem>
+//             );
+//           })}
+//         </>
+//       }
+//     >
+//       <MenuTrigger
+//         type="plain"
+//         style={{
+//           marginRight: -10,
+//           height: '100%',
+//         }}
+//       >
+//         {currentPermission}
+//       </MenuTrigger>
+//     </Menu>
+//   );
+// };
 
 export const InviteModal = ({
   open,
@@ -67,7 +63,7 @@ export const InviteModal = ({
 }: InviteModalProps) => {
   const t = useAFFiNEI18N();
   const [inviteEmail, setInviteEmail] = useState('');
-  const [permission, setPermission] = useState(Permission.Write);
+  const [permission] = useState(Permission.Write);
   const [isValidEmail, setIsValidEmail] = useState(true);
 
   const handleCancel = useCallback(() => {
@@ -125,12 +121,12 @@ export const InviteModal = ({
             onEnter={handleConfirm}
             style={{ marginTop: 20 }}
             size="large"
-            endFix={
-              <PermissionMenu
-                currentPermission={permission}
-                onChange={setPermission}
-              />
-            }
+            // endFix={
+            //   <PermissionMenu
+            //     currentPermission={permission}
+            //     onChange={setPermission}
+            //   />
+            // }
           />
         </div>
         <div className={styles.inviteModalButtonContainer}>

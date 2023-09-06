@@ -191,6 +191,7 @@ __metadata:
     react-dom: 18.2.0
     react-error-boundary: ^4.0.11
     react-is: ^18.2.0
+    react-paginate: ^8.2.0
     rxjs: ^7.8.1
     typescript: ^5.2.2
     vite: ^4.4.9
@@ -29056,7 +29057,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.6.2, prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
+"prop-types@npm:^15, prop-types@npm:^15.6.2, prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -29606,6 +29607,17 @@ __metadata:
     react: ^15.5.x || ^16.x || ^17.x || ^18.x
     react-dom: ^15.5.x || ^16.x || ^17.x || ^18.x
   checksum: a7cfe62e91f7f92891cda7b885d6eec7b2854850f8703ccafcea5c04bb93a210a566a70b51b9fae0cc30c3485e04eb6a3f3ae58f495cac3ec2747b4fc44d1ad2
+  languageName: node
+  linkType: hard
+
+"react-paginate@npm:^8.2.0":
+  version: 8.2.0
+  resolution: "react-paginate@npm:8.2.0"
+  dependencies:
+    prop-types: ^15
+  peerDependencies:
+    react: ^16 || ^17 || ^18
+  checksum: a0969b4ef27be466ef3e052e2c7c61fca60af24e0d10c76770ebd9953ad6131206a276dfc335e61cf35aa494ff3aacc2610682e3192d7f2ee9541928edb46721
   languageName: node
   linkType: hard
 

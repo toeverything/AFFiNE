@@ -171,7 +171,6 @@ export class WorkspaceResolver {
     return this.prisma.userWorkspacePermission.count({
       where: {
         workspaceId: workspace.id,
-        accepted: true,
       },
     });
   }
@@ -212,15 +211,25 @@ export class WorkspaceResolver {
     description: 'Members of workspace',
     complexity: 2,
   })
-  async members(@Parent() workspace: WorkspaceType) {
+  async members(
+    @Parent() workspace: WorkspaceType,
+    @Args('skip', { type: () => Int, nullable: true }) skip?: number,
+    @Args('take', { type: () => Int, nullable: true }) take?: number
+  ) {
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         workspaceId: workspace.id,
+      },
+      skip,
+      take: take || 8,
+      orderBy: {
+        type: 'desc',
       },
       include: {
         user: true,
       },
     });
+
     return data
       .filter(({ user }) => !!user)
       .map(({ id, accepted, type, user }) => ({
