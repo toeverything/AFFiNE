@@ -25,7 +25,8 @@ export abstract class BaseSQLiteAdapter {
       }
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
-      if ((await this.db.getMaxVersion()) !== WorkspaceVersion.Surface) {
+      const maxVersion = await this.db.getMaxVersion();
+      if (maxVersion !== WorkspaceVersion.Surface) {
         await migrateToLatest(this.path, WorkspaceVersion.Surface);
       }
       logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);

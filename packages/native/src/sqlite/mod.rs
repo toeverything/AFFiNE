@@ -267,7 +267,8 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn get_max_version(&self) -> napi::Result<i32> {
-    let version = sqlx::query!("SELECT COALESCE(MAX(version), 0) AS max_version FROM version_info")
+    // 4 is the current version
+    let version = sqlx::query!("SELECT COALESCE(MAX(version), 4) AS max_version FROM version_info")
       .fetch_one(&self.pool)
       .await
       .map_err(anyhow::Error::from)?
