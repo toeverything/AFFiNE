@@ -83,6 +83,27 @@ export const MigrationFallback = function MigrationFallback() {
         }
       }
     };
+    const uploadRecursively = async (doc: YDoc) => {
+      {
+        await localProvider.datasource.sendDocUpdate(
+          doc.guid,
+          encodeStateAsUpdate(doc)
+        );
+        console.log('upload indexeddb', doc.guid);
+        if (remoteProvider) {
+          await remoteProvider.datasource.sendDocUpdate(
+            doc.guid,
+            encodeStateAsUpdate(doc)
+          );
+          console.log('upload remote', doc.guid);
+        }
+      }
+      await Promise.all(
+        [...doc.subdocs].map(async subdoc => {
+          await uploadRecursively(subdoc);
+        })
+      );
+    };
 
     await downloadRecursively(workspace.blockSuiteWorkspace.doc);
     console.log('download done');
@@ -92,6 +113,7 @@ export const MigrationFallback = function MigrationFallback() {
       getCurrentRootDoc: async () => workspace.blockSuiteWorkspace.doc,
       getSchema: () => workspace.blockSuiteWorkspace.schema,
     });
+    await uploadRecursively(workspace.blockSuiteWorkspace.doc);
     console.log('migration done');
     setDone(true);
   }, [
