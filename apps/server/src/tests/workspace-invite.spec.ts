@@ -179,3 +179,33 @@ test('should send invite email', async t => {
   }
   t.pass();
 });
+
+test('should support pagination for member', async t => {
+  const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+  const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
+  const u3 = await signUp(app, 'u3', 'u3@affine.pro', '1');
+
+  const workspace = await createWorkspace(app, u1.token.token);
+  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
+  await inviteUser(app, u1.token.token, workspace.id, u3.email, 'Admin');
+
+  await acceptInvite(app, u2.token.token, workspace.id);
+  await acceptInvite(app, u3.token.token, workspace.id);
+
+  const firstPageWorkspace = await getWorkspace(
+    app,
+    u1.token.token,
+    workspace.id,
+    0,
+    2
+  );
+  t.is(firstPageWorkspace.members.length, 2, 'failed to check invite id');
+  const secondPageWorkspace = await getWorkspace(
+    app,
+    u1.token.token,
+    workspace.id,
+    2,
+    2
+  );
+  t.is(secondPageWorkspace.members.length, 1, 'failed to check invite id');
+});
