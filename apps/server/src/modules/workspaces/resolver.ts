@@ -37,6 +37,7 @@ import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
+import { UsersService } from '../users';
 import { UserType } from '../users/resolver';
 import { PermissionService } from './permission';
 import { Permission } from './types';
@@ -140,7 +141,8 @@ export class WorkspaceResolver {
     private readonly config: Config,
     private readonly mailer: MailService,
     private readonly prisma: PrismaService,
-    private readonly permissionProvider: PermissionService,
+    private readonly permissions: PermissionService,
+    private readonly users: UsersService,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
@@ -157,7 +159,7 @@ export class WorkspaceResolver {
       return workspace.permission;
     }
 
-    const permission = await this.permissionProvider.get(workspace.id, user.id);
+    const permission = await this.permissions.get(workspace.id, user.id);
 
     if (!permission) {
       throw new ForbiddenException();
@@ -299,7 +301,7 @@ export class WorkspaceResolver {
     description: 'Get workspace by id',
   })
   async workspace(@CurrentUser() user: UserType, @Args('id') id: string) {
-    await this.permissionProvider.check(id, user.id);
+    await this.permissions.check(id, user.id);
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
     if (!workspace) {
@@ -368,7 +370,7 @@ export class WorkspaceResolver {
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
-    await this.permissionProvider.check(id, user.id, Permission.Admin);
+    await this.permissions.check(id, user.id, Permission.Admin);
 
     return this.prisma.workspace.update({
       where: {
@@ -380,7 +382,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async deleteWorkspace(@CurrentUser() user: UserType, @Args('id') id: string) {
-    await this.permissionProvider.check(id, user.id, Permission.Owner);
+    await this.permissions.check(id, user.id, Permission.Owner);
 
     await this.prisma.workspace.delete({
       where: {
@@ -412,17 +414,13 @@ export class WorkspaceResolver {
     @Args('permission', { type: () => Permission }) permission: Permission,
     @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
   ) {
-    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+    await this.permissions.check(workspaceId, user.id, Permission.Admin);
 
     if (permission === Permission.Owner) {
       throw new ForbiddenException('Cannot change owner');
     }
 
-    const target = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+    const target = await this.users.findUserByEmail(email);
 
     if (target) {
       const originRecord = await this.prisma.userWorkspacePermission.findFirst({
@@ -436,7 +434,7 @@ export class WorkspaceResolver {
         return originRecord.id;
       }
 
-      const inviteId = await this.permissionProvider.grant(
+      const inviteId = await this.permissions.grant(
         workspaceId,
         target.id,
         permission
@@ -459,7 +457,7 @@ export class WorkspaceResolver {
       return inviteId;
     } else {
       const user = await this.auth.createAnonymousUser(email);
-      const inviteId = await this.permissionProvider.grant(
+      const inviteId = await this.permissions.grant(
         workspaceId,
         user.id,
         permission
@@ -556,9 +554,9 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+    await this.permissions.check(workspaceId, user.id, Permission.Admin);
 
-    return this.permissionProvider.revoke(workspaceId, userId);
+    return this.permissions.revoke(workspaceId, userId);
   }
 
   @Mutation(() => Boolean)
@@ -587,7 +585,7 @@ export class WorkspaceResolver {
       });
     }
 
-    return this.permissionProvider.acceptById(workspaceId, inviteId);
+    return this.permissions.acceptById(workspaceId, inviteId);
   }
 
   @Mutation(() => Boolean)
@@ -595,7 +593,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
-    return this.permissionProvider.accept(workspaceId, user.id);
+    return this.permissions.accept(workspaceId, user.id);
   }
 
   @Mutation(() => Boolean)
@@ -605,17 +603,9 @@ export class WorkspaceResolver {
     @Args('workspaceName') workspaceName: string,
     @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
-    await this.permissionProvider.check(workspaceId, user.id);
+    await this.permissions.check(workspaceId, user.id);
 
-    const owner = await this.prisma.userWorkspacePermission.findFirstOrThrow({
-      where: {
-        workspaceId,
-        type: Permission.Owner,
-      },
-      include: {
-        user: true,
-      },
-    });
+    const owner = await this.permissions.getWorkspaceOwner(workspaceId);
 
     if (!owner.user) {
       throw new ForbiddenException(
@@ -630,7 +620,7 @@ export class WorkspaceResolver {
       });
     }
 
-    return this.permissionProvider.revoke(workspaceId, user.id);
+    return this.permissions.revoke(workspaceId, user.id);
   }
 
   @Mutation(() => Boolean)
@@ -639,9 +629,9 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+    await this.permissions.check(workspaceId, user.id, Permission.Admin);
 
-    return this.permissionProvider.grantPage(workspaceId, pageId);
+    return this.permissions.grantPage(workspaceId, pageId);
   }
 
   @Mutation(() => Boolean)
@@ -650,9 +640,9 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id, Permission.Admin);
+    await this.permissions.check(workspaceId, user.id, Permission.Admin);
 
-    return this.permissionProvider.revokePage(workspaceId, pageId);
+    return this.permissions.revokePage(workspaceId, pageId);
   }
 
   @Query(() => [String], {
@@ -662,7 +652,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id);
+    await this.permissions.check(workspaceId, user.id);
 
     return this.storage.listBlobs(workspaceId);
   }
@@ -672,7 +662,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id);
+    await this.permissions.check(workspaceId, user.id);
 
     return this.storage.blobsSize([workspaceId]).then(size => ({ size }));
   }
@@ -706,7 +696,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('size', { type: () => Float }) size: number
   ) {
-    const canWrite = await this.permissionProvider.tryCheck(
+    const canWrite = await this.permissions.tryCheck(
       workspaceId,
       user.id,
       Permission.Write
@@ -739,7 +729,7 @@ export class WorkspaceResolver {
     @Args({ name: 'blob', type: () => GraphQLUpload })
     blob: FileUpload
   ) {
-    await this.permissionProvider.check(workspaceId, user.id, Permission.Write);
+    await this.permissions.check(workspaceId, user.id, Permission.Write);
     const quota = this.config.objectStorage.quota;
     const { size } = await this.collectAllBlobSizes(user);
 
@@ -791,7 +781,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('hash') hash: string
   ) {
-    await this.permissionProvider.check(workspaceId, user.id);
+    await this.permissions.check(workspaceId, user.id);
 
     return this.storage.deleteBlob(workspaceId, hash);
   }
