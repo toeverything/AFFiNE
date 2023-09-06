@@ -143,8 +143,8 @@ describe('Trace Reporter', () => {
     const traceSpan = TraceReporter.createTraceSpan(
       traceId,
       spanId,
-      requestId,
-      startTime
+      startTime,
+      { requestId }
     );
     expect(traceSpan.startTime).toBe(startTime);
     expect(
@@ -152,7 +152,7 @@ describe('Trace Reporter', () => {
         `projects/{GCP_PROJECT_ID}/traces/${traceId}/spans/${spanId}`
     ).toBe(true);
     expect(traceSpan.spanId).toBe(spanId);
-    expect(traceSpan.attributes.attributeMap.requestId.stringValue.value).toBe(
+    expect(traceSpan.attributes.attributeMap.requestId?.stringValue.value).toBe(
       requestId
     );
   });

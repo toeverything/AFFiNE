@@ -29,10 +29,7 @@ const createAndPinCollection = async (
   });
   await expect(cell).toBeVisible();
   await page.getByTestId('create-first-filter').click();
-  await page
-    .getByTestId('variable-select')
-    .locator('button', { hasText: 'Created' })
-    .click();
+  await page.getByTestId(`filler-tag-Created`).click();
   await page.getByTestId('save-as-collection').click();
   const title = page.getByTestId('input-collection-title');
   await title.isVisible();
@@ -156,7 +153,8 @@ test('create temporary filter by click tag', async ({ page }) => {
   await expect(cell).toBeVisible();
   expect(await page.getByTestId('title').count()).toBe(1);
   await page.getByTestId('filter-arg').click();
-  await page.getByRole('tooltip').getByText('TODO Tag').click();
+
+  await page.getByTestId('multi-select-TODO Tag').click();
   expect(await page.getByTestId('title').count()).toBeGreaterThanOrEqual(2);
 });
 

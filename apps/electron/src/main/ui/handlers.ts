@@ -26,7 +26,11 @@ export const uiHandlers = {
   handleMaximizeApp: async () => {
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(w => {
-      if (w.isMaximized()) {
+      // allow unmaximize when in full screen mode
+      if (w.isFullScreen()) {
+        w.setFullScreen(false);
+        w.unmaximize();
+      } else if (w.isMaximized()) {
         w.unmaximize();
       } else {
         w.maximize();

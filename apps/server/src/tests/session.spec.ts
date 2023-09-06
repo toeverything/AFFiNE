@@ -1,5 +1,4 @@
 /// <reference types="../global.d.ts" />
-import { equal } from 'node:assert';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -31,14 +30,12 @@ test.afterEach(async () => {
 
 test('should be able to set session', async t => {
   await session.set('test', 'value');
-  equal(await session.get('test'), 'value');
-  t.pass();
+  t.is(await session.get('test'), 'value');
 });
 
 test('should be expired by ttl', async t => {
   await session.set('test', 'value', 100);
-  equal(await session.get('test'), 'value');
+  t.is(await session.get('test'), 'value');
   await new Promise(resolve => setTimeout(resolve, 500));
-  equal(await session.get('test'), undefined);
-  t.pass();
+  t.is(await session.get('test'), undefined);
 });

@@ -12,7 +12,9 @@ export const SidebarSwitch = ({ show }: { show: boolean }) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
   const ref = useRef(null);
-  const tooltipContent = open ? t['Collapse sidebar']() : t['Expand sidebar']();
+  const tooltipContent = open
+    ? t['com.affine.sidebarSwitch.collapse']()
+    : t['com.affine.sidebarSwitch.expand']();
   const collapseKeyboardShortcuts =
     environment.isBrowser && environment.isMacOs ? ' ⌘+/' : ' Ctrl+/';
 

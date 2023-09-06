@@ -8,7 +8,7 @@ use sqlx::{
 };
 
 // latest version
-const LATEST_VERSION: i32 = 3;
+const LATEST_VERSION: i32 = 4;
 
 #[napi(object)]
 pub struct BlobRow {
@@ -263,6 +263,17 @@ impl SqliteConnection {
       .await
       .map_err(anyhow::Error::from)?;
     Ok(())
+  }
+
+  #[napi]
+  pub async fn get_max_version(&self) -> napi::Result<i32> {
+    // 4 is the current version
+    let version = sqlx::query!("SELECT COALESCE(MAX(version), 4) AS max_version FROM version_info")
+      .fetch_one(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?
+      .max_version;
+    Ok(version)
   }
 
   #[napi]

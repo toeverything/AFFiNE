@@ -8,7 +8,7 @@ packages/graphql/src/graphql/index.ts
 out
 dist
 .yarn
-tests/affine-legacy/0.7.0-canary.18/static
+tests/affine-legacy/**/static
 .github/helm
 _next
 storybook-static

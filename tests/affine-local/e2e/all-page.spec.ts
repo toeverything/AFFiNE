@@ -29,7 +29,7 @@ function getAllPage(page: Page) {
     .locator('table')
     .getByRole('button', { name: 'New Page' });
   const newPageDropdown = newPageButton.locator('svg');
-  const edgelessBlockCard = page.locator('table').getByText('New Edgeless');
+  const edgelessBlockCard = page.getByTestId('new-edgeless-button-in-all-page');
 
   async function clickNewPageButton() {
     return newPageButton.click();
@@ -106,11 +106,8 @@ test('allow creation of filters by created time', async ({ page }) => {
   await fillDatePicker(page, today);
   await checkPagesCount(page, 0);
   // change filter
-  await page.locator('[data-testid="filter-name"]').click();
-  await page
-    .locator('[data-testid="filter-name-select"]')
-    .locator('button', { hasText: 'before' })
-    .click();
+  await page.getByTestId('filter-name').click();
+  await page.getByTestId('filler-tag-before').click();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   await fillDatePicker(page, tomorrow);
@@ -142,10 +139,7 @@ test('creation of filters by created time, then click date picker to modify the 
   await checkPagesCount(page, 0);
   // change filter
   await page.locator('[data-testid="filter-name"]').click();
-  await page
-    .locator('[data-testid="filter-name-select"]')
-    .locator('button', { hasText: 'before' })
-    .click();
+  await page.getByTestId('filler-tag-before').click();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   await selectDateFromDatePicker(page, tomorrow);
@@ -196,11 +190,11 @@ test('allow creation of filters by tags', async ({ page }) => {
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
   await checkPagesCount(page, pagesWithTagsCount + 2);
-  await changeFilter(page, /^contains all/);
+  await changeFilter(page, 'contains all');
   await checkPagesCount(page, pageCount + 2);
   await selectTag(page, 'A');
   await checkPagesCount(page, 1);
-  await changeFilter(page, /^does not contains all/);
+  await changeFilter(page, 'does not contains all');
   await selectTag(page, 'B');
   await checkPagesCount(page, pageCount + 1);
 });

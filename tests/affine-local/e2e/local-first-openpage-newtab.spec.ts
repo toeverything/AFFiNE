@@ -25,7 +25,7 @@ test('click btn bew page and open in tab', async ({ page, workspace }) => {
     .click();
   const [newTabPage] = await Promise.all([
     page.waitForEvent('popup'),
-    page.getByRole('button', { name: 'Open in new tab' }).click(),
+    page.getByRole('menuitem', { name: 'Open in new tab' }).click(),
   ]);
 
   expect(newTabPage.url()).toBe(newPageUrl);

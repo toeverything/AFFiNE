@@ -14,7 +14,10 @@
       "sys:id": "_07_dOaECY",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "0n7YghSHPc": {
       "sys:id": "0n7YghSHPc",
@@ -38,7 +41,7 @@
       "prop:type": "text",
       "prop:text": [
         {
-          "insert": "An event brief outline the goals and key elements needed to plan a successfup event. This AFFiNE Event Planning template will help you gain alignment and kick off your event planning. "
+          "insert": "An event brief outline the goals and key elements needed to plan a successful event. This AFFiNE Event Planning template will help you gain alignment and kick off your event planning. "
         }
       ]
     },

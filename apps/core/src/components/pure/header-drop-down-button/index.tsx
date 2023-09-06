@@ -1,38 +1,28 @@
-import { styled } from '@affine/component';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import {
   IconButton,
   type IconButtonProps,
 } from '@toeverything/components/button';
+import { forwardRef } from 'react';
 
-const StyledIconButtonWithAnimate = styled(IconButton)(() => {
-  return {
-    svg: {
-      transition: 'transform 0.15s ease-in-out',
-    },
-    ':hover': {
-      svg: {
-        transform: 'translateY(3px)',
-      },
-      backgroundColor: 'transparent !important',
-    },
-  };
-});
+import { headerMenuTrigger } from './styles.css';
 
-// fixme(himself65): need to refactor
-export const HeaderDropDownButton = ({
-  onClick,
-  ...props
-}: Omit<IconButtonProps, 'children'>) => {
+export const HeaderDropDownButton = forwardRef<
+  HTMLButtonElement,
+  Omit<IconButtonProps, 'children'>
+>((props, ref) => {
   return (
-    <StyledIconButtonWithAnimate
-      data-testid="header-dropDownButton"
+    <IconButton
+      ref={ref}
       {...props}
-      onClick={e => {
-        onClick?.(e);
-      }}
+      data-testid="header-dropDownButton"
+      className={headerMenuTrigger}
+      withoutHoverStyle={true}
+      type="plain"
     >
       <ArrowDownSmallIcon />
-    </StyledIconButtonWithAnimate>
+    </IconButton>
   );
-};
+});
+
+HeaderDropDownButton.displayName = 'HeaderDropDownButton';

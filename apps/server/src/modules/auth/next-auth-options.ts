@@ -121,7 +121,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {
-        strategy: 'jwt',
+        strategy: config.node.prod ? 'database' : 'jwt',
       },
       // @ts-expect-error Third part library type mismatch
       logger: console,

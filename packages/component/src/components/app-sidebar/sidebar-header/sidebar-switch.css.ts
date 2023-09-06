@@ -5,11 +5,12 @@ export const sidebarSwitch = style({
   width: 0,
   overflow: 'hidden',
   pointerEvents: 'none',
-  transition: 'opacity .3s ease-in-out',
+  transition: 'all .3s ease-in-out',
   selectors: {
     '&[data-show=true]': {
       opacity: 1,
       width: '32px',
+      flexShrink: 0,
       pointerEvents: 'auto',
     },
   },

@@ -6,8 +6,8 @@ use std::{
   path::PathBuf,
 };
 
-use jwst::BlobStorage;
 use jwst_codec::Doc;
+use jwst_core::BlobStorage;
 use jwst_storage::{BlobStorageType, JwstStorage, JwstStorageError};
 use napi::{bindgen_prelude::*, Error, Result, Status};
 

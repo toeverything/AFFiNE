@@ -65,8 +65,10 @@ const NameWorkspaceContent = ({
   const t = useAFFiNEI18N();
   return (
     <div className={style.content}>
-      <div className={style.contentTitle}>{t['Name Your Workspace']()}</div>
-      <p>{t['Workspace description']()}</p>
+      <div className={style.contentTitle}>
+        {t['com.affine.nameWorkspace.title']()}
+      </div>
+      <p>{t['com.affine.nameWorkspace.description']()}</p>
       <Input
         ref={ref => {
           if (ref) {
@@ -75,14 +77,14 @@ const NameWorkspaceContent = ({
         }}
         data-testid="create-workspace-input"
         onKeyDown={handleKeyDown}
-        placeholder={t['Set a Workspace name']()}
+        placeholder={t['com.affine.nameWorkspace.placeholder']()}
         maxLength={64}
         minLength={0}
         onChange={setWorkspaceName}
       />
       <div className={style.buttonGroup}>
         <Button data-testid="create-workspace-close-button" onClick={onClose}>
-          {t.Cancel()}
+          {t['com.affine.nameWorkspace.button.cancel']()}
         </Button>
         <Button
           data-testid="create-workspace-create-button"
@@ -93,7 +95,7 @@ const NameWorkspaceContent = ({
           type="primary"
           onClick={handleCreateWorkspace}
         >
-          {t.Create()}
+          {t['com.affine.nameWorkspace.button.create']()}
         </Button>
       </div>
     </div>
@@ -150,8 +152,10 @@ const SetDBLocationContent = ({
 
   return (
     <div className={style.content}>
-      <div className={style.contentTitle}>{t['Set database location']()}</div>
-      <p>{t['Workspace database storage description']()}</p>
+      <div className={style.contentTitle}>
+        {t['com.affine.setDBLocation.title']()}
+      </div>
+      <p>{t['com.affine.setDBLocation.description']()}</p>
       <div className={style.buttonGroup}>
         <Button
           disabled={opening}
@@ -159,10 +163,10 @@ const SetDBLocationContent = ({
           type="primary"
           onClick={handleSelectDBFileLocation}
         >
-          {t['Customize']()}
+          {t['com.affine.setDBLocation.button.customize']()}
         </Button>
         <Tooltip
-          content={t['Default db location hint']({
+          content={t['com.affine.setDBLocation.tooltip.defaultLocation']({
             location: defaultDBLocation,
           })}
           portalOptions={{
@@ -179,7 +183,7 @@ const SetDBLocationContent = ({
             iconPosition="end"
             ref={ref}
           >
-            {t['Default Location']()}
+            {t['com.affine.setDBLocation.button.defaultLocation']()}
           </Button>
         </Tooltip>
       </div>
@@ -201,7 +205,9 @@ const SetSyncingModeContent = ({
   return (
     <div className={style.content}>
       <div className={style.contentTitle}>
-        {t[mode === 'new' ? 'Created Successfully' : 'Added Successfully']()}
+        {mode === 'new'
+          ? t['com.affine.setSyncingMode.title.created']()
+          : t['com.affine.setSyncingMode.title.added']()}
       </div>
 
       <div className={style.radioGroup}>
@@ -212,7 +218,7 @@ const SetSyncingModeContent = ({
             readOnly
             checked={!enableCloudSyncing}
           />
-          {t['Use on current device only']()}
+          {t['com.affine.setSyncingMode.deviceOnly']()}
         </label>
         <label onClick={() => setEnableCloudSyncing(true)}>
           <input
@@ -221,7 +227,7 @@ const SetSyncingModeContent = ({
             readOnly
             checked={enableCloudSyncing}
           />
-          {t['Sync across devices with AFFiNE Cloud']()}
+          {t['com.affine.setSyncingMode.cloud']()}
         </label>
       </div>
 
@@ -233,7 +239,7 @@ const SetSyncingModeContent = ({
             onConfirmMode(enableCloudSyncing);
           }}
         >
-          {t['Continue']()}
+          {t['com.affine.setSyncingMode.button.continue']()}
         </Button>
       </div>
     </div>

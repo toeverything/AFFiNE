@@ -14,7 +14,10 @@
       "sys:id": "yC-F6Rj9bA",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "pk_Cjkpyd4": {
       "sys:id": "pk_Cjkpyd4",
