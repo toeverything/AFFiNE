@@ -5,9 +5,8 @@ import {
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
+import { fetcher } from '@affine/workspace/affine/gql';
 import type { BlobStorage } from '@blocksuite/store';
-
-import { fetcher } from '../affine/gql';
 
 export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
   return {
