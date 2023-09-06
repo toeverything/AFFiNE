@@ -8,6 +8,7 @@ import {
 
 import type { ConfirmProps } from '../../..';
 import { Confirm } from '../../..';
+
 export const MoveToTrash = (props: MenuItemProps) => {
   const t = useAFFiNEI18N();
 
@@ -21,7 +22,7 @@ export const MoveToTrash = (props: MenuItemProps) => {
       type="danger"
       {...props}
     >
-      {t['Move to Trash']()}
+      {t['com.affine.moveToTrash.title']()}
     </MenuItem>
   );
 };
@@ -36,8 +37,8 @@ const ConfirmModal = ({
 
   return (
     <Confirm
-      title={t['Delete page?']()}
-      content={t['will be moved to Trash']({
+      title={t['com.affine.moveToTrash.confirmModal.title']()}
+      content={t['com.affine.moveToTrash.confirmModal.description']({
         title: title || 'Untitled',
       })}
       confirmButtonTestId="confirm-delete-page"

@@ -78,6 +78,7 @@ export class SqliteConnection {
   ): Promise<void>;
   initVersion(): Promise<void>;
   setVersion(version: number): Promise<void>;
+  getMaxVersion(): Promise<number>;
   close(): Promise<void>;
   get isClose(): boolean;
   static validate(path: string): Promise<ValidationResult>;
