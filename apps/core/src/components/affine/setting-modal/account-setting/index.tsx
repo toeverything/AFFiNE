@@ -8,10 +8,11 @@ import { UserAvatar } from '@affine/component/user-avatar';
 import { allBlobSizesQuery, uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
-import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
-import { Button, IconButton } from '@toeverything/components/button';
+import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
-import { type FC, Suspense, useCallback, useState } from 'react';
+import { type FC, Suspense, useCallback, useRef, useState } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
@@ -23,6 +24,7 @@ import * as style from './style.css';
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
+  const ref = useRef(null);
 
   const [input, setInput] = useState<string>(user.name);
 
@@ -56,25 +58,32 @@ export const AvatarAndName = () => {
         spreadCol={false}
       >
         <FlexWrapper style={{ margin: '12px 0 24px 0' }} alignItems="center">
-          <div className={style.avatarWrapper}>
-            <Upload
-              accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-              fileChange={handleUpdateUserAvatar}
-              data-testid="upload-user-avatar"
-            >
-              <>
-                <div className="camera-icon-wrapper">
-                  <CameraIcon />
-                </div>
-                <UserAvatar
-                  size={56}
-                  name={user.name}
-                  url={user.image}
-                  className="avatar"
-                />
-              </>
-            </Upload>
-          </div>
+          <Tooltip
+            content={t['Click to replace photo']()}
+            portalOptions={{
+              container: ref.current,
+            }}
+          >
+            <div className={style.avatarWrapper} ref={ref}>
+              <Upload
+                accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+                fileChange={handleUpdateUserAvatar}
+                data-testid="upload-user-avatar"
+              >
+                <>
+                  <div className="camera-icon-wrapper">
+                    <CameraIcon />
+                  </div>
+                  <UserAvatar
+                    size={56}
+                    name={user.name}
+                    url={user.image}
+                    className="avatar"
+                  />
+                </>
+              </Upload>
+            </div>
+          </Tooltip>
 
           <div className={style.profileInputWrapper}>
             <label>{t['com.affine.settings.profile.name']()}</label>
@@ -90,18 +99,17 @@ export const AvatarAndName = () => {
                 onChange={setInput}
               />
               {input && input === user.name ? null : (
-                <IconButton
+                <Button
                   data-testid="save-user-name"
                   onClick={() => {
                     handleUpdateUserName(input);
                   }}
                   style={{
-                    color: 'var(--affine-primary-color)',
                     marginLeft: '12px',
                   }}
                 >
-                  <DoneIcon />
-                </IconButton>
+                  {t['com.affine.editCollection.save']()}
+                </Button>
               )}
             </FlexWrapper>
           </div>
