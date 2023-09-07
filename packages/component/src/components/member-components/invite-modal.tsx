@@ -15,46 +15,6 @@ export interface InviteModalProps {
   isMutating: boolean;
 }
 
-// const PermissionMenu = ({
-//   currentPermission,
-//   onChange,
-// }: {
-//   currentPermission: Permission;
-//   onChange: (permission: Permission) => void;
-// }) => {
-//   return (
-//     <Menu
-//       trigger="click"
-//       content={
-//         <>
-//           {Object.entries(Permission).map(([permission]) => {
-//             return (
-//               <MenuItem
-//                 key={permission}
-//                 onClick={() => {
-//                   onChange(permission as Permission);
-//                 }}
-//               >
-//                 {permission}
-//               </MenuItem>
-//             );
-//           })}
-//         </>
-//       }
-//     >
-//       <MenuTrigger
-//         type="plain"
-//         style={{
-//           marginRight: -10,
-//           height: '100%',
-//         }}
-//       >
-//         {currentPermission}
-//       </MenuTrigger>
-//     </Menu>
-//   );
-// };
-
 export const InviteModal = ({
   open,
   setOpen,
@@ -121,12 +81,6 @@ export const InviteModal = ({
             onEnter={handleConfirm}
             style={{ marginTop: 20 }}
             size="large"
-            // endFix={
-            //   <PermissionMenu
-            //     currentPermission={permission}
-            //     onChange={setPermission}
-            //   />
-            // }
           />
         </div>
         <div className={styles.inviteModalButtonContainer}>

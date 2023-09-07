@@ -106,7 +106,7 @@ async function getWorkspace(
   token: string,
   workspaceId: string,
   skip = 0,
-  take = 10
+  take = 8
 ): Promise<WorkspaceType> {
   const res = await request(app.getHttpServer())
     .post(gql)
