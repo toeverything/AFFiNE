@@ -346,7 +346,7 @@
   "com.affine.trashOperation.restoreIt": "Restore it",
   "com.affine.workspace.cannot-delete": "You cannot delete the last workspace",
   "com.affine.workspace.cloud": "Cloud Workspaces",
-  "com.affine.workspace.cloud.account.logout": "Log Out",
+  "com.affine.workspace.cloud.account.logout": "Sign Out",
   "com.affine.workspace.cloud.account.settings": "Account Settings",
   "com.affine.workspace.cloud.auth": "Sign up/ Sign in",
   "com.affine.workspace.cloud.description": "Sync with AFFiNE Cloud",
