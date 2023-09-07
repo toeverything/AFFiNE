@@ -29,6 +29,7 @@ import {
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
 } from '../../../atoms';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { AllWorkspace } from '../../../shared';
 import { signOutCloud } from '../../../utils/cloud-utils';
 import {
@@ -68,6 +69,7 @@ interface WorkspaceModalProps {
 const AccountMenu = () => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openSettingModalAtom);
+  const { jumpToIndex } = useNavigateHelper();
   return (
     <div>
       <MenuItem
@@ -92,8 +94,12 @@ const AccountMenu = () => {
         }
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
-          signOutCloud().catch(console.error);
-        }, [])}
+          signOutCloud()
+            .then(() => {
+              jumpToIndex();
+            })
+            .catch(console.error);
+        }, [jumpToIndex])}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
