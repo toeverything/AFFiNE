@@ -67,6 +67,8 @@ const SortableWorkspaceItem = (props: SortableWorkspaceItemProps) => {
   );
 };
 
+const modifiers = [restrictToParentElement, restrictToVerticalAxis];
+
 export const WorkspaceList = (props: WorkspaceListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -79,7 +81,7 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
     <DndContext
       sensors={sensors}
       onDragEnd={props.onDragEnd}
-      modifiers={[restrictToParentElement, restrictToVerticalAxis]}
+      modifiers={modifiers}
     >
       <SortableContext items={props.items}>
         {props.items.map(item => (
