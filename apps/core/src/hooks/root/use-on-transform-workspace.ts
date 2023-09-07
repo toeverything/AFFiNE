@@ -72,6 +72,7 @@ export function useOnTransformWorkspace() {
       openPage,
       currentPageId,
       pushNotification,
+      t,
     ]
   );
 }
