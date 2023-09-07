@@ -9,7 +9,12 @@ import { noop } from 'foxact/noop';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
-import { redirect, useLoaderData } from 'react-router-dom';
+import {
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useRouteError,
+} from 'react-router-dom';
 import { applyUpdate } from 'yjs';
 
 import { PageDetailEditor } from '../../adapters/shared';
@@ -71,3 +76,14 @@ export const Component = (): ReactElement => {
     </AppContainer>
   );
 };
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return isRouteErrorResponse(error) ? (
+    <h1>
+      {error.status} {error.statusText}
+    </h1>
+  ) : (
+    <h1>You do not have access or this content does not exist.</h1>
+  );
+}
