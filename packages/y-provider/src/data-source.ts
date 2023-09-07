@@ -1,4 +1,4 @@
-import type { Doc as YDoc} from 'yjs';
+import type { Doc as YDoc } from 'yjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type { DocState } from './types';
