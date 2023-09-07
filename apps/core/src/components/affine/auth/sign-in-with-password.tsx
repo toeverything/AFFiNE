@@ -44,9 +44,8 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
     await update();
     onSignedIn?.();
     pushNotification({
-      title: `${email}${t['com.affine.auth.has.signed']()}`,
-      message: '',
-      key: Date.now().toString(),
+      title: t['com.affine.auth.has.signed'](),
+      message: t['com.affine.auth.has.signed.message'](),
       type: 'success',
     });
   }, [email, password, pushNotification, onSignedIn, t, update]);
