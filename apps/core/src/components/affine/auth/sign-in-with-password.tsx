@@ -4,10 +4,8 @@ import {
   BackButton,
   ModalHeader,
 } from '@affine/component/auth-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
-import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 import type { FC } from 'react';
@@ -25,8 +23,6 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const { update } = useSession();
 
-  const pushNotification = useSetAtom(pushNotificationAtom);
-
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
@@ -43,12 +39,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
     await update();
     onSignedIn?.();
-    pushNotification({
-      title: t['com.affine.auth.has.signed'](),
-      message: t['com.affine.auth.has.signed.message'](),
-      type: 'success',
-    });
-  }, [email, password, pushNotification, onSignedIn, t, update]);
+  }, [email, password, onSignedIn, update]);
 
   return (
     <>

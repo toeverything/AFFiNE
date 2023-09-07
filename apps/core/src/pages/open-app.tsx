@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { fetcher } from '@affine/workspace/affine/gql';
 import { Logo1Icon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   type LoaderFunction,
   useLoaderData,
@@ -72,15 +72,12 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   const [params] = useSearchParams();
   const autoOpen = useMemo(() => params.get('open') !== 'false', [params]);
 
-  useEffect(() => {
-    if (!urlToOpen || lastOpened === urlToOpen || !autoOpen) {
-      return;
-    }
+  if (urlToOpen && lastOpened !== urlToOpen && autoOpen) {
+    lastOpened = urlToOpen;
     setTimeout(() => {
-      lastOpened = urlToOpen;
       open(urlToOpen, '_blank');
     }, 1000);
-  }, [urlToOpen, autoOpen]);
+  }
 
   if (!urlToOpen) {
     return null;
