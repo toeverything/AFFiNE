@@ -59,15 +59,19 @@ export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
   setAuthState,
   setEmailType,
   emailType,
+  onSignedIn: propsOnSignedIn,
 }) => {
   const refreshMetadata = useSetAtom(refreshRootMetadataAtom);
 
   const onSignedIn = useCallback(() => {
     setOpen(false);
+
+    propsOnSignedIn?.();
+
     startTransition(() => {
       refreshMetadata();
     });
-  }, [refreshMetadata, setOpen]);
+  }, [propsOnSignedIn, refreshMetadata, setOpen]);
 
   return (
     <AuthModalBase open={open} setOpen={setOpen}>

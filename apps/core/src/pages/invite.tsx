@@ -6,7 +6,7 @@ import {
   getInviteInfoQuery,
 } from '@affine/graphql';
 import { fetcher } from '@affine/workspace/affine/gql';
-import { useAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
 
@@ -51,7 +51,7 @@ export const Component = () => {
   const { addCloudWorkspace } = useAppHelper();
   const { jumpToSubPath } = useNavigateHelper();
 
-  const [, setAuthAtom] = useAtom(authAtom);
+  const setAuthAtom = useSetAtom(authAtom);
   const { inviteInfo } = useLoaderData() as {
     inviteId: string;
     inviteInfo: GetInviteInfoQuery['getInviteInfo'];

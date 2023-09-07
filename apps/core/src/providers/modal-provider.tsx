@@ -108,15 +108,28 @@ export const Setting = () => {
 
 export const AuthModal = (): ReactElement => {
   const [
-    { openModal, state, email = '', emailType = 'changePassword' },
+    {
+      openModal,
+      state,
+      email = '',
+      emailType = 'changePassword',
+      onceSignedIn,
+    },
     setAuthAtom,
   ] = useAtom(authAtom);
+
+  const onSignedIn = useCallback(() => {
+    onceSignedIn?.();
+    setAuthAtom(prev => ({ ...prev, onceSignedIn: undefined }));
+  }, [onceSignedIn, setAuthAtom]);
+
   return (
     <Auth
       open={openModal}
       state={state}
       email={email}
       emailType={emailType}
+      onSignedIn={onSignedIn}
       setEmailType={useCallback(
         emailType => {
           setAuthAtom(prev => ({ ...prev, emailType }));
