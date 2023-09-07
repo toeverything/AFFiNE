@@ -21,6 +21,7 @@
     "@affine/jotai": "workspace:*",
     "@affine/workspace": "workspace:*",
     "@dnd-kit/core": "^6.0.8",
+    "@dnd-kit/modifiers": "^6.0.1",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.1",

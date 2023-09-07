@@ -10,6 +10,10 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from '@dnd-kit/modifiers';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
@@ -63,6 +67,8 @@ const SortableWorkspaceItem = (props: SortableWorkspaceItemProps) => {
   );
 };
 
+const modifiers = [restrictToParentElement, restrictToVerticalAxis];
+
 export const WorkspaceList = (props: WorkspaceListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -72,7 +78,11 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
     })
   );
   return (
-    <DndContext sensors={sensors} onDragEnd={props.onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragEnd={props.onDragEnd}
+      modifiers={modifiers}
+    >
       <SortableContext items={props.items}>
         {props.items.map(item => (
           <SortableWorkspaceItem {...props} item={item} key={item.id} />
