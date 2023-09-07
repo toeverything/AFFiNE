@@ -13,6 +13,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import {
   lazy,
+  startTransition,
   Suspense,
   useCallback,
   useEffect,
@@ -223,13 +224,14 @@ export const AllWorkspaceModals = (): ReactElement => {
   );
 
   const { jumpToSubPath } = useNavigateHelper();
-  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom, {
+    delay: 0,
+  });
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
     currentWorkspaceIdAtom
   );
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
-  const [isPending, startTransition] = useTransition();
   const [, startCloseTransition] = useTransition();
   const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
 
@@ -250,7 +252,6 @@ export const AllWorkspaceModals = (): ReactElement => {
     <>
       <Suspense>
         <WorkspaceListModal
-          disabled={isPending}
           workspaces={workspaces}
           currentWorkspaceId={currentWorkspaceId}
           open={
