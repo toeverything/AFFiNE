@@ -5,7 +5,10 @@
     "baseUrl": ".",
     "target": "ESNext"
   },
-  "references": [{ "path": "../../../tests/kit" }],
+  "references": [
+    { "path": "../../../tests/kit" },
+    { "path": "../tsconfig.tests.json" }
+  ],
   "include": ["**.spec.ts", "**.test.ts", "fixture.ts"],
   "exclude": ["lib"]
 }
