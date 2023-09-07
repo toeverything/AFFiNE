@@ -33,6 +33,18 @@ export class PermissionService {
     });
   }
 
+  async tryGetWorkspaceOwner(workspaceId: string) {
+    return this.prisma.userWorkspacePermission.findFirst({
+      where: {
+        workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+  }
+
   async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
     if (user) {
       return await this.tryCheck(ws, user);
@@ -167,6 +179,18 @@ export class PermissionService {
         },
       })
       .then(p => p.id);
+  }
+
+  async getInvitationById(inviteId: string, workspaceId: string) {
+    return this.prisma.userWorkspacePermission.findUniqueOrThrow({
+      where: {
+        id: inviteId,
+        workspaceId,
+      },
+      include: {
+        user: true,
+      },
+    });
   }
 
   async acceptById(ws: string, id: string) {

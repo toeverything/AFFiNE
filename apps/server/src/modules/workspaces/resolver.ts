@@ -200,15 +200,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async owner(@Parent() workspace: WorkspaceType) {
-    const data = await this.prisma.userWorkspacePermission.findFirstOrThrow({
-      where: {
-        workspaceId: workspace.id,
-        type: Permission.Owner,
-      },
-      include: {
-        user: true,
-      },
-    });
+    const data = await this.permissions.getWorkspaceOwner(workspace.id);
 
     return data.user;
   }
@@ -244,15 +236,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
-    const data = await this.prisma.userWorkspacePermission.findFirst({
-      where: {
-        workspaceId,
-        type: Permission.Owner,
-      },
-      include: {
-        user: true,
-      },
-    });
+    const data = await this.permissions.tryGetWorkspaceOwner(workspaceId);
 
     return data?.user?.id === user.id;
   }
