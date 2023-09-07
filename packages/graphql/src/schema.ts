@@ -50,6 +50,16 @@ export interface UpdateWorkspaceInput {
   public: InputMaybe<Scalars['Boolean']['input']>;
 }
 
+export type CheckBlobSizesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  size: Scalars['Float']['input'];
+}>;
+
+export type CheckBlobSizesQuery = {
+  __typename?: 'Query';
+  checkBlobSize: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
+
 export type DeleteBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   hash: Scalars['String']['input'];
@@ -448,6 +458,11 @@ export type AcceptInviteByWorkspaceIdMutation = {
 };
 
 export type Queries =
+  | {
+      name: 'checkBlobSizesQuery';
+      variables: CheckBlobSizesQueryVariables;
+      response: CheckBlobSizesQuery;
+    }
   | {
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;

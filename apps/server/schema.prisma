@@ -1,6 +1,6 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
   previewFeatures = ["metrics", "tracing"]
 }
 
@@ -48,8 +48,20 @@ model User {
   createdAt     DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   /// Not available if user signed up through OAuth providers
   password      String?                   @db.VarChar
+  features      UserFeatureGates[]
 
   @@map("users")
+}
+
+model UserFeatureGates {
+  id        String   @id @default(uuid()) @db.VarChar
+  userId    String   @map("user_id") @db.VarChar
+  feature   String   @db.VarChar
+  reason    String   @db.VarChar
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_feature_gates")
 }
 
 model Account {

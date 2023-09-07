@@ -386,6 +386,27 @@ async function collectAllBlobSizes(
   return res.body.data.collectAllBlobSizes.size;
 }
 
+async function checkBlobSize(
+  app: INestApplication,
+  token: string,
+  workspaceId: string,
+  size: number
+): Promise<number> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `query checkBlobSize($workspaceId: String!, $size: Float!) {
+        checkBlobSize(workspaceId: $workspaceId, size: $size) {
+          size
+        }
+      }`,
+      variables: { workspaceId, size },
+    })
+    .expect(200);
+  return res.body.data.checkBlobSize.size;
+}
+
 async function setBlob(
   app: INestApplication,
   token: string,
@@ -480,6 +501,7 @@ async function getInviteInfo(
 export {
   acceptInvite,
   acceptInviteById,
+  checkBlobSize,
   collectAllBlobSizes,
   collectBlobSizes,
   createTestApp,

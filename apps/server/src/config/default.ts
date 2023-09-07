@@ -175,7 +175,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
-      quota: 10 * 1024 * 1024,
+      // 10GB
+      quota: 10 * 1024 * 1024 * 1024,
     },
     rateLimiter: {
       ttl: 60,
