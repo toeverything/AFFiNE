@@ -47,7 +47,6 @@ export const StyledCard = styled('div')<{
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '12px',
     transition: 'background .2s',
     alignItems: 'center',
     position: 'relative',
