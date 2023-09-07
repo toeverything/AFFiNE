@@ -91,7 +91,7 @@ export const signOutCloud: typeof signOut = async options => {
     .then(result => {
       if (result) {
         startTransition(() => {
-          localStorage.setItem('last_workspace_id', null);
+          localStorage.removeItem('last_workspace_id');
           getCurrentStore().set(refreshRootMetadataAtom);
         });
       }
