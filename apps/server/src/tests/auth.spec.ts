@@ -13,10 +13,11 @@ import { RateLimiterModule } from '../throttler';
 
 let auth: AuthService;
 let module: TestingModule;
+let client: PrismaClient;
 
 // cleanup database before each test
 test.beforeEach(async () => {
-  const client = new PrismaClient();
+  client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
 });
@@ -43,6 +44,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await module.close();
+  await client.$disconnect();
 });
 
 test('should be able to register and signIn', async t => {

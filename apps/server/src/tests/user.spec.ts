@@ -10,10 +10,11 @@ import { AppModule } from '../app';
 import { currentUser, signUp } from './utils';
 
 let app: INestApplication;
+let client: PrismaClient;
 
 // cleanup database before each test
 test.beforeEach(async () => {
-  const client = new PrismaClient();
+  client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
   await client.$disconnect();
@@ -31,6 +32,7 @@ test.beforeEach(async () => {
     })
   );
   await app.init();
+  await client.$disconnect();
 });
 
 test.afterEach(async () => {
