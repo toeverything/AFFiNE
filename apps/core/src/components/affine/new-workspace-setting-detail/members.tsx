@@ -38,7 +38,7 @@ const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;
 }
-
+type OnRevoke = (memberId: string) => void;
 const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
   return (
@@ -61,8 +61,11 @@ export const CloudWorkspaceMembersPanel = ({
 
   const t = useAFFiNEI18N();
   const { invite, isMutating } = useInviteMember(workspaceId);
+  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
+
   const [open, setOpen] = useState(false);
   const [memberSkip, setMemberSkip] = useState(0);
+
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const openModal = useCallback(() => {
@@ -93,6 +96,19 @@ export const CloudWorkspaceMembersPanel = ({
     [invite, pushNotification, t]
   );
 
+  const onRevoke = useCallback<OnRevoke>(
+    async memberId => {
+      const res = await revokeMemberPermission(memberId);
+      if (res?.revoke) {
+        pushNotification({
+          title: t['Removed successfully'](),
+          type: 'success',
+        });
+      }
+    },
+    [pushNotification, revokeMemberPermission, t]
+  );
+
   return (
     <>
       <SettingRow
@@ -119,6 +135,7 @@ export const CloudWorkspaceMembersPanel = ({
             workspaceId={workspaceId}
             isOwner={isOwner}
             skip={memberSkip}
+            onRevoke={onRevoke}
           />
         </Suspense>
 
@@ -158,14 +175,15 @@ const MemberList = ({
   workspaceId,
   isOwner,
   skip,
+  onRevoke,
 }: {
   workspaceId: string;
   isOwner: boolean;
   skip: number;
+  onRevoke: OnRevoke;
 }) => {
   const members = useMembers(workspaceId, skip, COUNT_PER_PAGE);
   const currentUser = useCurrentUser();
-  const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
 
   return (
     <>
@@ -175,7 +193,7 @@ const MemberList = ({
           member={member}
           isOwner={isOwner}
           currentUser={currentUser}
-          onRevoke={revokeMemberPermission}
+          onRevoke={onRevoke}
         />
       ))}
     </>
@@ -191,7 +209,7 @@ const MemberItem = ({
   member: Member;
   isOwner: boolean;
   currentUser: CheckedUser;
-  onRevoke: (memberId: string) => void;
+  onRevoke: OnRevoke;
 }) => {
   const t = useAFFiNEI18N();
 
