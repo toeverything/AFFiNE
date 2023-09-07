@@ -226,7 +226,7 @@ const MemberItem = ({
 
   return (
     <>
-      <div key={member.id} className={style.listItem}>
+      <div key={member.id} className={style.listItem} data-testid="member-item">
         <Avatar
           size={36}
           url={member.avatarUrl}

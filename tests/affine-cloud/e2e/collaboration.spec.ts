@@ -10,7 +10,11 @@ import {
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { clickUserInfoCard } from '@affine-test/kit/utils/setting';
+import {
+  clickUserInfoCard,
+  openSettingModal,
+  openWorkspaceSettingPanel,
+} from '@affine-test/kit/utils/setting';
 import {
   clickSideBarAllPageButton,
   clickSideBarSettingButton,
@@ -123,5 +127,67 @@ test.describe('collaboration', () => {
     await page.getByTestId('sign-out-button').click();
     await page.waitForTimeout(5000);
     expect(page.url()).toBe(url);
+  });
+});
+
+test.describe('collaboration members', () => {
+  test('should have pagination in member list', async ({ page }) => {
+    await page.reload();
+    await waitForEditorLoad(page);
+    await createLocalWorkspace(
+      {
+        name: 'test',
+      },
+      page
+    );
+    await enableCloudWorkspace(page);
+    await clickNewPageButton(page);
+    const currentUrl = page.url();
+    // format: http://localhost:8080/workspace/${workspaceId}/xxx
+    const workspaceId = currentUrl.split('/')[4];
+
+    // create 10 user and add to workspace
+    const createUserAndAddToWorkspace = async () => {
+      const userB = await createRandomUser();
+      await addUserToWorkspace(workspaceId, userB.id, 1 /* READ */);
+    };
+    await Promise.all(
+      new Array(10).fill(1).map(() => createUserAndAddToWorkspace())
+    );
+
+    await openSettingModal(page);
+    await openWorkspaceSettingPanel(page, 'test');
+
+    await page.waitForTimeout(100);
+
+    const firstPageMemberItemCount = await page
+      .locator('[data-testid="member-item"]')
+      .count();
+
+    expect(firstPageMemberItemCount).toBe(8);
+
+    const navigationItems = await page
+      .getByRole('navigation')
+      .getByRole('button')
+      .all();
+
+    // There have four pagination items: < 1 2 >
+    expect(navigationItems.length).toBe(4);
+    // Click second page
+    await navigationItems[2].click();
+    await page.waitForTimeout(500);
+    // There should have other three members in second page
+    const secondPageMemberItemCount = await page
+      .locator('[data-testid="member-item"]')
+      .count();
+    expect(secondPageMemberItemCount).toBe(3);
+    // Click left arrow to back to first page
+    await navigationItems[0].click();
+    await page.waitForTimeout(500);
+    expect(await page.locator('[data-testid="member-item"]').count()).toBe(8);
+    // Click right arrow to second page
+    await navigationItems[3].click();
+    await page.waitForTimeout(500);
+    expect(await page.locator('[data-testid="member-item"]').count()).toBe(3);
   });
 });
