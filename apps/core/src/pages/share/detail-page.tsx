@@ -1,11 +1,9 @@
-import { Empty } from '@affine/component';
 import { MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { downloadBinaryFromCloud } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
-import { Logo1Icon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { noop } from 'foxact/noop';
 import type { ReactElement } from 'react';
@@ -21,6 +19,7 @@ import { applyUpdate } from 'yjs';
 
 import { PageDetailEditor } from '../../adapters/shared';
 import { AppContainer } from '../../components/affine/app-container';
+import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
 
 function assertArrayBuffer(value: unknown): asserts value is ArrayBuffer {
   if (!(value instanceof ArrayBuffer)) {
@@ -86,33 +85,6 @@ export function ErrorBoundary() {
       {error.status} {error.statusText}
     </h1>
   ) : (
-    <div
-      style={{
-        width: '100%',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <div
-        onClick={() => {
-          window.location.href = 'https://affine.pro/';
-        }}
-        style={{
-          position: 'absolute',
-          top: '16px',
-          left: '16px',
-          fontSize: '24px',
-          cursor: 'pointer',
-        }}
-      >
-        <Logo1Icon />
-      </div>
-      <Empty
-        description={'You do not have access or this content does not exist.'}
-      />
-    </div>
+    <SharePageNotFoundError />
   );
 }
