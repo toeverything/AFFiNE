@@ -1,6 +1,7 @@
 name: Build Canary Desktop App on Staging Branch
 
 on:
+  workflow_dispatch:
   push:
     branches:
       # 0.6.x-staging
