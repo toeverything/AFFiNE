@@ -1,16 +1,20 @@
-import { FlexWrapper, Input, toast, Wrapper } from '@affine/component';
+import { FlexWrapper, Input, Wrapper } from '@affine/component';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CameraIcon, DoneIcon } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
+import { CameraIcon } from '@blocksuite/icons';
+import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import clsx from 'clsx';
+import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,
   startTransition,
   useCallback,
+  useRef,
   useState,
 } from 'react';
 
@@ -24,6 +28,8 @@ export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
 
 export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
+  const ref = useRef(null);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
@@ -38,9 +44,12 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   const handleUpdateWorkspaceName = useCallback(
     (name: string) => {
       setName(name);
-      toast(t['Update workspace name success']());
+      pushNotification({
+        title: t['Update workspace name success'](),
+        type: 'success',
+      });
     },
-    [setName, t]
+    [pushNotification, setName, t]
   );
 
   const handleSetInput = useCallback((value: string) => {
@@ -64,23 +73,34 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
 
   return (
     <div className={style.profileWrapper}>
-      <div className={clsx(style.avatarWrapper, { disable: !isOwner })}>
-        <Upload
-          accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-          fileChange={update}
-          data-testid="upload-avatar"
+      <Tooltip
+        content={t['Click to replace photo']()}
+        portalOptions={{
+          container: ref.current,
+        }}
+      >
+        <div
+          className={clsx(style.avatarWrapper, { disable: !isOwner })}
+          ref={ref}
         >
-          <>
-            <div className="camera-icon-wrapper">
-              <CameraIcon />
-            </div>
-            <WorkspaceAvatar
-              size={56}
-              workspace={workspace.blockSuiteWorkspace}
-            />
-          </>
-        </Upload>
-      </div>
+          <Upload
+            accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+            fileChange={update}
+            data-testid="upload-avatar"
+          >
+            <>
+              <div className="camera-icon-wrapper">
+                <CameraIcon />
+              </div>
+              <WorkspaceAvatar
+                size={56}
+                workspace={workspace.blockSuiteWorkspace}
+              />
+            </>
+          </Upload>
+        </div>
+      </Tooltip>
+
       <Wrapper marginLeft={20}>
         <div className={style.label}>{t['Workspace Name']()}</div>
         <FlexWrapper alignItems="center" flexGrow="1">
@@ -97,16 +117,15 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
             onKeyUp={handleKeyUp}
           />
           {input === workspace.blockSuiteWorkspace.meta.name ? null : (
-            <IconButton
+            <Button
               data-testid="save-workspace-name"
               onClick={handleClick}
-              active={true}
               style={{
                 marginLeft: '12px',
               }}
             >
-              <DoneIcon />
-            </IconButton>
+              {t['com.affine.editCollection.save']()}
+            </Button>
           )}
         </FlexWrapper>
       </Wrapper>
