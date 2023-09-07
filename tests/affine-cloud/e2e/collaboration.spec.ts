@@ -71,7 +71,10 @@ test.describe('collaboration', () => {
     }
   });
 
-  test('can collaborate with other user', async ({ page, browser }) => {
+  test('can collaborate with other user and name should display when editing', async ({
+    page,
+    browser,
+  }) => {
     await page.reload();
     await waitForEditorLoad(page);
     await createLocalWorkspace(
@@ -103,6 +106,30 @@ test.describe('collaboration', () => {
     {
       const title = getBlockSuiteEditorTitle(page2);
       expect(await title.innerText()).toBe('TEST TITLE');
+      await expect(page2.getByText(user.name)).toBeVisible();
+    }
+
+    // change username
+    await clickSideBarSettingButton(page);
+    await clickUserInfoCard(page);
+    const input = page.getByTestId('user-name-input');
+    await input.clear();
+    await input.type('TEST USER', {
+      delay: 50,
+    });
+    await page.getByTestId('save-user-name').click({
+      delay: 50,
+    });
+    await page.keyboard.press('Escape', {
+      delay: 50,
+    });
+    const title = getBlockSuiteEditorTitle(page);
+    await title.focus();
+
+    {
+      await expect(page2.getByText('TEST USER')).toBeVisible({
+        timeout: 2000,
+      });
     }
   });
 
