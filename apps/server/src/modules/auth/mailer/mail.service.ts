@@ -73,7 +73,7 @@ export class MailService {
   }</span>`;
 
     const subContent =
-      'Currently, AFFiNE Cloud is in the early access stage. Only Early Access Sponsors can register and log in to AFFiNE Cloud.<a href="https://community.affine.pro/c/insider-general/" style="color: #1e67af" >Please click here for more information.</a>';
+      'Currently, AFFiNE Cloud is in the early access stage. Only Early Access Sponsors can register and log in to AFFiNE Cloud. <a href="https://community.affine.pro/c/insider-general/" style="color: #1e67af" >Please click here for more information.</a>';
 
     const html = emailTemplate({
       title: 'You are invited!',
@@ -86,7 +86,7 @@ export class MailService {
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Invitation to workspace`,
+      subject: `${invitationInfo.user.name} invited you to join ${invitationInfo.workspace}`,
       html,
       attachments: [
         {
