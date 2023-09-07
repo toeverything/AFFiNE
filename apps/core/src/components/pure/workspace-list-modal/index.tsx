@@ -21,7 +21,7 @@ import { Divider } from '@toeverything/components/divider';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import {
@@ -30,6 +30,7 @@ import {
   openSettingModalAtom,
 } from '../../../atoms';
 import type { AllWorkspace } from '../../../shared';
+import { signOutCloud } from '../../../utils/cloud-utils';
 import {
   StyledCreateWorkspaceCardPill,
   StyledCreateWorkspaceCardPillContent,
@@ -91,7 +92,7 @@ const AccountMenu = () => {
         }
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
-          signOut().catch(console.error);
+          signOutCloud().catch(console.error);
         }, [])}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
