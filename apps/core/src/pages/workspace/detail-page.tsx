@@ -16,7 +16,6 @@ import {
   getCurrentStore,
 } from '@toeverything/infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { getSession } from 'next-auth/react';
 import { type ReactElement, useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
@@ -139,11 +138,6 @@ export const loader: LoaderFunction = async args => {
   } else {
     return redirect('/404');
   }
-  const session = await getSession();
-  const name = session?.user.name;
-  currentWorkspace.awarenessStore.awareness.setLocalStateField('user', {
-    name: name ?? 'Anonymous User',
-  });
   return null;
 };
 
