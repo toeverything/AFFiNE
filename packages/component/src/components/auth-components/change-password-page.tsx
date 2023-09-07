@@ -32,12 +32,12 @@ export const ChangePasswordPage: FC<{
     <AuthPageContainer
       title={
         hasSetUp
-          ? t['com.affine.auth.set.password.page.success']()
+          ? t['com.affine.auth.reset.password.page.success']()
           : t['com.affine.auth.reset.password.page.title']()
       }
       subtitle={
         hasSetUp ? (
-          t['com.affine.auth.sign.up.success.subtitle']()
+          t['com.affine.auth.sent.reset.password.success.message']()
         ) : (
           <>
             {t['com.affine.auth.page.sent.email.subtitle']()}

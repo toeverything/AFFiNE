@@ -53,6 +53,9 @@ export const PasswordInput: FC<
   }, []);
 
   useEffect(() => {
+    if (!password || !confirmPassword) {
+      return;
+    }
     if (password === confirmPassword) {
       setConfirmStatus('success');
     } else {
