@@ -25,8 +25,6 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const { update } = useSession();
 
-  const pushNotification = useSetAtom(pushNotificationAtom);
-
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
@@ -43,13 +41,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
     await update();
     onSignedIn?.();
-    pushNotification({
-      title: `${email}${t['com.affine.auth.has.signed']()}`,
-      message: '',
-      key: Date.now().toString(),
-      type: 'success',
-    });
-  }, [email, password, pushNotification, onSignedIn, t, update]);
+  }, [email, password, onSignedIn, update]);
 
   return (
     <>

@@ -72,15 +72,12 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   const [params] = useSearchParams();
   const autoOpen = useMemo(() => params.get('open') !== 'false', [params]);
 
-  useEffect(() => {
-    if (!urlToOpen || lastOpened === urlToOpen || !autoOpen) {
-      return;
-    }
+  if (urlToOpen && lastOpened !== urlToOpen && autoOpen) {
+    lastOpened = urlToOpen;
     setTimeout(() => {
-      lastOpened = urlToOpen;
       open(urlToOpen, '_blank');
     }, 1000);
-  }, [urlToOpen, autoOpen]);
+  }
 
   if (!urlToOpen) {
     return null;
