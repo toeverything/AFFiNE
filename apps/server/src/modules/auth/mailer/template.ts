@@ -80,7 +80,7 @@ export const emailTemplate = ({
                       text-decoration: none;
                       border-radius: 8px;
                       padding: 8px 18px;
-                      border: 1px solid #1e96eb;
+                      border: 1px solid rgba(0,0,0,.1);
                       display: inline-block;
                       font-weight: bold;
                     "

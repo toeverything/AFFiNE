@@ -46,7 +46,7 @@ export class MailService {
     const buttonUrl = `${this.config.origin}/invite/${inviteId}`;
     const workspaceAvatar = invitationInfo.workspace.avatar;
 
-    const content = `${
+    const content = `<p style="margin:0">${
       invitationInfo.user.avatar
         ? `<img
     src="${invitationInfo.user.avatar}"
@@ -57,7 +57,7 @@ export class MailService {
   />`
         : ''
     }
-  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${
+  <span style="font-weight:500;margin-right: 4px;">${
     invitationInfo.user.name
   }</span>
   <span>invited you to join</span>
@@ -66,11 +66,11 @@ export class MailService {
     alt=""
     width="24px"
     height="24px"
-    style="width:24px; height:24px; margin-left:10px;border-radius: 12px;object-fit: cover;vertical-align: middle"
+    style="width:24px; height:24px; margin-left:4px;border-radius: 12px;object-fit: cover;vertical-align: middle"
   />
-  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${
+  <span style="font-weight:500;margin-right: 4px;">${
     invitationInfo.workspace.name
-  }</span>`;
+  }</span></p><p style="margin-top:8px;margin-bottom:0;">Click button to join this workspace</p>`;
 
     const subContent =
       'Currently, AFFiNE Cloud is in the early access stage. Only Early Access Sponsors can register and log in to AFFiNE Cloud. <a href="https://community.affine.pro/c/insider-general/" style="color: #1e67af" >Please click here for more information.</a>';
