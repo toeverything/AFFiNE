@@ -22,14 +22,12 @@ const SessionReporter = () => {
       prevSession.current?.status === 'unauthenticated' &&
       session.status === 'authenticated'
     ) {
-      const email = session?.data?.user.email;
       startTransition(() => {
         refreshMetadata();
       });
       pushNotification({
-        title: `${email}${t['com.affine.auth.has.signed']()}`,
-        message: '',
-        key: Date.now().toString(),
+        title: t['com.affine.auth.has.signed'](),
+        message: t['com.affine.auth.has.signed.message'](),
         type: 'success',
       });
 
