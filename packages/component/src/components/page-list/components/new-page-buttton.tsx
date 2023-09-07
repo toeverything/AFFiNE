@@ -1,7 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import { Menu } from '@toeverything/components/menu';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { BlockCard } from '../../card/block-card';
 import { DropdownButton } from './dropdown';
@@ -65,18 +65,18 @@ export const NewPageButton = ({
     <Menu
       items={
         <CreateNewPagePopup
-          createNewPage={() => {
+          createNewPage={useCallback(() => {
             createNewPage();
             setOpen(false);
-          }}
-          createNewEdgeless={() => {
+          }, [createNewPage])}
+          createNewEdgeless={useCallback(() => {
             createNewEdgeless();
             setOpen(false);
-          }}
-          importFile={() => {
+          }, [createNewEdgeless])}
+          importFile={useCallback(() => {
             importFile();
             setOpen(false);
-          }}
+          }, [importFile])}
         />
       }
       rootOptions={{
@@ -86,17 +86,17 @@ export const NewPageButton = ({
         className: menuContent,
         align: 'end',
         hideWhenDetached: true,
-        onInteractOutside: () => {
+        onInteractOutside: useCallback(() => {
           setOpen(false);
-        },
+        }, []),
       }}
     >
       <DropdownButton
-        onClick={() => {
+        onClick={useCallback(() => {
           createNewPage();
           setOpen(false);
-        }}
-        onClickDropDown={() => setOpen(!open)}
+        }, [createNewPage])}
+        onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >
         {t['New Page']()}
       </DropdownButton>
