@@ -12,6 +12,18 @@ import type { InvitationType, WorkspaceType } from '../modules/workspaces';
 
 const gql = '/graphql';
 
+export async function getCurrentMailMessageCount() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.total;
+}
+
+export async function getLatestMailMessage() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.items[0];
+}
+
 async function signUp(
   app: INestApplication,
   name: string,
@@ -192,7 +204,8 @@ async function inviteUser(
 async function acceptInviteById(
   app: INestApplication,
   workspaceId: string,
-  inviteId: string
+  inviteId: string,
+  sendAcceptMail = false
 ): Promise<boolean> {
   const res = await request(app.getHttpServer())
     .post(gql)
@@ -200,7 +213,7 @@ async function acceptInviteById(
     .send({
       query: `
           mutation {
-            acceptInviteById(workspaceId: "${workspaceId}", inviteId: "${inviteId}")
+            acceptInviteById(workspaceId: "${workspaceId}", inviteId: "${inviteId}", sendAcceptMail: ${sendAcceptMail})
           }
         `,
     })
@@ -231,7 +244,8 @@ async function acceptInvite(
 async function leaveWorkspace(
   app: INestApplication,
   token: string,
-  workspaceId: string
+  workspaceId: string,
+  sendLeaveMail = false
 ): Promise<boolean> {
   const res = await request(app.getHttpServer())
     .post(gql)
@@ -240,7 +254,7 @@ async function leaveWorkspace(
     .send({
       query: `
           mutation {
-            leaveWorkspace(workspaceId: "${workspaceId}")
+            leaveWorkspace(workspaceId: "${workspaceId}", workspaceName: "test workspace", sendLeaveMail: ${sendLeaveMail})
           }
         `,
     })

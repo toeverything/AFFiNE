@@ -109,6 +109,8 @@ export class InvitationType {
   workspace!: InvitationWorkspaceType;
   @Field({ description: 'User information' })
   user!: UserType;
+  @Field({ description: 'Invitee information' })
+  invitee!: UserType;
 }
 
 @InputType()
@@ -514,6 +516,17 @@ export class WorkspaceResolver {
         user: true,
       },
     });
+    const invitee = await this.prisma.userWorkspacePermission.findUniqueOrThrow(
+      {
+        where: {
+          id: inviteId,
+          workspaceId: permission.workspaceId,
+        },
+        include: {
+          user: true,
+        },
+      }
+    );
 
     let avatar = '';
 
@@ -532,6 +545,7 @@ export class WorkspaceResolver {
         id: permission.workspaceId,
       },
       user: owner.user,
+      invitee: invitee.user,
     };
   }
 
@@ -550,8 +564,28 @@ export class WorkspaceResolver {
   @Public()
   async acceptInviteById(
     @Args('workspaceId') workspaceId: string,
-    @Args('inviteId') inviteId: string
+    @Args('inviteId') inviteId: string,
+    @Args('sendAcceptMail', { nullable: true }) sendAcceptMail: boolean
   ) {
+    const {
+      invitee,
+      user: inviter,
+      workspace,
+    } = await this.getInviteInfo(inviteId);
+
+    if (!inviter || !invitee) {
+      throw new ForbiddenException(
+        `can not find inviter/invitee by inviteId: ${inviteId}`
+      );
+    }
+
+    if (sendAcceptMail) {
+      await this.mailer.sendAcceptedEmail(inviter.email, {
+        inviteeName: invitee.name,
+        workspaceName: workspace.name,
+      });
+    }
+
     return this.permissionProvider.acceptById(workspaceId, inviteId);
   }
 
@@ -566,9 +600,34 @@ export class WorkspaceResolver {
   @Mutation(() => Boolean)
   async leaveWorkspace(
     @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string
+    @Args('workspaceId') workspaceId: string,
+    @Args('workspaceName') workspaceName: string,
+    @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
     await this.permissionProvider.check(workspaceId, user.id);
+
+    const owner = await this.prisma.userWorkspacePermission.findFirstOrThrow({
+      where: {
+        workspaceId,
+        type: Permission.Owner,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!owner.user) {
+      throw new ForbiddenException(
+        `can not find owner by workspaceId: ${workspaceId}`
+      );
+    }
+
+    if (sendLeaveMail) {
+      await this.mailer.sendLeaveWorkspaceEmail(owner.user.email, {
+        workspaceName,
+        inviteeName: user.name,
+      });
+    }
 
     return this.permissionProvider.revoke(workspaceId, user.id);
   }

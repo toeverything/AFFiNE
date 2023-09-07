@@ -35,6 +35,7 @@ export const loader: LoaderFunction = async args => {
     variables: {
       workspaceId: res.getInviteInfo.workspace.id,
       inviteId,
+      sendAcceptMail: true,
     },
   }).catch(console.error);
 

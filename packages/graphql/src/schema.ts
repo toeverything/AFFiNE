@@ -279,6 +279,8 @@ export type GetWorkspacesQuery = {
 
 export type LeaveWorkspaceMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  workspaceName: Scalars['String']['input'];
+  sendLeaveMail: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type LeaveWorkspaceMutation = {
@@ -428,6 +430,7 @@ export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
 export type AcceptInviteByInviteIdMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   inviteId: Scalars['String']['input'];
+  sendAcceptMail: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type AcceptInviteByInviteIdMutation = {
