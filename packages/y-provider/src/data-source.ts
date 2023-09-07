@@ -1,3 +1,6 @@
+import type { Doc as YDoc} from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+
 import type { DocState } from './types';
 
 export interface DatasourceDocAdapter {
@@ -24,6 +27,40 @@ export interface DatasourceDocAdapter {
   onDocUpdate?(
     callback: (guid: string, update: Uint8Array) => void
   ): () => void;
+}
+
+export async function syncDocFromDataSource(
+  rootDoc: YDoc,
+  datasource: DatasourceDocAdapter
+) {
+  const downloadDocStateRecursively = async (doc: YDoc) => {
+    const docState = await datasource.queryDocState(doc.guid);
+    if (docState) {
+      applyUpdate(doc, docState.missing, 'sync-doc-from-datasource');
+    }
+    await Promise.all(
+      [...doc.subdocs].map(async subdoc => {
+        await downloadDocStateRecursively(subdoc);
+      })
+    );
+  };
+  await downloadDocStateRecursively(rootDoc);
+}
+
+export async function syncDataSourceFromDoc(
+  rootDoc: YDoc,
+  datasource: DatasourceDocAdapter
+) {
+  const uploadDocStateRecursively = async (doc: YDoc) => {
+    await datasource.sendDocUpdate(doc.guid, encodeStateAsUpdate(doc));
+    await Promise.all(
+      [...doc.subdocs].map(async subdoc => {
+        await uploadDocStateRecursively(subdoc);
+      })
+    );
+  };
+
+  await uploadDocStateRecursively(rootDoc);
 }
 
 /**

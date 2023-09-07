@@ -3,12 +3,14 @@ import type {
   LocalIndexedDBBackgroundProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
+import {
+  syncDataSourceFromDoc,
+  syncDocFromDataSource,
+} from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import { Button } from '@toeverything/components/button';
 import { forceUpgradePages } from '@toeverything/infra/blocksuite';
 import { useCallback, useMemo, useState } from 'react';
-import type { Doc as YDoc } from 'yjs';
-import { applyUpdate, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 
@@ -36,85 +38,31 @@ export const MigrationFallback = function MigrationFallback() {
   }, [providers]);
   const handleClick = useCallback(async () => {
     setDone(false);
-    const downloadRecursively = async (doc: YDoc) => {
-      {
-        const docState = await localProvider.datasource.queryDocState(
-          doc.guid,
-          {
-            stateVector: encodeStateVector(doc),
-          }
-        );
-        console.log('download indexeddb', doc.guid);
-        if (docState) {
-          applyUpdate(doc, docState.missing, 'migration');
-        }
-      }
-      if (remoteProvider) {
-        {
-          const docState = await remoteProvider.datasource.queryDocState(
-            doc.guid,
-            {
-              stateVector: encodeStateVector(doc),
-            }
-          );
-          console.log('download remote', doc.guid);
-          if (docState) {
-            applyUpdate(doc, docState.missing, 'migration');
-          }
-        }
-      }
-      await Promise.all(
-        [...doc.subdocs].map(async subdoc => {
-          await downloadRecursively(subdoc);
-        })
+    await syncDocFromDataSource(
+      workspace.blockSuiteWorkspace.doc,
+      localProvider.datasource
+    );
+    if (remoteProvider) {
+      await syncDocFromDataSource(
+        workspace.blockSuiteWorkspace.doc,
+        remoteProvider.datasource
       );
-      {
-        await localProvider.datasource.sendDocUpdate(
-          doc.guid,
-          encodeStateAsUpdate(doc)
-        );
-        console.log('upload indexeddb', doc.guid);
-        if (remoteProvider) {
-          await remoteProvider.datasource.sendDocUpdate(
-            doc.guid,
-            encodeStateAsUpdate(doc)
-          );
-          console.log('upload remote', doc.guid);
-        }
-      }
-    };
-    const uploadRecursively = async (doc: YDoc) => {
-      {
-        await localProvider.datasource.sendDocUpdate(
-          doc.guid,
-          encodeStateAsUpdate(doc)
-        );
-        console.log('upload indexeddb', doc.guid);
-        if (remoteProvider) {
-          await remoteProvider.datasource.sendDocUpdate(
-            doc.guid,
-            encodeStateAsUpdate(doc)
-          );
-          console.log('upload remote', doc.guid);
-        }
-      }
-      await Promise.all(
-        [...doc.subdocs].map(async subdoc => {
-          await uploadRecursively(subdoc);
-        })
-      );
-    };
+    }
 
-    await downloadRecursively(workspace.blockSuiteWorkspace.doc);
-    console.log('download done');
-
-    console.log('start migration');
     await forceUpgradePages({
       getCurrentRootDoc: async () => workspace.blockSuiteWorkspace.doc,
       getSchema: () => workspace.blockSuiteWorkspace.schema,
     });
-    await uploadRecursively(workspace.blockSuiteWorkspace.doc);
-    console.log('migration done');
+    await syncDataSourceFromDoc(
+      workspace.blockSuiteWorkspace.doc,
+      localProvider.datasource
+    );
+    if (remoteProvider) {
+      await syncDataSourceFromDoc(
+        workspace.blockSuiteWorkspace.doc,
+        remoteProvider.datasource
+      );
+    }
     setDone(true);
   }, [
     localProvider.datasource,
