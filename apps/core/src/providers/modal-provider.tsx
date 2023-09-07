@@ -8,12 +8,7 @@ import {
 } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useTransition,
-} from 'react';
+import { lazy, Suspense, useCallback, useTransition } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {

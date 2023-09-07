@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { type App, type BrowserWindow,ipcMain } from 'electron';
+import { type App, type BrowserWindow, ipcMain } from 'electron';
 
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { logger } from './logger';
@@ -11,7 +11,6 @@ import {
   restoreOrCreateWindow,
   setCookie,
 } from './main-window';
-import { uiSubjects } from './ui';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
 if (isDev) {

@@ -7,7 +7,7 @@ import { refreshRootMetadataAtom } from '@affine/workspace/atom';
 import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { SessionProvider, useSession } from 'next-auth/react';
-import { type PropsWithChildren,startTransition, useRef } from 'react';
+import { type PropsWithChildren, startTransition, useRef } from 'react';
 
 const SessionReporter = () => {
   const session = useSession();

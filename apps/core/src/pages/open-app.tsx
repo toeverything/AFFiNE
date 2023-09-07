@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { fetcher } from '@affine/workspace/affine/gql';
 import { Logo1Icon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   type LoaderFunction,
   useLoaderData,
