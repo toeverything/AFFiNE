@@ -11,6 +11,7 @@ import { useCallback, useEffect } from 'react';
 import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
+import { setOnceSignedInEventAtom } from '../atoms/event';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useAppHelper } from '../hooks/use-workspaces';
@@ -51,15 +52,13 @@ export const Component = () => {
   const { addCloudWorkspace } = useAppHelper();
   const { jumpToSubPath } = useNavigateHelper();
 
+  const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
+
   const setAuthAtom = useSetAtom(authAtom);
   const { inviteInfo } = useLoaderData() as {
     inviteId: string;
     inviteInfo: GetInviteInfoQuery['getInviteInfo'];
   };
-
-  const loadWorkspaceAfterSignIn = useCallback(() => {
-    addCloudWorkspace(inviteInfo.workspace.id);
-  }, [addCloudWorkspace, inviteInfo.workspace.id]);
 
   const openWorkspace = useCallback(() => {
     addCloudWorkspace(inviteInfo.workspace.id);
@@ -73,10 +72,7 @@ export const Component = () => {
   useEffect(() => {
     if (loginStatus === 'unauthenticated') {
       // We can not pass function to navigate state, so we need to save it in atom
-      setAuthAtom(prev => ({
-        ...prev,
-        onceSignedIn: loadWorkspaceAfterSignIn,
-      }));
+      setOnceSignedInEvent(openWorkspace);
       jumpToSignIn(RouteLogic.REPLACE, {
         state: {
           callbackURL: `/workspace/${inviteInfo.workspace.id}/all`,
@@ -86,9 +82,10 @@ export const Component = () => {
   }, [
     inviteInfo.workspace.id,
     jumpToSignIn,
-    loadWorkspaceAfterSignIn,
     loginStatus,
+    openWorkspace,
     setAuthAtom,
+    setOnceSignedInEvent,
   ]);
 
   if (loginStatus === 'authenticated') {
