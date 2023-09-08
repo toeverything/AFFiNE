@@ -124,7 +124,7 @@ type InvitationWorkspaceType {
 }
 
 type WorkspaceBlobSizes {
-  size: Int!
+  size: Float!
 }
 
 type InvitationType {
@@ -158,6 +158,7 @@ type Query {
   listBlobs(workspaceId: String!): [String!]!
   collectBlobSizes(workspaceId: String!): WorkspaceBlobSizes!
   collectAllBlobSizes: WorkspaceBlobSizes!
+  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 
   """Get current user"""
   currentUser: UserType!

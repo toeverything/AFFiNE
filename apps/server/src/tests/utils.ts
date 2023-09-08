@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
+
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { hashSync } from '@node-rs/argon2';
+import { PrismaClient, User } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
@@ -386,6 +389,27 @@ async function collectAllBlobSizes(
   return res.body.data.collectAllBlobSizes.size;
 }
 
+async function checkBlobSize(
+  app: INestApplication,
+  token: string,
+  workspaceId: string,
+  size: number
+): Promise<number> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .send({
+      query: `query checkBlobSize($workspaceId: String!, $size: Float!) {
+        checkBlobSize(workspaceId: $workspaceId, size: $size) {
+          size
+        }
+      }`,
+      variables: { workspaceId, size },
+    })
+    .expect(200);
+  return res.body.data.checkBlobSize.size;
+}
+
 async function setBlob(
   app: INestApplication,
   token: string,
@@ -477,9 +501,37 @@ async function getInviteInfo(
   return res.body.data.getInviteInfo;
 }
 
+export class FakePrisma {
+  fakeUser: User = {
+    id: randomUUID(),
+    name: 'Alex Yang',
+    avatarUrl: '',
+    email: 'alex.yang@example.org',
+    password: hashSync('123456'),
+    emailVerified: new Date(),
+    createdAt: new Date(),
+  };
+  get user() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const prisma = this;
+    return {
+      async findFirst() {
+        return prisma.fakeUser;
+      },
+      async findUnique() {
+        return this.findFirst();
+      },
+      async update() {
+        return this.findFirst();
+      },
+    };
+  }
+}
+
 export {
   acceptInvite,
   acceptInviteById,
+  checkBlobSize,
   collectAllBlobSizes,
   collectBlobSizes,
   createTestApp,

@@ -23,7 +23,7 @@ import { AuthHandler } from 'next-auth/core';
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
+import { AuthThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
@@ -47,7 +47,7 @@ export class NextAuthController {
     this.callbackSession = nextAuthOptions.callbacks!.session;
   }
 
-  @UseGuards(CloudThrottlerGuard)
+  @UseGuards(AuthThrottlerGuard)
   @Throttle(60, 60)
   @All('*')
   async auth(
@@ -197,7 +197,7 @@ export class NextAuthController {
       throw new BadRequestException(`Invalid new session data`);
     }
     if (password) {
-      const user = await this.getUserFromRequest(req);
+      const user = await this.verifyUserFromRequest(req);
       const { password: userPassword } = user;
       if (!oldPassword) {
         if (userPassword) {
@@ -223,7 +223,7 @@ export class NextAuthController {
       }
       return user;
     } else {
-      const user = await this.getUserFromRequest(req);
+      const user = await this.verifyUserFromRequest(req);
       return this.prisma.user.update({
         where: {
           id: user.id,
@@ -233,7 +233,7 @@ export class NextAuthController {
     }
   }
 
-  private async getUserFromRequest(req: Request): Promise<User> {
+  private async verifyUserFromRequest(req: Request): Promise<User> {
     const token = req.headers.authorization;
     if (!token) {
       const session = await AuthHandler({

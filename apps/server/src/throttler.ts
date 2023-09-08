@@ -54,4 +54,22 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
   }
 }
 
+@Injectable()
+export class AuthThrottlerGuard extends CloudThrottlerGuard {
+  override async handleRequest(
+    context: ExecutionContext,
+    limit: number,
+    ttl: number
+  ): Promise<boolean> {
+    const { req } = this.getRequestResponse(context);
+
+    if (req?.url === '/api/auth/session') {
+      // relax throttle for session auto renew
+      return super.handleRequest(context, limit * 20, ttl);
+    }
+
+    return super.handleRequest(context, limit, ttl);
+  }
+}
+
 export { Throttle };

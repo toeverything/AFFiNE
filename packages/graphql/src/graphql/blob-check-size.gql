@@ -1,0 +1,5 @@
+query checkBlobSizes($workspaceId: String!, $size: Float!) {
+  checkBlobSize(workspaceId: $workspaceId, size: $size) {
+    size
+  }
+}

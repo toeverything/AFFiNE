@@ -27,8 +27,6 @@ export type AuthAtom = {
   state: AuthProps['state'];
   email?: string;
   emailType?: AuthProps['emailType'];
-  // Only used for sign in page callback, after called, it will be set to undefined
-  onceSignedIn?: () => void;
 };
 
 export const authAtom = atom<AuthAtom>({
