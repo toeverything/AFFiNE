@@ -1,3 +1,11 @@
-mutation leaveWorkspace($workspaceId: String!) {
-  leaveWorkspace(workspaceId: $workspaceId)
+mutation leaveWorkspace(
+  $workspaceId: String!
+  $workspaceName: String!
+  $sendLeaveMail: Boolean
+) {
+  leaveWorkspace(
+    workspaceId: $workspaceId
+    workspaceName: $workspaceName
+    sendLeaveMail: $sendLeaveMail
+  )
 }

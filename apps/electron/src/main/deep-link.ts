@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { App } from 'electron';
+import { type App, type BrowserWindow, ipcMain } from 'electron';
 
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { logger } from './logger';
@@ -11,7 +11,6 @@ import {
   restoreOrCreateWindow,
   setCookie,
 } from './main-window';
-import { uiSubjects } from './ui';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
 if (isDev) {
@@ -100,16 +99,16 @@ async function handleOauthJwt(url: string) {
         isSecure ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url'
       );
 
+      let hiddenWindow: BrowserWindow | null = null;
+
+      ipcMain.once('affine:login', () => {
+        hiddenWindow?.destroy();
+      });
+
       // hacks to refresh auth state in the main window
-      const window = await handleOpenUrlInHiddenWindow(
+      hiddenWindow = await handleOpenUrlInHiddenWindow(
         mainWindowOrigin + '/auth/signIn'
       );
-      uiSubjects.onFinishLogin.next({
-        success: true,
-      });
-      setTimeout(() => {
-        window.destroy();
-      }, 3000);
     } catch (e) {
       logger.error('failed to open url in popup', e);
     }

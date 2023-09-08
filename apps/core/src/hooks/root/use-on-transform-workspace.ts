@@ -1,6 +1,8 @@
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
@@ -14,11 +16,14 @@ import { openSettingModalAtom } from '../../atoms';
 import { useNavigateHelper } from '../use-navigate-helper';
 
 export function useOnTransformWorkspace() {
+  const t = useAFFiNEI18N();
   const setSettingModal = useSetAtom(openSettingModalAtom);
   const WorkspaceAdapters = useAtomValue(workspaceAdaptersAtom);
   const setMetadata = useSetAtom(rootWorkspacesMetadataAtom);
   const { openPage } = useNavigateHelper();
   const currentPageId = useAtomValue(currentPageIdAtom);
+  const pushNotification = useSetAtom(pushNotificationAtom);
+
   return useCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
@@ -55,8 +60,20 @@ export function useOnTransformWorkspace() {
         })
       );
       openPage(newId, currentPageId ?? WorkspaceSubPath.ALL);
+      pushNotification({
+        title: t['Successfully enabled AFFiNE Cloud'](),
+        type: 'success',
+      });
     },
-    [WorkspaceAdapters, setMetadata, setSettingModal, openPage, currentPageId]
+    [
+      WorkspaceAdapters,
+      setMetadata,
+      setSettingModal,
+      openPage,
+      currentPageId,
+      pushNotification,
+      t,
+    ]
   );
 }
 

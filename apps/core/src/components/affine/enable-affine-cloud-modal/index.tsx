@@ -2,7 +2,12 @@ import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
+import { useSetAtom } from 'jotai';
+import { useCallback } from 'react';
 
+import { authAtom } from '../../../atoms';
+import { setOnceSignedInEventAtom } from '../../../atoms/event';
+import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { ButtonContainer, Content, Header, StyleTips, Title } from './style';
 
 interface EnableAffineCloudModalProps {
@@ -12,11 +17,31 @@ interface EnableAffineCloudModalProps {
 }
 
 export const EnableAffineCloudModal = ({
-  onConfirm,
+  onConfirm: propsOnConfirm,
   open,
   onClose,
 }: EnableAffineCloudModalProps) => {
   const t = useAFFiNEI18N();
+  const loginStatus = useCurrentLoginStatus();
+  const setAuthAtom = useSetAtom(authAtom);
+  const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
+
+  const confirm = useCallback(async () => {
+    return propsOnConfirm();
+  }, [propsOnConfirm]);
+
+  const onConfirm = useCallback(() => {
+    if (loginStatus === 'unauthenticated') {
+      setAuthAtom(prev => ({
+        ...prev,
+        openModal: true,
+      }));
+      setOnceSignedInEvent(confirm);
+    }
+    if (loginStatus === 'authenticated') {
+      return propsOnConfirm();
+    }
+  }, [confirm, loginStatus, propsOnConfirm, setAuthAtom, setOnceSignedInEvent]);
 
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
@@ -42,7 +67,9 @@ export const EnableAffineCloudModal = ({
                 block
                 onClick={onConfirm}
               >
-                {t['Sign in and Enable']()}
+                {loginStatus === 'authenticated'
+                  ? t['Enable']()
+                  : t['Sign in and Enable']()}
               </Button>
             </div>
           </ButtonContainer>

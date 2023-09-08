@@ -1,11 +1,11 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import { Menu } from '@toeverything/components/menu';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
-// import { Menu } from '../../../ui/menu/menu';
 import { BlockCard } from '../../card/block-card';
 import { DropdownButton } from './dropdown';
+import { menuContent } from './dropdown.css';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
@@ -63,32 +63,40 @@ export const NewPageButton = ({
   const [open, setOpen] = useState(false);
   return (
     <Menu
+      items={
+        <CreateNewPagePopup
+          createNewPage={useCallback(() => {
+            createNewPage();
+            setOpen(false);
+          }, [createNewPage])}
+          createNewEdgeless={useCallback(() => {
+            createNewEdgeless();
+            setOpen(false);
+          }, [createNewEdgeless])}
+          importFile={useCallback(() => {
+            importFile();
+            setOpen(false);
+          }, [importFile])}
+        />
+      }
       rootOptions={{
         open,
       }}
-      items={
-        <CreateNewPagePopup
-          createNewPage={() => {
-            createNewPage();
-            setOpen(false);
-          }}
-          createNewEdgeless={() => {
-            createNewEdgeless();
-            setOpen(false);
-          }}
-          importFile={() => {
-            importFile();
-            setOpen(false);
-          }}
-        />
-      }
+      contentOptions={{
+        className: menuContent,
+        align: 'end',
+        hideWhenDetached: true,
+        onInteractOutside: useCallback(() => {
+          setOpen(false);
+        }, []),
+      }}
     >
       <DropdownButton
-        onClick={() => {
+        onClick={useCallback(() => {
           createNewPage();
           setOpen(false);
-        }}
-        onClickDropDown={() => setOpen(!open)}
+        }, [createNewPage])}
+        onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >
         {t['New Page']()}
       </DropdownButton>

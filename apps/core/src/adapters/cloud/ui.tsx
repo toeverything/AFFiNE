@@ -6,6 +6,8 @@ import type {
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { lazy, useCallback } from 'react';
 
+import type { OnLoadEditor } from '../../components/page-detail-editor';
+import { useCurrentUser } from '../../hooks/affine/use-current-user';
 import { useIsWorkspaceOwner } from '../../hooks/affine/use-is-workspace-owner';
 import { useWorkspace } from '../../hooks/use-workspace';
 import {
@@ -32,12 +34,28 @@ export const UI = {
     if (!page) {
       throw new PageNotFoundError(workspace.blockSuiteWorkspace, currentPageId);
     }
+    // this should be safe because we are under cloud workspace adapter
+    const currentUser = useCurrentUser();
+    const onLoad = useCallback<OnLoadEditor>(
+      (...args) => {
+        const dispose = onLoadEditor(...args);
+        workspace.blockSuiteWorkspace.awarenessStore.awareness.setLocalStateField(
+          'user',
+          {
+            name: currentUser.name,
+          }
+        );
+        return dispose;
+      },
+      [currentUser, workspace, onLoadEditor]
+    );
+
     return (
       <>
         <PageDetailEditor
           pageId={currentPageId}
           onInit={useCallback(async page => initEmptyPage(page), [])}
-          onLoad={onLoadEditor}
+          onLoad={onLoad}
           workspace={workspace.blockSuiteWorkspace}
         />
       </>

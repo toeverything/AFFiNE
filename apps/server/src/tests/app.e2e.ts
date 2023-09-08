@@ -6,7 +6,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { User } from '@prisma/client';
-import test from 'ava';
+import ava, { TestFn } from 'ava';
 import { Express } from 'express';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
@@ -17,7 +17,9 @@ import { PrismaService } from '../prisma/service';
 
 const gql = '/graphql';
 
-let app: INestApplication;
+const test = ava as TestFn<{
+  app: INestApplication;
+}>;
 
 class FakePrisma {
   fakeUser: User = {
@@ -46,33 +48,33 @@ class FakePrisma {
   }
 }
 
-test.beforeEach(async () => {
+test.beforeEach(async t => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
   })
     .overrideProvider(PrismaService)
     .useClass(FakePrisma)
     .compile();
-  app = module.createNestApplication({
+  t.context.app = module.createNestApplication({
     cors: true,
     bodyParser: true,
   });
-  app.use(
+  t.context.app.use(
     graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024,
       maxFiles: 5,
     })
   );
-  await app.init();
+  await t.context.app.init();
 });
 
-test.afterEach(async () => {
-  await app.close();
+test.afterEach(async t => {
+  await t.context.app.close();
 });
 
 test('should init app', async t => {
-  t.is(typeof app, 'object');
-  await request(app.getHttpServer())
+  t.is(typeof t.context.app, 'object');
+  await request(t.context.app.getHttpServer())
     .post(gql)
     .send({
       query: `
@@ -83,9 +85,9 @@ test('should init app', async t => {
     })
     .expect(400);
 
-  const { token } = await createToken(app);
+  const { token } = await createToken(t.context.app);
 
-  await request(app.getHttpServer())
+  await request(t.context.app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
     .send({
@@ -102,8 +104,8 @@ test('should init app', async t => {
 });
 
 test('should find default user', async t => {
-  const { token } = await createToken(app);
-  await request(app.getHttpServer())
+  const { token } = await createToken(t.context.app);
+  await request(t.context.app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
     .send({
@@ -123,14 +125,14 @@ test('should find default user', async t => {
 });
 
 test('should be able to upload avatar', async t => {
-  const { token, id } = await createToken(app);
+  const { token, id } = await createToken(t.context.app);
   const png = await Transformer.fromRgbaPixels(
     Buffer.alloc(400 * 400 * 4).fill(255),
     400,
     400
   ).png();
 
-  await request(app.getHttpServer())
+  await request(t.context.app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
     .field(

@@ -7,8 +7,8 @@ export const emailTemplate = ({
 }: {
   title: string;
   content: string;
-  buttonContent: string;
-  buttonUrl: string;
+  buttonContent?: string;
+  buttonUrl?: string;
   subContent?: string;
 }) => {
   return `<body style="background: #f6f7fb; overflow: hidden">
@@ -59,7 +59,9 @@ export const emailTemplate = ({
             "
           >${content}</td>
         </tr>
-        <tr>
+        ${
+          buttonContent && buttonUrl
+            ? `<tr>
           <td style="margin-left: 24px; padding-top: 0; padding-bottom: ${
             subContent ? '0' : '64px'
           }">
@@ -78,7 +80,7 @@ export const emailTemplate = ({
                       text-decoration: none;
                       border-radius: 8px;
                       padding: 8px 18px;
-                      border: 1px solid #1e96eb;
+                      border: 1px solid rgba(0,0,0,.1);
                       display: inline-block;
                       font-weight: bold;
                     "
@@ -88,7 +90,9 @@ export const emailTemplate = ({
               </tr>
             </table>
           </td>
-        </tr>
+        </tr>`
+            : ''
+        }
          ${
            subContent
              ? `<tr>

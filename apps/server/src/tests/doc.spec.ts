@@ -42,6 +42,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
+  await m.close();
   timer.restore();
 });
 

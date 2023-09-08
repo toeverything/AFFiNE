@@ -91,6 +91,7 @@
   "com.affine.nameWorkspace.button.create": "Создать",
   "com.affine.nameWorkspace.description": "Рабочее пространство - это ваше виртуальное пространство для фиксации, создания и планирования в одиночку или в команде. ",
   "com.affine.nameWorkspace.placeholder": "Задайте имя рабочего пространства",
+  "com.affine.notFoundPage.backButton": "Вернуться на Главную",
   "com.affine.notFoundPage.title": "404 - Страница не найдена",
   "com.affine.openPageOperation.newTab": "Открыть в новой вкладке",
   "com.affine.pageMode.all": "все",
