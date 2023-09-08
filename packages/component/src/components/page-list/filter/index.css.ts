@@ -1,14 +1,12 @@
 import { style } from '@vanilla-extract/css';
 
 export const menuItemStyle = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-  padding: '0px 24px 0px 8px',
+  fontSize: 'var(--affine-font-xs)',
 });
 export const variableSelectTitleStyle = style({
-  marginLeft: '12px',
-  marginTop: '10px',
+  margin: '7px 16px',
+  fontWeight: 500,
+  lineHeight: '20px',
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
 });
@@ -21,7 +19,7 @@ export const variableSelectDividerStyle = style({
   background: 'var(--affine-border-color)',
 });
 export const menuItemTextStyle = style({
-  fontSize: 'var(--affine-font-sm)',
+  fontSize: 'var(--affine-font-xs)',
 });
 export const filterItemStyle = style({
   display: 'flex',

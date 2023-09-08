@@ -206,6 +206,7 @@ export const CollectionList = ({
         }}
       >
         <Button
+          className={styles.filterMenuTrigger}
           type="default"
           icon={<FilteredIcon />}
           data-testid="create-first-filter"
