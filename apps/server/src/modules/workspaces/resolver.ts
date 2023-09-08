@@ -2,6 +2,7 @@ import type { Storage } from '@affine/storage';
 import {
   ForbiddenException,
   Inject,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   UseGuards,
@@ -426,17 +427,33 @@ export class WorkspaceResolver {
       if (sendInviteMail) {
         const inviteInfo = await this.getInviteInfo(inviteId);
 
-        await this.mailer.sendInviteEmail(email, inviteId, {
-          workspace: {
-            id: inviteInfo.workspace.id,
-            name: inviteInfo.workspace.name,
-            avatar: inviteInfo.workspace.avatar,
-          },
-          user: {
-            avatar: inviteInfo.user?.avatarUrl || '',
-            name: inviteInfo.user?.name || '',
-          },
-        });
+        try {
+          await this.mailer.sendInviteEmail(email, inviteId, {
+            workspace: {
+              id: inviteInfo.workspace.id,
+              name: inviteInfo.workspace.name,
+              avatar: inviteInfo.workspace.avatar,
+            },
+            user: {
+              avatar: inviteInfo.user?.avatarUrl || '',
+              name: inviteInfo.user?.name || '',
+            },
+          });
+        } catch (e) {
+          const ret = await this.permissions.revoke(workspaceId, target.id);
+
+          if (!ret) {
+            this.logger.fatal(
+              `failed to send ${workspaceId} invite email to ${email} and failed to revoke permission: ${inviteId}, ${e}`
+            );
+          } else {
+            this.logger.warn(
+              `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
+            );
+          }
+
+          return new InternalServerErrorException(e);
+        }
       }
       return inviteId;
     } else {
@@ -449,17 +466,33 @@ export class WorkspaceResolver {
       if (sendInviteMail) {
         const inviteInfo = await this.getInviteInfo(inviteId);
 
-        await this.mailer.sendInviteEmail(email, inviteId, {
-          workspace: {
-            id: inviteInfo.workspace.id,
-            name: inviteInfo.workspace.name,
-            avatar: inviteInfo.workspace.avatar,
-          },
-          user: {
-            avatar: inviteInfo.user?.avatarUrl || '',
-            name: inviteInfo.user?.name || '',
-          },
-        });
+        try {
+          await this.mailer.sendInviteEmail(email, inviteId, {
+            workspace: {
+              id: inviteInfo.workspace.id,
+              name: inviteInfo.workspace.name,
+              avatar: inviteInfo.workspace.avatar,
+            },
+            user: {
+              avatar: inviteInfo.user?.avatarUrl || '',
+              name: inviteInfo.user?.name || '',
+            },
+          });
+        } catch (e) {
+          const ret = await this.permissions.revoke(workspaceId, user.id);
+
+          if (!ret) {
+            this.logger.fatal(
+              `failed to send ${workspaceId} invite email to ${email} and failed to revoke permission: ${inviteId}, ${e}`
+            );
+          } else {
+            this.logger.warn(
+              `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
+            );
+          }
+
+          return new InternalServerErrorException(e);
+        }
       }
       return inviteId;
     }
