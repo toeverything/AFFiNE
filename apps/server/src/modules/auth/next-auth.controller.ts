@@ -17,7 +17,7 @@ import { hash, verify } from '@node-rs/argon2';
 import type { User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { pick } from 'lodash-es';
-import type { AuthAction, NextAuthOptions } from 'next-auth';
+import type { AuthAction, CookieOption, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
@@ -28,6 +28,8 @@ import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
 const BASE_URL = '/api/auth/';
+
+const DEFAULT_SESSION_EXPIRE_DATE = 2592000 * 1000; // 30 days
 
 @Controller(BASE_URL)
 export class NextAuthController {
@@ -69,7 +71,11 @@ export class NextAuthController {
       .slice(BASE_URL.length) // make relative to baseUrl
       .replace(/\?.*/, '') // remove query part, use only path part
       .split('/') as [AuthAction, string]; // as array of strings;
-    if (providerId === 'credentials') {
+
+    const credentialsSignIn =
+      req.method === 'POST' && providerId === 'credentials';
+    let userId: string | undefined;
+    if (credentialsSignIn) {
       const { email } = req.body;
       if (email) {
         const user = await this.prisma.user.findFirst({
@@ -83,6 +89,7 @@ export class NextAuthController {
           req.body = null;
           throw new NotFoundException(`User not found`);
         } else {
+          userId = user.id;
           req.body = {
             ...req.body,
             name: user.name,
@@ -138,6 +145,29 @@ export class NextAuthController {
       for (const cookie of cookies) {
         res.cookie(cookie.name, cookie.value, cookie.options);
       }
+    }
+
+    let nextAuthTokenCookie: (CookieOption & { value: string }) | undefined;
+    // next-auth credentials login only support JWT strategy
+    // https://next-auth.js.org/configuration/providers/credentials
+    // let's store the session token in the database
+    if (
+      credentialsSignIn &&
+      (nextAuthTokenCookie = cookies?.find(
+        ({ name }) => name === 'next-auth.session-token'
+      ))
+    ) {
+      const cookieExpires = new Date();
+      cookieExpires.setTime(
+        cookieExpires.getTime() + DEFAULT_SESSION_EXPIRE_DATE
+      );
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await this.nextAuthOptions.adapter!.createSession!({
+        sessionToken: nextAuthTokenCookie.value,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        userId: userId!,
+        expires: cookieExpires,
+      });
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
