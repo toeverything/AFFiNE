@@ -6,6 +6,7 @@ import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { authAtom } from '../../../atoms';
+import { setOnceSignedInEventAtom } from '../../../atoms/event';
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { ButtonContainer, Content, Header, StyleTips, Title } from './style';
 
@@ -23,8 +24,8 @@ export const EnableAffineCloudModal = ({
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
   const setAuthAtom = useSetAtom(authAtom);
+  const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
 
-  // FIXME: If onConfirm is transferWorkspace, code will throw error
   const confirm = useCallback(async () => {
     return propsOnConfirm();
   }, [propsOnConfirm]);
@@ -34,13 +35,13 @@ export const EnableAffineCloudModal = ({
       setAuthAtom(prev => ({
         ...prev,
         openModal: true,
-        onceSignedIn: confirm,
       }));
+      setOnceSignedInEvent(confirm);
     }
     if (loginStatus === 'authenticated') {
       return propsOnConfirm();
     }
-  }, [confirm, loginStatus, propsOnConfirm, setAuthAtom]);
+  }, [confirm, loginStatus, propsOnConfirm, setAuthAtom, setOnceSignedInEvent]);
 
   return (
     <Modal open={open} onClose={onClose} data-testid="logout-modal">
