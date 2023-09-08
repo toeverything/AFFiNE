@@ -1,30 +1,36 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 test('Collapse Sidebar', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  await waitForEditorLoad(page);
+  await page
+    .locator('[data-testid=app-sidebar-arrow-button-collapse][data-show=true]')
+    .click();
   const sliderBarArea = page.getByTestId('app-sidebar');
   await expect(sliderBarArea).not.toBeInViewport();
 });
 
 test('Expand Sidebar', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await page.getByTestId('app-sidebar-arrow-button-collapse').click();
+  await waitForEditorLoad(page);
+  await page
+    .locator('[data-testid=app-sidebar-arrow-button-collapse][data-show=true]')
+    .click();
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).not.toBeInViewport();
 
-  await page.getByTestId('app-sidebar-arrow-button-expand').click();
+  await page
+    .locator('[data-testid=app-sidebar-arrow-button-expand][data-show=true]')
+    .click();
   await expect(sliderBarArea).toBeInViewport();
 });
 
 test('Click resizer can close sidebar', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).toBeVisible();
 
@@ -34,7 +40,7 @@ test('Click resizer can close sidebar', async ({ page }) => {
 
 test('Drag resizer can resize sidebar', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).toBeVisible();
 
@@ -51,7 +57,7 @@ test('Drag resizer can resize sidebar', async ({ page }) => {
 
 test('Sidebar in between sm & md breakpoint', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   const sliderBarModalBackground = page.getByTestId('app-sidebar-float-mask');
   await expect(sliderBarArea).toBeInViewport();

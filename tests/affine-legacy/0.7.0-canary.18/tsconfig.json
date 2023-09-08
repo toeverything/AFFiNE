@@ -7,6 +7,9 @@
   "include": ["e2e"],
   "references": [
     {
+      "path": "../../fixtures"
+    },
+    {
       "path": "../../kit"
     }
   ]

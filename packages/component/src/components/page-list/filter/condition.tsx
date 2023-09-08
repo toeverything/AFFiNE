@@ -1,9 +1,9 @@
 import type { Filter, Literal } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
+import { Menu, MenuItem } from '@toeverything/components/menu';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
-import { Menu, MenuItem } from '../../../ui/menu';
 import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';
@@ -50,8 +50,7 @@ export const Condition = ({
           style={{ display: 'flex', userSelect: 'none', alignItems: 'center' }}
         >
           <Menu
-            trigger="click"
-            content={
+            items={
               <VariableSelect
                 propertiesMeta={propertiesMeta}
                 selected={[]}
@@ -67,8 +66,7 @@ export const Condition = ({
             </div>
           </Menu>
           <Menu
-            trigger="click"
-            content={
+            items={
               <FunctionSelect
                 propertiesMeta={propertiesMeta}
                 value={value}

@@ -49,6 +49,7 @@ export const Modal = (props: ModalProps) => {
       slots={{ backdrop: Backdrop }}
       alignItems={transformConfig[vertical]}
       justifyContent={transformConfig[horizontal]}
+      disableEnforceFocus
     >
       <Fade in={open}>{children}</Fade>
     </StyledModal>

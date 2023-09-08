@@ -7,6 +7,7 @@ export const header = style({
   position: 'relative',
   padding: '0 16px',
   minHeight: '52px',
+  background: 'var(--affine-background-primary-color)',
   borderBottom: '1px solid var(--affine-border-color)',
   zIndex: 2,
   selectors: {
@@ -32,6 +33,9 @@ export const headerItem = style({
   selectors: {
     '&.top-item': {
       height: '52px',
+    },
+    '&.top-item-visible': {
+      marginRight: '20px',
     },
     '&.left': {
       justifyContent: 'left',
@@ -96,6 +100,7 @@ export const windowAppControl = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '0',
+  color: 'var(--affine-icon-color)',
   selectors: {
     '&[data-type="close"]': {
       width: '56px',

@@ -51,7 +51,7 @@ export const AddCollectionButton = ({
         onConfirm={setting.saveCollection}
         open={show}
         onClose={() => showUpdateCollection(false)}
-        title={t['Save As New Collection']()}
+        title={t['com.affine.editCollection.saveCollection']()}
         init={defaultCollection}
       />
     </>

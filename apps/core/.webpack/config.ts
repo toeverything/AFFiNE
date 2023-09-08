@@ -128,9 +128,7 @@ export const createConfiguration: (
 
     devtool:
       buildFlags.mode === 'production'
-        ? buildFlags.distribution === 'desktop'
-          ? 'nosources-source-map'
-          : 'source-map'
+        ? 'source-map'
         : 'eval-cheap-module-source-map',
 
     resolve: {
@@ -227,11 +225,8 @@ export const createConfiguration: (
             {
               loader: require.resolve('source-map-loader'),
               options: {
-                filterSourceMappingUrl: (
-                  _url: string,
-                  resourcePath: string
-                ) => {
-                  return resourcePath.includes('@blocksuite');
+                filterSourceMappingUrl: (_url: string) => {
+                  return false;
                 },
               },
             },

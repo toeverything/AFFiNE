@@ -173,3 +173,33 @@ export async function overwriteBinary(
     ],
   });
 }
+
+export async function pushBinary(
+  guid: string,
+  update: UpdateMessage['update'],
+  dbName = DEFAULT_DB_NAME
+) {
+  const dbPromise = openDB<BlockSuiteBinaryDB>(dbName, dbVersion, {
+    upgrade: upgradeDB,
+  });
+  const db = await dbPromise;
+  const t = db.transaction('workspace', 'readwrite').objectStore('workspace');
+  const doc = await t.get(guid);
+  if (!doc) {
+    await t.put({
+      id: guid,
+      updates: [
+        {
+          timestamp: Date.now(),
+          update,
+        },
+      ],
+    });
+  } else {
+    doc.updates.push({
+      timestamp: Date.now(),
+      update,
+    });
+    await t.put(doc);
+  }
+}

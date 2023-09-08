@@ -33,12 +33,12 @@ export const SetPasswordPage: FC<{
     <AuthPageContainer
       title={
         hasSetUp
-          ? t['com.affine.auth.sign.up.success.title']()
-          : t['com.affine.auth.page.sent.email.title']()
+          ? t['com.affine.auth.set.password.page.success']()
+          : t['com.affine.auth.set.password.page.title']()
       }
       subtitle={
         hasSetUp ? (
-          t['com.affine.auth.sign.up.success.subtitle']()
+          t['com.affine.auth.sent.set.password.success.message']()
         ) : (
           <>
             {t['com.affine.auth.page.sent.email.subtitle']()}
@@ -47,7 +47,6 @@ export const SetPasswordPage: FC<{
         )
       }
     >
-      <h1>This is set page</h1>
       {hasSetUp ? (
         <Button type="primary" size="large" onClick={onOpenAffine}>
           {t['com.affine.auth.open.affine']()}

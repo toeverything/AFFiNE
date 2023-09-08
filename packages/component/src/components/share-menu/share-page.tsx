@@ -1,15 +1,9 @@
-import {
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  RadioButton,
-  RadioButtonGroup,
-  Switch,
-} from '@affine/component';
+import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, WebIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import { useState } from 'react';
 import { useCallback, useMemo } from 'react';
 
@@ -132,13 +126,18 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           readOnly
         />
         {isPublic ? (
-          <Button onClick={onClickCopyLink} style={{ padding: '4px 12px' }}>
+          <Button
+            onClick={onClickCopyLink}
+            data-testid="share-menu-copy-link-button"
+            style={{ padding: '4px 12px' }}
+          >
             {t.Copy()}
           </Button>
         ) : (
           <Button
             onClick={onClickCreateLink}
             type="primary"
+            data-testid="share-menu-create-link-button"
             style={{ padding: '4px 12px' }}
           >
             {t.Create()}
@@ -161,14 +160,14 @@ export const AffineSharePage = (props: ShareMenuProps) => {
                 value={'page'}
                 spanStyle={styles.spanStyle}
               >
-                {t['Page']()}
+                {t['com.affine.pageMode.page']()}
               </RadioButton>
               <RadioButton
                 className={styles.radioButton}
                 value={'edgeless'}
                 spanStyle={styles.spanStyle}
               >
-                {t['Edgeless']()}
+                {t['com.affine.pageMode.edgeless']()}
               </RadioButton>
             </RadioButtonGroup>
           </div>
@@ -181,20 +180,8 @@ export const AffineSharePage = (props: ShareMenuProps) => {
               <div className={styles.rowContainerStyle}>
                 <div className={styles.subTitleStyle}>Link expires</div>
                 <div>
-                  <Menu
-                    content={<MenuItem>Never</MenuItem>}
-                    placement="bottom-end"
-                    trigger="click"
-                  >
-                    <MenuTrigger
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '4px 6px 4px 10px',
-                      }}
-                    >
-                      Never
-                    </MenuTrigger>
+                  <Menu items={<MenuItem>Never</MenuItem>}>
+                    <MenuTrigger>Never</MenuTrigger>
                   </Menu>
                 </div>
               </div>

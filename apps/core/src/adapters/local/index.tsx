@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { initEmptyPage } from '@affine/env/blocksuite';
 import {
   DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   DEFAULT_WORKSPACE_NAME,
@@ -16,11 +15,15 @@ import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import {
+  getOrCreateWorkspace,
+  globalBlockSuiteSchema,
+} from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
 import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
 import { useCallback } from 'react';
 
@@ -49,6 +52,7 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       if (runtimeConfig.enablePreloading) {
         buildShowcaseWorkspace(blockSuiteWorkspace, {
+          schema: globalBlockSuiteSchema,
           store: getCurrentStore(),
           atoms: {
             pageMode: setPageModeAtom,

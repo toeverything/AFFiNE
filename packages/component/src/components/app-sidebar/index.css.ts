@@ -13,7 +13,7 @@ export const navWrapperStyle = style({
   width: navWidthVar,
   minWidth: navWidthVar,
   height: '100%',
-  zIndex: 1,
+  zIndex: 3,
   paddingBottom: '8px',
   backgroundColor: 'transparent',
   '@media': {
@@ -33,9 +33,9 @@ export const navWrapperStyle = style({
       marginLeft: `calc(${navWidthVar} * -1)`,
     },
     '&[data-enable-animation="true"]': {
-      transition: 'margin-left .3s, width .3s',
+      transition: 'margin-left .3s .05s, width .3s .05s',
     },
-    '&.has-background': {
+    '&[data-is-floating="false"].has-background': {
       backgroundColor: 'var(--affine-white-60)',
       borderRight: '1px solid var(--affine-border-color)',
     },
@@ -43,6 +43,18 @@ export const navWrapperStyle = style({
       borderRight: '1px solid var(--affine-border-color)',
     },
   },
+});
+
+export const navHeaderButton = style({
+  width: '32px',
+  height: '32px',
+  flexShrink: 0,
+});
+
+export const navHeaderNavigationButtons = style({
+  display: 'flex',
+  alignItems: 'center',
+  columnGap: '32px',
 });
 
 export const navStyle = style({
@@ -61,11 +73,10 @@ export const navHeaderStyle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  gap: '32px',
   WebkitAppRegion: 'drag',
   selectors: {
     '&[data-is-macos-electron="true"]': {
-      justifyContent: 'flex-end',
+      paddingLeft: '90px',
     },
   },
 } as ComplexStyleRule);

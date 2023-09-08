@@ -14,7 +14,10 @@
       "sys:id": "9eBKQxt8ax",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "2nHeyqzDMf": {
       "sys:id": "2nHeyqzDMf",

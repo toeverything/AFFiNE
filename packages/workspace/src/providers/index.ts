@@ -35,9 +35,15 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   { awareness }
 ): AffineSocketIOProvider => {
   const dataSource = createAffineDataSource(id, doc, awareness);
+  const lazyProvider = createLazyProvider(doc, dataSource, {
+    origin: 'affine-socket-io',
+  });
   return {
     flavour: 'affine-socket-io',
-    ...createLazyProvider(doc, dataSource),
+    ...lazyProvider,
+    get status() {
+      return lazyProvider.status;
+    },
   };
 };
 
@@ -50,6 +56,7 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   let connected = false;
   return {
     flavour: 'local-indexeddb-background',
+    datasource: indexeddbProvider.datasource,
     passive: true,
     get status() {
       return indexeddbProvider.status;

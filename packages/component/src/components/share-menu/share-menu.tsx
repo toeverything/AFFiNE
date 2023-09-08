@@ -8,11 +8,10 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
-import { useAtom } from 'jotai';
+import { Menu } from '@toeverything/components/menu';
+import { useRef } from 'react';
 
-import { Menu } from '../../ui/menu/menu';
 import * as styles from './index.css';
-import { enableShareMenuAtom } from './index.jotai';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
 
@@ -34,11 +33,11 @@ export interface ShareMenuProps<
 
 export const ShareMenu = (props: ShareMenuProps) => {
   const { useIsSharedPage } = props;
+  const ref = useRef(null);
   const isSharedPage = useIsSharedPage(
     props.workspace.id,
     props.currentPage.id
   );
-  const [open, setOpen] = useAtom(enableShareMenuAtom);
   const t = useAFFiNEI18N();
   const content = (
     <div className={styles.containerStyle}>
@@ -51,28 +50,12 @@ export const ShareMenu = (props: ShareMenuProps) => {
   );
   return (
     <Menu
-      menuStyles={{
-        padding: '12px',
-        background: 'var(--affine-background-overlay-panel-color)',
-        transform: 'translateX(-10px)',
-      }}
-      content={content}
-      visible={open}
-      placement="bottom"
-      trigger={['click']}
-      width={410}
-      disablePortal={true}
-      onClickAway={() => {
-        setOpen(false);
+      items={content}
+      portalOptions={{
+        container: ref.current,
       }}
     >
-      <Button
-        data-testid="share-menu-button"
-        onClick={() => {
-          setOpen(!open);
-        }}
-        type={'plain'}
-      >
+      <Button data-testid="share-menu-button" type="plain" ref={ref}>
         <div
           style={{
             color: isSharedPage

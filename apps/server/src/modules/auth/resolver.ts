@@ -1,4 +1,8 @@
-import { ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   Args,
   Context,
@@ -10,10 +14,13 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { Request } from 'express';
+import { nanoid } from 'nanoid';
 
 import { Config } from '../../config';
+import { SessionService } from '../../session';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import { UserType } from '../users/resolver';
-import { CurrentUser } from './guard';
+import { Auth, CurrentUser } from './guard';
 import { AuthService } from './service';
 
 @ObjectType()
@@ -25,25 +32,40 @@ export class TokenType {
   refresh!: string;
 }
 
+/**
+ * Auth resolver
+ * Token rate limit: 20 req/m
+ * Sign up/in rate limit: 10 req/m
+ * Other rate limit: 5 req/m
+ */
+@UseGuards(CloudThrottlerGuard)
 @Resolver(() => UserType)
 export class AuthResolver {
   constructor(
     private readonly config: Config,
-    private auth: AuthService
+    private readonly auth: AuthService,
+    private readonly session: SessionService
   ) {}
 
+  @Throttle(20, 60)
   @ResolveField(() => TokenType)
-  token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
-    if (user !== currentUser) {
-      throw new ForbiddenException();
+  async token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
+    if (user.id !== currentUser.id) {
+      throw new BadRequestException('Invalid user');
     }
 
+    // on production we use session token that is stored in database (strategy = 'database')
+    const sessionToken = this.config.node.prod
+      ? await this.auth.getSessionToken(user.id)
+      : this.auth.sign(user);
+
     return {
-      token: this.auth.sign(user),
+      token: sessionToken,
       refresh: this.auth.refresh(user),
     };
   }
 
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signUp(
     @Context() ctx: { req: Request },
@@ -56,6 +78,7 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(10, 60)
   @Mutation(() => UserType)
   async signIn(
     @Context() ctx: { req: Request },
@@ -67,55 +90,95 @@ export class AuthResolver {
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => UserType)
+  @Auth()
   async changePassword(
-    @Context() ctx: { req: Request },
-    @Args('id') id: string,
+    @CurrentUser() user: UserType,
+    @Args('token') token: string,
     @Args('newPassword') newPassword: string
   ) {
-    const user = await this.auth.changePassword(id, newPassword);
-    ctx.req.user = user;
+    const id = await this.session.get(token);
+    if (!id || id !== user.id) {
+      throw new ForbiddenException('Invalid token');
+    }
+
+    await this.auth.changePassword(id, newPassword);
+    await this.session.delete(token);
+
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => UserType)
+  @Auth()
   async changeEmail(
-    @Context() ctx: { req: Request },
-    @Args('id') id: string,
+    @CurrentUser() user: UserType,
+    @Args('token') token: string,
     @Args('email') email: string
   ) {
-    const user = await this.auth.changeEmail(id, email);
-    ctx.req.user = user;
+    const id = await this.session.get(token);
+    if (!id || id !== user.id) {
+      throw new ForbiddenException('Invalid token');
+    }
+
+    await this.auth.changeEmail(id, email);
+    await this.session.delete(token);
+
     return user;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
+  @Auth()
   async sendChangePasswordEmail(
+    @CurrentUser() user: UserType,
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
-    const url = `${this.config.baseUrl}${callbackUrl}`;
-    const res = await this.auth.sendChangePasswordEmail(email, url);
+    const token = nanoid();
+    await this.session.set(token, user.id);
+
+    const url = new URL(callbackUrl, this.config.baseUrl);
+    url.searchParams.set('token', token);
+
+    const res = await this.auth.sendChangePasswordEmail(email, url.toString());
     return !res.rejected.length;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
+  @Auth()
   async sendSetPasswordEmail(
+    @CurrentUser() user: UserType,
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
-    const url = `${this.config.baseUrl}${callbackUrl}`;
-    const res = await this.auth.sendSetPasswordEmail(email, url);
+    const token = nanoid();
+    await this.session.set(token, user.id);
+
+    const url = new URL(callbackUrl, this.config.baseUrl);
+    url.searchParams.set('token', token);
+
+    const res = await this.auth.sendSetPasswordEmail(email, url.toString());
     return !res.rejected.length;
   }
 
+  @Throttle(5, 60)
   @Mutation(() => Boolean)
+  @Auth()
   async sendChangeEmail(
+    @CurrentUser() user: UserType,
     @Args('email') email: string,
     @Args('callbackUrl') callbackUrl: string
   ) {
-    const url = `${this.config.baseUrl}${callbackUrl}`;
-    const res = await this.auth.sendChangeEmail(email, url);
+    const token = nanoid();
+    await this.session.set(token, user.id);
+
+    const url = new URL(callbackUrl, this.config.baseUrl);
+    url.searchParams.set('token', token);
+
+    const res = await this.auth.sendChangeEmail(email, url.toString());
     return !res.rejected.length;
   }
 }

@@ -44,6 +44,7 @@ const makers = [
           },
           { x: 432, y: 192, type: 'link', path: '/Applications' },
         ],
+        iconSize: 118,
         file: path.resolve(
           __dirname,
           'out',
@@ -113,7 +114,6 @@ module.exports = {
       : undefined,
     // We need the following line for updater
     extraResource: ['./resources/app-update.yml'],
-    ignore: ['e2e', 'tests'],
     protocols: [
       {
         name: productName,

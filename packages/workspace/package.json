@@ -7,7 +7,8 @@
     "./type": "./src/type.ts",
     "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
-    "./affine/gql": "./src/affine/gql.ts",
+    "./affine": "./src/affine/index.ts",
+    "./affine/*": "./src/affine/*.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
@@ -23,7 +24,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
-    "jotai": "^2.4.0",
+    "jotai": "^2.4.1",
     "js-base64": "^3.7.5",
     "ky": "^0.33.3",
     "lib0": "^0.2.83",
@@ -39,5 +40,5 @@
     "@types/ws": "^8.5.5",
     "ws": "^8.13.0"
   },
-  "version": "0.9.0-canary.3"
+  "version": "0.9.0-canary.11"
 }

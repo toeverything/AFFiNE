@@ -7,6 +7,19 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
+export const checkBlobSizesQuery = {
+  id: 'checkBlobSizesQuery' as const,
+  operationName: 'checkBlobSizes',
+  definitionName: 'checkBlobSize',
+  containsFile: false,
+  query: `
+query checkBlobSizes($workspaceId: String!, $size: Float!) {
+  checkBlobSize(workspaceId: $workspaceId, size: $size) {
+    size
+  }
+}`,
+};
+
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   operationName: 'deleteBlob',
@@ -40,14 +53,40 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 }`,
 };
 
+export const blobSizesQuery = {
+  id: 'blobSizesQuery' as const,
+  operationName: 'blobSizes',
+  definitionName: 'collectBlobSizes',
+  containsFile: false,
+  query: `
+query blobSizes($workspaceId: String!) {
+  collectBlobSizes(workspaceId: $workspaceId) {
+    size
+  }
+}`,
+};
+
+export const allBlobSizesQuery = {
+  id: 'allBlobSizesQuery' as const,
+  operationName: 'allBlobSizes',
+  definitionName: 'collectAllBlobSizes',
+  containsFile: false,
+  query: `
+query allBlobSizes {
+  collectAllBlobSizes {
+    size
+  }
+}`,
+};
+
 export const changeEmailMutation = {
   id: 'changeEmailMutation' as const,
   operationName: 'changeEmail',
   definitionName: 'changeEmail',
   containsFile: false,
   query: `
-mutation changeEmail($id: String!, $newEmail: String!) {
-  changeEmail(id: $id, email: $newEmail) {
+mutation changeEmail($token: String!, $newEmail: String!) {
+  changeEmail(token: $token, email: $newEmail) {
     id
     name
     avatarUrl
@@ -62,8 +101,8 @@ export const changePasswordMutation = {
   definitionName: 'changePassword',
   containsFile: false,
   query: `
-mutation changePassword($id: String!, $newPassword: String!) {
-  changePassword(id: $id, newPassword: $newPassword) {
+mutation changePassword($token: String!, $newPassword: String!) {
+  changePassword(token: $token, newPassword: $newPassword) {
     id
     name
     avatarUrl
@@ -125,6 +164,9 @@ query getCurrentUser {
     emailVerified
     avatarUrl
     createdAt
+    token {
+      token
+    }
   }
 }`,
 };
@@ -272,8 +314,12 @@ export const leaveWorkspaceMutation = {
   definitionName: 'leaveWorkspace',
   containsFile: false,
   query: `
-mutation leaveWorkspace($workspaceId: String!) {
-  leaveWorkspace(workspaceId: $workspaceId)
+mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLeaveMail: Boolean) {
+  leaveWorkspace(
+    workspaceId: $workspaceId
+    workspaceName: $workspaceName
+    sendLeaveMail: $sendLeaveMail
+  )
 }`,
 };
 
@@ -446,8 +492,12 @@ export const acceptInviteByInviteIdMutation = {
   definitionName: 'acceptInviteById',
   containsFile: false,
   query: `
-mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!) {
-  acceptInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
+mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $sendAcceptMail: Boolean) {
+  acceptInviteById(
+    workspaceId: $workspaceId
+    inviteId: $inviteId
+    sendAcceptMail: $sendAcceptMail
+  )
 }`,
 };
 

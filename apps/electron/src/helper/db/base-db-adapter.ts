@@ -1,5 +1,11 @@
-import { type InsertRow, SqliteConnection } from '@affine/native';
+import {
+  type InsertRow,
+  SqliteConnection,
+  ValidationResult,
+} from '@affine/native';
+import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 
+import { migrateToLatest } from '../db/migration';
 import { logger } from '../logger';
 
 /**
@@ -13,8 +19,16 @@ export abstract class BaseSQLiteAdapter {
 
   async connectIfNeeded() {
     if (!this.db) {
+      const validation = await SqliteConnection.validate(this.path);
+      if (validation === ValidationResult.MissingVersionColumn) {
+        await migrateToLatest(this.path, WorkspaceVersion.SubDoc);
+      }
       this.db = new SqliteConnection(this.path);
       await this.db.connect();
+      const maxVersion = await this.db.getMaxVersion();
+      if (maxVersion !== WorkspaceVersion.Surface) {
+        await migrateToLatest(this.path, WorkspaceVersion.Surface);
+      }
       logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
     }
     return this.db;

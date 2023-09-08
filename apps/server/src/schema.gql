@@ -123,12 +123,19 @@ type InvitationWorkspaceType {
   avatar: String!
 }
 
+type WorkspaceBlobSizes {
+  size: Int!
+}
+
 type InvitationType {
   """Workspace information"""
   workspace: InvitationWorkspaceType!
 
   """User information"""
   user: UserType!
+
+  """Invitee information"""
+  invitee: UserType!
 }
 
 type Query {
@@ -149,6 +156,9 @@ type Query {
 
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]!
+  collectBlobSizes(workspaceId: String!): WorkspaceBlobSizes!
+  collectAllBlobSizes: WorkspaceBlobSizes!
+  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 
   """Get current user"""
   currentUser: UserType!
@@ -166,9 +176,9 @@ type Mutation {
   deleteWorkspace(id: String!): Boolean!
   invite(workspaceId: String!, email: String!, permission: Permission!, sendInviteMail: Boolean): String!
   revoke(workspaceId: String!, userId: String!): Boolean!
-  acceptInviteById(workspaceId: String!, inviteId: String!): Boolean!
+  acceptInviteById(workspaceId: String!, inviteId: String!, sendAcceptMail: Boolean): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
-  leaveWorkspace(workspaceId: String!): Boolean!
+  leaveWorkspace(workspaceId: String!, workspaceName: String!, sendLeaveMail: Boolean): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean!
   revokePage(workspaceId: String!, pageId: String!): Boolean!
   setBlob(workspaceId: String!, blob: Upload!): String!
@@ -180,8 +190,8 @@ type Mutation {
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
-  changePassword(id: String!, newPassword: String!): UserType!
-  changeEmail(id: String!, email: String!): UserType!
+  changePassword(token: String!, newPassword: String!): UserType!
+  changeEmail(token: String!, email: String!): UserType!
   sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
   sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
   sendChangeEmail(email: String!, callbackUrl: String!): Boolean!

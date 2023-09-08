@@ -76,7 +76,7 @@ const StableTitle = ({
       <span
         data-testid="title-edit-button"
         className={styles.titleEditButton}
-        onClick={onRename}
+        onDoubleClick={onRename}
       >
         {title || 'Untitled'}
       </span>

@@ -35,14 +35,19 @@ export const TrashButtonGroup = () => {
     <div className={group}>
       <div className={buttonContainer}>
         <Button
+          data-testid="page-restore-button"
           type="primary"
           onClick={() => {
             restoreFromTrash(pageId);
-            toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
+            toast(
+              t['com.affine.toastMessage.restored']({
+                title: pageMeta.title || 'Untitled',
+              })
+            );
           }}
           size="large"
         >
-          {t['Restore it']()}
+          {t['com.affine.trashOperation.restoreIt']()}
         </Button>
       </div>
       <div className={buttonContainer}>
@@ -53,19 +58,19 @@ export const TrashButtonGroup = () => {
           }}
           size="large"
         >
-          {t['Delete permanently']()}
+          {t['com.affine.trashOperation.deletePermanently']()}
         </Button>
       </div>
       <Confirm
-        title={t['TrashButtonGroupTitle']()}
-        content={t['TrashButtonGroupDescription']()}
-        confirmText={t['Delete']()}
+        title={t['com.affine.trashOperation.delete.title']()}
+        content={t['com.affine.trashOperation.delete.description']()}
+        confirmText={t['com.affine.trashOperation.delete']()}
         confirmType="error"
         open={open}
         onConfirm={useCallback(() => {
           jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           blockSuiteWorkspace.removePage(pageId);
-          toast(t['Permanently deleted']());
+          toast(t['com.affine.toastMessage.permanentlyDeleted']());
         }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id, t])}
         onCancel={() => {
           setOpen(false);

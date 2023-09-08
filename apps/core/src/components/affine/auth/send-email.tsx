@@ -16,7 +16,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai/react';
-import { type FC, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { AuthPanelProps } from './index';
 
@@ -30,6 +30,20 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
       return t['com.affine.auth.reset.password']();
     case 'changeEmail':
       return t['com.affine.settings.email.action']();
+  }
+};
+const useContent = (emailType: AuthPanelProps['emailType'], email: string) => {
+  const t = useAFFiNEI18N();
+
+  switch (emailType) {
+    case 'setPassword':
+      return t['com.affine.auth.set.password.message']();
+    case 'changePassword':
+      return t['com.affine.auth.set.password.message']();
+    case 'changeEmail':
+      return t['com.affine.auth.change.email.message']({
+        email,
+      });
   }
 };
 
@@ -118,18 +132,18 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
   };
 };
 
-export const SendEmail: FC<AuthPanelProps> = ({
+export const SendEmail = ({
   setAuthState,
-  setAuthStore,
   email,
-  authStore: { hasSentEmail },
   emailType,
-}) => {
+}: AuthPanelProps) => {
   const t = useAFFiNEI18N();
+  const [hasSentEmail, setHasSentEmail] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const title = useEmailTitle(emailType);
   const hint = useNotificationHint(emailType);
+  const content = useContent(emailType, email);
   const buttonContent = useButtonContent(emailType);
   const { loading, sendEmail } = useSendEmail(emailType);
 
@@ -143,13 +157,16 @@ export const SendEmail: FC<AuthPanelProps> = ({
       key: Date.now().toString(),
       type: 'success',
     });
-    setAuthStore({ hasSentEmail: true });
-  }, [email, hint, pushNotification, sendEmail, setAuthStore]);
+    setHasSentEmail(true);
+  }, [email, hint, pushNotification, sendEmail]);
 
   return (
     <>
-      <ModalHeader title={t['AFFiNE Cloud']()} subTitle={title} />
-      <AuthContent>{t['com.affine.auth.reset.password.message']()}</AuthContent>
+      <ModalHeader
+        title={t['com.affine.brand.affineCloud']()}
+        subTitle={title}
+      />
+      <AuthContent>{content}</AuthContent>
 
       <Wrapper
         marginTop={30}

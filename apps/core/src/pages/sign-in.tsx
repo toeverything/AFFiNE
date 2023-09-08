@@ -9,7 +9,7 @@ import { AuthPanel } from '../components/affine/auth';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 
 interface LocationState {
-  state: {
+  state?: {
     callbackURL?: string;
   };
 }
@@ -29,16 +29,18 @@ export const Component = () => {
           await onceSignedIn();
           setAuthAtom(prev => ({ ...prev, onceSignedIn: undefined }));
         }
-        if (location.state.callbackURL) {
+        if (location.state?.callbackURL) {
           navigate(location.state.callbackURL, {
             replace: true,
           });
         }
       }
     };
-    afterSignedIn();
+    afterSignedIn().catch(err => {
+      console.error(err);
+    });
   }, [
-    location.state.callbackURL,
+    location.state?.callbackURL,
     loginStatus,
     navigate,
     onceSignedIn,

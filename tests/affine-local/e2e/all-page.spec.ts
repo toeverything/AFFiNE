@@ -15,10 +15,10 @@ import {
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  clickNewPageButton,
   getBlockSuiteEditorTitle,
-  newPage,
-  waitEditorLoad,
   waitForAllPagesLoad,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import type { Page } from '@playwright/test';
@@ -29,7 +29,7 @@ function getAllPage(page: Page) {
     .locator('table')
     .getByRole('button', { name: 'New Page' });
   const newPageDropdown = newPageButton.locator('svg');
-  const edgelessBlockCard = page.locator('table').getByText('New Edgeless');
+  const edgelessBlockCard = page.getByTestId('new-edgeless-button-in-all-page');
 
   async function clickNewPageButton() {
     return newPageButton.click();
@@ -45,14 +45,14 @@ function getAllPage(page: Page) {
 
 test('all page', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
 });
 
 test('all page can create new page', async ({ page }) => {
   const { clickNewPageButton } = getAllPage(page);
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await clickNewPageButton();
   const title = getBlockSuiteEditorTitle(page);
@@ -65,7 +65,7 @@ test('all page can create new page', async ({ page }) => {
 test('all page can create new edgeless page', async ({ page }) => {
   const { clickNewEdgelessDropdown } = getAllPage(page);
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await clickNewEdgelessDropdown();
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
@@ -73,7 +73,7 @@ test('all page can create new edgeless page', async ({ page }) => {
 
 test('allow creation of filters by favorite', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await createFirstFilter(page, 'Favourited');
   await page
@@ -87,8 +87,8 @@ test('allow creation of filters by favorite', async ({ page }) => {
 
 test('allow creation of filters by created time', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
@@ -106,11 +106,8 @@ test('allow creation of filters by created time', async ({ page }) => {
   await fillDatePicker(page, today);
   await checkPagesCount(page, 0);
   // change filter
-  await page.locator('[data-testid="filter-name"]').click();
-  await page
-    .locator('[data-testid="filter-name-select"]')
-    .locator('button', { hasText: 'before' })
-    .click();
+  await page.getByTestId('filter-name').click();
+  await page.getByTestId('filler-tag-before').click();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   await fillDatePicker(page, tomorrow);
@@ -122,8 +119,8 @@ test('creation of filters by created time, then click date picker to modify the 
   page,
 }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
-  await newPage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
@@ -142,10 +139,7 @@ test('creation of filters by created time, then click date picker to modify the 
   await checkPagesCount(page, 0);
   // change filter
   await page.locator('[data-testid="filter-name"]').click();
-  await page
-    .locator('[data-testid="filter-name-select"]')
-    .locator('button', { hasText: 'before' })
-    .click();
+  await page.getByTestId('filler-tag-before').click();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   await selectDateFromDatePicker(page, tomorrow);
@@ -155,7 +149,7 @@ test('creation of filters by created time, then click date picker to modify the 
 
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
@@ -179,7 +173,7 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
 
 test('allow creation of filters by tags', async ({ page }) => {
   await openHomePage(page);
-  await waitEditorLoad(page);
+  await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
   const pages = await page.locator('[data-testid="title"]').all();
@@ -196,11 +190,11 @@ test('allow creation of filters by tags', async ({ page }) => {
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
   await checkPagesCount(page, pagesWithTagsCount + 2);
-  await changeFilter(page, /^contains all/);
+  await changeFilter(page, 'contains all');
   await checkPagesCount(page, pageCount + 2);
   await selectTag(page, 'A');
   await checkPagesCount(page, 1);
-  await changeFilter(page, /^does not contains all/);
+  await changeFilter(page, 'does not contains all');
   await selectTag(page, 'B');
   await checkPagesCount(page, pageCount + 1);
 });

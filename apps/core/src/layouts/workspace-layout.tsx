@@ -33,18 +33,21 @@ import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/reac
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { Map as YMap } from 'yjs';
 
 import {
   openQuickSearchModalAtom,
   openSettingModalAtom,
   openWorkspacesModalAtom,
 } from '../atoms';
+import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { MigrationFallback } from '../components/migration-fallback';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
@@ -110,9 +113,14 @@ export const CurrentWorkspaceContext = ({
   return <>{children}</>;
 };
 
+type WorkspaceLayoutProps = {
+  incompatible?: boolean;
+};
+
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
-}: PropsWithChildren) {
+  incompatible = false,
+}: PropsWithChildren<WorkspaceLayoutProps>) {
   return (
     <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
@@ -122,16 +130,41 @@ export const WorkspaceLayout = function WorkspacesSuspense({
           <CurrentWorkspaceModals />
         </Suspense>
         <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+          <WorkspaceLayoutInner incompatible={incompatible}>
+            {children}
+          </WorkspaceLayoutInner>
         </Suspense>
       </CurrentWorkspaceContext>
     </AdapterProviderWrapper>
   );
 };
 
-export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+export const WorkspaceLayoutInner = ({
+  children,
+  incompatible = false,
+}: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
+
+  useEffect(() => {
+    // hotfix for blockVersions
+    // this is a mistake in the
+    //    0.8.0 ~ 0.8.1
+    //    0.8.0-beta.0 ~ 0.8.0-beta.3
+    //    0.8.0-canary.17 ~ 0.9.0-canary.3
+    const meta = currentWorkspace.blockSuiteWorkspace.doc.getMap('meta');
+    const blockVersions = meta.get('blockVersions');
+    if (
+      !(blockVersions instanceof YMap) &&
+      blockVersions != null &&
+      typeof blockVersions === 'object'
+    ) {
+      meta.set(
+        'blockVersions',
+        new YMap(Object.entries(blockVersions as Record<string, number>))
+      );
+    }
+  }, [currentWorkspace.blockSuiteWorkspace.doc]);
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
@@ -194,7 +227,7 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
         // TODO-Doma
         // Co-locate `moveToTrash` with the toast for reuse, as they're always used together
         moveToTrash(pageId);
-        toast(t['Successfully deleted']());
+        toast(t['com.affine.toastMessage.successfullyDeleted']());
       }
       // Drag page into Collections
       processCollectionsDrag(e);
@@ -205,6 +238,8 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
   const [appSetting] = useAppSetting();
   const location = useLocation();
   const { pageId } = useParams();
+
+  const setMainContainer = useSetAtom(mainContainerAtom);
 
   return (
     <>
@@ -234,9 +269,12 @@ export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
               paths={pathGenerator}
             />
           </Suspense>
-          <Suspense fallback={<MainContainer />}>
-            <MainContainer padding={appSetting.clientBorder}>
-              {children}
+          <Suspense fallback={<MainContainer ref={setMainContainer} />}>
+            <MainContainer
+              ref={setMainContainer}
+              padding={appSetting.clientBorder}
+            >
+              {incompatible ? <MigrationFallback /> : children}
               <ToolContainer>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
                 <HelpIsland showList={pageId ? undefined : showList} />

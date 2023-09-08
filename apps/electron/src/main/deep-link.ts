@@ -1,14 +1,16 @@
 import path from 'node:path';
 
-import type { App } from 'electron';
+import { type App, type BrowserWindow, ipcMain } from 'electron';
 
-import { buildType, isDev } from './config';
+import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { logger } from './logger';
 import {
   handleOpenUrlInHiddenWindow,
+  mainWindowOrigin,
+  removeCookie,
   restoreOrCreateWindow,
+  setCookie,
 } from './main-window';
-import { uiSubjects } from './ui';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
 if (isDev) {
@@ -57,47 +59,56 @@ async function handleAffineUrl(url: string) {
   logger.info('handle affine schema action', urlObj.hostname);
   // handle more actions here
   // hostname is the action name
-  if (urlObj.hostname === 'sign-in') {
-    const urlToOpen = urlObj.search.slice(1);
-    if (urlToOpen) {
-      await handleSignIn(urlToOpen);
-    }
+  if (urlObj.hostname === 'oauth-jwt') {
+    await handleOauthJwt(url);
   }
 }
 
-// todo: move to another place?
-async function handleSignIn(url: string) {
+async function handleOauthJwt(url: string) {
   if (url) {
     try {
       const mainWindow = await restoreOrCreateWindow();
       mainWindow.show();
       const urlObj = new URL(url);
-      const email = urlObj.searchParams.get('email');
+      const token = urlObj.searchParams.get('token');
 
-      if (!email) {
-        logger.error('no email in url', url);
+      if (!token) {
+        logger.error('no token in url', url);
         return;
       }
 
-      uiSubjects.onStartLogin.next({
-        email,
+      const isSecure = CLOUD_BASE_URL.startsWith('https://');
+
+      // set token to cookie
+      await setCookie({
+        url: CLOUD_BASE_URL,
+        httpOnly: true,
+        value: token,
+        secure: true,
+        name: isSecure
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token',
+        expirationDate: Math.floor(Date.now() / 1000 + 3600 * 24 * 7),
       });
-      const window = await handleOpenUrlInHiddenWindow(url);
-      logger.info('opened url in hidden window', window.webContents.getURL());
-      // check path
-      // - if path === /auth/{signIn,signUp}, we know sign in succeeded
-      // - if path === expired, we know sign in failed
-      const finalUrl = new URL(window.webContents.getURL());
-      console.log('final url', finalUrl);
-      // hack: wait for the hidden window to send broadcast message to the main window
-      // that's how next-auth works for cross-tab communication
-      setTimeout(() => {
-        window.destroy();
-      }, 3000);
-      uiSubjects.onFinishLogin.next({
-        success: ['/auth/signIn', '/auth/signUp'].includes(finalUrl.pathname),
-        email,
+
+      // force reset next-auth.callback-url
+      // there could be incorrect callback-url in cookie that will cause auth failure
+      // so we need to reset it to empty to mitigate this issue
+      await removeCookie(
+        CLOUD_BASE_URL,
+        isSecure ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url'
+      );
+
+      let hiddenWindow: BrowserWindow | null = null;
+
+      ipcMain.once('affine:login', () => {
+        hiddenWindow?.destroy();
       });
+
+      // hacks to refresh auth state in the main window
+      hiddenWindow = await handleOpenUrlInHiddenWindow(
+        mainWindowOrigin + '/auth/signIn'
+      );
     } catch (e) {
       logger.error('failed to open url in popup', e);
     }

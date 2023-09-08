@@ -42,40 +42,51 @@ export class MailService {
       };
     }
   ) {
-    console.log('invitationInfo', invitationInfo);
-
-    const buttonUrl = `${this.config.baseUrl}/invite/${inviteId}`;
+    // TODO: use callback url when need support desktop app
+    const buttonUrl = `${this.config.origin}/invite/${inviteId}`;
     const workspaceAvatar = invitationInfo.workspace.avatar;
 
-    const content = `  <img
+    const content = `<p style="margin:0">${
+      invitationInfo.user.avatar
+        ? `<img
     src="${invitationInfo.user.avatar}"
     alt=""
     width="24px"
     height="24px"
-    style="border-radius: 12px;object-fit: cover;vertical-align: middle"
-  />
-  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.user.name}</span>
+    style="width:24px; height:24px; border-radius: 12px;object-fit: cover;vertical-align: middle"
+  />`
+        : ''
+    }
+  <span style="font-weight:500;margin-right: 4px;">${
+    invitationInfo.user.name
+  }</span>
   <span>invited you to join</span>
   <img
     src="cid:workspaceAvatar"
     alt=""
     width="24px"
     height="24px"
-    style="margin-left:10px;border-radius: 12px;object-fit: cover;vertical-align: middle"
+    style="width:24px; height:24px; margin-left:4px;border-radius: 12px;object-fit: cover;vertical-align: middle"
   />
-  <span style="font-weight:500;margin-left:4px;margin-right: 10px;">${invitationInfo.workspace.name}</span>`;
+  <span style="font-weight:500;margin-right: 4px;">${
+    invitationInfo.workspace.name
+  }</span></p><p style="margin-top:8px;margin-bottom:0;">Click button to join this workspace</p>`;
+
+    const subContent =
+      'Currently, AFFiNE Cloud is in the early access stage. Only Early Access Sponsors can register and log in to AFFiNE Cloud. <a href="https://community.affine.pro/c/insider-general/" style="color: #1e67af" >Please click here for more information.</a>';
 
     const html = emailTemplate({
       title: 'You are invited!',
       content,
       buttonContent: 'Accept & Join',
       buttonUrl,
+      subContent,
     });
 
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Invitation to workspace`,
+      subject: `${invitationInfo.user.name} invited you to join ${invitationInfo.workspace}`,
       html,
       attachments: [
         {
@@ -87,43 +98,111 @@ export class MailService {
       ],
     });
   }
+
+  async sendSignInEmail(url: string, options: Options) {
+    const html = emailTemplate({
+      title: 'Sign in to AFFiNE',
+      content:
+        'Click the button below to securely sign in. The magic link will expire in 30 minutes.',
+      buttonContent: 'Sign in to AFFiNE',
+      buttonUrl: url,
+    });
+    return this.sendMail({
+      html,
+      subject: 'Sign in to AFFiNE',
+      ...options,
+    });
+  }
+
   async sendChangePasswordEmail(to: string, url: string) {
-    const html = `
-      <h1>Change password</h1>
-      <p>Click button to open change password page</p>
-      <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'Modify your AFFiNE password',
+      content:
+        'Click the button below to reset your password. The magic link will expire in 30 minutes.',
+      buttonContent: 'Set new password',
+      buttonUrl: url,
+    });
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Change password`,
+      subject: `Modify your AFFiNE password`,
       html,
     });
   }
 
   async sendSetPasswordEmail(to: string, url: string) {
-    const html = `
-      <h1>Set password</h1>
-      <p>Click button to open set password page</p>
-      <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'Set your AFFiNE password',
+      content:
+        'Click the button below to set your password. The magic link will expire in 30 minutes.',
+      buttonContent: 'Set your password',
+      buttonUrl: url,
+    });
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Change password`,
+      subject: `Set your AFFiNE password`,
       html,
     });
   }
   async sendChangeEmail(to: string, url: string) {
-    const html = `
-      <h1>Change Email</h1>
-      <p>Click button to open change email page</p>
-      <a href="${url}">${url}</a>
-    `;
+    const html = emailTemplate({
+      title: 'Verify your current email for AFFiNE',
+      content:
+        'You recently requested to change the email address associated with your AFFiNE account. To complete this process, please click on the verification link below. This magic link will expire in 30 minutes.',
+      buttonContent: 'Verify and set up a new email address',
+      buttonUrl: url,
+    });
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `Change password`,
+      subject: `Verify your current email for AFFiNE`,
+      html,
+    });
+  }
+  async sendAcceptedEmail(
+    to: string,
+    {
+      inviteeName,
+      workspaceName,
+    }: {
+      inviteeName: string;
+      workspaceName: string;
+    }
+  ) {
+    const title = `${inviteeName} accepted your invitation`;
+
+    const html = emailTemplate({
+      title,
+      content: `${inviteeName} has joined ${workspaceName}`,
+    });
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: title,
+      html,
+    });
+  }
+  async sendLeaveWorkspaceEmail(
+    to: string,
+    {
+      inviteeName,
+      workspaceName,
+    }: {
+      inviteeName: string;
+      workspaceName: string;
+    }
+  ) {
+    const title = `${inviteeName} left ${workspaceName}`;
+
+    const html = emailTemplate({
+      title,
+      content: `${inviteeName} has left your workspace`,
+    });
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: title,
       html,
     });
   }

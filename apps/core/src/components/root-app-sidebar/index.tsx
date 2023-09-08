@@ -30,6 +30,7 @@ import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
+import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
 import ImportPage from './import-page';
@@ -155,7 +156,13 @@ export const RootAppSidebar = ({
     <>
       <AppSidebar
         router={router}
-        hasBackground={!appSettings.enableBlurBackground}
+        hasBackground={
+          !(
+            appSettings.enableBlurBackground &&
+            environment.isDesktop &&
+            environment.isMacOs
+          )
+        }
       >
         <SidebarContainer>
           <NoSsr>
@@ -174,7 +181,9 @@ export const RootAppSidebar = ({
             path={paths.all(currentWorkspaceId)}
             onClick={backToAll}
           >
-            <span data-testid="all-pages">{t['All pages']()}</span>
+            <span data-testid="all-pages">
+              {t['com.affine.workspaceSubPath.all']()}
+            </span>
           </RouteMenuLinkItem>
           {runtimeConfig.enableNewSettingModal ? (
             <MenuItem
@@ -183,20 +192,22 @@ export const RootAppSidebar = ({
               onClick={onOpenSettingModal}
             >
               <span data-testid="settings-modal-trigger">
-                {t['Settings']()}
+                {t['com.affine.settingSidebar.title']()}
               </span>
             </MenuItem>
           ) : null}
         </SidebarContainer>
 
         <SidebarScrollableContainer>
-          <CategoryDivider label={t['Favorites']()} />
+          <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
+            <AddFavouriteButton workspace={blockSuiteWorkspace} />
+          </CategoryDivider>
           <FavoriteList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['Collections']()}>
+          <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
             <AddCollectionButton workspace={blockSuiteWorkspace} />
           </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['others']()} />
+          <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
           {/* fixme: remove the following spacer */}
           <div style={{ height: '4px' }} />
           <RouteMenuLinkItem
@@ -206,7 +217,9 @@ export const RootAppSidebar = ({
             currentPath={currentPath}
             path={paths.trash(currentWorkspaceId)}
           >
-            <span data-testid="trash-page">{t['Trash']()}</span>
+            <span data-testid="trash-page">
+              {t['com.affine.workspaceSubPath.trash']()}
+            </span>
           </RouteMenuLinkItem>
           {blockSuiteWorkspace && (
             <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />

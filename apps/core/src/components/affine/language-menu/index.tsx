@@ -1,88 +1,69 @@
-import {
-  Menu,
-  MenuItem,
-  type MenuProps,
-  MenuTrigger,
-  styled,
-} from '@affine/component';
 import { LOCALES } from '@affine/i18n';
 import { useI18N } from '@affine/i18n';
-import type { ButtonProps } from '@toeverything/components/button';
+import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
-export const StyledListItem = styled(MenuItem)(() => ({
-  height: '38px',
-  textTransform: 'capitalize',
-}));
-
-interface LanguageMenuContentProps {
+// Fixme: keyboard focus should be supported by Menu component
+const LanguageMenuContent = ({
+  currentLanguage,
+  onSelect,
+}: {
   currentLanguage?: string;
-}
-
-const LanguageMenuContent = ({ currentLanguage }: LanguageMenuContentProps) => {
-  const i18n = useI18N();
-  const changeLanguage = useCallback(
-    (event: string) => {
-      return i18n.changeLanguage(event);
-    },
-    [i18n]
-  );
-
+  onSelect: (value: string) => void;
+}) => {
   return (
     <>
       {LOCALES.map(option => {
         return (
-          <StyledListItem
+          <MenuItem
             key={option.name}
-            active={currentLanguage === option.originalName}
+            selected={currentLanguage === option.originalName}
             title={option.name}
-            onClick={() => {
-              changeLanguage(option.tag).catch(err => {
-                throw new Error('Failed to change language', err);
-              });
-            }}
+            onSelect={() => onSelect(option.tag)}
           >
             {option.originalName}
-          </StyledListItem>
+          </MenuItem>
         );
       })}
     </>
   );
 };
 
-interface LanguageMenuProps extends Omit<MenuProps, 'children'> {
-  triggerProps?: ButtonProps;
-}
-
-export const LanguageMenu = ({
-  triggerProps,
-  ...menuProps
-}: LanguageMenuProps) => {
+export const LanguageMenu = () => {
   const i18n = useI18N();
-
-  const currentLanguage = LOCALES.find(item => item.tag === i18n.language);
-
+  const ref = useRef(null);
+  const currentLanguage = useMemo(
+    () => LOCALES.find(item => item.tag === i18n.language),
+    [i18n.language]
+  );
+  const onSelect = useCallback(
+    (event: string) => {
+      return i18n.changeLanguage(event);
+    },
+    [i18n]
+  );
   return (
     <Menu
-      content={
+      items={
         (
           <LanguageMenuContent
             currentLanguage={currentLanguage?.originalName}
+            onSelect={onSelect}
           />
         ) as ReactElement
       }
-      placement="bottom-end"
-      trigger="click"
-      disablePortal={true}
-      {...menuProps}
+      portalOptions={{
+        container: ref.current,
+      }}
     >
       <MenuTrigger
+        ref={ref}
         data-testid="language-menu-button"
-        style={{ textTransform: 'capitalize' }}
-        {...triggerProps}
+        style={{ textTransform: 'capitalize', fontWeight: 600 }}
+        block={true}
       >
-        {currentLanguage?.originalName}
+        {currentLanguage?.originalName || ''}
       </MenuTrigger>
     </Menu>
   );

@@ -37,9 +37,14 @@ export const SettingPage: StoryFn = () => {
 };
 SettingPage.play = async ({ canvasElement, step }) => {
   const canvas = within(canvasElement);
-  await waitFor(async () => {
-    assertExists(canvasElement.querySelector('v-line'));
-  });
+  await waitFor(
+    () => {
+      assertExists(canvasElement.querySelector('v-line'));
+    },
+    {
+      timeout: 10000,
+    }
+  );
   await step('click setting modal button', async () => {
     await userEvent.click(canvas.getByTestId('settings-modal-trigger'));
   });
@@ -111,9 +116,14 @@ export const SearchPage: StoryFn = () => {
 };
 SearchPage.play = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await waitFor(async () => {
-    assertExists(canvasElement.querySelector('v-line'));
-  });
+  await waitFor(
+    () => {
+      assertExists(canvasElement.querySelector('v-line'));
+    },
+    {
+      timeout: 10000,
+    }
+  );
   await userEvent.click(canvas.getByTestId('slider-bar-quick-search-button'));
 };
 SearchPage.decorators = [withRouter];
@@ -131,9 +141,14 @@ export const ImportPage: StoryFn = () => {
 };
 ImportPage.play = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await waitFor(() => {
-    assertExists(canvasElement.querySelector('v-line'));
-  });
+  await waitFor(
+    () => {
+      assertExists(canvasElement.querySelector('v-line'));
+    },
+    {
+      timeout: 10000,
+    }
+  );
   await waitFor(() => {
     assertExists(
       canvasElement.querySelector('[data-testid="header-dropDownButton"]')
@@ -165,7 +180,7 @@ OpenAppPage.parameters = {
   reactRouter: reactRouterParameters({
     routing: reactRouterOutlets(routes),
     location: {
-      path: '/open-app',
+      path: '/open-app/url',
       searchParams: {
         url: 'affine-beta://foo-bar.com',
         open: 'false',

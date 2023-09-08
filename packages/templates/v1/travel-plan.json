@@ -28,111 +28,114 @@
       "sys:flavour": "affine:surface",
       "sys:children": [],
       "prop:elements": {
-        "sw8Uxi4bBo": {
-          "type": "text",
-          "xywh": "[-536.8747010075784,-1579.765008069904,1543.7942406924883,394.2045498052795]",
-          "rotate": 0,
-          "text": [
-            {
-              "insert": "You can switch from edgeless mode to paper mode if you want to add more notes! "
-            }
-          ],
-          "color": "--affine-palette-line-navy",
-          "fontSize": 82.63458496823259,
-          "fontFamily": "'Kalam', cursive",
-          "textAlign": "left",
-          "isBold": false,
-          "isItalic": false,
-          "id": "sw8Uxi4bBo",
-          "index": "b0u",
-          "seed": 615352575
-        },
-        "Tubq5p548e": {
-          "type": "text",
-          "xywh": "[-513.3186960556048,-1403.9329998657581,1624.0512882883274,77.08483854034749]",
-          "rotate": 0,
-          "text": [
-            {
-              "insert": "If you want creat your own template, click + New Page to start your journey! "
-            }
-          ],
-          "color": "--affine-palette-line-navy",
-          "fontSize": 48.17803589166863,
-          "fontFamily": "'Kalam', cursive",
-          "textAlign": "left",
-          "isBold": false,
-          "isItalic": false,
-          "id": "Tubq5p548e",
-          "index": "b0v",
-          "seed": 1725612619
-        },
-        "ieZVmhh5WF": {
-          "type": "shape",
-          "xywh": "[-536.8747010075784,-1425.8756349679952,1777.647429124084,120.9701087448215]",
-          "rotate": 0,
-          "shapeType": "rect",
-          "radius": 0.1,
-          "filled": false,
-          "fillColor": "--affine-palette-transparent",
-          "strokeWidth": 4,
-          "strokeColor": "--affine-palette-line-navy",
-          "strokeStyle": "solid",
-          "roughness": 2,
-          "id": "ieZVmhh5WF",
-          "index": "b0w",
-          "seed": 1287209158
-        },
-        "yGt4uK3Jrz": {
-          "type": "frame",
-          "xywh": "[-559.1114681167911,-596.5645426128128,1121.628897543559,640]",
-          "title": [
-            {
-              "insert": "Start from here"
-            }
-          ],
-          "batch": "a0",
-          "id": "yGt4uK3Jrz",
-          "index": "a1",
-          "seed": 1327354607
-        },
-        "dPCGvkzOF1": {
-          "type": "frame",
-          "xywh": "[-559.1114681167911,289.07749381963725,1075.8482127510565,640]",
-          "title": [
-            {
-              "insert": "Part 1"
-            }
-          ],
-          "batch": "a0",
-          "id": "dPCGvkzOF1",
-          "index": "a2",
-          "seed": 122824650
-        },
-        "nIZLp-sa3n": {
-          "type": "frame",
-          "xywh": "[-559.1114681167911,1174.7195302520875,1130.582694488373,640]",
-          "title": [
-            {
-              "insert": "Part 2"
-            }
-          ],
-          "batch": "a0",
-          "id": "nIZLp-sa3n",
-          "index": "a3",
-          "seed": 1488143224
-        },
-        "8FjxUtSCG6": {
-          "type": "frame",
-          "xywh": "[1019.2666610517662,-621.9153214705414,2150.370188968697,1619.1792632492125]",
-          "title": [
-            {
-              "insert": "Part 3"
-            }
-          ],
-          "batch": "a0",
-          "id": "8FjxUtSCG6",
-          "index": "a4",
-          "seed": 219967056
+        "type": "$blocksuite:internal:native$",
+        "value": {
+          "sw8Uxi4bBo": {
+            "type": "text",
+            "xywh": "[-536.8747010075784,-1579.765008069904,1543.7942406924883,394.2045498052795]",
+            "rotate": 0,
+            "text": [
+              {
+                "insert": "You can switch from edgeless mode to paper mode if you want to add more notes! "
+              }
+            ],
+            "color": "--affine-palette-line-navy",
+            "fontSize": 82.63458496823259,
+            "fontFamily": "'Kalam', cursive",
+            "textAlign": "left",
+            "isBold": false,
+            "isItalic": false,
+            "id": "sw8Uxi4bBo",
+            "index": "b0u",
+            "seed": 615352575
+          },
+          "Tubq5p548e": {
+            "type": "text",
+            "xywh": "[-513.3186960556048,-1403.9329998657581,1624.0512882883274,77.08483854034749]",
+            "rotate": 0,
+            "text": [
+              {
+                "insert": "If you want creat your own template, click + New Page to start your journey! "
+              }
+            ],
+            "color": "--affine-palette-line-navy",
+            "fontSize": 48.17803589166863,
+            "fontFamily": "'Kalam', cursive",
+            "textAlign": "left",
+            "isBold": false,
+            "isItalic": false,
+            "id": "Tubq5p548e",
+            "index": "b0v",
+            "seed": 1725612619
+          },
+          "ieZVmhh5WF": {
+            "type": "shape",
+            "xywh": "[-536.8747010075784,-1425.8756349679952,1777.647429124084,120.9701087448215]",
+            "rotate": 0,
+            "shapeType": "rect",
+            "radius": 0.1,
+            "filled": false,
+            "fillColor": "--affine-palette-transparent",
+            "strokeWidth": 4,
+            "strokeColor": "--affine-palette-line-navy",
+            "strokeStyle": "solid",
+            "roughness": 2,
+            "id": "ieZVmhh5WF",
+            "index": "b0w",
+            "seed": 1287209158
+          },
+          "yGt4uK3Jrz": {
+            "type": "frame",
+            "xywh": "[-559.1114681167911,-596.5645426128128,1121.628897543559,640]",
+            "title": [
+              {
+                "insert": "Start from here"
+              }
+            ],
+            "batch": "a0",
+            "id": "yGt4uK3Jrz",
+            "index": "a1",
+            "seed": 1327354607
+          },
+          "dPCGvkzOF1": {
+            "type": "frame",
+            "xywh": "[-559.1114681167911,289.07749381963725,1075.8482127510565,640]",
+            "title": [
+              {
+                "insert": "Part 1"
+              }
+            ],
+            "batch": "a0",
+            "id": "dPCGvkzOF1",
+            "index": "a2",
+            "seed": 122824650
+          },
+          "nIZLp-sa3n": {
+            "type": "frame",
+            "xywh": "[-559.1114681167911,1174.7195302520875,1130.582694488373,640]",
+            "title": [
+              {
+                "insert": "Part 2"
+              }
+            ],
+            "batch": "a0",
+            "id": "nIZLp-sa3n",
+            "index": "a3",
+            "seed": 1488143224
+          },
+          "8FjxUtSCG6": {
+            "type": "frame",
+            "xywh": "[1019.2666610517662,-621.9153214705414,2150.370188968697,1619.1792632492125]",
+            "title": [
+              {
+                "insert": "Part 3"
+              }
+            ],
+            "batch": "a0",
+            "id": "8FjxUtSCG6",
+            "index": "a4",
+            "seed": 219967056
+          }
         }
       }
     },
@@ -232,7 +235,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Accomedation "
+          "insert": "Accommodation "
         }
       ],
       "prop:checked": false
@@ -288,7 +291,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "Vaccinations/immuzations "
+          "insert": "Vaccinations / Immunizations "
         }
       ],
       "prop:checked": false

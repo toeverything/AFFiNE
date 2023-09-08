@@ -2,7 +2,10 @@ import { equal } from 'node:assert';
 import { resolve } from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
+import { Schema } from '@blocksuite/store';
 import {
+  forceUpgradePages,
   migrateToSubdoc,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
@@ -34,15 +37,19 @@ export const migrateToSubdocAndReplaceDatabase = async (path: string) => {
   await db.close();
 };
 
-import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { Schema, Workspace } from '@blocksuite/store';
-import { migrateWorkspace } from '@toeverything/infra/blocksuite';
-
 // v1 v2 -> v3
-export const migrateToLatestDatabase = async (path: string) => {
+// v3 -> v4
+export const migrateToLatest = async (
+  path: string,
+  version: WorkspaceVersion
+) => {
   const connection = new SqliteConnection(path);
   await connection.connect();
-  await connection.initVersion();
+  if (version === WorkspaceVersion.SubDoc) {
+    await connection.initVersion();
+  } else {
+    await connection.setVersion(version);
+  }
   const schema = new Schema();
   schema.register(AffineSchemas).register(__unstableSchemas);
   const rootDoc = new YDoc();
@@ -50,9 +57,11 @@ export const migrateToLatestDatabase = async (path: string) => {
     const update = (
       await connection.getUpdates(isRoot ? undefined : doc.guid)
     ).map(update => update.data);
-    // Buffer[] -> Uint8Array
-    const data = new Uint8Array(Buffer.concat(update).buffer);
-    applyUpdate(doc, data);
+    // Buffer[] -> Uint8Array[]
+    const data = update.map(update => new Uint8Array(update));
+    data.forEach(data => {
+      applyUpdate(doc, data);
+    });
     // trigger data manually
     if (isRoot) {
       doc.getMap('meta');
@@ -67,24 +76,11 @@ export const migrateToLatestDatabase = async (path: string) => {
     );
   };
   await downloadBinary(rootDoc, true);
-  const result = await migrateWorkspace(WorkspaceVersion.SubDoc, {
+  const result = await forceUpgradePages({
     getSchema: () => schema,
     getCurrentRootDoc: () => Promise.resolve(rootDoc),
-    createWorkspace: () =>
-      Promise.resolve(
-        new Workspace({
-          id: nanoid(10),
-          schema,
-          blobStorages: [],
-          providerCreators: [],
-        })
-      ),
   });
-  equal(
-    typeof result,
-    'boolean',
-    'migrateWorkspace should return boolean value'
-  );
+  equal(result, true, 'migrateWorkspace should return boolean value');
   const uploadBinary = async (doc: YDoc, isRoot: boolean) => {
     await connection.replaceUpdates(doc.guid, [
       { docId: isRoot ? undefined : doc.guid, data: encodeStateAsUpdate(doc) },

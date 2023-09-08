@@ -1,10 +1,11 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
-import { useState } from 'react';
+import { Menu } from '@toeverything/components/menu';
+import { useCallback, useState } from 'react';
 
-import { DropdownButton } from '../../../ui/button/dropdown';
-import { Menu } from '../../../ui/menu/menu';
 import { BlockCard } from '../../card/block-card';
+import { DropdownButton } from './dropdown';
+import { menuContent } from './dropdown.css';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
@@ -32,18 +33,21 @@ export const CreateNewPagePopup = ({
         desc={t['com.affine.write_with_a_blank_page']()}
         right={<PageIcon width={20} height={20} />}
         onClick={createNewPage}
+        data-testid="new-page-button-in-all-page"
       />
       <BlockCard
         title={t['com.affine.new_edgeless']()}
         desc={t['com.affine.draw_with_a_blank_whiteboard']()}
         right={<EdgelessIcon width={20} height={20} />}
         onClick={createNewEdgeless}
+        data-testid="new-edgeless-button-in-all-page"
       />
       <BlockCard
         title={t['com.affine.new_import']()}
         desc={t['com.affine.import_file']()}
         right={<ImportIcon width={20} height={20} />}
         onClick={importFile}
+        data-testid="import-button-in-all-page"
       />
       {/* TODO Import */}
     </div>
@@ -59,40 +63,40 @@ export const NewPageButton = ({
   const [open, setOpen] = useState(false);
   return (
     <Menu
-      visible={open}
-      placement="bottom-end"
-      trigger={['click']}
-      disablePortal={true}
-      onClickAway={() => {
-        setOpen(false);
-      }}
-      menuStyles={{
-        padding: '0px',
-        background: 'var(--affine-background-overlay-panel-color)',
-      }}
-      content={
+      items={
         <CreateNewPagePopup
-          createNewPage={() => {
+          createNewPage={useCallback(() => {
             createNewPage();
             setOpen(false);
-          }}
-          createNewEdgeless={() => {
+          }, [createNewPage])}
+          createNewEdgeless={useCallback(() => {
             createNewEdgeless();
             setOpen(false);
-          }}
-          importFile={() => {
+          }, [createNewEdgeless])}
+          importFile={useCallback(() => {
             importFile();
             setOpen(false);
-          }}
+          }, [importFile])}
         />
       }
+      rootOptions={{
+        open,
+      }}
+      contentOptions={{
+        className: menuContent,
+        align: 'end',
+        hideWhenDetached: true,
+        onInteractOutside: useCallback(() => {
+          setOpen(false);
+        }, []),
+      }}
     >
       <DropdownButton
-        onClick={() => {
+        onClick={useCallback(() => {
           createNewPage();
           setOpen(false);
-        }}
-        onClickDropDown={() => setOpen(!open)}
+        }, [createNewPage])}
+        onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >
         {t['New Page']()}
       </DropdownButton>

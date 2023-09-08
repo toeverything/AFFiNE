@@ -24,14 +24,14 @@ export const StyledContainer = styled('div')(() => {
   };
 });
 
-export const NotfoundPage = () => {
+export const NotFoundPage = () => {
   const t = useAFFiNEI18N();
   const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   return (
     <StyledContainer data-testid="notFound">
       <img alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
 
-      <p>{t['404 - Page Not Found']()}</p>
+      <p>{t['com.affine.notFoundPage.title']()}</p>
       <Button
         onClick={() => {
           const id = localStorage.getItem('last_workspace_id');
@@ -42,12 +42,12 @@ export const NotfoundPage = () => {
           }
         }}
       >
-        {t['Back Home']()}
+        {t['com.affine.notFoundPage.backButton']()}
       </Button>
     </StyledContainer>
   );
 };
 
 export const Component = (): ReactElement => {
-  return <NotfoundPage></NotfoundPage>;
+  return <NotFoundPage />;
 };

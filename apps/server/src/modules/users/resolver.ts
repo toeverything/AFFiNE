@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   HttpException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   Args,
@@ -17,12 +18,14 @@ import type { User } from '@prisma/client';
 // @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
-import { Config } from '../../config';
 import { PrismaService } from '../../prisma/service';
+import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public } from '../auth/guard';
 import { StorageService } from '../storage/storage.service';
 import { NewFeaturesKind } from './types';
+import { UsersService } from './users';
+import { isStaff } from './utils';
 
 registerEnumType(NewFeaturesKind, {
   name: 'NewFeaturesKind',
@@ -69,31 +72,42 @@ export class AddToNewFeaturesWaitingList {
   type!: NewFeaturesKind;
 }
 
+/**
+ * User resolver
+ * All op rate limit: 10 req/m
+ */
+@UseGuards(CloudThrottlerGuard)
 @Auth()
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    private readonly config: Config
+    private readonly users: UsersService
   ) {}
 
+  @Throttle(10, 60)
   @Query(() => UserType, {
     name: 'currentUser',
     description: 'Get current user',
   })
-  async currentUser(@CurrentUser() user: User) {
+  async currentUser(@CurrentUser() user: UserType) {
+    const storedUser = await this.users.findUserById(user.id);
+    if (!storedUser) {
+      throw new BadRequestException(`User ${user.id} not found in db`);
+    }
     return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      hasPassword: !!user.password,
+      id: storedUser.id,
+      name: storedUser.name,
+      email: storedUser.email,
+      emailVerified: storedUser.emailVerified,
+      avatarUrl: storedUser.avatarUrl,
+      createdAt: storedUser.createdAt,
+      hasPassword: !!storedUser.password,
     };
   }
 
+  @Throttle(10, 60)
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
@@ -101,27 +115,14 @@ export class UserResolver {
   })
   @Public()
   async user(@Args('email') email: string) {
-    if (this.config.node.prod && this.config.affine.beta) {
-      const hasEarlyAccess = await this.prisma.newFeaturesWaitingList
-        .findUnique({
-          where: { email, type: NewFeaturesKind.EarlyAccess },
-        })
-        .catch(() => false);
-      if (!hasEarlyAccess) {
-        return new HttpException(
-          `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
-          401
-        );
-      }
+    if (!(await this.users.canEarlyAccess(email))) {
+      return new HttpException(
+        `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
+        401
+      );
     }
     // TODO: need to limit a user can only get another user witch is in the same workspace
-    const user = await this.prisma.user
-      .findUnique({
-        where: { email },
-      })
-      .catch(() => {
-        return null;
-      });
+    const user = await this.users.findUserByEmail(email);
     if (user?.password) {
       const userResponse: UserType = user;
       userResponse.hasPassword = true;
@@ -129,6 +130,7 @@ export class UserResolver {
     return user;
   }
 
+  @Throttle(10, 60)
   @Mutation(() => UserType, {
     name: 'uploadAvatar',
     description: 'Upload user avatar',
@@ -138,7 +140,7 @@ export class UserResolver {
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.users.findUserById(id);
     if (!user) {
       throw new BadRequestException(`User ${id} not found`);
     }
@@ -149,23 +151,14 @@ export class UserResolver {
     });
   }
 
+  @Throttle(10, 60)
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
-    await this.prisma.user.delete({
-      where: {
-        id: user.id,
-      },
-    });
-    await this.prisma.session.deleteMany({
-      where: {
-        userId: user.id,
-      },
-    });
-    return {
-      success: true,
-    };
+    await this.users.deleteUser(user.id);
+    return { success: true };
   }
 
+  @Throttle(10, 60)
   @Mutation(() => AddToNewFeaturesWaitingList)
   async addToNewFeaturesWaitingList(
     @CurrentUser() user: UserType,
@@ -175,7 +168,7 @@ export class UserResolver {
     type: NewFeaturesKind,
     @Args('email') email: string
   ): Promise<AddToNewFeaturesWaitingList> {
-    if (!user.email.endsWith('@toeverything.info')) {
+    if (!isStaff(user.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
     await this.prisma.newFeaturesWaitingList.create({

@@ -1,4 +1,3 @@
-import { Menu, MenuItem } from '@affine/component';
 import {
   InviteModal,
   type InviteModalProps,
@@ -12,6 +11,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button, IconButton } from '@toeverything/components/button';
+import { Menu, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai/react';
@@ -190,14 +190,11 @@ const MemberItem = ({
             : 'Pending'}
         </div>
         <Menu
-          content={
+          items={
             <MenuItem data-member-id={member.id} onClick={handleRevoke}>
               {operationButtonInfo.leaveOrRevokeText}
             </MenuItem>
           }
-          placement="bottom"
-          disablePortal={true}
-          trigger="click"
         >
           <IconButton
             disabled={!operationButtonInfo.show}

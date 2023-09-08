@@ -2,11 +2,11 @@ import {
   AuthModal as AuthModalBase,
   type AuthModalProps as AuthModalBaseProps,
 } from '@affine/component/auth-components';
-import { atom, useAtom } from 'jotai';
-import { type FC, useCallback, useEffect, useMemo } from 'react';
+import { type FC, useCallback, useMemo } from 'react';
 
 import { AfterSignInSendEmail } from './after-sign-in-send-email';
 import { AfterSignUpSendEmail } from './after-sign-up-send-email';
+import { NoAccess } from './no-access';
 import { SendEmail } from './send-email';
 import { SignIn } from './sign-in';
 import { SignInWithPassword } from './sign-in-with-password';
@@ -18,7 +18,8 @@ export type AuthProps = {
     | 'afterSignInSendEmail'
     // throw away
     | 'signInWithPassword'
-    | 'sendEmail';
+    | 'sendEmail'
+    | 'noAccess';
   setAuthState: (state: AuthProps['state']) => void;
   setAuthEmail: (state: AuthProps['email']) => void;
   setEmailType: (state: AuthProps['emailType']) => void;
@@ -34,8 +35,6 @@ export type AuthPanelProps = {
   setEmailType: AuthProps['setEmailType'];
   emailType: AuthProps['emailType'];
   onSignedIn?: () => void;
-  authStore: AuthStoreAtom;
-  setAuthStore: (data: Partial<AuthStoreAtom>) => void;
 };
 
 const config: {
@@ -46,16 +45,8 @@ const config: {
   afterSignInSendEmail: AfterSignInSendEmail,
   signInWithPassword: SignInWithPassword,
   sendEmail: SendEmail,
+  noAccess: NoAccess,
 };
-
-type AuthStoreAtom = {
-  hasSentEmail: boolean;
-  resendCountDown: number;
-};
-export const authStoreAtom = atom<AuthStoreAtom>({
-  hasSentEmail: false,
-  resendCountDown: 60,
-});
 
 export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
   open,
@@ -67,18 +58,6 @@ export const AuthModal: FC<AuthModalBaseProps & AuthProps> = ({
   setEmailType,
   emailType,
 }) => {
-  const [, setAuthStore] = useAtom(authStoreAtom);
-
-  useEffect(() => {
-    if (!open) {
-      setAuthStore({
-        hasSentEmail: false,
-        resendCountDown: 60,
-      });
-      setAuthEmail('');
-    }
-  }, [open, setAuthEmail, setAuthStore]);
-
   const onSignedIn = useCallback(() => {
     setOpen(false);
   }, [setOpen]);
@@ -107,20 +86,9 @@ export const AuthPanel: FC<AuthProps> = ({
   emailType,
   onSignedIn,
 }) => {
-  const [authStore, setAuthStore] = useAtom(authStoreAtom);
-
   const CurrentPanel = useMemo(() => {
     return config[state];
   }, [state]);
-
-  useEffect(() => {
-    return () => {
-      setAuthStore({
-        hasSentEmail: false,
-        resendCountDown: 60,
-      });
-    };
-  }, [setAuthEmail, setAuthStore]);
 
   return (
     <CurrentPanel
@@ -128,18 +96,8 @@ export const AuthPanel: FC<AuthProps> = ({
       setAuthState={setAuthState}
       setAuthEmail={setAuthEmail}
       setEmailType={setEmailType}
-      authStore={authStore}
       emailType={emailType}
       onSignedIn={onSignedIn}
-      setAuthStore={useCallback(
-        (data: Partial<AuthStoreAtom>) => {
-          setAuthStore(prev => ({
-            ...prev,
-            ...data,
-          }));
-        },
-        [setAuthStore]
-      )}
     />
   );
 };

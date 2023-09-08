@@ -4,15 +4,14 @@ import {
   BackButton,
   ModalHeader,
 } from '@affine/component/auth-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
-import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
+import { signInCloud } from '../../../utils/cloud-utils';
 import type { AuthPanelProps } from './index';
 import { forgetPasswordButton } from './style.css';
 
@@ -24,13 +23,11 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   const t = useAFFiNEI18N();
   const { update } = useSession();
 
-  const pushNotification = useSetAtom(pushNotificationAtom);
-
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
   const onSignIn = useCallback(async () => {
-    const res = await signIn('credentials', {
+    const res = await signInCloud('credentials', {
       redirect: false,
       email,
       password,
@@ -42,19 +39,13 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
     await update();
     onSignedIn?.();
-    pushNotification({
-      title: `${email}${t['com.affine.auth.has.signed']()}`,
-      message: '',
-      key: Date.now().toString(),
-      type: 'success',
-    });
-  }, [email, password, pushNotification, onSignedIn, t, update]);
+  }, [email, password, onSignedIn, update]);
 
   return (
     <>
       <ModalHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={t['AFFiNE Cloud']()}
+        subTitle={t['com.affine.brand.affineCloud']()}
       />
 
       <Wrapper
