@@ -12,15 +12,10 @@
         "script": "build"
       },
       "inputs": [
-        {
-          "runtime": "rustc --version"
-        },
-        {
-          "runtime": "node -v"
-        },
-        {
-          "runtime": "clang --version"
-        }
+        { "runtime": "rustc --version" },
+        { "runtime": "node -v" },
+        { "runtime": "clang --version" },
+        { "runtime": "cargo tree" }
       ],
       "outputs": ["{projectRoot}/*.node", "{workspaceRoot}/*.node"]
     }

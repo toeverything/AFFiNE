@@ -133,6 +133,9 @@ type InvitationType {
 
   """User information"""
   user: UserType!
+
+  """Invitee information"""
+  invitee: UserType!
 }
 
 type Query {
@@ -155,6 +158,7 @@ type Query {
   listBlobs(workspaceId: String!): [String!]!
   collectBlobSizes(workspaceId: String!): WorkspaceBlobSizes!
   collectAllBlobSizes: WorkspaceBlobSizes!
+  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 
   """Get current user"""
   currentUser: UserType!
@@ -172,9 +176,9 @@ type Mutation {
   deleteWorkspace(id: String!): Boolean!
   invite(workspaceId: String!, email: String!, permission: Permission!, sendInviteMail: Boolean): String!
   revoke(workspaceId: String!, userId: String!): Boolean!
-  acceptInviteById(workspaceId: String!, inviteId: String!): Boolean!
+  acceptInviteById(workspaceId: String!, inviteId: String!, sendAcceptMail: Boolean): Boolean!
   acceptInvite(workspaceId: String!): Boolean!
-  leaveWorkspace(workspaceId: String!): Boolean!
+  leaveWorkspace(workspaceId: String!, workspaceName: String!, sendLeaveMail: Boolean): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean!
   revokePage(workspaceId: String!, pageId: String!): Boolean!
   setBlob(workspaceId: String!, blob: Upload!): String!

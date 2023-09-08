@@ -21,6 +21,7 @@
     "@affine/jotai": "workspace:*",
     "@affine/workspace": "workspace:*",
     "@dnd-kit/core": "^6.0.8",
+    "@dnd-kit/modifiers": "^6.0.1",
     "@dnd-kit/sortable": "^7.0.2",
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.1",
@@ -52,12 +53,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230905170607-94acf22c-nightly",
-    "@blocksuite/editor": "0.0.0-20230905170607-94acf22c-nightly",
-    "@blocksuite/global": "0.0.0-20230905170607-94acf22c-nightly",
+    "@blocksuite/blocks": "0.0.0-20230907222710-102d1e99-nightly",
+    "@blocksuite/editor": "0.0.0-20230907222710-102d1e99-nightly",
+    "@blocksuite/global": "0.0.0-20230907222710-102d1e99-nightly",
     "@blocksuite/icons": "^2.1.32",
-    "@blocksuite/lit": "0.0.0-20230905170607-94acf22c-nightly",
-    "@blocksuite/store": "0.0.0-20230905170607-94acf22c-nightly",
+    "@blocksuite/lit": "0.0.0-20230907222710-102d1e99-nightly",
+    "@blocksuite/store": "0.0.0-20230907222710-102d1e99-nightly",
     "@types/react": "^18.2.21",
     "@types/react-datepicker": "^4.15.0",
     "@types/react-dnd": "^3.0.2",
@@ -67,5 +68,5 @@
     "vite": "^4.4.9",
     "yjs": "^13.6.7"
   },
-  "version": "0.9.0-canary.9"
+  "version": "0.9.0-canary.11"
 }

@@ -52,3 +52,7 @@ export const dropdownBtn = style({
     },
   },
 });
+
+export const menuContent = style({
+  backgroundColor: 'var(--affine-background-overlay-panel-color)',
+});

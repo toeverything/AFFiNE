@@ -50,6 +50,16 @@ export interface UpdateWorkspaceInput {
   public: InputMaybe<Scalars['Boolean']['input']>;
 }
 
+export type CheckBlobSizesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  size: Scalars['Float']['input'];
+}>;
+
+export type CheckBlobSizesQuery = {
+  __typename?: 'Query';
+  checkBlobSize: { __typename?: 'WorkspaceBlobSizes'; size: number };
+};
+
 export type DeleteBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   hash: Scalars['String']['input'];
@@ -279,6 +289,8 @@ export type GetWorkspacesQuery = {
 
 export type LeaveWorkspaceMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  workspaceName: Scalars['String']['input'];
+  sendLeaveMail: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type LeaveWorkspaceMutation = {
@@ -428,6 +440,7 @@ export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
 export type AcceptInviteByInviteIdMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   inviteId: Scalars['String']['input'];
+  sendAcceptMail: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type AcceptInviteByInviteIdMutation = {
@@ -445,6 +458,11 @@ export type AcceptInviteByWorkspaceIdMutation = {
 };
 
 export type Queries =
+  | {
+      name: 'checkBlobSizesQuery';
+      variables: CheckBlobSizesQueryVariables;
+      response: CheckBlobSizesQuery;
+    }
   | {
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;

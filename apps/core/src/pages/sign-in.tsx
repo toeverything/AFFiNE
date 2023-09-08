@@ -9,7 +9,7 @@ import { AuthPanel } from '../components/affine/auth';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 
 interface LocationState {
-  state: {
+  state?: {
     callbackURL?: string;
   };
 }
@@ -40,7 +40,7 @@ export const Component = () => {
       console.error(err);
     });
   }, [
-    location.state.callbackURL,
+    location.state?.callbackURL,
     loginStatus,
     navigate,
     onceSignedIn,

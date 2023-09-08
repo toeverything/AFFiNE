@@ -100,7 +100,8 @@ test.describe('basic', () => {
       timeout: 60000,
     });
     await page.goto(
-      `${coreUrl}/workspace/${workspaceId}/gc5FeppNDv-hello-world`
+      // page 'F1SX6cgNxy' has edgeless mode
+      `${coreUrl}/workspace/${workspaceId}/F1SX6cgNxy`
     );
     await waitForEditorLoad(page);
     await clickEdgelessModeButton(page);

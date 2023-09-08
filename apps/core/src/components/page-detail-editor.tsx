@@ -35,12 +35,14 @@ import * as styles from './page-detail-editor.css';
 import { pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
 
+export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
+
 export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
-  onLoad?: (page: Page, editor: EditorContainer) => () => void;
+  onLoad?: OnLoadEditor;
 }
 
 const EditorWrapper = memo(function EditorWrapper({

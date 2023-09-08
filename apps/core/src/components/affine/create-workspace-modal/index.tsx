@@ -290,11 +290,7 @@ export const CreateWorkspaceModal = ({
         console.error(err);
       });
     } else if (mode === 'new') {
-      setStep(
-        environment.isDesktop && runtimeConfig.enableSQLiteProvider
-          ? 'set-db-location'
-          : 'name-workspace'
-      );
+      setStep('name-workspace');
     } else {
       setStep(undefined);
     }
