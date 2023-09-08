@@ -44,7 +44,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     get internal() {
       return {
         ...this.stable,
-        serverUrlPrefix: 'https://affine.fail',
+        serverUrlPrefix: 'https://insider.affine.pro',
       };
     },
     // canary will be aggressive and enable all features
