@@ -5,41 +5,25 @@ import 'fake-indexeddb/auto';
 
 import type { Collection } from '@affine/env/filter';
 import { renderHook } from '@testing-library/react';
-import { noop } from 'foxact/noop';
 import { atom } from 'jotai';
 import { expect, test } from 'vitest';
 
 import { createDefaultFilter, vars } from '../filter/vars';
 import {
-  type StorageCRUD,
+  type CollectionsAtom,
   useCollectionManager,
 } from '../use-collection-manager';
 
 const defaultMeta = { tags: { options: [] } };
 
-const storage: Collection[] = [];
+const baseAtom = atom<Collection[]>([]);
 
-const mockStorage: StorageCRUD<Collection> = {
-  get: async (key: string) => {
-    return storage.find(v => v.id === key) ?? null;
-  },
-  set: async (key: string, value: Collection) => {
-    storage.push(value);
-    return key;
-  },
-  delete: async (key: string) => {
-    const index = storage.findIndex(v => v.id === key);
-    if (index >= 0) {
-      storage.splice(index, 1);
-    }
-  },
-  list: async () => {
-    return storage.map(v => v.id);
-  },
-  on: () => noop,
-};
-
-const mockAtom = atom(mockStorage);
+const mockAtom: CollectionsAtom = atom(
+  get => get(baseAtom),
+  async (get, set, update) => {
+    set(baseAtom, update);
+  }
+);
 
 test('useAllPageSetting', async () => {
   const settingHook = renderHook(() => useCollectionManager(mockAtom));

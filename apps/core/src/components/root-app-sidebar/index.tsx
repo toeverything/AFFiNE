@@ -28,7 +28,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
-import { getStorageAtom } from '../../utils/user-setting';
+import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
@@ -99,9 +99,7 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const [appSettings] = useAppSetting();
-  const { backToAll } = useCollectionManager(
-    getStorageAtom(currentWorkspace.blockSuiteWorkspace)
-  );
+  const { backToAll } = useCollectionManager(currentCollectionsAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {

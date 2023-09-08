@@ -1,6 +1,6 @@
 import {
   CollectionBar,
-  type StorageCRUDAtom,
+  type CollectionsAtom,
 } from '@affine/component/page-list';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { PropertiesMeta } from '@affine/env/filter';
@@ -39,7 +39,7 @@ interface AllPagesHeadProps {
   importFile: () => void;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  storageAtom: StorageCRUDAtom;
+  collectionsAtom: CollectionsAtom;
 }
 
 const AllPagesHead = ({
@@ -50,7 +50,7 @@ const AllPagesHead = ({
   importFile,
   getPageInfo,
   propertiesMeta,
-  storageAtom,
+  collectionsAtom,
 }: AllPagesHeadProps) => {
   const t = useAFFiNEI18N();
   const titleList = useMemo(
@@ -153,7 +153,7 @@ const AllPagesHead = ({
         columnsCount={titleList.length}
         getPageInfo={getPageInfo}
         propertiesMeta={propertiesMeta}
-        storageAtom={storageAtom}
+        collectionsAtom={collectionsAtom}
       />
     </TableHead>
   );
@@ -161,7 +161,7 @@ const AllPagesHead = ({
 
 export const PageList = ({
   isPublicWorkspace = false,
-  storageAtom,
+  collectionsAtom,
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
@@ -206,7 +206,7 @@ export const PageList = ({
       <StyledTableContainer ref={ref}>
         <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
           <AllPagesHead
-            storageAtom={storageAtom}
+            collectionsAtom={collectionsAtom}
             propertiesMeta={propertiesMeta}
             isPublicWorkspace={isPublicWorkspace}
             sorter={sorter}

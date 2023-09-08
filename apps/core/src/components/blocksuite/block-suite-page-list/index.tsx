@@ -19,7 +19,7 @@ import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { filterPage } from '../../../utils/filter';
-import { getStorageAtom } from '../../../utils/user-setting';
+import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
@@ -278,7 +278,7 @@ export const BlockSuitePageList = ({
 
   return (
     <PageList
-      storageAtom={getStorageAtom(blockSuiteWorkspace)}
+      collectionsAtom={currentCollectionsAtom}
       propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}

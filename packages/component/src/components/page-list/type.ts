@@ -1,8 +1,8 @@
-import type { StorageCRUDAtom } from '@affine/component/page-list/use-collection-manager';
+import type { CollectionsAtom } from '@affine/component/page-list/use-collection-manager';
 import type { Tag } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * Get the keys of an object type whose values are of a given type
@@ -47,9 +47,9 @@ export type TrashListData = {
 
 export type PageListProps = {
   isPublicWorkspace?: boolean;
-  storageAtom: StorageCRUDAtom;
+  collectionsAtom: CollectionsAtom;
   list: ListData[];
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
   onCreateNewPage: () => void;
   onCreateNewEdgeless: () => void;
   onImportFile: () => void;
@@ -61,5 +61,5 @@ export type DraggableTitleCellData = {
   pageId: string;
   pageTitle: string;
   pagePreview?: string;
-  icon: React.ReactElement;
+  icon: ReactElement;
 };

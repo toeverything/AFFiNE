@@ -18,7 +18,7 @@ import { useCallback } from 'react';
 import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
-import { getStorageAtom } from '../utils/user-setting';
+import { currentCollectionsAtom } from '../utils/user-setting';
 import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
 import { filterContainerStyle } from './filter-container.css';
@@ -28,9 +28,7 @@ import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
 
 const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
   const currentWorkspace = useWorkspace(workspaceId);
-  const setting = useCollectionManager(
-    getStorageAtom(currentWorkspace.blockSuiteWorkspace)
-  );
+  const setting = useCollectionManager(currentCollectionsAtom);
   const saveToCollection = useCallback(
     async (collection: Collection) => {
       await setting.saveCollection(collection);
@@ -84,9 +82,7 @@ export function WorkspaceHeader({
   const setAppHeader = useSetAtom(appHeaderAtom);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
-  const setting = useCollectionManager(
-    getStorageAtom(currentWorkspace.blockSuiteWorkspace)
-  );
+  const setting = useCollectionManager(currentCollectionsAtom);
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );

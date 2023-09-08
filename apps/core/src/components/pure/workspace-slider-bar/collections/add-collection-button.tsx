@@ -11,7 +11,7 @@ import { IconButton } from '@toeverything/components/button';
 import { useCallback, useState } from 'react';
 
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
-import { getStorageAtom } from '../../../../utils/user-setting';
+import { currentCollectionsAtom } from '../../../../utils/user-setting';
 
 type AddCollectionButtonProps = {
   workspace: Workspace;
@@ -21,7 +21,7 @@ export const AddCollectionButton = ({
   workspace,
 }: AddCollectionButtonProps) => {
   const getPageInfo = useGetPageInfoById(workspace);
-  const setting = useCollectionManager(getStorageAtom(workspace));
+  const setting = useCollectionManager(currentCollectionsAtom);
   const t = useAFFiNEI18N();
   const [show, showUpdateCollection] = useState(false);
   const [defaultCollection, setDefaultCollection] = useState<Collection>();

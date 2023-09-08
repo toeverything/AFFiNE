@@ -34,7 +34,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { filterPage } from '../../../../utils/filter';
-import { getStorageAtom } from '../../../../utils/user-setting';
+import { currentCollectionsAtom } from '../../../../utils/user-setting';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -150,7 +150,7 @@ const CollectionRenderer = ({
   getPageInfo: GetPageInfoById;
 }) => {
   const [collapsed, setCollapsed] = useState(true);
-  const setting = useCollectionManager(getStorageAtom(workspace));
+  const setting = useCollectionManager(currentCollectionsAtom);
   const { jumpToSubPath } = useNavigateHelper();
   const clickCollection = useCallback(() => {
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
@@ -273,7 +273,7 @@ const CollectionRenderer = ({
 };
 export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
-  const { savedCollections } = useSavedCollections(getStorageAtom(workspace));
+  const { savedCollections } = useSavedCollections(currentCollectionsAtom);
   const getPageInfo = useGetPageInfoById(workspace);
   const pinedCollections = useMemo(
     () => savedCollections.filter(v => v.pinned),

@@ -1,12 +1,15 @@
-import type { StorageCRUD, Subscribe } from '@affine/component/page-list';
+import type { CollectionsAtom } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import type { Workspace } from '@blocksuite/store';
-import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
-import type { Atom } from 'jotai';
+import { DisposableGroup } from '@blocksuite/global/utils';
+import { currentWorkspaceAtom } from '@toeverything/infra/atom';
+import { type DBSchema, openDB } from 'idb';
 import { atom } from 'jotai';
-import { getSession } from 'next-auth/react';
+import { atomWithObservable } from 'jotai/utils';
+import { Observable } from 'rxjs';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
+
+import { sessionAtom } from '../atoms/cloud-user';
 
 export interface PageCollectionDBV1 extends DBSchema {
   view: {
@@ -15,167 +18,183 @@ export interface PageCollectionDBV1 extends DBSchema {
   };
 }
 
-const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
+export interface StorageCRUD<Value> {
+  get: (key: string) => Promise<Value | null>;
+  set: (key: string, value: Value) => Promise<string>;
+  delete: (key: string) => Promise<void>;
+  list: () => Promise<string[]>;
+}
+
+type Subscribe = () => void;
+
+const collectionDBAtom = atom(
   openDB<PageCollectionDBV1>('page-view', 1, {
     upgrade(database) {
       database.createObjectStore('view', {
         keyPath: 'id',
       });
     },
-  });
+  })
+);
 
-const defaultSet = new Set<Subscribe>();
-const workspaceWeakMap = new WeakMap<Workspace, Set<Subscribe>>();
+const callbackSet = new Set<Subscribe>();
 
-const defaultCRUD: StorageCRUD<Collection> = {
+const localCollectionCRUDAtom = atom(get => ({
   get: async (key: string) => {
-    const db = await pageCollectionDBPromise;
+    const db = await get(collectionDBAtom);
     const t = db.transaction('view').objectStore('view');
     return (await t.get(key)) ?? null;
   },
   set: async (key: string, value: Collection) => {
-    const db = await pageCollectionDBPromise;
+    const db = await get(collectionDBAtom);
     const t = db.transaction('view', 'readwrite').objectStore('view');
     await t.put(value);
+    callbackSet.forEach(cb => cb());
     return key;
   },
   delete: async (key: string) => {
-    const db = await pageCollectionDBPromise;
+    const db = await get(collectionDBAtom);
     const t = db.transaction('view', 'readwrite').objectStore('view');
+    callbackSet.forEach(cb => cb());
     await t.delete(key);
   },
   list: async () => {
-    const db = await pageCollectionDBPromise;
+    const db = await get(collectionDBAtom);
     const t = db.transaction('view').objectStore('view');
     return t.getAllKeys();
   },
-  on: subscribe => {
-    defaultSet.add(subscribe);
-    return () => {
-      defaultSet.delete(subscribe);
-    };
-  },
+}));
+
+const getCollections = async (
+  storage: StorageCRUD<Collection>
+): Promise<Collection[]> => {
+  return storage
+    .list()
+    .then(async keys => {
+      return await Promise.all(keys.map(key => storage.get(key))).then(v =>
+        v.filter((v): v is Collection => v !== null)
+      );
+    })
+    .catch(error => {
+      console.error('Failed to load collections', error);
+      return [];
+    });
 };
 
-const storageSettingAtomWeakMap = new WeakMap<
-  Workspace,
-  Atom<StorageCRUD<Collection>>
->();
+const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
+  const currentWorkspacePromise = get(currentWorkspaceAtom);
+  const session = get(sessionAtom);
+  const localCRUD = get(localCollectionCRUDAtom);
+  const userId = session?.data?.user.id ?? null;
 
-export async function syncStorageCRUD(
-  from: StorageCRUD<Collection>,
-  to: StorageCRUD<Collection>
-) {
-  const keys = await from.list();
-  for (const key of keys) {
-    const value = await from.get(key);
-    if (value != null) {
-      await to.set(key, value);
+  const useLocalStorage = userId === null;
+
+  return new Observable<Collection[]>(subscriber => {
+    if (useLocalStorage) {
+      getCollections(localCRUD).then(collections => {
+        subscriber.next(collections);
+      });
+      const fn = () => {
+        getCollections(localCRUD).then(collections => {
+          subscriber.next(collections);
+        });
+      };
+      callbackSet.add(fn);
+      return () => {
+        callbackSet.delete(fn);
+      };
+    } else {
+      const group = new DisposableGroup();
+      const abortController = new AbortController();
+      currentWorkspacePromise.then(async currentWorkspace => {
+        if (abortController.signal.aborted) {
+          return;
+        }
+        const collectionsFromLocal = await getCollections(localCRUD);
+        const rootDoc = currentWorkspace.doc;
+        const settingMap = rootDoc.getMap('settings') as YMap<YDoc>;
+        if (!settingMap.has(userId)) {
+          settingMap.set(
+            userId,
+            new YDoc({
+              guid: `${rootDoc.guid}:settings:${userId}`,
+            })
+          );
+        }
+        const settingDoc = settingMap.get(userId) as YDoc;
+        if (!settingDoc.isLoaded) {
+          settingDoc.load();
+        }
+        const viewMap = settingDoc.getMap('view') as YMap<Collection>;
+        const collectionsFromDoc: Collection[] = Array.from(viewMap.keys())
+          .map(key => viewMap.get(key))
+          .filter((v): v is Collection => !!v);
+        const collections = [...collectionsFromLocal, ...collectionsFromDoc];
+        subscriber.next(collections);
+        if (group.disposed) {
+          return;
+        }
+        console.log('collectionsFromDoc');
+        const fn = () => {
+          console.log('collectionsFromDoc');
+          // todo: simplify
+          const collectionsFromDoc: Collection[] = Array.from(viewMap.keys())
+            .map(key => viewMap.get(key))
+            .filter((v): v is Collection => !!v);
+          const collections = [...collectionsFromLocal, ...collectionsFromDoc];
+          subscriber.next(collections);
+        };
+        viewMap.observe(fn);
+        group.add(() => {
+          viewMap.unobserve(fn);
+        });
+      });
+      return () => {
+        group.dispose();
+      };
+    }
+  });
+});
+
+export const currentCollectionsAtom: CollectionsAtom = atom(
+  get => get(pageCollectionBaseAtom),
+  async (get, set, apply) => {
+    const collections = await get(pageCollectionBaseAtom);
+    let newCollections: Collection[];
+    if (typeof apply === 'function') {
+      newCollections = apply(collections);
+    } else {
+      newCollections = apply;
+    }
+    const session = get(sessionAtom);
+    const userId = session?.data?.user.id ?? null;
+    const useLocalStorage = userId === null;
+    const added = newCollections.filter(v => !collections.includes(v));
+    const removed = collections.filter(v => !newCollections.includes(v));
+    if (useLocalStorage) {
+      const localCRUD = get(localCollectionCRUDAtom);
+      await Promise.all([
+        ...added.map(async v => {
+          await localCRUD.set(v.id, v);
+        }),
+        ...removed.map(async v => {
+          await localCRUD.delete(v.id);
+        }),
+      ]);
+    } else {
+      const currentWorkspace = await get(currentWorkspaceAtom);
+      const rootDoc = currentWorkspace.doc;
+      const settingMap = rootDoc.getMap('settings') as YMap<YDoc>;
+      const settingDoc = settingMap.get(userId) as YDoc;
+      const viewMap = settingDoc.getMap('view') as YMap<Collection>;
+      await Promise.all([
+        ...added.map(async v => {
+          viewMap.set(v.id, v);
+        }),
+        ...removed.map(async v => {
+          viewMap.delete(v.id);
+        }),
+      ]);
     }
   }
-}
-
-const isCloudStorageEnabled = async (): Promise<string | false> => {
-  const session = await getSession();
-  return session?.user.id ?? false;
-};
-
-const getCloudStorage = async (workspace: Workspace) => {
-  const userId = await isCloudStorageEnabled();
-  if (!userId) {
-    return;
-  }
-  // need sync from local indexeddb after user enable affine cloud
-  const rootDoc = workspace.doc;
-  const settingMap = rootDoc.getMap('settings') as YMap<YDoc>;
-  if (!settingMap.has(userId)) {
-    settingMap.set(
-      userId,
-      new YDoc({
-        guid: `${rootDoc.guid}:settings:${userId}`,
-      })
-    );
-  }
-  const settingDoc = settingMap.get(userId) as YDoc;
-  settingDoc.load();
-  const viewMap = settingDoc.getMap('view') as YMap<Collection>;
-  viewMap.observe(() => {
-    workspaceWeakMap.get(workspace)?.forEach(cb => cb());
-  });
-  return {
-    get: async (key: string) => {
-      return viewMap.get(key) ?? null;
-    },
-    set: async (key: string, value: Collection) => {
-      viewMap.set(key, value);
-      return key;
-    },
-    delete: async (key: string) => {
-      viewMap.delete(key);
-    },
-    list: async () => {
-      return Array.from(viewMap.keys());
-    },
-  };
-};
-
-export function getStorageAtom(
-  workspace: Workspace
-): Atom<StorageCRUD<Collection>> {
-  if (!storageSettingAtomWeakMap.has(workspace)) {
-    storageSettingAtomWeakMap.set(
-      workspace,
-      atom<StorageCRUD<Collection>>(() => {
-        return {
-          get: async key => {
-            const cloudStorage = await getCloudStorage(workspace);
-            const localValue = await defaultCRUD.get(key);
-            if (localValue) {
-              return localValue;
-            }
-            return cloudStorage?.get(key) ?? null;
-          },
-          set: async (key, value) => {
-            const cloudStorage = await getCloudStorage(workspace);
-            if (cloudStorage) {
-              return await cloudStorage.set(key, value);
-            }
-            return await defaultCRUD.set(key, value);
-          },
-          delete: async key => {
-            const cloudStorage = await getCloudStorage(workspace);
-            if (cloudStorage) {
-              await cloudStorage.delete(key);
-            }
-            await defaultCRUD.delete(key);
-          },
-          list: async () => {
-            const cloudStorage = await getCloudStorage(workspace);
-            if (cloudStorage) {
-              return [
-                ...new Set<string>([
-                  ...(await cloudStorage.list()),
-                  ...(await defaultCRUD.list()),
-                ]).values(),
-              ];
-            }
-            return defaultCRUD.list();
-          },
-          on: subscribe => {
-            if (!workspaceWeakMap.has(workspace)) {
-              workspaceWeakMap.set(workspace, new Set());
-            }
-            const set = workspaceWeakMap.get(workspace) as Set<Subscribe>;
-            set.add(subscribe);
-            return () => {
-              set.delete(subscribe);
-            };
-          },
-        };
-      })
-    );
-  }
-  return storageSettingAtomWeakMap.get(workspace) as Atom<
-    StorageCRUD<Collection>
-  >;
-}
+);
