@@ -41,7 +41,9 @@ export class WorkspacesController {
     const blob = await this.storage.getBlob(workspaceId, name);
 
     if (!blob) {
-      throw new NotFoundException('Blob not found');
+      throw new NotFoundException(
+        `Blob not found in workspace ${workspaceId}: ${name}`
+      );
     }
 
     res.setHeader('content-type', blob.contentType);
@@ -78,6 +80,6 @@ export class WorkspacesController {
 
     res.setHeader('content-type', 'application/octet-stream');
     res.send(update);
-    this.logger.debug('workspaces doc api: ', format(process.hrtime(start)));
+    this.logger.debug(`workspaces doc api: ${format(process.hrtime(start))}`);
   }
 }
