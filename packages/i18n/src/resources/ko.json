@@ -68,6 +68,7 @@
   "com.affine.nameWorkspace.title": "워크스페이스 이름을 입력하세요",
   "com.affine.new_edgeless": "새로운 엣지리스",
   "com.affine.new_import": "불러오기",
+  "com.affine.notFoundPage.backButton": "홈으로 돌아가기",
   "com.affine.notFoundPage.title": "404 - 발견되지 않음",
   "com.affine.openPageOperation.newTab": "새로운 탭에서 열기",
   "com.affine.pageMode.all": "모든",

@@ -156,9 +156,6 @@ test('windows only check', async ({ page }) => {
 test('delete workspace', async ({ page }) => {
   await page.getByTestId('current-workspace').click();
   await page.getByTestId('new-workspace').click();
-  await page.getByTestId('create-workspace-default-location-button').click({
-    delay: 100,
-  });
   await page.getByTestId('create-workspace-input').type('Delete Me', {
     delay: 100,
   });

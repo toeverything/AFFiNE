@@ -13,6 +13,8 @@ import fs from 'fs-extra';
 import type { ElectronApplication } from 'playwright';
 import { _electron as electron } from 'playwright';
 
+import { removeWithRetry } from '../tests/utils';
+
 function generateUUID() {
   return crypto.randomUUID();
 }
@@ -102,7 +104,7 @@ export const test = base.extend<{
     });
     await use(electronApp);
     try {
-      await fs.rm(clonedDist, { recursive: true, force: true });
+      await removeWithRetry(clonedDist);
     } catch (error) {
       console.log(error);
     }

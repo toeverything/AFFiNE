@@ -21,7 +21,7 @@ import { Divider } from '@toeverything/components/divider';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import {
@@ -29,7 +29,9 @@ import {
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
 } from '../../../atoms';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { AllWorkspace } from '../../../shared';
+import { signOutCloud } from '../../../utils/cloud-utils';
 import {
   StyledCreateWorkspaceCardPill,
   StyledCreateWorkspaceCardPillContent,
@@ -67,6 +69,7 @@ interface WorkspaceModalProps {
 const AccountMenu = () => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openSettingModalAtom);
+  const { jumpToIndex } = useNavigateHelper();
   return (
     <div>
       <MenuItem
@@ -91,8 +94,12 @@ const AccountMenu = () => {
         }
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
-          signOut().catch(console.error);
-        }, [])}
+          signOutCloud()
+            .then(() => {
+              jumpToIndex();
+            })
+            .catch(console.error);
+        }, [jumpToIndex])}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>

@@ -15,6 +15,7 @@ test.beforeEach(async () => {
   const client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
+  await client.$disconnect();
 });
 
 test.beforeEach(async () => {

@@ -215,7 +215,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
   return gqlFetch;
 };
 
-export const fetchWithTraceReport = (
+export const fetchWithTraceReport = async (
   input: RequestInfo | URL,
   init?: RequestInit,
   traceOptions?: { event: string }
@@ -241,21 +241,20 @@ export const fetchWithTraceReport = (
     return fetch(input, init);
   }
 
-  return fetch(input, init)
-    .then(response => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      traceReporter!.cacheTrace(traceId, spanId, startTime, {
-        requestId,
-        ...(event ? { event } : {}),
-      });
-      return response;
-    })
-    .catch(err => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      traceReporter!.uploadTrace(traceId, spanId, startTime, {
-        requestId,
-        ...(event ? { event } : {}),
-      });
-      return Promise.reject(err);
+  try {
+    const response = await fetch(input, init);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    traceReporter!.cacheTrace(traceId, spanId, startTime, {
+      requestId,
+      ...(event ? { event } : {}),
     });
+    return response;
+  } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    traceReporter!.uploadTrace(traceId, spanId, startTime, {
+      requestId,
+      ...(event ? { event } : {}),
+    });
+    return await Promise.reject(err);
+  }
 };

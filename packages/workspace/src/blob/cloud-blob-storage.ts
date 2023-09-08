@@ -1,12 +1,12 @@
 import {
+  checkBlobSizesQuery,
   deleteBlobMutation,
   fetchWithTraceReport,
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
+import { fetcher } from '@affine/workspace/affine/gql';
 import type { BlobStorage } from '@blocksuite/store';
-
-import { fetcher } from '../affine/gql';
 
 export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
   return {
@@ -18,6 +18,20 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
         ).then(res => res.blob());
       },
       set: async (key, value) => {
+        const {
+          checkBlobSize: { size },
+        } = await fetcher({
+          query: checkBlobSizesQuery,
+          variables: {
+            workspaceId,
+            size: value.size,
+          },
+        });
+
+        if (size <= 0) {
+          throw new Error('Blob size limit exceeded');
+        }
+
         const result = await fetcher({
           query: setBlobMutation,
           variables: {

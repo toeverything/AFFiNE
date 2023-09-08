@@ -67,6 +67,7 @@
   "com.affine.nameWorkspace.description": "ワークスペースは、一人で、あるいはチームで、創造し、計画するための仮想空間です",
   "com.affine.nameWorkspace.placeholder": "ワークスペース名を設定",
   "com.affine.nameWorkspace.title": "ワークスペースに名前をつける",
+  "com.affine.notFoundPage.backButton": "ホームに戻る",
   "com.affine.notFoundPage.title": "404 - ページが見つかりません",
   "com.affine.onboarding.title1": "ハイパーマージされたホワイトボードとドキュメント",
   "com.affine.onboarding.title2": "直感的で堅牢なブロックベースの編集",

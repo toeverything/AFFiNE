@@ -1,16 +1,10 @@
-import { randomUUID } from 'node:crypto';
-
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { BadRequestException, FactoryProvider, Logger } from '@nestjs/common';
+import { FactoryProvider, Logger } from '@nestjs/common';
 import { verify } from '@node-rs/argon2';
-import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import { assign, omit } from 'lodash-es';
-import { nanoid } from 'nanoid';
 import { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import Email, {
-  type SendVerificationRequestParams,
-} from 'next-auth/providers/email';
+import Email from 'next-auth/providers/email';
 import Github from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 
@@ -20,7 +14,12 @@ import { SessionService } from '../../session';
 import { NewFeaturesKind } from '../users/types';
 import { isStaff } from '../users/utils';
 import { MailService } from './mailer';
-import { getUtcTimestamp, UserClaim } from './service';
+import {
+  decode,
+  encode,
+  sendVerificationRequest,
+  SendVerificationRequestParams,
+} from './utils';
 
 export const NextAuthOptionsProvide = Symbol('NextAuthOptions');
 
@@ -78,44 +77,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             },
           },
           from: config.auth.email.sender,
-          async sendVerificationRequest(params: SendVerificationRequestParams) {
-            const { identifier, url, provider } = params;
-            const urlWithToken = new URL(url);
-            const callbackUrl =
-              urlWithToken.searchParams.get('callbackUrl') || '';
-            if (!callbackUrl) {
-              throw new Error('callbackUrl is not set');
-            } else {
-              const newCallbackUrl = new URL(callbackUrl, config.origin);
-
-              const token = nanoid();
-              await session.set(token, identifier);
-              newCallbackUrl.searchParams.set('token', token);
-
-              urlWithToken.searchParams.set(
-                'callbackUrl',
-                newCallbackUrl.toString()
-              );
-            }
-
-            const result = await mailer.sendSignInEmail(
-              urlWithToken.toString(),
-              {
-                to: identifier,
-                from: provider.from,
-              }
-            );
-            logger.log(
-              `send verification email success: ${result.accepted.join(', ')}`
-            );
-
-            const failed = result.rejected
-              .concat(result.pending)
-              .filter(Boolean);
-            if (failed.length) {
-              throw new Error(`Email (${failed.join(', ')}) could not be sent`);
-            }
-          },
+          sendVerificationRequest: (params: SendVerificationRequestParams) =>
+            sendVerificationRequest(config, logger, mailer, session, params),
         }),
       ],
       // @ts-expect-error Third part library type mismatch
@@ -200,66 +163,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     }
 
     nextAuthOptions.jwt = {
-      encode: async ({ token, maxAge }) => {
-        if (!token?.email) {
-          throw new BadRequestException('Missing email in jwt token');
-        }
-        const user = await prisma.user.findFirstOrThrow({
-          where: {
-            email: token.email,
-          },
-        });
-        const now = getUtcTimestamp();
-        return sign(
-          {
-            data: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              emailVerified: user.emailVerified?.toISOString(),
-              picture: user.avatarUrl,
-              createdAt: user.createdAt.toISOString(),
-              hasPassword: Boolean(user.password),
-            },
-            iat: now,
-            exp: now + (maxAge ?? config.auth.accessTokenExpiresIn),
-            iss: config.serverId,
-            sub: user.id,
-            aud: user.name,
-            jti: randomUUID({
-              disableEntropyCache: true,
-            }),
-          },
-          config.auth.privateKey,
-          {
-            algorithm: Algorithm.ES256,
-          }
-        );
-      },
-      decode: async ({ token }) => {
-        if (!token) {
-          return null;
-        }
-        const { name, email, emailVerified, id, picture, hasPassword } = (
-          await jwtVerify(token, config.auth.publicKey, {
-            algorithms: [Algorithm.ES256],
-            iss: [config.serverId],
-            leeway: config.auth.leeway,
-            requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
-          })
-        ).data as Omit<UserClaim, 'avatarUrl'> & {
-          picture: string | undefined;
-        };
-        return {
-          name,
-          email,
-          emailVerified,
-          picture,
-          sub: id,
-          id,
-          hasPassword,
-        };
-      },
+      encode: async ({ token, maxAge }) =>
+        encode(config, prisma, token, maxAge),
+      decode: async ({ token }) => decode(config, token),
     };
     nextAuthOptions.secret ??= config.auth.nextAuthSecret;
 
