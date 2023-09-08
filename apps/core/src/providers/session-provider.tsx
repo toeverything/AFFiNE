@@ -9,11 +9,14 @@ import { useSetAtom } from 'jotai';
 import { SessionProvider, useSession } from 'next-auth/react';
 import { type PropsWithChildren, startTransition, useRef } from 'react';
 
+import { useOnceSignedInEvents } from '../atoms/event';
+
 const SessionReporter = () => {
   const session = useSession();
   const prevSession = useRef<ReturnType<typeof useSession>>();
   const pushNotification = useSetAtom(pushNotificationAtom);
   const refreshMetadata = useSetAtom(refreshRootMetadataAtom);
+  const onceSignedInEvents = useOnceSignedInEvents();
   const t = useAFFiNEI18N();
 
   if (prevSession.current !== session && session.status !== 'loading') {
@@ -23,7 +26,9 @@ const SessionReporter = () => {
       session.status === 'authenticated'
     ) {
       startTransition(() => {
-        refreshMetadata();
+        onceSignedInEvents().then(() => {
+          refreshMetadata();
+        });
       });
       pushNotification({
         title: t['com.affine.auth.has.signed'](),

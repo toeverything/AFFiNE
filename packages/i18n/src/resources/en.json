@@ -569,5 +569,6 @@
   "Workspace Settings": "Workspace Settings",
   "Workspace Settings with name": "{{name}}'s Settings",
   "Workspace Type": "Workspace Type",
-  "You cannot delete the last workspace": "You cannot delete the last workspace"
+  "You cannot delete the last workspace": "You cannot delete the last workspace",
+  "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud"
 }
