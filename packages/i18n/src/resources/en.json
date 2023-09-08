@@ -133,7 +133,7 @@
   "com.affine.auth.toast.message.signed-in": "You have been signed in, start to sync your data with AFFiNE Cloud!",
   "com.affine.auth.toast.title.failed": "Unable to sign in",
   "com.affine.auth.toast.title.signed-in": "Signed in",
-  "com.affine.backButton": "Back Home",
+  "com.affine.backButton": "Back",
   "com.affine.banner.content": "This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.",
   "com.affine.brand.affineCloud": "AFFiNE Cloud",
   "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can fill out the <1>AFFiNE Cloud Signup</1>.",
@@ -569,5 +569,6 @@
   "Workspace Settings": "Workspace Settings",
   "Workspace Settings with name": "{{name}}'s Settings",
   "Workspace Type": "Workspace Type",
-  "You cannot delete the last workspace": "You cannot delete the last workspace"
+  "You cannot delete the last workspace": "You cannot delete the last workspace",
+  "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud"
 }

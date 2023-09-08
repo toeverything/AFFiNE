@@ -101,6 +101,7 @@ export const AuthModal = (): ReactElement => {
     { openModal, state, email = '', emailType = 'changePassword' },
     setAuthAtom,
   ] = useAtom(authAtom);
+
   return (
     <Auth
       open={openModal}
