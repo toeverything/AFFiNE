@@ -3,16 +3,44 @@
  */
 import 'fake-indexeddb/auto';
 
+import type { Collection } from '@affine/env/filter';
 import { renderHook } from '@testing-library/react';
+import { atom } from 'jotai';
 import { expect, test } from 'vitest';
 
 import { createDefaultFilter, vars } from '../filter/vars';
-import { useCollectionManager } from '../use-collection-manager';
+import {
+  type StorageCRUD,
+  useCollectionManager,
+} from '../use-collection-manager';
 
 const defaultMeta = { tags: { options: [] } };
 
+const storage: Collection[] = [];
+
+const mockStorage: StorageCRUD<Collection> = {
+  get: async (key: string) => {
+    return storage.find(v => v.id === key) ?? null;
+  },
+  set: async (key: string, value: Collection) => {
+    storage.push(value);
+    return key;
+  },
+  delete: async (key: string) => {
+    const index = storage.findIndex(v => v.id === key);
+    if (index >= 0) {
+      storage.splice(index, 1);
+    }
+  },
+  list: async () => {
+    return storage.map(v => v.id);
+  },
+};
+
+const mockAtom = atom(mockStorage);
+
 test('useAllPageSetting', async () => {
-  const settingHook = renderHook(() => useCollectionManager('test'));
+  const settingHook = renderHook(() => useCollectionManager(mockAtom));
   const prevCollection = settingHook.result.current.currentCollection;
   expect(settingHook.result.current.savedCollections).toEqual([]);
   await settingHook.result.current.updateCollection({

@@ -1,6 +1,8 @@
+import type { StorageCRUDAtom } from '@affine/component/page-list/use-collection-manager';
 import type { Tag } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import type { ReactNode } from 'react';
 
 /**
  * Get the keys of an object type whose values are of a given type
@@ -15,7 +17,7 @@ export type ListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  preview?: React.ReactNode;
+  preview?: ReactNode;
   tags: Tag[];
   favorite: boolean;
   createDate: Date;
@@ -34,7 +36,7 @@ export type TrashListData = {
   pageId: string;
   icon: JSX.Element;
   title: string;
-  preview?: React.ReactNode;
+  preview?: ReactNode;
   createDate: Date;
   // TODO remove optional after assert that trashDate is always set
   trashDate?: Date;
@@ -45,7 +47,7 @@ export type TrashListData = {
 
 export type PageListProps = {
   isPublicWorkspace?: boolean;
-  workspaceId: string;
+  storageAtom: StorageCRUDAtom;
   list: ListData[];
   fallback?: React.ReactNode;
   onCreateNewPage: () => void;

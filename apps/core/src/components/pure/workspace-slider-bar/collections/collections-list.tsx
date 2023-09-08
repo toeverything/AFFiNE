@@ -29,11 +29,12 @@ import {
 } from '@toeverything/components/menu';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import type { ReactElement } from 'react';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { filterPage } from '../../../../utils/filter';
+import { getStorageAtom } from '../../../../utils/user-setting';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -148,8 +149,8 @@ const CollectionRenderer = ({
   workspace: Workspace;
   getPageInfo: GetPageInfoById;
 }) => {
-  const [collapsed, setCollapsed] = React.useState(true);
-  const setting = useCollectionManager(workspace.id);
+  const [collapsed, setCollapsed] = useState(true);
+  const setting = useCollectionManager(getStorageAtom(workspace));
   const { jumpToSubPath } = useNavigateHelper();
   const clickCollection = useCallback(() => {
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
@@ -272,7 +273,7 @@ const CollectionRenderer = ({
 };
 export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
-  const { savedCollections } = useSavedCollections(workspace.id);
+  const { savedCollections } = useSavedCollections(getStorageAtom(workspace));
   const getPageInfo = useGetPageInfoById(workspace);
   const pinedCollections = useMemo(
     () => savedCollections.filter(v => v.pinned),

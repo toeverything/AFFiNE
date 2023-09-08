@@ -1,4 +1,7 @@
-import { EditCollectionModel } from '@affine/component/page-list';
+import {
+  EditCollectionModel,
+  type StorageCRUDAtom,
+} from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -15,14 +18,14 @@ import { useActions } from './use-action';
 interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  storageAtom: StorageCRUDAtom;
   columnsCount: number;
-  workspaceId: string;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
-  const { getPageInfo, propertiesMeta, columnsCount, workspaceId } = props;
+  const { getPageInfo, propertiesMeta, columnsCount, storageAtom } = props;
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(workspaceId);
+  const setting = useCollectionManager(storageAtom);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
   const actions = useActions({

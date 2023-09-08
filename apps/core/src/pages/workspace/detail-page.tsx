@@ -26,6 +26,7 @@ import { setPageModeAtom } from '../../atoms';
 import { currentModeAtom } from '../../atoms/mode';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { getStorageAtom } from '../../utils/user-setting';
 
 const DetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
@@ -34,7 +35,9 @@ const DetailPageImpl = (): ReactElement => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const collectionManager = useCollectionManager(currentWorkspace.id);
+  const collectionManager = useCollectionManager(
+    getStorageAtom(currentWorkspace.blockSuiteWorkspace)
+  );
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
 

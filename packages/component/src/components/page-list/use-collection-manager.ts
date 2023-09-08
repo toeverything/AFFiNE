@@ -14,7 +14,7 @@ export interface StorageCRUD<Value> {
   list: () => Promise<string[]>;
 }
 
-type StorageCRUDAtom = Atom<StorageCRUD<Collection>>;
+export type StorageCRUDAtom = Atom<StorageCRUD<Collection>>;
 
 const defaultCollection = {
   id: NIL,
@@ -30,7 +30,7 @@ const collectionAtom = atomWithReset<{
   defaultCollection: defaultCollection,
 });
 
-const refreshCollection = (
+const refreshCollection = async (
   storage: StorageCRUD<Collection>,
   signal?: AbortSignal
 ): Promise<Collection[]> => {

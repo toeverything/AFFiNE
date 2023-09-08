@@ -112,7 +112,7 @@ const getCloudStorage = async (workspace: Workspace) => {
   };
 };
 
-export function getViewAtom(
+export function getStorageAtom(
   workspace: Workspace
 ): Atom<StorageCRUD<Collection>> {
   if (!storageSettingAtomWeakMap.has(workspace)) {
