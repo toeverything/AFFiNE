@@ -21,7 +21,6 @@
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@affine/jotai": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
     "@blocksuite/block-std": "0.0.0-20230907222710-102d1e99-nightly",
