@@ -5,6 +5,7 @@ import 'fake-indexeddb/auto';
 
 import type { Collection } from '@affine/env/filter';
 import { renderHook } from '@testing-library/react';
+import { noop } from 'foxact/noop';
 import { atom } from 'jotai';
 import { expect, test } from 'vitest';
 
@@ -35,6 +36,7 @@ const mockStorage: StorageCRUD<Collection> = {
   list: async () => {
     return storage.map(v => v.id);
   },
+  on: () => noop,
 };
 
 const mockAtom = atom(mockStorage);

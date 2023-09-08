@@ -1,3 +1,4 @@
+import type { StorageCRUD, Subscribe } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import type { Workspace } from '@blocksuite/store';
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
@@ -6,13 +7,6 @@ import { atom } from 'jotai';
 import { getSession } from 'next-auth/react';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
-
-export interface StorageCRUD<Value> {
-  get: (key: string) => Promise<Value | null>;
-  set: (key: string, value: Value) => Promise<string>;
-  delete: (key: string) => Promise<void>;
-  list: () => Promise<string[]>;
-}
 
 export interface PageCollectionDBV1 extends DBSchema {
   view: {
@@ -29,6 +23,9 @@ const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
       });
     },
   });
+
+const defaultSet = new Set<Subscribe>();
+const workspaceWeakMap = new WeakMap<Workspace, Set<Subscribe>>();
 
 const defaultCRUD: StorageCRUD<Collection> = {
   get: async (key: string) => {
@@ -51,6 +48,12 @@ const defaultCRUD: StorageCRUD<Collection> = {
     const db = await pageCollectionDBPromise;
     const t = db.transaction('view').objectStore('view');
     return t.getAllKeys();
+  },
+  on: subscribe => {
+    defaultSet.add(subscribe);
+    return () => {
+      defaultSet.delete(subscribe);
+    };
   },
 };
 
@@ -94,7 +97,11 @@ const getCloudStorage = async (workspace: Workspace) => {
     );
   }
   const settingDoc = settingMap.get(userId) as YDoc;
+  settingDoc.load();
   const viewMap = settingDoc.getMap('view') as YMap<Collection>;
+  viewMap.observe(() => {
+    workspaceWeakMap.get(workspace)?.forEach(cb => cb());
+  });
   return {
     get: async (key: string) => {
       return viewMap.get(key) ?? null;
@@ -122,13 +129,16 @@ export function getStorageAtom(
         return {
           get: async key => {
             const cloudStorage = await getCloudStorage(workspace);
-
-            return cloudStorage?.get(key) ?? (await defaultCRUD.get(key));
+            const localValue = await defaultCRUD.get(key);
+            if (localValue) {
+              return localValue;
+            }
+            return cloudStorage?.get(key) ?? null;
           },
           set: async (key, value) => {
             const cloudStorage = await getCloudStorage(workspace);
             if (cloudStorage) {
-              await cloudStorage.set(key, value);
+              return await cloudStorage.set(key, value);
             }
             return await defaultCRUD.set(key, value);
           },
@@ -137,7 +147,7 @@ export function getStorageAtom(
             if (cloudStorage) {
               await cloudStorage.delete(key);
             }
-            return await defaultCRUD.delete(key);
+            await defaultCRUD.delete(key);
           },
           list: async () => {
             const cloudStorage = await getCloudStorage(workspace);
@@ -150,6 +160,16 @@ export function getStorageAtom(
               ];
             }
             return defaultCRUD.list();
+          },
+          on: subscribe => {
+            if (!workspaceWeakMap.has(workspace)) {
+              workspaceWeakMap.set(workspace, new Set());
+            }
+            const set = workspaceWeakMap.get(workspace) as Set<Subscribe>;
+            set.add(subscribe);
+            return () => {
+              set.delete(subscribe);
+            };
           },
         };
       })
