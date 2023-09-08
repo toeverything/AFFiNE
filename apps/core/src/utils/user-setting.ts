@@ -122,10 +122,20 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
           settingDoc.load();
         }
         const viewMap = settingDoc.getMap('view') as YMap<Collection>;
+        // sync local storage to doc
+        collectionsFromLocal.map(v => viewMap.set(v.id, v));
+        // delete from indexeddb
+        Promise.all(
+          collectionsFromLocal.map(async v => {
+            await localCRUD.delete(v.id);
+          })
+        ).catch(error => {
+          console.error('Failed to delete collections from indexeddb', error);
+        });
         const collectionsFromDoc: Collection[] = Array.from(viewMap.keys())
           .map(key => viewMap.get(key))
           .filter((v): v is Collection => !!v);
-        const collections = [...collectionsFromLocal, ...collectionsFromDoc];
+        const collections = [...collectionsFromDoc];
         subscriber.next(collections);
         if (group.disposed) {
           return;
