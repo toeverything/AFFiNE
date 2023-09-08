@@ -214,11 +214,9 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           portalOptions={{
             container: ref.current,
           }}
-          // menuStyles={{
-          //   borderRadius: '8px',
-          //   padding: '8px',
-          //   background: 'var(--affine-background-overlay-panel-color)',
-          // }}
+          contentOptions={{
+            align: 'center',
+          }}
         >
           <HeaderDropDownButton />
         </Menu>

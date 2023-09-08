@@ -12,6 +12,7 @@ export const descriptionStyle = style({
   fontSize: 'var(--affine-font-xs)',
   lineHeight: '20px',
   color: 'var(--affine-text-secondary-color)',
+  textAlign: 'left',
 });
 
 export const buttonStyle = style({

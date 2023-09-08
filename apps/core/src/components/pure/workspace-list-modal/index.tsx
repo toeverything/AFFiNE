@@ -227,14 +227,24 @@ export const WorkspaceListModal = ({
               </StyledCreateWorkspaceCardPillContent>
             </StyledItem>
           </StyledSignInCardPill>
-          <Divider style={{ margin: '12px 0px' }} />
+          <Divider
+            style={{
+              margin: '12px 0px',
+            }}
+          />
         </StyledModalHeaderContent>
       ) : (
         <StyledModalHeaderContent>
           <StyledModalHeader>
             <StyledModalTitle>{session?.user.email}</StyledModalTitle>
             <StyledOperationWrapper>
-              <Menu items={<AccountMenu />}>
+              <Menu
+                items={<AccountMenu />}
+                contentOptions={{
+                  side: 'right',
+                  sideOffset: 30,
+                }}
+              >
                 <IconButton
                   data-testid="more-button"
                   icon={<MoreHorizontalIcon />}
@@ -261,7 +271,11 @@ export const WorkspaceListModal = ({
               currentWorkspaceId={currentWorkspaceId}
               onMoveWorkspace={onMoveWorkspace}
             />
-            <Divider style={{ margin: '12px 0px', minHeight: '1px' }} />
+            <Divider
+              style={{
+                margin: '12px 0px',
+              }}
+            />
           </>
         ) : null}
         <StyledModalHeader>

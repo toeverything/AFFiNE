@@ -129,7 +129,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           <Button
             onClick={onClickCopyLink}
             data-testid="share-menu-copy-link-button"
-            style={{ padding: '4px 12px' }}
+            style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
           >
             {t.Copy()}
           </Button>
@@ -138,7 +138,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             onClick={onClickCreateLink}
             type="primary"
             data-testid="share-menu-create-link-button"
-            style={{ padding: '4px 12px' }}
+            style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
           >
             {t.Create()}
           </Button>
