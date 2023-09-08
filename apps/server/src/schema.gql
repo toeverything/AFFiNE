@@ -124,7 +124,7 @@ type InvitationWorkspaceType {
 }
 
 type WorkspaceBlobSizes {
-  size: Int!
+  size: Float!
 }
 
 type InvitationType {

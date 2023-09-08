@@ -101,7 +101,7 @@ export class InvitationWorkspaceType {
 
 @ObjectType()
 export class WorkspaceBlobSizes {
-  @Field(() => Int)
+  @Field(() => Float)
   size!: number;
 }
 
