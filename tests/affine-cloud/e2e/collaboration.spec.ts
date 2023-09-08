@@ -139,6 +139,36 @@ test.describe('collaboration', () => {
     }
   });
 
+  test('can sync collections between different browser', async ({
+    page,
+    browser,
+  }) => {
+    await page.reload();
+    await waitForEditorLoad(page);
+    await createLocalWorkspace(
+      {
+        name: 'test',
+      },
+      page
+    );
+    await enableCloudWorkspace(page);
+    await page.getByTestId('slider-bar-add-collection-button').click();
+    const title = page.getByTestId('input-collection-title');
+    await title.isVisible();
+    await title.fill('test collection');
+    await page.getByTestId('save-collection').click();
+
+    {
+      const context = await browser.newContext();
+      const page2 = await context.newPage();
+      await loginUser(page2, user.email);
+      await page2.goto(page.url());
+      waitForEditorLoad(page2);
+      const collections = page2.getByTestId('collections');
+      await expect(collections.getByText('test collection')).toBeVisible();
+    }
+  });
+
   test('exit successfully and re-login', async ({ page }) => {
     await page.reload();
     await clickSideBarAllPageButton(page);
