@@ -105,11 +105,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
       };
     } else {
       const group = new DisposableGroup();
-      const abortController = new AbortController();
       currentWorkspacePromise.then(async currentWorkspace => {
-        if (abortController.signal.aborted) {
-          return;
-        }
         const collectionsFromLocal = await getCollections(localCRUD);
         const rootDoc = currentWorkspace.doc;
         const settingMap = rootDoc.getMap('settings') as YMap<YDoc>;
@@ -134,10 +130,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
         if (group.disposed) {
           return;
         }
-        console.log('collectionsFromDoc');
         const fn = () => {
-          console.log('collectionsFromDoc');
-          // todo: simplify
           const collectionsFromDoc: Collection[] = Array.from(viewMap.keys())
             .map(key => viewMap.get(key))
             .filter((v): v is Collection => !!v);
