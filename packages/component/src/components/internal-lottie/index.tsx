@@ -74,7 +74,7 @@ export const InternalLottie = ({
       }
       lottieInstance.current?.destroy();
     };
-  }, [lottie, options]);
+  }, [options]);
 
   useEffect(() => {
     if (speed) {
