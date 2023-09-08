@@ -90,6 +90,8 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
   const useLocalStorage = userId === null;
 
   return new Observable<Collection[]>(subscriber => {
+    // initial value
+    subscriber.next([]);
     if (useLocalStorage) {
       getCollections(localCRUD).then(collections => {
         subscriber.next(collections);
@@ -120,6 +122,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
         const settingDoc = settingMap.get(userId) as YDoc;
         if (!settingDoc.isLoaded) {
           settingDoc.load();
+          await settingDoc.whenLoaded;
         }
         const viewMap = settingDoc.getMap('view') as YMap<Collection>;
         // sync local storage to doc
