@@ -141,7 +141,7 @@ export class NextAuthController {
     }
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      this.logger.log('Early access redirect headers ', req.headers);
+      this.logger.log(`Early access redirect headers: ${req.headers}`);
       this.metrics.authFailCounter(1, {
         reason: 'no_early_access_permission',
       });
