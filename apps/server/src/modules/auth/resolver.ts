@@ -49,15 +49,20 @@ export class AuthResolver {
 
   @Throttle(20, 60)
   @ResolveField(() => TokenType)
-  async token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
+  async token(
+    @Context() ctx: { req: Request },
+    @CurrentUser() currentUser: UserType,
+    @Parent() user: UserType
+  ) {
     if (user.id !== currentUser.id) {
       throw new BadRequestException('Invalid user');
     }
 
+    const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
+    const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+
     // on production we use session token that is stored in database (strategy = 'database')
-    const sessionToken = this.config.node.prod
-      ? await this.auth.getSessionToken(user.id)
-      : this.auth.sign(user);
+    const sessionToken = ctx.req.cookies[sessionCookieName];
 
     return {
       token: sessionToken,
