@@ -492,6 +492,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/linked-page-plugin@workspace:plugins/linked-page":
+  version: 0.0.0-use.local
+  resolution: "@affine/linked-page-plugin@workspace:plugins/linked-page"
+  dependencies:
+    "@affine/component": "workspace:*"
+    "@affine/plugin-cli": "workspace:*"
+    "@affine/sdk": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@affine/monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "@affine/monorepo@workspace:."
