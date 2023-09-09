@@ -166,7 +166,6 @@ __metadata:
   dependencies:
     "@affine/debug": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@affine/jotai": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230907222710-102d1e99-nightly
     "@blocksuite/editor": 0.0.0-20230907222710-102d1e99-nightly
@@ -257,7 +256,6 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@aws-sdk/client-s3": 3.400.0
@@ -493,29 +491,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/jotai@workspace:*, @affine/jotai@workspace:packages/jotai":
-  version: 0.0.0-use.local
-  resolution: "@affine/jotai@workspace:packages/jotai"
-  dependencies:
-    "@blocksuite/block-std": 0.0.0-20230907222710-102d1e99-nightly
-    "@blocksuite/blocks": 0.0.0-20230907222710-102d1e99-nightly
-    "@blocksuite/editor": 0.0.0-20230907222710-102d1e99-nightly
-    "@blocksuite/global": 0.0.0-20230907222710-102d1e99-nightly
-    "@blocksuite/lit": 0.0.0-20230907222710-102d1e99-nightly
-    "@blocksuite/store": 0.0.0-20230907222710-102d1e99-nightly
-    jotai: ^2.4.1
-    lottie-web: ^5.12.2
-  peerDependencies:
-    "@blocksuite/block-std": "*"
-    "@blocksuite/blocks": "*"
-    "@blocksuite/editor": "*"
-    "@blocksuite/global": "*"
-    "@blocksuite/lit": "*"
-    "@blocksuite/store": "*"
-    lottie-web: "*"
-  languageName: unknown
-  linkType: soft
-
 "@affine/monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "@affine/monorepo@workspace:."
@@ -637,7 +612,6 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@affine/jotai": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20230907222710-102d1e99-nightly
