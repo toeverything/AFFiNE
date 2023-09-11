@@ -6,7 +6,10 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { pushNotificationAtom } from '@affine/component/notification-center';
+import {
+  NotificationCenter,
+  pushNotificationAtom,
+} from '@affine/component/notification-center';
 import {
   changeEmailMutation,
   changePasswordMutation,
@@ -170,7 +173,13 @@ export const Component = () => {
   }
 
   if (loginStatus === 'authenticated') {
-    return <AuthPage />;
+    return (
+      <>
+        <AuthPage />
+        {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
+      </>
+    );
   }
+
   return null;
 };
