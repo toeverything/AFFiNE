@@ -26,7 +26,7 @@
     "@blocksuite/block-std": "0.0.0-20230908185655-61117b50-nightly",
     "@blocksuite/blocks": "0.0.0-20230908185655-61117b50-nightly",
     "@blocksuite/editor": "0.0.0-20230908185655-61117b50-nightly",
-    "@blocksuite/global": "0.0.0-20230908185655-61117b50-nightly",
+    "@blocksuite/global": "0.8.0",
     "@blocksuite/icons": "^2.1.32",
     "@blocksuite/lit": "0.0.0-20230908185655-61117b50-nightly",
     "@blocksuite/store": "0.0.0-20230908185655-61117b50-nightly",
