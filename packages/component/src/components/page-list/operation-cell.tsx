@@ -88,7 +88,12 @@ export const OperationCell = ({
   return (
     <>
       <FlexWrapper alignItems="center" justifyContent="center">
-        <Menu items={OperationMenu}>
+        <Menu
+          items={OperationMenu}
+          contentOptions={{
+            align: 'end',
+          }}
+        >
           <IconButton type="plain" data-testid="page-list-operation-button">
             <MoreVerticalIcon />
           </IconButton>
