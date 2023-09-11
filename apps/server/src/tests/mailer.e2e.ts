@@ -78,6 +78,7 @@ test('should include callbackUrl in sending email', async t => {
     'sendSetPasswordEmail',
     'sendChangeEmail',
     'sendChangePasswordEmail',
+    'sendVerifyChangeEmail',
   ] as const) {
     const prev = await getCurrentMailMessageCount();
     await auth[fn]('alexyang@example.org', 'https://test.com/callback');

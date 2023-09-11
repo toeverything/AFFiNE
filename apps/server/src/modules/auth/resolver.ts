@@ -201,8 +201,6 @@ export class AuthResolver {
     @Args('callbackUrl') callbackUrl: string
   ) {
     const id = await this.session.get(token);
-    console.log('id', id);
-
     if (!id || id !== user.id) {
       throw new ForbiddenException('Invalid token');
     }
@@ -220,8 +218,6 @@ export class AuthResolver {
     url.searchParams.set('token', withEmailToken);
 
     const res = await this.auth.sendVerifyChangeEmail(email, url.toString());
-
-    console.log('res', res);
 
     await this.session.delete(token);
 

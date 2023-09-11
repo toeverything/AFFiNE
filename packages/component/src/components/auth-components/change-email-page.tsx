@@ -54,6 +54,7 @@ export const ChangeEmailPage = ({
             isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
           }
           onEnter={onContinue}
+          disabled={hasSetUp}
         />
         <Button
           type="primary"

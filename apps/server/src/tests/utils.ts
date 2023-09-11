@@ -501,6 +501,76 @@ async function getInviteInfo(
   return res.body.data.getInviteInfo;
 }
 
+async function sendChangeEmail(
+  app: INestApplication,
+  userToken: string,
+  email: string,
+  callbackUrl: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation {
+            sendChangeEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+          }
+        `,
+    })
+    .expect(200);
+
+  return res.body.data.sendChangeEmail;
+}
+
+async function sendVerifyChangeEmail(
+  app: INestApplication,
+  userToken: string,
+  token: string,
+  email: string,
+  callbackUrl: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation {
+            sendVerifyChangeEmail(token:"${token}", email: "${email}", callbackUrl: "${callbackUrl}")
+          }
+        `,
+    })
+    .expect(200);
+
+  return res.body.data.sendVerifyChangeEmail;
+}
+
+async function changeEmail(
+  app: INestApplication,
+  userToken: string,
+  token: string
+): Promise<UserType & { token: TokenType }> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation {
+             changeEmail(token: "${token}") {
+              id
+              name
+              avatarUrl
+              email
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.changeEmail;
+}
+
 export class FakePrisma {
   fakeUser: User = {
     id: randomUUID(),
@@ -531,6 +601,7 @@ export class FakePrisma {
 export {
   acceptInvite,
   acceptInviteById,
+  changeEmail,
   checkBlobSize,
   collectAllBlobSizes,
   collectBlobSizes,
@@ -546,6 +617,8 @@ export {
   listBlobs,
   revokePage,
   revokeUser,
+  sendChangeEmail,
+  sendVerifyChangeEmail,
   setBlob,
   sharePage,
   signUp,
