@@ -4,7 +4,7 @@ import { displayFlex, styled, textEllipsis } from '../../../styles';
 
 export const StyledWorkspaceInfo = styled('div')(() => {
   return {
-    marginLeft: '15px',
+    marginLeft: '12px',
     width: '202px',
     p: {
       height: '20px',
@@ -43,7 +43,7 @@ export const StyledCard = styled('div')<{
     width: '280px',
     height: '58px',
     cursor: 'pointer',
-    padding: '16px',
+    padding: '12px',
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),

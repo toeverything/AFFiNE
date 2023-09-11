@@ -56,6 +56,12 @@ export const LanguageMenu = () => {
       portalOptions={{
         container: ref.current,
       }}
+      contentOptions={{
+        style: {
+          background: 'var(--affine-white)',
+        },
+        align: 'end',
+      }}
     >
       <MenuTrigger
         ref={ref}

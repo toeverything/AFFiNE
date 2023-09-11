@@ -9,7 +9,6 @@ import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 import { Menu } from '@toeverything/components/menu';
-import { useRef } from 'react';
 
 import * as styles from './index.css';
 import { ShareExport } from './share-export';
@@ -33,7 +32,6 @@ export interface ShareMenuProps<
 
 export const ShareMenu = (props: ShareMenuProps) => {
   const { useIsSharedPage } = props;
-  const ref = useRef(null);
   const isSharedPage = useIsSharedPage(
     props.workspace.id,
     props.currentPage.id
@@ -43,7 +41,7 @@ export const ShareMenu = (props: ShareMenuProps) => {
     <div className={styles.containerStyle}>
       <SharePage {...props} />
       <div className={styles.columnContainerStyle}>
-        <Divider dividerColor="var(--affine-border-color)" size="thinner" />
+        <Divider size="thinner" />
       </div>
       <ShareExport />
     </div>
@@ -51,11 +49,19 @@ export const ShareMenu = (props: ShareMenuProps) => {
   return (
     <Menu
       items={content}
-      portalOptions={{
-        container: ref.current,
+      contentOptions={{
+        style: {
+          width: '410px',
+          height: 'auto',
+          padding: '12px',
+          transform: 'translateX(-10px)',
+        },
+      }}
+      rootOptions={{
+        modal: false,
       }}
     >
-      <Button data-testid="share-menu-button" type="plain" ref={ref}>
+      <Button data-testid="share-menu-button" type="plain">
         <div
           style={{
             color: isSharedPage

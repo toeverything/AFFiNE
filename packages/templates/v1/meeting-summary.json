@@ -52,7 +52,7 @@
           "insert": "Project:"
         },
         {
-          "insert": " [alink the project plan]\n",
+          "insert": " [Link the project plan]\n",
           "attributes": {
             "background": "var(--affine-text-highlight-grey)"
           }
@@ -67,7 +67,7 @@
           }
         },
         {
-          "insert": "\nDate & time:"
+          "insert": "\nDate & Time:"
         },
         {
           "insert": " [type /today]",

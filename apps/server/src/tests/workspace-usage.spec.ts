@@ -59,7 +59,7 @@ test.beforeEach(async t => {
   await t.context.app.init();
 });
 
-test.afterEach(async t => {
+test.afterEach.always(async t => {
   await t.context.app.close();
 });
 

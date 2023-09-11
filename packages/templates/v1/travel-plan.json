@@ -279,7 +279,7 @@
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "🧳 Pre-Departure Check list Check list "
+          "insert": "🧳 Pre-Departure Check list "
         }
       ],
       "prop:type": "h6"
@@ -511,7 +511,7 @@
       "prop:type": "todo",
       "prop:text": [
         {
-          "insert": "airin"
+          "insert": "airline"
         }
       ],
       "prop:checked": false

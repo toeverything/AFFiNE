@@ -114,7 +114,7 @@ test.beforeEach(async () => {
   mail = module.get(MailService);
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await app.close();
 });
 
