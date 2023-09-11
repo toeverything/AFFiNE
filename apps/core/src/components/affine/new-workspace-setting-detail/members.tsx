@@ -25,8 +25,8 @@ import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import { AnyErrorBoundary } from '../any-error-boundary';
-import { type WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
+import type { WorkspaceSettingDetailProps } from './types';
 
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;
