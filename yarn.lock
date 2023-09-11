@@ -378,7 +378,7 @@ __metadata:
     "@blocksuite/store": 0.0.0-20230908185655-61117b50-nightly
     "@electron-forge/cli": ^6.4.1
     "@electron-forge/core": ^6.4.1
-    "@electron-forge/core-utils": ^6.4.1
+    "@electron-forge/core-utils": ^6.4.2
     "@electron-forge/maker-deb": ^6.4.1
     "@electron-forge/maker-squirrel": ^6.4.1
     "@electron-forge/maker-zip": ^6.4.1
@@ -3984,7 +3984,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/core-utils@npm:6.4.1, @electron-forge/core-utils@npm:^6.4.1":
+"@electron-forge/core-utils@npm:6.4.1":
   version: 6.4.1
   resolution: "@electron-forge/core-utils@npm:6.4.1"
   dependencies:
@@ -3999,6 +3999,24 @@ __metadata:
     semver: ^7.2.1
     yarn-or-npm: ^3.0.1
   checksum: bd88e16e498ab0a83bb2e218b70bf677816a2314fe08e770c3ae24a31926b01660c0bdd3fa6c9653a8c2772324f323605627532ee376ea2d741a4e07e3f81d1c
+  languageName: node
+  linkType: hard
+
+"@electron-forge/core-utils@npm:^6.4.2":
+  version: 6.4.2
+  resolution: "@electron-forge/core-utils@npm:6.4.2"
+  dependencies:
+    "@electron-forge/shared-types": 6.4.2
+    "@electron/rebuild": ^3.2.10
+    "@malept/cross-spawn-promise": ^2.0.0
+    chalk: ^4.0.0
+    debug: ^4.3.1
+    find-up: ^5.0.0
+    fs-extra: ^10.0.0
+    log-symbols: ^4.0.0
+    semver: ^7.2.1
+    yarn-or-npm: ^3.0.1
+  checksum: 91db8534fa7af85346f7321bf9dd4815563c645a42a8d5a01ec650ece57ed2a1e86453a5f221da20019bb3b44f1efbf39d4d5c22fdf3fc7773cc03dd7cc0903a
   languageName: node
   linkType: hard
 
@@ -4123,6 +4141,17 @@ __metadata:
     electron-packager: ^17.1.2
     listr2: ^5.0.3
   checksum: 0a629d559e4968f9bbcdf086850449194bb09f051dfd272644a0979f871de611b066da4936a0841e6f3d6b21d6487c5b3ee27fffadea055cec13926e8d89658f
+  languageName: node
+  linkType: hard
+
+"@electron-forge/shared-types@npm:6.4.2":
+  version: 6.4.2
+  resolution: "@electron-forge/shared-types@npm:6.4.2"
+  dependencies:
+    "@electron/rebuild": ^3.2.10
+    electron-packager: ^17.1.2
+    listr2: ^5.0.3
+  checksum: cdc8f05a78c199d7a2b03949a6d0750fb72699cfaa490303df9cf0b541ff8372fb17d4c8ceb6a193adce607120ebafde2ebb73710f24b5a76c75fdc198746199
   languageName: node
   linkType: hard
 

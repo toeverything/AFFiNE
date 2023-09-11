@@ -35,7 +35,7 @@
     "@blocksuite/store": "0.0.0-20230908185655-61117b50-nightly",
     "@electron-forge/cli": "^6.4.1",
     "@electron-forge/core": "^6.4.1",
-    "@electron-forge/core-utils": "^6.4.1",
+    "@electron-forge/core-utils": "^6.4.2",
     "@electron-forge/maker-deb": "^6.4.1",
     "@electron-forge/maker-squirrel": "^6.4.1",
     "@electron-forge/maker-zip": "^6.4.1",
