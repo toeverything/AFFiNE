@@ -1,0 +1,8 @@
+mutation removeAvatar($id: String!) {
+  removeAvatar(id: $id) {
+    id
+    name
+    avatarUrl
+    email
+  }
+}

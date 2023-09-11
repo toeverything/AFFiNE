@@ -186,6 +186,9 @@ type Mutation {
 
   """Upload user avatar"""
   uploadAvatar(id: String!, avatar: Upload!): UserType!
+
+  """Remove user avatar"""
+  removeAvatar(id: String!): UserType!
   deleteAccount: DeleteAccount!
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
   signUp(name: String!, email: String!, password: String!): UserType!

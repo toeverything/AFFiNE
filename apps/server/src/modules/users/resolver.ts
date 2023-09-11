@@ -152,6 +152,22 @@ export class UserResolver {
   }
 
   @Throttle(10, 60)
+  @Mutation(() => UserType, {
+    name: 'removeAvatar',
+    description: 'Remove user avatar',
+  })
+  async removeAvatar(@Args('id') id: string) {
+    const user = await this.users.findUserById(id);
+    if (!user) {
+      throw new BadRequestException(`User ${id} not found`);
+    }
+    return this.prisma.user.update({
+      where: { id },
+      data: { avatarUrl: '' },
+    });
+  }
+
+  @Throttle(10, 60)
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
     await this.users.deleteUser(user.id);

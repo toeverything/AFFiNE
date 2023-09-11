@@ -298,6 +298,21 @@ export type LeaveWorkspaceMutation = {
   leaveWorkspace: boolean;
 };
 
+export type RemoveAvatarMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type RemoveAvatarMutation = {
+  __typename?: 'Mutation';
+  removeAvatar: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    email: string;
+  };
+};
+
 export type RevokeMemberPermissionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -569,6 +584,11 @@ export type Mutations =
       name: 'leaveWorkspaceMutation';
       variables: LeaveWorkspaceMutationVariables;
       response: LeaveWorkspaceMutation;
+    }
+  | {
+      name: 'removeAvatarMutation';
+      variables: RemoveAvatarMutationVariables;
+      response: RemoveAvatarMutation;
     }
   | {
       name: 'revokeMemberPermissionMutation';

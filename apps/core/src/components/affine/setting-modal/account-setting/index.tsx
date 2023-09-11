@@ -5,7 +5,11 @@ import {
   StorageProgress,
 } from '@affine/component/setting-components';
 import { UserAvatar } from '@affine/component/user-avatar';
-import { allBlobSizesQuery, uploadAvatarMutation } from '@affine/graphql';
+import {
+  allBlobSizesQuery,
+  removeAvatarMutation,
+  uploadAvatarMutation,
+} from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
@@ -29,6 +33,9 @@ export const AvatarAndName = () => {
   const { trigger: avatarTrigger } = useMutation({
     mutation: uploadAvatarMutation,
   });
+  const { trigger: removeAvatarTrigger } = useMutation({
+    mutation: removeAvatarMutation,
+  });
 
   const handleUpdateUserName = useCallback(
     (newName: string) => {
@@ -48,6 +55,13 @@ export const AvatarAndName = () => {
     },
     [avatarTrigger, user]
   );
+  const handleRemoveUserAvatar = useCallback(async () => {
+    await removeAvatarTrigger({
+      id: user.id,
+    });
+    // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
+    user.update({ name: user.name }).catch(console.error);
+  }, [removeAvatarTrigger, user]);
   return (
     <>
       <SettingRow
