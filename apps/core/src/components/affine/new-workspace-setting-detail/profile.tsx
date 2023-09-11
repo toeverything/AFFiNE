@@ -14,7 +14,6 @@ import {
   type KeyboardEvent,
   startTransition,
   useCallback,
-  useRef,
   useState,
 } from 'react';
 
@@ -28,7 +27,6 @@ export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
 
 export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
-  const ref = useRef(null);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const [, update] = useBlockSuiteWorkspaceAvatarUrl(
@@ -40,6 +38,8 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   );
 
   const [input, setInput] = useState<string>(name);
+  const [tooltipContainer, setTooltipContainer] =
+    useState<HTMLDivElement | null>(null);
 
   const handleUpdateWorkspaceName = useCallback(
     (name: string) => {
@@ -76,12 +76,12 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
       <Tooltip
         content={t['Click to replace photo']()}
         portalOptions={{
-          container: ref.current,
+          container: tooltipContainer,
         }}
       >
         <div
           className={clsx(style.avatarWrapper, { disable: !isOwner })}
-          ref={ref}
+          ref={setTooltipContainer}
         >
           <Upload
             accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"

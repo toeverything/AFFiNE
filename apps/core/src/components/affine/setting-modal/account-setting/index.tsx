@@ -12,7 +12,7 @@ import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
-import { type FC, Suspense, useCallback, useRef, useState } from 'react';
+import { type FC, Suspense, useCallback, useState } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
@@ -24,8 +24,9 @@ import * as style from './style.css';
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-  const ref = useRef(null);
 
+  const [tooltipContainer, setTooltipContainer] =
+    useState<HTMLDivElement | null>(null);
   const [input, setInput] = useState<string>(user.name);
 
   const { trigger: avatarTrigger } = useMutation({
@@ -61,10 +62,10 @@ export const AvatarAndName = () => {
           <Tooltip
             content={t['Click to replace photo']()}
             portalOptions={{
-              container: ref.current,
+              container: tooltipContainer,
             }}
           >
-            <div className={style.avatarWrapper} ref={ref}>
+            <div className={style.avatarWrapper} ref={setTooltipContainer}>
               <Upload
                 accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
                 fileChange={handleUpdateUserAvatar}
