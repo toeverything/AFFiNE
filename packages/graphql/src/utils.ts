@@ -50,7 +50,7 @@ export function generateRandUTF16Chars(bytes: number) {
 
 export class TraceReporter {
   static traceReportEndpoint = process.env.TRACE_REPORT_ENDPOINT;
-  static shouldReportTrace = process.env.SHOULD_REPORT_TRACE === 'true';
+  static shouldReportTrace = process.env.SHOULD_REPORT_TRACE;
 
   private spansCache = new Array<TraceSpan>();
   private reportIntervalId: number | undefined | NodeJS.Timeout;
@@ -204,7 +204,6 @@ export class TraceReporter {
   };
 }
 
-export const traceReporter =
-  process.env.SHOULD_REPORT_TRACE !== 'true'
-    ? null
-    : TraceReporter.getInstance();
+export const traceReporter = process.env.SHOULD_REPORT_TRACE
+  ? TraceReporter.getInstance()
+  : null;

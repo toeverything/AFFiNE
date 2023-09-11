@@ -352,7 +352,9 @@ export const createConfiguration: (
         'process.env': JSON.stringify({}),
         'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
-        'process.env.SHOULD_REPORT_TRACE': `${process.env.SHOULD_REPORT_TRACE}`,
+        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
+          process.env.SHOULD_REPORT_TRACE === 'true'
+        )}`,
         'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
