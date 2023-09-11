@@ -382,7 +382,7 @@ __metadata:
     "@electron-forge/maker-deb": ^6.4.1
     "@electron-forge/maker-squirrel": ^6.4.1
     "@electron-forge/maker-zip": ^6.4.1
-    "@electron-forge/shared-types": ^6.4.1
+    "@electron-forge/shared-types": ^6.4.2
     "@electron/remote": 2.0.11
     "@reforged/maker-appimage": ^3.3.1
     "@toeverything/infra": "workspace:*"
@@ -4115,7 +4115,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/shared-types@npm:6.4.1, @electron-forge/shared-types@npm:^6.4.1":
+"@electron-forge/shared-types@npm:6.4.1":
   version: 6.4.1
   resolution: "@electron-forge/shared-types@npm:6.4.1"
   dependencies:
@@ -4123,6 +4123,17 @@ __metadata:
     electron-packager: ^17.1.2
     listr2: ^5.0.3
   checksum: 0a629d559e4968f9bbcdf086850449194bb09f051dfd272644a0979f871de611b066da4936a0841e6f3d6b21d6487c5b3ee27fffadea055cec13926e8d89658f
+  languageName: node
+  linkType: hard
+
+"@electron-forge/shared-types@npm:^6.4.2":
+  version: 6.4.2
+  resolution: "@electron-forge/shared-types@npm:6.4.2"
+  dependencies:
+    "@electron/rebuild": ^3.2.10
+    electron-packager: ^17.1.2
+    listr2: ^5.0.3
+  checksum: cdc8f05a78c199d7a2b03949a6d0750fb72699cfaa490303df9cf0b541ff8372fb17d4c8ceb6a193adce607120ebafde2ebb73710f24b5a76c75fdc198746199
   languageName: node
   linkType: hard
 
