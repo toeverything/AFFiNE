@@ -710,7 +710,7 @@ __metadata:
     keyv: ^4.5.3
     lodash-es: ^4.17.21
     nanoid: ^4.0.2
-    nestjs-throttler-storage-redis: ^0.3.3
+    nestjs-throttler-storage-redis: ^0.4.0
     next-auth: 4.22.5
     nodemailer: ^6.9.4
     nodemon: ^3.0.1
@@ -26589,16 +26589,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nestjs-throttler-storage-redis@npm:^0.3.3":
-  version: 0.3.3
-  resolution: "nestjs-throttler-storage-redis@npm:0.3.3"
+"nestjs-throttler-storage-redis@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "nestjs-throttler-storage-redis@npm:0.4.0"
   peerDependencies:
-    "@nestjs/common": ">=9.4.1"
-    "@nestjs/core": ">=9.4.1"
+    "@nestjs/common": ">=10.2.4"
+    "@nestjs/core": ">=10.2.4"
     "@nestjs/throttler": ">=4.0.0"
     ioredis: ^5.3.2
     reflect-metadata: ^0.1.13
-  checksum: 23c14767ea77e850a4656a3a1023315d3144639040e1172bc89a090c09498300fa2b13c18f3ef6aabbdf77a98a3c2b4bd84d2da64397fcfa94457ae525c24c13
+  checksum: f351df78b1d668bcde912822c32a917a84a3ef87d78e8500cdd8a17b1364abfdac40f3b3daf69d07c85e686e9ae2dd79b720294b27bb744f815063311b270f16
   languageName: node
   linkType: hard
 
