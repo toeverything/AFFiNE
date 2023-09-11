@@ -18,7 +18,6 @@
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@affine/jotai": "workspace:*",
     "@affine/workspace": "workspace:*",
     "@dnd-kit/core": "^6.0.8",
     "@dnd-kit/modifiers": "^6.0.1",
@@ -54,12 +53,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230907222710-102d1e99-nightly",
-    "@blocksuite/editor": "0.0.0-20230907222710-102d1e99-nightly",
-    "@blocksuite/global": "0.0.0-20230907222710-102d1e99-nightly",
+    "@blocksuite/blocks": "0.0.0-20230908185655-61117b50-nightly",
+    "@blocksuite/editor": "0.0.0-20230908185655-61117b50-nightly",
+    "@blocksuite/global": "0.0.0-20230908185655-61117b50-nightly",
     "@blocksuite/icons": "^2.1.32",
-    "@blocksuite/lit": "0.0.0-20230907222710-102d1e99-nightly",
-    "@blocksuite/store": "0.0.0-20230907222710-102d1e99-nightly",
+    "@blocksuite/lit": "0.0.0-20230908185655-61117b50-nightly",
+    "@blocksuite/store": "0.0.0-20230908185655-61117b50-nightly",
     "@types/react": "^18.2.21",
     "@types/react-datepicker": "^4.15.0",
     "@types/react-dnd": "^3.0.2",

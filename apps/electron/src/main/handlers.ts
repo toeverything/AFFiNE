@@ -5,7 +5,7 @@ import type {
   UIHandlerManager,
   UnwrapManagerHandlerToServerSide,
   UpdaterHandlerManager,
-} from '@toeverything/infra';
+} from '@toeverything/infra/index';
 import { ipcMain } from 'electron';
 
 import { clipboardHandlers } from './clipboard';

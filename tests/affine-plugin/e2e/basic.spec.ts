@@ -17,7 +17,9 @@ test('plugin should exist', async ({ page }) => {
   await page.waitForTimeout(50);
   const packageJson = await page.evaluate(() => {
     // @ts-expect-error
-    return window.__pluginPackageJson__;
+    return window.__pluginPackageJson__.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
   });
   const plugins = [
     '@affine/bookmark-plugin',
@@ -28,11 +30,13 @@ test('plugin should exist', async ({ page }) => {
     '@affine/outline-plugin',
   ];
   expect(packageJson).toEqual(
-    plugins.map(name => ({
-      name,
-      version: expect.any(String),
-      description: expect.any(String),
-      affinePlugin: expect.anything(),
-    }))
+    plugins
+      .map(name => ({
+        name,
+        version: expect.any(String),
+        description: expect.any(String),
+        affinePlugin: expect.anything(),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
   );
 });
