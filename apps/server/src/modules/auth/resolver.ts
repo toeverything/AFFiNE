@@ -61,11 +61,19 @@ export class AuthResolver {
       throw new BadRequestException('Invalid user');
     }
 
-    const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
-    const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+    let sessionToken: string | undefined;
 
-    const sessionToken: string | undefined =
-      ctx.req.cookies?.[sessionCookieName];
+    // only return session if the request is from the same origin & path == /open-app
+    if (
+      ctx.req.headers.referer &&
+      ctx.req.headers.host &&
+      new URL(ctx.req.headers.referer).pathname.startsWith('/open-app') &&
+      ctx.req.headers.host === new URL(this.config.origin).host
+    ) {
+      const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
+      const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+      sessionToken = ctx.req.cookies?.[sessionCookieName];
+    }
 
     return {
       sessionToken,
