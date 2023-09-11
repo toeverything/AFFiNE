@@ -160,6 +160,33 @@ export class MailService {
       html,
     });
   }
+  async sendVerifyChangeEmail(to: string, url: string) {
+    const html = emailTemplate({
+      title: 'Verify your new email address',
+      content:
+        'You recently requested to change the email address associated with your AFFiNE account. To complete this process, please click on the verification link below. This magic link will expire in 30 minutes.',
+      buttonContent: 'Verify your new email address',
+      buttonUrl: url,
+    });
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: `Verify your new email for AFFiNE`,
+      html,
+    });
+  }
+  async sendNotificationChangeEmail(to: string) {
+    const html = emailTemplate({
+      title: 'Email change successful',
+      content: `As per your request, we have changed your email. Please make sure you're using ${to} when you log in the next time. `,
+    });
+    return this.sendMail({
+      from: this.config.auth.email.sender,
+      to,
+      subject: `Your email has been changed`,
+      html,
+    });
+  }
   async sendAcceptedEmail(
     to: string,
     {

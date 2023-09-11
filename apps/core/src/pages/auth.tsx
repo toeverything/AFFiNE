@@ -1,12 +1,20 @@
 import {
   ChangeEmailPage,
   ChangePasswordPage,
+  ConfirmChangeEmail,
   SetPasswordPage,
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
-import { useMutation } from '@affine/workspace/affine/gql';
+import { pushNotificationAtom } from '@affine/component/notification-center';
+import {
+  changeEmailMutation,
+  changePasswordMutation,
+  sendVerifyChangeEmailMutation,
+} from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { fetcher, useMutation } from '@affine/workspace/affine/gql';
+import { useSetAtom } from 'jotai/react';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import {
@@ -27,30 +35,46 @@ const authTypeSchema = z.enum([
   'changePassword',
   'signUp',
   'changeEmail',
+  'confirm-change-email',
 ]);
 
 export const AuthPage = (): ReactElement | null => {
   const user = useCurrentUser();
+  const t = useAFFiNEI18N();
+
   const { authType } = useParams();
   const [searchParams] = useSearchParams();
+  const pushNotification = useSetAtom(pushNotificationAtom);
+
   const { trigger: changePassword } = useMutation({
     mutation: changePasswordMutation,
   });
 
-  const { trigger: changeEmail } = useMutation({
-    mutation: changeEmailMutation,
+  const { trigger: sendVerifyChangeEmail } = useMutation({
+    mutation: sendVerifyChangeEmailMutation,
   });
+
   const { jumpToIndex } = useNavigateHelper();
 
-  const onChangeEmail = useCallback(
+  const onSendVerifyChangeEmail = useCallback(
     async (email: string) => {
-      const res = await changeEmail({
+      const res = await sendVerifyChangeEmail({
         token: searchParams.get('token') || '',
-        newEmail: email,
-      });
-      return !!res?.changeEmail;
+        email,
+        callbackUrl: `/auth/confirm-change-email`,
+      }).catch(console.error);
+
+      // FIXME: There is not notification
+      if (res?.sendVerifyChangeEmail) {
+        pushNotification({
+          title: t['com.affine.auth.sent.change.email.hint'](),
+          type: 'success',
+        });
+      }
+
+      return !!res?.sendVerifyChangeEmail;
     },
-    [changeEmail, searchParams]
+    [pushNotification, searchParams, sendVerifyChangeEmail, t]
   );
 
   const onSetPassword = useCallback(
@@ -100,11 +124,13 @@ export const AuthPage = (): ReactElement | null => {
     case 'changeEmail': {
       return (
         <ChangeEmailPage
-          user={user}
-          onChangeEmail={onChangeEmail}
+          onChangeEmail={onSendVerifyChangeEmail}
           onOpenAffine={onOpenAffine}
         />
       );
+    }
+    case 'confirm-change-email': {
+      return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
     }
   }
   return null;
@@ -116,6 +142,22 @@ export const loader: LoaderFunction = async args => {
   }
   if (!authTypeSchema.safeParse(args.params.authType).success) {
     return redirect('/404');
+  }
+
+  if (args.params.authType === 'confirm-change-email') {
+    const url = new URL(args.request.url);
+    const searchParams = url.searchParams;
+    const token = searchParams.get('token');
+    const res = await fetcher({
+      query: changeEmailMutation,
+      variables: {
+        token: token || '',
+      },
+    }).catch(console.error);
+    // TODO: Add error handling
+    if (!res?.changeEmail) {
+      return redirect('/expired');
+    }
   }
   return null;
 };

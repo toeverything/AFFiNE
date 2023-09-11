@@ -191,10 +191,11 @@ type Mutation {
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
   changePassword(token: String!, newPassword: String!): UserType!
-  changeEmail(token: String!, email: String!): UserType!
+  changeEmail(token: String!): UserType!
   sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
   sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
   sendChangeEmail(email: String!, callbackUrl: String!): Boolean!
+  sendVerifyChangeEmail(token: String!, email: String!, callbackUrl: String!): Boolean!
 }
 
 """The `Upload` scalar type represents a file upload."""

@@ -251,6 +251,12 @@ export class AuthService {
   async sendChangeEmail(email: string, callbackUrl: string) {
     return this.mailer.sendChangeEmail(email, callbackUrl);
   }
+  async sendVerifyChangeEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendVerifyChangeEmail(email, callbackUrl);
+  }
+  async sendNotificationChangeEmail(email: string) {
+    return this.mailer.sendNotificationChangeEmail(email);
+  }
   async getSessionToken(userId: string) {
     const session = await this.prisma.session.findFirst({
       where: {

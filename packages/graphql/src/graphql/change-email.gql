@@ -1,5 +1,5 @@
-mutation changeEmail($token: String!, $newEmail: String!) {
-  changeEmail(token: $token, email: $newEmail) {
+mutation changeEmail($token: String!) {
+  changeEmail(token: $token) {
     id
     name
     avatarUrl
