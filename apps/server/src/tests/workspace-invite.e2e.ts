@@ -56,7 +56,7 @@ test.beforeEach(async t => {
   t.context.mail = mail;
 });
 
-test.afterEach(async t => {
+test.afterEach.always(async t => {
   await t.context.app.close();
 });
 

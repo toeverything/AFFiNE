@@ -65,7 +65,7 @@ test.beforeEach(async () => {
   auth = module.get(AuthService);
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await module.close();
 });
 

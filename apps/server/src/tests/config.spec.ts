@@ -1,14 +1,19 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
 import { Config, ConfigModule } from '../config';
 
 let config: Config;
+let module: TestingModule;
 test.beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  module = await Test.createTestingModule({
     imports: [ConfigModule.forRoot()],
   }).compile();
   config = module.get(Config);
+});
+
+test.afterEach.always(async () => {
+  await module.close();
 });
 
 test('should be able to get config', t => {
