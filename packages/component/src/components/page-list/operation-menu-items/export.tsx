@@ -13,11 +13,12 @@ import { useSetAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
 
 import { getContentParser } from './get-content-parser';
+import { transitionStyle } from './index.css';
 import type { CommonMenuItemProps } from './types';
 
 export const ExportToPdfMenuItem = ({
   onSelect,
-  style,
+  className,
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -75,7 +76,7 @@ export const ExportToPdfMenuItem = ({
 
   return (
     <MenuItem
-      style={style}
+      className={className}
       data-testid="export-to-pdf"
       onSelect={onClickDownloadPDF}
       block
@@ -92,7 +93,7 @@ export const ExportToPdfMenuItem = ({
 
 export const ExportToHtmlMenuItem = ({
   onSelect,
-  style,
+  className,
 }: CommonMenuItemProps<{ type: 'html' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -125,7 +126,7 @@ export const ExportToHtmlMenuItem = ({
   return (
     <>
       <MenuItem
-        style={style}
+        className={className}
         data-testid="export-to-html"
         onSelect={onClickExportHtml}
         block
@@ -143,7 +144,7 @@ export const ExportToHtmlMenuItem = ({
 
 export const ExportToPngMenuItem = ({
   onSelect,
-  style,
+  className,
 }: CommonMenuItemProps<{ type: 'png' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -178,7 +179,7 @@ export const ExportToPngMenuItem = ({
   return (
     <>
       <MenuItem
-        style={style}
+        className={className}
         data-testid="export-to-png"
         onSelect={onClickDownloadPNG}
         block
@@ -196,7 +197,7 @@ export const ExportToPngMenuItem = ({
 
 export const ExportToMarkdownMenuItem = ({
   onSelect,
-  style,
+  className,
 }: CommonMenuItemProps<{ type: 'markdown' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -229,7 +230,7 @@ export const ExportToMarkdownMenuItem = ({
   return (
     <>
       <MenuItem
-        style={style}
+        className={className}
         data-testid="export-to-markdown"
         onSelect={onClickExportMarkdown}
         block
@@ -254,13 +255,22 @@ export const Export = () => {
       <MenuSub
         items={
           <>
-            <ExportToPdfMenuItem></ExportToPdfMenuItem>
-            <ExportToHtmlMenuItem></ExportToHtmlMenuItem>
-            <ExportToPngMenuItem></ExportToPngMenuItem>
-            <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
+            <ExportToPdfMenuItem
+              className={transitionStyle}
+            ></ExportToPdfMenuItem>
+            <ExportToHtmlMenuItem
+              className={transitionStyle}
+            ></ExportToHtmlMenuItem>
+            <ExportToPngMenuItem
+              className={transitionStyle}
+            ></ExportToPngMenuItem>
+            <ExportToMarkdownMenuItem
+              className={transitionStyle}
+            ></ExportToMarkdownMenuItem>
           </>
         }
         triggerOptions={{
+          className: transitionStyle,
           preFix: (
             <MenuIcon>
               <ExportIcon />

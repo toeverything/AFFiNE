@@ -1,9 +1,8 @@
 import { style } from '@vanilla-extract/css';
 
 export const menuItemStyle = style({
-  padding: '4px 18px',
-  paddingBottom: '16px',
-  width: '100%',
+  padding: '4px',
+  transition: 'all 0.3s',
 });
 
 export const descriptionStyle = style({

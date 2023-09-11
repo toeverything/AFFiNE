@@ -83,6 +83,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   }, [pageId, removeToTrash, t]);
   const menuItemStyle = {
     padding: '4px 12px',
+    transition: 'all 0.3s',
   };
   const { openPage } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);

@@ -203,16 +203,17 @@ export const AffineSharePage = (props: ShareMenuProps) => {
               </div>
             </>
           )}
-          <div
-            className={styles.rowContainerStyle}
+          <MenuItem
+            endFix={<ArrowRightSmallIcon />}
+            block
+            type="danger"
+            className={styles.menuItemStyle}
             onClick={() => setShowDisable(true)}
-            style={{ cursor: 'pointer' }}
           >
             <div className={styles.disableSharePage}>
               {t['Disable Public Link']()}
             </div>
-            <ArrowRightSmallIcon />
-          </div>
+          </MenuItem>
           <PublicLinkDisableModal
             open={showDisable}
             onConfirmDisable={onDisablePublic}
