@@ -30,6 +30,9 @@ export class TokenType {
 
   @Field()
   refresh!: string;
+
+  @Field({ nullable: true })
+  sessionToken?: string;
 }
 
 /**
@@ -61,11 +64,12 @@ export class AuthResolver {
     const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
     const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
 
-    // on production we use session token that is stored in database (strategy = 'database')
-    const sessionToken = ctx.req.cookies[sessionCookieName];
+    const sessionToken: string | undefined =
+      ctx.req.cookies?.[sessionCookieName];
 
     return {
-      token: sessionToken,
+      sessionToken,
+      token: this.auth.sign(user),
       refresh: this.auth.refresh(user),
     };
   }

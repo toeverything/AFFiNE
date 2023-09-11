@@ -165,7 +165,7 @@ query getCurrentUser {
     avatarUrl
     createdAt
     token {
-      token
+      sessionToken
     }
   }
 }`,

@@ -173,7 +173,7 @@ export type GetCurrentUserQuery = {
     emailVerified: string | null;
     avatarUrl: string | null;
     createdAt: string | null;
-    token: { __typename?: 'TokenType'; token: string };
+    token: { __typename?: 'TokenType'; sessionToken: string | null };
   };
 };
 
