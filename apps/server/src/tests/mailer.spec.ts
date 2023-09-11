@@ -1,36 +1,107 @@
 import { ok } from 'node:assert';
+import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { hashSync } from '@node-rs/argon2';
+import { User } from '@prisma/client';
 import test from 'ava';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../app';
 import { MailService } from '../modules/auth/mailer';
+import { PrismaService } from '../prisma';
 import { createWorkspace, getInviteInfo, inviteUser, signUp } from './utils';
 
 let app: INestApplication;
 
-const client = new PrismaClient();
-
 let mail: MailService;
 
-// cleanup database before each test
-test.beforeEach(async () => {
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.snapshot.deleteMany({});
-  await client.update.deleteMany({});
-  await client.workspace.deleteMany({});
-  await client.$disconnect();
-});
+const FakePrisma = {
+  fakeUser: {
+    id: randomUUID(),
+    name: 'Alex Yang',
+    avatarUrl: '',
+    email: 'alex.yang@example.org',
+    password: hashSync('123456'),
+    emailVerified: new Date(),
+    createdAt: new Date(),
+  } satisfies User,
+
+  get user() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const prisma = this;
+    return {
+      async findFirst() {
+        return null;
+      },
+      async create({ data }: any) {
+        return {
+          ...prisma.fakeUser,
+          ...data,
+        };
+      },
+      async findUnique() {
+        return prisma.fakeUser;
+      },
+    };
+  },
+  get workspace() {
+    return {
+      id: randomUUID(),
+      async create({ data }: any) {
+        return {
+          id: this.id,
+          public: data.public ?? false,
+          createdAt: new Date(),
+        };
+      },
+    };
+  },
+  snapshot: {
+    id: randomUUID(),
+    async create() {},
+    async findFirstOrThrow() {
+      return { id: this.id, blob: Buffer.from([0, 0]) };
+    },
+  },
+  get userWorkspacePermission() {
+    return {
+      id: randomUUID(),
+      prisma: this,
+      async count() {
+        return 1;
+      },
+      async create() {
+        return { id: this.id };
+      },
+      async findUniqueOrThrow() {
+        return { id: this.id, workspaceId: this.prisma.workspace.id };
+      },
+      async findFirst() {
+        return { id: this.id };
+      },
+      async findFirstOrThrow() {
+        return { id: this.id, user: this.prisma.fakeUser };
+      },
+      async userWorkspacePermission() {
+        return {
+          id: randomUUID(),
+          createdAt: new Date(),
+        };
+      },
+    };
+  },
+};
 
 test.beforeEach(async () => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(PrismaService)
+    .useValue(FakePrisma)
+    .compile();
   app = module.createNestApplication();
   app.use(
     graphqlUploadExpress({

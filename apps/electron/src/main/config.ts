@@ -19,7 +19,7 @@ const API_URL_MAPPING = {
   stable: `https://app.affine.pro`,
   beta: `https://insider.affine.pro`,
   canary: `https://affine.fail`,
-  internal: `https://affine.fail`,
+  internal: `https://insider.affine.pro`,
 };
 
 export const CLOUD_BASE_URL =

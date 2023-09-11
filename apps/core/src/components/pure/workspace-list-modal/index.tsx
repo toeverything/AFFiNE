@@ -1,4 +1,3 @@
-import { Menu, MenuItem } from '@affine/component';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
   AffineCloudWorkspace,
@@ -9,8 +8,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   AccountIcon,
-  CloudWorkspaceIcon,
   ImportIcon,
+  Logo1Icon,
   MoreHorizontalIcon,
   PlusIcon,
   SignOutIcon,
@@ -19,9 +18,10 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { Popover } from '@mui/material';
 import { IconButton } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
+import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import {
@@ -29,12 +29,15 @@ import {
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
 } from '../../../atoms';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { AllWorkspace } from '../../../shared';
+import { signOutCloud } from '../../../utils/cloud-utils';
 import {
   StyledCreateWorkspaceCardPill,
   StyledCreateWorkspaceCardPillContent,
   StyledCreateWorkspaceCardPillIcon,
   StyledImportWorkspaceCardPill,
+  StyledItem,
   StyledModalBody,
   StyledModalContent,
   StyledModalFooterContent,
@@ -66,15 +69,15 @@ interface WorkspaceModalProps {
 const AccountMenu = () => {
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(openSettingModalAtom);
+  const { jumpToIndex } = useNavigateHelper();
   return (
     <div>
-      {/* <div>Unlimted</div>
-      <Divider size="thinner" dividerColor="var(--affine-border-color)" />
-      <MenuItem icon={<ImportIcon />} data-testid="editor-option-menu-import">
-        {t['com.affine.workspace.cloud.join']()}
-      </MenuItem> */}
       <MenuItem
-        icon={<AccountIcon />}
+        preFix={
+          <MenuIcon>
+            <AccountIcon />
+          </MenuIcon>
+        }
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
           setOpen(prev => ({ ...prev, open: true, activeTab: 'account' }));
@@ -84,11 +87,19 @@ const AccountMenu = () => {
       </MenuItem>
       <Divider />
       <MenuItem
-        icon={<SignOutIcon />}
+        preFix={
+          <MenuIcon>
+            <SignOutIcon />
+          </MenuIcon>
+        }
         data-testid="editor-option-menu-import"
         onClick={useCallback(() => {
-          signOut().catch(console.error);
-        }, [])}
+          signOutCloud()
+            .then(() => {
+              jumpToIndex();
+            })
+            .catch(console.error);
+        }, [jumpToIndex])}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
@@ -188,11 +199,7 @@ export const WorkspaceListModal = ({
       {!isLoggedIn ? (
         <StyledModalHeaderContent>
           <StyledSignInCardPill>
-            <MenuItem
-              style={{
-                height: 'auto',
-                padding: '0px 12px',
-              }}
+            <StyledItem
               onClick={async () => {
                 if (!runtimeConfig.enableCloud) {
                   setDisableCloudOpen(true);
@@ -207,7 +214,7 @@ export const WorkspaceListModal = ({
             >
               <StyledCreateWorkspaceCardPillContent>
                 <StyledCreateWorkspaceCardPillIcon>
-                  <CloudWorkspaceIcon />
+                  <Logo1Icon />
                 </StyledCreateWorkspaceCardPillIcon>
                 <StyledSignInCardPillTextCotainer>
                   <StyledSignInCardPillTextPrimary>
@@ -218,9 +225,13 @@ export const WorkspaceListModal = ({
                   </StyledSignInCardPillTextSecondary>
                 </StyledSignInCardPillTextCotainer>
               </StyledCreateWorkspaceCardPillContent>
-            </MenuItem>
+            </StyledItem>
           </StyledSignInCardPill>
-          <Divider style={{ margin: '12px 0px' }} />
+          <Divider
+            style={{
+              margin: '12px 0px',
+            }}
+          />
         </StyledModalHeaderContent>
       ) : (
         <StyledModalHeaderContent>
@@ -228,10 +239,11 @@ export const WorkspaceListModal = ({
             <StyledModalTitle>{session?.user.email}</StyledModalTitle>
             <StyledOperationWrapper>
               <Menu
-                placement="bottom-end"
-                trigger={['click']}
-                content={<AccountMenu />}
-                zIndex={1000}
+                items={<AccountMenu />}
+                contentOptions={{
+                  side: 'right',
+                  sideOffset: 30,
+                }}
               >
                 <IconButton
                   data-testid="more-button"
@@ -259,7 +271,11 @@ export const WorkspaceListModal = ({
               currentWorkspaceId={currentWorkspaceId}
               onMoveWorkspace={onMoveWorkspace}
             />
-            <Divider style={{ margin: '12px 0px', minHeight: '1px' }} />
+            <Divider
+              style={{
+                margin: '12px 0px',
+              }}
+            />
           </>
         ) : null}
         <StyledModalHeader>
@@ -287,36 +303,24 @@ export const WorkspaceListModal = ({
         </StyledModalContent>
         {runtimeConfig.enableSQLiteProvider && environment.isDesktop ? (
           <StyledImportWorkspaceCardPill>
-            <MenuItem
-              onClick={onAddWorkspace}
-              data-testid="add-workspace"
-              style={{
-                height: 'auto',
-                padding: '8px 12px',
-              }}
-            >
-              <StyledCreateWorkspaceCardPillContent>
-                <StyledCreateWorkspaceCardPillIcon>
+            <StyledItem onClick={onAddWorkspace} data-testid="add-workspace">
+              <StyledCreateWorkspaceCardPillContent
+                style={{ gap: '14px', paddingLeft: '2px' }}
+              >
+                <StyledCreateWorkspaceCardPillIcon style={{ fontSize: '24px' }}>
                   <ImportIcon />
                 </StyledCreateWorkspaceCardPillIcon>
                 <div>
                   <p>{t['com.affine.workspace.local.import']()}</p>
                 </div>
               </StyledCreateWorkspaceCardPillContent>
-            </MenuItem>
+            </StyledItem>
           </StyledImportWorkspaceCardPill>
         ) : null}
       </StyledModalBody>
       <StyledModalFooterContent>
         <StyledCreateWorkspaceCardPill>
-          <MenuItem
-            style={{
-              height: 'auto',
-              padding: '8px 12px',
-            }}
-            onClick={onNewWorkspace}
-            data-testid="new-workspace"
-          >
+          <StyledItem onClick={onNewWorkspace} data-testid="new-workspace">
             <StyledCreateWorkspaceCardPillContent>
               <StyledCreateWorkspaceCardPillIcon>
                 <PlusIcon />
@@ -325,7 +329,7 @@ export const WorkspaceListModal = ({
                 <p>{t['New Workspace']()}</p>
               </div>
             </StyledCreateWorkspaceCardPillContent>
-          </MenuItem>
+          </StyledItem>
         </StyledCreateWorkspaceCardPill>
       </StyledModalFooterContent>
     </Popover>

@@ -1,11 +1,11 @@
 import type { Workspace } from '@blocksuite/store';
-import { type PassiveDocProvider } from '@blocksuite/store';
 import { useAtomValue } from 'jotai/react';
 import { useEffect } from 'react';
 
 import {
+  disablePassiveProviders,
+  enablePassiveProviders,
   getActiveBlockSuiteWorkspaceAtom,
-  workspacePassiveEffectWeakMap,
 } from './workspace.js';
 
 export function useStaticBlockSuiteWorkspace(id: string): Workspace {
@@ -14,22 +14,9 @@ export function useStaticBlockSuiteWorkspace(id: string): Workspace {
 
 export function usePassiveWorkspaceEffect(workspace: Workspace) {
   useEffect(() => {
-    if (workspacePassiveEffectWeakMap.get(workspace) === true) {
-      return;
-    }
-    const providers = workspace.providers.filter(
-      (provider): provider is PassiveDocProvider =>
-        'passive' in provider && provider.passive === true
-    );
-    providers.forEach(provider => {
-      provider.connect();
-    });
-    workspacePassiveEffectWeakMap.set(workspace, true);
+    enablePassiveProviders(workspace);
     return () => {
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-      workspacePassiveEffectWeakMap.delete(workspace);
+      disablePassiveProviders(workspace);
     };
   }, [workspace]);
 }

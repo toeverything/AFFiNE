@@ -266,10 +266,6 @@ export interface WorkspaceEvents {
 }
 
 export interface UIEvents {
-  onStartLogin: (fn: (options: { email?: string }) => void) => () => void;
-  onFinishLogin: (
-    fn: (result: { success: boolean; email?: string }) => void
-  ) => () => void;
   onMaximized: (fn: (maximized: boolean) => void) => () => void;
 }
 

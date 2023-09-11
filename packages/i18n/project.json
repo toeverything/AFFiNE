@@ -5,6 +5,7 @@
   "sourceRoot": "packages/i18n/src",
   "targets": {
     "build": {
+      "outputs": ["{workspaceRoot}/src/i18n-generated.ts"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "packages/i18n",

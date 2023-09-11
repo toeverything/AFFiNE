@@ -33,3 +33,9 @@ export async function openWorkspaceSettingPanel(
 ) {
   await page.getByTestId('settings-sidebar').getByText(workspaceName).click();
 }
+
+export async function clickUserInfoCard(page: Page) {
+  await page.getByTestId('user-info-card').click({
+    delay: 50,
+  });
+}

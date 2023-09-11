@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Get,
   Inject,
+  Logger,
   NotFoundException,
   Param,
   Res,
@@ -20,6 +21,8 @@ import { PermissionService } from './permission';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
+  private readonly logger = new Logger('WorkspacesController');
+
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
     private readonly permission: PermissionService,
@@ -38,7 +41,9 @@ export class WorkspacesController {
     const blob = await this.storage.getBlob(workspaceId, name);
 
     if (!blob) {
-      throw new NotFoundException('Blob not found');
+      throw new NotFoundException(
+        `Blob not found in workspace ${workspaceId}: ${name}`
+      );
     }
 
     res.setHeader('content-type', blob.contentType);
@@ -75,6 +80,6 @@ export class WorkspacesController {
 
     res.setHeader('content-type', 'application/octet-stream');
     res.send(update);
-    console.info('workspaces doc api: ', format(process.hrtime(start)));
+    this.logger.debug(`workspaces doc api: ${format(process.hrtime(start))}`);
   }
 }

@@ -2,7 +2,10 @@ import { DebugLogger } from '@affine/debug';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { saveWorkspaceToLocalStorage } from '@affine/workspace/local/crud';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import {
+  getOrCreateWorkspace,
+  globalBlockSuiteSchema,
+} from '@affine/workspace/manager';
 import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -73,6 +76,7 @@ export function useAppHelper() {
             WorkspaceFlavour.LOCAL
           );
           await buildShowcaseWorkspace(blockSuiteWorkspace, {
+            schema: globalBlockSuiteSchema,
             store: getCurrentStore(),
             atoms: {
               pageMode: setPageModeAtom,

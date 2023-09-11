@@ -9,6 +9,8 @@ import {
   getWorkspaceQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
+import { createAffineDataSource } from '@affine/workspace/affine/index';
+import { syncDataSourceFromDoc } from '@affine/y-provider';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { migrateLocalBlobStorage } from '@toeverything/infra/blocksuite';
 import {
@@ -38,35 +40,43 @@ async function deleteLocalBlobStorage(id: string) {
 const createdWorkspaces = proxy<string[]>([]);
 
 export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
-  create: async blockSuiteWorkspace => {
-    if (createdWorkspaces.some(id => id === blockSuiteWorkspace.id)) {
+  create: async upstreamWorkspace => {
+    if (createdWorkspaces.some(id => id === upstreamWorkspace.id)) {
       throw new Error('workspace already created');
     }
     const { createWorkspace } = await fetcher({
       query: createWorkspaceMutation,
       variables: {
         init: new File(
-          [Y.encodeStateAsUpdate(blockSuiteWorkspace.doc)],
+          [Y.encodeStateAsUpdate(upstreamWorkspace.doc)],
           'initBinary.yDoc'
         ),
       },
     });
-    createdWorkspaces.push(blockSuiteWorkspace.id);
-    const newBLockSuiteWorkspace = getOrCreateWorkspace(
+    createdWorkspaces.push(upstreamWorkspace.id);
+    const newBlockSuiteWorkspace = getOrCreateWorkspace(
       createWorkspace.id,
       WorkspaceFlavour.AFFINE_CLOUD
     );
 
+    const datasource = createAffineDataSource(
+      createWorkspace.id,
+      newBlockSuiteWorkspace.doc,
+      newBlockSuiteWorkspace.awarenessStore.awareness
+    );
+
+    await syncDataSourceFromDoc(upstreamWorkspace.doc, datasource);
+
     Y.applyUpdate(
-      newBLockSuiteWorkspace.doc,
-      Y.encodeStateAsUpdate(blockSuiteWorkspace.doc)
+      newBlockSuiteWorkspace.doc,
+      Y.encodeStateAsUpdate(upstreamWorkspace.doc)
     );
 
     await Promise.all(
-      [...blockSuiteWorkspace.doc.subdocs].map(async subdoc => {
+      [...upstreamWorkspace.doc.subdocs].map(async subdoc => {
         subdoc.load();
         return subdoc.whenLoaded.then(() => {
-          newBLockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
+          newBlockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
             if (newSubdoc.guid === subdoc.guid) {
               Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
             }
@@ -76,12 +86,12 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     );
 
     const provider = createIndexedDBProvider(
-      newBLockSuiteWorkspace.doc,
+      newBlockSuiteWorkspace.doc,
       DEFAULT_DB_NAME
     );
     provider.connect();
-    migrateLocalBlobStorage(blockSuiteWorkspace.id, createWorkspace.id)
-      .then(() => deleteLocalBlobStorage(blockSuiteWorkspace.id))
+    migrateLocalBlobStorage(upstreamWorkspace.id, createWorkspace.id)
+      .then(() => deleteLocalBlobStorage(upstreamWorkspace.id))
       .catch(e => {
         console.error('error when moving blob storage:', e);
       });

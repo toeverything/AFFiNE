@@ -14,7 +14,10 @@
       "sys:id": "86K_nlhKXG",
       "sys:flavour": "affine:surface",
       "sys:children": [],
-      "prop:elements": {}
+      "prop:elements": {
+        "type": "$blocksuite:internal:native$",
+        "value": {}
+      }
     },
     "q7fYMX90uJ": {
       "sys:id": "q7fYMX90uJ",
@@ -49,7 +52,7 @@
           "insert": "Project:"
         },
         {
-          "insert": " [alink the project plan]\n",
+          "insert": " [Link the project plan]\n",
           "attributes": {
             "background": "var(--affine-text-highlight-grey)"
           }
@@ -64,7 +67,7 @@
           }
         },
         {
-          "insert": "\nDate & time:"
+          "insert": "\nDate & Time:"
         },
         {
           "insert": " [type /today]",

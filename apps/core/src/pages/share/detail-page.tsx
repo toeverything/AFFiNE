@@ -9,11 +9,17 @@ import { noop } from 'foxact/noop';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
-import { redirect, useLoaderData } from 'react-router-dom';
+import {
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useRouteError,
+} from 'react-router-dom';
 import { applyUpdate } from 'yjs';
 
 import { PageDetailEditor } from '../../adapters/shared';
 import { AppContainer } from '../../components/affine/app-container';
+import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
 
 function assertArrayBuffer(value: unknown): asserts value is ArrayBuffer {
   if (!(value instanceof ArrayBuffer)) {
@@ -71,3 +77,14 @@ export const Component = (): ReactElement => {
     </AppContainer>
   );
 };
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return isRouteErrorResponse(error) ? (
+    <h1>
+      {error.status} {error.statusText}
+    </h1>
+  ) : (
+    <SharePageNotFoundError />
+  );
+}

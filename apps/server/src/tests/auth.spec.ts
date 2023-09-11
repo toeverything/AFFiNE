@@ -1,6 +1,4 @@
 /// <reference types="../global.d.ts" />
-import { equal } from 'node:assert';
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
@@ -21,6 +19,7 @@ test.beforeEach(async () => {
   const client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
+  await client.$disconnect();
 });
 
 test.beforeEach(async () => {
@@ -69,20 +68,19 @@ test('should be able to verify', async t => {
   {
     const token = await auth.sign(user);
     const claim = await auth.verify(token);
-    equal(claim.id, '1');
-    equal(claim.name, 'Alex Yang');
-    equal(claim.email, 'alexyang@example.org');
-    equal(claim.emailVerified?.toISOString(), date.toISOString());
-    equal(claim.createdAt.toISOString(), date.toISOString());
+    t.is(claim.id, '1');
+    t.is(claim.name, 'Alex Yang');
+    t.is(claim.email, 'alexyang@example.org');
+    t.is(claim.emailVerified?.toISOString(), date.toISOString());
+    t.is(claim.createdAt.toISOString(), date.toISOString());
   }
   {
     const token = await auth.refresh(user);
     const claim = await auth.verify(token);
-    equal(claim.id, '1');
-    equal(claim.name, 'Alex Yang');
-    equal(claim.email, 'alexyang@example.org');
-    equal(claim.emailVerified?.toISOString(), date.toISOString());
-    equal(claim.createdAt.toISOString(), date.toISOString());
+    t.is(claim.id, '1');
+    t.is(claim.name, 'Alex Yang');
+    t.is(claim.email, 'alexyang@example.org');
+    t.is(claim.emailVerified?.toISOString(), date.toISOString());
+    t.is(claim.createdAt.toISOString(), date.toISOString());
   }
-  t.pass();
 });

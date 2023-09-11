@@ -4,6 +4,7 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
@@ -18,12 +19,14 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { type ReactElement, useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
+import type { Map as YMap } from 'yjs';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
 import { currentModeAtom } from '../../atoms/mode';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { currentCollectionsAtom } from '../../utils/user-setting';
 
 const DetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
@@ -32,12 +35,29 @@ const DetailPageImpl = (): ReactElement => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const collectionManager = useCollectionManager(currentWorkspace.id);
+  const collectionManager = useCollectionManager(currentCollectionsAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
 
   const onLoad = useCallback(
-    (_: Page, editor: EditorContainer) => {
+    (page: Page, editor: EditorContainer) => {
+      try {
+        const surfaceBlock = page.getBlockByFlavour('affine:surface')[0];
+        // hotfix for old page
+        if (
+          surfaceBlock &&
+          (surfaceBlock.yBlock.get('prop:elements') as YMap<any>).get(
+            'type'
+          ) !== '$blocksuite:internal:native$'
+        ) {
+          globalBlockSuiteSchema.upgradePage(
+            {
+              'affine:surface': 3,
+            },
+            page.spaceDoc
+          );
+        }
+      } catch {}
       setPageMode(currentPageId, mode);
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
@@ -102,10 +122,10 @@ export const loader: LoaderFunction = async args => {
     localStorage.setItem('last_workspace_id', args.params.workspaceId);
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
   }
+  const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
   if (args.params.pageId) {
     const pageId = args.params.pageId;
     localStorage.setItem('last_page_id', pageId);
-    const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
     const page = currentWorkspace.getPage(pageId);
     if (!page) {
       return redirect('/404');

@@ -225,11 +225,8 @@ export const createConfiguration: (
             {
               loader: require.resolve('source-map-loader'),
               options: {
-                filterSourceMappingUrl: (
-                  _url: string,
-                  resourcePath: string
-                ) => {
-                  return resourcePath.includes('@blocksuite');
+                filterSourceMappingUrl: (_url: string) => {
+                  return false;
                 },
               },
             },

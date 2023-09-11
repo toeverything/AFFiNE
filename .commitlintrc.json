@@ -17,7 +17,6 @@
         "cli",
         "hooks",
         "i18n",
-        "jotai",
         "native",
         "templates",
         "y-indexeddb",

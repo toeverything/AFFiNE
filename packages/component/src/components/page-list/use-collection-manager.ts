@@ -1,35 +1,11 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import type { DBSchema } from 'idb';
-import type { IDBPDatabase } from 'idb';
-import { openDB } from 'idb';
 import { useAtom } from 'jotai';
 import { atomWithReset, RESET } from 'jotai/utils';
+import type { WritableAtom } from 'jotai/vanilla';
 import { useCallback } from 'react';
-import useSWRImmutable from 'swr/immutable';
 import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
-
-type PersistenceCollection = Collection;
-
-export interface PageCollectionDBV1 extends DBSchema {
-  view: {
-    key: PersistenceCollection['id'];
-    value: PersistenceCollection;
-  };
-}
-
-const pageCollectionDBPromise: Promise<IDBPDatabase<PageCollectionDBV1>> =
-  typeof window === 'undefined'
-    ? // never resolve in SSR
-      new Promise<any>(() => {})
-    : openDB<PageCollectionDBV1>('page-view', 1, {
-        upgrade(database) {
-          database.createObjectStore('view', {
-            keyPath: 'id',
-          });
-        },
-      });
 
 const defaultCollection = {
   id: NIL,
@@ -37,6 +13,7 @@ const defaultCollection = {
   filterList: [],
   workspaceId: 'temporary',
 };
+
 const collectionAtom = atomWithReset<{
   currentId: string;
   defaultCollection: Collection;
@@ -45,69 +22,62 @@ const collectionAtom = atomWithReset<{
   defaultCollection: defaultCollection,
 });
 
-export const useSavedCollections = (workspaceId: string) => {
-  const { data: savedCollections, mutate } = useSWRImmutable<Collection[]>(
-    ['affine', 'page-collection', workspaceId],
-    {
-      fetcher: async () => {
-        const db = await pageCollectionDBPromise;
-        const t = db.transaction('view').objectStore('view');
-        const all = await t.getAll();
-        return all.filter(v => v.workspaceId === workspaceId);
-      },
-      suspense: true,
-      fallbackData: [],
-      revalidateOnMount: true,
-    }
-  );
+export type CollectionsAtom = WritableAtom<
+  Collection[] | Promise<Collection[]>,
+  [Collection[] | ((collection: Collection[]) => Collection[])],
+  Promise<void>
+>;
+
+export const useSavedCollections = (collectionAtom: CollectionsAtom) => {
+  const [savedCollections, setCollections] = useAtom(collectionAtom);
+
   const saveCollection = useCallback(
     async (collection: Collection) => {
       if (collection.id === NIL) {
         return;
       }
-      const db = await pageCollectionDBPromise;
-      const t = db.transaction('view', 'readwrite').objectStore('view');
-      await t.put(collection);
-      await mutate();
+      await setCollections(old => [...old, collection]);
     },
-    [mutate]
+    [setCollections]
   );
   const deleteCollection = useCallback(
     async (id: string) => {
       if (id === NIL) {
         return;
       }
-      const db = await pageCollectionDBPromise;
-      const t = db.transaction('view', 'readwrite').objectStore('view');
-      await t.delete(id);
-      await mutate();
+      await setCollections(old => old.filter(v => v.id !== id));
     },
-    [mutate]
+    [setCollections]
   );
   const addPage = useCallback(
     async (collectionId: string, pageId: string) => {
-      const collection = savedCollections?.find(v => v.id === collectionId);
-      if (!collection) {
-        return;
-      }
-      await saveCollection({
-        ...collection,
-        allowList: [pageId, ...(collection.allowList ?? [])],
+      await setCollections(old => {
+        const collection = old.find(v => v.id === collectionId);
+        if (!collection) {
+          return old;
+        }
+        return [
+          ...old.filter(v => v.id !== collectionId),
+          {
+            ...collection,
+            allowList: [pageId, ...(collection.allowList ?? [])],
+          },
+        ];
       });
     },
-    [saveCollection, savedCollections]
+    [setCollections]
   );
   return {
-    savedCollections: savedCollections ?? [],
+    savedCollections,
     saveCollection,
     deleteCollection,
     addPage,
   };
 };
 
-export const useCollectionManager = (workspaceId: string) => {
+export const useCollectionManager = (collectionsAtom: CollectionsAtom) => {
   const { savedCollections, saveCollection, deleteCollection, addPage } =
-    useSavedCollections(workspaceId);
+    useSavedCollections(collectionsAtom);
   const [collectionData, setCollectionData] = useAtom(collectionAtom);
 
   const updateCollection = useCallback(

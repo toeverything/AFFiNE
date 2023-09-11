@@ -2,6 +2,7 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { useSetAtom } from 'jotai';
 import { useAtomValue } from 'jotai';
@@ -24,7 +25,11 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
 
   const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
+
   const workspace = useWorkspace(workspaceId);
+  const [workspaceName] = useBlockSuiteWorkspaceName(
+    workspace.blockSuiteWorkspace
+  );
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
@@ -74,13 +79,19 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
 
   const handleLeaveWorkspace = useCallback(async () => {
     closeAndJumpOut();
-    await leaveWorkspace(workspaceId);
+    await leaveWorkspace(workspaceId, workspaceName);
 
     pushNotification({
       title: 'Successfully leave',
       type: 'success',
     });
-  }, [closeAndJumpOut, leaveWorkspace, pushNotification, workspaceId]);
+  }, [
+    closeAndJumpOut,
+    leaveWorkspace,
+    pushNotification,
+    workspaceId,
+    workspaceName,
+  ]);
 
   const onTransformWorkspace = useOnTransformWorkspace();
   // const handleDelete = useCallback(async () => {

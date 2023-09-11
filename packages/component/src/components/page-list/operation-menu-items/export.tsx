@@ -2,36 +2,24 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageBlockModel } from '@blocksuite/blocks';
 import {
-  ArrowRightSmallIcon,
   ExportIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
+import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
-import { Menu, MenuItem } from '../../..';
 import { getContentParser } from './get-content-parser';
+import { transitionStyle } from './index.css';
 import type { CommonMenuItemProps } from './types';
-
-type ExportMenuItemProps = {
-  iconSize?: number;
-  gap?: string;
-  fontSize?: string;
-};
-const MenuItemStyle = {
-  padding: '4px 12px',
-};
 
 export const ExportToPdfMenuItem = ({
   onSelect,
-  style = MenuItemStyle,
-  iconSize,
-  gap,
-  fontSize,
-}: CommonMenuItemProps<{ type: 'pdf' }> & ExportMenuItemProps) => {
+  className,
+}: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -88,13 +76,15 @@ export const ExportToPdfMenuItem = ({
 
   return (
     <MenuItem
+      className={className}
       data-testid="export-to-pdf"
-      onClick={onClickDownloadPDF}
-      icon={<ExportToPdfIcon />}
-      style={style}
-      iconSize={iconSize}
-      gap={gap}
-      fontSize={fontSize}
+      onSelect={onClickDownloadPDF}
+      block
+      preFix={
+        <MenuIcon>
+          <ExportToPdfIcon />
+        </MenuIcon>
+      }
     >
       {t['Export to PDF']()}
     </MenuItem>
@@ -103,11 +93,8 @@ export const ExportToPdfMenuItem = ({
 
 export const ExportToHtmlMenuItem = ({
   onSelect,
-  style = MenuItemStyle,
-  iconSize,
-  gap,
-  fontSize,
-}: CommonMenuItemProps<{ type: 'html' }> & ExportMenuItemProps) => {
+  className,
+}: CommonMenuItemProps<{ type: 'html' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -139,13 +126,15 @@ export const ExportToHtmlMenuItem = ({
   return (
     <>
       <MenuItem
+        className={className}
         data-testid="export-to-html"
-        onClick={onClickExportHtml}
-        icon={<ExportToHtmlIcon />}
-        style={style}
-        iconSize={iconSize}
-        gap={gap}
-        fontSize={fontSize}
+        onSelect={onClickExportHtml}
+        block
+        preFix={
+          <MenuIcon>
+            <ExportToHtmlIcon />
+          </MenuIcon>
+        }
       >
         {t['Export to HTML']()}
       </MenuItem>
@@ -155,11 +144,8 @@ export const ExportToHtmlMenuItem = ({
 
 export const ExportToPngMenuItem = ({
   onSelect,
-  style = MenuItemStyle,
-  iconSize,
-  gap,
-  fontSize,
-}: CommonMenuItemProps<{ type: 'png' }> & ExportMenuItemProps) => {
+  className,
+}: CommonMenuItemProps<{ type: 'png' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -193,13 +179,15 @@ export const ExportToPngMenuItem = ({
   return (
     <>
       <MenuItem
+        className={className}
         data-testid="export-to-png"
-        onClick={onClickDownloadPNG}
-        icon={<ExportToPngIcon />}
-        style={style}
-        iconSize={iconSize}
-        gap={gap}
-        fontSize={fontSize}
+        onSelect={onClickDownloadPNG}
+        block
+        preFix={
+          <MenuIcon>
+            <ExportToPngIcon />
+          </MenuIcon>
+        }
       >
         {t['Export to PNG']()}
       </MenuItem>
@@ -209,11 +197,8 @@ export const ExportToPngMenuItem = ({
 
 export const ExportToMarkdownMenuItem = ({
   onSelect,
-  style = MenuItemStyle,
-  iconSize,
-  gap,
-  fontSize,
-}: CommonMenuItemProps<{ type: 'markdown' }> & ExportMenuItemProps) => {
+  className,
+}: CommonMenuItemProps<{ type: 'markdown' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
   const setPushNotification = useSetAtom(pushNotificationAtom);
@@ -245,13 +230,15 @@ export const ExportToMarkdownMenuItem = ({
   return (
     <>
       <MenuItem
+        className={className}
         data-testid="export-to-markdown"
-        onClick={onClickExportMarkdown}
-        icon={<ExportToMarkdownIcon />}
-        style={style}
-        iconSize={iconSize}
-        gap={gap}
-        fontSize={fontSize}
+        onSelect={onClickExportMarkdown}
+        block
+        preFix={
+          <MenuIcon>
+            <ExportToMarkdownIcon />
+          </MenuIcon>
+        }
       >
         {t['Export to Markdown']()}
       </MenuItem>
@@ -259,41 +246,44 @@ export const ExportToMarkdownMenuItem = ({
   );
 };
 
-export const Export = ({
-  onItemClick,
-}: CommonMenuItemProps<{ type: 'markdown' | 'html' | 'pdf' | 'png' }>) => {
+// fixme: refactor this file, export function may should be passed by 'props', this file is just a ui component
+export const Export = () => {
+  const ref = useRef(null);
   const t = useAFFiNEI18N();
   return (
-    <Menu
-      width={248}
-      trigger="hover"
-      placement="right-start"
-      content={
-        <>
-          <ExportToPdfMenuItem></ExportToPdfMenuItem>
-          <ExportToHtmlMenuItem></ExportToHtmlMenuItem>
-          <ExportToPngMenuItem></ExportToPngMenuItem>
-          <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
-        </>
-      }
-      menuStyles={{
-        borderRadius: '8px',
-        padding: '8px',
-        background: 'var(--affine-background-overlay-panel-color)',
-      }}
-    >
-      <MenuItem
-        data-testid="export-menu"
-        icon={<ExportIcon />}
-        endIcon={<ArrowRightSmallIcon />}
-        style={MenuItemStyle}
-        onClick={e => {
-          e.stopPropagation();
-          onItemClick?.();
+    <div ref={ref}>
+      <MenuSub
+        items={
+          <>
+            <ExportToPdfMenuItem
+              className={transitionStyle}
+            ></ExportToPdfMenuItem>
+            <ExportToHtmlMenuItem
+              className={transitionStyle}
+            ></ExportToHtmlMenuItem>
+            <ExportToPngMenuItem
+              className={transitionStyle}
+            ></ExportToPngMenuItem>
+            <ExportToMarkdownMenuItem
+              className={transitionStyle}
+            ></ExportToMarkdownMenuItem>
+          </>
+        }
+        triggerOptions={{
+          className: transitionStyle,
+          preFix: (
+            <MenuIcon>
+              <ExportIcon />
+            </MenuIcon>
+          ),
+          ['data-testid' as string]: 'export-menu',
+        }}
+        portalOptions={{
+          container: ref.current,
         }}
       >
         {t.Export()}
-      </MenuItem>
-    </Menu>
+      </MenuSub>
+    </div>
   );
 };

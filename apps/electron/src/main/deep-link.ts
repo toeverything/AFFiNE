@@ -1,16 +1,16 @@
 import path from 'node:path';
 
-import type { App } from 'electron';
+import { type App, type BrowserWindow, ipcMain } from 'electron';
 
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { logger } from './logger';
 import {
   handleOpenUrlInHiddenWindow,
   mainWindowOrigin,
+  removeCookie,
   restoreOrCreateWindow,
   setCookie,
 } from './main-window';
-import { uiSubjects } from './ui';
 
 let protocol = buildType === 'stable' ? 'affine' : `affine-${buildType}`;
 if (isDev) {
@@ -92,22 +92,23 @@ async function handleOauthJwt(url: string) {
       });
 
       // force reset next-auth.callback-url
-      await setCookie({
-        url: CLOUD_BASE_URL,
-        httpOnly: true,
-        name: 'next-auth.callback-url',
+      // there could be incorrect callback-url in cookie that will cause auth failure
+      // so we need to reset it to empty to mitigate this issue
+      await removeCookie(
+        CLOUD_BASE_URL,
+        isSecure ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url'
+      );
+
+      let hiddenWindow: BrowserWindow | null = null;
+
+      ipcMain.once('affine:login', () => {
+        hiddenWindow?.destroy();
       });
 
       // hacks to refresh auth state in the main window
-      const window = await handleOpenUrlInHiddenWindow(
+      hiddenWindow = await handleOpenUrlInHiddenWindow(
         mainWindowOrigin + '/auth/signIn'
       );
-      uiSubjects.onFinishLogin.next({
-        success: true,
-      });
-      setTimeout(() => {
-        window.destroy();
-      }, 3000);
     } catch (e) {
       logger.error('failed to open url in popup', e);
     }

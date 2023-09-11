@@ -1,4 +1,3 @@
-import { deepEqual, equal, ok } from 'node:assert';
 import { mock } from 'node:test';
 
 import { INestApplication } from '@nestjs/common';
@@ -43,6 +42,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
+  await m.close();
   timer.restore();
 });
 
@@ -54,10 +54,9 @@ test('should setup update poll interval', async t => {
 
   await m.createNestApplication().init();
 
-  equal(fake.mock.callCount(), 1);
+  t.is(fake.mock.callCount(), 1);
   // @ts-expect-error private member
-  ok(manager.job);
-  t.pass();
+  t.truthy(manager.job);
 });
 
 test('should be able to stop poll', async t => {
@@ -66,10 +65,9 @@ test('should be able to stop poll', async t => {
 
   await app.close();
 
-  equal(fake.mock.callCount(), 1);
+  t.is(fake.mock.callCount(), 1);
   // @ts-expect-error private member
-  equal(manager.job, null);
-  t.pass();
+  t.is(manager.job, null);
 });
 
 test('should poll when intervel due', async t => {
@@ -84,22 +82,21 @@ test('should poll when intervel due', async t => {
   });
 
   timer.tick(interval);
-  equal(fake.mock.callCount(), 1);
+  t.is(fake.mock.callCount(), 1);
 
   // busy
   timer.tick(interval);
   // @ts-expect-error private member
-  equal(manager.busy, true);
-  equal(fake.mock.callCount(), 1);
+  t.is(manager.busy, true);
+  t.is(fake.mock.callCount(), 1);
 
   resolve();
   await timer.tickAsync(1);
 
   // @ts-expect-error private member
-  equal(manager.busy, false);
+  t.is(manager.busy, false);
   timer.tick(interval);
-  equal(fake.mock.callCount(), 2);
-  t.pass();
+  t.is(fake.mock.callCount(), 2);
 });
 
 test('should merge update when intervel due', async t => {
@@ -135,7 +132,10 @@ test('should merge update when intervel due', async t => {
 
   await manager.apply();
 
-  deepEqual(await manager.getLatestUpdate(ws.id, '1'), update);
+  t.deepEqual(
+    (await manager.getLatestUpdate(ws.id, '1'))?.toString('hex'),
+    Buffer.from(update.buffer).toString('hex')
+  );
 
   let appendUpdate = Buffer.from([]);
   doc.on('update', update => {
@@ -153,9 +153,8 @@ test('should merge update when intervel due', async t => {
 
   await manager.apply();
 
-  deepEqual(
-    await manager.getLatestUpdate(ws.id, '1'),
-    encodeStateAsUpdate(doc)
+  t.deepEqual(
+    (await manager.getLatestUpdate(ws.id, '1'))?.toString('hex'),
+    Buffer.from(encodeStateAsUpdate(doc)).toString('hex')
   );
-  t.pass();
 });

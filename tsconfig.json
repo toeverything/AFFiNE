@@ -65,7 +65,6 @@
       "@affine/i18n": ["./packages/i18n/src"],
       "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/debug"],
-      "@affine/jotai": ["./packages/jotai"],
       "@affine/env": ["./packages/env/src"],
       "@affine/env/*": ["./packages/env/src/*"],
       "@affine/utils": ["./packages/utils"],
@@ -181,6 +180,9 @@
     },
     {
       "path": "./tests/affine-legacy/0.8.0-canary.7"
+    },
+    {
+      "path": "./tests/affine-legacy/0.8.3"
     }
   ],
   "files": [],

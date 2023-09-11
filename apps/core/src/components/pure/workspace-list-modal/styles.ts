@@ -116,7 +116,7 @@ export const StyledCreateWorkspaceCardPillContent = styled('div')(() => {
 
 export const StyledCreateWorkspaceCardPillIcon = styled('div')(() => {
   return {
-    fontSize: '20px',
+    fontSize: '28px',
     width: '1em',
     height: '1em',
   };
@@ -142,6 +142,7 @@ export const StyledSignInCardPillTextPrimary = styled('div')(() => {
     fontWeight: 600,
     lineHeight: '24px',
     maxWidth: '200px',
+    textAlign: 'left',
     ...textEllipsis(1),
   };
 });
@@ -239,5 +240,34 @@ export const StyledWorkspaceFlavourTitle = styled('div')(() => {
     fontSize: 'var(--affine-font-xs)',
     color: 'var(--affine-text-secondary-color)',
     marginBottom: '4px',
+  };
+});
+export const StyledItem = styled('button')<{
+  active?: boolean;
+}>(({ active = false }) => {
+  return {
+    height: 'auto',
+    padding: '8px 12px',
+    width: '100%',
+    borderRadius: '5px',
+    fontSize: 'var(--affine-font-sm)',
+    ...displayFlex('flex-start', 'center'),
+    cursor: 'pointer',
+    position: 'relative',
+    backgroundColor: 'transparent',
+    color: 'var(--affine-text-primary-color)',
+    svg: {
+      color: 'var(--affine-icon-color)',
+    },
+
+    ':hover': {
+      backgroundColor: 'var(--affine-hover-color)',
+    },
+
+    ...(active
+      ? {
+          backgroundColor: 'var(--affine-hover-color)',
+        }
+      : {}),
   };
 });

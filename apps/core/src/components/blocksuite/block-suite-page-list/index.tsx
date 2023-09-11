@@ -19,6 +19,7 @@ import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { filterPage } from '../../../utils/filter';
+import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
@@ -204,11 +205,15 @@ export const BlockSuitePageList = ({
         },
         onRestorePage: () => {
           restoreFromTrash(pageMeta.id);
-          toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
+          toast(
+            t['com.affine.toastMessage.restored']({
+              title: pageMeta.title || 'Untitled',
+            })
+          );
         },
         onPermanentlyDeletePage: () => {
           permanentlyDeletePage(pageMeta.id);
-          toast(t['Permanently deleted']());
+          toast(t['com.affine.toastMessage.permanentlyDeleted']());
         },
       };
     });
@@ -243,17 +248,23 @@ export const BlockSuitePageList = ({
       },
       removeToTrash: () => {
         removeToTrash(pageMeta.id);
-        toast(t['Successfully deleted']());
+        toast(t['com.affine.toastMessage.successfullyDeleted']());
       },
       onRestorePage: () => {
         restoreFromTrash(pageMeta.id);
-        toast(t['restored']({ title: pageMeta.title || 'Untitled' }));
+        toast(
+          t['com.affine.toastMessage.restored']({
+            title: pageMeta.title || 'Untitled',
+          })
+        );
       },
       bookmarkPage: () => {
         const status = pageMeta.favorite;
         toggleFavorite(pageMeta.id);
         toast(
-          status ? t['Removed from Favorites']() : t['Added to Favorites']()
+          status
+            ? t['com.affine.toastMessage.removedFavorites']()
+            : t['com.affine.toastMessage.addedFavorites']()
         );
       },
       onDisablePublicSharing: () => {
@@ -267,7 +278,7 @@ export const BlockSuitePageList = ({
 
   return (
     <PageList
-      workspaceId={blockSuiteWorkspace.id}
+      collectionsAtom={currentCollectionsAtom}
       propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}

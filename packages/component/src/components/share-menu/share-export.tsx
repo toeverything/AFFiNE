@@ -7,7 +7,6 @@ import {
   ExportToPngMenuItem,
 } from '../page-list/operation-menu-items/export';
 import * as styles from './index.css';
-// import type { ShareMenuProps } from './share-menu';
 
 export const ShareExport = () => {
   const t = useAFFiNEI18N();
@@ -17,26 +16,10 @@ export const ShareExport = () => {
         {t['com.affine.share-menu.ShareViaExport']()}
       </div>
       <div>
-        <ExportToPdfMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
-        <ExportToHtmlMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
-        <ExportToPngMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
-        <ExportToMarkdownMenuItem
-          style={{ padding: '4px' }}
-          iconSize={16}
-          gap={'4px'}
-        />
+        <ExportToPdfMenuItem className={styles.menuItemStyle} />
+        <ExportToHtmlMenuItem className={styles.menuItemStyle} />
+        <ExportToPngMenuItem className={styles.menuItemStyle} />
+        <ExportToMarkdownMenuItem className={styles.menuItemStyle} />
       </div>
       <div className={styles.columnContainerStyle}>
         <div className={styles.descriptionStyle}>

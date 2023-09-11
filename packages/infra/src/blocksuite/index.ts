@@ -1,6 +1,7 @@
 import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
+import type { Doc } from 'yjs';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 export async function initEmptyPage(page: Page, title?: string) {
@@ -24,6 +25,7 @@ export async function buildEmptyBlockSuite(workspace: Workspace) {
 export async function buildShowcaseWorkspace(
   workspace: Workspace,
   options: {
+    schema: Schema;
     atoms: {
       pageMode: WritableAtom<
         undefined,
@@ -34,21 +36,6 @@ export async function buildShowcaseWorkspace(
     store: ReturnType<typeof createStore>;
   }
 ) {
-  const showcaseWorkspaceVersions = {
-    'affine:code': 1,
-    'affine:paragraph': 1,
-    'affine:page': 2,
-    'affine:list': 1,
-    'affine:note': 1,
-    'affine:divider': 1,
-    'affine:image': 1,
-    'affine:surface': 3,
-    'affine:bookmark': 1,
-    'affine:database': 2,
-  };
-  workspace.doc
-    .getMap('meta')
-    .set('blockVersions', new YMap(Object.entries(showcaseWorkspaceVersions)));
   const prototypes = {
     tags: {
       options: [
@@ -211,7 +198,11 @@ export async function buildShowcaseWorkspace(
   await Promise.all(
     data.map(async ([id, promise]) => {
       const { default: template } = await promise;
-      await workspace.importPageSnapshot(structuredClone(template), id);
+      await workspace
+        .importPageSnapshot(structuredClone(template), id)
+        .catch(error => {
+          console.error('error importing page', id, error);
+        });
       workspace.setPageMeta(id, pageMetas[id]);
     })
   );
@@ -228,6 +219,16 @@ type XYWH = [number, number, number, number];
 function deserializeXYWH(xywh: string): XYWH {
   return JSON.parse(xywh) as XYWH;
 }
+
+const getLatestVersions = (schema: Schema): Record<string, number> => {
+  return [...schema.flavourSchemaMap.entries()].reduce(
+    (record, [flavour, schema]) => {
+      record[flavour] = schema.version;
+      return record;
+    },
+    {} as Record<string, number>
+  );
+};
 
 function migrateDatabase(data: YMap<unknown>) {
   data.delete('prop:mode');
@@ -465,30 +466,6 @@ export function migrateToSubdoc(oldDoc: YDoc): YDoc {
   return newDoc;
 }
 
-export async function migrateDatabaseBlockTo3(rootDoc: YDoc, schema: Schema) {
-  const spaces = rootDoc.getMap('spaces') as YMap<any>;
-  spaces.forEach(space => {
-    schema.upgradePage(
-      {
-        'affine:note': 1,
-        'affine:bookmark': 1,
-        'affine:database': 2,
-        'affine:divider': 1,
-        'affine:image': 1,
-        'affine:list': 1,
-        'affine:code': 1,
-        'affine:page': 2,
-        'affine:paragraph': 1,
-        'affine:surface': 3,
-      },
-      space
-    );
-  });
-  const meta = rootDoc.getMap('meta') as YMap<unknown>;
-  const versions = meta.get('blockVersions') as YMap<number>;
-  versions.set('affine:database', 3);
-}
-
 export type UpgradeOptions = {
   getCurrentRootDoc: () => Promise<YDoc>;
   createWorkspace: () => Promise<Workspace>;
@@ -510,20 +487,46 @@ const upgradeV1ToV2 = async (options: UpgradeOptions) => {
   return newWorkspace;
 };
 
-const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<boolean> => {
+/**
+ * Force upgrade block schema to the latest.
+ * Don't force to upgrade the pages without the check.
+ *
+ * Please note that this function will not upgrade the workspace version.
+ *
+ * @returns true if any schema is upgraded.
+ * @returns false if no schema is upgraded.
+ */
+export async function forceUpgradePages(
+  options: Omit<UpgradeOptions, 'createWorkspace'>
+): Promise<boolean> {
   const rootDoc = await options.getCurrentRootDoc();
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
-  if ('affine:database' in versions) {
-    if (versions['affine:database'] === 3) {
-      return false;
-    }
-  } else if (versions.get('affine:database') === 3) {
-    return false;
-  }
   const schema = options.getSchema();
-  spaces.forEach(space => {
+  const oldVersions = versions.toJSON();
+  spaces.forEach((space: Doc) => {
+    try {
+      schema.upgradePage(oldVersions, space);
+    } catch (e) {
+      console.error(`page ${space.guid} upgrade failed`, e);
+    }
+  });
+  const newVersions = getLatestVersions(schema);
+  meta.set('blockVersions', new YMap(Object.entries(newVersions)));
+  return Object.entries(oldVersions).some(
+    ([flavour, version]) => newVersions[flavour] !== version
+  );
+}
+
+// database from 2 to 3
+async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
+  const rootDoc = await options.getCurrentRootDoc();
+  const spaces = rootDoc.getMap('spaces') as YMap<any>;
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+  const versions = meta.get('blockVersions') as YMap<number>;
+  const schema = options.getSchema();
+  spaces.forEach((space: Doc) => {
     schema.upgradePage(
       {
         'affine:note': 1,
@@ -541,18 +544,23 @@ const upgradeV2ToV3 = async (options: UpgradeOptions): Promise<boolean> => {
     );
   });
   if ('affine:database' in versions) {
-    versions['affine:database'] = 3;
-    meta.set('blockVersions', new YMap(Object.entries(versions)));
+    meta.set(
+      'blockVersions',
+      new YMap(Object.entries(getLatestVersions(schema)))
+    );
   } else {
-    versions.set('affine:database', 3);
+    Object.entries(getLatestVersions(schema)).map(([flavour, version]) =>
+      versions.set(flavour, version)
+    );
   }
   return true;
-};
+}
 
 export enum WorkspaceVersion {
   // v1 is treated as undefined
   SubDoc = 2,
   DatabaseV3 = 3,
+  Surface = 4,
 }
 
 /**
@@ -575,6 +583,9 @@ export async function migrateWorkspace(
   }
   if (currentVersion === WorkspaceVersion.SubDoc) {
     return upgradeV2ToV3(options);
+  } else if (currentVersion === WorkspaceVersion.DatabaseV3) {
+    // surface from 3 to 5
+    return forceUpgradePages(options);
   } else {
     return false;
   }
