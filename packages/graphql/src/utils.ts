@@ -49,9 +49,8 @@ export function generateRandUTF16Chars(bytes: number) {
 }
 
 export class TraceReporter {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  static traceReportEndpoint = process.env.TRACE_REPORT_ENDPOINT!;
-  static shouldReportTrace = process.env.SHOULD_REPORT_TRACE === 'true';
+  static traceReportEndpoint = process.env.TRACE_REPORT_ENDPOINT;
+  static shouldReportTrace = process.env.SHOULD_REPORT_TRACE;
 
   private spansCache = new Array<TraceSpan>();
   private reportIntervalId: number | undefined | NodeJS.Timeout;
@@ -108,6 +107,10 @@ export class TraceReporter {
   }
 
   public static reportToTraceEndpoint(payload: string): void {
+    if (!TraceReporter.traceReportEndpoint) {
+      console.warn('No trace report endpoint found!');
+      return;
+    }
     if (typeof navigator !== 'undefined') {
       navigator.sendBeacon(TraceReporter.traceReportEndpoint, payload);
     } else {
@@ -201,7 +204,6 @@ export class TraceReporter {
   };
 }
 
-export const traceReporter =
-  process.env.SHOULD_REPORT_TRACE !== 'true'
-    ? null
-    : TraceReporter.getInstance();
+export const traceReporter = process.env.SHOULD_REPORT_TRACE
+  ? TraceReporter.getInstance()
+  : null;
