@@ -17,7 +17,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "^2.1.32",
+    "@blocksuite/icons": "^2.1.33",
     "@toeverything/components": "^0.0.34"
   },
   "devDependencies": {
