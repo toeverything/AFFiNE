@@ -22,26 +22,13 @@ export const FavoriteTag = forwardRef<
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       onClick?.(e);
-      setPlayAnimation(true);
+      setPlayAnimation(!active);
     },
-    [onClick]
-  );
-  const handleFavoritedClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      onClick?.(e);
-      setPlayAnimation(false);
-    },
-    [onClick]
+    [active, onClick]
   );
   return (
     <Tooltip content={active ? t['Favorited']() : t['Favorite']()} side="top">
-      <IconButton
-        ref={ref}
-        active={active}
-        onClick={active ? handleFavoritedClick : handleClick}
-        {...props}
-      >
+      <IconButton ref={ref} active={active} onClick={handleClick} {...props}>
         {active ? (
           playAnimation ? (
             <Lottie
