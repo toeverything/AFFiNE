@@ -8,6 +8,7 @@
 //
 // We use HTTP POST requests with CSRF Tokens to protect against CSRF attacks.
 
+import { useSystemOnline } from '@toeverything/hooks/use-system-online';
 import { atom } from 'jotai/vanilla';
 import type { DefaultSession, Session } from 'next-auth';
 import type { AuthClientConfig, CtxOrReq } from 'next-auth/client/_utils';
@@ -31,7 +32,7 @@ import type {
   SignOutParams,
   SignOutResponse,
   UseSessionOptions,
-} from 'next-auth/react/types';
+} from 'next-auth/react';
 import _logger, { proxyLogger } from 'next-auth/utils/logger';
 import parseUrl from 'next-auth/utils/parse-url';
 import { createContext, useEffect, useMemo, useState } from 'react';
@@ -64,27 +65,6 @@ const __NEXTAUTH: AuthClientConfig = {
 const broadcast = BroadcastChannel();
 
 const logger = proxyLogger(_logger, __NEXTAUTH.basePath);
-
-function useOnline() {
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : false
-  );
-
-  const setOnline = () => setIsOnline(true);
-  const setOffline = () => setIsOnline(false);
-
-  useEffect(() => {
-    window.addEventListener('online', setOnline);
-    window.addEventListener('offline', setOffline);
-
-    return () => {
-      window.removeEventListener('online', setOnline);
-      window.removeEventListener('offline', setOffline);
-    };
-  }, []);
-
-  return isOnline;
-}
 
 type UpdateSession = (data?: any) => Promise<Session | null>;
 
@@ -464,7 +444,7 @@ export function SessionProvider(props: SessionProviderProps) {
       );
   }, [refetchOnWindowFocus]);
 
-  const isOnline = useOnline();
+  const isOnline = useSystemOnline();
   // TODO: Flip this behavior in next major version
   const shouldRefetch = refetchWhenOffline !== false || isOnline;
 

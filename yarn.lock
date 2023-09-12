@@ -12451,10 +12451,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/auth@workspace:packages/auth"
   dependencies:
+    "@toeverything/hooks": "workspace:*"
     jotai: ^2.4.2
     next-auth: 4.22.5
     react: ^18.2.0
   peerDependencies:
+    "@toeverything/hooks": "workspace:*"
     jotai: ^2
     next-auth: ^4
     react: ^18

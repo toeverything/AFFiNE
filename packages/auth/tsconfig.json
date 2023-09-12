@@ -6,5 +6,10 @@
     "moduleResolution": "node",
     "outDir": "lib"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../hooks"
+    }
+  ]
 }
