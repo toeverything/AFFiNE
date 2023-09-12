@@ -45,7 +45,7 @@ export const FavoriteTag = forwardRef<
               style={{ width: '20px', height: '20px' }}
             />
           ) : (
-            <FavoritedIcon />
+            <FavoritedIcon data-testid="favorited-icon" />
           )
         ) : (
           <FavoriteIcon />
