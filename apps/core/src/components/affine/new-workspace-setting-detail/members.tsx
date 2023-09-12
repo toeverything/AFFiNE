@@ -2,6 +2,10 @@ import {
   InviteModal,
   type InviteModalProps,
 } from '@affine/component/member-components';
+import {
+  Pagination,
+  type PaginationProps,
+} from '@affine/component/member-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
@@ -11,10 +15,11 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreVerticalIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button, IconButton } from '@toeverything/components/button';
+import { Loading } from '@toeverything/components/loading';
 import { Menu, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
-import { useSetAtom } from 'jotai/react';
+import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -22,16 +27,18 @@ import { ErrorBoundary } from 'react-error-boundary';
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
+import { useMemberCount } from '../../../hooks/affine/use-member-count';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import { AnyErrorBoundary } from '../any-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
+const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;
 }
-
+type OnRevoke = (memberId: string) => void;
 const MembersPanelLocal = () => {
   const t = useAFFiNEI18N();
   return (
@@ -48,39 +55,25 @@ const MembersPanelLocal = () => {
 export const CloudWorkspaceMembersPanel = ({
   workspace,
   isOwner,
-}: MembersPanelProps): ReactElement => {
+}: MembersPanelProps) => {
   const workspaceId = workspace.id;
-  const members = useMembers(workspaceId);
+  const memberCount = useMemberCount(workspaceId);
+
   const t = useAFFiNEI18N();
-  const currentUser = useCurrentUser();
   const { invite, isMutating } = useInviteMember(workspaceId);
-  const [open, setOpen] = useState(false);
-  const pushNotification = useSetAtom(pushNotificationAtom);
   const revokeMemberPermission = useRevokeMemberPermission(workspaceId);
 
-  const memberCount = members.length;
-  const memberList = useMemo(
-    () =>
-      members.sort((a, b) => {
-        if (
-          a.permission === Permission.Owner &&
-          b.permission !== Permission.Owner
-        ) {
-          return -1;
-        }
-        if (
-          a.permission !== Permission.Owner &&
-          b.permission === Permission.Owner
-        ) {
-          return 1;
-        }
-        return 0;
-      }),
-    [members]
-  );
+  const [open, setOpen] = useState(false);
+  const [memberSkip, setMemberSkip] = useState(0);
+
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const openModal = useCallback(() => {
     setOpen(true);
+  }, []);
+
+  const onPageChange = useCallback<PaginationProps['onPageChange']>(offset => {
+    setMemberSkip(offset);
   }, []);
 
   const onInviteConfirm = useCallback<InviteModalProps['onConfirm']>(
@@ -103,11 +96,25 @@ export const CloudWorkspaceMembersPanel = ({
     [invite, pushNotification, t]
   );
 
+  const onRevoke = useCallback<OnRevoke>(
+    async memberId => {
+      const res = await revokeMemberPermission(memberId);
+      if (res?.revoke) {
+        pushNotification({
+          title: t['Removed successfully'](),
+          type: 'success',
+        });
+      }
+    },
+    [pushNotification, revokeMemberPermission, t]
+  );
+
   return (
     <>
       <SettingRow
         name={`${t['Members']()} (${memberCount})`}
         desc={t['Members hint']()}
+        spreadCol={isOwner}
       >
         {isOwner ? (
           <>
@@ -121,17 +128,74 @@ export const CloudWorkspaceMembersPanel = ({
           </>
         ) : null}
       </SettingRow>
-      <div className={style.membersList}>
-        {memberList.map(member => (
-          <MemberItem
-            key={member.id}
-            member={member}
+
+      <div className={style.membersPanel}>
+        <Suspense fallback={<MemberListFallback memberCount={memberCount} />}>
+          <MemberList
+            workspaceId={workspaceId}
             isOwner={isOwner}
-            currentUser={currentUser}
-            onRevoke={revokeMemberPermission}
+            skip={memberSkip}
+            onRevoke={onRevoke}
           />
-        ))}
+        </Suspense>
+
+        <Pagination
+          totalCount={memberCount}
+          countPerPage={COUNT_PER_PAGE}
+          onPageChange={onPageChange}
+        />
       </div>
+    </>
+  );
+};
+
+const MemberListFallback = ({ memberCount }: { memberCount: number }) => {
+  // prevent page jitter
+  const height = useMemo(() => {
+    if (memberCount > COUNT_PER_PAGE) {
+      // height and margin-bottom
+      return COUNT_PER_PAGE * 58 + (COUNT_PER_PAGE - 1) * 6;
+    }
+    return 'auto';
+  }, [memberCount]);
+
+  return (
+    <div
+      style={{
+        height,
+      }}
+      className={style.membersFallback}
+    >
+      <Loading size={40} />
+    </div>
+  );
+};
+
+const MemberList = ({
+  workspaceId,
+  isOwner,
+  skip,
+  onRevoke,
+}: {
+  workspaceId: string;
+  isOwner: boolean;
+  skip: number;
+  onRevoke: OnRevoke;
+}) => {
+  const members = useMembers(workspaceId, skip, COUNT_PER_PAGE);
+  const currentUser = useCurrentUser();
+
+  return (
+    <>
+      {members.map(member => (
+        <MemberItem
+          key={member.id}
+          member={member}
+          isOwner={isOwner}
+          currentUser={currentUser}
+          onRevoke={onRevoke}
+        />
+      ))}
     </>
   );
 };
@@ -145,7 +209,7 @@ const MemberItem = ({
   member: Member;
   isOwner: boolean;
   currentUser: CheckedUser;
-  onRevoke: (memberId: string) => void;
+  onRevoke: OnRevoke;
 }) => {
   const t = useAFFiNEI18N();
 
@@ -162,7 +226,7 @@ const MemberItem = ({
 
   return (
     <>
-      <div key={member.id} className={style.listItem}>
+      <div key={member.id} className={style.listItem} data-testid="member-item">
         <Avatar
           size={36}
           url={member.avatarUrl}
@@ -198,6 +262,7 @@ const MemberItem = ({
         >
           <IconButton
             disabled={!operationButtonInfo.show}
+            type="plain"
             style={{
               visibility: operationButtonInfo.show ? 'visible' : 'hidden',
               flexShrink: 0,

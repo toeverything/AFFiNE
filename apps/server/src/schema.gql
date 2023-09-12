@@ -98,7 +98,7 @@ type WorkspaceType {
   createdAt: DateTime!
 
   """Members of workspace"""
-  members: [InviteUserType!]!
+  members(skip: Int, take: Int): [InviteUserType!]!
 
   """Permission of current signed in user in workspace"""
   permission: Permission!
