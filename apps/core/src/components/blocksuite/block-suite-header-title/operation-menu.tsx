@@ -1,5 +1,6 @@
 import { FlexWrapper } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -57,6 +58,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const { setPageMeta, setPageTitle } = usePageMetaHelper(blockSuiteWorkspace);
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const { jumpToSubPath } = useNavigateHelper();
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const handleFavorite = useCallback(() => {
     setPageMeta(pageId, { favorite: !favorite });
@@ -78,9 +80,11 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   }, [mode, setSetting, t]);
   const handleOnConfirm = useCallback(() => {
     removeToTrash(pageId);
+    jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+    //toast does't work
     toast(t['com.affine.toastMessage.movedTrash']());
     setOpenConfirm(false);
-  }, [pageId, removeToTrash, t]);
+  }, [jumpToSubPath, pageId, removeToTrash, t, workspace.id]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',
