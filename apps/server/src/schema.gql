@@ -48,6 +48,7 @@ enum NewFeaturesKind {
 type TokenType {
   token: String!
   refresh: String!
+  sessionToken: String
 }
 
 type InviteUserType {
