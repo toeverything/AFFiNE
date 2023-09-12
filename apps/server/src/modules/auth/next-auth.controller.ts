@@ -179,7 +179,7 @@ export class NextAuthController {
       });
       if (
         !req.headers?.referer ||
-        new URL(req.headers.referer).host === 'https://accounts.google.com'
+        new URL(req.headers.referer).origin === 'https://accounts.google.com'
       ) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
