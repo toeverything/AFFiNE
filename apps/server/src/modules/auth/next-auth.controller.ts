@@ -177,10 +177,17 @@ export class NextAuthController {
       this.metrics.authFailCounter(1, {
         reason: 'no_early_access_permission',
       });
-      if (
-        !req.headers?.referer ||
-        new URL(req.headers.referer).origin === 'https://accounts.google.com'
-      ) {
+      const checkReferer = () => {
+        try {
+          return (
+            new URL(req.headers.referer ?? '').origin ===
+            'https://accounts.google.com'
+          );
+        } catch (e) {
+          return false;
+        }
+      };
+      if (!req.headers?.referer || checkReferer()) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
         res.status(403);
