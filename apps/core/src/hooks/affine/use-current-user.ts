@@ -1,6 +1,4 @@
-import type { DefaultSession } from 'next-auth';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
+import { useSession } from '@toeverything/auth/react';
 export type CheckedUser = {
   id: string;
   name: string;
@@ -9,16 +7,6 @@ export type CheckedUser = {
   hasPassword: boolean;
   update: ReturnType<typeof useSession>['update'];
 };
-
-// FIXME: Should this namespace be here?
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      hasPassword: boolean;
-    } & DefaultSession['user'];
-  }
-}
 
 /**
  * This hook checks if the user is logged in.

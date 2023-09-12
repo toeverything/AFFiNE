@@ -12,12 +12,12 @@ import {
 import { createAffineDataSource } from '@affine/workspace/affine/index';
 import { syncDataSourceFromDoc } from '@affine/y-provider';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
+import { getSession } from '@toeverything/auth/react';
 import { migrateLocalBlobStorage } from '@toeverything/infra/blocksuite';
 import {
   createIndexedDBProvider,
   DEFAULT_DB_NAME,
 } from '@toeverything/y-indexeddb';
-import { getSession } from 'next-auth/react';
 import { proxy } from 'valtio/vanilla';
 
 import { getOrCreateWorkspace } from '../manager';

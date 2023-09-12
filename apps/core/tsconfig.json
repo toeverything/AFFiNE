@@ -9,6 +9,9 @@
   "exclude": ["node_modules"],
   "references": [
     {
+      "path": "../../packages/auth"
+    },
+    {
       "path": "../../packages/component"
     },
     {

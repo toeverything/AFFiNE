@@ -5,9 +5,8 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useSession } from '@toeverything/auth/react';
 import { Button } from '@toeverything/components/button';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 

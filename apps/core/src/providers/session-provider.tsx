@@ -4,9 +4,9 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { refreshRootMetadataAtom } from '@affine/workspace/atom';
+import { SessionProvider, useSession } from '@toeverything/auth/react';
+import { sessionAtom } from '@toeverything/auth/react';
 import { useAtom, useSetAtom } from 'jotai';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { SessionProvider, useSession } from 'next-auth/react';
 import {
   type PropsWithChildren,
   startTransition,
@@ -14,7 +14,6 @@ import {
   useRef,
 } from 'react';
 
-import { sessionAtom } from '../atoms/cloud-user';
 import { useOnceSignedInEvents } from '../atoms/event';
 
 const useRefreshHook = () => {

@@ -1,0 +1,12 @@
+{
+  "name": "@toeverything/auth",
+  "exports": {
+    "./react": "./src/react.tsx"
+  },
+  "devDependencies": {
+    "next-auth": "4.22.5"
+  },
+  "peerDependencies": {
+    "next-auth": "*"
+  }
+}

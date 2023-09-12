@@ -16,12 +16,11 @@ import {
 } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { Popover } from '@mui/material';
+import { useSession } from '@toeverything/auth/react';
 import { IconButton } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import {
@@ -236,7 +235,7 @@ export const WorkspaceListModal = ({
       ) : (
         <StyledModalHeaderContent>
           <StyledModalHeader>
-            <StyledModalTitle>{session?.user.email}</StyledModalTitle>
+            <StyledModalTitle>{session?.user?.email}</StyledModalTitle>
             <StyledOperationWrapper>
               <Menu
                 items={<AccountMenu />}

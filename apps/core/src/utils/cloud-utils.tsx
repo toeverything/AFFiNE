@@ -6,9 +6,8 @@ import {
   traceReporter,
 } from '@affine/graphql';
 import { refreshRootMetadataAtom } from '@affine/workspace/atom';
+import { signIn, signOut } from '@toeverything/auth/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { signIn, signOut } from 'next-auth/react';
 import { startTransition } from 'react';
 
 type TraceParams = {

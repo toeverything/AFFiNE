@@ -33,7 +33,7 @@ export const WorkspaceAdapters = {
     Events: {
       'app:access': async () => {
         try {
-          const { getSession } = await import('next-auth/react');
+          const { getSession } = await import('@toeverything/auth/react');
           const session = await getSession();
           return !!session;
         } catch (e) {

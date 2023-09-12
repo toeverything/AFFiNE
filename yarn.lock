@@ -282,6 +282,7 @@ __metadata:
     "@sentry/webpack-plugin": ^2.7.0
     "@svgr/webpack": ^8.1.0
     "@swc/core": ^1.3.81
+    "@toeverything/auth": "workspace:^"
     "@toeverything/components": ^0.0.34
     "@types/lodash-es": ^4.17.9
     "@types/webpack-env": ^1.18.1
@@ -12445,6 +12446,16 @@ __metadata:
   checksum: 852c48ea6db1c9471b18276617c84fec4320771e466cd58339a732ca3fd73ad35e5a43ae14f51af51a8d0a150dcf60fcaab049ef367871207bea8f92c4b8195e
   languageName: node
   linkType: hard
+
+"@toeverything/auth@workspace:^, @toeverything/auth@workspace:packages/auth":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/auth@workspace:packages/auth"
+  dependencies:
+    next-auth: 4.22.5
+  peerDependencies:
+    next-auth: "*"
+  languageName: unknown
+  linkType: soft
 
 "@toeverything/components@npm:^0.0.34":
   version: 0.0.34

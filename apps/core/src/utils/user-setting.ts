@@ -1,6 +1,7 @@
 import type { CollectionsAtom } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { DisposableGroup } from '@blocksuite/global/utils';
+import { sessionAtom } from '@toeverything/auth/react';
 import { currentWorkspaceAtom } from '@toeverything/infra/atom';
 import { type DBSchema, openDB } from 'idb';
 import { atom } from 'jotai';
@@ -8,8 +9,6 @@ import { atomWithObservable } from 'jotai/utils';
 import { Observable } from 'rxjs';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
-
-import { sessionAtom } from '../atoms/cloud-user';
 
 export interface PageCollectionDBV1 extends DBSchema {
   view: {
@@ -85,7 +84,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
   const currentWorkspacePromise = get(currentWorkspaceAtom);
   const session = get(sessionAtom);
   const localCRUD = get(localCollectionCRUDAtom);
-  const userId = session?.data?.user.id ?? null;
+  const userId = session?.data?.user?.id ?? null;
 
   const useLocalStorage = userId === null;
 
@@ -173,7 +172,7 @@ export const currentCollectionsAtom: CollectionsAtom = atom(
       newCollections = apply;
     }
     const session = get(sessionAtom);
-    const userId = session?.data?.user.id ?? null;
+    const userId = session?.data?.user?.id ?? null;
     const useLocalStorage = userId === null;
     const added = newCollections.filter(v => !collections.includes(v));
     const removed = collections.filter(v => !newCollections.includes(v));
