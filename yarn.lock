@@ -12451,9 +12451,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/auth@workspace:packages/auth"
   dependencies:
+    jotai: ^2.4.2
     next-auth: 4.22.5
+    react: ^18.2.0
   peerDependencies:
-    next-auth: "*"
+    jotai: ^2
+    next-auth: ^4
+    react: ^18
   languageName: unknown
   linkType: soft
 
@@ -24182,6 +24186,21 @@ __metadata:
     react:
       optional: true
   checksum: e77b17c47f7b9846cee7af0689f2c67dce20d99f1d22ade1f8255d297d60843c38b062c2ab7f48b609db4b821b29a629f726b6fa47bc63fc13fd90ef59197378
+  languageName: node
+  linkType: hard
+
+"jotai@npm:^2.4.2":
+  version: 2.4.2
+  resolution: "jotai@npm:2.4.2"
+  peerDependencies:
+    "@types/react": ">=17.0.0"
+    react: ">=17.0.0"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    react:
+      optional: true
+  checksum: b0f77afa692435ae922c8ad25f8642b98759127d686c6b3a6e8944b64f351be63e08b14bbcf7f6d2becdf68f2f5c1005b19c853271fc22052db783a2bce25efc
   languageName: node
   linkType: hard
 

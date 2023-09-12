@@ -34,7 +34,7 @@ import type {
 } from 'next-auth/react/types';
 import _logger, { proxyLogger } from 'next-auth/utils/logger';
 import parseUrl from 'next-auth/utils/parse-url';
-import * as React from 'react';
+import { createContext, useEffect, useMemo, useState } from 'react';
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export type * from 'next-auth/react';
@@ -66,14 +66,14 @@ const broadcast = BroadcastChannel();
 const logger = proxyLogger(_logger, __NEXTAUTH.basePath);
 
 function useOnline() {
-  const [isOnline, setIsOnline] = React.useState(
+  const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : false
   );
 
   const setOnline = () => setIsOnline(true);
   const setOffline = () => setIsOnline(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     window.addEventListener('online', setOnline);
     window.addEventListener('offline', setOffline);
 
@@ -107,9 +107,9 @@ export type SessionContextValue<R extends boolean = false> = R extends true
           status: 'unauthenticated' | 'loading';
         };
 
-export const SessionContext = React.createContext?.<
-  SessionContextValue | undefined
->(undefined);
+export const SessionContext = createContext<SessionContextValue | undefined>(
+  undefined
+);
 
 export const sessionAtom = atom<SessionContextValue<true> | null>(null);
 
@@ -138,7 +138,7 @@ export function useSession<R extends boolean>(
 
   const requiredAndNotLoading = required && value.status === 'unauthenticated';
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (requiredAndNotLoading) {
       const url = `/api/auth/signin?${new URLSearchParams({
         error: 'SessionRequired',
@@ -353,7 +353,13 @@ export function SessionProvider(props: SessionProviderProps) {
     throw new Error('React Context is unavailable in Server Components');
   }
 
-  const { children, basePath, refetchInterval, refetchWhenOffline } = props;
+  const {
+    children,
+    basePath,
+    refetchInterval,
+    refetchWhenOffline,
+    refetchOnWindowFocus = true,
+  } = props;
 
   if (basePath) __NEXTAUTH.basePath = basePath;
 
@@ -366,15 +372,15 @@ export function SessionProvider(props: SessionProviderProps) {
   /** If session was passed, initialize as already synced */
   __NEXTAUTH._lastSync = hasInitialSession ? now() : 0;
 
-  const [session, setSession] = React.useState(() => {
+  const [session, setSession] = useState(() => {
     if (hasInitialSession) __NEXTAUTH._session = props.session;
     return props.session;
   });
 
   /** If session was passed, initialize as not loading */
-  const [loading, setLoading] = React.useState(!hasInitialSession);
+  const [loading, setLoading] = useState(!hasInitialSession);
 
-  React.useEffect(() => {
+  useEffect(() => {
     __NEXTAUTH._getSession = async ({ event } = {}) => {
       try {
         const storageEvent = event === 'storage';
@@ -425,7 +431,7 @@ export function SessionProvider(props: SessionProviderProps) {
     };
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Listen for storage events and update session if event fired from
     // another window (but suppress firing another event to avoid a loop)
     // Fetch new session data but tell it to not to fire another event to
@@ -441,9 +447,7 @@ export function SessionProvider(props: SessionProviderProps) {
 
     return () => unsubscribe();
   }, []);
-
-  React.useEffect(() => {
-    const { refetchOnWindowFocus = true } = props;
+  useEffect(() => {
     // Listen for when the page is visible, if the user switches tabs
     // and makes our tab visible again, re-fetch the session, but only if
     // this feature is not disabled.
@@ -458,13 +462,13 @@ export function SessionProvider(props: SessionProviderProps) {
         visibilityHandler,
         false
       );
-  }, [props.refetchOnWindowFocus]);
+  }, [refetchOnWindowFocus]);
 
   const isOnline = useOnline();
   // TODO: Flip this behavior in next major version
   const shouldRefetch = refetchWhenOffline !== false || isOnline;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (refetchInterval && shouldRefetch) {
       const refetchIntervalTimer = setInterval(() => {
         if (__NEXTAUTH._session) {
@@ -476,7 +480,7 @@ export function SessionProvider(props: SessionProviderProps) {
     return;
   }, [refetchInterval, shouldRefetch]);
 
-  const value: any = React.useMemo(
+  const value: any = useMemo(
     () => ({
       data: session,
       status: loading
