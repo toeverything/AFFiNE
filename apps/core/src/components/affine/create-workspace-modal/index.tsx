@@ -1,14 +1,9 @@
-import {
-  Input,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-  toast,
-} from '@affine/component';
+import { Input, toast } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Modal } from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
 import type {
   LoadDBFileResult,
@@ -386,16 +381,28 @@ export const CreateWorkspaceModal = ({
       />
     ) : null;
 
+  const onOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
   return (
-    <Modal open={mode !== false && !!step} onClose={onClose}>
-      <ModalWrapper width={560} style={{ padding: '10px' }}>
-        <div className={style.header}>
-          <ModalCloseButton top={6} right={6} onClick={onClose} />
-        </div>
-        {nameWorkspaceNode}
-        {setDBLocationNode}
-        {setSyncingModeNode}
-      </ModalWrapper>
+    <Modal
+      open={mode !== false && !!step}
+      width={560}
+      onOpenChange={onOpenChange}
+      contentOptions={{
+        style: { padding: '10px' },
+      }}
+    >
+      <div className={style.header}></div>
+      {nameWorkspaceNode}
+      {setDBLocationNode}
+      {setSyncingModeNode}
     </Modal>
   );
 };

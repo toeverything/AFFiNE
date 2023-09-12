@@ -1,6 +1,5 @@
-import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
+import { Modal } from '@toeverything/components/modal';
 import type { FC, PropsWithChildren } from 'react';
-import { useCallback } from 'react';
 
 export type AuthModalProps = {
   open: boolean;
@@ -12,32 +11,18 @@ export const AuthModal: FC<PropsWithChildren<AuthModalProps>> = ({
   open,
   setOpen,
 }) => {
-  const handleClose = useCallback(() => {
-    setOpen(false);
-  }, [setOpen]);
-
   return (
     <Modal
       open={open}
-      onClose={handleClose}
-      wrapperPosition={['center', 'center']}
+      onOpenChange={setOpen}
       data-testid="auth-modal"
+      width={400}
+      height={468}
+      contentOptions={{
+        style: { padding: '44px 40px 0' },
+      }}
     >
-      <ModalWrapper
-        width={1080}
-        height={760}
-        style={{
-          height: '468px',
-          width: '400px',
-          overflow: 'hidden',
-          backgroundColor: 'var(--affine-white)',
-          boxShadow: 'var(--affine-popover-shadow)',
-          padding: '44px 40px 0',
-        }}
-      >
-        <ModalCloseButton top={20} right={20} onClick={handleClose} />
-        {children}
-      </ModalWrapper>
+      {children}
     </Modal>
   );
 };

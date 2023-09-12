@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 import * as styles from './index.css';
 
-export interface MenuItemProps extends React.HTMLAttributes<HTMLButtonElement> {
+export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactElement;
   active?: boolean;
   disabled?: boolean;
@@ -25,7 +25,7 @@ const stopPropagation: React.MouseEventHandler = e => {
   e.stopPropagation();
 };
 
-export const MenuItem = React.forwardRef<HTMLButtonElement, MenuItemProps>(
+export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
   (
     {
       onClick,
@@ -42,7 +42,7 @@ export const MenuItem = React.forwardRef<HTMLButtonElement, MenuItemProps>(
   ) => {
     const collapsible = onCollapsedChange !== undefined;
     return (
-      <button
+      <div
         ref={ref}
         {...props}
         onClick={onClick}
@@ -82,22 +82,21 @@ export const MenuItem = React.forwardRef<HTMLButtonElement, MenuItemProps>(
             {postfix}
           </div>
         ) : null}
-      </button>
+      </div>
     );
   }
 );
 MenuItem.displayName = 'MenuItem';
 
-export const MenuLinkItem = React.forwardRef<
-  HTMLButtonElement,
-  MenuLinkItemProps
->(({ to, ...props }, ref) => {
-  return (
-    <Link to={to} className={styles.linkItemRoot}>
-      {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
-      {/* Thus ref is passed to MenuItem instead of Link */}
-      <MenuItem ref={ref} {...props}></MenuItem>
-    </Link>
-  );
-});
+export const MenuLinkItem = React.forwardRef<HTMLDivElement, MenuLinkItemProps>(
+  ({ to, ...props }, ref) => {
+    return (
+      <Link to={to} className={styles.linkItemRoot}>
+        {/* The <a> element rendered by Link does not generate display box due to `display: contents` style */}
+        {/* Thus ref is passed to MenuItem instead of Link */}
+        <MenuItem ref={ref} {...props}></MenuItem>
+      </Link>
+    );
+  }
+);
 MenuLinkItem.displayName = 'MenuLinkItem';

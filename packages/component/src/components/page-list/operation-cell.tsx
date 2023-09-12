@@ -10,10 +10,11 @@ import {
 } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
+import { ConfirmModal } from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
 
-import { Confirm, FlexWrapper } from '../../..';
+import { FlexWrapper } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export interface OperationCellProps {
@@ -106,19 +107,12 @@ export const OperationCell = ({
           onRemoveToTrash();
           setOpen(false);
         }}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onCancel={() => {
-          setOpen(false);
-        }}
+        onOpenChange={setOpen}
       />
       <DisablePublicSharing.DisablePublicSharingModal
-        onConfirmDisable={onDisablePublicSharing}
+        onConfirm={onDisablePublicSharing}
         open={openDisableShared}
-        onClose={() => {
-          setOpenDisableShared(false);
-        }}
+        onOpenChange={setOpenDisableShared}
       />
     </>
   );
@@ -161,20 +155,18 @@ export const TrashOperationCell = ({
           <DeletePermanentlyIcon />
         </IconButton>
       </Tooltip>
-      <Confirm
+      <ConfirmModal
         title={`${t['com.affine.trashOperation.deletePermanently']()}?`}
-        content={t['com.affine.trashOperation.deleteDescription']()}
-        confirmText={t['com.affine.trashOperation.delete']()}
-        confirmType="error"
+        description={t['com.affine.trashOperation.deleteDescription']()}
+        cancelText={t['com.affine.confirmModal.button.cancel']()}
+        confirmButtonOptions={{
+          type: 'error',
+          children: t['com.affine.trashOperation.delete'](),
+        }}
         open={open}
+        onOpenChange={setOpen}
         onConfirm={() => {
           onPermanentlyDeletePage();
-          setOpen(false);
-        }}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onCancel={() => {
           setOpen(false);
         }}
       />

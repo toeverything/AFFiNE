@@ -1,12 +1,10 @@
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
+import { ConfirmModal } from '@toeverything/components/modal';
 import { useCallback, useEffect, useState } from 'react';
 
-import { Modal, ModalCloseButton, ModalWrapper } from '../../ui/modal';
 import { AuthInput } from '..//auth-components';
 import { emailRegex } from '..//auth-components/utils';
-import * as styles from './styles.css';
 
 export interface InviteModalProps {
   open: boolean;
@@ -70,10 +68,6 @@ export const InviteModal = ({
   const [permission, setPermission] = useState(Permission.Write);
   const [isValidEmail, setIsValidEmail] = useState(true);
 
-  const handleCancel = useCallback(() => {
-    setOpen(false);
-  }, [setOpen]);
-
   const handleConfirm = useCallback(() => {
     if (!emailRegex.test(inviteEmail)) {
       setIsValidEmail(false);
@@ -95,53 +89,47 @@ export const InviteModal = ({
   }, [open]);
 
   return (
-    <Modal
-      wrapperPosition={['center', 'center']}
-      data-testid="invite-modal"
+    <ConfirmModal
       open={open}
-    >
-      <ModalWrapper
-        width={480}
-        height={254}
-        style={{
+      onOpenChange={setOpen}
+      width={480}
+      title={t['Invite Members']()}
+      description={t['Invite Members Message']()}
+      cancelText={t['com.affine.inviteModal.button.cancel']()}
+      contentOptions={{
+        ['data-testid' as string]: 'invite-modal',
+        style: {
           padding: '20px 26px',
+        },
+      }}
+      confirmButtonOptions={{
+        loading: isMutating,
+        type: 'primary',
+        ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
+        children: t['Invite'](),
+      }}
+      onConfirm={handleConfirm}
+    >
+      {/*TODO: check email & add placeholder*/}
+      <AuthInput
+        disabled={isMutating}
+        placeholder="email@example.com"
+        value={inviteEmail}
+        onChange={setInviteEmail}
+        error={!isValidEmail}
+        errorHint={isValidEmail ? '' : t['com.affine.auth.sign.email.error']()}
+        onEnter={handleConfirm}
+        wrapperProps={{
+          style: { padding: 0 },
         }}
-      >
-        <ModalCloseButton top={20} right={20} onClick={handleCancel} />
-
-        <div className={styles.inviteModalTitle}>{t['Invite Members']()}</div>
-        <div className={styles.inviteModalContent}>
-          {t['Invite Members Message']()}
-          {/*TODO: check email & add placeholder*/}
-          <AuthInput
-            disabled={isMutating}
-            placeholder="email@example.com"
-            value={inviteEmail}
-            onChange={setInviteEmail}
-            error={!isValidEmail}
-            errorHint={
-              isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
-            }
-            onEnter={handleConfirm}
-            style={{ marginTop: 20 }}
-            size="large"
-            endFix={
-              <PermissionMenu
-                currentPermission={permission}
-                onChange={setPermission}
-              />
-            }
+        size="large"
+        endFix={
+          <PermissionMenu
+            currentPermission={permission}
+            onChange={setPermission}
           />
-        </div>
-        <div className={styles.inviteModalButtonContainer}>
-          <Button style={{ marginRight: 20 }} onClick={handleCancel}>
-            {t['com.affine.inviteModal.button.cancel']()}
-          </Button>
-          <Button type="primary" onClick={handleConfirm} loading={isMutating}>
-            {t['Invite']()}
-          </Button>
-        </div>
-      </ModalWrapper>
-    </Modal>
+        }
+      />
+    </ConfirmModal>
   );
 };
