@@ -1,32 +1,7 @@
 import type { PluginContext } from '@affine/sdk/entry';
-import type { BaseBlockModel } from '@blocksuite/store';
-import type { Page, PageMeta } from '@blocksuite/store';
+import { LinkedPageWidget } from '@blocksuite/blocks';
 
-// Copy from https://github.com/toeverything/blocksuite/blob/6c9c5137f2cda0d25738c99268ef62fdd9a1dbc4/packages/blocks/src/widgets/linked-page/config.ts#L13-L38
-type LinkedPageItem = {
-  key: string;
-  name: string;
-  icon: string;
-  action: () => void;
-};
-
-type LinkedPageGroup = {
-  name: string;
-  styles?: string;
-  items: LinkedPageItem[];
-};
-
-type LinkedPageOptions = {
-  triggerKeys: string[];
-  ignoreBlockTypes: string[];
-  convertTriggerKey: boolean;
-  getMenus: (ctx: {
-    query: string;
-    page: Page;
-    pageMetas: PageMeta[];
-    model: BaseBlockModel;
-  }) => LinkedPageGroup[];
-};
+type LinkedPageOptions = (typeof LinkedPageWidget)['DEFAULT_OPTIONS'];
 
 type LitBlockSpec = unknown;
 
@@ -55,7 +30,6 @@ export const entry = (context: PluginContext) => {
   }
 
   context.register('editor', (root, editor) => {
-    const LinkedPageWidget = customElements.get('affine-linked-page-widget');
     if (!LinkedPageWidget) {
       console.error('no page block found', LinkedPageWidget);
       return () => {};
@@ -63,7 +37,7 @@ export const entry = (context: PluginContext) => {
 
     const maybeDefaultOptions =
       'DEFAULT_OPTIONS' in LinkedPageWidget
-        ? (LinkedPageWidget.DEFAULT_OPTIONS as LinkedPageOptions)
+        ? LinkedPageWidget.DEFAULT_OPTIONS
         : undefined;
 
     if (!maybeDefaultOptions) {
@@ -104,7 +78,7 @@ export const entry = (context: PluginContext) => {
     };
 
     class CustomLinkedPage extends LinkedPageWidget {
-      options: LinkedPageOptions = {
+      override options = {
         ...linkedPageOptions,
         getMenus: customGetMenus,
       };
