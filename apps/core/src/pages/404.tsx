@@ -2,6 +2,7 @@ import { displayFlex, styled } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import type { ReactElement } from 'react';
+import { useCallback } from 'react';
 
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 
@@ -32,7 +33,7 @@ export const NotFoundPage = () => {
       <img alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
 
       <p>{t['com.affine.notFoundPage.title']()}</p>
-      <Button onClick={() => jumpToIndex()}>
+      <Button onClick={useCallback(() => jumpToIndex(), [])}>
         {t['com.affine.notFoundPage.backButton']()}
       </Button>
     </StyledContainer>
