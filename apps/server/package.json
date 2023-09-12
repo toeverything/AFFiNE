@@ -58,7 +58,7 @@
     "keyv": "^4.5.3",
     "lodash-es": "^4.17.21",
     "nanoid": "^4.0.2",
-    "nestjs-throttler-storage-redis": "^0.3.3",
+    "nestjs-throttler-storage-redis": "^0.4.0",
     "next-auth": "4.22.5",
     "nodemailer": "^6.9.4",
     "on-headers": "^1.0.2",
