@@ -15,10 +15,10 @@ export const AuthModal: FC<PropsWithChildren<AuthModalProps>> = ({
     <Modal
       open={open}
       onOpenChange={setOpen}
-      data-testid="auth-modal"
       width={400}
       height={468}
       contentOptions={{
+        ['data-testid' as string]: 'auth-modal',
         style: { padding: '44px 40px 0' },
       }}
     >
