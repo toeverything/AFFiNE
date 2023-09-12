@@ -512,6 +512,7 @@
   "Remove from Pivots": "Remove from Pivots",
   "Remove from workspace": "Remove from workspace",
   "Remove special filter": "Remove special filter",
+  "Removed successfully": "Removed successfully",
   "Rename": "Rename",
   "Restart Install Client Update": "Restart to install update",
   "Retain cached cloud data": "Retain cached cloud data",
@@ -539,6 +540,7 @@
   "Storage and Export": "Storage and Export",
   "Storage Folder": "Storage Folder",
   "Successfully deleted": "Successfully deleted",
+  "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud",
   "Successfully joined!": "Successfully joined!",
   "Switch": "Switch",
   "Sync": "Sync",
@@ -569,7 +571,5 @@
   "Workspace Settings": "Workspace Settings",
   "Workspace Settings with name": "{{name}}'s Settings",
   "Workspace Type": "Workspace Type",
-  "You cannot delete the last workspace": "You cannot delete the last workspace",
-  "Removed successfully": "Removed successfully",
-  "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud"
+  "You cannot delete the last workspace": "You cannot delete the last workspace"
 }
