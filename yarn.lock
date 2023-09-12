@@ -303,7 +303,6 @@ __metadata:
     lottie-web: ^5.12.2
     mime-types: ^2.1.35
     mini-css-extract-plugin: ^2.7.6
-    next-auth: ^4.22.1
     next-themes: ^0.2.1
     postcss-loader: ^7.3.3
     raw-loader: ^4.0.2
@@ -12458,7 +12457,6 @@ __metadata:
   peerDependencies:
     "@toeverything/hooks": "workspace:*"
     jotai: ^2
-    next-auth: ^4
     react: ^18
   languageName: unknown
   linkType: soft
@@ -26651,31 +26649,6 @@ __metadata:
     nodemailer:
       optional: true
   checksum: 94e8cb4d72a68636d2f26ba7cd330085c5589227449b180ee559fdb4100ee4e3d8f541776d2dc059c6878d640fe6e177a6ab22e375916529424ab0f6c369f482
-  languageName: node
-  linkType: hard
-
-"next-auth@npm:^4.22.1":
-  version: 4.23.1
-  resolution: "next-auth@npm:4.23.1"
-  dependencies:
-    "@babel/runtime": ^7.20.13
-    "@panva/hkdf": ^1.0.2
-    cookie: ^0.5.0
-    jose: ^4.11.4
-    oauth: ^0.9.15
-    openid-client: ^5.4.0
-    preact: ^10.6.3
-    preact-render-to-string: ^5.1.19
-    uuid: ^8.3.2
-  peerDependencies:
-    next: ^12.2.5 || ^13
-    nodemailer: ^6.6.5
-    react: ^17.0.2 || ^18
-    react-dom: ^17.0.2 || ^18
-  peerDependenciesMeta:
-    nodemailer:
-      optional: true
-  checksum: 995114797c257ccf71a82d19fb6316fb7709b552aaaf66444591c505a4b8e00b0cae3f4db4316b63a8cc439076044cc391ab171c4f6ee2e086709c5b3bbfed24
   languageName: node
   linkType: hard
 

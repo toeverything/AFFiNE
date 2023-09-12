@@ -52,7 +52,6 @@
     "lit": "^2.8.0",
     "lottie-web": "^5.12.2",
     "mini-css-extract-plugin": "^2.7.6",
-    "next-auth": "^4.22.1",
     "next-themes": "^0.2.1",
     "postcss-loader": "^7.3.3",
     "react": "18.2.0",
