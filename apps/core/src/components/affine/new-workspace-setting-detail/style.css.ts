@@ -86,13 +86,18 @@ export const fakeWrapper = style({
   },
 });
 
-export const membersList = style({
+export const membersFallback = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  color: 'var(--affine-primary-color)',
+});
+export const membersPanel = style({
   marginTop: '24px',
   padding: '4px',
   borderRadius: '12px',
   background: 'var(--affine-background-primary-color)',
-  maxHeight: '464px',
-  overflow: 'auto',
+  border: '1px solid var(--affine-border-color)',
 });
 
 export const listItem = style({
@@ -101,9 +106,14 @@ export const listItem = style({
   display: 'flex',
   width: '100%',
   alignItems: 'center',
-  ':hover': {
-    background: 'var(--affine-hover-color)',
-    borderRadius: '8px',
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+      borderRadius: '8px',
+    },
+    '&:not(:last-of-type)': {
+      marginBottom: '6px',
+    },
   },
 });
 export const memberContainer = style({

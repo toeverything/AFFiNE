@@ -20,7 +20,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "^2.1.32",
+    "@blocksuite/icons": "^2.1.33",
     "foxact": "^0.2.20",
     "link-preview-js": "^3.0.5"
   },

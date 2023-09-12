@@ -548,7 +548,7 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
               div,
               widget.page,
               () => {
-                return root.selectionManager.value;
+                return root.selection.value;
               }
             );
             addCleanup(pluginName, () => {
