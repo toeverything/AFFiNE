@@ -6,7 +6,7 @@ import {
 } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import Lottie from 'lottie-react';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 
 import favoritedAnimation from './favorited-animation/data.json';
 
@@ -18,16 +18,22 @@ export const FavoriteTag = forwardRef<
 >(({ active, onClick, ...props }, ref) => {
   const [playAnimation, setPlayAnimation] = useState(false);
   const t = useAFFiNEI18N();
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    onClick?.(e);
-    setPlayAnimation(true);
-  };
-  const handleFavoritedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    onClick?.(e);
-    setPlayAnimation(false);
-  };
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      onClick?.(e);
+      setPlayAnimation(true);
+    },
+    [onClick]
+  );
+  const handleFavoritedClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      onClick?.(e);
+      setPlayAnimation(false);
+    },
+    [onClick]
+  );
   return (
     <Tooltip content={active ? t['Favorited']() : t['Favorite']()} side="top">
       <IconButton
