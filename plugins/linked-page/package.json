@@ -19,6 +19,10 @@
     "@affine/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@affine/plugin-cli": "workspace:*"
+    "@affine/plugin-cli": "workspace:*",
+    "@blocksuite/blocks": "0.0.0-20230908185655-61117b50-nightly"
+  },
+  "peerDependencies": {
+    "@blocksuite/blocks": "0.0.0-20230908185655-61117b50-nightly"
   }
 }
