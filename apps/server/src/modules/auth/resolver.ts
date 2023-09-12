@@ -30,6 +30,9 @@ export class TokenType {
 
   @Field()
   refresh!: string;
+
+  @Field({ nullable: true })
+  sessionToken?: string;
 }
 
 /**
@@ -49,18 +52,32 @@ export class AuthResolver {
 
   @Throttle(20, 60)
   @ResolveField(() => TokenType)
-  async token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
+  async token(
+    @Context() ctx: { req: Request },
+    @CurrentUser() currentUser: UserType,
+    @Parent() user: UserType
+  ) {
     if (user.id !== currentUser.id) {
       throw new BadRequestException('Invalid user');
     }
 
-    // on production we use session token that is stored in database (strategy = 'database')
-    const sessionToken = this.config.node.prod
-      ? await this.auth.getSessionToken(user.id)
-      : this.auth.sign(user);
+    let sessionToken: string | undefined;
+
+    // only return session if the request is from the same origin & path == /open-app
+    if (
+      ctx.req.headers.referer &&
+      ctx.req.headers.host &&
+      new URL(ctx.req.headers.referer).pathname.startsWith('/open-app') &&
+      ctx.req.headers.host === new URL(this.config.origin).host
+    ) {
+      const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
+      const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+      sessionToken = ctx.req.cookies?.[sessionCookieName];
+    }
 
     return {
-      token: sessionToken,
+      sessionToken,
+      token: this.auth.sign(user),
       refresh: this.auth.refresh(user),
     };
   }

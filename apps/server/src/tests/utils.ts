@@ -119,7 +119,9 @@ export async function getWorkspaceSharedPages(
 async function getWorkspace(
   app: INestApplication,
   token: string,
-  workspaceId: string
+  workspaceId: string,
+  skip = 0,
+  take = 8
 ): Promise<WorkspaceType> {
   const res = await request(app.getHttpServer())
     .post(gql)
@@ -129,7 +131,7 @@ async function getWorkspace(
       query: `
           query {
             workspace(id: "${workspaceId}") {
-              id, members { id, name, email, permission, inviteId }
+              id, members(skip: ${skip}, take: ${take}) { id, name, email, permission, inviteId }
             }
           }
         `,
