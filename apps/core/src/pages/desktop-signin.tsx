@@ -20,7 +20,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   if (session) {
     // already signed in, need to sign out first
     await signOutCloud({
-      callbackUrl: request.url // retry
+      callbackUrl: request.url, // retry
     });
   }
 
