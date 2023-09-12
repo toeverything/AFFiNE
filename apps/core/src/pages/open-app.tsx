@@ -57,7 +57,7 @@ interface OpenAppProps {
 }
 
 interface LoaderData {
-  action: 'url' | 'oauth-jwt';
+  action: 'url' | 'signin-redirect';
   currentUser?: GetCurrentUserQuery['currentUser'];
 }
 
@@ -86,12 +86,7 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   return (
     <div className={styles.root}>
       <div className={styles.topNav}>
-        <a
-          href="https://affine.pro"
-          target="_blank"
-          rel="noreferrer"
-          className={styles.affineLogo}
-        >
+        <a href="/" rel="noreferrer" className={styles.affineLogo}>
           <Logo1Icon width={24} height={24} />
         </a>
 
@@ -182,7 +177,7 @@ const OpenOAuthJwt = () => {
     return null;
   }
 
-  const urlToOpen = `${schema}://oauth-jwt?token=${currentUser.token.sessionToken}`;
+  const urlToOpen = `${schema}://signin-redirect?token=${currentUser.token.sessionToken}`;
 
   return <OpenAppImpl urlToOpen={urlToOpen} channel={channel} />;
 };
@@ -192,7 +187,7 @@ export const Component = () => {
 
   if (action === 'url') {
     return <OpenUrl />;
-  } else if (action === 'oauth-jwt') {
+  } else if (action === 'signin-redirect') {
     return <OpenOAuthJwt />;
   }
   return null;
