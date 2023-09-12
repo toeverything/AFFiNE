@@ -137,7 +137,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         onSelect={handleSwitchMode}
         style={menuItemStyle}
       >
-        {t['Convert to ']()}
+        {t['com.affine.pageMode.convertTo']()}
         {mode === 'page'
           ? t['com.affine.pageMode.edgeless']()
           : t['com.affine.pageMode.page']()}

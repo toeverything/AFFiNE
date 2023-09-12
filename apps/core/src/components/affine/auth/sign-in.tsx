@@ -93,7 +93,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           signInWithGoogle();
         }, [signInWithGoogle])}
       >
-        {t['Continue with Google']()}
+        {t['com.affine.signIn.button.withGoogle']()}
       </Button>
 
       <div className={style.authModalContent}>
@@ -140,7 +140,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           iconPosition="end"
           onClick={onContinue}
         >
-          {t['com.affine.auth.sign.email.continue']()}
+          {t['com.affine.signIn.button.withEmail']()}
         </Button>
 
         <div className={style.authMessage}>

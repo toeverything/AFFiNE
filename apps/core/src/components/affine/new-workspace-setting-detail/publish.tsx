@@ -53,7 +53,7 @@ const PublishPanelAffine = (props: PublishPanelAffineProps) => {
 
   const copyUrl = useCallback(async () => {
     await navigator.clipboard.writeText(shareUrl);
-    toast(t['Copied link to clipboard']());
+    toast(t['com.affine.toastMessage.copiedLinkClipboard']());
   }, [shareUrl, t]);
 
   return (

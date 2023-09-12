@@ -287,7 +287,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
         icon={<InformationIcon />}
         disabled
       >
-        <span>{t['Create a collection']()}</span>
+        <span>{t['com.affine.collectionsList.create']()}</span>
       </CollectionItem>
     );
   }

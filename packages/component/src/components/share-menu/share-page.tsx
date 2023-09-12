@@ -86,7 +86,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     navigator.clipboard
       .writeText(sharingUrl)
       .then(() => {
-        toast(t['Copied link to clipboard']());
+        toast(t['com.affine.toastMessage.copiedLinkClipboard']());
       })
       .catch(err => {
         console.error(err);

@@ -63,7 +63,7 @@ export const ConfirmModal = ({
             {t['com.affine.confirmModal.button.cancel']()}
           </Button>
           <Button type={confirmType} onClick={onConfirm}>
-            {confirmText || t['Confirm']()}
+            {confirmText || t['com.affine.confirmModal.button.confirm']()}
           </Button>
         </StyledModalFooter>
       </ModalWrapper>
