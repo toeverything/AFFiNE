@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import test from 'ava';
+import ava, { TestFn } from 'ava';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
@@ -21,28 +21,26 @@ import {
   signUp,
 } from './utils';
 
-let app: INestApplication;
+const test = ava as TestFn<{
+  app: INestApplication;
+  client: PrismaClient;
+  auth: AuthService;
+  mail: MailService;
+}>;
 
-const client = new PrismaClient();
-
-let auth: AuthService;
-let mail: MailService;
-
-// cleanup database before each test
-test.beforeEach(async () => {
+test.beforeEach(async t => {
+  const client = new PrismaClient();
+  t.context.client = client;
   await client.$connect();
   await client.user.deleteMany({});
   await client.snapshot.deleteMany({});
   await client.update.deleteMany({});
   await client.workspace.deleteMany({});
   await client.$disconnect();
-});
-
-test.beforeEach(async () => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
-  app = module.createNestApplication();
+  const app = module.createNestApplication();
   app.use(
     graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024,
@@ -51,15 +49,19 @@ test.beforeEach(async () => {
   );
   await app.init();
 
-  auth = module.get(AuthService);
-  mail = module.get(MailService);
+  const auth = module.get(AuthService);
+  const mail = module.get(MailService);
+  t.context.app = app;
+  t.context.auth = auth;
+  t.context.mail = mail;
 });
 
-test.afterEach(async () => {
-  await app.close();
+test.afterEach.always(async t => {
+  await t.context.app.close();
 });
 
 test('should invite a user', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
@@ -76,6 +78,7 @@ test('should invite a user', async t => {
 });
 
 test('should accept an invite', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
@@ -94,6 +97,7 @@ test('should accept an invite', async t => {
 });
 
 test('should leave a workspace', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
@@ -108,6 +112,7 @@ test('should leave a workspace', async t => {
 });
 
 test('should revoke a user', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
@@ -122,6 +127,7 @@ test('should revoke a user', async t => {
 });
 
 test('should create user if not exist', async t => {
+  const { app, auth } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
   const workspace = await createWorkspace(app, u1.token.token);
@@ -134,6 +140,7 @@ test('should create user if not exist', async t => {
 });
 
 test('should invite a user by link', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
@@ -167,6 +174,7 @@ test('should invite a user by link', async t => {
 });
 
 test('should send email', async t => {
+  const { mail, app } = t.context;
   if (mail.hasConfigured()) {
     const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
     const u2 = await signUp(app, 'test', 'production@toeverything.info', '1');
@@ -238,4 +246,35 @@ test('should send email', async t => {
     );
   }
   t.pass();
+});
+
+test('should support pagination for member', async t => {
+  const { app } = t.context;
+  const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
+  const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
+  const u3 = await signUp(app, 'u3', 'u3@affine.pro', '1');
+
+  const workspace = await createWorkspace(app, u1.token.token);
+  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
+  await inviteUser(app, u1.token.token, workspace.id, u3.email, 'Admin');
+
+  await acceptInvite(app, u2.token.token, workspace.id);
+  await acceptInvite(app, u3.token.token, workspace.id);
+
+  const firstPageWorkspace = await getWorkspace(
+    app,
+    u1.token.token,
+    workspace.id,
+    0,
+    2
+  );
+  t.is(firstPageWorkspace.members.length, 2, 'failed to check invite id');
+  const secondPageWorkspace = await getWorkspace(
+    app,
+    u1.token.token,
+    workspace.id,
+    2,
+    2
+  );
+  t.is(secondPageWorkspace.members.length, 1, 'failed to check invite id');
 });

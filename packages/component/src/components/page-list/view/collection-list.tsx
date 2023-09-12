@@ -1,5 +1,4 @@
 import { FlexWrapper } from '@affine/component';
-import { EditCollectionModel } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -15,6 +14,7 @@ import { useCallback, useRef, useState } from 'react';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
+import { EditCollectionModel } from './create-collection';
 import { useActions } from './use-action';
 
 const CollectionOption = ({
@@ -206,6 +206,7 @@ export const CollectionList = ({
         }}
       >
         <Button
+          className={styles.filterMenuTrigger}
           type="default"
           icon={<FilteredIcon />}
           data-testid="create-first-filter"

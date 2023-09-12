@@ -178,11 +178,11 @@ const OpenOAuthJwt = () => {
   }, [params]);
   const channel = schemaToChanel[schema as Schema];
 
-  if (!currentUser || !currentUser?.token?.token) {
+  if (!currentUser || !currentUser?.token?.sessionToken) {
     return null;
   }
 
-  const urlToOpen = `${schema}://oauth-jwt?token=${currentUser.token.token}`;
+  const urlToOpen = `${schema}://oauth-jwt?token=${currentUser.token.sessionToken}`;
 
   return <OpenAppImpl urlToOpen={urlToOpen} channel={channel} />;
 };

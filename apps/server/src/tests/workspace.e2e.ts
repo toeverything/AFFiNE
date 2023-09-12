@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import test from 'ava';
+import ava, { TestFn } from 'ava';
 // @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
@@ -20,25 +20,23 @@ import {
   updateWorkspace,
 } from './utils';
 
-let app: INestApplication;
+const test = ava as TestFn<{
+  app: INestApplication;
+  client: PrismaClient;
+}>;
 
-const client = new PrismaClient();
-
-// cleanup database before each test
-test.beforeEach(async () => {
+test.beforeEach(async t => {
+  const client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
   await client.update.deleteMany({});
   await client.snapshot.deleteMany({});
   await client.workspace.deleteMany({});
   await client.$disconnect();
-});
-
-test.beforeEach(async () => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
-  app = module.createNestApplication();
+  const app = module.createNestApplication();
   app.use(
     graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024,
@@ -46,20 +44,23 @@ test.beforeEach(async () => {
     })
   );
   await app.init();
+  t.context.client = client;
+  t.context.app = app;
 });
 
-test.afterEach(async () => {
-  await app.close();
+test.afterEach.always(async t => {
+  await t.context.app.close();
 });
 
 test('should register a user', async t => {
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
+  const user = await signUp(t.context.app, 'u1', 'u1@affine.pro', '123456');
   t.is(typeof user.id, 'string', 'user.id is not a string');
   t.is(user.name, 'u1', 'user.name is not valid');
   t.is(user.email, 'u1@affine.pro', 'user.email is not valid');
 });
 
 test.skip('should be throttled at call signUp', async t => {
+  const { app } = t.context;
   let token = '';
   for (let i = 0; i < 10; i++) {
     token = (await signUp(app, `u${i}`, `u${i}@affine.pro`, `${i}`)).token
@@ -72,6 +73,7 @@ test.skip('should be throttled at call signUp', async t => {
 });
 
 test('should create a workspace', async t => {
+  const { app } = t.context;
   const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
   const workspace = await createWorkspace(app, user.token.token);
@@ -79,6 +81,7 @@ test('should create a workspace', async t => {
 });
 
 test('should can publish workspace', async t => {
+  const { app } = t.context;
   const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const workspace = await createWorkspace(app, user.token.token);
 
@@ -100,6 +103,7 @@ test('should can publish workspace', async t => {
 });
 
 test('should can read published workspace', async t => {
+  const { app } = t.context;
   const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const workspace = await createWorkspace(app, user.token.token);
 
@@ -113,6 +117,7 @@ test('should can read published workspace', async t => {
 });
 
 test('should share a page', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
@@ -162,6 +167,7 @@ test('should share a page', async t => {
 });
 
 test('should can get workspace doc', async t => {
+  const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '2');
   const workspace = await createWorkspace(app, u1.token.token);
@@ -207,6 +213,7 @@ test('should can get workspace doc', async t => {
 });
 
 test('should be able to get public workspace doc', async t => {
+  const { app } = t.context;
   const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const workspace = await createWorkspace(app, user.token.token);
 

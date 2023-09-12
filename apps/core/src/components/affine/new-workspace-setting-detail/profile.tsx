@@ -18,8 +18,8 @@ import {
 } from 'react';
 
 import { Upload } from '../../pure/file-upload';
-import { type WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
+import type { WorkspaceSettingDetailProps } from './types';
 
 export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;

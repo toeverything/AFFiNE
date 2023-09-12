@@ -1,4 +1,3 @@
-import { EditCollectionModel } from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -8,21 +7,25 @@ import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
-import { useCollectionManager } from '../use-collection-manager';
+import {
+  type CollectionsAtom,
+  useCollectionManager,
+} from '../use-collection-manager';
 import * as styles from './collection-bar.css';
+import { EditCollectionModel } from './create-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  collectionsAtom: CollectionsAtom;
   columnsCount: number;
-  workspaceId: string;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
-  const { getPageInfo, propertiesMeta, columnsCount, workspaceId } = props;
+  const { getPageInfo, propertiesMeta, columnsCount, collectionsAtom } = props;
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(workspaceId);
+  const setting = useCollectionManager(collectionsAtom);
   const collection = setting.currentCollection;
   const [open, setOpen] = useState(false);
   const actions = useActions({
