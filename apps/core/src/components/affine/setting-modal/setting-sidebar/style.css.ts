@@ -108,13 +108,6 @@ export const accountButton = style({
   },
 });
 
-globalStyle(`${accountButton} .avatar`, {
-  border: '1px solid',
-  borderColor: 'var(--affine-white)',
-  marginRight: '10px',
-  flexShrink: 0,
-});
-
 globalStyle(`${accountButton} .avatar.not-sign`, {
   width: '28px',
   height: '28px',

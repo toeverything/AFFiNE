@@ -4,7 +4,6 @@ import {
   SettingRow,
   StorageProgress,
 } from '@affine/component/setting-components';
-import { UserAvatar } from '@affine/component/user-avatar';
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
@@ -13,10 +12,16 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
-import { type FC, Suspense, useCallback, useState } from 'react';
+import {
+  type FC,
+  type MouseEvent,
+  Suspense,
+  useCallback,
+  useState,
+} from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
@@ -25,13 +30,9 @@ import { signOutCloud } from '../../../../utils/cloud-utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
-export const AvatarAndName = () => {
+export const UserAvatar = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-
-  const [tooltipContainer, setTooltipContainer] =
-    useState<HTMLDivElement | null>(null);
-  const [input, setInput] = useState<string>(user.name);
 
   const { trigger: avatarTrigger } = useMutation({
     mutation: uploadAvatarMutation,
@@ -39,13 +40,6 @@ export const AvatarAndName = () => {
   const { trigger: removeAvatarTrigger } = useMutation({
     mutation: removeAvatarMutation,
   });
-
-  const handleUpdateUserName = useCallback(
-    (newName: string) => {
-      user.update({ name: newName }).catch(console.error);
-    },
-    [user]
-  );
 
   const handleUpdateUserAvatar = useCallback(
     async (file: File) => {
@@ -58,13 +52,48 @@ export const AvatarAndName = () => {
     },
     [avatarTrigger, user]
   );
-  const handleRemoveUserAvatar = useCallback(async () => {
-    await removeAvatarTrigger({
-      id: user.id,
-    });
-    // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
-    user.update({ name: user.name }).catch(console.error);
-  }, [removeAvatarTrigger, user]);
+  const handleRemoveUserAvatar = useCallback(
+    async (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      await removeAvatarTrigger({
+        id: user.id,
+      });
+      // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
+      user.update({ name: user.name }).catch(console.error);
+    },
+    [removeAvatarTrigger, user]
+  );
+  return (
+    <Upload
+      accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+      fileChange={handleUpdateUserAvatar}
+      data-testid="upload-user-avatar"
+    >
+      <Avatar
+        size={56}
+        name={user.name}
+        url={user.image}
+        hoverIcon={<CameraIcon />}
+        onRemove={user.image ? handleRemoveUserAvatar : undefined}
+        avatarTooltipOptions={{ content: t['Click to replace photo']() }}
+        removeTooltipOptions={{ content: t['Remove photo']() }}
+      />
+    </Upload>
+  );
+};
+
+export const AvatarAndName = () => {
+  const t = useAFFiNEI18N();
+  const user = useCurrentUser();
+  const [input, setInput] = useState<string>(user.name);
+
+  const handleUpdateUserName = useCallback(
+    (newName: string) => {
+      user.update({ name: newName }).catch(console.error);
+    },
+    [user]
+  );
+
   return (
     <>
       <SettingRow
@@ -73,32 +102,9 @@ export const AvatarAndName = () => {
         spreadCol={false}
       >
         <FlexWrapper style={{ margin: '12px 0 24px 0' }} alignItems="center">
-          <Tooltip
-            content={t['Click to replace photo']()}
-            portalOptions={{
-              container: tooltipContainer,
-            }}
-          >
-            <div className={style.avatarWrapper} ref={setTooltipContainer}>
-              <Upload
-                accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-                fileChange={handleUpdateUserAvatar}
-                data-testid="upload-user-avatar"
-              >
-                <>
-                  <div className="camera-icon-wrapper">
-                    <CameraIcon />
-                  </div>
-                  <UserAvatar
-                    size={56}
-                    name={user.name}
-                    url={user.image}
-                    className="avatar"
-                  />
-                </>
-              </Upload>
-            </div>
-          </Tooltip>
+          <Suspense>
+            <UserAvatar />
+          </Suspense>
 
           <div className={style.profileInputWrapper}>
             <label>{t['com.affine.settings.profile.name']()}</label>

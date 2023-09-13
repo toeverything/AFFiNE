@@ -2,13 +2,13 @@ import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
 } from '@affine/component/setting-components';
-import { UserAvatar } from '@affine/component/user-avatar';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
@@ -55,11 +55,13 @@ export const UserInfo = ({
       className={accountButton}
       onClick={onAccountSettingClick}
     >
-      <UserAvatar
+      <Avatar
         size={28}
         name={user.name}
         url={user.image}
-        className="avatar"
+        style={{
+          marginRight: '10px',
+        }}
       />
 
       <div className="content">
