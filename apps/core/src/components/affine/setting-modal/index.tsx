@@ -70,13 +70,13 @@ export const SettingModal = ({
     const keydown = (e: KeyboardEvent) => {
       if ((e.key === ',' && e.metaKey) || (e.key === ',' && e.ctrlKey)) {
         e.preventDefault();
-        setOpen(!open);
+        setOpen(open => !open);
       }
     };
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [open, setOpen]);
+  }, [setOpen]);
 
   return (
     <SettingModalBase open={open} setOpen={setOpen}>

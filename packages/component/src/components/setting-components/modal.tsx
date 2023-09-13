@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 
 export interface SettingModalProps {
   open: boolean;
-  setOpen: (value: boolean) => void;
+  setOpen: (apply: boolean | ((value: boolean) => boolean)) => void;
 }
 
 export const SettingModal = ({
