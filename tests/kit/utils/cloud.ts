@@ -11,6 +11,18 @@ import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { z } from 'zod';
 
+export async function getCurrentMailMessageCount() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.total;
+}
+
+export async function getLatestMailMessage() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.items[0];
+}
+
 export async function getLoginCookie(
   context: BrowserContext
 ): Promise<Cookie | undefined> {

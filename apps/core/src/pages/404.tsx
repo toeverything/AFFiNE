@@ -1,8 +1,8 @@
 import { displayFlex, styled } from '@affine/component';
-import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import type { ReactElement } from 'react';
+import { useCallback } from 'react';
 
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 
@@ -26,22 +26,15 @@ export const StyledContainer = styled('div')(() => {
 
 export const NotFoundPage = () => {
   const t = useAFFiNEI18N();
-  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
+  const { jumpToIndex } = useNavigateHelper();
+  const handleBackButtonClick = useCallback(() => jumpToIndex(), [jumpToIndex]);
+
   return (
     <StyledContainer data-testid="notFound">
       <img alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
 
       <p>{t['com.affine.notFoundPage.title']()}</p>
-      <Button
-        onClick={() => {
-          const id = localStorage.getItem('last_workspace_id');
-          if (id) {
-            jumpToSubPath(id, WorkspaceSubPath.ALL);
-          } else {
-            jumpToIndex();
-          }
-        }}
-      >
+      <Button onClick={handleBackButtonClick}>
         {t['com.affine.notFoundPage.backButton']()}
       </Button>
     </StyledContainer>
