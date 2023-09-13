@@ -1,9 +1,9 @@
-import { ConfirmModal } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { ConfirmModal } from '@toeverything/components/modal';
 import { useCallback, useState } from 'react';
 
 import type { WorkspaceSettingDetailProps } from '../types';
@@ -32,10 +32,6 @@ export const DeleteLeaveWorkspace = ({
       setShowLeave(true);
     }
   }, [isOwner]);
-
-  const onCloseLeaveModal = useCallback(() => {
-    setShowLeave(false);
-  }, []);
 
   const onLeaveConfirm = useCallback(() => {
     return onLeaveWorkspace();
@@ -71,21 +67,21 @@ export const DeleteLeaveWorkspace = ({
         <WorkspaceDeleteModal
           onConfirm={onDeleteConfirm}
           open={showDelete}
-          onClose={() => {
-            setShowDelete(false);
-          }}
+          onOpenChange={setShowDelete}
           workspace={workspace}
         />
       ) : (
         <ConfirmModal
           open={showLeave}
+          cancelText={t['com.affine.confirmModal.button.cancel']()}
           onConfirm={onLeaveConfirm}
-          onCancel={onCloseLeaveModal}
-          onClose={onCloseLeaveModal}
+          onOpenChange={setShowLeave}
           title={`${t['com.affine.deleteLeaveWorkspace.leave']()}?`}
-          content={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}
-          confirmType="warning"
-          confirmText={t['Leave']()}
+          description={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}
+          confirmButtonOptions={{
+            type: 'warning',
+            children: t['Leave'](),
+          }}
         />
       )}
     </>

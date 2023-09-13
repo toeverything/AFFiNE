@@ -10,72 +10,69 @@ import {
 } from '@blocksuite/icons';
 import { uuidv4 } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
+import { Modal } from '@toeverything/components/modal';
 import { useCallback, useMemo, useState } from 'react';
 
-import {
-  Input,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-  ScrollableContainer,
-} from '../../..';
+import { Input, ScrollableContainer } from '../../..';
 import { FilterList } from '../filter';
 import * as styles from './collection-list.css';
 
-interface EditCollectionModelProps {
+interface EditCollectionModalProps {
   init?: Collection;
   title?: string;
   open: boolean;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => Promise<void>;
 }
 
-export const EditCollectionModel = ({
+export const EditCollectionModal = ({
   init,
   onConfirm,
   open,
-  onClose,
+  onOpenChange,
   getPageInfo,
   propertiesMeta,
   title,
-}: EditCollectionModelProps) => {
+}: EditCollectionModalProps) => {
   const t = useAFFiNEI18N();
   const onConfirmOnCollection = useCallback(
     (view: Collection) => {
       onConfirm(view)
         .then(() => {
-          onClose();
+          onOpenChange(false);
         })
         .catch(err => {
           console.error(err);
         });
     },
-    [onClose, onConfirm]
+    [onConfirm, onOpenChange]
   );
+  const onCancel = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalWrapper
-        width={600}
-        style={{
-          padding: '40px',
-          background: 'var(--affine-background-primary-color)',
-        }}
-      >
-        <ModalCloseButton top={12} right={12} onClick={onClose} />
-        {init ? (
-          <EditCollection
-            propertiesMeta={propertiesMeta}
-            title={title}
-            onConfirmText={t['com.affine.editCollection.save']()}
-            init={init}
-            getPageInfo={getPageInfo}
-            onCancel={onClose}
-            onConfirm={onConfirmOnCollection}
-          />
-        ) : null}
-      </ModalWrapper>
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      width={600}
+      contentOptions={{
+        style: { padding: '40px' },
+      }}
+    >
+      {init ? (
+        <EditCollection
+          propertiesMeta={propertiesMeta}
+          title={title}
+          onConfirmText={t['com.affine.editCollection.save']()}
+          init={init}
+          getPageInfo={getPageInfo}
+          onCancel={onCancel}
+          onConfirm={onConfirmOnCollection}
+        />
+      ) : null}
     </Modal>
   );
 };
@@ -301,14 +298,14 @@ export const SaveCollectionButton = ({
       >
         {t['com.affine.editCollection.saveCollection']()}
       </Button>
-      <EditCollectionModel
+      <EditCollectionModal
         title={t['com.affine.editCollection.saveCollection']()}
         propertiesMeta={propertiesMeta}
         init={init}
         onConfirm={onConfirm}
         open={show}
         getPageInfo={getPageInfo}
-        onClose={() => changeShow(false)}
+        onOpenChange={changeShow}
       />
     </>
   );

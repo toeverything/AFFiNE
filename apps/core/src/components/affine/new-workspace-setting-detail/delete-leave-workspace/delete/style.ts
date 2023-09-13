@@ -21,20 +21,6 @@ export const StyledModalHeader = styled('div')(() => {
   };
 });
 
-// export const StyledModalContent = styled('div')(({ theme }) => {});
-
-export const StyledTextContent = styled('div')(() => {
-  return {
-    margin: 'auto',
-    width: '425px',
-    fontStyle: 'normal',
-    fontWeight: '400',
-    fontSize: '18px',
-    lineHeight: '26px',
-    textAlign: 'left',
-  };
-});
-
 export const StyledInputContent = styled('div')(() => {
   return {
     display: 'flex',
@@ -45,31 +31,8 @@ export const StyledInputContent = styled('div')(() => {
   };
 });
 
-export const StyledButtonContent = styled('div')(() => {
-  return {
-    marginBottom: '42px',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  };
-});
-
 export const StyledWorkspaceName = styled('span')(() => {
   return {
     fontWeight: '600',
   };
 });
-
-// export const StyledCancelButton = styled(Button)(({ theme }) => {
-//   return {
-//     width: '100px',
-//     justifyContent: 'center',
-//   };
-// });
-
-// export const StyledDeleteButton = styled(Button)(({ theme }) => {
-//   return {
-//     width: '100px',
-//     justifyContent: 'center',
-//   };
-// });
