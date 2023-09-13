@@ -1,7 +1,3 @@
-import {
-  type CollectionsAtom,
-  EditCollectionModel,
-} from '@affine/component/page-list';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -11,8 +7,12 @@ import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
-import { useCollectionManager } from '../use-collection-manager';
+import {
+  type CollectionsAtom,
+  useCollectionManager,
+} from '../use-collection-manager';
 import * as styles from './collection-bar.css';
+import { EditCollectionModel } from './create-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {

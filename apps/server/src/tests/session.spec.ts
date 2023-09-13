@@ -27,7 +27,7 @@ test.beforeEach(async t => {
   t.context.session = session;
 });
 
-test.afterEach(async t => {
+test.afterEach.always(async t => {
   await t.context.app.close();
 });
 

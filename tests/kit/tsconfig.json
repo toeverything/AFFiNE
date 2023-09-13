@@ -5,10 +5,5 @@
     "noEmit": false,
     "outDir": "lib"
   },
-  "include": ["./*.ts", "utils"],
-  "references": [
-    {
-      "path": "../../apps/server"
-    }
-  ]
+  "include": ["./*.ts", "utils"]
 }

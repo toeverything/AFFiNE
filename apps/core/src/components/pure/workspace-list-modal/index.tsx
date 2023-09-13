@@ -8,8 +8,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import {
   AccountIcon,
-  CloudWorkspaceIcon,
   ImportIcon,
+  Logo1Icon,
   MoreHorizontalIcon,
   PlusIcon,
   SignOutIcon,
@@ -214,7 +214,7 @@ export const WorkspaceListModal = ({
             >
               <StyledCreateWorkspaceCardPillContent>
                 <StyledCreateWorkspaceCardPillIcon>
-                  <CloudWorkspaceIcon />
+                  <Logo1Icon />
                 </StyledCreateWorkspaceCardPillIcon>
                 <StyledSignInCardPillTextCotainer>
                   <StyledSignInCardPillTextPrimary>
@@ -227,14 +227,24 @@ export const WorkspaceListModal = ({
               </StyledCreateWorkspaceCardPillContent>
             </StyledItem>
           </StyledSignInCardPill>
-          <Divider style={{ margin: '12px 0px' }} />
+          <Divider
+            style={{
+              margin: '12px 0px',
+            }}
+          />
         </StyledModalHeaderContent>
       ) : (
         <StyledModalHeaderContent>
           <StyledModalHeader>
             <StyledModalTitle>{session?.user.email}</StyledModalTitle>
             <StyledOperationWrapper>
-              <Menu items={<AccountMenu />}>
+              <Menu
+                items={<AccountMenu />}
+                contentOptions={{
+                  side: 'right',
+                  sideOffset: 30,
+                }}
+              >
                 <IconButton
                   data-testid="more-button"
                   icon={<MoreHorizontalIcon />}
@@ -261,7 +271,11 @@ export const WorkspaceListModal = ({
               currentWorkspaceId={currentWorkspaceId}
               onMoveWorkspace={onMoveWorkspace}
             />
-            <Divider style={{ margin: '12px 0px', minHeight: '1px' }} />
+            <Divider
+              style={{
+                margin: '12px 0px',
+              }}
+            />
           </>
         ) : null}
         <StyledModalHeader>
@@ -290,8 +304,10 @@ export const WorkspaceListModal = ({
         {runtimeConfig.enableSQLiteProvider && environment.isDesktop ? (
           <StyledImportWorkspaceCardPill>
             <StyledItem onClick={onAddWorkspace} data-testid="add-workspace">
-              <StyledCreateWorkspaceCardPillContent>
-                <StyledCreateWorkspaceCardPillIcon>
+              <StyledCreateWorkspaceCardPillContent
+                style={{ gap: '14px', paddingLeft: '2px' }}
+              >
+                <StyledCreateWorkspaceCardPillIcon style={{ fontSize: '24px' }}>
                   <ImportIcon />
                 </StyledCreateWorkspaceCardPillIcon>
                 <div>

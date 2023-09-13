@@ -10,13 +10,15 @@ import {
 } from '@blocksuite/icons';
 import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 
 import { getContentParser } from './get-content-parser';
+import { transitionStyle } from './index.css';
 import type { CommonMenuItemProps } from './types';
 
 export const ExportToPdfMenuItem = ({
   onSelect,
+  className,
 }: CommonMenuItemProps<{ type: 'pdf' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -74,8 +76,10 @@ export const ExportToPdfMenuItem = ({
 
   return (
     <MenuItem
+      className={className}
       data-testid="export-to-pdf"
       onSelect={onClickDownloadPDF}
+      block
       preFix={
         <MenuIcon>
           <ExportToPdfIcon />
@@ -89,6 +93,7 @@ export const ExportToPdfMenuItem = ({
 
 export const ExportToHtmlMenuItem = ({
   onSelect,
+  className,
 }: CommonMenuItemProps<{ type: 'html' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -121,8 +126,10 @@ export const ExportToHtmlMenuItem = ({
   return (
     <>
       <MenuItem
+        className={className}
         data-testid="export-to-html"
         onSelect={onClickExportHtml}
+        block
         preFix={
           <MenuIcon>
             <ExportToHtmlIcon />
@@ -137,6 +144,7 @@ export const ExportToHtmlMenuItem = ({
 
 export const ExportToPngMenuItem = ({
   onSelect,
+  className,
 }: CommonMenuItemProps<{ type: 'png' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -171,8 +179,10 @@ export const ExportToPngMenuItem = ({
   return (
     <>
       <MenuItem
+        className={className}
         data-testid="export-to-png"
         onSelect={onClickDownloadPNG}
+        block
         preFix={
           <MenuIcon>
             <ExportToPngIcon />
@@ -187,6 +197,7 @@ export const ExportToPngMenuItem = ({
 
 export const ExportToMarkdownMenuItem = ({
   onSelect,
+  className,
 }: CommonMenuItemProps<{ type: 'markdown' }>) => {
   const t = useAFFiNEI18N();
   const { currentEditor } = globalThis;
@@ -219,8 +230,10 @@ export const ExportToMarkdownMenuItem = ({
   return (
     <>
       <MenuItem
+        className={className}
         data-testid="export-to-markdown"
         onSelect={onClickExportMarkdown}
+        block
         preFix={
           <MenuIcon>
             <ExportToMarkdownIcon />
@@ -235,27 +248,42 @@ export const ExportToMarkdownMenuItem = ({
 
 // fixme: refactor this file, export function may should be passed by 'props', this file is just a ui component
 export const Export = () => {
+  const ref = useRef(null);
   const t = useAFFiNEI18N();
   return (
-    <MenuSub
-      items={
-        <>
-          <ExportToPdfMenuItem></ExportToPdfMenuItem>
-          <ExportToHtmlMenuItem></ExportToHtmlMenuItem>
-          <ExportToPngMenuItem></ExportToPngMenuItem>
-          <ExportToMarkdownMenuItem></ExportToMarkdownMenuItem>
-        </>
-      }
-      triggerOptions={{
-        preFix: (
-          <MenuIcon>
-            <ExportIcon />
-          </MenuIcon>
-        ),
-        ['data-testid' as string]: 'export-menu',
-      }}
-    >
-      {t.Export()}
-    </MenuSub>
+    <div ref={ref}>
+      <MenuSub
+        items={
+          <>
+            <ExportToPdfMenuItem
+              className={transitionStyle}
+            ></ExportToPdfMenuItem>
+            <ExportToHtmlMenuItem
+              className={transitionStyle}
+            ></ExportToHtmlMenuItem>
+            <ExportToPngMenuItem
+              className={transitionStyle}
+            ></ExportToPngMenuItem>
+            <ExportToMarkdownMenuItem
+              className={transitionStyle}
+            ></ExportToMarkdownMenuItem>
+          </>
+        }
+        triggerOptions={{
+          className: transitionStyle,
+          preFix: (
+            <MenuIcon>
+              <ExportIcon />
+            </MenuIcon>
+          ),
+          ['data-testid' as string]: 'export-menu',
+        }}
+        portalOptions={{
+          container: ref.current,
+        }}
+      >
+        {t.Export()}
+      </MenuSub>
+    </div>
   );
 };

@@ -173,7 +173,7 @@ export type GetCurrentUserQuery = {
     emailVerified: string | null;
     avatarUrl: string | null;
     createdAt: string | null;
-    token: { __typename?: 'TokenType'; token: string };
+    token: { __typename?: 'TokenType'; sessionToken: string | null };
   };
 };
 
@@ -206,8 +206,19 @@ export type GetIsOwnerQueryVariables = Exact<{
 
 export type GetIsOwnerQuery = { __typename?: 'Query'; isOwner: boolean };
 
+export type GetMemberCountByWorkspaceIdQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetMemberCountByWorkspaceIdQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; memberCount: number };
+};
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
 }>;
 
 export type GetMembersByWorkspaceIdQuery = {
@@ -507,6 +518,11 @@ export type Queries =
       name: 'getIsOwnerQuery';
       variables: GetIsOwnerQueryVariables;
       response: GetIsOwnerQuery;
+    }
+  | {
+      name: 'getMemberCountByWorkspaceIdQuery';
+      variables: GetMemberCountByWorkspaceIdQueryVariables;
+      response: GetMemberCountByWorkspaceIdQuery;
     }
   | {
       name: 'getMembersByWorkspaceIdQuery';

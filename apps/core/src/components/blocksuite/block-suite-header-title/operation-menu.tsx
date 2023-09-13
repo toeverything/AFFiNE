@@ -83,6 +83,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   }, [pageId, removeToTrash, t]);
   const menuItemStyle = {
     padding: '4px 12px',
+    transition: 'all 0.3s',
   };
   const { openPage } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
@@ -214,11 +215,9 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           portalOptions={{
             container: ref.current,
           }}
-          // menuStyles={{
-          //   borderRadius: '8px',
-          //   padding: '8px',
-          //   background: 'var(--affine-background-overlay-panel-color)',
-          // }}
+          contentOptions={{
+            align: 'center',
+          }}
         >
           <HeaderDropDownButton />
         </Menu>

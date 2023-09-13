@@ -47,7 +47,7 @@ export default {
         'process.env': {},
         'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
         'process.env.SHOULD_REPORT_TRACE': `${Boolean(
-          process.env.SHOULD_REPORT_TRACE
+          process.env.SHOULD_REPORT_TRACE === 'true'
         )}`,
         'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         runtimeConfig: getRuntimeConfig({

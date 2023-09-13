@@ -26,7 +26,6 @@ export const avatarWrapper = style({
   height: '56px',
   borderRadius: '50%',
   position: 'relative',
-  overflow: 'hidden',
   cursor: 'pointer',
   flexShrink: '0',
   selectors: {
@@ -43,8 +42,9 @@ globalStyle(`${avatarWrapper}:hover .camera-icon-wrapper`, {
   display: 'flex',
 });
 globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
-  width: '100%',
-  height: '100%',
+  width: '56px',
+  height: '56px',
+  borderRadius: '50%',
   position: 'absolute',
   display: 'none',
   justifyContent: 'center',
@@ -86,13 +86,18 @@ export const fakeWrapper = style({
   },
 });
 
-export const membersList = style({
+export const membersFallback = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  color: 'var(--affine-primary-color)',
+});
+export const membersPanel = style({
   marginTop: '24px',
   padding: '4px',
   borderRadius: '12px',
   background: 'var(--affine-background-primary-color)',
-  maxHeight: '464px',
-  overflow: 'auto',
+  border: '1px solid var(--affine-border-color)',
 });
 
 export const listItem = style({
@@ -101,9 +106,14 @@ export const listItem = style({
   display: 'flex',
   width: '100%',
   alignItems: 'center',
-  ':hover': {
-    background: 'var(--affine-hover-color)',
-    borderRadius: '8px',
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+      borderRadius: '8px',
+    },
+    '&:not(:last-of-type)': {
+      marginBottom: '6px',
+    },
   },
 });
 export const memberContainer = style({

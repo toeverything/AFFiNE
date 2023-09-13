@@ -165,7 +165,7 @@ query getCurrentUser {
     avatarUrl
     createdAt
     token {
-      token
+      sessionToken
     }
   }
 }`,
@@ -204,15 +204,28 @@ query getIsOwner($workspaceId: String!) {
 }`,
 };
 
+export const getMemberCountByWorkspaceIdQuery = {
+  id: 'getMemberCountByWorkspaceIdQuery' as const,
+  operationName: 'getMemberCountByWorkspaceId',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getMemberCountByWorkspaceId($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    memberCount
+  }
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',
   definitionName: 'workspace',
   containsFile: false,
   query: `
-query getMembersByWorkspaceId($workspaceId: String!) {
+query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
   workspace(id: $workspaceId) {
-    members {
+    members(skip: $skip, take: $take) {
       id
       name
       email
