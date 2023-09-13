@@ -74,7 +74,7 @@ describe('delete workspace', () => {
 
 describe('getWorkspaceMeta', () => {
   test('can get meta', async () => {
-    const { getWorkspaceMeta } = await import('../handlers');
+    const { getWorkspaceMeta } = await import('../meta');
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     const meta = {
@@ -86,7 +86,7 @@ describe('getWorkspaceMeta', () => {
   });
 
   test('can create meta if not exists', async () => {
-    const { getWorkspaceMeta } = await import('../handlers');
+    const { getWorkspaceMeta } = await import('../meta');
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);
@@ -100,7 +100,7 @@ describe('getWorkspaceMeta', () => {
   });
 
   test('can migrate meta if db file is a link', async () => {
-    const { getWorkspaceMeta } = await import('../handlers');
+    const { getWorkspaceMeta } = await import('../meta');
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);

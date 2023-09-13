@@ -21,13 +21,12 @@ import {
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
+import { listWorkspaces, storeWorkspaceMeta } from '../workspace';
 import {
   getWorkspaceDBPath,
   getWorkspaceMeta,
   getWorkspacesBasePath,
-  listWorkspaces,
-  storeWorkspaceMeta,
-} from '../workspace';
+} from '../workspace/meta';
 
 // NOTE:
 // we are using native dialogs because HTML dialogs do not give full file paths

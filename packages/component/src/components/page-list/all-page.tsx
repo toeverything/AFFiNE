@@ -1,7 +1,3 @@
-import {
-  CollectionBar,
-  type CollectionsAtom,
-} from '@affine/component/page-list';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -28,8 +24,10 @@ import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
+import type { CollectionsAtom } from './use-collection-manager';
 import { useSorter } from './use-sorter';
 import { formatDate, useIsSmallDevices } from './utils';
+import { CollectionBar } from './view/collection-bar';
 
 interface AllPagesHeadProps {
   isPublicWorkspace: boolean;

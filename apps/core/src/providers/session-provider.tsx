@@ -7,7 +7,12 @@ import { refreshRootMetadataAtom } from '@affine/workspace/atom';
 import { useAtom, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { SessionProvider, useSession } from 'next-auth/react';
-import { type PropsWithChildren, startTransition, useRef } from 'react';
+import {
+  type PropsWithChildren,
+  startTransition,
+  useEffect,
+  useRef,
+} from 'react';
 
 import { sessionAtom } from '../atoms/cloud-user';
 import { useOnceSignedInEvents } from '../atoms/event';
@@ -20,34 +25,44 @@ const SessionDefence = (props: PropsWithChildren) => {
   const refreshMetadata = useSetAtom(refreshRootMetadataAtom);
   const onceSignedInEvents = useOnceSignedInEvents();
   const t = useAFFiNEI18N();
-
-  if (sessionInAtom !== session && session.status === 'authenticated') {
-    setSession(session);
-  }
-
-  if (prevSession.current !== session && session.status !== 'loading') {
-    // unauthenticated -> authenticated
-    if (
-      prevSession.current?.status === 'unauthenticated' &&
-      session.status === 'authenticated'
-    ) {
-      startTransition(() => {
-        onceSignedInEvents().then(() => {
-          refreshMetadata();
-        });
-      });
-      pushNotification({
-        title: t['com.affine.auth.has.signed'](),
-        message: t['com.affine.auth.has.signed.message'](),
-        type: 'success',
-      });
-
-      if (isDesktop) {
-        window.affine.ipcRenderer.send('affine:login');
-      }
+  useEffect(() => {
+    if (sessionInAtom !== session && session.status === 'authenticated') {
+      setSession(session);
     }
-    prevSession.current = session;
-  }
+
+    if (prevSession.current !== session && session.status !== 'loading') {
+      // unauthenticated -> authenticated
+      if (
+        prevSession.current?.status === 'unauthenticated' &&
+        session.status === 'authenticated'
+      ) {
+        startTransition(() => {
+          onceSignedInEvents().then(() => {
+            refreshMetadata();
+          });
+        });
+        pushNotification({
+          title: t['com.affine.auth.has.signed'](),
+          message: t['com.affine.auth.has.signed.message'](),
+          type: 'success',
+        });
+
+        if (isDesktop) {
+          window.affine.ipcRenderer.send('affine:login');
+        }
+      }
+      prevSession.current = session;
+    }
+  }, [
+    session,
+    sessionInAtom,
+    prevSession,
+    setSession,
+    onceSignedInEvents,
+    pushNotification,
+    refreshMetadata,
+    t,
+  ]);
   return props.children;
 };
 

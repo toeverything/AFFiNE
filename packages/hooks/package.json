@@ -12,12 +12,12 @@
   "devDependencies": {
     "@affine/env": "workspace:*",
     "@affine/y-provider": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230908185655-61117b50-nightly",
-    "@blocksuite/blocks": "0.0.0-20230908185655-61117b50-nightly",
-    "@blocksuite/editor": "0.0.0-20230908185655-61117b50-nightly",
-    "@blocksuite/global": "0.0.0-20230908185655-61117b50-nightly",
-    "@blocksuite/lit": "0.0.0-20230908185655-61117b50-nightly",
-    "@blocksuite/store": "0.0.0-20230908185655-61117b50-nightly",
+    "@blocksuite/block-std": "0.0.0-20230911110410-f65fc3ab-nightly",
+    "@blocksuite/blocks": "0.0.0-20230911110410-f65fc3ab-nightly",
+    "@blocksuite/editor": "0.0.0-20230911110410-f65fc3ab-nightly",
+    "@blocksuite/global": "0.0.0-20230911110410-f65fc3ab-nightly",
+    "@blocksuite/lit": "0.0.0-20230911110410-f65fc3ab-nightly",
+    "@blocksuite/store": "0.0.0-20230911110410-f65fc3ab-nightly",
     "@types/lodash.debounce": "^4.0.7"
   },
   "peerDependencies": {

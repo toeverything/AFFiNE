@@ -12,11 +12,12 @@ export function useRevokeMemberPermission(workspaceId: string) {
 
   return useCallback(
     async (userId: string) => {
-      await trigger({
+      const res = await trigger({
         workspaceId,
         userId,
       });
       await mutate();
+      return res;
     },
     [mutate, trigger, workspaceId]
   );
