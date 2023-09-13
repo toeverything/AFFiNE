@@ -43,6 +43,7 @@
     "dayjs": "^1.11.9",
     "jotai": "^2.4.1",
     "lit": "^2.8.0",
+    "lottie-react": "^2.4.0",
     "lottie-web": "^5.12.2",
     "react": "18.2.0",
     "react-datepicker": "^4.16.0",
