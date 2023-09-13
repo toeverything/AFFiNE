@@ -90,7 +90,7 @@ test.describe('basic', () => {
           await client.$executeRawUnsafe(sql);
         }
       });
-      await page.goto('about:blank');
+      await page.close();
     }
     await page.reload();
     await page.waitForTimeout(1000);
