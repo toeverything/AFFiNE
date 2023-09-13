@@ -1,7 +1,7 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
-import { type SignInResponse } from '@toeverything/auth/react';
 import { atom, useAtom, useSetAtom } from 'jotai';
+import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';

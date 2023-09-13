@@ -9,6 +9,7 @@ import { allBlobSizesQuery, uploadAvatarMutation } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon, DoneIcon } from '@blocksuite/icons';
+import { sessionAtom } from '@toeverything/auth/react';
 import { Button, IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 import { type FC, Suspense, useCallback, useState } from 'react';
@@ -22,6 +23,7 @@ import * as style from './style.css';
 
 export const AvatarAndName = () => {
   const t = useAFFiNEI18N();
+  const update = useSetAtom(sessionAtom);
   const user = useCurrentUser();
 
   const [input, setInput] = useState<string>(user.name);
@@ -32,7 +34,7 @@ export const AvatarAndName = () => {
 
   const handleUpdateUserName = useCallback(
     (newName: string) => {
-      user.update({ name: newName }).catch(console.error);
+      update({ name: newName }).catch(console.error);
     },
     [user]
   );
@@ -44,7 +46,7 @@ export const AvatarAndName = () => {
         avatar: file,
       });
       // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
-      user.update({ name: user.name }).catch(console.error);
+      update({ name: user.name }).catch(console.error);
     },
     [avatarTrigger, user]
   );

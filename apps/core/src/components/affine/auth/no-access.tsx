@@ -5,15 +5,15 @@ import {
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { NewIcon } from '@blocksuite/icons';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { type FC, useCallback } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 
 export const NoAccess: FC<AuthPanelProps> = ({ setAuthState, onSignedIn }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
 
   if (loginStatus === 'authenticated') {
     onSignedIn?.();

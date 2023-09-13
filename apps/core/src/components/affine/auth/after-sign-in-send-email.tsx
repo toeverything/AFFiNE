@@ -6,10 +6,10 @@ import {
 } from '@affine/component/auth-components';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { Button } from '@toeverything/components/button';
 import { useCallback } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
@@ -20,7 +20,7 @@ export const AfterSignInSendEmail = ({
   onSignedIn,
 }: AuthPanelProps) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
 
   const { resendCountDown, allowSendEmail, signIn } = useAuth();
   if (loginStatus === 'authenticated') {
@@ -66,12 +66,12 @@ export const AfterSignInSendEmail = ({
         <Trans i18nKey="com.affine.auth.sign.auth.code.message.password">
           If you haven&apos;t received the email, please check your spam folder.
           Or <span
-            className="link"
-            data-testid='sign-in-with-password'
-            onClick={useCallback(() => {
-              setAuthState('signInWithPassword');
-            }, [setAuthState])}
-          >
+          className="link"
+          data-testid="sign-in-with-password"
+          onClick={useCallback(() => {
+            setAuthState("signInWithPassword");
+          }, [setAuthState])}
+        >
             sign in with password
           </span> instead.
         </Trans>

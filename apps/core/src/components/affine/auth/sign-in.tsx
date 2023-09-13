@@ -8,11 +8,11 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { Button } from '@toeverything/components/button';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
@@ -29,7 +29,7 @@ export const SignIn: FC<AuthPanelProps> = ({
   onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
 
   const {
     isMutating: isSigningIn,
@@ -146,9 +146,14 @@ export const SignIn: FC<AuthPanelProps> = ({
         <div className={style.authMessage}>
           {/*prettier-ignore*/}
           <Trans i18nKey="com.affine.auth.sign.message">
-              By clicking &quot;Continue with Google/Email&quot; above, you acknowledge that
-              you agree to AFFiNE&apos;s <a href="https://affine.pro/terms" target="_blank" rel="noreferrer">Terms of Conditions</a> and <a href="https://affine.pro/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
-            </Trans>
+            By clicking &quot;Continue with Google/Email&quot; above, you
+            acknowledge that
+            you agree to AFFiNE&apos;s <a href="https://affine.pro/terms"
+                                          target="_blank" rel="noreferrer">Terms
+            of Conditions</a> and <a href="https://affine.pro/privacy"
+                                     target="_blank" rel="noreferrer">Privacy
+            Policy</a>.
+          </Trans>
         </div>
       </div>
     </>

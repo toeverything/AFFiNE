@@ -9,6 +9,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
@@ -23,7 +24,6 @@ import {
 } from 'react';
 
 import { authAtom } from '../../../../atoms';
-import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import type {
@@ -117,7 +117,7 @@ export const SettingSidebar = ({
   onAccountSettingClick: () => void;
 }) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
   return (
     <div className={settingSlideBar} data-testid="settings-sidebar">
       <div className={sidebarTitle}>

@@ -16,11 +16,11 @@ import {
 } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { Popover } from '@mui/material';
-import { useSession } from '@toeverything/auth/react';
+import { sessionAtom } from '@toeverything/auth/react';
 import { IconButton } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import {
@@ -167,7 +167,7 @@ export const WorkspaceListModal = ({
   const setOpen = useSetAtom(authAtom);
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
   // TODO: AFFiNE Cloud support
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAtomValue(sessionAtom);
   const isLoggedIn = status === 'authenticated' ? true : false;
   const anchorEl = document.getElementById('current-workspace');
   const cloudWorkspaces = workspaces.filter(

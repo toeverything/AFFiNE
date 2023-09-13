@@ -1,15 +1,15 @@
 import { UserAvatar } from '@affine/component/user-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { useSessionStatus } from '@toeverything/auth/react';
 
-import { useCurrentLoginStatus } from '../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../hooks/affine/use-current-user';
 import { signInCloud } from '../../utils/cloud-utils';
 import { StyledSignInButton } from '../pure/footer/styles';
 
 export const LoginCard = () => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
   if (loginStatus === 'authenticated') {
     return <UserCard />;
   }

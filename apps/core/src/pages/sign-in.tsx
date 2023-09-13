@@ -1,4 +1,5 @@
 import { SignInPageContainer } from '@affine/component/auth-components';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -6,7 +7,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import { AuthPanel } from '../components/affine/auth';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 interface LocationState {
@@ -14,10 +14,11 @@ interface LocationState {
     callbackURL?: string;
   };
 }
+
 export const Component = () => {
   const [{ state, email = '', emailType = 'changePassword' }, setAuthAtom] =
     useAtom(authAtom);
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
   const location = useLocation() as LocationState;
   const navigate = useNavigate();
   const { jumpToIndex } = useNavigateHelper();

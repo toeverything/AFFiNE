@@ -5,8 +5,9 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSession } from '@toeverything/auth/react';
+import { sessionAtom } from '@toeverything/auth/react';
 import { Button } from '@toeverything/components/button';
+import { useSetAtom } from 'jotai/react';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -20,7 +21,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   onSignedIn,
 }) => {
   const t = useAFFiNEI18N();
-  const { update } = useSession();
+  const update = useSetAtom(sessionAtom);
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);

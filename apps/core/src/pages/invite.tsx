@@ -6,13 +6,13 @@ import {
   getInviteInfoQuery,
 } from '@affine/graphql';
 import { fetcher } from '@affine/workspace/affine/gql';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';
 
 import { authAtom } from '../atoms';
 import { setOnceSignedInEventAtom } from '../atoms/event';
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useAppHelper } from '../hooks/use-workspaces';
 
@@ -47,7 +47,7 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const Component = () => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
   const { jumpToSignIn } = useNavigateHelper();
   const { addCloudWorkspace } = useAppHelper();
   const { jumpToSubPath } = useNavigateHelper();

@@ -7,6 +7,7 @@ import {
 } from '@affine/component/auth-components';
 import { changeEmailMutation, changePasswordMutation } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
+import { useSessionStatus } from '@toeverything/auth/react';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
 import {
@@ -17,7 +18,6 @@ import {
 } from 'react-router-dom';
 import { z } from 'zod';
 
-import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
@@ -120,7 +120,7 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 export const Component = () => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
   const { jumpToExpired } = useNavigateHelper();
 
   if (loginStatus === 'unauthenticated') {

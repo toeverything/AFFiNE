@@ -1,13 +1,13 @@
 import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { Button, IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { authAtom } from '../../../atoms';
 import { setOnceSignedInEventAtom } from '../../../atoms/event';
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { ButtonContainer, Content, Header, StyleTips, Title } from './style';
 
 interface EnableAffineCloudModalProps {
@@ -22,7 +22,7 @@ export const EnableAffineCloudModal = ({
   onClose,
 }: EnableAffineCloudModalProps) => {
   const t = useAFFiNEI18N();
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
   const setAuthAtom = useSetAtom(authAtom);
   const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
 

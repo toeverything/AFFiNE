@@ -1,14 +1,14 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { useSessionStatus } from '@toeverything/auth/react';
 import { type CSSProperties, type FC, forwardRef, useCallback } from 'react';
 
-import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { stringToColour } from '../../../utils';
 import { signInCloud } from '../../../utils/cloud-utils';
 import { StyledFooter, StyledSignInButton } from './styles';
 
 export const Footer: FC = () => {
-  const loginStatus = useCurrentLoginStatus();
+  const loginStatus = useSessionStatus();
 
   // const setOpen = useSetAtom(openDisableCloudAlertModalAtom);
   return (

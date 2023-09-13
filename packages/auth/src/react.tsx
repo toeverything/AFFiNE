@@ -9,6 +9,7 @@
 // We use HTTP POST requests with CSRF Tokens to protect against CSRF attacks.
 
 import { useSystemOnline } from '@toeverything/hooks/use-system-online';
+import { useAtomValue, useSetAtom } from 'jotai/react';
 import { atom } from 'jotai/vanilla';
 import type { DefaultSession, Session } from 'next-auth';
 import type { AuthClientConfig, CtxOrReq } from 'next-auth/client/_utils';
@@ -31,14 +32,10 @@ import type {
   SignInResponse,
   SignOutParams,
   SignOutResponse,
-  UseSessionOptions,
 } from 'next-auth/react';
 import _logger, { proxyLogger } from 'next-auth/utils/logger';
 import parseUrl from 'next-auth/utils/parse-url';
-import { createContext, useEffect, useMemo, useState } from 'react';
-
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-export type * from 'next-auth/react';
+import { useEffect } from 'react';
 
 // This behaviour mirrors the default behaviour for getting the site name that
 // happens server side in server/index.js
@@ -46,7 +43,7 @@ export type * from 'next-auth/react';
 //    relative URLs are valid in that context and so defaults to empty.
 // 2. When invoked server side the value is picked up from an environment
 //    variable and defaults to 'http://localhost:3000'.
-const __NEXTAUTH: AuthClientConfig = {
+const __NEXTAUTH = {
   baseUrl: parseUrl(process.env.NEXTAUTH_URL ?? process.env.VERCEL_URL).origin,
   basePath: parseUrl(process.env.NEXTAUTH_URL).path,
   baseUrlServer: parseUrl(
@@ -60,13 +57,13 @@ const __NEXTAUTH: AuthClientConfig = {
   _lastSync: 0,
   _session: undefined,
   _getSession: () => {},
+} as AuthClientConfig & {
+  _session: CloudSession | null | undefined;
 };
 
 const broadcast = BroadcastChannel();
 
 const logger = proxyLogger(_logger, __NEXTAUTH.basePath);
-
-type UpdateSession = (data?: any) => Promise<Session | null>;
 
 interface CloudSession extends Session {
   user: {
@@ -77,68 +74,67 @@ interface CloudSession extends Session {
 
 export type SessionContextValue<R extends boolean = false> = R extends true
   ?
-      | { update: UpdateSession; data: CloudSession; status: 'authenticated' }
-      | { update: UpdateSession; data: null; status: 'loading' }
-  :
-      | { update: UpdateSession; data: CloudSession; status: 'authenticated' }
       | {
-          update: UpdateSession;
+          data: CloudSession;
+          status: 'authenticated';
+        }
+      | {
+          data: null;
+          status: 'loading';
+        }
+  :
+      | {
+          data: CloudSession;
+          status: 'authenticated';
+        }
+      | {
           data: null;
           status: 'unauthenticated' | 'loading';
         };
 
-export const SessionContext = createContext<SessionContextValue | undefined>(
-  undefined
-);
+const sessionLoadingAtom = atom<boolean>(false);
+const sessionValueAtom = atom<CloudSession | null>(null);
 
-export const sessionAtom = atom<SessionContextValue<true> | null>(null);
-
-/**
- * React Hook that gives you access
- * to the logged in user's session data.
- *
- * [Documentation](https://next-auth.js.org/getting-started/client#usesession)
- */
-export function useSession<R extends boolean>(
-  options?: UseSessionOptions<R>
-): SessionContextValue<R> {
-  if (!SessionContext) {
-    throw new Error('React Context is unavailable in Server Components');
-  }
-
-  // @ts-expect-error Satisfy TS if branch on line below
-  const value: SessionContextValue<R> = React.useContext(SessionContext);
-  if (!value && process.env.NODE_ENV !== 'production') {
-    throw new Error(
-      '[next-auth]: `useSession` must be wrapped in a <SessionProvider />'
-    );
-  }
-
-  const { required, onUnauthenticated } = options ?? {};
-
-  const requiredAndNotLoading = required && value.status === 'unauthenticated';
-
-  useEffect(() => {
-    if (requiredAndNotLoading) {
-      const url = `/api/auth/signin?${new URLSearchParams({
-        error: 'SessionRequired',
-        callbackUrl: window.location.href,
-      })}`;
-      if (onUnauthenticated) onUnauthenticated();
-      else window.location.href = url;
-    }
-  }, [requiredAndNotLoading, onUnauthenticated]);
-
-  if (requiredAndNotLoading) {
-    return {
-      data: value.data,
-      update: value.update,
-      status: 'loading',
-    };
-  }
-
-  return value;
+export function useSessionStatus() {
+  return useAtomValue(sessionAtom).status;
 }
+
+export const sessionAtom = atom<
+  SessionContextValue,
+  [data?: any],
+  Promise<Session | null | undefined>
+>(
+  get => {
+    return {
+      data: get(sessionValueAtom),
+      status: get(sessionValueAtom)
+        ? 'loading'
+        : get(sessionLoadingAtom)
+        ? 'authenticated'
+        : 'unauthenticated',
+    } as SessionContextValue;
+  },
+  async (get, set, data) => {
+    const loading = get(sessionLoadingAtom);
+    const session = get(sessionValueAtom);
+    if (loading || !session) return;
+    set(sessionLoadingAtom, true);
+    const newSession = await fetchData<CloudSession>(
+      'session',
+      __NEXTAUTH,
+      logger,
+      {
+        req: { body: { csrfToken: await getCsrfToken(), data } },
+      }
+    );
+    set(sessionLoadingAtom, false);
+    if (newSession) {
+      set(sessionValueAtom, newSession);
+      broadcast.post({ event: 'session', data: { trigger: 'getSession' } });
+    }
+    return newSession;
+  }
+);
 
 export type GetSessionParams = CtxOrReq & {
   event?: 'storage' | 'timer' | 'hidden' | string;
@@ -147,7 +143,7 @@ export type GetSessionParams = CtxOrReq & {
 };
 
 export async function getSession(params?: GetSessionParams) {
-  const session = await fetchData<Session>(
+  const session = await fetchData<CloudSession>(
     'session',
     __NEXTAUTH,
     logger,
@@ -168,12 +164,9 @@ export async function getSession(params?: GetSessionParams) {
  * [Documentation](https://next-auth.js.org/getting-started/client#getcsrftoken)
  */
 export async function getCsrfToken(params?: CtxOrReq) {
-  const response = await fetchData<{ csrfToken: string }>(
-    'csrf',
-    __NEXTAUTH,
-    logger,
-    params
-  );
+  const response = await fetchData<{
+    csrfToken: string;
+  }>('csrf', __NEXTAUTH, logger, params);
   return response?.csrfToken;
 }
 
@@ -329,10 +322,6 @@ export async function signOut<R extends boolean = true>(
  * [Documentation](https://next-auth.js.org/getting-started/client#sessionprovider)
  */
 export function SessionProvider(props: SessionProviderProps) {
-  if (!SessionContext) {
-    throw new Error('React Context is unavailable in Server Components');
-  }
-
   const {
     children,
     basePath,
@@ -343,22 +332,10 @@ export function SessionProvider(props: SessionProviderProps) {
 
   if (basePath) __NEXTAUTH.basePath = basePath;
 
-  /**
-   * If session was `null`, there was an attempt to fetch it,
-   * but it failed, but we still treat it as a valid initial value.
-   */
-  const hasInitialSession = props.session !== undefined;
+  const setSession = useSetAtom(sessionValueAtom);
 
-  /** If session was passed, initialize as already synced */
-  __NEXTAUTH._lastSync = hasInitialSession ? now() : 0;
-
-  const [session, setSession] = useState(() => {
-    if (hasInitialSession) __NEXTAUTH._session = props.session;
-    return props.session;
-  });
-
-  /** If session was passed, initialize as not loading */
-  const [loading, setLoading] = useState(!hasInitialSession);
+  /** If the session was passed, initialize as not loading */
+  const setLoading = useSetAtom(sessionLoadingAtom);
 
   useEffect(() => {
     __NEXTAUTH._getSession = async ({ event } = {}) => {
@@ -409,7 +386,7 @@ export function SessionProvider(props: SessionProviderProps) {
       __NEXTAUTH._session = undefined;
       __NEXTAUTH._getSession = () => {};
     };
-  }, []);
+  }, [setLoading, setSession]);
 
   useEffect(() => {
     // Listen for storage events and update session if event fired from
@@ -460,35 +437,5 @@ export function SessionProvider(props: SessionProviderProps) {
     return;
   }, [refetchInterval, shouldRefetch]);
 
-  const value: any = useMemo(
-    () => ({
-      data: session,
-      status: loading
-        ? 'loading'
-        : session
-        ? 'authenticated'
-        : 'unauthenticated',
-      async update(data: unknown) {
-        if (loading || !session) return;
-        setLoading(true);
-        const newSession = await fetchData<Session>(
-          'session',
-          __NEXTAUTH,
-          logger,
-          { req: { body: { csrfToken: await getCsrfToken(), data } } }
-        );
-        setLoading(false);
-        if (newSession) {
-          setSession(newSession);
-          broadcast.post({ event: 'session', data: { trigger: 'getSession' } });
-        }
-        return newSession;
-      },
-    }),
-    [session, loading]
-  );
-
-  return (
-    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
-  );
+  return children;
 }
