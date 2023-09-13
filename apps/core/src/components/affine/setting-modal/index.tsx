@@ -1,10 +1,7 @@
-import {
-  SettingModal as SettingModalBase,
-  type SettingModalProps as SettingModalBaseProps,
-  WorkspaceDetailSkeleton,
-} from '@affine/component/setting-components';
+import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
+import { Modal, type ModalProps } from '@toeverything/components/modal';
 import { Suspense, useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
@@ -20,7 +17,7 @@ import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
 
-export interface SettingProps {
+export interface SettingProps extends ModalProps {
   activeTab: ActiveTab;
   workspaceId: string | null;
   onSettingClick: (params: {
@@ -29,15 +26,12 @@ export interface SettingProps {
   }) => void;
 }
 
-type SettingModalProps = SettingModalBaseProps & SettingProps;
-
 export const SettingModal = ({
-  open,
-  setOpen,
   activeTab = 'appearance',
   workspaceId = null,
   onSettingClick,
-}: SettingModalProps) => {
+  ...modalProps
+}: SettingProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
 
@@ -66,7 +60,21 @@ export const SettingModal = ({
   }, [onSettingClick]);
 
   return (
-    <SettingModalBase open={open} setOpen={setOpen}>
+    <Modal
+      width={1080}
+      height={760}
+      contentOptions={{
+        ['data-testid' as string]: 'setting-modal',
+        style: {
+          maxHeight: '85vh',
+          maxWidth: '70vw',
+          padding: 0,
+          overflow: 'hidden',
+          display: 'flex',
+        },
+      }}
+      {...modalProps}
+    >
       <SettingSidebar
         generalSettingList={generalSettingList}
         onGeneralSettingClick={onGeneralSettingClick}
@@ -105,6 +113,6 @@ export const SettingModal = ({
           </div>
         </div>
       </div>
-    </SettingModalBase>
+    </Modal>
   );
 };

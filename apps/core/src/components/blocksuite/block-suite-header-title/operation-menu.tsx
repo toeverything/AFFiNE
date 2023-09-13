@@ -225,9 +225,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           open={openConfirm}
           title={pageMeta.title}
           onConfirm={handleOnConfirm}
-          onCancel={() => {
-            setOpenConfirm(false);
-          }}
+          onOpenChange={setOpenConfirm}
         />
       </FlexWrapper>
     </>

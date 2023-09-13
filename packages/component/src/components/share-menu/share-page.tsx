@@ -208,7 +208,10 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             block
             type="danger"
             className={styles.menuItemStyle}
-            onClick={() => setShowDisable(true)}
+            onSelect={e => {
+              e.preventDefault();
+              setShowDisable(true);
+            }}
           >
             <div className={styles.disableSharePage}>
               {t['Disable Public Link']()}
@@ -216,10 +219,8 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           </MenuItem>
           <PublicLinkDisableModal
             open={showDisable}
-            onConfirmDisable={onDisablePublic}
-            onClose={() => {
-              setShowDisable(false);
-            }}
+            onConfirm={onDisablePublic}
+            onOpenChange={setShowDisable}
           />
         </>
       ) : null}
@@ -231,7 +232,11 @@ export const SharePage = (props: ShareMenuProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    return <AffineSharePage {...props} />;
+    return (
+      <>
+        <AffineSharePage {...props} />
+      </>
+    );
   }
   throw new Error('Unreachable');
 };

@@ -53,14 +53,14 @@ export type RootAppSidebarProps = {
 };
 
 const RouteMenuLinkItem = React.forwardRef<
-  HTMLButtonElement,
+  HTMLDivElement,
   {
     currentPath: string; // todo: pass through useRouter?
     path: string;
     icon: ReactElement;
     children?: ReactElement;
     isDraggedOver?: boolean;
-  } & React.HTMLAttributes<HTMLButtonElement>
+  } & React.HTMLAttributes<HTMLDivElement>
 >(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
   // Force active style when a page is dragged over
   const active = isDraggedOver || currentPath === path;

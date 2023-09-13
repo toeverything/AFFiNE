@@ -5,9 +5,10 @@ import {
   MenuItem,
   type MenuItemProps,
 } from '@toeverything/components/menu';
-
-import type { ConfirmProps } from '../../..';
-import { Confirm } from '../../..';
+import {
+  ConfirmModal,
+  type ConfirmModalProps,
+} from '@toeverything/components/modal';
 
 export const MoveToTrash = (props: MenuItemProps) => {
   const t = useAFFiNEI18N();
@@ -27,26 +28,29 @@ export const MoveToTrash = (props: MenuItemProps) => {
   );
 };
 
-const ConfirmModal = ({
+const MoveToTrashConfirm = ({
   title,
   ...confirmModalProps
 }: {
   title: string;
-} & ConfirmProps) => {
+} & ConfirmModalProps) => {
   const t = useAFFiNEI18N();
 
   return (
-    <Confirm
+    <ConfirmModal
       title={t['com.affine.moveToTrash.confirmModal.title']()}
-      content={t['com.affine.moveToTrash.confirmModal.description']({
+      description={t['com.affine.moveToTrash.confirmModal.description']({
         title: title || 'Untitled',
       })}
-      confirmButtonTestId="confirm-delete-page"
-      confirmText={t.Delete()}
-      confirmType="error"
+      cancelText={t['com.affine.confirmModal.button.cancel']()}
+      confirmButtonOptions={{
+        ['data-testid' as string]: 'confirm-delete-page',
+        type: 'error',
+        children: t.Delete(),
+      }}
       {...confirmModalProps}
     />
   );
 };
 
-MoveToTrash.ConfirmModal = ConfirmModal;
+MoveToTrash.ConfirmModal = MoveToTrashConfirm;

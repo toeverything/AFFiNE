@@ -1,33 +1,24 @@
-import { Input, Modal, ModalCloseButton } from '@affine/component';
+import { Input } from '@affine/component';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
+import {
+  ConfirmModal,
+  type ConfirmModalProps,
+} from '@toeverything/components/modal';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useState } from 'react';
 
-import {
-  StyledButtonContent,
-  StyledInputContent,
-  StyledModalHeader,
-  StyledModalWrapper,
-  StyledTextContent,
-  StyledWorkspaceName,
-} from './style';
+import { StyledInputContent, StyledWorkspaceName } from './style';
 
-interface WorkspaceDeleteProps {
-  open: boolean;
-  onClose: () => void;
+interface WorkspaceDeleteProps extends ConfirmModalProps {
   workspace: AffineOfficialWorkspace;
-  onConfirm: () => void;
 }
 
 export const WorkspaceDeleteModal = ({
-  open,
-  onClose,
-  onConfirm,
   workspace,
+  ...props
 }: WorkspaceDeleteProps) => {
   const [workspaceName] = useBlockSuiteWorkspaceName(
     workspace.blockSuiteWorkspace
@@ -37,65 +28,50 @@ export const WorkspaceDeleteModal = ({
   const t = useAFFiNEI18N();
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <StyledModalWrapper>
-        <ModalCloseButton onClick={onClose} />
-        <StyledModalHeader>
-          {t['com.affine.workspaceDelete.title']()}?
-        </StyledModalHeader>
-        {workspace.flavour === WorkspaceFlavour.LOCAL ? (
-          <StyledTextContent>
-            <Trans i18nKey="com.affine.workspaceDelete.description">
-              Deleting (
-              <StyledWorkspaceName>
-                {{ workspace: workspaceName } as any}
-              </StyledWorkspaceName>
-              ) cannot be undone, please proceed with caution. All contents will
-              be lost.
-            </Trans>
-          </StyledTextContent>
-        ) : (
-          <StyledTextContent>
-            <Trans i18nKey="com.affine.workspaceDelete.description2">
-              Deleting (
-              <StyledWorkspaceName>
-                {{ workspace: workspaceName } as any}
-              </StyledWorkspaceName>
-              ) will delete both local and cloud data, this operation cannot be
-              undone, please proceed with caution.
-            </Trans>
-          </StyledTextContent>
-        )}
-        <StyledInputContent>
-          <Input
-            ref={ref => {
-              if (ref) {
-                window.setTimeout(() => ref.focus(), 0);
-              }
-            }}
-            onChange={setDeleteStr}
-            data-testid="delete-workspace-input"
-            placeholder={t['com.affine.workspaceDelete.placeholder']()}
-            width={315}
-            height={42}
-          />
-        </StyledInputContent>
-        <StyledButtonContent>
-          <Button onClick={onClose} size="large">
-            {t['com.affine.workspaceDelete.button.cancel']()}
-          </Button>
-          <Button
-            data-testid="delete-workspace-confirm-button"
-            disabled={!allowDelete}
-            onClick={onConfirm}
-            size="large"
-            type="error"
-            style={{ marginLeft: '24px' }}
-          >
-            {t['com.affine.workspaceDelete.button.delete']()}
-          </Button>
-        </StyledButtonContent>
-      </StyledModalWrapper>
-    </Modal>
+    <ConfirmModal
+      title={`${t['com.affine.workspaceDelete.title']()}?`}
+      cancelText={t['com.affine.workspaceDelete.button.cancel']()}
+      confirmButtonOptions={{
+        type: 'error',
+        disabled: !allowDelete,
+        ['data-testid' as string]: 'delete-workspace-confirm-button',
+        children: t['com.affine.workspaceDelete.button.delete'](),
+      }}
+      {...props}
+    >
+      {workspace.flavour === WorkspaceFlavour.LOCAL ? (
+        <Trans i18nKey="com.affine.workspaceDelete.description">
+          Deleting (
+          <StyledWorkspaceName>
+            {{ workspace: workspaceName } as any}
+          </StyledWorkspaceName>
+          ) cannot be undone, please proceed with caution. All contents will be
+          lost.
+        </Trans>
+      ) : (
+        <Trans i18nKey="com.affine.workspaceDelete.description2">
+          Deleting (
+          <StyledWorkspaceName>
+            {{ workspace: workspaceName } as any}
+          </StyledWorkspaceName>
+          ) will delete both local and cloud data, this operation cannot be
+          undone, please proceed with caution.
+        </Trans>
+      )}
+      <StyledInputContent>
+        <Input
+          ref={ref => {
+            if (ref) {
+              window.setTimeout(() => ref.focus(), 0);
+            }
+          }}
+          onChange={setDeleteStr}
+          data-testid="delete-workspace-input"
+          placeholder={t['com.affine.workspaceDelete.placeholder']()}
+          width={315}
+          height={42}
+        />
+      </StyledInputContent>
+    </ConfirmModal>
   );
 };
