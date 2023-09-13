@@ -20,6 +20,7 @@ const flags: BuildFlags = {
 };
 
 if (process.argv.includes('--static')) {
+  flags.mode = 'production';
   await awaitChildProcess(
     spawn(
       'node',
@@ -29,7 +30,9 @@ if (process.argv.includes('--static')) {
         '../../node_modules/webpack/bin/webpack.js',
         'serve',
         '--mode',
-        'development',
+        'production',
+        '--no-client-overlay',
+        '--no-live-reload',
         '--env',
         'flags=' + Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
       ].filter((v): v is string => !!v),
