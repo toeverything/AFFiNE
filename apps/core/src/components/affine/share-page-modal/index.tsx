@@ -30,9 +30,7 @@ export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
       {workspace.flavour === WorkspaceFlavour.LOCAL ? (
         <EnableAffineCloudModal
           open={open}
-          onClose={() => {
-            setOpen(false);
-          }}
+          onOpenChange={setOpen}
           onConfirm={() => {
             onTransformWorkspace(
               WorkspaceFlavour.LOCAL,

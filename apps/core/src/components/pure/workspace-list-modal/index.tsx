@@ -177,6 +177,7 @@ export const WorkspaceListModal = ({
   const localWorkspaces = workspaces.filter(
     ({ flavour }) => flavour === WorkspaceFlavour.LOCAL
   ) as (AffineCloudWorkspace | LocalWorkspace)[];
+  // FIXME: replace mui popover
   return (
     <Popover
       sx={{
@@ -209,6 +210,7 @@ export const WorkspaceListModal = ({
                     openModal: true,
                   }));
                 }
+                onClose();
               }}
               data-testid="cloud-signin-button"
             >

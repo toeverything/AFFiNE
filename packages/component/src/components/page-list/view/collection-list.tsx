@@ -14,7 +14,7 @@ import { useCallback, useRef, useState } from 'react';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
-import { EditCollectionModel } from './create-collection';
+import { EditCollectionModal } from './create-collection';
 import { useActions } from './use-action';
 
 const CollectionOption = ({
@@ -126,14 +126,16 @@ export const CollectionList = ({
     },
     [setting]
   );
-  const closeUpdateCollectionModal = useCallback(
-    () => setCollection(undefined),
-    []
-  );
+  const closeUpdateCollectionModal = useCallback((open: boolean) => {
+    if (!open) {
+      setCollection(undefined);
+    }
+  }, []);
+
   const onConfirm = useCallback(
     async (view: Collection) => {
       await setting.updateCollection(view);
-      closeUpdateCollectionModal();
+      closeUpdateCollectionModal(false);
     },
     [closeUpdateCollectionModal, setting]
   );
@@ -214,14 +216,14 @@ export const CollectionList = ({
           {t['com.affine.filter']()}
         </Button>
       </Menu>
-      <EditCollectionModel
+      <EditCollectionModal
         propertiesMeta={propertiesMeta}
         getPageInfo={getPageInfo}
         init={collection}
         open={!!collection}
-        onClose={closeUpdateCollectionModal}
+        onOpenChange={closeUpdateCollectionModal}
         onConfirm={onConfirm}
-      ></EditCollectionModel>
+      />
     </FlexWrapper>
   );
 };
