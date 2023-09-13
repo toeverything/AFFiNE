@@ -217,7 +217,7 @@ jobs:
 
   server-desktop-e2e-test:
     name: Server Desktop E2E Test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: development
     needs: build-storage
     services:
@@ -249,7 +249,7 @@ jobs:
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
-          target: ${{ matrix.spec.target }}
+          target: x86_64-pc-windows-msvc
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
@@ -282,7 +282,7 @@ jobs:
           path: ./apps/server
 
       - name: Run playwright tests
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop-cloud e2e
+        run: yarn workspace @affine-test/affine-desktop-cloud e2e
         env:
           COVERAGE: true
           DEV_SERVER_URL: http://localhost:8080
