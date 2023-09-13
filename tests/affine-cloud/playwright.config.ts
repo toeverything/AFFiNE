@@ -14,7 +14,7 @@ const config: PlaywrightTestConfig = {
       'chromium',
     permissions: ['clipboard-read', 'clipboard-write'],
     viewport: { width: 1440, height: 800 },
-    actionTimeout: 5 * 1000,
+    actionTimeout: 10 * 1000,
     locale: 'en-US',
     trace: 'on-first-retry',
     video: 'on-first-retry',
@@ -44,7 +44,7 @@ const config: PlaywrightTestConfig = {
       env: {
         DATABASE_URL:
           process.env.DATABASE_URL ??
-          'postgresql://affine@localhost:5432/affine',
+          'postgresql://affine:affine@localhost:5432/affine',
         NODE_ENV: 'development',
         AFFINE_ENV: process.env.AFFINE_ENV ?? 'dev',
         DEBUG: 'affine:*',

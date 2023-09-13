@@ -144,18 +144,14 @@ export async function loginUser(
   await page.getByTestId('cloud-signin-button').click({
     delay: 200,
   });
-  await page.getByPlaceholder('Enter your email address').type(userEmail, {
-    delay: 50,
-  });
+  await page.getByPlaceholder('Enter your email address').fill(userEmail);
   await page.getByTestId('continue-login-button').click({
     delay: 200,
   });
   await page.getByTestId('sign-in-with-password').click({
     delay: 200,
   });
-  await page.getByTestId('password-input').type('123456', {
-    delay: 50,
-  });
+  await page.getByTestId('password-input').fill('123456');
   if (config?.beforeLogin) {
     await config.beforeLogin();
   }
