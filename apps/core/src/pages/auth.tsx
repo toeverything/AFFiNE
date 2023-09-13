@@ -7,7 +7,6 @@ import {
   SignUpPage,
 } from '@affine/component/auth-components';
 import {
-  NotificationCenter,
   pushNotificationAtom,
 } from '@affine/component/notification-center';
 import {
@@ -173,12 +172,7 @@ export const Component = () => {
   }
 
   if (loginStatus === 'authenticated') {
-    return (
-      <>
-        <AuthPage />
-        {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
-      </>
-    );
+    return <AuthPage />;
   }
 
   return null;
