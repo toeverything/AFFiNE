@@ -242,6 +242,7 @@
   "com.affine.loading": "Loading...",
   "com.affine.moveToTrash.confirmModal.description": "{{title}} will be moved to Trash",
   "com.affine.moveToTrash.confirmModal.title": "Delete page?",
+  "com.affine.moveToTrash.description": "{{title}} has been moved to trash",
   "com.affine.moveToTrash.title": "Move to Trash",
   "com.affine.nameWorkspace.button.cancel": "Cancel",
   "com.affine.nameWorkspace.button.create": "Create",

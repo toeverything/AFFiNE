@@ -105,6 +105,7 @@
   "com.affine.lastYear": "Letztes Jahr",
   "com.affine.moveToTrash.confirmModal.description": "{{title}} wird in den Papierkorb verschoben",
   "com.affine.moveToTrash.confirmModal.title": "Seite löschen?",
+  "com.affine.moveToTrash.description": "{{title}} wurde in den Papierkorb verschoben",
   "com.affine.moveToTrash.title": "In Papierkorb verschieben",
   "com.affine.nameWorkspace.button.cancel": "Abbrechen",
   "com.affine.nameWorkspace.button.create": "Erstellen",

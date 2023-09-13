@@ -166,6 +166,7 @@
   "com.affine.lastYear": "去年",
   "com.affine.moveToTrash.confirmModal.description": " {{title}} 將被移至廢紙簍",
   "com.affine.moveToTrash.confirmModal.title": "確認刪除頁面？",
+  "com.affine.moveToTrash.description": "{{title}} 已移至垃圾箱",
   "com.affine.moveToTrash.title": "移至廢紙簍",
   "com.affine.nameWorkspace.button.cancel": "取消",
   "com.affine.nameWorkspace.button.create": "建立",

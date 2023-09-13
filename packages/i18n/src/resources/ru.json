@@ -86,6 +86,7 @@
   "com.affine.lastMonth": "Последний месяц",
   "com.affine.moveToTrash.confirmModal.description": "{{title}} будет перемещен в Корзину",
   "com.affine.moveToTrash.confirmModal.title": "Удалить страницу?",
+  "com.affine.moveToTrash.description": "{{title}} было перемещено в корзину",
   "com.affine.moveToTrash.title": "Переместить в корзину",
   "com.affine.nameWorkspace.button.cancel": "Отмена",
   "com.affine.nameWorkspace.button.create": "Создать",

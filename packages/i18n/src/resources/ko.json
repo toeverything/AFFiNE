@@ -61,6 +61,7 @@
   "com.affine.lastWeek": "지난 주",
   "com.affine.lastYear": "작년",
   "com.affine.moveToTrash.confirmModal.title": "페이지 삭제",
+  "com.affine.moveToTrash.description": "{{title}} 휴지통으로 이동되었습니다",
   "com.affine.moveToTrash.title": "휴지통으로 이동",
   "com.affine.nameWorkspace.button.cancel": "취소",
   "com.affine.nameWorkspace.button.create": "생성",

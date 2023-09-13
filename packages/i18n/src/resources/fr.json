@@ -166,6 +166,7 @@
   "com.affine.lastYear": "L'année dernière ",
   "com.affine.moveToTrash.confirmModal.description": "{{title}} sera déplacé à la corbeille ",
   "com.affine.moveToTrash.confirmModal.title": "Supprimer la page ?",
+  "com.affine.moveToTrash.description": "{{title}} a été déplacé vers la corbeille",
   "com.affine.moveToTrash.title": "Déplacer à la corbeille",
   "com.affine.nameWorkspace.button.cancel": "Annuler ",
   "com.affine.nameWorkspace.button.create": "Créer ",

@@ -61,6 +61,7 @@
   "com.affine.keyboardShortcuts.undo": "元に戻す",
   "com.affine.moveToTrash.confirmModal.description": "{{title}}はゴミ箱に移動されます",
   "com.affine.moveToTrash.confirmModal.title": "ページを削除しますか？",
+  "com.affine.moveToTrash.description": "{{title}} ゴミ箱に移動されました",
   "com.affine.moveToTrash.title": "ゴミ箱に移動",
   "com.affine.nameWorkspace.button.cancel": "キャンセル",
   "com.affine.nameWorkspace.button.create": "作成",

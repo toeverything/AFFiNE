@@ -1,4 +1,5 @@
 import { FlexWrapper } from '@affine/component';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Export, MoveToTrash } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -59,6 +60,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const [openConfirm, setOpenConfirm] = useState(false);
   const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { jumpToSubPath } = useNavigateHelper();
+  const setPushNotification = useSetAtom(pushNotificationAtom);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const handleFavorite = useCallback(() => {
     setPageMeta(pageId, { favorite: !favorite });
@@ -81,10 +83,23 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const handleOnConfirm = useCallback(() => {
     removeToTrash(pageId);
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-    //toast does't work
-    toast(t['com.affine.toastMessage.movedTrash']());
+    setPushNotification({
+      title: t['com.affine.moveToTrash.title'](),
+      message: t['com.affine.moveToTrash.description']({
+        title: pageMeta.title || 'Untitled',
+      }),
+      type: 'warning',
+    });
     setOpenConfirm(false);
-  }, [jumpToSubPath, pageId, removeToTrash, t, workspace.id]);
+  }, [
+    jumpToSubPath,
+    pageId,
+    pageMeta.title,
+    removeToTrash,
+    setPushNotification,
+    t,
+    workspace.id,
+  ]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',
