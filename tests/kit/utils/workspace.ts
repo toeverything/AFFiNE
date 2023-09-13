@@ -23,10 +23,6 @@ export async function createLocalWorkspace(
     return !!window.appInfo?.electron;
   }, []);
 
-  if (isDesktop) {
-    await page.getByTestId('create-workspace-default-location-button').click();
-  }
-
   // input workspace name
   await page.getByPlaceholder('Set a Workspace name').click();
   await page.getByPlaceholder('Set a Workspace name').fill(params.name);

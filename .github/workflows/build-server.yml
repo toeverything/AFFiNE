@@ -282,7 +282,7 @@ jobs:
           path: ./apps/server
 
       - name: Run playwright tests
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine/affine-desktop-cloud e2e
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop-cloud e2e
         env:
           COVERAGE: true
           DEV_SERVER_URL: http://localhost:8080
