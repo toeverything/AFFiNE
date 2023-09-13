@@ -1,5 +1,5 @@
-import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Modal } from '@toeverything/components/modal';
 import { Command } from 'cmdk';
 import { startTransition, Suspense } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -75,93 +75,86 @@ export const QuickSearchModal = ({
   return (
     <Modal
       open={open}
-      onClose={handleClose}
-      wrapperPosition={['top', 'center']}
-      data-testid="quickSearch"
-    >
-      <ModalWrapper
-        width={608}
-        style={{
+      onOpenChange={setOpen}
+      width={608}
+      contentOptions={{
+        ['data-testid' as string]: 'quickSearch',
+        style: {
           maxHeight: '80vh',
           minHeight: '412px',
           top: '80px',
           overflow: 'hidden',
+          transform: 'translateX(-50%)',
+        },
+      }}
+    >
+      <Command
+        shouldFilter={false}
+        //Handle KeyboardEvent conflicts with blocksuite
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (
+            e.key === 'ArrowDown' ||
+            e.key === 'ArrowUp' ||
+            e.key === 'ArrowLeft' ||
+            e.key === 'ArrowRight'
+          ) {
+            e.stopPropagation();
+          }
         }}
       >
-        {/* <NavigationPath
-          blockSuiteWorkspace={blockSuiteWorkspace}
-          onJumpToPage={() => {
-            setOpen(false);
-          }}
-        /> */}
-        <Command
-          shouldFilter={false}
-          //Handle KeyboardEvent conflicts with blocksuite
-          onKeyDown={(e: React.KeyboardEvent) => {
-            if (
-              e.key === 'ArrowDown' ||
-              e.key === 'ArrowUp' ||
-              e.key === 'ArrowLeft' ||
-              e.key === 'ArrowRight'
-            ) {
-              e.stopPropagation();
-            }
-          }}
-        >
-          <StyledModalHeader>
-            <SearchInput
-              ref={inputRef}
-              onValueChange={value => {
-                setQuery(value);
-              }}
-              onKeyDown={e => {
-                // Avoid triggering the cmdk onSelect event when the input method is in use
-                if (e.nativeEvent.isComposing) {
-                  e.stopPropagation();
-                  return;
-                }
-              }}
-              placeholder={t['Quick search placeholder']()}
-            />
-            <StyledShortcut>
-              {environment.isBrowser && environment.isMacOs
-                ? '⌘ + K'
-                : 'Ctrl + K'}
-            </StyledShortcut>
-          </StyledModalHeader>
-          <StyledModalDivider />
-          <Command.List>
-            <StyledContent>
-              <Suspense
-                fallback={
-                  <StyledNotFound>
-                    <span>{t['com.affine.loading']()}</span>
-                  </StyledNotFound>
-                }
-              >
-                <Results
+        <StyledModalHeader>
+          <SearchInput
+            ref={inputRef}
+            onValueChange={value => {
+              setQuery(value);
+            }}
+            onKeyDown={e => {
+              // Avoid triggering the cmdk onSelect event when the input method is in use
+              if (e.nativeEvent.isComposing) {
+                e.stopPropagation();
+                return;
+              }
+            }}
+            placeholder={t['Quick search placeholder']()}
+          />
+          <StyledShortcut>
+            {environment.isBrowser && environment.isMacOs
+              ? '⌘ + K'
+              : 'Ctrl + K'}
+          </StyledShortcut>
+        </StyledModalHeader>
+        <StyledModalDivider />
+        <Command.List>
+          <StyledContent>
+            <Suspense
+              fallback={
+                <StyledNotFound>
+                  <span>{t['com.affine.loading']()}</span>
+                </StyledNotFound>
+              }
+            >
+              <Results
+                query={query}
+                onClose={handleClose}
+                workspace={workspace}
+                setShowCreatePage={setShowCreatePage}
+              />
+            </Suspense>
+          </StyledContent>
+          {showCreatePage ? (
+            <>
+              <StyledModalDivider />
+              <StyledModalFooter>
+                <Footer
                   query={query}
                   onClose={handleClose}
-                  workspace={workspace}
-                  setShowCreatePage={setShowCreatePage}
+                  blockSuiteWorkspace={blockSuiteWorkspace}
                 />
-              </Suspense>
-            </StyledContent>
-            {showCreatePage ? (
-              <>
-                <StyledModalDivider />
-                <StyledModalFooter>
-                  <Footer
-                    query={query}
-                    onClose={handleClose}
-                    blockSuiteWorkspace={blockSuiteWorkspace}
-                  />
-                </StyledModalFooter>
-              </>
-            ) : null}
-          </Command.List>
-        </Command>
-      </ModalWrapper>
+              </StyledModalFooter>
+            </>
+          ) : null}
+        </Command.List>
+      </Command>
     </Modal>
   );
 };

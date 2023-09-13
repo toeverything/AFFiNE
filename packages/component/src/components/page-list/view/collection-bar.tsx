@@ -5,14 +5,14 @@ import { ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 import {
   type CollectionsAtom,
   useCollectionManager,
 } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
-import { EditCollectionModel } from './create-collection';
+import { EditCollectionModal } from './create-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {
@@ -33,21 +33,20 @@ export const CollectionBar = (props: CollectionBarProps) => {
     setting,
     openEdit: () => setOpen(true),
   });
-  const onClose = useCallback(() => setOpen(false), []);
 
   return !setting.isDefault ? (
     <tr style={{ userSelect: 'none' }}>
       <td>
         <div className={styles.view}>
-          <EditCollectionModel
+          <EditCollectionModal
             propertiesMeta={propertiesMeta}
             getPageInfo={getPageInfo}
             init={collection}
             open={open}
-            onClose={onClose}
+            onOpenChange={setOpen}
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             onConfirm={setting.updateCollection}
-          ></EditCollectionModel>
+          />
           <ViewLayersIcon
             style={{
               height: 20,

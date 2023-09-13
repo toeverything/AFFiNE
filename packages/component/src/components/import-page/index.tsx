@@ -1,13 +1,14 @@
 import {
+  CloseIcon,
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
   HelpIcon,
   NewIcon,
   NotionIcon,
 } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 
-import { ModalCloseButton } from '../../ui/modal';
 import { BlockCard } from '../card/block-card';
 import {
   importPageBodyStyle,
@@ -27,7 +28,17 @@ export const ImportPage = ({
   onClose: () => void;
 }) => (
   <div className={importPageContainerStyle}>
-    <ModalCloseButton top={6} right={6} onClick={onClose} />
+    <IconButton
+      style={{
+        position: 'absolute',
+        right: 6,
+        top: 6,
+      }}
+      onClick={() => {
+        onClose();
+      }}
+      icon={<CloseIcon />}
+    />
     <div className={importPageBodyStyle}>
       <div className="title">Import</div>
       <span>

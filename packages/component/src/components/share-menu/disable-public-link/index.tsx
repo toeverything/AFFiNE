@@ -1,57 +1,24 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon } from '@blocksuite/icons';
-import { Button, IconButton } from '@toeverything/components/button';
+import {
+  ConfirmModal,
+  type ConfirmModalProps,
+} from '@toeverything/components/modal';
 
-import { Modal, ModalWrapper } from '../../..';
-import { ButtonContainer, Content, Header, StyleTips, Title } from './style';
-
-export type PublicLinkDisableProps = {
-  open: boolean;
-  onConfirmDisable: () => void;
-  onClose: () => void;
-};
-
-export const PublicLinkDisableModal = ({
-  open,
-  onConfirmDisable,
-  onClose,
-}: PublicLinkDisableProps) => {
+export const PublicLinkDisableModal = (props: ConfirmModalProps) => {
   const t = useAFFiNEI18N();
+
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalWrapper width={480}>
-        <Header>
-          <Title>{t['com.affine.publicLinkDisableModal.title']()}</Title>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Header>
-        <Content>
-          <StyleTips>
-            {t['com.affine.publicLinkDisableModal.description']()}
-          </StyleTips>
-          <ButtonContainer>
-            <div>
-              <Button onClick={onClose} block>
-                {t['com.affine.publicLinkDisableModal.button.cancel']()}
-              </Button>
-            </div>
-            <div>
-              <Button
-                data-testid="confirm-enable-affine-cloud-button"
-                type="error"
-                block
-                onClick={() => {
-                  onConfirmDisable();
-                  onClose();
-                }}
-              >
-                {t['com.affine.publicLinkDisableModal.button.disable']()}
-              </Button>
-            </div>
-          </ButtonContainer>
-        </Content>
-      </ModalWrapper>
-    </Modal>
+    <ConfirmModal
+      width={480}
+      title={t['com.affine.publicLinkDisableModal.title']()}
+      description={t['com.affine.publicLinkDisableModal.description']()}
+      cancelText={t['com.affine.publicLinkDisableModal.button.cancel']()}
+      confirmButtonOptions={{
+        type: 'error',
+        ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
+        children: t['com.affine.publicLinkDisableModal.button.disable'](),
+      }}
+      {...props}
+    />
   );
 };
