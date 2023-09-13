@@ -43,6 +43,10 @@ export const TourModal = (props: ModalProps) => {
           background: 'transparent',
         },
       }}
+      closeButtonOptions={{
+        // @ts-expect-error - fix upstream type
+        'data-testid': 'onboarding-modal-close-button',
+      }}
       {...props}
     >
       <div className={modalStyle}>
