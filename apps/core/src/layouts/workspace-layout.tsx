@@ -28,6 +28,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -237,7 +238,10 @@ export const WorkspaceLayoutInner = ({
   const [appSetting] = useAppSetting();
   const location = useLocation();
   const { pageId } = useParams();
-
+  const pageMeta = useBlockSuitePageMeta(
+    currentWorkspace.blockSuiteWorkspace
+  ).find(meta => meta.id === pageId);
+  const inTrashPage = pageMeta?.trash ?? false;
   const setMainContainer = useSetAtom(mainContainerAtom);
 
   return (
@@ -272,9 +276,10 @@ export const WorkspaceLayoutInner = ({
             <MainContainer
               ref={setMainContainer}
               padding={appSetting.clientBorder}
+              inTrashPage={inTrashPage}
             >
               {incompatible ? <MigrationFallback /> : children}
-              <ToolContainer>
+              <ToolContainer inTrashPage={inTrashPage}>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
                 <HelpIsland showList={pageId ? undefined : showList} />
               </ToolContainer>

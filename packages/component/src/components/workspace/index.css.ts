@@ -86,6 +86,12 @@ export const mainContainerStyle = style({
     '&[data-show-padding="true"][data-is-macos="true"]': {
       borderRadius: '6px',
     },
+    '&[data-in-trash-page="true"]': {
+      marginBottom: '50px',
+    },
+    '&[data-in-trash-page="true"][data-show-padding="true"]': {
+      marginBottom: '60px',
+    },
     '&[data-show-padding="true"]:before': {
       content: '""',
       position: 'absolute',
@@ -149,6 +155,22 @@ export const toolStyle = style({
     },
     print: {
       display: 'none',
+    },
+  },
+  selectors: {
+    '&[data-in-trash-page="true"]': {
+      bottom: '70px',
+      '@media': {
+        [breakpoints.down('md', true)]: {
+          bottom: '80px',
+        },
+        [breakpoints.down('sm', true)]: {
+          bottom: '85px',
+        },
+        print: {
+          display: 'none',
+        },
+      },
     },
   },
 });

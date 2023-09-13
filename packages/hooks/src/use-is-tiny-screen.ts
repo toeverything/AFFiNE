@@ -70,7 +70,7 @@ export function useIsTinyScreen({
     resizeObserver.observe(mainContainer);
 
     return () => {
-      resizeObserver.disconnect();
+      resizeObserver.unobserve(mainContainer);
     };
   }, [
     centerDom,

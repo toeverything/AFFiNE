@@ -1,16 +1,34 @@
 import { style } from '@vanilla-extract/css';
 
 export const group = style({
-  width: '100%',
-  position: 'absolute',
-  bottom: '100px',
-  left: '0',
   display: 'flex',
   gap: '24px',
   justifyContent: 'center',
-  zIndex: 2,
 });
 export const buttonContainer = style({
   boxShadow: 'var(--affine-float-button-shadow-2)',
   borderRadius: '8px',
+});
+export const deleteHintContainer = style({
+  position: 'fixed',
+  zIndex: 2,
+  padding: '14px 24px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  bottom: '0',
+  backgroundColor: 'var(--affine-background-primary-color)',
+  borderTop: '1px solid var(--affine-border-color)',
+  selectors: {
+    '&[data-has-background="false"]': {
+      backgroundColor: 'transparent',
+      borderTop: 'none',
+    },
+  },
+});
+export const deleteHintText = style({
+  fontSize: '15px',
+  fontWeight: '500',
+  lineHeight: '24px',
+  color: 'var(--affine-text-secondary-color)',
 });
