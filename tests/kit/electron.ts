@@ -12,6 +12,7 @@ import {
   test as base,
   testResultDir,
 } from './playwright';
+import { removeWithRetry } from './utils/utils';
 
 const projectRoot = resolve(__dirname, '..', '..');
 const electronRoot = resolve(projectRoot, 'apps', 'electron');
@@ -112,7 +113,7 @@ export const test = base.extend<{
     });
     await use(electronApp);
     try {
-      await fs.rm(clonedDist, { recursive: true, force: true });
+      await removeWithRetry(clonedDist);
     } catch (error) {
       console.log(error);
     }

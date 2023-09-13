@@ -7,11 +7,13 @@ import { ConfigModule } from '../config';
 import { GqlModule } from '../graphql.module';
 import { MetricsModule } from '../metrics';
 import { AuthModule } from '../modules/auth';
+import { AuthResolver } from '../modules/auth/resolver';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
 import { RateLimiterModule } from '../throttler';
 
-let auth: AuthService;
+let authService: AuthService;
+let authResolver: AuthResolver;
 let module: TestingModule;
 
 // cleanup database before each test
@@ -19,6 +21,7 @@ test.beforeEach(async () => {
   const client = new PrismaClient();
   await client.$connect();
   await client.user.deleteMany({});
+  await client.$disconnect();
 });
 
 test.beforeEach(async () => {
@@ -30,6 +33,8 @@ test.beforeEach(async () => {
           refreshTokenExpiresIn: 1,
           leeway: 1,
         },
+        host: 'example.org',
+        https: true,
       }),
       PrismaModule,
       GqlModule,
@@ -38,22 +43,23 @@ test.beforeEach(async () => {
       RateLimiterModule,
     ],
   }).compile();
-  auth = module.get(AuthService);
+  authService = module.get(AuthService);
+  authResolver = module.get(AuthResolver);
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await module.close();
 });
 
 test('should be able to register and signIn', async t => {
-  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
-  await auth.signIn('alexyang@example.org', '123456');
+  await authService.signUp('Alex Yang', 'alexyang@example.org', '123456');
+  await authService.signIn('alexyang@example.org', '123456');
   t.pass();
 });
 
 test('should be able to verify', async t => {
-  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
-  await auth.signIn('alexyang@example.org', '123456');
+  await authService.signUp('Alex Yang', 'alexyang@example.org', '123456');
+  await authService.signIn('alexyang@example.org', '123456');
   const date = new Date();
 
   const user = {
@@ -65,8 +71,8 @@ test('should be able to verify', async t => {
     avatarUrl: '',
   };
   {
-    const token = await auth.sign(user);
-    const claim = await auth.verify(token);
+    const token = await authService.sign(user);
+    const claim = await authService.verify(token);
     t.is(claim.id, '1');
     t.is(claim.name, 'Alex Yang');
     t.is(claim.email, 'alexyang@example.org');
@@ -74,12 +80,99 @@ test('should be able to verify', async t => {
     t.is(claim.createdAt.toISOString(), date.toISOString());
   }
   {
-    const token = await auth.refresh(user);
-    const claim = await auth.verify(token);
+    const token = await authService.refresh(user);
+    const claim = await authService.verify(token);
     t.is(claim.id, '1');
     t.is(claim.name, 'Alex Yang');
     t.is(claim.email, 'alexyang@example.org');
     t.is(claim.emailVerified?.toISOString(), date.toISOString());
     t.is(claim.createdAt.toISOString(), date.toISOString());
   }
+});
+
+test('should not be able to return token if user is invalid', async t => {
+  const date = new Date();
+  const user = {
+    id: '1',
+    name: 'Alex Yang',
+    email: 'alexyang@example.org',
+    emailVerified: date,
+    createdAt: date,
+    avatarUrl: '',
+  };
+  const anotherUser = {
+    id: '2',
+    name: 'Alex Yang 2',
+    email: 'alexyang@example.org',
+    emailVerified: date,
+    createdAt: date,
+    avatarUrl: '',
+  };
+  await t.throwsAsync(
+    authResolver.token(
+      {
+        req: {
+          headers: {
+            referer: 'https://example.org',
+            host: 'example.org',
+          },
+        } as any,
+      },
+      user,
+      anotherUser
+    ),
+    {
+      message: 'Invalid user',
+    }
+  );
+});
+
+test('should not return sessionToken if request headers is invalid', async t => {
+  const date = new Date();
+  const user = {
+    id: '1',
+    name: 'Alex Yang',
+    email: 'alexyang@example.org',
+    emailVerified: date,
+    createdAt: date,
+    avatarUrl: '',
+  };
+  const result = await authResolver.token(
+    {
+      req: {
+        headers: {},
+      } as any,
+    },
+    user,
+    user
+  );
+  t.is(result.sessionToken, undefined);
+});
+
+test('should return valid sessionToken if request headers valid', async t => {
+  const date = new Date();
+  const user = {
+    id: '1',
+    name: 'Alex Yang',
+    email: 'alexyang@example.org',
+    emailVerified: date,
+    createdAt: date,
+    avatarUrl: '',
+  };
+  const result = await authResolver.token(
+    {
+      req: {
+        headers: {
+          referer: 'https://example.org/open-app/test',
+          host: 'example.org',
+        },
+        cookies: {
+          'next-auth.session-token': '123456',
+        },
+      } as any,
+    },
+    user,
+    user
+  );
+  t.is(result.sessionToken, '123456');
 });

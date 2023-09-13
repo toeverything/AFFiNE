@@ -187,8 +187,8 @@ export interface AFFiNEConfig {
       path: string;
     };
     /**
-     * Free user storage quota
-     * @default 10 * 1024 * 1024 (10GB)
+     * default storage quota
+     * @default 10 * 1024 * 1024 * 1024 (10GB)
      */
     quota: number;
   };
@@ -205,7 +205,7 @@ export interface AFFiNEConfig {
     ttl: number;
     /**
      * How many requests can be made in the given time frame
-     * @default 60
+     * @default 120
      * @env THROTTLE_LIMIT
      */
     limit: number;

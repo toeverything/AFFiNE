@@ -129,7 +129,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           <Button
             onClick={onClickCopyLink}
             data-testid="share-menu-copy-link-button"
-            style={{ padding: '4px 12px' }}
+            style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
           >
             {t.Copy()}
           </Button>
@@ -138,7 +138,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             onClick={onClickCreateLink}
             type="primary"
             data-testid="share-menu-create-link-button"
-            style={{ padding: '4px 12px' }}
+            style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
           >
             {t.Create()}
           </Button>
@@ -203,16 +203,17 @@ export const AffineSharePage = (props: ShareMenuProps) => {
               </div>
             </>
           )}
-          <div
-            className={styles.rowContainerStyle}
+          <MenuItem
+            endFix={<ArrowRightSmallIcon />}
+            block
+            type="danger"
+            className={styles.menuItemStyle}
             onClick={() => setShowDisable(true)}
-            style={{ cursor: 'pointer' }}
           >
             <div className={styles.disableSharePage}>
               {t['Disable Public Link']()}
             </div>
-            <ArrowRightSmallIcon />
-          </div>
+          </MenuItem>
           <PublicLinkDisableModal
             open={showDisable}
             onConfirmDisable={onDisablePublic}

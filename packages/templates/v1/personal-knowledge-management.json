@@ -15,45 +15,48 @@
       "sys:flavour": "affine:surface",
       "sys:children": [],
       "prop:elements": {
-        "aAOeeA4jhz": {
-          "type": "connector",
-          "mode": 1,
-          "strokeWidth": 2,
-          "stroke": "--affine-palette-line-blue",
-          "strokeStyle": "solid",
-          "roughness": 1.4,
-          "source": {
-            "id": "f6Owaa00aK",
-            "position": [0.5, 1]
+        "type": "$blocksuite:internal:native$",
+        "value": {
+          "aAOeeA4jhz": {
+            "type": "connector",
+            "mode": 1,
+            "strokeWidth": 2,
+            "stroke": "--affine-palette-line-blue",
+            "strokeStyle": "solid",
+            "roughness": 1.4,
+            "source": {
+              "id": "f6Owaa00aK",
+              "position": [0.5, 1]
+            },
+            "target": {
+              "id": "W6M-MPQ5-F"
+            },
+            "controllers": [],
+            "id": "aAOeeA4jhz",
+            "index": "a1",
+            "seed": 1493853178,
+            "xywh": "[181.61467354910715,-359.54656036633406,400,379.64]"
           },
-          "target": {
-            "id": "W6M-MPQ5-F"
-          },
-          "controllers": [],
-          "id": "aAOeeA4jhz",
-          "index": "a1",
-          "seed": 1493853178,
-          "xywh": "[181.61467354910715,-359.54656036633406,400,379.64]"
-        },
-        "pMyfZPwXXU": {
-          "type": "connector",
-          "mode": 1,
-          "strokeWidth": 2,
-          "stroke": "--affine-palette-line-black",
-          "strokeStyle": "solid",
-          "roughness": 1.4,
-          "source": {
-            "id": "f6Owaa00aK",
-            "position": [0.5010332476508476, 1]
-          },
-          "target": {
-            "id": "-tH5D5Hf4J"
-          },
-          "controllers": [],
-          "id": "pMyfZPwXXU",
-          "index": "a2",
-          "seed": 1151132732,
-          "xywh": "[581.9546735491072,-359.54656036633406,650.69,379.64]"
+          "pMyfZPwXXU": {
+            "type": "connector",
+            "mode": 1,
+            "strokeWidth": 2,
+            "stroke": "--affine-palette-line-black",
+            "strokeStyle": "solid",
+            "roughness": 1.4,
+            "source": {
+              "id": "f6Owaa00aK",
+              "position": [0.5010332476508476, 1]
+            },
+            "target": {
+              "id": "-tH5D5Hf4J"
+            },
+            "controllers": [],
+            "id": "pMyfZPwXXU",
+            "index": "a2",
+            "seed": 1151132732,
+            "xywh": "[581.9546735491072,-359.54656036633406,650.69,379.64]"
+          }
         }
       }
     },

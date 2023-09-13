@@ -32,6 +32,20 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
       return t['com.affine.settings.email.action']();
   }
 };
+const useContent = (emailType: AuthPanelProps['emailType'], email: string) => {
+  const t = useAFFiNEI18N();
+
+  switch (emailType) {
+    case 'setPassword':
+      return t['com.affine.auth.set.password.message']();
+    case 'changePassword':
+      return t['com.affine.auth.set.password.message']();
+    case 'changeEmail':
+      return t['com.affine.auth.change.email.message']({
+        email,
+      });
+  }
+};
 
 const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
   const t = useAFFiNEI18N();
@@ -129,6 +143,7 @@ export const SendEmail = ({
 
   const title = useEmailTitle(emailType);
   const hint = useNotificationHint(emailType);
+  const content = useContent(emailType, email);
   const buttonContent = useButtonContent(emailType);
   const { loading, sendEmail } = useSendEmail(emailType);
 
@@ -151,7 +166,7 @@ export const SendEmail = ({
         title={t['com.affine.brand.affineCloud']()}
         subTitle={title}
       />
-      <AuthContent>{t['com.affine.auth.reset.password.message']()}</AuthContent>
+      <AuthContent>{content}</AuthContent>
 
       <Wrapper
         marginTop={30}

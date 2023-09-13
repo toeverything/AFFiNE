@@ -1,3 +1,5 @@
+import { URLSearchParams } from 'node:url';
+
 import {
   All,
   BadRequestException,
@@ -15,17 +17,19 @@ import { hash, verify } from '@node-rs/argon2';
 import type { User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { pick } from 'lodash-es';
-import type { AuthAction, NextAuthOptions } from 'next-auth';
+import type { AuthAction, CookieOption, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
+import { AuthThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
 const BASE_URL = '/api/auth/';
+
+const DEFAULT_SESSION_EXPIRE_DATE = 2592000 * 1000; // 30 days
 
 @Controller(BASE_URL)
 export class NextAuthController {
@@ -45,7 +49,7 @@ export class NextAuthController {
     this.callbackSession = nextAuthOptions.callbacks!.session;
   }
 
-  @UseGuards(CloudThrottlerGuard)
+  @UseGuards(AuthThrottlerGuard)
   @Throttle(60, 60)
   @All('*')
   async auth(
@@ -54,12 +58,24 @@ export class NextAuthController {
     @Query() query: Record<string, any>,
     @Next() next: NextFunction
   ) {
+    if (req.path === '/api/auth/signin' && req.method === 'GET') {
+      const query = req.query
+        ? // @ts-expect-error req.query is satisfy with the Record<string, any>
+          `?${new URLSearchParams(req.query).toString()}`
+        : '';
+      res.redirect(`/signin${query}`);
+      return;
+    }
     this.metrics.authCounter(1, {});
     const [action, providerId] = req.url // start with request url
       .slice(BASE_URL.length) // make relative to baseUrl
       .replace(/\?.*/, '') // remove query part, use only path part
       .split('/') as [AuthAction, string]; // as array of strings;
-    if (providerId === 'credentials') {
+
+    const credentialsSignIn =
+      req.method === 'POST' && providerId === 'credentials';
+    let userId: string | undefined;
+    if (credentialsSignIn) {
       const { email } = req.body;
       if (email) {
         const user = await this.prisma.user.findFirst({
@@ -73,6 +89,7 @@ export class NextAuthController {
           req.body = null;
           throw new NotFoundException(`User not found`);
         } else {
+          userId = user.id;
           req.body = {
             ...req.body,
             name: user.name,
@@ -130,13 +147,42 @@ export class NextAuthController {
       }
     }
 
+    let nextAuthTokenCookie: (CookieOption & { value: string }) | undefined;
+    const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
+    const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+    // next-auth credentials login only support JWT strategy
+    // https://next-auth.js.org/configuration/providers/credentials
+    // let's store the session token in the database
+    if (
+      credentialsSignIn &&
+      (nextAuthTokenCookie = cookies?.find(
+        ({ name }) => name === sessionCookieName
+      ))
+    ) {
+      const cookieExpires = new Date();
+      cookieExpires.setTime(
+        cookieExpires.getTime() + DEFAULT_SESSION_EXPIRE_DATE
+      );
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await this.nextAuthOptions.adapter!.createSession!({
+        sessionToken: nextAuthTokenCookie.value,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        userId: userId!,
+        expires: cookieExpires,
+      });
+    }
+
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
-      if (!req.headers?.referer) {
+      this.logger.log(`Early access redirect headers: ${req.headers}`);
+      this.metrics.authFailCounter(1, {
+        reason: 'no_early_access_permission',
+      });
+      if (
+        !req.headers?.referer ||
+        req.headers.referer.startsWith('https://accounts.google.com')
+      ) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
-        this.metrics.authFailCounter(1, {
-          reason: 'no_early_access_permission',
-        });
         res.status(403);
         res.json({
           url: 'https://community.affine.pro/c/insider-general/',
@@ -183,7 +229,7 @@ export class NextAuthController {
       throw new BadRequestException(`Invalid new session data`);
     }
     if (password) {
-      const user = await this.getUserFromRequest(req);
+      const user = await this.verifyUserFromRequest(req);
       const { password: userPassword } = user;
       if (!oldPassword) {
         if (userPassword) {
@@ -209,7 +255,7 @@ export class NextAuthController {
       }
       return user;
     } else {
-      const user = await this.getUserFromRequest(req);
+      const user = await this.verifyUserFromRequest(req);
       return this.prisma.user.update({
         where: {
           id: user.id,
@@ -219,7 +265,7 @@ export class NextAuthController {
     }
   }
 
-  private async getUserFromRequest(req: Request): Promise<User> {
+  private async verifyUserFromRequest(req: Request): Promise<User> {
     const token = req.headers.authorization;
     if (!token) {
       const session = await AuthHandler({

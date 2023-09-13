@@ -1,6 +1,6 @@
-query getMembersByWorkspaceId($workspaceId: String!) {
+query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
   workspace(id: $workspaceId) {
-    members {
+    members(skip: $skip, take: $take) {
       id
       name
       email

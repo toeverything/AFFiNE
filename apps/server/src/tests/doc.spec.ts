@@ -40,8 +40,9 @@ test.beforeEach(async () => {
   await app.init();
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await app.close();
+  await m.close();
   timer.restore();
 });
 

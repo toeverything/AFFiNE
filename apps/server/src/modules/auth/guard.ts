@@ -77,6 +77,10 @@ class AuthGuard implements CanActivate {
     if (isPublic) {
       return true;
     } else if (!token) {
+      if (!req.cookies) {
+        return isPublicable;
+      }
+
       const session = await AuthHandler({
         req: {
           cookies: req.cookies,

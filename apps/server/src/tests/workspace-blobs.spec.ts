@@ -8,6 +8,7 @@ import request from 'supertest';
 
 import { AppModule } from '../app';
 import {
+  checkBlobSize,
   collectAllBlobSizes,
   collectBlobSizes,
   createWorkspace,
@@ -44,7 +45,7 @@ test.beforeEach(async () => {
   await app.init();
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await app.close();
 });
 
@@ -126,4 +127,20 @@ test('should calc all blobs size', async t => {
 
   const size = await collectAllBlobSizes(app, u1.token.token);
   t.is(size, 8, 'failed to collect all blob sizes');
+
+  const size1 = await checkBlobSize(
+    app,
+    u1.token.token,
+    workspace1.id,
+    10 * 1024 * 1024 * 1024 - 8
+  );
+  t.is(size1, 0, 'failed to check blob size');
+
+  const size2 = await checkBlobSize(
+    app,
+    u1.token.token,
+    workspace1.id,
+    10 * 1024 * 1024 * 1024 - 7
+  );
+  t.is(size2, -1, 'failed to check blob size');
 });

@@ -1,10 +1,9 @@
 import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import { v4 } from 'uuid';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-
-import { removeWithRetry } from '../../../../tests/utils';
 
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');

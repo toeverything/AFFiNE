@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { fetcher } from '@affine/workspace/affine/gql';
 import { Logo1Icon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   type LoaderFunction,
   useLoaderData,
@@ -57,7 +57,7 @@ interface OpenAppProps {
 }
 
 interface LoaderData {
-  action: 'url' | 'oauth-jwt';
+  action: 'url' | 'signin-redirect';
   currentUser?: GetCurrentUserQuery['currentUser'];
 }
 
@@ -72,15 +72,12 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   const [params] = useSearchParams();
   const autoOpen = useMemo(() => params.get('open') !== 'false', [params]);
 
-  useEffect(() => {
-    if (!urlToOpen || lastOpened === urlToOpen || !autoOpen) {
-      return;
-    }
+  if (urlToOpen && lastOpened !== urlToOpen && autoOpen) {
+    lastOpened = urlToOpen;
     setTimeout(() => {
-      lastOpened = urlToOpen;
       open(urlToOpen, '_blank');
     }, 1000);
-  }, [urlToOpen, autoOpen]);
+  }
 
   if (!urlToOpen) {
     return null;
@@ -89,12 +86,7 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   return (
     <div className={styles.root}>
       <div className={styles.topNav}>
-        <a
-          href="https://affine.pro"
-          target="_blank"
-          rel="noreferrer"
-          className={styles.affineLogo}
-        >
+        <a href="/" rel="noreferrer" className={styles.affineLogo}>
           <Logo1Icon width={24} height={24} />
         </a>
 
@@ -181,11 +173,11 @@ const OpenOAuthJwt = () => {
   }, [params]);
   const channel = schemaToChanel[schema as Schema];
 
-  if (!currentUser || !currentUser?.token?.token) {
+  if (!currentUser || !currentUser?.token?.sessionToken) {
     return null;
   }
 
-  const urlToOpen = `${schema}://oauth-jwt?token=${currentUser.token.token}`;
+  const urlToOpen = `${schema}://signin-redirect?token=${currentUser.token.sessionToken}`;
 
   return <OpenAppImpl urlToOpen={urlToOpen} channel={channel} />;
 };
@@ -195,7 +187,7 @@ export const Component = () => {
 
   if (action === 'url') {
     return <OpenUrl />;
-  } else if (action === 'oauth-jwt') {
+  } else if (action === 'signin-redirect') {
     return <OpenOAuthJwt />;
   }
   return null;

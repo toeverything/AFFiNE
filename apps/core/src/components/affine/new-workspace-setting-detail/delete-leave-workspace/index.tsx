@@ -6,7 +6,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 
-import type { WorkspaceSettingDetailProps } from '../index';
+import type { WorkspaceSettingDetailProps } from '../types';
 import { WorkspaceDeleteModal } from './delete';
 
 export interface DeleteLeaveWorkspaceProps extends WorkspaceSettingDetailProps {

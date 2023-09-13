@@ -116,7 +116,7 @@ export const StyledCreateWorkspaceCardPillContent = styled('div')(() => {
 
 export const StyledCreateWorkspaceCardPillIcon = styled('div')(() => {
   return {
-    fontSize: '20px',
+    fontSize: '28px',
     width: '1em',
     height: '1em',
   };
@@ -142,6 +142,7 @@ export const StyledSignInCardPillTextPrimary = styled('div')(() => {
     fontWeight: 600,
     lineHeight: '24px',
     maxWidth: '200px',
+    textAlign: 'left',
     ...textEllipsis(1),
   };
 });

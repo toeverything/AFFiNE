@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import { ValidationResult } from '@affine/native';
+import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import type {
   FakeDialogResult,
   LoadDBFileResult,
@@ -14,19 +15,18 @@ import { nanoid } from 'nanoid';
 import { ensureSQLiteDB } from '../db/ensure-db';
 import {
   copyToTemp,
-  migrateToLatestDatabase,
+  migrateToLatest,
   migrateToSubdocAndReplaceDatabase,
 } from '../db/migration';
 import type { WorkspaceSQLiteDB } from '../db/workspace-db-adapter';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
+import { listWorkspaces, storeWorkspaceMeta } from '../workspace';
 import {
   getWorkspaceDBPath,
   getWorkspaceMeta,
   getWorkspacesBasePath,
-  listWorkspaces,
-  storeWorkspaceMeta,
-} from '../workspace';
+} from '../workspace/meta';
 
 // NOTE:
 // we are using native dialogs because HTML dialogs do not give full file paths
@@ -204,7 +204,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
     if (validationResult === ValidationResult.MissingVersionColumn) {
       try {
         const tmpDBPath = await copyToTemp(originalPath);
-        await migrateToLatestDatabase(tmpDBPath);
+        await migrateToLatest(tmpDBPath, WorkspaceVersion.SubDoc);
         originalPath = tmpDBPath;
       } catch (error) {
         logger.warn(
@@ -221,6 +221,24 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
       validationResult !== ValidationResult.Valid
     ) {
       return { error: 'DB_FILE_INVALID' }; // invalid db file
+    }
+
+    const db = new SqliteConnection(originalPath);
+    try {
+      await db.connect();
+      if ((await db.getMaxVersion()) === WorkspaceVersion.DatabaseV3) {
+        const tmpDBPath = await copyToTemp(originalPath);
+        await migrateToLatest(tmpDBPath, WorkspaceVersion.SubDoc);
+        originalPath = tmpDBPath;
+      }
+    } catch (error) {
+      logger.warn(
+        `loadDBFile, migration version column failed: ${originalPath}`,
+        error
+      );
+      return { error: 'DB_FILE_MIGRATION_FAILED' };
+    } finally {
+      await db.close();
     }
 
     // copy the db file to a new workspace id

@@ -1,10 +1,10 @@
 import path from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
+import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
-import { removeWithRetry } from '../../../../tests/utils';
 import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../migration';
 
 const tmpDir = path.join(__dirname, 'tmp');

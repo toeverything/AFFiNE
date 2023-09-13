@@ -221,3 +221,7 @@ export const deleteIcon = style({
     backgroundColor: 'var(--affine-background-error-color)',
   },
 });
+export const filterMenuTrigger = style({
+  padding: '6px 8px',
+  background: 'var(--affine-hover-color)',
+});

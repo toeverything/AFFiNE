@@ -225,11 +225,8 @@ export const createConfiguration: (
             {
               loader: require.resolve('source-map-loader'),
               options: {
-                filterSourceMappingUrl: (
-                  _url: string,
-                  resourcePath: string
-                ) => {
-                  return resourcePath.includes('@blocksuite');
+                filterSourceMappingUrl: (_url: string) => {
+                  return false;
                 },
               },
             },
@@ -352,10 +349,12 @@ export const createConfiguration: (
         'process.env': JSON.stringify({}),
         'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
-        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
-          process.env.SHOULD_REPORT_TRACE
-        )}`,
-        'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
+        'process.env.SHOULD_REPORT_TRACE': JSON.stringify(
+          Boolean(process.env.SHOULD_REPORT_TRACE === 'true')
+        ),
+        'process.env.TRACE_REPORT_ENDPOINT': JSON.stringify(
+          process.env.TRACE_REPORT_ENDPOINT
+        ),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({

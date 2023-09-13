@@ -1,10 +1,10 @@
 import assert from 'node:assert';
 import path from 'node:path';
 
+import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import fs from 'fs-extra';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { removeWithRetry } from '../../../tests/utils';
 import type { MainIPCHandlerMap } from '../exposed';
 
 const registeredHandlers = new Map<

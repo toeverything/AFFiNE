@@ -7,6 +7,19 @@ export interface GraphQLQuery {
   containsFile?: boolean;
 }
 
+export const checkBlobSizesQuery = {
+  id: 'checkBlobSizesQuery' as const,
+  operationName: 'checkBlobSizes',
+  definitionName: 'checkBlobSize',
+  containsFile: false,
+  query: `
+query checkBlobSizes($workspaceId: String!, $size: Float!) {
+  checkBlobSize(workspaceId: $workspaceId, size: $size) {
+    size
+  }
+}`,
+};
+
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   operationName: 'deleteBlob',
@@ -152,7 +165,7 @@ query getCurrentUser {
     avatarUrl
     createdAt
     token {
-      token
+      sessionToken
     }
   }
 }`,
@@ -191,15 +204,28 @@ query getIsOwner($workspaceId: String!) {
 }`,
 };
 
+export const getMemberCountByWorkspaceIdQuery = {
+  id: 'getMemberCountByWorkspaceIdQuery' as const,
+  operationName: 'getMemberCountByWorkspaceId',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getMemberCountByWorkspaceId($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    memberCount
+  }
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',
   definitionName: 'workspace',
   containsFile: false,
   query: `
-query getMembersByWorkspaceId($workspaceId: String!) {
+query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
   workspace(id: $workspaceId) {
-    members {
+    members(skip: $skip, take: $take) {
       id
       name
       email
@@ -301,8 +327,12 @@ export const leaveWorkspaceMutation = {
   definitionName: 'leaveWorkspace',
   containsFile: false,
   query: `
-mutation leaveWorkspace($workspaceId: String!) {
-  leaveWorkspace(workspaceId: $workspaceId)
+mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLeaveMail: Boolean) {
+  leaveWorkspace(
+    workspaceId: $workspaceId
+    workspaceName: $workspaceName
+    sendLeaveMail: $sendLeaveMail
+  )
 }`,
 };
 
@@ -475,8 +505,12 @@ export const acceptInviteByInviteIdMutation = {
   definitionName: 'acceptInviteById',
   containsFile: false,
   query: `
-mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!) {
-  acceptInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
+mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $sendAcceptMail: Boolean) {
+  acceptInviteById(
+    workspaceId: $workspaceId
+    inviteId: $inviteId
+    sendAcceptMail: $sendAcceptMail
+  )
 }`,
 };
 

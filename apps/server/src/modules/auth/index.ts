@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
-import { SessionService } from '../../session';
+import { SessionModule } from '../../session';
 import { MAILER, MailService } from './mailer';
 import { NextAuthController } from './next-auth.controller';
 import { NextAuthOptionsProvider } from './next-auth-options';
@@ -9,9 +9,9 @@ import { AuthService } from './service';
 
 @Global()
 @Module({
+  imports: [SessionModule],
   providers: [
     AuthService,
-    SessionService,
     AuthResolver,
     NextAuthOptionsProvider,
     MAILER,

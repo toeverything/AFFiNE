@@ -13,6 +13,7 @@ import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
 import { RateLimiterModule } from '../throttler';
+import { getCurrentMailMessageCount, getLatestMailMessage } from './utils';
 
 let auth: AuthService;
 let module: TestingModule;
@@ -64,27 +65,15 @@ test.beforeEach(async () => {
   auth = module.get(AuthService);
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await module.close();
 });
-
-const getCurrentMailMessageCount = async () => {
-  const response = await fetch('http://localhost:8025/api/v2/messages');
-  const data = await response.json();
-  return data.total;
-};
-
-const getLatestMailMessage = async () => {
-  const response = await fetch('http://localhost:8025/api/v2/messages');
-  const data = await response.json();
-  return data.items[0];
-};
 
 test('should include callbackUrl in sending email', async t => {
   if (skip) {
     return t.pass();
   }
-  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
+  // await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   for (const fn of [
     'sendSetPasswordEmail',
     'sendChangeEmail',

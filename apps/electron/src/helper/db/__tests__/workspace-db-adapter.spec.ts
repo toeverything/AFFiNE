@@ -1,11 +1,11 @@
 import path from 'node:path';
 
+import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
-import { removeWithRetry } from '../../../../tests/utils';
 import { dbSubjects } from '../subjects';
 
 const tmpDir = path.join(__dirname, 'tmp');
