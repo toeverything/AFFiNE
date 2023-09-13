@@ -1,4 +1,3 @@
-import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   CloudWorkspaceIcon,
@@ -6,7 +5,9 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import {
@@ -20,7 +21,6 @@ import {
 import { useDatasourceSync } from '../../../../hooks/use-datasource-sync';
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
-import { workspaceAvatarStyle } from './index.css';
 import { Loading } from './loading-icon';
 import {
   StyledSelectorContainer,
@@ -172,6 +172,10 @@ export const WorkspaceSelector = ({
   const [name] = useBlockSuiteWorkspaceName(
     currentWorkspace.blockSuiteWorkspace
   );
+  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(
+    currentWorkspace.blockSuiteWorkspace
+  );
+
   // Open dialog when `Enter` or `Space` pressed
   // TODO-Doma Refactor with `@radix-ui/react-dialog` or other libraries that handle these out of the box and be accessible by default
   // TODO: Delete this?
@@ -197,11 +201,15 @@ export const WorkspaceSelector = ({
       data-testid="current-workspace"
       id="current-workspace"
     >
-      <WorkspaceAvatar
+      <Avatar
         data-testid="workspace-avatar"
-        className={workspaceAvatarStyle}
         size={40}
-        workspace={currentWorkspace.blockSuiteWorkspace}
+        url={workspaceAvatar}
+        name={name}
+        colorfulFallback
+        style={{
+          marginRight: '10px',
+        }}
       />
       <StyledSelectorWrapper>
         <StyledWorkspaceName data-testid="workspace-name">

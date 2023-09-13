@@ -2,7 +2,6 @@ import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
 } from '@affine/component/setting-components';
-import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
@@ -10,6 +9,7 @@ import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
@@ -223,6 +223,7 @@ const WorkspaceListItem = ({
   isActive: boolean;
 }) => {
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
+  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
   const ref = useRef(null);
 
@@ -234,7 +235,15 @@ const WorkspaceListItem = ({
       data-testid="workspace-list-item"
       ref={ref}
     >
-      <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
+      <Avatar
+        size={14}
+        url={workspaceAvatar}
+        name={workspaceName}
+        colorfulFallback
+        style={{
+          marginRight: '10px',
+        }}
+      />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
         <Tooltip

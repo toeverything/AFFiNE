@@ -1,7 +1,4 @@
 import { createVar, keyframes, style } from '@vanilla-extract/css';
-export const workspaceAvatarStyle = style({
-  flexShrink: 0,
-});
 
 export const speedVar = createVar('speedVar');
 

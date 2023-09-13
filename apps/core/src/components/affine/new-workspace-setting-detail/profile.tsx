@@ -87,6 +87,7 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
           size={56}
           url={workspaceAvatar}
           name={name}
+          colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
           onRemove={
             workspaceAvatar && isOwner ? handleRemoveUserAvatar : undefined

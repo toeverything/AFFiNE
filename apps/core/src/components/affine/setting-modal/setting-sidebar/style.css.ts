@@ -62,12 +62,6 @@ export const sidebarSelectItem = style({
   },
 });
 
-globalStyle(`${settingSlideBar} .icon`, {
-  width: '16px',
-  height: '16px',
-  marginRight: '10px',
-  flexShrink: 0,
-});
 globalStyle(`${settingSlideBar} .setting-name`, {
   minWidth: 0,
   overflow: 'hidden',
