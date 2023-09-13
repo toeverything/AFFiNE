@@ -96,10 +96,6 @@ export type SessionContextValue<R extends boolean = false> = R extends true
 const sessionLoadingAtom = atom<boolean>(false);
 const sessionValueAtom = atom<CloudSession | null>(null);
 
-export function useSessionStatus() {
-  return useAtomValue(sessionAtom).status;
-}
-
 export const sessionAtom = atom<
   SessionContextValue,
   [data?: any],
@@ -136,6 +132,12 @@ export const sessionAtom = atom<
     return newSession;
   }
 );
+
+const sessionStatusAtom = atom(get => get(sessionAtom).status);
+
+export function useSessionStatus() {
+  return useAtomValue(sessionStatusAtom);
+}
 
 export type GetSessionParams = CtxOrReq & {
   event?: 'storage' | 'timer' | 'hidden' | string;
