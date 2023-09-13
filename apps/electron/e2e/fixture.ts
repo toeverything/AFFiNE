@@ -34,9 +34,12 @@ export const test = base.extend<{
 }>({
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
-    await page.getByTestId('onboarding-modal-close-button').click({
-      delay: 100,
-    });
+    await page
+      .getByTestId('onboarding-modal')
+      .locator('[aria-label="Close"]')
+      .click({
+        delay: 100,
+      });
     if (!process.env.CI) {
       await electronApp.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()[0].webContents.openDevTools({
