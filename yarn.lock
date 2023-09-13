@@ -653,6 +653,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/server@workspace:apps/server"
   dependencies:
+    "@affine-test/kit": "workspace:*"
     "@affine/storage": "workspace:*"
     "@apollo/server": ^4.9.3
     "@auth/prisma-adapter": ^1.0.1

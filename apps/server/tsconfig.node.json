@@ -13,6 +13,9 @@
   "references": [
     {
       "path": "../../tests/fixtures"
+    },
+    {
+      "path": "../../tests/kit"
     }
   ],
   "include": ["scripts", "package.json"]
