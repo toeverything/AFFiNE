@@ -20,10 +20,7 @@ if (platform() === 'darwin') {
     await page.getByTestId('help-island').click();
     await page.getByTestId('easy-guide').click();
     await page.getByTestId('onboarding-modal-next-button').click();
-    await page
-      .getByTestId('onboarding-modal')
-      .locator('[aria-label="Close"]')
-      .click();
+    await page.getByTestId('onboarding-modal-close-button').click();
     {
       // create pages
       await page.waitForTimeout(500);
@@ -142,10 +139,7 @@ test('affine onboarding button', async ({ page }) => {
     '[data-testid=onboarding-modal-editing-video]'
   );
   expect(await editingVideo.isVisible()).toEqual(true);
-  await page
-    .getByTestId('onboarding-modal')
-    .locator('[aria-label="Close"]')
-    .click();
+  await page.getByTestId('onboarding-modal-close-button').click();
 
   expect(await onboardingModal.isVisible()).toEqual(false);
 });
