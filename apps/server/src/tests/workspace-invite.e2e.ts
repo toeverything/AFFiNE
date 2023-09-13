@@ -1,3 +1,7 @@
+import {
+  getCurrentMailMessageCount,
+  getLatestMailMessage,
+} from '@affine-test/kit/utils/cloud';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -12,8 +16,6 @@ import {
   acceptInvite,
   acceptInviteById,
   createWorkspace,
-  getCurrentMailMessageCount,
-  getLatestMailMessage,
   getWorkspace,
   inviteUser,
   leaveWorkspace,
