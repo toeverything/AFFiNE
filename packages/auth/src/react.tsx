@@ -11,7 +11,7 @@
 import { useSystemOnline } from '@toeverything/hooks/use-system-online';
 import { useAtomValue, useSetAtom } from 'jotai/react';
 import { atom } from 'jotai/vanilla';
-import type { DefaultSession, Session } from 'next-auth';
+import type { DefaultSession, LoggerInstance, Session } from 'next-auth';
 import type { AuthClientConfig, CtxOrReq } from 'next-auth/client/_utils';
 import {
   apiBaseUrl,
@@ -34,9 +34,98 @@ import type {
   SignOutParams,
   SignOutResponse,
 } from 'next-auth/react';
-import _logger, { proxyLogger } from 'next-auth/utils/logger';
-import parseUrl from 'next-auth/utils/parse-url';
+import type { InternalUrl } from 'next-auth/utils/parse-url';
 import { useEffect } from 'react';
+
+function hasErrorProperty(
+  x: unknown
+): x is { error: Error; [key: string]: unknown } {
+  return !!(x as any)?.error;
+}
+
+function formatError(o: unknown): unknown {
+  if (hasErrorProperty(o)) {
+    o.error = formatError(o.error) as Error;
+    o.message = o.message ?? o.error.message;
+  }
+  return o;
+}
+
+const _logger: LoggerInstance = {
+  error(code, metadata) {
+    metadata = formatError(metadata) as Error;
+    console.error(
+      `[next-auth][error][${code}]`,
+      `\nhttps://next-auth.js.org/errors#${code.toLowerCase()}`,
+      metadata.message,
+      metadata
+    );
+  },
+  warn(code) {
+    console.warn(
+      `[next-auth][warn][${code}]`,
+      `\nhttps://next-auth.js.org/warnings#${code.toLowerCase()}`
+    );
+  },
+  debug(code, metadata) {
+    console.log(`[next-auth][debug][${code}]`, metadata);
+  },
+};
+
+function proxyLogger(
+  logger: LoggerInstance = _logger,
+  basePath?: string
+): LoggerInstance {
+  try {
+    if (typeof window === 'undefined') {
+      return logger;
+    }
+
+    const clientLogger: Record<string, unknown> = {};
+    for (const level in logger) {
+      clientLogger[level] = (code: string, metadata: Error) => {
+        _logger[level](code, metadata); // Logs to console
+
+        if (level === 'error') {
+          metadata = formatError(metadata) as Error;
+        }
+        (metadata as any).client = true;
+        const url = `${basePath}/_log`;
+        const body = new URLSearchParams({ level, code, ...(metadata as any) });
+        if (navigator.sendBeacon) {
+          return navigator.sendBeacon(url, body);
+        }
+        return fetch(url, { method: 'POST', body, keepalive: true });
+      };
+    }
+    return clientLogger as unknown as LoggerInstance;
+  } catch {
+    return _logger;
+  }
+}
+
+function parseUrl(url?: string): InternalUrl {
+  const defaultUrl = new URL('http://localhost:3000/api/auth');
+
+  if (url && !url.startsWith('http')) {
+    url = `https://${url}`;
+  }
+
+  const _url = new URL(url ?? defaultUrl);
+  const path = (_url.pathname === '/' ? defaultUrl.pathname : _url.pathname)
+    // Remove trailing slash
+    .replace(/\/$/, '');
+
+  const base = `${_url.origin}${path}`;
+
+  return {
+    origin: _url.origin,
+    host: _url.host,
+    path,
+    base,
+    toString: () => base,
+  };
+}
 
 // This behaviour mirrors the default behaviour for getting the site name that
 // happens server side in server/index.js
@@ -426,7 +515,7 @@ export function SessionProvider(props: SessionProviderProps) {
 
   const isOnline = useSystemOnline();
   // TODO: Flip this behavior in next major version
-  const shouldRefetch = refetchWhenOffline !== false || isOnline;
+  const shouldRefetch = refetchWhenOffline || isOnline;
 
   useEffect(() => {
     if (refetchInterval && shouldRefetch) {
