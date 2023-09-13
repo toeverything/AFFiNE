@@ -32,7 +32,7 @@ export interface ShareMenuProps<
 
 export const ShareMenu = (props: ShareMenuProps) => {
   const { useIsSharedPage } = props;
-  const isSharedPage = useIsSharedPage(
+  const [isSharedPage] = useIsSharedPage(
     props.workspace.id,
     props.currentPage.id
   );
