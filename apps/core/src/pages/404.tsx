@@ -27,13 +27,14 @@ export const StyledContainer = styled('div')(() => {
 export const NotFoundPage = () => {
   const t = useAFFiNEI18N();
   const { jumpToIndex } = useNavigateHelper();
+  const handleBackButtonClick = useCallback(() => jumpToIndex(), [jumpToIndex]);
 
   return (
     <StyledContainer data-testid="notFound">
       <img alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
 
       <p>{t['com.affine.notFoundPage.title']()}</p>
-      <Button onClick={useCallback(() => jumpToIndex(), [])}>
+      <Button onClick={handleBackButtonClick}>
         {t['com.affine.notFoundPage.backButton']()}
       </Button>
     </StyledContainer>
