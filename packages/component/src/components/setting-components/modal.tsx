@@ -1,10 +1,10 @@
 import { Modal, ModalCloseButton, ModalWrapper } from '@affine/component';
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, SetStateAction } from 'react';
 import { useCallback } from 'react';
 
 export interface SettingModalProps {
   open: boolean;
-  setOpen: (value: boolean) => void;
+  setOpen: (action: SetStateAction<boolean>) => void;
 }
 
 export const SettingModal = ({

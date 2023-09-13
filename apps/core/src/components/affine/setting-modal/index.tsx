@@ -5,7 +5,7 @@ import {
 } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
@@ -64,6 +64,19 @@ export const SettingModal = ({
   const onAccountSettingClick = useCallback(() => {
     onSettingClick({ activeTab: 'account', workspaceId: null });
   }, [onSettingClick]);
+
+  // Add ‘⌘+,’ shortcut keys as switches
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === ',' && e.metaKey) || (e.key === ',' && e.ctrlKey)) {
+        e.preventDefault();
+        setOpen(open => !open);
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [setOpen]);
 
   return (
     <SettingModalBase open={open} setOpen={setOpen}>

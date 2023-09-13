@@ -88,7 +88,12 @@ export const Setting = () => {
       onSettingClick={onSettingClick}
       setOpen={useCallback(
         open => {
-          setOpenSettingModalAtom(prev => ({ ...prev, open }));
+          typeof open === 'function'
+            ? setOpenSettingModalAtom(prev => ({
+                ...prev,
+                open: open(prev.open),
+              }))
+            : setOpenSettingModalAtom(prev => ({ ...prev, open }));
         },
         [setOpenSettingModalAtom]
       )}
