@@ -6,9 +6,7 @@ import {
   SignInSuccessPage,
   SignUpPage,
 } from '@affine/component/auth-components';
-import {
-  pushNotificationAtom,
-} from '@affine/component/notification-center';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import {
   changeEmailMutation,
   changePasswordMutation,
