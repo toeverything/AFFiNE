@@ -24,8 +24,12 @@ export function useBlockSuiteWorkspaceAvatarUrl(
     fallbackData: null,
   });
   const setAvatar = useCallback(
-    async (file: File) => {
+    async (file: File | null) => {
       assertExists(blockSuiteWorkspace);
+      if (!file) {
+        blockSuiteWorkspace.meta.setAvatar('');
+        return;
+      }
       const blob = new Blob([file], { type: file.type });
       const blobs = await blockSuiteWorkspace.blobs;
       const blobId = await blobs.set(blob);

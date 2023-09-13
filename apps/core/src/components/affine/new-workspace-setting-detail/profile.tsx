@@ -1,17 +1,16 @@
 import { FlexWrapper, Input, Wrapper } from '@affine/component';
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CameraIcon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,
+  type MouseEvent,
   startTransition,
   useCallback,
   useState,
@@ -29,7 +28,7 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
   const pushNotification = useSetAtom(pushNotificationAtom);
 
-  const [, update] = useBlockSuiteWorkspaceAvatarUrl(
+  const [workspaceAvatar, update] = useBlockSuiteWorkspaceAvatarUrl(
     workspace.blockSuiteWorkspace
   );
 
@@ -38,8 +37,6 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   );
 
   const [input, setInput] = useState<string>(name);
-  const [tooltipContainer, setTooltipContainer] =
-    useState<HTMLDivElement | null>(null);
 
   const handleUpdateWorkspaceName = useCallback(
     (name: string) => {
@@ -71,35 +68,33 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
     handleUpdateWorkspaceName(input);
   }, [handleUpdateWorkspaceName, input]);
 
+  const handleRemoveUserAvatar = useCallback(
+    async (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      await update(null);
+    },
+    [update]
+  );
   return (
     <div className={style.profileWrapper}>
-      <Tooltip
-        content={t['Click to replace photo']()}
-        portalOptions={{
-          container: tooltipContainer,
-        }}
+      <Upload
+        accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+        fileChange={update}
+        data-testid="upload-avatar"
+        disabled={!isOwner}
       >
-        <div
-          className={clsx(style.avatarWrapper, { disable: !isOwner })}
-          ref={setTooltipContainer}
-        >
-          <Upload
-            accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-            fileChange={update}
-            data-testid="upload-avatar"
-          >
-            <>
-              <div className="camera-icon-wrapper">
-                <CameraIcon />
-              </div>
-              <WorkspaceAvatar
-                size={56}
-                workspace={workspace.blockSuiteWorkspace}
-              />
-            </>
-          </Upload>
-        </div>
-      </Tooltip>
+        <Avatar
+          size={56}
+          url={workspaceAvatar}
+          name={name}
+          hoverIcon={isOwner ? <CameraIcon /> : undefined}
+          onRemove={
+            workspaceAvatar && isOwner ? handleRemoveUserAvatar : undefined
+          }
+          avatarTooltipOptions={{ content: t['Click to replace photo']() }}
+          removeTooltipOptions={{ content: t['Remove photo']() }}
+        />
+      </Upload>
 
       <Wrapper marginLeft={20}>
         <div className={style.label}>{t['Workspace Name']()}</div>
