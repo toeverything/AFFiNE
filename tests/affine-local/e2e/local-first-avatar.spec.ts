@@ -8,7 +8,7 @@ import {
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
-test('should create a page with a local first avatar', async ({
+test('should create a page with a local first avatar and remove it', async ({
   page,
   workspace,
 }) => {
@@ -40,6 +40,22 @@ test('should create a page with a local first avatar', async ({
     .getAttribute('src');
   // out user uploaded avatar
   expect(blobUrl).toContain('blob:');
+
+  // Click remove button to remove workspace avatar
+  await page.getByTestId('settings-modal-trigger').click();
+  await page.getByTestId('current-workspace-label').click();
+  await page.getByTestId('workspace-setting-avatar').hover();
+  await page.getByTestId('workspace-setting-remove-avatar-button').click();
+  await page.mouse.click(0, 0);
+  await page.waitForTimeout(1000);
+  await page.getByTestId('workspace-name').click();
+  await page.getByTestId('workspace-card').nth(1).click();
+  const removedAvatarImage = await page
+    .getByTestId('workspace-avatar')
+    .locator('img')
+    .count();
+  expect(removedAvatarImage).toBe(0);
+
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.flavour).toContain('local');

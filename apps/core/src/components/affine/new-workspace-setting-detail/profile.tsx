@@ -94,6 +94,10 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
           }
           avatarTooltipOptions={{ content: t['Click to replace photo']() }}
           removeTooltipOptions={{ content: t['Remove photo']() }}
+          data-testid="workspace-setting-avatar"
+          removeButtonProps={{
+            ['data-testid' as string]: 'workspace-setting-remove-avatar-button',
+          }}
         />
       </Upload>
 

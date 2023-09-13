@@ -77,6 +77,10 @@ export const UserAvatar = () => {
         onRemove={user.image ? handleRemoveUserAvatar : undefined}
         avatarTooltipOptions={{ content: t['Click to replace photo']() }}
         removeTooltipOptions={{ content: t['Remove photo']() }}
+        data-testid="user-setting-avatar"
+        removeButtonProps={{
+          ['data-testid' as string]: 'user-setting-remove-avatar-button',
+        }}
       />
     </Upload>
   );

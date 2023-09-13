@@ -124,7 +124,7 @@ test('should find default user', async t => {
     });
 });
 
-test('should be able to upload avatar', async t => {
+test('should be able to upload avatar and remove it', async t => {
   const { token, id } = await createToken(t.context.app);
   const png = await Transformer.fromRgbaPixels(
     Buffer.alloc(400 * 400 * 4).fill(255),
@@ -156,6 +156,28 @@ test('should be able to upload avatar', async t => {
     .expect(200)
     .expect(res => {
       t.is(res.body.data.uploadAvatar.id, id);
+    });
+
+  await request(t.context.app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation removeAvatar($id: String!) {
+            removeAvatar(id: $id) {
+              id
+              name
+              avatarUrl
+              email
+            }
+          }
+        `,
+      variables: { id },
+    })
+    .expect(200)
+    .expect(res => {
+      t.is(res.body.data.removeAvatar.avatarUrl, '');
     });
 });
 
