@@ -74,6 +74,7 @@
     "yjs": "^13.6.7"
   },
   "devDependencies": {
+    "@affine-test/kit": "workspace:*",
     "@affine/storage": "workspace:*",
     "@napi-rs/image": "^1.6.1",
     "@nestjs/testing": "^10.2.4",
