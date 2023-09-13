@@ -4,7 +4,6 @@ import {
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
-import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
@@ -285,7 +284,6 @@ export const WorkspaceLayoutInner = ({
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
-      {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
     </>
   );
 };
