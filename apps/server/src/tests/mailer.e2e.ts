@@ -2,6 +2,10 @@
 // This test case is for testing the mailer service.
 // Please use local SMTP server for testing.
 // See: https://github.com/mailhog/MailHog
+import {
+  getCurrentMailMessageCount,
+  getLatestMailMessage,
+} from '@affine-test/kit/utils/cloud';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
@@ -13,7 +17,6 @@ import { AuthModule } from '../modules/auth';
 import { AuthService } from '../modules/auth/service';
 import { PrismaModule } from '../prisma';
 import { RateLimiterModule } from '../throttler';
-import { getCurrentMailMessageCount, getLatestMailMessage } from './utils';
 
 let auth: AuthService;
 let module: TestingModule;

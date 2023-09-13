@@ -1,31 +1,15 @@
 import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { PrismaClient, User } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { InvitationType, WorkspaceType } from '../modules/workspaces';
 
 const gql = '/graphql';
-
-export async function getCurrentMailMessageCount() {
-  const response = await fetch('http://localhost:8025/api/v2/messages');
-  const data = await response.json();
-  return data.total;
-}
-
-export async function getLatestMailMessage() {
-  const response = await fetch('http://localhost:8025/api/v2/messages');
-  const data = await response.json();
-  return data.items[0];
-}
 
 async function signUp(
   app: INestApplication,
@@ -444,7 +428,8 @@ async function flushDB() {
   const result: { tablename: string }[] =
     await client.$queryRaw`SELECT tablename
                            FROM pg_catalog.pg_tables
-                           WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'`;
+                           WHERE schemaname != 'pg_catalog'
+                             AND schemaname != 'information_schema'`;
 
   // remove all table data
   await client.$executeRawUnsafe(
@@ -455,21 +440,6 @@ async function flushDB() {
   );
 
   await client.$disconnect();
-}
-
-async function createTestApp() {
-  const module = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-  const app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await app.init();
-  return app;
 }
 
 async function getInviteInfo(
@@ -583,6 +553,7 @@ export class FakePrisma {
     emailVerified: new Date(),
     createdAt: new Date(),
   };
+
   get user() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const prisma = this;
@@ -607,7 +578,6 @@ export {
   checkBlobSize,
   collectAllBlobSizes,
   collectBlobSizes,
-  createTestApp,
   createWorkspace,
   currentUser,
   flushDB,
