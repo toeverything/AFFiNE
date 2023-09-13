@@ -5,13 +5,13 @@ import '@toeverything/components/style.css';
 import { AffineContext } from '@affine/component/context';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { CacheProvider } from '@emotion/react';
+import { SessionProvider } from '@toeverything/auth/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { use } from 'foxact/use';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
-import { CloudSessionProvider } from './providers/session-provider';
 import { router } from './router';
 import createEmotionCache from './utils/create-emotion-cache';
 
@@ -50,7 +50,7 @@ export const App = memo(function App() {
   return (
     <CacheProvider value={cache}>
       <AffineContext store={getCurrentStore()}>
-        <CloudSessionProvider>
+        <SessionProvider>
           <DebugProvider>
             <RouterProvider
               fallbackElement={<WorkspaceFallback key="RouterFallback" />}
@@ -58,7 +58,7 @@ export const App = memo(function App() {
               future={future}
             />
           </DebugProvider>
-        </CloudSessionProvider>
+        </SessionProvider>
       </AffineContext>
     </CacheProvider>
   );
