@@ -1,6 +1,7 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import type { Notification } from '@affine/component/notification-center/index.jotai';
 import { atom, useAtom, useSetAtom } from 'jotai';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
 

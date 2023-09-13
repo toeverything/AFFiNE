@@ -23,6 +23,7 @@ import type {
   BuiltInProviderType,
   RedirectableProviderType,
 } from 'next-auth/providers';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import type {
   ClientSafeProvider,
   LiteralUnion,

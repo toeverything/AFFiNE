@@ -36,7 +36,7 @@ export const AvatarAndName = () => {
     (newName: string) => {
       update({ name: newName }).catch(console.error);
     },
-    [user]
+    [update]
   );
 
   const handleUpdateUserAvatar = useCallback(
@@ -48,7 +48,7 @@ export const AvatarAndName = () => {
       // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
       update({ name: user.name }).catch(console.error);
     },
-    [avatarTrigger, user]
+    [avatarTrigger, update, user.id, user.name]
   );
   return (
     <>

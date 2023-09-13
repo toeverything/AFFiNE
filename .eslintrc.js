@@ -33,13 +33,8 @@ const createPattern = packageName => [
   },
   {
     group: ['next-auth/react'],
-    message: "Import hooks from 'use-current-user.tsx'",
-    importNames: ['useSession', 'SessionProvider'],
-  },
-  {
-    group: ['next-auth/react'],
-    message: "Import hooks from 'cloud-utils.ts'",
-    importNames: ['signIn', 'signOut'],
+    message: 'Do not use this',
+    allowTypeImports: false,
   },
   {
     group: ['yjs'],
@@ -171,13 +166,8 @@ const config = {
           },
           {
             group: ['next-auth/react'],
-            message: "Import hooks from 'use-current-user.tsx'",
-            importNames: ['useSession', 'SessionProvider'],
-          },
-          {
-            group: ['next-auth/react'],
-            message: "Import hooks from 'cloud-utils.ts'",
-            importNames: ['signIn', 'signOut'],
+            message: 'Do not use this',
+            allowTypeImports: false,
           },
           {
             group: ['yjs'],
