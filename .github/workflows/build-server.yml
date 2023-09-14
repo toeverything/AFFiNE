@@ -217,7 +217,7 @@ jobs:
 
   server-desktop-e2e-test:
     name: Server Desktop E2E Test
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     environment: development
     needs: build-storage
     services:
@@ -249,7 +249,7 @@ jobs:
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
-          target: x86_64-pc-windows-msvc
+          target: x86_64-unknown-linux-gnu
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
