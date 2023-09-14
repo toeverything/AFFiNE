@@ -3,9 +3,10 @@ import type {
   AffineCloudWorkspace,
   LocalWorkspace,
 } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
   AccountIcon,
   ImportIcon,
@@ -15,23 +16,28 @@ import {
   SignOutIcon,
 } from '@blocksuite/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { Popover } from '@mui/material';
+import { arrayMove } from '@dnd-kit/sortable';
 import { IconButton } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
-import { useSetAtom } from 'jotai';
+import {
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
+} from '@toeverything/infra/atom';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
-import { useCallback } from 'react';
+import { startTransition, useCallback, useMemo, useTransition } from 'react';
 
 import {
   authAtom,
+  openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
-} from '../../../atoms';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import type { AllWorkspace } from '../../../shared';
-import { signOutCloud } from '../../../utils/cloud-utils';
+} from '../../../../atoms';
+import type { AllWorkspace } from '../../../../shared';
+import { signOutCloud } from '../../../../utils/cloud-utils';
+import { useNavigateHelper } from '../.././../../hooks/use-navigate-helper';
 import {
   StyledCreateWorkspaceCardPill,
   StyledCreateWorkspaceCardPillContent,
@@ -57,8 +63,6 @@ interface WorkspaceModalProps {
   disabled?: boolean;
   workspaces: RootWorkspaceMetadata[];
   currentWorkspaceId: AllWorkspace['id'] | null;
-  open: boolean;
-  onClose: () => void;
   onClickWorkspace: (workspace: RootWorkspaceMetadata['id']) => void;
   onClickWorkspaceSetting: (workspace: RootWorkspaceMetadata['id']) => void;
   onNewWorkspace: () => void;
@@ -66,10 +70,15 @@ interface WorkspaceModalProps {
   onMoveWorkspace: (activeId: string, overId: string) => void;
 }
 
-const AccountMenu = () => {
+const AccountMenu = ({
+  onOpenAccountSetting,
+  onSignOut,
+}: {
+  onOpenAccountSetting: () => void;
+  onSignOut: () => void;
+}) => {
   const t = useAFFiNEI18N();
-  const setOpen = useSetAtom(openSettingModalAtom);
-  const { jumpToIndex } = useNavigateHelper();
+
   return (
     <div>
       <MenuItem
@@ -79,9 +88,7 @@ const AccountMenu = () => {
           </MenuIcon>
         }
         data-testid="editor-option-menu-import"
-        onClick={useCallback(() => {
-          setOpen(prev => ({ ...prev, open: true, activeTab: 'account' }));
-        }, [setOpen])}
+        onClick={onOpenAccountSetting}
       >
         {t['com.affine.workspace.cloud.account.settings']()}
       </MenuItem>
@@ -93,13 +100,7 @@ const AccountMenu = () => {
           </MenuIcon>
         }
         data-testid="editor-option-menu-import"
-        onClick={useCallback(() => {
-          signOutCloud()
-            .then(() => {
-              jumpToIndex();
-            })
-            .catch(console.error);
-        }, [jumpToIndex])}
+        onClick={onSignOut}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
@@ -152,52 +153,108 @@ const CloudWorkSpaceList = ({
   );
 };
 
-export const WorkspaceListModal = ({
-  disabled,
-  open,
-  onClose,
-  workspaces,
-  onClickWorkspace,
-  onClickWorkspaceSetting,
-  onNewWorkspace,
-  onAddWorkspace,
-  currentWorkspaceId,
-  onMoveWorkspace,
-}: WorkspaceModalProps) => {
+export const UserWithWorkspaceList = ({
+  onEventEnd,
+}: {
+  onEventEnd?: () => void;
+}) => {
+  const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
+
+  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
+  const workspaces = useAtomValue(rootWorkspacesMetadataAtom, {
+    delay: 0,
+  });
+  const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
+    currentWorkspaceIdAtom
+  );
+  const setCurrentPageId = useSetAtom(currentPageIdAtom);
+  const [, startCloseTransition] = useTransition();
+  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+
   const t = useAFFiNEI18N();
   const setOpen = useSetAtom(authAtom);
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
   // TODO: AFFiNE Cloud support
   const { data: session, status } = useSession();
-  const isLoggedIn = status === 'authenticated' ? true : false;
-  const anchorEl = document.getElementById('current-workspace');
-  const cloudWorkspaces = workspaces.filter(
-    ({ flavour }) => flavour === WorkspaceFlavour.AFFINE_CLOUD
-  ) as (AffineCloudWorkspace | LocalWorkspace)[];
-  const localWorkspaces = workspaces.filter(
-    ({ flavour }) => flavour === WorkspaceFlavour.LOCAL
-  ) as (AffineCloudWorkspace | LocalWorkspace)[];
-  // FIXME: replace mui popover
+  const isLoggedIn = useMemo(() => status === 'authenticated', [status]);
+  const cloudWorkspaces = useMemo(
+    () =>
+      workspaces.filter(
+        ({ flavour }) => flavour === WorkspaceFlavour.AFFINE_CLOUD
+      ) as (AffineCloudWorkspace | LocalWorkspace)[],
+    [workspaces]
+  );
+  const localWorkspaces = useMemo(
+    () =>
+      workspaces.filter(
+        ({ flavour }) => flavour === WorkspaceFlavour.LOCAL
+      ) as (AffineCloudWorkspace | LocalWorkspace)[],
+    [workspaces]
+  );
+
+  const onClickWorkspaceSetting = useCallback(
+    (workspaceId: string) => {
+      setOpenSettingModalAtom({
+        open: true,
+        activeTab: 'workspace',
+        workspaceId,
+      });
+      onEventEnd?.();
+    },
+    [onEventEnd, setOpenSettingModalAtom]
+  );
+
+  const onMoveWorkspace = useCallback(
+    (activeId: string, overId: string) => {
+      const oldIndex = workspaces.findIndex(w => w.id === activeId);
+      const newIndex = workspaces.findIndex(w => w.id === overId);
+      startTransition(() => {
+        setWorkspaces(workspaces => arrayMove(workspaces, oldIndex, newIndex));
+      });
+    },
+    [setWorkspaces, workspaces]
+  );
+  const onClickWorkspace = useCallback(
+    (workspaceId: string) => {
+      startCloseTransition(() => {
+        setCurrentWorkspaceId(workspaceId);
+        setCurrentPageId(null);
+        jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
+      });
+      onEventEnd?.();
+    },
+    [jumpToSubPath, onEventEnd, setCurrentPageId, setCurrentWorkspaceId]
+  );
+  const onNewWorkspace = useCallback(() => {
+    setOpenCreateWorkspaceModal('new');
+    onEventEnd?.();
+  }, [onEventEnd, setOpenCreateWorkspaceModal]);
+  const onAddWorkspace = useCallback(async () => {
+    setOpenCreateWorkspaceModal('add');
+    onEventEnd?.();
+  }, [onEventEnd, setOpenCreateWorkspaceModal]);
+
+  const onOpenAccountSetting = useCallback(() => {
+    setSettingModalAtom(prev => ({
+      ...prev,
+      open: true,
+      activeTab: 'account',
+    }));
+    onEventEnd?.();
+  }, [onEventEnd, setSettingModalAtom]);
+  const onSignOut = useCallback(async () => {
+    signOutCloud()
+      .then(() => {
+        jumpToIndex();
+      })
+      .catch(console.error);
+    onEventEnd?.();
+  }, [onEventEnd, jumpToIndex]);
+
   return (
-    <Popover
-      sx={{
-        color: 'success.main',
-        zIndex: 999,
-        '& .MuiPopover-paper': {
-          borderRadius: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: 'var(--affine-shadow-2)',
-          backgroundColor: 'var(--affine-background-overlay-panel-color)',
-          padding: '16px 12px',
-        },
-        maxHeight: '90vh',
-      }}
-      open={open}
-      anchorEl={anchorEl}
-      onClose={onClose}
-      disableEnforceFocus
-    >
+    <>
       {!isLoggedIn ? (
         <StyledModalHeaderContent>
           <StyledSignInCardPill>
@@ -211,7 +268,6 @@ export const WorkspaceListModal = ({
                     openModal: true,
                   }));
                 }
-                onClose();
               }}
               data-testid="cloud-signin-button"
             >
@@ -242,7 +298,12 @@ export const WorkspaceListModal = ({
             <StyledModalTitle>{session?.user.email}</StyledModalTitle>
             <StyledOperationWrapper>
               <Menu
-                items={<AccountMenu />}
+                items={
+                  <AccountMenu
+                    onOpenAccountSetting={onOpenAccountSetting}
+                    onSignOut={onSignOut}
+                  />
+                }
                 contentOptions={{
                   side: 'right',
                   sideOffset: 30,
@@ -263,9 +324,6 @@ export const WorkspaceListModal = ({
         {isLoggedIn && cloudWorkspaces.length !== 0 ? (
           <>
             <CloudWorkSpaceList
-              disabled={disabled}
-              open={open}
-              onClose={onClose}
               workspaces={workspaces}
               onClickWorkspace={onClickWorkspace}
               onClickWorkspaceSetting={onClickWorkspaceSetting}
@@ -288,7 +346,6 @@ export const WorkspaceListModal = ({
         </StyledModalHeader>
         <StyledModalContent>
           <WorkspaceList
-            disabled={disabled}
             items={localWorkspaces}
             currentWorkspaceId={currentWorkspaceId}
             onClick={onClickWorkspace}
@@ -335,6 +392,6 @@ export const WorkspaceListModal = ({
           </StyledItem>
         </StyledCreateWorkspaceCardPill>
       </StyledModalFooterContent>
-    </Popover>
+    </>
   );
 };

@@ -1,20 +1,8 @@
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import { arrayMove } from '@dnd-kit/sortable';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/infra/atom';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import {
-  lazy,
-  startTransition,
-  Suspense,
-  useCallback,
-  useTransition,
-} from 'react';
+import { lazy, Suspense, useCallback } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
@@ -22,7 +10,6 @@ import {
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
-  openWorkspacesModalAtom,
 } from '../atoms';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -35,12 +22,6 @@ const SettingModal = lazy(() =>
 const Auth = lazy(() =>
   import('../components/affine/auth').then(module => ({
     default: module.AuthModal,
-  }))
-);
-
-const WorkspaceListModal = lazy(() =>
-  import('../components/pure/workspace-list-modal').then(module => ({
-    default: module.WorkspaceListModal,
   }))
 );
 
@@ -161,90 +142,14 @@ export function CurrentWorkspaceModals() {
 }
 
 export const AllWorkspaceModals = (): ReactElement => {
-  const [openWorkspacesModal, setOpenWorkspacesModal] = useAtom(
-    openWorkspacesModalAtom
-  );
   const [isOpenCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
   );
 
   const { jumpToSubPath } = useNavigateHelper();
-  const workspaces = useAtomValue(rootWorkspacesMetadataAtom, {
-    delay: 0,
-  });
-  const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
-    currentWorkspaceIdAtom
-  );
-  const setCurrentPageId = useSetAtom(currentPageIdAtom);
-  const [, startCloseTransition] = useTransition();
-  const [, setOpenSettingModalAtom] = useAtom(openSettingModalAtom);
-
-  const handleOpenSettingModal = useCallback(
-    (workspaceId: string) => {
-      setOpenWorkspacesModal(false);
-
-      setOpenSettingModalAtom({
-        open: true,
-        activeTab: 'workspace',
-        workspaceId,
-      });
-    },
-    [setOpenSettingModalAtom, setOpenWorkspacesModal]
-  );
 
   return (
     <>
-      <Suspense>
-        <WorkspaceListModal
-          workspaces={workspaces}
-          currentWorkspaceId={currentWorkspaceId}
-          open={
-            (openWorkspacesModal || workspaces.length === 0) &&
-            isOpenCreateWorkspaceModal === false
-          }
-          onClose={useCallback(() => {
-            startCloseTransition(() => {
-              setOpenWorkspacesModal(false);
-            });
-          }, [setOpenWorkspacesModal])}
-          onMoveWorkspace={useCallback(
-            (activeId, overId) => {
-              const oldIndex = workspaces.findIndex(w => w.id === activeId);
-              const newIndex = workspaces.findIndex(w => w.id === overId);
-              startTransition(() => {
-                setWorkspaces(workspaces =>
-                  arrayMove(workspaces, oldIndex, newIndex)
-                );
-              });
-            },
-            [setWorkspaces, workspaces]
-          )}
-          onClickWorkspace={useCallback(
-            workspaceId => {
-              startCloseTransition(() => {
-                setOpenWorkspacesModal(false);
-                setCurrentWorkspaceId(workspaceId);
-                setCurrentPageId(null);
-                jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
-              });
-            },
-            [
-              jumpToSubPath,
-              setCurrentPageId,
-              setCurrentWorkspaceId,
-              setOpenWorkspacesModal,
-            ]
-          )}
-          onClickWorkspaceSetting={handleOpenSettingModal}
-          onNewWorkspace={useCallback(() => {
-            setOpenCreateWorkspaceModal('new');
-          }, [setOpenCreateWorkspaceModal])}
-          onAddWorkspace={useCallback(async () => {
-            setOpenCreateWorkspaceModal('add');
-          }, [setOpenCreateWorkspaceModal])}
-        />
-      </Suspense>
       <Suspense>
         <CreateWorkspaceModal
           mode={isOpenCreateWorkspaceModal}
@@ -254,14 +159,13 @@ export const AllWorkspaceModals = (): ReactElement => {
           onCreate={useCallback(
             id => {
               setOpenCreateWorkspaceModal(false);
-              setOpenWorkspacesModal(false);
               // if jumping immediately, the page may stuck in loading state
               // not sure why yet .. here is a workaround
               setTimeout(() => {
                 jumpToSubPath(id, WorkspaceSubPath.ALL);
               });
             },
-            [jumpToSubPath, setOpenCreateWorkspaceModal, setOpenWorkspacesModal]
+            [jumpToSubPath, setOpenCreateWorkspaceModal]
           )}
         />
       </Suspense>

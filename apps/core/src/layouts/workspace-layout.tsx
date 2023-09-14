@@ -36,11 +36,7 @@ import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
-import {
-  openQuickSearchModalAtom,
-  openSettingModalAtom,
-  openWorkspacesModalAtom,
-} from '../atoms';
+import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
@@ -167,7 +163,6 @@ export const WorkspaceLayoutInner = ({
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
-  const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 
   const handleCreatePage = useCallback(() => {
@@ -177,10 +172,6 @@ export const WorkspaceLayoutInner = ({
     assertExists(page);
     return page;
   }, [currentWorkspace.blockSuiteWorkspace, helper]);
-
-  const handleOpenWorkspaceListModal = useCallback(() => {
-    setOpenWorkspacesModal(true);
-  }, [setOpenWorkspacesModal]);
 
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenQuickSearchModal = useCallback(() => {
@@ -255,7 +246,6 @@ export const WorkspaceLayoutInner = ({
               onOpenQuickSearchModal={handleOpenQuickSearchModal}
               onOpenSettingModal={handleOpenSettingModal}
               currentWorkspace={currentWorkspace}
-              onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
               openPage={useCallback(
                 (pageId: string) => {
                   assertExists(currentWorkspace);
