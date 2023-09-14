@@ -101,7 +101,6 @@ export type AllBlobSizesQuery = {
 
 export type ChangeEmailMutationVariables = Exact<{
   token: Scalars['String']['input'];
-  newEmail: Scalars['String']['input'];
 }>;
 
 export type ChangeEmailMutation = {
@@ -359,6 +358,17 @@ export type SendSetPasswordEmailMutation = {
   sendSetPasswordEmail: boolean;
 };
 
+export type SendVerifyChangeEmailMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  callbackUrl: Scalars['String']['input'];
+}>;
+
+export type SendVerifyChangeEmailMutation = {
+  __typename?: 'Mutation';
+  sendVerifyChangeEmail: boolean;
+};
+
 export type SetRevokePageMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   pageId: Scalars['String']['input'];
@@ -610,6 +620,11 @@ export type Mutations =
       name: 'sendSetPasswordEmailMutation';
       variables: SendSetPasswordEmailMutationVariables;
       response: SendSetPasswordEmailMutation;
+    }
+  | {
+      name: 'sendVerifyChangeEmailMutation';
+      variables: SendVerifyChangeEmailMutationVariables;
+      response: SendVerifyChangeEmailMutation;
     }
   | {
       name: 'setRevokePageMutation';
