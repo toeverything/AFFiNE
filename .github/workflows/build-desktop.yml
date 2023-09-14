@@ -102,13 +102,6 @@ jobs:
           playwright-install: true
           hard-link-nm: false
 
-      - name: (test, remove me) Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn workspace @affine-test/affine-desktop e2e
-        env:
-          COVERAGE: true
-
-
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
