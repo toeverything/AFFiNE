@@ -156,14 +156,13 @@ export class UserResolver {
     name: 'removeAvatar',
     description: 'Remove user avatar',
   })
-  async removeAvatar(@Args('id') id: string) {
-    const user = await this.users.findUserById(id);
+  async removeAvatar(@CurrentUser() user: UserType) {
     if (!user) {
-      throw new BadRequestException(`User ${id} not found`);
+      throw new BadRequestException(`User not found`);
     }
     return this.prisma.user.update({
-      where: { id },
-      data: { avatarUrl: '' },
+      where: { id: user.id },
+      data: { avatarUrl: null },
     });
   }
 

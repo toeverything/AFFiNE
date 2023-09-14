@@ -342,8 +342,8 @@ export const removeAvatarMutation = {
   definitionName: 'removeAvatar',
   containsFile: false,
   query: `
-mutation removeAvatar($id: String!) {
-  removeAvatar(id: $id) {
+mutation removeAvatar {
+  removeAvatar {
     id
     name
     avatarUrl

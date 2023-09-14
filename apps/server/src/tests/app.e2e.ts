@@ -164,8 +164,8 @@ test('should be able to upload avatar and remove it', async t => {
     .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
-          mutation removeAvatar($id: String!) {
-            removeAvatar(id: $id) {
+          mutation removeAvatar {
+            removeAvatar {
               id
               name
               avatarUrl
@@ -173,7 +173,6 @@ test('should be able to upload avatar and remove it', async t => {
             }
           }
         `,
-      variables: { id },
     })
     .expect(200)
     .expect(res => {

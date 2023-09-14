@@ -55,9 +55,7 @@ export const UserAvatar = () => {
   const handleRemoveUserAvatar = useCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      await removeAvatarTrigger({
-        id: user.id,
-      });
+      await removeAvatarTrigger();
       // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
       user.update({ name: user.name }).catch(console.error);
     },

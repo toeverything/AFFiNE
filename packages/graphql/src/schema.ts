@@ -308,9 +308,7 @@ export type LeaveWorkspaceMutation = {
   leaveWorkspace: boolean;
 };
 
-export type RemoveAvatarMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
+export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
 
 export type RemoveAvatarMutation = {
   __typename?: 'Mutation';
