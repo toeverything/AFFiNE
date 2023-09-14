@@ -159,6 +159,9 @@ export const RootAppSidebar = ({
   const trashDroppable = useDroppable({
     id: DROPPABLE_SIDEBAR_TRASH,
   });
+  const closeUserWorkspaceList = useCallback(() => {
+    setOpenUserWorkspaceList(false);
+  }, []);
 
   return (
     <>
@@ -177,16 +180,13 @@ export const RootAppSidebar = ({
             open={openUserWorkspaceList}
             content={
               <Suspense>
-                <UserWithWorkspaceList
-                  onEventEnd={useCallback(() => {
-                    setOpenUserWorkspaceList(false);
-                  }, [])}
-                />
+                <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
               </Suspense>
             }
             contentOptions={{
               // hide trigger
               sideOffset: -58,
+              onInteractOutside: closeUserWorkspaceList,
             }}
           >
             <WorkspaceCard
