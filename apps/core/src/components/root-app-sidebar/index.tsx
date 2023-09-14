@@ -184,6 +184,10 @@ export const RootAppSidebar = ({
                 />
               </Suspense>
             }
+            contentOptions={{
+              // hide trigger
+              sideOffset: -58,
+            }}
           >
             <WorkspaceCard
               currentWorkspace={currentWorkspace}
