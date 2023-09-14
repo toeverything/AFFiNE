@@ -336,6 +336,19 @@ mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLea
 }`,
 };
 
+export const removeAvatarMutation = {
+  id: 'removeAvatarMutation' as const,
+  operationName: 'removeAvatar',
+  definitionName: 'removeAvatar',
+  containsFile: false,
+  query: `
+mutation removeAvatar {
+  removeAvatar {
+    success
+  }
+}`,
+};
+
 export const revokeMemberPermissionMutation = {
   id: 'revokeMemberPermissionMutation' as const,
   operationName: 'revokeMemberPermission',

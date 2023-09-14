@@ -63,6 +63,11 @@ export class DeleteAccount {
   @Field()
   success!: boolean;
 }
+@ObjectType()
+export class RemoveAvatar {
+  @Field()
+  success!: boolean;
+}
 
 @ObjectType()
 export class AddToNewFeaturesWaitingList {
@@ -149,6 +154,22 @@ export class UserResolver {
       where: { id },
       data: { avatarUrl: url },
     });
+  }
+
+  @Throttle(10, 60)
+  @Mutation(() => RemoveAvatar, {
+    name: 'removeAvatar',
+    description: 'Remove user avatar',
+  })
+  async removeAvatar(@CurrentUser() user: UserType) {
+    if (!user) {
+      throw new BadRequestException(`User not found`);
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { avatarUrl: null },
+    });
+    return { success: true };
   }
 
   @Throttle(10, 60)

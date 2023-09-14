@@ -8,12 +8,14 @@ export interface UploadProps {
   uploadType?: string;
   accept?: string;
   fileChange: (file: File) => void;
+  disabled?: boolean;
 }
 
 export const Upload = ({
   fileChange,
   accept,
   children,
+  disabled,
   ...props
 }: PropsWithChildren<UploadProps>) => {
   const t = useAFFiNEI18N();
@@ -34,6 +36,10 @@ export const Upload = ({
       input_ref.current.value = '';
     }
   };
+
+  if (disabled) {
+    return children ?? <Button>{t['Upload']()}</Button>;
+  }
 
   return (
     <UploadStyle onClick={_chooseFile}>
