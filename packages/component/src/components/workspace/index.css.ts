@@ -87,10 +87,10 @@ export const mainContainerStyle = style({
       borderRadius: '6px',
     },
     '&[data-in-trash-page="true"]': {
-      marginBottom: '50px',
+      marginBottom: '66px',
     },
     '&[data-in-trash-page="true"][data-show-padding="true"]': {
-      marginBottom: '60px',
+      marginBottom: '66px',
     },
     '&[data-show-padding="true"]:before': {
       content: '""',
