@@ -381,6 +381,9 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
         Element: globalThis.Element,
         SVGElement: globalThis.SVGElement,
 
+        // widgets uses this
+        customElements: globalThis.customElements,
+
         // fixme: use our own db api
         indexedDB: globalThis.indexedDB,
         IDBRequest: globalThis.IDBRequest,

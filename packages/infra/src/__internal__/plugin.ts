@@ -13,6 +13,7 @@ export const builtinPluginPaths = new Set([
   '/plugins/image-preview',
   '/plugins/vue-hello-world',
   '/plugins/outline',
+  '/plugins/linked-page',
 ]);
 
 const pluginCleanupMap = new Map<string, Set<() => void>>();
