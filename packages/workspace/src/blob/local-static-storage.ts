@@ -1,6 +1,6 @@
 import type { BlobStorage } from '@blocksuite/store';
 
-const predefinedStaticFiles = [
+export const predefinedStaticFiles = [
   'v2yF7lY2L5rtorTtTmYFsoMb9dBPKs5M1y9cUKxcI1M=',
   'nSEEkYxrThpZfLoPNOzMp6HWekvutAIYmADElDe1J6I=',
   'CBWoKrhSDndjBJzscQKENRqiXOOZnzIA5qyiCoy4-A0=',
@@ -29,7 +29,7 @@ export const createStaticStorage = (): BlobStorage => {
             return response.blob();
           }
         } else if (predefinedStaticFiles.includes(key)) {
-          const response = await fetch(`/static/${key}.png`);
+          const response = await fetch(`/static/${key}`);
           if (response.ok) {
             return response.blob();
           }
