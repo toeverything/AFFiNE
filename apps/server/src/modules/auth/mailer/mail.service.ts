@@ -86,7 +86,7 @@ export class MailService {
     return this.sendMail({
       from: this.config.auth.email.sender,
       to,
-      subject: `${invitationInfo.user.name} invited you to join ${invitationInfo.workspace}`,
+      subject: `${invitationInfo.user.name} invited you to join ${invitationInfo.workspace.name}`,
       html,
       attachments: [
         {
