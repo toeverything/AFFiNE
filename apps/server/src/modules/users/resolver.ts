@@ -63,6 +63,11 @@ export class DeleteAccount {
   @Field()
   success!: boolean;
 }
+@ObjectType()
+export class RemoveAvatar {
+  @Field()
+  success!: boolean;
+}
 
 @ObjectType()
 export class AddToNewFeaturesWaitingList {
@@ -152,7 +157,7 @@ export class UserResolver {
   }
 
   @Throttle(10, 60)
-  @Mutation(() => UserType, {
+  @Mutation(() => RemoveAvatar, {
     name: 'removeAvatar',
     description: 'Remove user avatar',
   })
@@ -160,10 +165,11 @@ export class UserResolver {
     if (!user) {
       throw new BadRequestException(`User not found`);
     }
-    return this.prisma.user.update({
+    await this.prisma.user.update({
       where: { id: user.id },
       data: { avatarUrl: null },
     });
+    return { success: true };
   }
 
   @Throttle(10, 60)

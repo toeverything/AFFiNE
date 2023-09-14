@@ -344,10 +344,7 @@ export const removeAvatarMutation = {
   query: `
 mutation removeAvatar {
   removeAvatar {
-    id
-    name
-    avatarUrl
-    email
+    success
   }
 }`,
 };

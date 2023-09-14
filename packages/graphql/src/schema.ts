@@ -312,13 +312,7 @@ export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
 
 export type RemoveAvatarMutation = {
   __typename?: 'Mutation';
-  removeAvatar: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    avatarUrl: string | null;
-    email: string;
-  };
+  removeAvatar: { __typename?: 'RemoveAvatar'; success: boolean };
 };
 
 export type RevokeMemberPermissionMutationVariables = Exact<{

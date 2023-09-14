@@ -1,8 +1,5 @@
 mutation removeAvatar {
   removeAvatar {
-    id
-    name
-    avatarUrl
-    email
+    success
   }
 }
