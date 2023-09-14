@@ -281,6 +281,12 @@ jobs:
           name: storage.node
           path: ./apps/server
 
+      - name: Build Plugins
+        run: yarn run build:plugins
+
+      - name: Build Desktop Layers
+        run: yarn workspace @affine/electron build:dev
+
       - name: Run playwright tests
         run: yarn workspace @affine-test/affine-desktop-cloud e2e
         env:

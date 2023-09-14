@@ -14,6 +14,7 @@
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "dev:prod": "yarn node scripts/dev.mjs",
     "build": "NODE_ENV=production zx scripts/build-layers.mjs",
+    "build:dev": "NODE_ENV=development zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
