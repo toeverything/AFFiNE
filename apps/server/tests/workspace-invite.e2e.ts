@@ -6,12 +6,11 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { AppModule } from '../app';
-import { MailService } from '../modules/auth/mailer';
-import { AuthService } from '../modules/auth/service';
+import { AppModule } from '../src/app';
+import { MailService } from '../src/modules/auth/mailer';
+import { AuthService } from '../src/modules/auth/service';
 import {
   acceptInvite,
   acceptInviteById,
@@ -202,8 +201,7 @@ test('should send email', async t => {
     const inviteEmailContent = await getLatestMailMessage();
 
     t.not(
-      // @ts-expect-error Third part library type mismatch
-      inviteEmailContent.To.find(item => {
+      inviteEmailContent.To.find((item: any) => {
         return item.Mailbox === 'production';
       }),
       undefined,
@@ -221,8 +219,7 @@ test('should send email', async t => {
     );
     const acceptEmailContent = await getLatestMailMessage();
     t.not(
-      // @ts-expect-error Third part library type mismatch
-      acceptEmailContent.To.find(item => {
+      acceptEmailContent.To.find((item: any) => {
         return item.Mailbox === 'u1';
       }),
       undefined,
@@ -239,8 +236,7 @@ test('should send email', async t => {
     );
     const leaveEmailContent = await getLatestMailMessage();
     t.not(
-      // @ts-expect-error Third part library type mismatch
-      leaveEmailContent.To.find(item => {
+      leaveEmailContent.To.find((item: any) => {
         return item.Mailbox === 'u1';
       }),
       undefined,

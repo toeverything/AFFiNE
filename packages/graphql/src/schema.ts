@@ -441,7 +441,6 @@ export type SignUpMutation = {
 };
 
 export type UploadAvatarMutationVariables = Exact<{
-  id: Scalars['String']['input'];
   avatar: Scalars['Upload']['input'];
 }>;
 

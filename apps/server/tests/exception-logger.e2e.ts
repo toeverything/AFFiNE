@@ -1,13 +1,12 @@
 import { Controller, Get, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import test from 'ava';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../app';
-import { ExceptionLogger } from '../middleware/exception-logger';
-import { PrismaService } from '../prisma';
+import { AppModule } from '../src/app';
+import { ExceptionLogger } from '../src/middleware/exception-logger';
+import { PrismaService } from '../src/prisma';
 
 const gql = '/graphql';
 const rest = '/rest';

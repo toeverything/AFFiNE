@@ -1,4 +1,4 @@
-/// <reference types="../global.d.ts" />
+/// <reference types="../src/global.d.ts" />
 // This test case is for testing the mailer service.
 // Please use local SMTP server for testing.
 // See: https://github.com/mailhog/MailHog
@@ -8,38 +8,21 @@ import {
 } from '@affine-test/kit/utils/cloud';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import test from 'ava';
+import ava, { TestFn } from 'ava';
 
-import { ConfigModule } from '../config';
-import { GqlModule } from '../graphql.module';
-import { MetricsModule } from '../metrics';
-import { AuthModule } from '../modules/auth';
-import { AuthService } from '../modules/auth/service';
-import { PrismaModule } from '../prisma';
-import { RateLimiterModule } from '../throttler';
+import { ConfigModule } from '../src/config';
+import { GqlModule } from '../src/graphql.module';
+import { MetricsModule } from '../src/metrics';
+import { AuthModule } from '../src/modules/auth';
+import { AuthService } from '../src/modules/auth/service';
+import { PrismaModule } from '../src/prisma';
+import { RateLimiterModule } from '../src/throttler';
 
-let auth: AuthService;
-let module: TestingModule;
-let skip = false;
-
-test.before(async () => {
-  try {
-    const response = await fetch('http://localhost:8025/api/v2/messages');
-    if (!response.ok && !process.env.CI) {
-      console.warn('local mail not found, skip the mailer.e2e.ts');
-      skip = true;
-    }
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.cause as any)?.code === 'ECONNREFUSED' &&
-      !process.env.CI
-    ) {
-      console.warn('local mail not found, skip the mailer.e2e.ts');
-      skip = true;
-    }
-  }
-});
+const test = ava as TestFn<{
+  auth: AuthService;
+  module: TestingModule;
+  skip: boolean;
+}>;
 
 // cleanup database before each test
 test.beforeEach(async () => {
@@ -48,8 +31,8 @@ test.beforeEach(async () => {
   await client.user.deleteMany({});
 });
 
-test.beforeEach(async () => {
-  module = await Test.createTestingModule({
+test.beforeEach(async t => {
+  t.context.module = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
         auth: {
@@ -65,18 +48,16 @@ test.beforeEach(async () => {
       RateLimiterModule,
     ],
   }).compile();
-  auth = module.get(AuthService);
+  t.context.auth = t.context.module.get(AuthService);
 });
 
-test.afterEach.always(async () => {
-  await module.close();
+test.afterEach.always(async t => {
+  await t.context.module.close();
 });
 
 test('should include callbackUrl in sending email', async t => {
-  if (skip) {
-    return t.pass();
-  }
-  // await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
+  const { auth } = t.context;
+  await auth.signUp('Alex Yang', 'alexyang@example.org', '123456');
   for (const fn of [
     'sendSetPasswordEmail',
     'sendChangeEmail',
@@ -88,11 +69,10 @@ test('should include callbackUrl in sending email', async t => {
     const current = await getCurrentMailMessageCount();
     const mail = await getLatestMailMessage();
     t.regex(
-      mail.Content.Body,
+      mail?.Content?.Body,
       /https:\/\/test.com\/callback/,
       `should include callbackUrl when calling ${fn}`
     );
     t.is(current, prev + 1, `calling ${fn}`);
   }
-  return;
 });

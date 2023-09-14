@@ -26,7 +26,6 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, Workspace } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
@@ -648,10 +647,10 @@ export class WorkspaceResolver {
         workspaceId,
       },
     });
-    return (
-      userWorkspace?.accepted &&
-      (await this.permissions.grantPage(workspaceId, pageId))
-    );
+    if (!userWorkspace?.accepted) {
+      throw new ForbiddenException('Permission denied');
+    }
+    return this.permissions.grantPage(workspaceId, pageId);
   }
 
   @Mutation(() => Boolean)

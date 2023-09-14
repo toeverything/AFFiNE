@@ -18,5 +18,6 @@
       "path": "../../tests/kit"
     }
   ],
-  "include": ["scripts", "package.json"]
+  "include": ["scripts", "package.json"],
+  "exclude": ["tests"]
 }

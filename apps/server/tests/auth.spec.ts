@@ -1,16 +1,16 @@
-/// <reference types="../global.d.ts" />
+/// <reference types="../src/global.d.ts" />
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 
-import { ConfigModule } from '../config';
-import { GqlModule } from '../graphql.module';
-import { MetricsModule } from '../metrics';
-import { AuthModule } from '../modules/auth';
-import { AuthResolver } from '../modules/auth/resolver';
-import { AuthService } from '../modules/auth/service';
-import { PrismaModule } from '../prisma';
-import { RateLimiterModule } from '../throttler';
+import { ConfigModule } from '../src/config';
+import { GqlModule } from '../src/graphql.module';
+import { MetricsModule } from '../src/metrics';
+import { AuthModule } from '../src/modules/auth';
+import { AuthResolver } from '../src/modules/auth/resolver';
+import { AuthService } from '../src/modules/auth/service';
+import { PrismaModule } from '../src/prisma';
+import { RateLimiterModule } from '../src/throttler';
 
 let authService: AuthService;
 let authResolver: AuthResolver;

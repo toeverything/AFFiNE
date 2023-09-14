@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
-import { Config, ConfigModule } from '../config';
+import { Config, ConfigModule } from '../src/config';
 
 let config: Config;
 let module: TestingModule;

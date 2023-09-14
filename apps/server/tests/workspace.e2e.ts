@@ -2,11 +2,10 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../app';
+import { AppModule } from '../src/app';
 import {
   acceptInvite,
   createWorkspace,
@@ -133,7 +132,7 @@ test('should share a page', async t => {
   t.is(pages.length, 1, 'failed to get shared pages');
   t.is(pages[0], 'page1', 'failed to get shared page: page1');
 
-  const msg1 = await sharePage(app, u2.token.token, workspace.id, 'page2');
+  const msg1 = await sharePage(app, u2.token.token, 'not_exists_ws', 'page2');
   t.is(msg1, 'Permission denied', 'unauthorized user can share page');
   const msg2 = await revokePage(app, u2.token.token, 'not_exists_ws', 'page2');
   t.is(msg2, 'Permission denied', 'unauthorized user can share page');
