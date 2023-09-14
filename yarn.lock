@@ -591,7 +591,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/plugin-cli@workspace:packages/plugin-cli"
   dependencies:
-    "@endo/static-module-record": ^0.8.1
+    "@endo/static-module-record": ^0.8.2
     "@swc/core": ^1.3.81
     "@toeverything/infra": "workspace:^"
     "@vanilla-extract/rollup-plugin": ^1.3.0
@@ -4446,13 +4446,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/env-options@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "@endo/env-options@npm:0.1.3"
-  checksum: da8c66865d4d30b0053a00960657dc36f022975a888f0dd6a2f6bb37b9fe731f45a02a2cf263d93b1a40fcb37b25f8ba7076cb8af9e93fd95f496365d9382930
-  languageName: node
-  linkType: hard
-
 "@endo/env-options@npm:^0.1.4":
   version: 0.1.4
   resolution: "@endo/env-options@npm:0.1.4"
@@ -4460,16 +4453,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/static-module-record@npm:^0.8.1":
-  version: 0.8.1
-  resolution: "@endo/static-module-record@npm:0.8.1"
+"@endo/static-module-record@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "@endo/static-module-record@npm:0.8.2"
   dependencies:
     "@agoric/babel-generator": ^7.17.6
     "@babel/parser": ^7.17.3
     "@babel/traverse": ^7.17.3
     "@babel/types": ^7.17.0
-    ses: ^0.18.7
-  checksum: c9dc18a5b8ec13008784e30aa15214a67771c325759b42d54362f891d0328b0abf4cafc7be8fa17d539f5f7ca28b9555127e22e9596f5e52d9bf7f3fa90c7963
+    ses: ^0.18.8
+  checksum: 0e65f28e95d4ddd495de4cc7e5f0a47a70b89ba5449660158c8813121ab76aa3a8db7e6b2bb9efd3cb24833f8613a952e3a85a8af9fc9b7e4ad49d1d47a9f06c
   languageName: node
   linkType: hard
 
@@ -31000,15 +30993,6 @@ __metadata:
   version: 0.0.1
   resolution: "server-only@npm:0.0.1"
   checksum: c432348956641ea3f460af8dc3765f3a1bdbcf7a1e0205b0756d868e6e6fe8934cdee6bff68401a1dd49ba4a831c75916517a877446d54b334f7de36fa273e53
-  languageName: node
-  linkType: hard
-
-"ses@npm:^0.18.7":
-  version: 0.18.7
-  resolution: "ses@npm:0.18.7"
-  dependencies:
-    "@endo/env-options": ^0.1.3
-  checksum: 75ac014771d9bc1f747193c6d0f9e7d2d7700a10311ba8d805d9bc78d4c20d4ef40537f0535b1ea6abf06babf67e70f8bd37b2ad68ad54992a0c5ce842181c87
   languageName: node
   linkType: hard
 
