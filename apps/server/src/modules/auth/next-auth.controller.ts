@@ -179,7 +179,7 @@ export class NextAuthController {
       });
       if (
         !req.headers?.referer ||
-        req.headers.referer.startsWith('https://accounts.google.com')
+        checkUrlOrigin(req.headers.referer, 'https://accounts.google.com')
       ) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
@@ -307,3 +307,11 @@ export class NextAuthController {
     throw new BadRequestException(`User not found`);
   }
 }
+
+const checkUrlOrigin = (url: string, origin: string) => {
+  try {
+    return new URL(url).origin === origin;
+  } catch (e) {
+    return false;
+  }
+};
