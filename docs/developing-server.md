@@ -1,30 +1,34 @@
 This document explains how to start server (@affine/server) locally with Docker
 
 ## Run postgresql in docker
+
 ```
 docker pull postgres
 docker run --rm --name affine-postgres -e POSTGRES_PASSWORD=affine -p 5432:5432 -v ~/Documents/postgres:/var/lib/postgresql/data postgres
 ```
 
 ### Optionally, use a dedicated volume
+
 ```
 docker volume create affine-postgres
 docker run --rm --name affine-postgres -e POSTGRES_PASSWORD=affine -p 5432:5432 -v affine-postgres:/var/lib/postgresql/data postgres
 ```
 
 ### mailhog (for local testing)
+
 ```
 docker run --rm --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog
 ```
 
-
 ## prepare db
+
 ```
 docker ps
 docker exec -it CONTAINER_ID psql -U postgres ## change container_id
 ```
 
 ### in the terminal, following the example to user & table
+
 ```
 psql (15.3 (Debian 15.3-1.pgdg120+1))
 Type "help" for help.
@@ -54,6 +58,7 @@ OAUTH_EMAIL_PASSWORD="corajqdetrpsjdev"
 ```
 
 You may need additional env for Google oauth login. You may want to put your own one if you are not part of the AFFiNE team
+
 ```
 OAUTH_GOOGLE_ENABLED="true"
 OAUTH_GOOGLE_CLIENT_ID=
@@ -95,4 +100,5 @@ yarn dev
 ```
 
 ## Done
+
 Now you should be able to start developing affine with server enabled.
