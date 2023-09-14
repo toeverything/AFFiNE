@@ -30,7 +30,6 @@ import type { User, Workspace } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
-import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -139,7 +138,6 @@ export class WorkspaceResolver {
 
   constructor(
     private readonly auth: AuthService,
-    private readonly config: Config,
     private readonly mailer: MailService,
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
