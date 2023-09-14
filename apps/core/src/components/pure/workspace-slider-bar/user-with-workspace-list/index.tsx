@@ -156,7 +156,7 @@ const CloudWorkSpaceList = ({
 export const UserWithWorkspaceList = ({
   onEventEnd,
 }: {
-  onEventEnd: () => void;
+  onEventEnd?: () => void;
 }) => {
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
@@ -201,7 +201,7 @@ export const UserWithWorkspaceList = ({
         activeTab: 'workspace',
         workspaceId,
       });
-      onEventEnd();
+      onEventEnd?.();
     },
     [onEventEnd, setOpenSettingModalAtom]
   );
@@ -223,17 +223,17 @@ export const UserWithWorkspaceList = ({
         setCurrentPageId(null);
         jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
       });
-      onEventEnd();
+      onEventEnd?.();
     },
     [jumpToSubPath, onEventEnd, setCurrentPageId, setCurrentWorkspaceId]
   );
   const onNewWorkspace = useCallback(() => {
     setOpenCreateWorkspaceModal('new');
-    onEventEnd();
+    onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
   const onAddWorkspace = useCallback(async () => {
     setOpenCreateWorkspaceModal('add');
-    onEventEnd();
+    onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
   const onOpenAccountSetting = useCallback(() => {
@@ -242,7 +242,7 @@ export const UserWithWorkspaceList = ({
       open: true,
       activeTab: 'account',
     }));
-    onEventEnd();
+    onEventEnd?.();
   }, [onEventEnd, setSettingModalAtom]);
   const onSignOut = useCallback(async () => {
     signOutCloud()
@@ -250,7 +250,7 @@ export const UserWithWorkspaceList = ({
         jumpToIndex();
       })
       .catch(console.error);
-    onEventEnd();
+    onEventEnd?.();
   }, [onEventEnd, jumpToIndex]);
 
   return (

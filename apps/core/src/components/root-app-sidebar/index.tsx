@@ -187,6 +187,7 @@ export const RootAppSidebar = ({
               // hide trigger
               sideOffset: -58,
               onInteractOutside: closeUserWorkspaceList,
+              onEscapeKeyDown: closeUserWorkspaceList,
             }}
           >
             <WorkspaceCard
