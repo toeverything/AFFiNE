@@ -177,17 +177,10 @@ export class NextAuthController {
       this.metrics.authFailCounter(1, {
         reason: 'no_early_access_permission',
       });
-      const checkReferer = () => {
-        try {
-          return (
-            new URL(req.headers.referer ?? '').origin ===
-            'https://accounts.google.com'
-          );
-        } catch (e) {
-          return false;
-        }
-      };
-      if (!req.headers?.referer || checkReferer()) {
+      if (
+        !req.headers?.referer ||
+        checkUrlOrigin(req.headers.referer, 'https://accounts.google.com')
+      ) {
         res.redirect('https://community.affine.pro/c/insider-general/');
       } else {
         res.status(403);
@@ -314,3 +307,11 @@ export class NextAuthController {
     throw new BadRequestException(`User not found`);
   }
 }
+
+const checkUrlOrigin = (url: string, origin: string) => {
+  try {
+    return new URL(url).origin === origin;
+  } catch (e) {
+    return false;
+  }
+};
