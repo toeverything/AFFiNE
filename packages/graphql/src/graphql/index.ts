@@ -85,8 +85,8 @@ export const changeEmailMutation = {
   definitionName: 'changeEmail',
   containsFile: false,
   query: `
-mutation changeEmail($token: String!, $newEmail: String!) {
-  changeEmail(token: $token, email: $newEmail) {
+mutation changeEmail($token: String!) {
+  changeEmail(token: $token) {
     id
     name
     avatarUrl
@@ -165,7 +165,7 @@ query getCurrentUser {
     avatarUrl
     createdAt
     token {
-      token
+      sessionToken
     }
   }
 }`,
@@ -204,15 +204,28 @@ query getIsOwner($workspaceId: String!) {
 }`,
 };
 
+export const getMemberCountByWorkspaceIdQuery = {
+  id: 'getMemberCountByWorkspaceIdQuery' as const,
+  operationName: 'getMemberCountByWorkspaceId',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getMemberCountByWorkspaceId($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    memberCount
+  }
+}`,
+};
+
 export const getMembersByWorkspaceIdQuery = {
   id: 'getMembersByWorkspaceIdQuery' as const,
   operationName: 'getMembersByWorkspaceId',
   definitionName: 'workspace',
   containsFile: false,
   query: `
-query getMembersByWorkspaceId($workspaceId: String!) {
+query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
   workspace(id: $workspaceId) {
-    members {
+    members(skip: $skip, take: $take) {
       id
       name
       email
@@ -375,6 +388,17 @@ export const sendSetPasswordEmailMutation = {
   query: `
 mutation sendSetPasswordEmail($email: String!, $callbackUrl: String!) {
   sendSetPasswordEmail(email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const sendVerifyChangeEmailMutation = {
+  id: 'sendVerifyChangeEmailMutation' as const,
+  operationName: 'sendVerifyChangeEmail',
+  definitionName: 'sendVerifyChangeEmail',
+  containsFile: false,
+  query: `
+mutation sendVerifyChangeEmail($token: String!, $email: String!, $callbackUrl: String!) {
+  sendVerifyChangeEmail(token: $token, email: $email, callbackUrl: $callbackUrl)
 }`,
 };
 

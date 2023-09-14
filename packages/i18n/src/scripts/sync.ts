@@ -1,7 +1,6 @@
 // cSpell:ignore Tolgee
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-
-import { readFile } from 'fs/promises';
 
 import { createsNewKey, getRemoteTranslations } from './api.js';
 import type { TranslationRes } from './utils.js';

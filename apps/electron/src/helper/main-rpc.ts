@@ -1,13 +1,17 @@
+import { assertExists } from '@blocksuite/global/utils';
 import type {
   HelperToMain,
   MainToHelper,
 } from '@toeverything/infra/preload/electron';
 import { AsyncCall } from 'async-call-rpc';
 
-import { getExposedMeta } from './exposed';
+import { exposed } from './provide';
 
 const helperToMainServer: HelperToMain = {
-  getMeta: () => getExposedMeta(),
+  getMeta: () => {
+    assertExists(exposed);
+    return exposed;
+  },
 };
 
 export const mainRPC = AsyncCall<MainToHelper>(helperToMainServer, {

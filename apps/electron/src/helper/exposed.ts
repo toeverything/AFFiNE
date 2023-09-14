@@ -6,6 +6,7 @@ import type {
 
 import { dbEvents, dbHandlers } from './db';
 import { dialogHandlers } from './dialog';
+import { provideExposed } from './provide';
 import { workspaceEvents, workspaceHandlers } from './workspace';
 
 type AllHandlers = {
@@ -25,7 +26,7 @@ export const events = {
   workspace: workspaceEvents,
 };
 
-export const getExposedMeta = () => {
+const getExposedMeta = () => {
   const handlersMeta = Object.entries(handlers).map(
     ([namespace, namespaceHandlers]) => {
       return [namespace, Object.keys(namespaceHandlers)] as [string, string[]];
@@ -43,3 +44,5 @@ export const getExposedMeta = () => {
     events: eventsMeta,
   };
 };
+
+provideExposed(getExposedMeta());

@@ -3,10 +3,6 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import type {
-  WorkspaceFlavour,
-  WorkspaceRegistry,
-} from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useMemo } from 'react';
@@ -19,22 +15,7 @@ import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
 import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
-
-export interface WorkspaceSettingDetailProps {
-  workspaceId: string;
-  isOwner: boolean;
-  onDeleteLocalWorkspace: () => void;
-  onDeleteCloudWorkspace: () => void;
-  onLeaveWorkspace: () => void;
-  onTransferWorkspace: <
-    From extends WorkspaceFlavour,
-    To extends WorkspaceFlavour,
-  >(
-    from: From,
-    to: To,
-    workspace: WorkspaceRegistry[From]
-  ) => void;
-}
+import type { WorkspaceSettingDetailProps } from './types';
 
 export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
   const { workspaceId } = props;

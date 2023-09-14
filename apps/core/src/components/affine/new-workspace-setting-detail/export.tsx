@@ -1,11 +1,14 @@
-import { toast } from '@affine/component';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { isDesktop } from '@affine/env/constant';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import type { SaveDBFileResult } from '@toeverything/infra/type';
-import { useCallback } from 'react';
+import { useSetAtom } from 'jotai';
+import { useCallback, useState } from 'react';
+import type { Doc } from 'yjs';
+import { encodeStateAsUpdate } from 'yjs';
 
 async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
   if (window.apis && isDesktop) {
@@ -28,6 +31,22 @@ async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
   }
 }
 
+async function syncDocsToSqliteDb(workspace: AffineOfficialWorkspace) {
+  if (window.apis && isDesktop) {
+    const workspaceId = workspace.blockSuiteWorkspace.doc.guid;
+    const syncDoc = async (doc: Doc) => {
+      await window.apis.db.applyDocUpdate(
+        workspace.id,
+        encodeStateAsUpdate(doc),
+        doc.guid === workspaceId ? undefined : doc.guid
+      );
+      await Promise.all([...doc.subdocs].map(subdoc => syncDoc(subdoc)));
+    };
+
+    return syncDoc(workspace.blockSuiteWorkspace.doc);
+  }
+}
+
 interface ExportPanelProps {
   workspace: AffineOfficialWorkspace;
 }
@@ -35,21 +54,45 @@ interface ExportPanelProps {
 export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   const workspaceId = workspace.id;
   const t = useAFFiNEI18N();
+  const [syncing, setSyncing] = useState(false);
+  const pushNotification = useSetAtom(pushNotificationAtom);
   const onExport = useCallback(async () => {
-    await syncBlobsToSqliteDb(workspace);
-    const result: SaveDBFileResult =
-      await window.apis?.dialog.saveDBFileAs(workspaceId);
-    if (result?.error) {
-      toast(result.error);
-    } else if (!result?.canceled) {
-      toast(t['Export success']());
+    if (syncing) {
+      return;
     }
-  }, [t, workspace, workspaceId]);
+    setSyncing(true);
+    try {
+      await syncBlobsToSqliteDb(workspace);
+      await syncDocsToSqliteDb(workspace);
+      const result: SaveDBFileResult =
+        await window.apis?.dialog.saveDBFileAs(workspaceId);
+      if (result?.error) {
+        throw new Error(result.error);
+      } else if (!result?.canceled) {
+        pushNotification({
+          type: 'success',
+          title: t['Export success'](),
+        });
+      }
+    } catch (e: any) {
+      pushNotification({
+        type: 'error',
+        title: t['Export failed'](),
+        message: e.message,
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }, [pushNotification, syncing, t, workspace, workspaceId]);
 
   return (
     <>
       <SettingRow name={t['Export']()} desc={t['Export Description']()}>
-        <Button data-testid="export-affine-backup" onClick={onExport}>
+        <Button
+          data-testid="export-affine-backup"
+          onClick={onExport}
+          disabled={syncing}
+        >
           {t['Export']()}
         </Button>
       </SettingRow>

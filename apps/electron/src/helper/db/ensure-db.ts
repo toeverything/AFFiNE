@@ -25,7 +25,8 @@ import {
 } from 'rxjs/operators';
 
 import { logger } from '../logger';
-import { getWorkspaceMeta, workspaceSubjects } from '../workspace';
+import { getWorkspaceMeta } from '../workspace/meta';
+import { workspaceSubjects } from '../workspace/subjects';
 import { SecondaryWorkspaceSQLiteDB } from './secondary-db';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 import { openWorkspaceDatabase } from './workspace-db-adapter';

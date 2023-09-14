@@ -6,6 +6,11 @@ import { getDoc } from '@affine/y-provider';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
 import { Schema, uuidv4, Workspace } from '@blocksuite/store';
+import type { DBHandlerManager } from '@toeverything/infra/handler';
+import type {
+  EventMap,
+  UnwrapManagerHandlerToClientSide,
+} from '@toeverything/infra/type';
 import { setTimeout } from 'timers/promises';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -51,7 +56,7 @@ vi.stubGlobal('window', {
         return [];
       },
       addBlob: mockedAddBlob,
-    } as Partial<NonNullable<typeof window.apis>['db']>,
+    } satisfies Partial<UnwrapManagerHandlerToClientSide<DBHandlerManager>>,
   },
   events: {
     db: {
@@ -62,7 +67,7 @@ vi.stubGlobal('window', {
         };
       },
     },
-  } as Partial<NonNullable<typeof window.events>>,
+  } as Partial<EventMap>,
 });
 
 vi.stubGlobal('environment', {

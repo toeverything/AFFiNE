@@ -30,6 +30,9 @@ export class TokenType {
 
   @Field()
   refresh!: string;
+
+  @Field({ nullable: true })
+  sessionToken?: string;
 }
 
 /**
@@ -49,18 +52,32 @@ export class AuthResolver {
 
   @Throttle(20, 60)
   @ResolveField(() => TokenType)
-  async token(@CurrentUser() currentUser: UserType, @Parent() user: UserType) {
+  async token(
+    @Context() ctx: { req: Request },
+    @CurrentUser() currentUser: UserType,
+    @Parent() user: UserType
+  ) {
     if (user.id !== currentUser.id) {
       throw new BadRequestException('Invalid user');
     }
 
-    // on production we use session token that is stored in database (strategy = 'database')
-    const sessionToken = this.config.node.prod
-      ? await this.auth.getSessionToken(user.id)
-      : this.auth.sign(user);
+    let sessionToken: string | undefined;
+
+    // only return session if the request is from the same origin & path == /open-app
+    if (
+      ctx.req.headers.referer &&
+      ctx.req.headers.host &&
+      new URL(ctx.req.headers.referer).pathname.startsWith('/open-app') &&
+      ctx.req.headers.host === new URL(this.config.origin).host
+    ) {
+      const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
+      const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+      sessionToken = ctx.req.cookies?.[sessionCookieName];
+    }
 
     return {
-      token: sessionToken,
+      sessionToken,
+      token: this.auth.sign(user),
       refresh: this.auth.refresh(user),
     };
   }
@@ -114,16 +131,18 @@ export class AuthResolver {
   @Auth()
   async changeEmail(
     @CurrentUser() user: UserType,
-    @Args('token') token: string,
-    @Args('email') email: string
+    @Args('token') token: string
   ) {
-    const id = await this.session.get(token);
-    if (!id || id !== user.id) {
+    // email has set token in `sendVerifyChangeEmail`
+    const [id, email] = (await this.session.get(token)).split(',');
+    if (!id || id !== user.id || !email) {
       throw new ForbiddenException('Invalid token');
     }
 
     await this.auth.changeEmail(id, email);
     await this.session.delete(token);
+
+    await this.auth.sendNotificationChangeEmail(email);
 
     return user;
   }
@@ -164,6 +183,13 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
+  // The change email step is:
+  // 1. send email to primitive email `sendChangeEmail`
+  // 2. user open change email page from email
+  // 3. send verify email to new email `sendVerifyChangeEmail`
+  // 4. user open confirm email page from new email
+  // 5. user click confirm button
+  // 6. send notification email
   @Throttle(5, 60)
   @Mutation(() => Boolean)
   @Auth()
@@ -179,6 +205,39 @@ export class AuthResolver {
     url.searchParams.set('token', token);
 
     const res = await this.auth.sendChangeEmail(email, url.toString());
+    return !res.rejected.length;
+  }
+
+  @Throttle(5, 60)
+  @Mutation(() => Boolean)
+  @Auth()
+  async sendVerifyChangeEmail(
+    @CurrentUser() user: UserType,
+    @Args('token') token: string,
+    @Args('email') email: string,
+    @Args('callbackUrl') callbackUrl: string
+  ) {
+    const id = await this.session.get(token);
+    if (!id || id !== user.id) {
+      throw new ForbiddenException('Invalid token');
+    }
+
+    const hasRegistered = await this.auth.getUserByEmail(email);
+
+    if (hasRegistered) {
+      throw new BadRequestException(`Invalid user email`);
+    }
+
+    const withEmailToken = nanoid();
+    await this.session.set(withEmailToken, `${user.id},${email}`);
+
+    const url = new URL(callbackUrl, this.config.baseUrl);
+    url.searchParams.set('token', withEmailToken);
+
+    const res = await this.auth.sendVerifyChangeEmail(email, url.toString());
+
+    await this.session.delete(token);
+
     return !res.rejected.length;
   }
 }

@@ -28,13 +28,12 @@ export class ExceptionLogger implements ExceptionFilter {
     );
     this.logger.error(
       new Error(
-        `${requestId ? `requestId-${requestId}:` : ''}${exception.message}`,
+        `${requestId ? `requestId-${requestId}: ` : ''}${exception.message}${
+          shouldVerboseLog ? '\n' + exception.stack : ''
+        }}`,
         { cause: exception }
       )
     );
-    if (shouldVerboseLog) {
-      this.logger.error(exception.stack);
-    }
 
     if (host.getType<GqlContextType>() === 'graphql') {
       return;

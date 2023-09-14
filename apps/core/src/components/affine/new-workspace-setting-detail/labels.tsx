@@ -1,8 +1,8 @@
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useMemo } from 'react';
 
-import { type WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
+import type { WorkspaceSettingDetailProps } from './types';
 
 export interface LabelsPanelProps extends WorkspaceSettingDetailProps {
   workspace: AffineOfficialWorkspace;

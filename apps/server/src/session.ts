@@ -1,19 +1,23 @@
 import KeyvRedis from '@keyv/redis';
-import { Global, Injectable, Module } from '@nestjs/common';
+import {
+  FactoryProvider,
+  Global,
+  Inject,
+  Injectable,
+  Module,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 import Keyv from 'keyv';
 
 import { Config } from './config';
 
-@Injectable()
-export class SessionService {
-  private readonly cache: Keyv;
-  private readonly prefix = 'session:';
-  private readonly sessionTtl = 30 * 60 * 1000; // 30 min
+export const KeyvProvide = Symbol('KeyvProvide');
 
-  constructor(protected readonly config: Config) {
+export const KeyvProvider: FactoryProvider<Keyv> = {
+  provide: KeyvProvide,
+  useFactory(config: Config) {
     if (config.redis.enabled) {
-      this.cache = new Keyv({
+      return new Keyv({
         store: new KeyvRedis(
           new Redis(config.redis.port, config.redis.host, {
             username: config.redis.username,
@@ -23,9 +27,18 @@ export class SessionService {
         ),
       });
     } else {
-      this.cache = new Keyv();
+      return new Keyv();
     }
-  }
+  },
+  inject: [Config],
+};
+
+@Injectable()
+export class SessionService {
+  private readonly prefix = 'session:';
+  private readonly sessionTtl = 30 * 60 * 1000; // 30 min
+
+  constructor(@Inject(KeyvProvide) private readonly cache: Keyv) {}
 
   /**
    * get session
@@ -54,7 +67,7 @@ export class SessionService {
 
 @Global()
 @Module({
-  providers: [SessionService],
-  exports: [SessionService],
+  providers: [KeyvProvider, SessionService],
+  exports: [KeyvProvider, SessionService],
 })
 export class SessionModule {}

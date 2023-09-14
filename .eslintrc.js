@@ -57,7 +57,6 @@ const allPackages = [
   'packages/graphql',
   'packages/hooks',
   'packages/i18n',
-  'packages/jotai',
   'packages/native',
   'packages/infra',
   'packages/sdk',

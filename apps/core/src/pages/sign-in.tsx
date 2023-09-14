@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { authAtom } from '../atoms';
 import { AuthPanel } from '../components/affine/auth';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
+import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 interface LocationState {
   state?: {
@@ -14,36 +15,28 @@ interface LocationState {
   };
 }
 export const Component = () => {
-  const [
-    { state, email = '', emailType = 'changePassword', onceSignedIn },
-    setAuthAtom,
-  ] = useAtom(authAtom);
+  const [{ state, email = '', emailType = 'changePassword' }, setAuthAtom] =
+    useAtom(authAtom);
   const loginStatus = useCurrentLoginStatus();
   const location = useLocation() as LocationState;
   const navigate = useNavigate();
+  const { jumpToIndex } = useNavigateHelper();
 
   useEffect(() => {
-    const afterSignedIn = async () => {
-      if (loginStatus === 'authenticated') {
-        if (onceSignedIn) {
-          await onceSignedIn();
-          setAuthAtom(prev => ({ ...prev, onceSignedIn: undefined }));
-        }
-        if (location.state?.callbackURL) {
-          navigate(location.state.callbackURL, {
-            replace: true,
-          });
-        }
+    if (loginStatus === 'authenticated') {
+      if (location.state?.callbackURL) {
+        navigate(location.state.callbackURL, {
+          replace: true,
+        });
+      } else {
+        jumpToIndex(RouteLogic.REPLACE);
       }
-    };
-    afterSignedIn().catch(err => {
-      console.error(err);
-    });
+    }
   }, [
+    jumpToIndex,
     location.state?.callbackURL,
     loginStatus,
     navigate,
-    onceSignedIn,
     setAuthAtom,
   ]);
 

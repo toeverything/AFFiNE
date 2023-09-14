@@ -48,6 +48,7 @@ enum NewFeaturesKind {
 type TokenType {
   token: String!
   refresh: String!
+  sessionToken: String
 }
 
 type InviteUserType {
@@ -98,7 +99,7 @@ type WorkspaceType {
   createdAt: DateTime!
 
   """Members of workspace"""
-  members: [InviteUserType!]!
+  members(skip: Int, take: Int): [InviteUserType!]!
 
   """Permission of current signed in user in workspace"""
   permission: Permission!
@@ -124,7 +125,7 @@ type InvitationWorkspaceType {
 }
 
 type WorkspaceBlobSizes {
-  size: Int!
+  size: Float!
 }
 
 type InvitationType {
@@ -191,10 +192,11 @@ type Mutation {
   signUp(name: String!, email: String!, password: String!): UserType!
   signIn(email: String!, password: String!): UserType!
   changePassword(token: String!, newPassword: String!): UserType!
-  changeEmail(token: String!, email: String!): UserType!
+  changeEmail(token: String!): UserType!
   sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
   sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
   sendChangeEmail(email: String!, callbackUrl: String!): Boolean!
+  sendVerifyChangeEmail(token: String!, email: String!, callbackUrl: String!): Boolean!
 }
 
 """The `Upload` scalar type represents a file upload."""

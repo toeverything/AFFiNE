@@ -297,3 +297,10 @@ textarea,
 #webpack-dev-server-client-overlay {
   -webkit-app-region: no-drag;
 }
+
+html,
+body {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}

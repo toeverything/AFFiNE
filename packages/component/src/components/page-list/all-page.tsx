@@ -1,4 +1,3 @@
-import { CollectionBar } from '@affine/component/page-list';
 import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -25,8 +24,10 @@ import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
+import type { CollectionsAtom } from './use-collection-manager';
 import { useSorter } from './use-sorter';
 import { formatDate, useIsSmallDevices } from './utils';
+import { CollectionBar } from './view/collection-bar';
 
 interface AllPagesHeadProps {
   isPublicWorkspace: boolean;
@@ -36,7 +37,7 @@ interface AllPagesHeadProps {
   importFile: () => void;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  workspaceId: string;
+  collectionsAtom: CollectionsAtom;
 }
 
 const AllPagesHead = ({
@@ -47,7 +48,7 @@ const AllPagesHead = ({
   importFile,
   getPageInfo,
   propertiesMeta,
-  workspaceId,
+  collectionsAtom,
 }: AllPagesHeadProps) => {
   const t = useAFFiNEI18N();
   const titleList = useMemo(
@@ -147,10 +148,10 @@ const AllPagesHead = ({
     <TableHead>
       <TableHeadRow>{tableItem}</TableHeadRow>
       <CollectionBar
-        workspaceId={workspaceId}
         columnsCount={titleList.length}
         getPageInfo={getPageInfo}
         propertiesMeta={propertiesMeta}
+        collectionsAtom={collectionsAtom}
       />
     </TableHead>
   );
@@ -158,7 +159,7 @@ const AllPagesHead = ({
 
 export const PageList = ({
   isPublicWorkspace = false,
-  workspaceId,
+  collectionsAtom,
   list,
   onCreateNewPage,
   onCreateNewEdgeless,
@@ -203,7 +204,7 @@ export const PageList = ({
       <StyledTableContainer ref={ref}>
         <Table showBorder={hasScrollTop} style={{ maxHeight: '100%' }}>
           <AllPagesHead
-            workspaceId={workspaceId}
+            collectionsAtom={collectionsAtom}
             propertiesMeta={propertiesMeta}
             isPublicWorkspace={isPublicWorkspace}
             sorter={sorter}

@@ -11,6 +11,7 @@ import { redirect } from 'react-router-dom';
 import { getUIAdapter } from '../../adapters/workspace';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { currentCollectionsAtom } from '../../utils/user-setting';
 
 export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();
@@ -35,7 +36,7 @@ export const loader: LoaderFunction = async args => {
 export const AllPage = () => {
   const { jumpToPage } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
-  const setting = useCollectionManager(currentWorkspace.id);
+  const setting = useCollectionManager(currentCollectionsAtom);
   const onClickPage = useCallback(
     (pageId: string, newTab?: boolean) => {
       assertExists(currentWorkspace);

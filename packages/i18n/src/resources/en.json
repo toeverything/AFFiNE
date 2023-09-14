@@ -133,7 +133,7 @@
   "com.affine.auth.toast.message.signed-in": "You have been signed in, start to sync your data with AFFiNE Cloud!",
   "com.affine.auth.toast.title.failed": "Unable to sign in",
   "com.affine.auth.toast.title.signed-in": "Signed in",
-  "com.affine.backButton": "Back Home",
+  "com.affine.backButton": "Back",
   "com.affine.banner.content": "This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.",
   "com.affine.brand.affineCloud": "AFFiNE Cloud",
   "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can fill out the <1>AFFiNE Cloud Signup</1>.",
@@ -428,6 +428,7 @@
   "Export Description": "You can export the entire Workspace data for backup, and the exported data can be re-imported.",
   "Export Shared Pages Description": "Download a static copy of your page to share with others.",
   "Export success": "Export success",
+  "Export failed": "Export failed",
   "Export to HTML": "Export to HTML",
   "Export to Markdown": "Export to Markdown",
   "Export to PDF": "Export to PDF",
@@ -569,5 +570,9 @@
   "Workspace Settings": "Workspace Settings",
   "Workspace Settings with name": "{{name}}'s Settings",
   "Workspace Type": "Workspace Type",
-  "You cannot delete the last workspace": "You cannot delete the last workspace"
+  "You cannot delete the last workspace": "You cannot delete the last workspace",
+  "Click to replace photo": "Click to replace photo",
+  "Remove photo": "Remove photo",
+  "Removed successfully": "Removed successfully",
+  "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud"
 }

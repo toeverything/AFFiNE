@@ -74,8 +74,9 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         }
       } catch (e) {
         this.logger.error(
-          `Failed to apply updates, index: ${i}`,
-          updates.map(u => u.toString('hex'))
+          `Failed to apply updates, index: ${i}\nUpdate: ${updates
+            .map(u => u.toString('hex'))
+            .join('\n')}`
         );
       }
     });
@@ -109,13 +110,12 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         }
       } catch (e) {
         this.metrics.jwstCodecFail(1, {});
-        this.logger.warn(`jwst apply update failed for :${guid}`, e);
+        this.logger.warn(`jwst apply update failed for ${guid}: ${e}`);
         log = true;
       } finally {
         if (log) {
           this.logger.warn(
-            'Updates:',
-            updates.map(u => u.toString('hex'))
+            `Updates: ${updates.map(u => u.toString('hex')).join('\n')}`
           );
         }
       }
@@ -288,7 +288,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       .catch(
         // transaction failed, it's safe to ignore
         e => {
-          this.logger.error('Failed to fetch updates', e);
+          this.logger.error(`Failed to fetch updates: ${e}`);
         }
       );
 
@@ -322,7 +322,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       await this.upsert(workspaceId, id, merged);
     } catch (e) {
       // failed to merge updates, put them back
-      this.logger.error('Failed to merge updates', e);
+      this.logger.error(`Failed to merge updates: ${e}`);
 
       await this.db.update
         .createMany({
@@ -334,7 +334,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         })
         .catch(e => {
           // failed to recover, fallback TBD
-          this.logger.error('Fetal: failed to put updates back to db', e);
+          this.logger.error(`Fetal: failed to put updates back to db: ${e}`);
         });
     }
   }

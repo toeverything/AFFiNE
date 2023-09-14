@@ -15,7 +15,7 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
     await page.waitForTimeout(500);
   }
 
-  const title = 'AFFiNE - not just a note taking app';
+  const title = 'AFFiNE - not just a note-taking app';
 
   // Drag-and-drop
   // Ref: https://playwright.dev/docs/input#dragging-manually

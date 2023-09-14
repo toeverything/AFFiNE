@@ -85,7 +85,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {
-        strategy: config.node.prod ? 'database' : 'jwt',
+        strategy: 'database',
       },
       logger: {
         debug(code, metadata) {

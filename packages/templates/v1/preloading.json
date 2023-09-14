@@ -19,7 +19,7 @@
       ],
       "prop:title": [
         {
-          "insert": "AFFiNE - not just a note taking app"
+          "insert": "AFFiNE - not just a note-taking app"
         }
       ]
     },
@@ -6244,7 +6244,7 @@
       "prop:type": "text",
       "prop:text": [
         {
-          "insert": "With powerful databases you can create your content inside of tables but leverage powerful features. From adding due dates, tracking progress, adding tags and status labels."
+          "insert": "With powerful databases, you can create content within tables and leverage powerful features such as adding due dates, tracking progress, and adding tags and status labels."
         }
       ]
     },
@@ -6325,7 +6325,7 @@
           }
         },
         {
-          "insert": " . Whether you want to share new ideas or interact with other like minded individuals - we look forward to having you."
+          "insert": " . Whether you want to share new ideas or interact with other like-minded individuals - we look forward to having you."
         }
       ]
     },

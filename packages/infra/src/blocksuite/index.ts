@@ -506,7 +506,11 @@ export async function forceUpgradePages(
   const schema = options.getSchema();
   const oldVersions = versions.toJSON();
   spaces.forEach((space: Doc) => {
-    schema.upgradePage(oldVersions, space);
+    try {
+      schema.upgradePage(oldVersions, space);
+    } catch (e) {
+      console.error(`page ${space.guid} upgrade failed`, e);
+    }
   });
   const newVersions = getLatestVersions(schema);
   meta.set('blockVersions', new YMap(Object.entries(newVersions)));

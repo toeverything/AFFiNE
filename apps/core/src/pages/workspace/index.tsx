@@ -1,6 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { assertExists } from '@blocksuite/global/utils';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import {
   currentPageIdAtom,
@@ -36,7 +35,9 @@ export const loader: LoaderFunction = async args => {
     const workspace = await rootStore.get(workspaceAtom);
     return (() => {
       const blockVersions = workspace.meta.blockVersions;
-      assertExists(blockVersions, 'blockVersions should not be null');
+      if (!blockVersions) {
+        return true;
+      }
       for (const [flavour, schema] of workspace.schema.flavourSchemaMap) {
         if (blockVersions[flavour] !== schema.version) {
           return true;

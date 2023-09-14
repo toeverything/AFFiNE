@@ -9,7 +9,7 @@ import type {
   UnwrapManagerHandlerToClientSide,
   UpdaterHandlerManager,
   WorkspaceHandlerManager,
-} from '@toeverything/infra';
+} from '@toeverything/infra/index';
 
 declare global {
   interface Window {

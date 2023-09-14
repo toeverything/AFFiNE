@@ -17,7 +17,7 @@ test.beforeEach(async () => {
   metrics = module.get(Metrics);
 });
 
-test.afterEach(async () => {
+test.afterEach.always(async () => {
   await module.close();
 });
 

@@ -1,8 +1,8 @@
-import { Confirm } from '@affine/component';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { Button } from '@toeverything/components/button';
+import { ConfirmModal } from '@toeverything/components/modal';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
@@ -61,23 +61,21 @@ export const TrashButtonGroup = () => {
           {t['com.affine.trashOperation.deletePermanently']()}
         </Button>
       </div>
-      <Confirm
+      <ConfirmModal
         title={t['com.affine.trashOperation.delete.title']()}
-        content={t['com.affine.trashOperation.delete.description']()}
-        confirmText={t['com.affine.trashOperation.delete']()}
-        confirmType="error"
+        cancelText={t['com.affine.confirmModal.button.cancel']()}
+        description={t['com.affine.trashOperation.delete.description']()}
+        confirmButtonOptions={{
+          type: 'error',
+          children: t['com.affine.trashOperation.delete'](),
+        }}
         open={open}
         onConfirm={useCallback(() => {
           jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
           blockSuiteWorkspace.removePage(pageId);
           toast(t['com.affine.toastMessage.permanentlyDeleted']());
         }, [blockSuiteWorkspace, jumpToSubPath, pageId, workspace.id, t])}
-        onCancel={() => {
-          setOpen(false);
-        }}
-        onClose={() => {
-          setOpen(false);
-        }}
+        onOpenChange={setOpen}
       />
     </div>
   );

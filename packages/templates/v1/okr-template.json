@@ -63,7 +63,7 @@
           }
         },
         {
-          "insert": " allows team members to participate in theformulation and decomposition of qoals, jointly find a way to achieve them. and divefull play to their subjective initiative, The weekly progress alignment allows eachmember to fully understand the goals, contribute ideas, and combine timelyfeedback and correction to complete the goal  better and faster."
+          "insert": " helps teams work together to create and break down their goals. They also figure out how to reach those goals and use their own ideas and creativity. Every week, the team checks in to make sure everyone understands the goals, shares their thoughts, and makes changes as needed to get the job done well and quickly."
         }
       ]
     },
@@ -91,7 +91,7 @@
       "sys:children": [],
       "prop:text": [
         {
-          "insert": "All team members collaboratively fill in the latest progress and next step plan of the person in charge of OKR, and discuss the progress at the meeting e! Team OKR weeklymeeting"
+          "insert": "All team members collectively update the latest progress and the next step plan for the person responsible for the OKR. These updates are discussed during the weekly Team OKR meeting."
         }
       ],
       "prop:type": "text"

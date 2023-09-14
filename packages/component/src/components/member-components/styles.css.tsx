@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const inviteModalTitle = style({
   fontWeight: '600',
@@ -20,4 +20,49 @@ export const inviteName = style({
   marginLeft: '4px',
   marginRight: '10px',
   color: 'var(--affine-black)',
+});
+
+export const pagination = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '6px',
+  marginTop: 5,
+});
+
+export const pageItem = style({
+  display: 'inline-flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  width: '20px',
+  height: '20px',
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-primary-color)',
+  borderRadius: '4px',
+
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+    },
+    '&.active': {
+      color: 'var(--affine-primary-color)',
+      cursor: 'default',
+      pointerEvents: 'none',
+    },
+    '&.label': {
+      color: 'var(--affine-icon-color)',
+      fontSize: '16px',
+    },
+    '&.disabled': {
+      opacity: '.4',
+      cursor: 'default',
+      color: 'var(--affine-disable-color)',
+      pointerEvents: 'none',
+    },
+  },
+});
+globalStyle(`${pageItem} a`, {
+  display: 'inline-flex',
+  justifyContent: 'center',
+  alignItems: 'center',
 });

@@ -27,9 +27,6 @@
       "path": "../../packages/i18n"
     },
     {
-      "path": "../../packages/jotai"
-    },
-    {
       "path": "../../packages/workspace"
     },
 

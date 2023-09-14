@@ -118,6 +118,8 @@ jobs:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
           ENABLE_LOCAL_EMAIL: true
+          OAUTH_EMAIL_LOGIN: affine
+          OAUTH_EMAIL_PASSWORD: affine
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
@@ -168,15 +170,13 @@ jobs:
 
       - name: Generate prisma client
         run: |
-          yarn exec prisma generate
-          yarn exec prisma db push
-        working-directory: apps/server
+          yarn workspace @affine/server exec prisma generate
+          yarn workspace @affine/server exec prisma db push
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn exec ts-node-esm ./scripts/init-db.ts
-        working-directory: apps/server
+        run: yarn workspace @affine/server exec ts-node-esm ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
@@ -187,12 +187,13 @@ jobs:
           path: ./apps/server
 
       - name: Run playwright tests
-        run: yarn e2e --forbid-only
-        working-directory: tests/affine-cloud
+        run: yarn workspace @affine-test/affine-cloud e2e --forbid-only
         env:
           COVERAGE: true
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
           ENABLE_LOCAL_EMAIL: true
+          OAUTH_EMAIL_LOGIN: affine
+          OAUTH_EMAIL_PASSWORD: affine
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov

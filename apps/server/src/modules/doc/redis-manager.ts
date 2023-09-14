@@ -140,12 +140,11 @@ export class RedisDocManager extends DocManager {
         .ltrim(updateKey, updates.length, -1)
         // safe, fallback to mergeUpdates
         .catch(e => {
-          this.logger.error('Failed to remove merged updates from Redis', e);
+          this.logger.error(`Failed to remove merged updates from Redis: ${e}`);
         });
     } catch (e) {
       this.logger.error(
-        `Failed to merge updates with snapshot for ${pendingDoc}`,
-        e
+        `Failed to merge updates with snapshot for ${pendingDoc}: ${e}`
       );
       await this.redis.sadd(pending, `${workspaceId}:${id}`).catch(() => null); // safe
     } finally {

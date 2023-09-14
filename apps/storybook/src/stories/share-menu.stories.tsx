@@ -136,11 +136,11 @@ export const DisableModal: StoryFn = () => {
       </StyledDisableButton>
       <PublicLinkDisableModal
         open={open}
-        onConfirmDisable={() => {
+        onConfirm={() => {
           toast('Disabled');
           setOpen(false);
         }}
-        onClose={() => setOpen(false)}
+        onOpenChange={setOpen}
       />
     </>
   );

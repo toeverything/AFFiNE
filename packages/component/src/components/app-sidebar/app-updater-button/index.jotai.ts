@@ -1,5 +1,5 @@
 import { isBrowser } from '@affine/env/constant';
-import type { UpdateMeta } from '@toeverything/infra';
+import type { UpdateMeta } from '@toeverything/infra/type';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { Observable } from 'rxjs';
 

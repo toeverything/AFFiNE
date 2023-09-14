@@ -16,8 +16,8 @@
     "verbatimModuleSyntax": false,
     "rootDir": "./src"
   },
-  "include": ["src", "package.json"],
-  "exclude": ["dist", "node_modules"],
+  "include": ["./src", "package.json"],
+  "exclude": ["dist", "node_modules", "./src/tests"],
   "references": [
     {
       "path": "./tsconfig.node.json"

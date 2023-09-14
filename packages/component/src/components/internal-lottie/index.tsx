@@ -1,6 +1,5 @@
-import { lottieAtom } from '@affine/jotai';
-import { useAtomValue } from 'jotai';
 import type { AnimationItem } from 'lottie-web';
+import lottie from 'lottie-web';
 import { useEffect, useRef } from 'react';
 
 interface CustomLottieProps {
@@ -28,7 +27,6 @@ export const InternalLottie = ({
 }: CustomLottieProps) => {
   const element = useRef<HTMLDivElement>(null);
   const lottieInstance = useRef<AnimationItem>();
-  const lottie = useAtomValue(lottieAtom);
   const directionRef = useRef<1 | -1>(1);
 
   useEffect(() => {
@@ -76,7 +74,7 @@ export const InternalLottie = ({
       }
       lottieInstance.current?.destroy();
     };
-  }, [lottie, options]);
+  }, [options]);
 
   useEffect(() => {
     if (speed) {

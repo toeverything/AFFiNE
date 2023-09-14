@@ -101,7 +101,6 @@ export type AllBlobSizesQuery = {
 
 export type ChangeEmailMutationVariables = Exact<{
   token: Scalars['String']['input'];
-  newEmail: Scalars['String']['input'];
 }>;
 
 export type ChangeEmailMutation = {
@@ -173,7 +172,7 @@ export type GetCurrentUserQuery = {
     emailVerified: string | null;
     avatarUrl: string | null;
     createdAt: string | null;
-    token: { __typename?: 'TokenType'; token: string };
+    token: { __typename?: 'TokenType'; sessionToken: string | null };
   };
 };
 
@@ -206,8 +205,19 @@ export type GetIsOwnerQueryVariables = Exact<{
 
 export type GetIsOwnerQuery = { __typename?: 'Query'; isOwner: boolean };
 
+export type GetMemberCountByWorkspaceIdQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetMemberCountByWorkspaceIdQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; memberCount: number };
+};
+
 export type GetMembersByWorkspaceIdQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  skip: Scalars['Int']['input'];
+  take: Scalars['Int']['input'];
 }>;
 
 export type GetMembersByWorkspaceIdQuery = {
@@ -346,6 +356,17 @@ export type SendSetPasswordEmailMutationVariables = Exact<{
 export type SendSetPasswordEmailMutation = {
   __typename?: 'Mutation';
   sendSetPasswordEmail: boolean;
+};
+
+export type SendVerifyChangeEmailMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  callbackUrl: Scalars['String']['input'];
+}>;
+
+export type SendVerifyChangeEmailMutation = {
+  __typename?: 'Mutation';
+  sendVerifyChangeEmail: boolean;
 };
 
 export type SetRevokePageMutationVariables = Exact<{
@@ -494,6 +515,11 @@ export type Queries =
       response: GetIsOwnerQuery;
     }
   | {
+      name: 'getMemberCountByWorkspaceIdQuery';
+      variables: GetMemberCountByWorkspaceIdQueryVariables;
+      response: GetMemberCountByWorkspaceIdQuery;
+    }
+  | {
       name: 'getMembersByWorkspaceIdQuery';
       variables: GetMembersByWorkspaceIdQueryVariables;
       response: GetMembersByWorkspaceIdQuery;
@@ -594,6 +620,11 @@ export type Mutations =
       name: 'sendSetPasswordEmailMutation';
       variables: SendSetPasswordEmailMutationVariables;
       response: SendSetPasswordEmailMutation;
+    }
+  | {
+      name: 'sendVerifyChangeEmailMutation';
+      variables: SendVerifyChangeEmailMutationVariables;
+      response: SendVerifyChangeEmailMutation;
     }
   | {
       name: 'setRevokePageMutation';

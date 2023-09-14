@@ -251,17 +251,10 @@ export class AuthService {
   async sendChangeEmail(email: string, callbackUrl: string) {
     return this.mailer.sendChangeEmail(email, callbackUrl);
   }
-  async getSessionToken(userId: string) {
-    const session = await this.prisma.session.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    if (!session) {
-      throw new BadRequestException(`No session found for user id ${userId}`);
-    }
-
-    return session?.sessionToken;
+  async sendVerifyChangeEmail(email: string, callbackUrl: string) {
+    return this.mailer.sendVerifyChangeEmail(email, callbackUrl);
+  }
+  async sendNotificationChangeEmail(email: string) {
+    return this.mailer.sendNotificationChangeEmail(email);
   }
 }

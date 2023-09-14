@@ -1,28 +1,15 @@
+import { randomUUID } from 'node:crypto';
+
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import { hashSync } from '@node-rs/argon2';
+import { PrismaClient, User } from '@prisma/client';
 import request from 'supertest';
 
-import { AppModule } from '../app';
 import type { TokenType } from '../modules/auth';
 import type { UserType } from '../modules/users';
 import type { InvitationType, WorkspaceType } from '../modules/workspaces';
 
 const gql = '/graphql';
-
-export async function getCurrentMailMessageCount() {
-  const response = await fetch('http://localhost:8025/api/v2/messages');
-  const data = await response.json();
-  return data.total;
-}
-
-export async function getLatestMailMessage() {
-  const response = await fetch('http://localhost:8025/api/v2/messages');
-  const data = await response.json();
-  return data.items[0];
-}
 
 async function signUp(
   app: INestApplication,
@@ -116,7 +103,9 @@ export async function getWorkspaceSharedPages(
 async function getWorkspace(
   app: INestApplication,
   token: string,
-  workspaceId: string
+  workspaceId: string,
+  skip = 0,
+  take = 8
 ): Promise<WorkspaceType> {
   const res = await request(app.getHttpServer())
     .post(gql)
@@ -126,7 +115,7 @@ async function getWorkspace(
       query: `
           query {
             workspace(id: "${workspaceId}") {
-              id, members { id, name, email, permission, inviteId }
+              id, members(skip: ${skip}, take: ${take}) { id, name, email, permission, inviteId }
             }
           }
         `,
@@ -439,7 +428,8 @@ async function flushDB() {
   const result: { tablename: string }[] =
     await client.$queryRaw`SELECT tablename
                            FROM pg_catalog.pg_tables
-                           WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'`;
+                           WHERE schemaname != 'pg_catalog'
+                             AND schemaname != 'information_schema'`;
 
   // remove all table data
   await client.$executeRawUnsafe(
@@ -450,21 +440,6 @@ async function flushDB() {
   );
 
   await client.$disconnect();
-}
-
-async function createTestApp() {
-  const module = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-  const app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await app.init();
-  return app;
 }
 
 async function getInviteInfo(
@@ -498,13 +473,111 @@ async function getInviteInfo(
   return res.body.data.getInviteInfo;
 }
 
+async function sendChangeEmail(
+  app: INestApplication,
+  userToken: string,
+  email: string,
+  callbackUrl: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation {
+            sendChangeEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+          }
+        `,
+    })
+    .expect(200);
+
+  return res.body.data.sendChangeEmail;
+}
+
+async function sendVerifyChangeEmail(
+  app: INestApplication,
+  userToken: string,
+  token: string,
+  email: string,
+  callbackUrl: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation {
+            sendVerifyChangeEmail(token:"${token}", email: "${email}", callbackUrl: "${callbackUrl}")
+          }
+        `,
+    })
+    .expect(200);
+
+  return res.body.data.sendVerifyChangeEmail;
+}
+
+async function changeEmail(
+  app: INestApplication,
+  userToken: string,
+  token: string
+): Promise<UserType & { token: TokenType }> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation {
+             changeEmail(token: "${token}") {
+              id
+              name
+              avatarUrl
+              email
+            }
+          }
+        `,
+    })
+    .expect(200);
+  return res.body.data.changeEmail;
+}
+
+export class FakePrisma {
+  fakeUser: User = {
+    id: randomUUID(),
+    name: 'Alex Yang',
+    avatarUrl: '',
+    email: 'alex.yang@example.org',
+    password: hashSync('123456'),
+    emailVerified: new Date(),
+    createdAt: new Date(),
+  };
+
+  get user() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const prisma = this;
+    return {
+      async findFirst() {
+        return prisma.fakeUser;
+      },
+      async findUnique() {
+        return this.findFirst();
+      },
+      async update() {
+        return this.findFirst();
+      },
+    };
+  }
+}
+
 export {
   acceptInvite,
   acceptInviteById,
+  changeEmail,
   checkBlobSize,
   collectAllBlobSizes,
   collectBlobSizes,
-  createTestApp,
   createWorkspace,
   currentUser,
   flushDB,
@@ -516,6 +589,8 @@ export {
   listBlobs,
   revokePage,
   revokeUser,
+  sendChangeEmail,
+  sendVerifyChangeEmail,
   setBlob,
   sharePage,
   signUp,

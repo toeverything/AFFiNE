@@ -28,6 +28,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
+import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
@@ -52,14 +53,14 @@ export type RootAppSidebarProps = {
 };
 
 const RouteMenuLinkItem = React.forwardRef<
-  HTMLButtonElement,
+  HTMLDivElement,
   {
     currentPath: string; // todo: pass through useRouter?
     path: string;
     icon: ReactElement;
     children?: ReactElement;
     isDraggedOver?: boolean;
-  } & React.HTMLAttributes<HTMLButtonElement>
+  } & React.HTMLAttributes<HTMLDivElement>
 >(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
   // Force active style when a page is dragged over
   const active = isDraggedOver || currentPath === path;
@@ -98,7 +99,7 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const [appSettings] = useAppSetting();
-  const { backToAll } = useCollectionManager(currentWorkspace.id);
+  const { backToAll } = useCollectionManager(currentCollectionsAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const onClickNewPage = useCallback(async () => {

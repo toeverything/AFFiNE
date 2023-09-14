@@ -5,7 +5,7 @@ import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { logger } from '../logger';
 import type { YOrigin } from '../type';
-import { getWorkspaceMeta } from '../workspace';
+import { getWorkspaceMeta } from '../workspace/meta';
 import { BaseSQLiteAdapter } from './base-db-adapter';
 import { dbSubjects } from './subjects';
 

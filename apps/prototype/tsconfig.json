@@ -25,9 +25,6 @@
       "path": "../../packages/i18n"
     },
     {
-      "path": "../../packages/jotai"
-    },
-    {
       "path": "../../packages/y-indexeddb"
     },
     {

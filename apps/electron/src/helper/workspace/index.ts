@@ -1,5 +1,6 @@
 import type { MainEventRegister, WorkspaceMeta } from '../type';
-import { deleteWorkspace, getWorkspaceMeta, listWorkspaces } from './handlers';
+import { deleteWorkspace, listWorkspaces } from './handlers';
+import { getWorkspaceMeta } from './meta';
 import { workspaceSubjects } from './subjects';
 
 export * from './handlers';

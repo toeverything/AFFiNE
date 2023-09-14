@@ -86,8 +86,8 @@ export const Setting = () => {
       activeTab={activeTab}
       workspaceId={workspaceId}
       onSettingClick={onSettingClick}
-      setOpen={useCallback(
-        open => {
+      onOpenChange={useCallback(
+        (open: boolean) => {
           setOpenSettingModalAtom(prev => ({ ...prev, open }));
         },
         [setOpenSettingModalAtom]
@@ -101,6 +101,7 @@ export const AuthModal = (): ReactElement => {
     { openModal, state, email = '', emailType = 'changePassword' },
     setAuthAtom,
   ] = useAtom(authAtom);
+
   return (
     <Auth
       open={openModal}
@@ -146,9 +147,7 @@ export function CurrentWorkspaceModals() {
       <Suspense>
         <TmpDisableAffineCloudModal
           open={openDisableCloudAlertModal}
-          onClose={useCallback(() => {
-            setOpenDisableCloudAlertModal(false);
-          }, [setOpenDisableCloudAlertModal])}
+          onOpenChange={setOpenDisableCloudAlertModal}
         />
       </Suspense>
       {environment.isDesktop && (

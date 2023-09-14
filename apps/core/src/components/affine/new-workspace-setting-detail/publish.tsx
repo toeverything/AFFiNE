@@ -17,8 +17,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from '../../../utils';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
 import { TmpDisableAffineCloudModal } from '../tmp-disable-affine-cloud-modal';
-import type { WorkspaceSettingDetailProps } from './index';
 import * as style from './style.css';
+import type { WorkspaceSettingDetailProps } from './types';
 
 export interface PublishPanelProps
   extends Omit<WorkspaceSettingDetailProps, 'workspaceId'> {
@@ -142,9 +142,7 @@ const PublishPanelLocal = ({
       {runtimeConfig.enableCloud ? (
         <EnableAffineCloudModal
           open={open}
-          onClose={() => {
-            setOpen(false);
-          }}
+          onOpenChange={setOpen}
           onConfirm={() => {
             onTransferWorkspace(
               WorkspaceFlavour.LOCAL,
@@ -155,12 +153,7 @@ const PublishPanelLocal = ({
           }}
         />
       ) : (
-        <TmpDisableAffineCloudModal
-          open={open}
-          onClose={() => {
-            setOpen(false);
-          }}
-        />
+        <TmpDisableAffineCloudModal open={open} onOpenChange={setOpen} />
       )}
     </>
   );

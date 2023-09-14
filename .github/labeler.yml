@@ -46,7 +46,6 @@ mod:storage: 'packages/storage/**/*'
 mod:native: 'packages/native/**/*'
 
 mod:store:
-  - 'packages/jotai/**/*'
   - '**/atoms/**/*'
 
 rust:
