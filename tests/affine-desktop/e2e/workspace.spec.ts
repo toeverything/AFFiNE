@@ -16,7 +16,7 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
+test.skip('move workspace db file', async ({ electronPage: page, appInfo, workspace }) => {
   const w = await workspace.current();
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
@@ -43,7 +43,7 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
 });
 
 //TODO:fix test
-test.fixme('export then add', async ({ page, appInfo, workspace }) => {
+test.fixme('export then add', async ({ electronPage: page, appInfo, workspace }) => {
   const w = await workspace.current();
 
   await page.focus('.affine-doc-page-block-title');

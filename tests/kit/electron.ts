@@ -33,8 +33,9 @@ export const test = base.extend<{
   router: {
     goto: (path: RoutePath) => Promise<void>;
   };
+  electronPage: Page
 }>({
-  page: async ({ electronApp }, use) => {
+  electronPage: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
     await page.getByTestId('onboarding-modal-close-button').click({
       delay: 100,
