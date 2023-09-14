@@ -81,8 +81,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             sendVerificationRequest(config, logger, mailer, session, params),
         }),
       ],
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
+      // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {
