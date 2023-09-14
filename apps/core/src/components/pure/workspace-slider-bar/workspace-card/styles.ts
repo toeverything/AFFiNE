@@ -1,22 +1,16 @@
 import { displayFlex, textEllipsis } from '@affine/component';
 import { styled } from '@affine/component';
-export const StyledSelectorContainer = styled('div')(({
-  disableHoverBackground,
-}: {
-  disableHoverBackground: boolean;
-}) => {
-  return {
-    height: '58px',
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 6px',
-    borderRadius: '8px',
-    color: 'var(--affine-text-primary-color)',
-    ':hover': {
-      cursor: 'pointer',
-      background: disableHoverBackground ? '' : 'var(--affine-hover-color)',
-    },
-  };
+export const StyledSelectorContainer = styled('div')({
+  height: '58px',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 6px',
+  borderRadius: '8px',
+  color: 'var(--affine-text-primary-color)',
+  ':hover': {
+    cursor: 'pointer',
+    background: 'var(--affine-hover-color)',
+  },
 });
 
 export const StyledSelectorWrapper = styled('div')(() => {
