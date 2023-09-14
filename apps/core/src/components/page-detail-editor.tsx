@@ -80,6 +80,7 @@ const EditorWrapper = memo(function EditorWrapper({
       <Editor
         className={clsx(styles.editor, {
           'full-screen': appSettings.fullWidthLayout,
+          'is-public-page': isPublic,
         })}
         style={
           {
