@@ -11,7 +11,7 @@ import {
   runPrisma,
 } from '@affine-test/kit/utils/cloud';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
-import { coreUrl, openHomePage } from '@affine-test/kit/utils/load-page';
+import { coreUrl } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   waitForEditorLoad,
@@ -32,8 +32,6 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page, context }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
   await loginUser(page, user.email, {
     beforeLogin: async () => {
       expect(await getLoginCookie(context)).toBeUndefined();

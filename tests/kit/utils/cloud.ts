@@ -1,3 +1,4 @@
+import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   waitForEditorLoad,
@@ -136,6 +137,9 @@ export async function loginUser(
     afterLogin?: () => Promise<void>;
   }
 ) {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('cloud-signin-button').click({
     delay: 200,
