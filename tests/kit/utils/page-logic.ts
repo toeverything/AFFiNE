@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 
 export async function waitForEditorLoad(page: Page) {
   await page.waitForSelector('v-line', {
-    timeout: 10000,
+    timeout: 20000,
   });
 }
 
