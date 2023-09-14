@@ -196,6 +196,7 @@ export const WorkspaceListModal = ({
       open={open}
       anchorEl={anchorEl}
       onClose={onClose}
+      disableEnforceFocus
     >
       {!isLoggedIn ? (
         <StyledModalHeaderContent>
