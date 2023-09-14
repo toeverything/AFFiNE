@@ -31,7 +31,9 @@ import {
 } from './styles';
 
 const hoverAtom = atom(false);
-
+// FIXME:
+// 1. Remove mui style
+// 2. Refactor the code to improve readability
 const CloudWorkspaceStatus = () => {
   return (
     <>
