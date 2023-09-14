@@ -1,8 +1,11 @@
 import type { ExpectedLayout } from '@affine/sdk/entry';
+import type Buffer from 'buffer';
 import type { WritableAtom } from 'jotai';
 import { z } from 'zod';
 
 import type { TypedEventEmitter } from './core/event-emitter.js';
+
+type Buffer = Buffer.Buffer;
 
 export const packageJsonInputSchema = z.object({
   name: z.string(),
