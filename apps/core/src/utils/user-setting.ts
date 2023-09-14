@@ -164,7 +164,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
 
 export const currentCollectionsAtom: CollectionsAtom = atom(
   get => get(pageCollectionBaseAtom),
-  async (get, set, apply) => {
+  async (get, _, apply) => {
     const collections = await get(pageCollectionBaseAtom);
     let newCollections: Collection[];
     if (typeof apply === 'function') {
