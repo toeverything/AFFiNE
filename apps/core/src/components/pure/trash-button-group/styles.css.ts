@@ -5,9 +5,8 @@ export const group = style({
   gap: '16px',
   justifyContent: 'center',
 });
-
 export const deleteHintContainer = style({
-  flex: '1 1 auto',
+  position: 'fixed',
   zIndex: 2,
   padding: '14px 20px',
   display: 'flex',
