@@ -187,7 +187,7 @@ jobs:
           path: ./apps/server
 
       - name: Run playwright tests
-        run: yarn workspace @affine-test/affine-cloud e2e --forbid-only
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-cloud e2e --forbid-only
         env:
           COVERAGE: true
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
