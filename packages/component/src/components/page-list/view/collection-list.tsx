@@ -9,7 +9,7 @@ import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import type { MouseEvent } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
@@ -110,7 +110,6 @@ export const CollectionList = ({
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
 }) => {
-  const ref = useRef(null);
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
@@ -140,12 +139,9 @@ export const CollectionList = ({
     [closeUpdateCollectionModal, setting]
   );
   return (
-    <FlexWrapper alignItems="center" ref={ref}>
+    <FlexWrapper alignItems="center">
       {setting.savedCollections.length > 0 && (
         <Menu
-          portalOptions={{
-            container: ref.current,
-          }}
           items={
             <div style={{ minWidth: 150 }}>
               <MenuItem
@@ -203,9 +199,6 @@ export const CollectionList = ({
             onChange={onChange}
           />
         }
-        portalOptions={{
-          container: ref.current,
-        }}
       >
         <Button
           className={styles.filterMenuTrigger}

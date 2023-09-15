@@ -151,7 +151,6 @@ export const Page = ({
   workspace: Workspace;
   allPageMeta: Record<string, PageMeta>;
 }) => {
-  const ref = React.useRef(null);
   const [collapsed, setCollapsed] = React.useState(true);
   const params = useParams();
   const { jumpToPage } = useNavigateHelper();
@@ -176,7 +175,6 @@ export const Page = ({
         active={active}
         collapsed={referencesToRender.length > 0 ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
-        ref={ref}
         postfix={
           <Menu
             items={
@@ -189,9 +187,6 @@ export const Page = ({
                 workspace={workspace}
               />
             }
-            portalOptions={{
-              container: ref.current,
-            }}
           >
             <IconButton
               data-testid="collection-page-options"
