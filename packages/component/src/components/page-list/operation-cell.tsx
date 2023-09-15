@@ -1,4 +1,3 @@
-import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeletePermanentlyIcon,
@@ -66,7 +65,7 @@ export const OperationCell = ({
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
-      {!isDesktop && (
+      {!environment.isDesktop && (
         <MenuItem
           onClick={onOpenPageInNewTab}
           preFix={

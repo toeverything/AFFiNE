@@ -1,7 +1,6 @@
 import '@toeverything/hooks/use-affine-ipc-renderer';
 
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { refreshRootMetadataAtom } from '@affine/workspace/atom';
 import { useAtom, useSetAtom } from 'jotai';
@@ -47,7 +46,7 @@ const SessionDefence = (props: PropsWithChildren) => {
           type: 'success',
         });
 
-        if (isDesktop) {
+        if (environment.isDesktop) {
           window.affine.ipcRenderer.send('affine:login');
         }
       }

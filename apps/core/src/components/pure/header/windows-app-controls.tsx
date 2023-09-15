@@ -8,7 +8,7 @@ import * as style from './style.css';
 const maximizedAtom = atomWithObservable(() => {
   return new Observable<boolean>(subscriber => {
     subscriber.next(false);
-    return window?.events.ui.onMaximized(maximized => {
+    return window.events?.ui.onMaximized(maximized => {
       return subscriber.next(maximized);
     });
   });

@@ -17,6 +17,7 @@ import { _setCurrentStore } from '@toeverything/infra/atom';
 import { setupGlobal } from '@affine/env/global';
 
 import type { Preview } from '@storybook/react';
+import { useLayoutEffect, useRef } from 'react';
 
 setupGlobal();
 export const parameters = {
@@ -142,11 +143,41 @@ const withContextDecorator: Decorator = (Story, context) => {
   );
 };
 
+const platforms = ['web', 'desktop-macos', 'desktop-windows'] as const;
+
 const withPlatformSelectionDecorator: Decorator = (Story, context) => {
+  const setupCounterRef = useRef(0);
+  useLayoutEffect(() => {
+    if (setupCounterRef.current++ === 0) {
+      return;
+    }
+    switch (context.globals.platform) {
+      case 'desktop-macos':
+        environment.isDesktop = true;
+        environment.isMacOs = true;
+        environment.isWindows = false;
+        break;
+      case 'desktop-windows':
+        environment.isDesktop = true;
+        environment.isMacOs = false;
+        environment.isWindows = true;
+        break;
+      default:
+        globalThis.$AFFINE_SETUP = false;
+        setupGlobal();
+        break;
+    }
+  }, [context.globals.platform]);
 
-}
+  return <Story key={context.globals.platform} {...context} />;
+};
 
-const decorators = [withContextDecorator, withI18n, withMockAuth];
+const decorators = [
+  withContextDecorator,
+  withI18n,
+  withMockAuth,
+  withPlatformSelectionDecorator,
+];
 
 const preview: Preview = {
   decorators,
@@ -157,14 +188,13 @@ const preview: Preview = {
       toolbar: {
         // The label to show for this toolbar item
         title: 'platform',
-        icon: 'circlehollow',
         // Array of plain string values or MenuItem shape (see below)
-        items: ['web', 'desktop-macos', 'desktop-windows'],
+        items: platforms,
         // Change title based on selected value
         dynamicTitle: true,
       },
     },
-  }
+  },
 };
 
 export default preview;
