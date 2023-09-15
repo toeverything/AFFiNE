@@ -234,6 +234,11 @@ test.describe('collaboration members', () => {
       .getByRole('button')
       .all();
 
+    // make sure the first member is the owner
+    expect(page.getByTestId('member-item').first()).toContainText(
+      'Workspace Owner'
+    );
+
     // There have four pagination items: < 1 2 >
     expect(navigationItems.length).toBe(4);
     // Click second page

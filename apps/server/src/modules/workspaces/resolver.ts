@@ -217,9 +217,14 @@ export class WorkspaceResolver {
       },
       skip,
       take: take || 8,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        {
+          createdAt: 'asc',
+        },
+        {
+          type: 'desc',
+        },
+      ],
       include: {
         user: true,
       },
