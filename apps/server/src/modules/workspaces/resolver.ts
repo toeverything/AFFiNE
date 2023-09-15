@@ -219,7 +219,7 @@ export class WorkspaceResolver {
       skip,
       take: take || 8,
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'asc',
         type: 'desc', // owner > admin > write > read
       },
       include: {
