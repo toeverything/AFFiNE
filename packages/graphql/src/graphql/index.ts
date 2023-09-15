@@ -85,8 +85,8 @@ export const changeEmailMutation = {
   definitionName: 'changeEmail',
   containsFile: false,
   query: `
-mutation changeEmail($token: String!, $newEmail: String!) {
-  changeEmail(token: $token, email: $newEmail) {
+mutation changeEmail($token: String!) {
+  changeEmail(token: $token) {
     id
     name
     avatarUrl
@@ -336,6 +336,19 @@ mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLea
 }`,
 };
 
+export const removeAvatarMutation = {
+  id: 'removeAvatarMutation' as const,
+  operationName: 'removeAvatar',
+  definitionName: 'removeAvatar',
+  containsFile: false,
+  query: `
+mutation removeAvatar {
+  removeAvatar {
+    success
+  }
+}`,
+};
+
 export const revokeMemberPermissionMutation = {
   id: 'revokeMemberPermissionMutation' as const,
   operationName: 'revokeMemberPermission',
@@ -388,6 +401,17 @@ export const sendSetPasswordEmailMutation = {
   query: `
 mutation sendSetPasswordEmail($email: String!, $callbackUrl: String!) {
   sendSetPasswordEmail(email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const sendVerifyChangeEmailMutation = {
+  id: 'sendVerifyChangeEmailMutation' as const,
+  operationName: 'sendVerifyChangeEmail',
+  definitionName: 'sendVerifyChangeEmail',
+  containsFile: false,
+  query: `
+mutation sendVerifyChangeEmail($token: String!, $email: String!, $callbackUrl: String!) {
+  sendVerifyChangeEmail(token: $token, email: $email, callbackUrl: $callbackUrl)
 }`,
 };
 

@@ -2,11 +2,12 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { SettingsIcon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { useCallback } from 'react';
 
-import { WorkspaceAvatar } from '../../workspace-avatar';
 import {
   StyledCard,
   StyledSettingLink,
@@ -68,6 +69,7 @@ export const WorkspaceCard = ({
   // const t = useAFFiNEI18N();
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [name] = useBlockSuiteWorkspaceName(workspace);
+  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
 
   return (
     <StyledCard
@@ -77,8 +79,7 @@ export const WorkspaceCard = ({
       }, [onClick, meta.id])}
       active={workspace.id === currentWorkspaceId}
     >
-      <WorkspaceAvatar size={28} workspace={workspace} />
-
+      <Avatar size={28} url={workspaceAvatar} name={name} colorfulFallback />
       <StyledWorkspaceInfo>
         <StyledWorkspaceTitleArea style={{ display: 'flex' }}>
           <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>

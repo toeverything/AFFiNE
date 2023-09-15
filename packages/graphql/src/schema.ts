@@ -101,7 +101,6 @@ export type AllBlobSizesQuery = {
 
 export type ChangeEmailMutationVariables = Exact<{
   token: Scalars['String']['input'];
-  newEmail: Scalars['String']['input'];
 }>;
 
 export type ChangeEmailMutation = {
@@ -309,6 +308,13 @@ export type LeaveWorkspaceMutation = {
   leaveWorkspace: boolean;
 };
 
+export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
+
+export type RemoveAvatarMutation = {
+  __typename?: 'Mutation';
+  removeAvatar: { __typename?: 'RemoveAvatar'; success: boolean };
+};
+
 export type RevokeMemberPermissionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -357,6 +363,17 @@ export type SendSetPasswordEmailMutationVariables = Exact<{
 export type SendSetPasswordEmailMutation = {
   __typename?: 'Mutation';
   sendSetPasswordEmail: boolean;
+};
+
+export type SendVerifyChangeEmailMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+  callbackUrl: Scalars['String']['input'];
+}>;
+
+export type SendVerifyChangeEmailMutation = {
+  __typename?: 'Mutation';
+  sendVerifyChangeEmail: boolean;
 };
 
 export type SetRevokePageMutationVariables = Exact<{
@@ -587,6 +604,11 @@ export type Mutations =
       response: LeaveWorkspaceMutation;
     }
   | {
+      name: 'removeAvatarMutation';
+      variables: RemoveAvatarMutationVariables;
+      response: RemoveAvatarMutation;
+    }
+  | {
       name: 'revokeMemberPermissionMutation';
       variables: RevokeMemberPermissionMutationVariables;
       response: RevokeMemberPermissionMutation;
@@ -610,6 +632,11 @@ export type Mutations =
       name: 'sendSetPasswordEmailMutation';
       variables: SendSetPasswordEmailMutationVariables;
       response: SendSetPasswordEmailMutation;
+    }
+  | {
+      name: 'sendVerifyChangeEmailMutation';
+      variables: SendVerifyChangeEmailMutationVariables;
+      response: SendVerifyChangeEmailMutation;
     }
   | {
       name: 'setRevokePageMutation';

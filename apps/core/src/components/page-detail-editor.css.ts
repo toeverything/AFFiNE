@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const pluginContainer = style({
   height: '100%',
@@ -15,4 +15,7 @@ export const editor = style({
       },
     },
   },
+});
+globalStyle('.is-public-page affine-page-meta-data', {
+  display: 'none',
 });
