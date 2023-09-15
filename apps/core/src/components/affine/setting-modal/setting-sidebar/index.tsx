@@ -14,12 +14,7 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
-import {
-  type ReactElement,
-  Suspense,
-  useCallback,
-  useMemo,
-} from 'react';
+import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
