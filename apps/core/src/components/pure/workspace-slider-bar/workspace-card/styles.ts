@@ -26,6 +26,7 @@ export const StyledWorkspaceName = styled('div')(() => {
     fontWeight: 600,
     userSelect: 'none',
     ...textEllipsis(1),
+    marginLeft: '4px',
   };
 });
 
