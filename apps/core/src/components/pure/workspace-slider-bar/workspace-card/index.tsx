@@ -187,9 +187,6 @@ export const WorkspaceCard = forwardRef<
         url={workspaceAvatar}
         name={name}
         colorfulFallback
-        style={{
-          marginRight: '10px',
-        }}
       />
       <StyledSelectorWrapper>
         <StyledWorkspaceName data-testid="workspace-name">
