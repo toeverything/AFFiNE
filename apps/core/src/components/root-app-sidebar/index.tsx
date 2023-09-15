@@ -11,7 +11,6 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { useCollectionManager } from '@affine/component/page-list';
-import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -117,7 +116,7 @@ export const RootAppSidebar = ({
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
-    if (isDesktop) {
+    if (environment.isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
     return;
@@ -125,7 +124,7 @@ export const RootAppSidebar = ({
 
   const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
   useEffect(() => {
-    if (isDesktop) {
+    if (environment.isDesktop) {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
@@ -252,7 +251,7 @@ export const RootAppSidebar = ({
           )}
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {isDesktop && <AppUpdaterButton />}
+          {environment.isDesktop && <AppUpdaterButton />}
           <div style={{ height: '4px' }} />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>

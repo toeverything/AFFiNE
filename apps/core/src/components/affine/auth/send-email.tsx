@@ -6,7 +6,6 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
-import { isDesktop } from '@affine/env/constant';
 import {
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
@@ -118,7 +117,7 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
         return trigger({
           email,
           callbackUrl: `/auth/${callbackUrl}?isClient=${
-            isDesktop ? 'true' : 'false'
+            environment.isDesktop ? 'true' : 'false'
           }`,
         });
       },

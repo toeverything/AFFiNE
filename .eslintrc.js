@@ -47,6 +47,12 @@ const createPattern = packageName => [
     message: 'Do not use this API because it has a bug',
     importNames: ['mergeUpdates'],
   },
+  {
+    group: ['@affine/env/constant'],
+    message:
+      'Do not import from @affine/env/constant. Use `environment.isDesktop` instead',
+    importNames: ['isDesktop'],
+  },
 ];
 
 const allPackages = [

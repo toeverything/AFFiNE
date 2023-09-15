@@ -1,4 +1,3 @@
-import { isDesktop } from '@affine/env/constant';
 import {
   generateRandUTF16Chars,
   SPAN_ID_BYTES,
@@ -48,7 +47,7 @@ function onRejectHandleTrace<T>(
 
 export const signInCloud: typeof signIn = async (provider, ...rest) => {
   const traceParams = genTraceParams();
-  if (isDesktop) {
+  if (environment.isDesktop) {
     if (provider === 'google') {
       open(
         `${
@@ -104,7 +103,7 @@ export const signOutCloud: typeof signOut = async options => {
 
 export function buildCallbackUrl(callbackUrl: string) {
   const params: string[][] = [];
-  if (isDesktop && window.appInfo.schema) {
+  if (environment.isDesktop && window.appInfo.schema) {
     params.push(['schema', window.appInfo.schema]);
   }
   const query =

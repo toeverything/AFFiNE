@@ -1,4 +1,4 @@
-import { isBrowser, isDesktop } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { createAffinePublicProviders } from '@affine/workspace/providers';
@@ -101,7 +101,7 @@ export function getOrCreateWorkspace(
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
       blobStorages.push(createCloudBlobStorage);
-      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
+      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
       providerCreators.push(...createAffineProviders());
@@ -111,7 +111,7 @@ export function getOrCreateWorkspace(
   } else if (flavour === WorkspaceFlavour.LOCAL) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
-      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
+      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
     }
@@ -119,7 +119,7 @@ export function getOrCreateWorkspace(
   } else if (flavour === WorkspaceFlavour.AFFINE_PUBLIC) {
     if (isBrowser) {
       blobStorages.push(createIndexeddbStorage);
-      if (isDesktop && runtimeConfig.enableSQLiteProvider) {
+      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
         blobStorages.push(createSQLiteStorage);
       }
     }
