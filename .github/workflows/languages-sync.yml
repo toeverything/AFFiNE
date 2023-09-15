@@ -24,14 +24,12 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Check Language Key
         if: github.ref != 'refs/heads/master'
-        working-directory: ./packages/i18n
-        run: yarn run sync-languages:check
+        run: yarn workspace @affine/i18n run sync-languages:check
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
 
       - name: Sync Languages
         if: github.ref == 'refs/heads/master'
-        working-directory: ./packages/i18n
-        run: yarn run sync-languages
+        run: yarn workspace @affine/i18n run sync-languages
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
