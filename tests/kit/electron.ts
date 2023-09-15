@@ -33,20 +33,13 @@ export const test = base.extend<{
   router: {
     goto: (path: RoutePath) => Promise<void>;
   };
-  electronPage: Page
+  electronPage: Page;
 }>({
   electronPage: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
     await page.getByTestId('onboarding-modal-close-button').click({
       delay: 100,
     });
-    if (!process.env.CI) {
-      await electronApp.evaluate(({ BrowserWindow }) => {
-        BrowserWindow.getAllWindows()[0].webContents.openDevTools({
-          mode: 'detach',
-        });
-      });
-    }
     // wat for blocksuite to be loaded
     await page.waitForSelector('v-line');
     if (enableCoverage) {
