@@ -212,9 +212,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>
         <Menu
           items={EditMenu}
-          portalOptions={{
-            container: ref.current,
-          }}
           contentOptions={{
             align: 'center',
           }}

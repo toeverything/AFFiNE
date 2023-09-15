@@ -11,7 +11,7 @@ import type {
 } from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -122,7 +122,6 @@ const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {
   const t = useAFFiNEI18N();
-  const ref = useRef(null);
   const defaultDBLocation = useDefaultDBLocation();
   const [opening, setOpening] = useState(false);
 
@@ -164,9 +163,6 @@ const SetDBLocationContent = ({
           content={t['com.affine.setDBLocation.tooltip.defaultLocation']({
             location: defaultDBLocation,
           })}
-          portalOptions={{
-            container: ref.current,
-          }}
         >
           <Button
             data-testid="create-workspace-default-location-button"
@@ -176,7 +172,6 @@ const SetDBLocationContent = ({
             }}
             icon={<HelpIcon />}
             iconPosition="end"
-            ref={ref}
           >
             {t['com.affine.setDBLocation.button.defaultLocation']()}
           </Button>
