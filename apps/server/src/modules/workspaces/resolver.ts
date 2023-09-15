@@ -218,10 +218,14 @@ export class WorkspaceResolver {
       },
       skip,
       take: take || 8,
-      orderBy: {
-        createdAt: 'asc',
-        type: 'desc', // owner > admin > write > read
-      },
+      orderBy: [
+        {
+          createdAt: 'asc',
+        },
+        {
+          type: 'desc',
+        },
+      ],
       include: {
         user: true,
       },
