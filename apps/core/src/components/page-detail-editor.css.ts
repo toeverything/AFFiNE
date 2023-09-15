@@ -7,6 +7,8 @@ export const pluginContainer = style({
 
 export const editor = style({
   height: 'calc(100% - 52px)',
+  display: 'flex',
+  flexDirection: 'column',
   selectors: {
     '&.full-screen': {
       vars: {
@@ -16,6 +18,7 @@ export const editor = style({
     },
   },
 });
+
 globalStyle('.is-public-page affine-page-meta-data', {
   display: 'none',
 });

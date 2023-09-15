@@ -76,17 +76,22 @@ const EditorWrapper = memo(function EditorWrapper({
   }, [appSettings.fontStyle]);
 
   return (
-    <>
+    <div
+      className={clsx(styles.editor, {
+        'full-screen': appSettings.fullWidthLayout,
+        'is-public-page': isPublic,
+      })}
+      style={
+        {
+          '--affine-font-family': value,
+        } as CSSProperties
+      }
+    >
       <Editor
-        className={clsx(styles.editor, {
-          'full-screen': appSettings.fullWidthLayout,
-          'is-public-page': isPublic,
-        })}
-        style={
-          {
-            '--affine-font-family': value,
-          } as CSSProperties
-        }
+        style={{
+          flex: '0 1 auto',
+          height: '100%',
+        }}
         mode={isPublic ? 'page' : currentMode}
         page={page}
         onInit={useCallback(
@@ -135,7 +140,7 @@ const EditorWrapper = memo(function EditorWrapper({
         )}
       />
       {meta.trash && <TrashButtonGroup />}
-    </>
+    </div>
   );
 });
 
