@@ -16,7 +16,6 @@ import {
   type MouseEvent,
   useCallback,
   useMemo,
-  useState,
 } from 'react';
 
 import { useDatasourceSync } from '../../../../hooks/use-datasource-sync';
@@ -88,7 +87,6 @@ const WorkspaceStatus = ({
     currentWorkspace.blockSuiteWorkspace
   );
   const setIsHovered = useSetAtom(hoverAtom);
-  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const content = useMemo(() => {
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
       return 'Saved locally';
@@ -130,17 +128,11 @@ const WorkspaceStatus = ({
   );
   return (
     <div style={{ display: 'flex' }}>
-      <Tooltip
-        content={content}
-        portalOptions={{
-          container,
-        }}
-      >
+      <Tooltip content={content}>
         <StyledWorkspaceStatus
           onMouseEnter={() => {
             setIsHovered(true);
           }}
-          ref={setContainer}
           onMouseLeave={() => setIsHovered(false)}
           onClick={handleClick}
         >

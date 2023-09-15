@@ -19,7 +19,6 @@ import {
   Suspense,
   useCallback,
   useMemo,
-  useRef,
 } from 'react';
 
 import { authAtom } from '../../../../atoms';
@@ -225,7 +224,6 @@ const WorkspaceListItem = ({
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
-  const ref = useRef(null);
 
   return (
     <div
@@ -233,7 +231,6 @@ const WorkspaceListItem = ({
       title={workspaceName}
       onClick={onClick}
       data-testid="workspace-list-item"
-      ref={ref}
     >
       <Avatar
         size={14}
@@ -246,13 +243,7 @@ const WorkspaceListItem = ({
       />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
-        <Tooltip
-          content="Current"
-          side="top"
-          portalOptions={{
-            container: ref.current,
-          }}
-        >
+        <Tooltip content="Current" side="top">
           <div
             className={currentWorkspaceLabel}
             data-testid="current-workspace-label"
