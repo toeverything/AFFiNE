@@ -16,6 +16,8 @@ import { createStore } from 'jotai/vanilla';
 import { _setCurrentStore } from '@toeverything/infra/atom';
 import { setupGlobal } from '@affine/env/global';
 
+import type { Preview } from '@storybook/react';
+
 setupGlobal();
 export const parameters = {
   backgrounds: { disable: true },
@@ -140,4 +142,29 @@ const withContextDecorator: Decorator = (Story, context) => {
   );
 };
 
-export const decorators = [withContextDecorator, withI18n, withMockAuth];
+const withPlatformSelectionDecorator: Decorator = (Story, context) => {
+
+}
+
+const decorators = [withContextDecorator, withI18n, withMockAuth];
+
+const preview: Preview = {
+  decorators,
+  globalTypes: {
+    platform: {
+      description: 'Rendering platform target',
+      defaultValue: 'web',
+      toolbar: {
+        // The label to show for this toolbar item
+        title: 'platform',
+        icon: 'circlehollow',
+        // Array of plain string values or MenuItem shape (see below)
+        items: ['web', 'desktop-macos', 'desktop-windows'],
+        // Change title based on selected value
+        dynamicTitle: true,
+      },
+    },
+  }
+};
+
+export default preview;
