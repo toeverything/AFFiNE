@@ -7,10 +7,10 @@ import { register } from 'prom-client';
 import * as Sinon from 'sinon';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
-import { Config, ConfigModule } from '../config';
-import { MetricsModule } from '../metrics';
-import { DocManager, DocModule } from '../modules/doc';
-import { PrismaModule, PrismaService } from '../prisma';
+import { Config, ConfigModule } from '../src/config';
+import { MetricsModule } from '../src/metrics';
+import { DocManager, DocModule } from '../src/modules/doc';
+import { PrismaModule, PrismaService } from '../src/prisma';
 import { flushDB } from './utils';
 
 const createModule = () => {

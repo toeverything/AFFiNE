@@ -2,11 +2,10 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../app';
+import { AppModule } from '../src/app';
 import { currentUser, signUp } from './utils';
 
 let app: INestApplication;

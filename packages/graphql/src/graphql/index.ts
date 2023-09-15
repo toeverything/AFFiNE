@@ -497,8 +497,8 @@ export const uploadAvatarMutation = {
   definitionName: 'uploadAvatar',
   containsFile: true,
   query: `
-mutation uploadAvatar($id: String!, $avatar: Upload!) {
-  uploadAvatar(id: $id, avatar: $avatar) {
+mutation uploadAvatar($avatar: Upload!) {
+  uploadAvatar(avatar: $avatar) {
     id
     name
     avatarUrl

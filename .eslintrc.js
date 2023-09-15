@@ -272,6 +272,7 @@ const config = {
         ],
         '@typescript-eslint/no-floating-promises': 0,
         '@typescript-eslint/no-misused-promises': 0,
+        '@typescript-eslint/no-restricted-imports': 0,
       },
     },
   ],

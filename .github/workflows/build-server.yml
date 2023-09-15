@@ -118,7 +118,7 @@ jobs:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
           ENABLE_LOCAL_EMAIL: true
-          OAUTH_EMAIL_LOGIN: affine
+          OAUTH_EMAIL_LOGIN: noreply@toeverything.info
           OAUTH_EMAIL_PASSWORD: affine
 
       - name: Upload server test coverage results
@@ -191,9 +191,6 @@ jobs:
         env:
           COVERAGE: true
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-          ENABLE_LOCAL_EMAIL: true
-          OAUTH_EMAIL_LOGIN: affine
-          OAUTH_EMAIL_PASSWORD: affine
 
       - name: Collect code coverage report
         run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov

@@ -1,10 +1,10 @@
-/// <reference types="../global.d.ts" />
+/// <reference types="../src/global.d.ts" />
 
 import { Test, TestingModule } from '@nestjs/testing';
 import ava, { TestFn } from 'ava';
 
-import { ConfigModule } from '../config';
-import { SessionModule, SessionService } from '../session';
+import { ConfigModule } from '../src/config';
+import { SessionModule, SessionService } from '../src/session';
 
 const test = ava as TestFn<{
   session: SessionService;

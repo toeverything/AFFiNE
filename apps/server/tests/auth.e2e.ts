@@ -1,18 +1,19 @@
+import {
+  getCurrentMailMessageCount,
+  getLatestMailMessage,
+} from '@affine-test/kit/utils/cloud';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { AppModule } from '../app';
-import { MailService } from '../modules/auth/mailer';
-import { AuthService } from '../modules/auth/service';
+import { AppModule } from '../src/app';
+import { MailService } from '../src/modules/auth/mailer';
+import { AuthService } from '../src/modules/auth/service';
 import {
   changeEmail,
   createWorkspace,
-  getCurrentMailMessageCount,
-  getLatestMailMessage,
   sendChangeEmail,
   sendVerifyChangeEmail,
   signUp,

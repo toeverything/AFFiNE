@@ -8,12 +8,11 @@ import { hashSync } from '@node-rs/argon2';
 import { User } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import { Express } from 'express';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
-import { AppModule } from '../app';
-import { PrismaService } from '../prisma/service';
+import { AppModule } from '../src/app';
+import { PrismaService } from '../src/prisma/service';
 
 const gql = '/graphql';
 
@@ -139,8 +138,8 @@ test('should be able to upload avatar and remove it', async t => {
       'operations',
       JSON.stringify({
         name: 'uploadAvatar',
-        query: `mutation uploadAvatar($id: String!, $avatar: Upload!) {
-          uploadAvatar(id: $id, avatar: $avatar) {
+        query: `mutation uploadAvatar($avatar: Upload!) {
+          uploadAvatar(avatar: $avatar) {
             id
             name
             avatarUrl
@@ -166,17 +165,14 @@ test('should be able to upload avatar and remove it', async t => {
       query: `
           mutation removeAvatar {
             removeAvatar {
-              id
-              name
-              avatarUrl
-              email
+              success
             }
           }
         `,
     })
     .expect(200)
     .expect(res => {
-      t.is(res.body.data.removeAvatar.avatarUrl, '');
+      t.is(res.body.data.removeAvatar.success, true);
     });
 });
 

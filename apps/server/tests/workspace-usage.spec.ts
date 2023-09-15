@@ -3,12 +3,12 @@ import { Test } from '@nestjs/testing';
 import ava, { TestFn } from 'ava';
 import { stub } from 'sinon';
 
-import { AppModule } from '../app';
-import { UsersService } from '../modules/users';
-import { PermissionService } from '../modules/workspaces/permission';
-import { WorkspaceResolver } from '../modules/workspaces/resolver';
-import { PrismaService } from '../prisma';
-import { StorageProvide } from '../storage';
+import { AppModule } from '../src/app';
+import { UsersService } from '../src/modules/users';
+import { PermissionService } from '../src/modules/workspaces/permission';
+import { WorkspaceResolver } from '../src/modules/workspaces/resolver';
+import { PrismaService } from '../src/prisma';
+import { StorageProvide } from '../src/storage';
 import { FakePrisma } from './utils';
 
 class FakePermission {

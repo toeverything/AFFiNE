@@ -190,7 +190,7 @@ type Mutation {
   deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
   """Upload user avatar"""
-  uploadAvatar(id: String!, avatar: Upload!): UserType!
+  uploadAvatar(avatar: Upload!): UserType!
 
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!

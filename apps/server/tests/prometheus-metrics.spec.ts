@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 import { register } from 'prom-client';
 
-import { MetricsModule } from '../metrics';
-import { Metrics } from '../metrics/metrics';
-import { PrismaModule } from '../prisma';
+import { MetricsModule } from '../src/metrics';
+import { Metrics } from '../src/metrics/metrics';
+import { PrismaModule } from '../src/prisma';
 
 let metrics: Metrics;
 let module: TestingModule;

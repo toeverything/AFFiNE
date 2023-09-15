@@ -5,9 +5,9 @@ import { hashSync } from '@node-rs/argon2';
 import { PrismaClient, User } from '@prisma/client';
 import request from 'supertest';
 
-import type { TokenType } from '../modules/auth';
-import type { UserType } from '../modules/users';
-import type { InvitationType, WorkspaceType } from '../modules/workspaces';
+import type { TokenType } from '../src/modules/auth';
+import type { UserType } from '../src/modules/users';
+import type { InvitationType, WorkspaceType } from '../src/modules/workspaces';
 
 const gql = '/graphql';
 
