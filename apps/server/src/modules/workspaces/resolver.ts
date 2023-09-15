@@ -220,7 +220,7 @@ export class WorkspaceResolver {
       take: take || 8,
       orderBy: {
         createdAt: 'desc',
-        type: 'desc' // owner > admin > write > read
+        type: 'desc', // owner > admin > write > read
       },
       include: {
         user: true,
