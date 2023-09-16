@@ -166,7 +166,7 @@ const OpenOAuthJwt = () => {
   const { currentUser } = useLoaderData() as LoaderData;
   const [params] = useSearchParams();
   const schema = useMemo(() => {
-    const maybeSchema = appSchemas.safeParse(params.get('a'));
+    const maybeSchema = appSchemas.safeParse(params.get('schema'));
     return maybeSchema.success ? maybeSchema.data : 'affine';
   }, [params]);
   const channel = schemaToChanel[schema as Schema];

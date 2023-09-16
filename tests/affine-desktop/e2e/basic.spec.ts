@@ -4,7 +4,7 @@ import { test } from '@affine-test/kit/electron';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
-test('new page', async ({ electronPage: page, workspace }) => {
+test('new page', async ({ page, workspace }) => {
   await page.getByTestId('new-page-button').click({
     delay: 100,
   });
@@ -15,7 +15,7 @@ test('new page', async ({ electronPage: page, workspace }) => {
 
 // macOS only
 if (platform() === 'darwin') {
-  test('app sidebar router forward/back', async ({ electronPage: page }) => {
+  test('app sidebar router forward/back', async ({ page }) => {
     await page.getByTestId('help-island').click();
     await page.getByTestId('easy-guide').click();
     await page.getByTestId('onboarding-modal-next-button').click();
@@ -81,7 +81,7 @@ if (platform() === 'darwin') {
 }
 
 test('clientBorder value should disable by default on window', async ({
-  electronPage: page,
+  page,
 }) => {
   await clickSideBarSettingButton(page);
   await page.waitForTimeout(1000);
@@ -93,7 +93,7 @@ test('clientBorder value should disable by default on window', async ({
   );
 });
 
-test('app theme', async ({ electronPage: page, electronApp }) => {
+test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');
   {
     const themeMode = await root.evaluate(element =>
@@ -124,7 +124,7 @@ test('app theme', async ({ electronPage: page, electronApp }) => {
   }
 });
 
-test('affine onboarding button', async ({ electronPage: page }) => {
+test('affine onboarding button', async ({ page }) => {
   await page.getByTestId('help-island').click();
   await page.getByTestId('easy-guide').click();
   const onboardingModal = page.locator('[data-testid=onboarding-modal]');
@@ -143,7 +143,7 @@ test('affine onboarding button', async ({ electronPage: page }) => {
   expect(await onboardingModal.isVisible()).toEqual(false);
 });
 
-test('windows only check', async ({ electronPage: page }) => {
+test('windows only check', async ({ page }) => {
   const windowOnlyUI = page.locator('[data-platform-target=win32]');
   if (process.platform === 'win32') {
     await expect(windowOnlyUI).toBeVisible();
@@ -152,7 +152,7 @@ test('windows only check', async ({ electronPage: page }) => {
   }
 });
 
-test('delete workspace', async ({ electronPage: page }) => {
+test('delete workspace', async ({ page }) => {
   await page.getByTestId('current-workspace').click();
   await page.getByTestId('new-workspace').click();
   await page.getByTestId('create-workspace-input').type('Delete Me', {

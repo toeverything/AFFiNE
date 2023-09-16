@@ -17,8 +17,12 @@ test.beforeEach(async () => {
   user = await createRandomUser();
 });
 
-test('new page', async ({ electronPage: page }) => {
+test.beforeEach(async ({ page }) => {
   await loginUser(page, user.email);
+});
+
+test('new page', async ({ page }) => {
+  await page.reload();
   await waitForEditorLoad(page);
   await createLocalWorkspace(
     {
