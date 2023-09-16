@@ -5,13 +5,14 @@ import type {
 import { getDoc } from '@affine/y-provider';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
-import { Schema, uuidv4, Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import type { DBHandlerManager } from '@toeverything/infra/handler';
 import type {
   EventMap,
   UnwrapManagerHandlerToClientSide,
 } from '@toeverything/infra/type';
 import { setTimeout } from 'timers/promises';
+import { v4 as uuid } from 'uuid';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -79,7 +80,7 @@ const schema = new Schema();
 schema.register(AffineSchemas).register(__unstableSchemas);
 
 beforeEach(() => {
-  id = uuidv4('unknown');
+  id = uuid();
   workspace = new Workspace({
     id,
     isSSR: true,
