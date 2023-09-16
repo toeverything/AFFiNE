@@ -117,9 +117,6 @@ jobs:
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-          ENABLE_LOCAL_EMAIL: true
-          OAUTH_EMAIL_LOGIN: noreply@toeverything.info
-          OAUTH_EMAIL_PASSWORD: affine
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v3
