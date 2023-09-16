@@ -8,10 +8,10 @@ import {
   RemoveIcon,
   SaveIcon,
 } from '@blocksuite/icons';
-import { uuidv4 } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
 import { useCallback, useMemo, useState } from 'react';
+import { v4 as uuid } from 'uuid';
 
 import { Input, ScrollableContainer } from '../../..';
 import { FilterList } from '../filter';
@@ -280,7 +280,7 @@ export const SaveCollectionButton = ({
   const handleClick = useCallback(() => {
     changeShow(true);
     setInit({
-      id: uuidv4(),
+      id: uuid(),
       name: '',
       filterList,
       workspaceId,

@@ -1,8 +1,9 @@
 import { DebugLogger } from '@affine/debug';
 import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { createJSONStorage } from 'jotai/utils';
+import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 
 import { getOrCreateWorkspace } from '../manager';
@@ -57,7 +58,7 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.LOCAL> = {
     !Array.isArray(storage.getItem(kStoreKey, [])) &&
       storage.setItem(kStoreKey, []);
     const binary = BlockSuiteWorkspace.Y.encodeStateAsUpdate(doc);
-    const id = nanoid();
+    const id = uuid();
     const blockSuiteWorkspace = getOrCreateWorkspace(
       id,
       WorkspaceFlavour.LOCAL

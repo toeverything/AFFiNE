@@ -6,6 +6,7 @@ import { type DBSchema, openDB } from 'idb';
 import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { Observable } from 'rxjs';
+import { v4 as uuid } from 'uuid';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
 
@@ -116,7 +117,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
           settingMap.set(
             userId,
             new YDoc({
-              guid: `${rootDoc.guid}:settings:${userId}`,
+              guid: uuid(),
             })
           );
         }

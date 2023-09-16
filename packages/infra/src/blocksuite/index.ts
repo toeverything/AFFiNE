@@ -1,8 +1,13 @@
-import type { Page, PageMeta, Workspace } from '@blocksuite/store';
+import type { IdGenerator, Page, PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
+import { v4 as uuid } from 'uuid';
 import type { Doc } from 'yjs';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
+
+export const idGenerator: IdGenerator = () => {
+  return uuid();
+};
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.waitForLoaded();

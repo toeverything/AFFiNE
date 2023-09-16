@@ -1,11 +1,11 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertEquals } from '@blocksuite/global/utils';
 import { PlusIcon } from '@blocksuite/icons';
-import { nanoid } from '@blocksuite/store';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { Command } from 'cmdk';
 import { useCallback } from 'react';
+import { v4 as uuid } from 'uuid';
 
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
@@ -35,7 +35,7 @@ export const Footer = ({
     <Command.Item
       data-testid="quick-search-add-new-page"
       onSelect={useCallback(async () => {
-        const id = nanoid();
+        const id = uuid();
         const page = createPage(id);
         assertEquals(page.id, id);
         await initEmptyPage(page, query);

@@ -61,7 +61,7 @@ const schema = new Schema();
 schema.register(AffineSchemas).register(__unstableSchemas);
 
 beforeEach(() => {
-  id = uuidv4();
+  id = uuidv4('unknown');
   workspace = new Workspace({
     id,
     isSSR: true,

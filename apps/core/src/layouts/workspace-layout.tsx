@@ -17,7 +17,6 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -34,6 +33,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { v4 as uuid } from 'uuid';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
@@ -166,7 +166,7 @@ export const WorkspaceLayoutInner = ({
   const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 
   const handleCreatePage = useCallback(() => {
-    const id = nanoid();
+    const id = uuid();
     helper.createPage(id);
     const page = currentWorkspace.blockSuiteWorkspace.getPage(id);
     assertExists(page);

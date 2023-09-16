@@ -6,7 +6,6 @@ import {
   getOrCreateWorkspace,
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
-import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
@@ -15,6 +14,7 @@ import {
 } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
+import { v4 as uuid } from 'uuid';
 
 import { LocalAdapter } from '../adapters/local';
 import { WorkspaceAdapters } from '../adapters/workspace';
@@ -64,7 +64,7 @@ export function useAppHelper() {
     createLocalWorkspace: useCallback(
       async (name: string): Promise<string> => {
         const blockSuiteWorkspace = getOrCreateWorkspace(
-          nanoid(),
+          uuid(),
           WorkspaceFlavour.LOCAL
         );
         blockSuiteWorkspace.meta.setName(name);

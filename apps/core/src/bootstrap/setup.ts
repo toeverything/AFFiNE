@@ -12,7 +12,6 @@ import {
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
 import { assertExists } from '@blocksuite/global/utils';
-import { nanoid } from '@blocksuite/store';
 import {
   migrateLocalBlobStorage,
   migrateWorkspace,
@@ -20,6 +19,7 @@ import {
 } from '@toeverything/infra/blocksuite';
 import { downloadBinary, overwriteBinary } from '@toeverything/y-indexeddb';
 import type { createStore } from 'jotai/vanilla';
+import { v4 as uuid } from 'uuid';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
@@ -54,7 +54,7 @@ async function tryMigration() {
               return doc;
             },
             createWorkspace: async () =>
-              getOrCreateWorkspace(nanoid(), WorkspaceFlavour.LOCAL),
+              getOrCreateWorkspace(uuid(), WorkspaceFlavour.LOCAL),
             getSchema: () => globalBlockSuiteSchema,
           };
           promises.push(
