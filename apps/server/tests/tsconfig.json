@@ -6,7 +6,8 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "rootDir": ".",
-    "outDir": "../dist/tests"
+    "outDir": "../lib/tests",
+    "tsBuildInfoFile": "../lib/tests/.tsbuildinfo"
   },
   "references": [
     {
