@@ -40,7 +40,7 @@ export const test = base.extend<{
     await page.getByTestId('onboarding-modal-close-button').click({
       delay: 100,
     });
-    // wat for blocksuite to be loaded
+    // wait for blocksuite to be loaded
     await page.waitForSelector('v-line');
     if (enableCoverage) {
       await fs.promises.mkdir(istanbulTempDir, { recursive: true });
@@ -85,14 +85,6 @@ export const test = base.extend<{
     // write to the cloned dist
     await fs.writeJSON(resolve(clonedDist, 'package.json'), packageJson);
 
-    const env = {
-      ...process.env,
-    };
-
-    if (process.env.DEV_SERVER_URL) {
-      env.DEV_SERVER_URL = process.env.DEV_SERVER_URL;
-    }
-
     const electronApp = await electron.launch({
       args: [clonedDist],
       executablePath: resolve(
@@ -101,7 +93,7 @@ export const test = base.extend<{
         '.bin',
         `electron${ext}`
       ),
-      cwd: electronRoot,
+      cwd: clonedDist,
       recordVideo: {
         dir: testResultDir,
       },
