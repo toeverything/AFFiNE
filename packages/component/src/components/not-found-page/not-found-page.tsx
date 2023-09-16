@@ -24,7 +24,7 @@ export const NotFoundPage = ({
   const t = useAFFiNEI18N();
 
   return (
-    <div className={notFoundPageContainer}>
+    <div className={notFoundPageContainer} data-testid="not-found">
       <div>
         <div className={wrapper}>
           <NotFoundPattern />
