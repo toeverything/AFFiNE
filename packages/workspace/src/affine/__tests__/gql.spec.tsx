@@ -136,7 +136,6 @@ describe('GraphQL wrapper for SWR', () => {
           mutation: uploadAvatarMutation,
         });
         trigger({
-          id: '1',
           avatar: new File([''], 'avatar.png'),
         });
       }

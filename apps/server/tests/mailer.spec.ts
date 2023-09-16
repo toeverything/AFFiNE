@@ -1,22 +1,16 @@
-import { ok } from 'node:assert';
 import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { User } from '@prisma/client';
-import test from 'ava';
-// @ts-expect-error graphql-upload is not typed
+import ava, { TestFn } from 'ava';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { AppModule } from '../app';
-import { MailService } from '../modules/auth/mailer';
-import { PrismaService } from '../prisma';
+import { AppModule } from '../src/app';
+import { MailService } from '../src/modules/auth/mailer';
+import { PrismaService } from '../src/prisma';
 import { createWorkspace, getInviteInfo, inviteUser, signUp } from './utils';
-
-let app: INestApplication;
-
-let mail: MailService;
 
 const FakePrisma = {
   fakeUser: {
@@ -95,14 +89,19 @@ const FakePrisma = {
   },
 };
 
-test.beforeEach(async () => {
+const test = ava as TestFn<{
+  app: INestApplication;
+  mail: MailService;
+}>;
+
+test.beforeEach(async t => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
   })
     .overrideProvider(PrismaService)
     .useValue(FakePrisma)
     .compile();
-  app = module.createNestApplication();
+  const app = module.createNestApplication();
   app.use(
     graphqlUploadExpress({
       maxFileSize: 10 * 1024 * 1024,
@@ -111,14 +110,17 @@ test.beforeEach(async () => {
   );
   await app.init();
 
-  mail = module.get(MailService);
+  const mail = module.get(MailService);
+  t.context.app = app;
+  t.context.mail = mail;
 });
 
-test.afterEach.always(async () => {
-  await app.close();
+test.afterEach.always(async t => {
+  await t.context.app.close();
 });
 
 test('should send invite email', async t => {
+  const { mail, app } = t.context;
   if (mail.hasConfigured()) {
     const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
     const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
@@ -150,7 +152,7 @@ test('should send invite email', async t => {
       }
     );
 
-    ok(resp.accepted.length === 1, 'failed to send invite email');
+    t.is(resp.accepted.length, 1, 'failed to send invite email');
   }
   t.pass();
 });

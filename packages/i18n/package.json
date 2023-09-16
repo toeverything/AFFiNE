@@ -17,9 +17,9 @@
   "scripts": {
     "build": "node build.mjs",
     "dev": "node dev.mjs",
-    "sync-languages": "NODE_OPTIONS=--experimental-fetch ts-node-esm src/scripts/sync.ts",
+    "sync-languages": "ts-node-esm -P ./tsconfig.node.json src/scripts/sync.ts",
     "sync-languages:check": "yarn run sync-languages --check",
-    "download-resources": "NODE_OPTIONS=--experimental-fetch ts-node-esm src/scripts/download.ts"
+    "download-resources": "ts-node-esm -P ./tsconfig.node.json src/scripts/download.ts"
   },
   "keywords": [],
   "repository": {

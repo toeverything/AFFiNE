@@ -25,7 +25,7 @@
     "concurrently": "^8.2.1",
     "jest-mock": "^29.6.3",
     "serve": "^14.2.1",
-    "ses": "^0.18.7",
+    "ses": "^0.18.8",
     "storybook": "^7.4.0",
     "storybook-dark-mode": "^3.0.1",
     "wait-on": "^7.0.1"

@@ -53,6 +53,8 @@ const config: PlaywrightTestConfig = {
         ENABLE_LOCAL_EMAIL: process.env.ENABLE_LOCAL_EMAIL ?? 'true',
         NEXTAUTH_URL: 'http://localhost:8080',
         OAUTH_EMAIL_SENDER: 'noreply@toeverything.info',
+        OAUTH_EMAIL_LOGIN: 'noreply@toeverything.info',
+        OAUTH_EMAIL_PASSWORD: 'affine',
       },
     },
   ],

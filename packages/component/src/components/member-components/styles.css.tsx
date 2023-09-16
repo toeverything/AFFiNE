@@ -62,7 +62,8 @@ export const pageItem = style({
   },
 });
 globalStyle(`${pageItem} a`, {
-  display: 'inline-flex',
+  width: '100%',
+  display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
 });

@@ -14,13 +14,7 @@ import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
-import {
-  type ReactElement,
-  Suspense,
-  useCallback,
-  useMemo,
-  useRef,
-} from 'react';
+import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
@@ -225,7 +219,6 @@ const WorkspaceListItem = ({
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
-  const ref = useRef(null);
 
   return (
     <div
@@ -233,7 +226,6 @@ const WorkspaceListItem = ({
       title={workspaceName}
       onClick={onClick}
       data-testid="workspace-list-item"
-      ref={ref}
     >
       <Avatar
         size={14}
@@ -246,13 +238,7 @@ const WorkspaceListItem = ({
       />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
-        <Tooltip
-          content="Current"
-          side="top"
-          portalOptions={{
-            container: ref.current,
-          }}
-        >
+        <Tooltip content="Current" side="top">
           <div
             className={currentWorkspaceLabel}
             data-testid="current-workspace-label"

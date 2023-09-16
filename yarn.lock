@@ -255,7 +255,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@toeverything/components": ^0.0.41
+    "@toeverything/components": ^0.0.42
     "@types/marked": ^5.0.1
     idb: ^7.1.1
     jotai: ^2.4.1
@@ -306,7 +306,7 @@ __metadata:
     "@sentry/webpack-plugin": ^2.7.0
     "@svgr/webpack": ^8.1.0
     "@swc/core": ^1.3.81
-    "@toeverything/components": ^0.0.41
+    "@toeverything/components": ^0.0.42
     "@types/lodash-es": ^4.17.9
     "@types/webpack-env": ^1.18.1
     async-call-rpc: ^6.3.1
@@ -336,7 +336,7 @@ __metadata:
     react-resizable-panels: ^0.0.55
     react-router-dom: ^6.15.0
     rxjs: ^7.8.1
-    ses: ^0.18.7
+    ses: ^0.18.8
     source-map-loader: ^4.0.1
     style-loader: ^3.3.3
     swc-loader: ^0.2.3
@@ -481,7 +481,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.33
-    "@toeverything/components": ^0.0.41
+    "@toeverything/components": ^0.0.42
   languageName: unknown
   linkType: soft
 
@@ -507,7 +507,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.33
-    "@toeverything/components": ^0.0.41
+    "@toeverything/components": ^0.0.42
     "@toeverything/theme": ^0.7.15
     clsx: ^2.0.0
     foxact: ^0.2.20
@@ -603,7 +603,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": ^2.1.33
-    "@toeverything/components": ^0.0.41
+    "@toeverything/components": ^0.0.42
     jotai: ^2.4.1
     react: 18.2.0
     react-dom: 18.2.0
@@ -614,7 +614,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/plugin-cli@workspace:packages/plugin-cli"
   dependencies:
-    "@endo/static-module-record": ^0.8.1
+    "@endo/static-module-record": ^0.8.2
     "@swc/core": ^1.3.81
     "@toeverything/infra": "workspace:^"
     "@vanilla-extract/rollup-plugin": ^1.3.0
@@ -713,6 +713,7 @@ __metadata:
     "@types/cookie-parser": ^1.4.3
     "@types/engine.io": ^3.1.7
     "@types/express": ^4.17.17
+    "@types/graphql-upload": ^16.0.1
     "@types/keyv": ^4.2.0
     "@types/lodash-es": ^4.17.9
     "@types/node": ^18.17.12
@@ -803,7 +804,7 @@ __metadata:
     react: 18.2.0
     react-dom: 18.2.0
     serve: ^14.2.1
-    ses: ^0.18.7
+    ses: ^0.18.8
     storybook: ^7.4.0
     storybook-addon-react-router-v6: ^2.0.7
     storybook-dark-mode: ^3.0.1
@@ -4463,23 +4464,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/env-options@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "@endo/env-options@npm:0.1.3"
-  checksum: da8c66865d4d30b0053a00960657dc36f022975a888f0dd6a2f6bb37b9fe731f45a02a2cf263d93b1a40fcb37b25f8ba7076cb8af9e93fd95f496365d9382930
+"@endo/env-options@npm:^0.1.4":
+  version: 0.1.4
+  resolution: "@endo/env-options@npm:0.1.4"
+  checksum: 6099f0a6b700a60bee7b226aa2a39bb5748e22f25e9606d70e5a66a8e62cbd8c972b0fe578735a658f80bf2ebece62e28c20aa3f16417cbfe6c19a8689966dd3
   languageName: node
   linkType: hard
 
-"@endo/static-module-record@npm:^0.8.1":
-  version: 0.8.1
-  resolution: "@endo/static-module-record@npm:0.8.1"
+"@endo/static-module-record@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "@endo/static-module-record@npm:0.8.2"
   dependencies:
     "@agoric/babel-generator": ^7.17.6
     "@babel/parser": ^7.17.3
     "@babel/traverse": ^7.17.3
     "@babel/types": ^7.17.0
-    ses: ^0.18.7
-  checksum: c9dc18a5b8ec13008784e30aa15214a67771c325759b42d54362f891d0328b0abf4cafc7be8fa17d539f5f7ca28b9555127e22e9596f5e52d9bf7f3fa90c7963
+    ses: ^0.18.8
+  checksum: 0e65f28e95d4ddd495de4cc7e5f0a47a70b89ba5449660158c8813121ab76aa3a8db7e6b2bb9efd3cb24833f8613a952e3a85a8af9fc9b7e4ad49d1d47a9f06c
   languageName: node
   linkType: hard
 
@@ -12531,9 +12532,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/components@npm:^0.0.41":
-  version: 0.0.41
-  resolution: "@toeverything/components@npm:0.0.41"
+"@toeverything/components@npm:^0.0.42":
+  version: 0.0.42
+  resolution: "@toeverything/components@npm:0.0.42"
   dependencies:
     "@blocksuite/icons": ^2.1.33
     "@radix-ui/react-dialog": ^1.0.4
@@ -12545,7 +12546,7 @@ __metadata:
     clsx: ^2
     react: ^18
     react-dom: ^18
-  checksum: 15ee1cba8ea7880c9aae9fb18f8f8c44a183b64972e29e852d55e097a74ec994c1b2d22d6708746055e741112decffed1db14c345f5300733969bac69ddecf87
+  checksum: 140097386e9e4130d1ad8e60ebc65ede0d68f041bef7058d06488d228009d3d58e9e1af6af2911b4a22d27efd36996a9f9e195ed49b92ba3c21aedb81ba54d87
   languageName: node
   linkType: hard
 
@@ -12718,6 +12719,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/accepts@npm:*":
+  version: 1.3.5
+  resolution: "@types/accepts@npm:1.3.5"
+  dependencies:
+    "@types/node": "*"
+  checksum: 590b7580570534a640510c071e09074cf63b5958b237a728f94322567350aea4d239f8a9d897a12b15c856b992ee4d7907e9812bb079886af2c00714e7fb3f60
+  languageName: node
+  linkType: hard
+
 "@types/affine__env@workspace:*, @types/affine__env@workspace:packages/@types/env":
   version: 0.0.0-use.local
   resolution: "@types/affine__env@workspace:packages/@types/env"
@@ -12864,6 +12874,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/content-disposition@npm:*":
+  version: 0.5.6
+  resolution: "@types/content-disposition@npm:0.5.6"
+  checksum: da07798d52cc8fc46a8843d768b48d54c70f1a44c861dc2c73c4c25a1e08af859709629ab0e4d23d5198107b8926bb48c593df436ba68123d87191f5e25fe4bc
+  languageName: node
+  linkType: hard
+
 "@types/cookie-parser@npm:^1.4.3":
   version: 1.4.3
   resolution: "@types/cookie-parser@npm:1.4.3"
@@ -12884,6 +12901,18 @@ __metadata:
   version: 2.1.2
   resolution: "@types/cookiejar@npm:2.1.2"
   checksum: f6e1903454007f86edd6c3520cbb4d553e1d4e17eaf1f77f6f75e3270f48cc828d74397a113a36942f5fe52f9fa71067bcfa738f53ad468fcca0bc52cb1cbd28
+  languageName: node
+  linkType: hard
+
+"@types/cookies@npm:*":
+  version: 0.7.8
+  resolution: "@types/cookies@npm:0.7.8"
+  dependencies:
+    "@types/connect": "*"
+    "@types/express": "*"
+    "@types/keygrip": "*"
+    "@types/node": "*"
+  checksum: 7945b0cfe370bf1f05a1f328c9eba55333dac1bb9d7efa3148b107c260ab924263546351f9fd168daa72948d195464d395319a24477995f9f887a3a99fbcb5b5
   languageName: node
   linkType: hard
 
@@ -13068,6 +13097,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/graphql-upload@npm:^16.0.1":
+  version: 16.0.1
+  resolution: "@types/graphql-upload@npm:16.0.1"
+  dependencies:
+    "@types/express": "*"
+    "@types/koa": "*"
+    fs-capacitor: ^8.0.0
+    graphql: 0.13.1 - 16
+  checksum: 8ad2162f60f0808a6232cf2d2a8a7a10ce3e7a6a9cbb3bf80d8683a790b98b401d5ef69a83b8d011ce28ee67fdbb2ca1343051ea2133ec6a59772f94558967ba
+  languageName: node
+  linkType: hard
+
 "@types/hast@npm:^2.0.0":
   version: 2.3.5
   resolution: "@types/hast@npm:2.3.5"
@@ -13081,6 +13122,13 @@ __metadata:
   version: 6.1.0
   resolution: "@types/html-minifier-terser@npm:6.1.0"
   checksum: eb843f6a8d662d44fb18ec61041117734c6aae77aa38df1be3b4712e8e50ffaa35f1e1c92fdd0fde14a5675fecf457abcd0d15a01fae7506c91926176967f452
+  languageName: node
+  linkType: hard
+
+"@types/http-assert@npm:*":
+  version: 1.5.3
+  resolution: "@types/http-assert@npm:1.5.3"
+  checksum: 9553e5a0b8bcfdac4b51d3fa3b89a91b5450171861a667a5b4c47204e0f4a1ca865d97396e6ceaf220e87b64d06b7a8bad7bfba15ef97acb41a87507c9940dbc
   languageName: node
   linkType: hard
 
@@ -13195,6 +13243,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/keygrip@npm:*":
+  version: 1.0.3
+  resolution: "@types/keygrip@npm:1.0.3"
+  checksum: adee9a3efda3db9c64466af1c7c91a6d049420ee50589500cfd36e3e38d6abefdd858da88e6da63ed186e588127af3e862c1dc64fb0ad45c91870e6c35fe3be0
+  languageName: node
+  linkType: hard
+
 "@types/keyv@npm:^3.1.4":
   version: 3.1.4
   resolution: "@types/keyv@npm:3.1.4"
@@ -13210,6 +13265,31 @@ __metadata:
   dependencies:
     keyv: "*"
   checksum: 8713da9382b9346d664866a6cab2f91b0fd479f61379af891303a618e9a2abad6f347adc38a0850540e3f2dad278427de24e7555339264fddb04d1d17d3b50e0
+  languageName: node
+  linkType: hard
+
+"@types/koa-compose@npm:*":
+  version: 3.2.6
+  resolution: "@types/koa-compose@npm:3.2.6"
+  dependencies:
+    "@types/koa": "*"
+  checksum: 1204c5bfa4c69448b692aba29c566ef6bedbdbe5842fa180450267a23d3606faa13ef209876fd0c989edb5bc381812a66610fcfeac196ce4e76364354756ba1f
+  languageName: node
+  linkType: hard
+
+"@types/koa@npm:*":
+  version: 2.13.9
+  resolution: "@types/koa@npm:2.13.9"
+  dependencies:
+    "@types/accepts": "*"
+    "@types/content-disposition": "*"
+    "@types/cookies": "*"
+    "@types/http-assert": "*"
+    "@types/http-errors": "*"
+    "@types/keygrip": "*"
+    "@types/koa-compose": "*"
+    "@types/node": "*"
+  checksum: af9cd599c8e17e2ae0f4168a61d964e343f713d002b65fd995658d7addc6551ccadecfd32b3405cf44e4d360178ee4f972d6881533548261ae1f636a655d24b1
   languageName: node
   linkType: hard
 
@@ -21979,7 +22059,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql@npm:^15.0.0 || ^16.0.0, graphql@npm:^16.0.0, graphql@npm:^16.8.0":
+"graphql@npm:0.13.1 - 16, graphql@npm:^15.0.0 || ^16.0.0, graphql@npm:^16.0.0, graphql@npm:^16.8.0":
   version: 16.8.0
   resolution: "graphql@npm:16.8.0"
   checksum: d853d4085b0c911a7e2a926c3b0d379934ec61cd4329e70cdf281763102f024fd80a97db7a505b8b04fed9050cb4875f8f518150ea854557a500a0b41dcd7f4e
@@ -31049,12 +31129,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ses@npm:^0.18.7":
-  version: 0.18.7
-  resolution: "ses@npm:0.18.7"
+"ses@npm:^0.18.8":
+  version: 0.18.8
+  resolution: "ses@npm:0.18.8"
   dependencies:
-    "@endo/env-options": ^0.1.3
-  checksum: 75ac014771d9bc1f747193c6d0f9e7d2d7700a10311ba8d805d9bc78d4c20d4ef40537f0535b1ea6abf06babf67e70f8bd37b2ad68ad54992a0c5ce842181c87
+    "@endo/env-options": ^0.1.4
+  checksum: d7976d2ee218baec021c5cfdfb193d63b52bf2b6cbdbbb90c19d835915a1872b6924910f7fd42bc849eb2de78fc7bdd6e7b4667e1df3c79244cc92d4ede48aa6
   languageName: node
   linkType: hard
 

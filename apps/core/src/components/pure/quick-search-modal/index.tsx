@@ -77,6 +77,7 @@ export const QuickSearchModal = ({
       open={open}
       onOpenChange={setOpen}
       width={608}
+      withoutCloseButton
       contentOptions={{
         ['data-testid' as string]: 'quickSearch',
         style: {
@@ -85,6 +86,7 @@ export const QuickSearchModal = ({
           top: '80px',
           overflow: 'hidden',
           transform: 'translateX(-50%)',
+          padding: 0,
         },
       }}
     >

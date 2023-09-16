@@ -97,6 +97,9 @@
       "path": "./apps/server"
     },
     {
+      "path": "./apps/server/tests"
+    },
+    {
       "path": "./apps/storybook"
     },
     {

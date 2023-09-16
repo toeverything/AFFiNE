@@ -81,6 +81,7 @@
     "@types/cookie-parser": "^1.4.3",
     "@types/engine.io": "^3.1.7",
     "@types/express": "^4.17.17",
+    "@types/graphql-upload": "^16.0.1",
     "@types/keyv": "^4.2.0",
     "@types/lodash-es": "^4.17.9",
     "@types/node": "^18.17.12",
@@ -104,19 +105,24 @@
     },
     "nodeArguments": [
       "--loader",
-      "ts-node/esm.mjs",
+      "ts-node/esm/transpile-only.mjs",
       "--es-module-specifier-resolution",
       "node"
     ],
     "files": [
-      "src/**/*.spec.ts"
+      "tests/**/*.spec.ts",
+      "tests/**/*.e2e.ts"
     ],
     "require": [
       "./src/prelude.ts"
     ],
     "environmentVariables": {
-      "TS_NODE_PROJECT": "./tsconfig.json",
-      "NODE_ENV": "test"
+      "TS_NODE_PROJECT": "./tests/tsconfig.json",
+      "NODE_ENV": "test",
+      "ENABLE_LOCAL_EMAIL": "true",
+      "OAUTH_EMAIL_LOGIN": "noreply@toeverything.info",
+      "OAUTH_EMAIL_PASSWORD": "affine",
+      "OAUTH_EMAIL_SENDER": "noreply@toeverything.info"
     }
   },
   "nodemonConfig": {

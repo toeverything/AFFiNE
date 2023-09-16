@@ -44,7 +44,6 @@ export const UserAvatar = () => {
   const handleUpdateUserAvatar = useCallback(
     async (file: File) => {
       await avatarTrigger({
-        id: user.id,
         avatar: file,
       });
       // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
