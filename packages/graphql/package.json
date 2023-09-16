@@ -24,6 +24,6 @@
   "dependencies": {
     "@affine/env": "workspace:*",
     "graphql": "^16.8.0",
-    "nanoid": "^4.0.2"
+    "nanoid": "^5.0.1"
   }
 }
