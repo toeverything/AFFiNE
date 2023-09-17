@@ -14,10 +14,10 @@
     "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
     "dev:prod": "yarn node scripts/dev.mjs",
     "build": "NODE_ENV=production zx scripts/build-layers.mjs",
+    "build:dev": "NODE_ENV=development zx scripts/build-layers.mjs",
     "generate-assets": "zx scripts/generate-assets.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "test": "DEBUG=pw:browser yarn -T run playwright test -c ./playwright.config.ts",
     "make-squirrel": "yarn ts-node-esm -T scripts/make-squirrel.mts"
   },
   "config": {
@@ -43,7 +43,6 @@
     "@electron/remote": "2.0.11",
     "@reforged/maker-appimage": "^3.3.1",
     "@toeverything/infra": "workspace:*",
-    "@types/fs-extra": "^11.0.1",
     "@types/uuid": "^9.0.3",
     "cross-env": "7.0.3",
     "electron": "^26.1.0",
