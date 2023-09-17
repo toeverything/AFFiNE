@@ -99,7 +99,7 @@ export async function buildShowcaseWorkspace(
   });
 
   const pageMetas = {
-    'gc5FeppNDv-hello-world': {
+    '9f6f3c04-cf32-470c-9648-479dc838f10e': {
       createDate: 1691548231530,
       tags: ['ZHBa2NtdSo', 'QYFD_HeQc-', 'wg-fBtd2eI'],
       updatedDate: 1691676331623,
@@ -175,7 +175,7 @@ export async function buildShowcaseWorkspace(
   } satisfies Record<string, Partial<PageMeta>>;
   const data = [
     [
-      'gc5FeppNDv-hello-world',
+      '9f6f3c04-cf32-470c-9648-479dc838f10e',
       import('@affine/templates/v1/getting-started.json'),
     ],
     ['F1SX6cgNxy', import('@affine/templates/v1/preloading.json')],
