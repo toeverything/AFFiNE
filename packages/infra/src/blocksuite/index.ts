@@ -114,7 +114,7 @@ export async function buildShowcaseWorkspace(
       updatedDate: 1691676775642,
       favorite: false,
     },
-    '3R9X-gMh3m': {
+    '59b140eb-4449-488f-9eeb-42412dcc044e': {
       createDate: 1691551731225,
       tags: [],
       updatedDate: 1691654611175,
@@ -184,7 +184,10 @@ export async function buildShowcaseWorkspace(
       '0773e198-5de0-45d4-a35e-de22ea72b96b',
       import('@affine/templates/v1/preloading.json'),
     ],
-    ['3R9X-gMh3m', import('@affine/templates/v1/template-galleries.json')],
+    [
+      '59b140eb-4449-488f-9eeb-42412dcc044e',
+      import('@affine/templates/v1/template-galleries.json'),
+    ],
     ['z_v6LOqNpp', import('@affine/templates/v1/personal-home.json')],
     ['0N0WzwmtK_', import('@affine/templates/v1/working-home.json')],
     [
