@@ -11,6 +11,7 @@ export const sidebarSwitch = style({
       opacity: 1,
       width: '32px',
       flexShrink: 0,
+      fontSize: '24px',
       pointerEvents: 'auto',
     },
   },

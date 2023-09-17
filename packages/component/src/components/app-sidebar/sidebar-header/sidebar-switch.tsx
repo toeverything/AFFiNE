@@ -3,7 +3,6 @@ import { SidebarIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useAtom } from 'jotai';
-import { useRef } from 'react';
 
 import { appSidebarOpenAtom } from '../index.jotai';
 import * as styles from './sidebar-switch.css';
@@ -11,7 +10,6 @@ import * as styles from './sidebar-switch.css';
 export const SidebarSwitch = ({ show }: { show: boolean }) => {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
-  const ref = useRef(null);
   const tooltipContent = open
     ? t['com.affine.sidebarSwitch.collapse']()
     : t['com.affine.sidebarSwitch.expand']();
@@ -22,9 +20,6 @@ export const SidebarSwitch = ({ show }: { show: boolean }) => {
     <Tooltip
       content={tooltipContent + ' ' + collapseKeyboardShortcuts}
       side={open ? 'bottom' : 'right'}
-      portalOptions={{
-        container: ref.current,
-      }}
     >
       <IconButton
         className={styles.sidebarSwitch}
@@ -35,7 +30,6 @@ export const SidebarSwitch = ({ show }: { show: boolean }) => {
           zIndex: 1,
         }}
         onClick={() => setOpen(open => !open)}
-        ref={ref}
       >
         <SidebarIcon />
       </IconButton>

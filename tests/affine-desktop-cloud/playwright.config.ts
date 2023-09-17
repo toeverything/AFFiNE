@@ -1,27 +1,22 @@
-import type {
-  PlaywrightTestConfig,
-  PlaywrightWorkerOptions,
-} from '@playwright/test';
+import type { PlaywrightTestConfig } from '@playwright/test';
+// import { devices } from '@playwright/test';
 
+/**
+ * Read environment variables from file.
+ * https://github.com/motdotla/dotenv
+ */
+// require('dotenv').config();
+
+/**
+ * See https://playwright.dev/docs/test-configuration.
+ */
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
-  fullyParallel: !process.env.CI,
-  timeout: process.env.CI ? 120_000 : 30_000,
+  fullyParallel: true,
+  timeout: process.env.CI ? 50_000 : 30_000,
   use: {
-    baseURL: 'http://localhost:8081/',
-    browserName:
-      (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
-      'chromium',
-    permissions: ['clipboard-read', 'clipboard-write'],
     viewport: { width: 1440, height: 800 },
-    actionTimeout: 10 * 1000,
-    locale: 'en-US',
-    trace: 'on',
-    video: 'on',
   },
-  forbidOnly: !!process.env.CI,
-  workers: process.env.CI ? 1 : 4,
-  retries: 1,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
     // Intentionally not building the web, reminds you to run it by yourself.
@@ -53,8 +48,6 @@ const config: PlaywrightTestConfig = {
         ENABLE_LOCAL_EMAIL: process.env.ENABLE_LOCAL_EMAIL ?? 'true',
         NEXTAUTH_URL: 'http://localhost:8080',
         OAUTH_EMAIL_SENDER: 'noreply@toeverything.info',
-        OAUTH_EMAIL_LOGIN: 'noreply@toeverything.info',
-        OAUTH_EMAIL_PASSWORD: 'affine',
       },
     },
   ],
@@ -62,6 +55,7 @@ const config: PlaywrightTestConfig = {
 
 if (process.env.CI) {
   config.retries = 3;
+  config.workers = '50%';
 }
 
 export default config;

@@ -8,13 +8,13 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "types": ["node"],
-    "outDir": "dist",
+    "outDir": "lib",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "noImplicitOverride": true
   },
   "include": ["./src"],
-  "exclude": ["node_modules", "out", "dist", "**/__tests__/**/*"],
+  "exclude": ["node_modules", "lib", "dist", "**/__tests__/**/*"],
   "references": [
     {
       "path": "../../packages/infra"

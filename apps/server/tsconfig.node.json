@@ -7,7 +7,7 @@
     "resolveJsonModule": true,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "outDir": "dist/scripts",
+    "outDir": "./lib/scripts",
     "rootDir": "."
   },
   "references": [
