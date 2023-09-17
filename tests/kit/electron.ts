@@ -84,8 +84,20 @@ export const test = base.extend<{
     // write to the cloned dist
     await fs.writeJSON(resolve(clonedDist, 'package.json'), packageJson);
 
+    const env: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value) {
+        env[key] = value;
+      }
+    }
+
+    if (process.env.DEV_SERVER_URL) {
+      env.DEV_SERVER_URL = process.env.DEV_SERVER_URL;
+    }
+
     const electronApp = await electron.launch({
       args: [clonedDist],
+      env,
       executablePath: resolve(
         electronRoot,
         'node_modules',
