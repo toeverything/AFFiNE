@@ -21,7 +21,9 @@ test('should create a page with a local first avatar and remove it', async ({
     .getByTestId('create-workspace-input')
     .type('Test Workspace 1', { delay: 50 });
   await page.getByTestId('create-workspace-create-button').click();
-  await page.getByTestId('workspace-name').click();
+  await page.getByTestId('workspace-name').click({
+    delay: 50,
+  });
   await page.getByTestId('workspace-card').nth(1).click();
   await page.getByTestId('settings-modal-trigger').click();
   await page.getByTestId('current-workspace-label').click();
@@ -29,10 +31,14 @@ test('should create a page with a local first avatar and remove it', async ({
     .getByTestId('upload-avatar')
     .setInputFiles(resolve(rootDir, 'tests', 'fixtures', 'smile.png'));
   await page.mouse.click(0, 0);
-  await page.getByTestId('workspace-name').click();
+  await page.getByTestId('workspace-name').click({
+    delay: 50,
+  });
   await page.getByTestId('workspace-card').nth(0).click();
   await page.waitForTimeout(1000);
-  await page.getByTestId('workspace-name').click();
+  await page.getByTestId('workspace-name').click({
+    delay: 50,
+  });
   await page.getByTestId('workspace-card').nth(1).click();
   const blobUrl = await page
     .getByTestId('workspace-avatar')
