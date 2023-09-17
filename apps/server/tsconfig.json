@@ -13,10 +13,11 @@
     "types": ["node"],
     "outDir": "dist",
     "noEmit": false,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "verbatimModuleSyntax": false,
     "rootDir": "./src"
   },
-  "include": ["src"],
+  "include": ["./src"],
   "exclude": ["dist", "lib", "tests"],
   "references": [
     {
