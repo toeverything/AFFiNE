@@ -94,9 +94,11 @@ export async function buildShowcaseWorkspace(
   };
   workspace.meta.setProperties(prototypes);
   const { store, atoms } = options;
-  ['F1SX6cgNxy', 'nQd2Bdvoqz', 'j8hIA_C0QF'].forEach(pageId => {
-    store.set(atoms.pageMode, pageId, 'edgeless');
-  });
+  ['0773e198-5de0-45d4-a35e-de22ea72b96b', 'nQd2Bdvoqz', 'j8hIA_C0QF'].forEach(
+    pageId => {
+      store.set(atoms.pageMode, pageId, 'edgeless');
+    }
+  );
 
   const pageMetas = {
     '9f6f3c04-cf32-470c-9648-479dc838f10e': {
@@ -106,7 +108,7 @@ export async function buildShowcaseWorkspace(
       favorite: true,
       jumpOnce: true,
     },
-    F1SX6cgNxy: {
+    '0773e198-5de0-45d4-a35e-de22ea72b96b': {
       createDate: 1691548220794,
       tags: [],
       updatedDate: 1691676775642,
@@ -178,7 +180,10 @@ export async function buildShowcaseWorkspace(
       '9f6f3c04-cf32-470c-9648-479dc838f10e',
       import('@affine/templates/v1/getting-started.json'),
     ],
-    ['F1SX6cgNxy', import('@affine/templates/v1/preloading.json')],
+    [
+      '0773e198-5de0-45d4-a35e-de22ea72b96b',
+      import('@affine/templates/v1/preloading.json'),
+    ],
     ['3R9X-gMh3m', import('@affine/templates/v1/template-galleries.json')],
     ['z_v6LOqNpp', import('@affine/templates/v1/personal-home.json')],
     ['0N0WzwmtK_', import('@affine/templates/v1/working-home.json')],
