@@ -94,11 +94,13 @@ export async function buildShowcaseWorkspace(
   };
   workspace.meta.setProperties(prototypes);
   const { store, atoms } = options;
-  ['0773e198-5de0-45d4-a35e-de22ea72b96b', 'nQd2Bdvoqz', 'j8hIA_C0QF'].forEach(
-    pageId => {
-      store.set(atoms.pageMode, pageId, 'edgeless');
-    }
-  );
+  [
+    '0773e198-5de0-45d4-a35e-de22ea72b96b',
+    '512b1cb3-d22d-4b20-a7aa-58e2afcb1238',
+    '9d6e716e-a071-45a2-88ac-2f2f6eec0109',
+  ].forEach(pageId => {
+    store.set(atoms.pageMode, pageId, 'edgeless');
+  });
 
   const pageMetas = {
     '9f6f3c04-cf32-470c-9648-479dc838f10e': {
@@ -120,56 +122,56 @@ export async function buildShowcaseWorkspace(
       updatedDate: 1691654611175,
       favorite: false,
     },
-    z_v6LOqNpp: {
+    '7217fbe2-61db-4a91-93c6-ad5c800e5a43': {
       createDate: 1691552082822,
       tags: [],
       updatedDate: 1691654606912,
       favorite: false,
     },
-    '0N0WzwmtK_': {
+    '6eb43ea8-8c11-456d-bb1d-5193937961ab': {
       createDate: 1691552090989,
       tags: [],
       updatedDate: 1691646748171,
       favorite: false,
     },
-    '6gexHy-jto': {
+    '3ddc8a4f-62c7-4fd4-8064-9ed9f61e437a': {
       createDate: 1691564303138,
       tags: [],
       updatedDate: 1691646845195,
     },
-    nQd2Bdvoqz: {
+    '512b1cb3-d22d-4b20-a7aa-58e2afcb1238': {
       createDate: 1691574743531,
       tags: ['icg1n5UdkP'],
       updatedDate: 1691647117761,
     },
-    bj_cuI1tN7: {
+    '22163830-8252-43fe-b62d-fd9bbeaa4caa': {
       createDate: 1691574859042,
       tags: [],
       updatedDate: 1691648159371,
     },
-    fFoDX2J1Z5: {
+    'b7a9e1bc-e205-44aa-8dad-7e328269d00b': {
       createDate: 1691575011078,
       tags: ['8qcYPCTK0h'],
       updatedDate: 1691645074511,
       favorite: false,
     },
-    PqZ7MLlL_9: {
+    '646305d9-93e0-48df-bb92-d82944ceb5a3': {
       createDate: 1691634722239,
       tags: ['ze07JVwBu4'],
       updatedDate: 1691647069662,
       favorite: false,
     },
-    A4wBRdQZN0: {
+    '0350509d-8702-4797-b4d7-168f5e9359c7': {
       createDate: 1691635388447,
       tags: ['Oe5dSe1DDJ'],
       updatedDate: 1691645873930,
     },
-    kBB4lzhm7C: {
+    'aa02af3c-5c5c-4856-b7ce-947ad17331f3': {
       createDate: 1691636192263,
       tags: ['q3mceOl_zi', 'g1L5dXKctL'],
       updatedDate: 1691645102104,
     },
-    j8hIA_C0QF: {
+    '9d6e716e-a071-45a2-88ac-2f2f6eec0109': {
       createDate: 1691574743531,
       tags: ['icg1n5UdkP'],
       updatedDate: 1691574743531,
@@ -188,25 +190,46 @@ export async function buildShowcaseWorkspace(
       '59b140eb-4449-488f-9eeb-42412dcc044e',
       import('@affine/templates/v1/template-galleries.json'),
     ],
-    ['z_v6LOqNpp', import('@affine/templates/v1/personal-home.json')],
-    ['0N0WzwmtK_', import('@affine/templates/v1/working-home.json')],
     [
-      '6gexHy-jto',
+      '7217fbe2-61db-4a91-93c6-ad5c800e5a43',
+      import('@affine/templates/v1/personal-home.json'),
+    ],
+    [
+      '6eb43ea8-8c11-456d-bb1d-5193937961ab',
+      import('@affine/templates/v1/working-home.json'),
+    ],
+    [
+      '3ddc8a4f-62c7-4fd4-8064-9ed9f61e437a',
       import('@affine/templates/v1/personal-project-management.json'),
     ],
-    ['nQd2Bdvoqz', import('@affine/templates/v1/travel-plan.json')],
     [
-      'bj_cuI1tN7',
+      '512b1cb3-d22d-4b20-a7aa-58e2afcb1238',
+      import('@affine/templates/v1/travel-plan.json'),
+    ],
+    [
+      '22163830-8252-43fe-b62d-fd9bbeaa4caa',
       import('@affine/templates/v1/personal-knowledge-management.json'),
     ],
     [
-      'fFoDX2J1Z5',
+      'b7a9e1bc-e205-44aa-8dad-7e328269d00b',
       import('@affine/templates/v1/annual-performance-review.json'),
     ],
-    ['PqZ7MLlL_9', import('@affine/templates/v1/brief-event-planning.json')],
-    ['A4wBRdQZN0', import('@affine/templates/v1/meeting-summary.json')],
-    ['kBB4lzhm7C', import('@affine/templates/v1/okr-template.json')],
-    ['j8hIA_C0QF', import('@affine/templates/v1/travel-note.json')],
+    [
+      '646305d9-93e0-48df-bb92-d82944ceb5a3',
+      import('@affine/templates/v1/brief-event-planning.json'),
+    ],
+    [
+      '0350509d-8702-4797-b4d7-168f5e9359c7',
+      import('@affine/templates/v1/meeting-summary.json'),
+    ],
+    [
+      'aa02af3c-5c5c-4856-b7ce-947ad17331f3',
+      import('@affine/templates/v1/okr-template.json'),
+    ],
+    [
+      '9d6e716e-a071-45a2-88ac-2f2f6eec0109',
+      import('@affine/templates/v1/travel-note.json'),
+    ],
   ] as const;
   await Promise.all(
     data.map(async ([id, promise]) => {
