@@ -117,7 +117,7 @@
     "vite-tsconfig-paths": "^4.2.0",
     "vitest": "0.33.0",
     "vitest-fetch-mock": "^0.2.2",
-    "vitest-mock-extended": "^1.2.0"
+    "vitest-mock-extended": "^1.2.1"
   },
   "packageManager": "yarn@3.6.3",
   "resolutions": {

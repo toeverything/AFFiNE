@@ -576,7 +576,7 @@ __metadata:
     vite-tsconfig-paths: ^4.2.0
     vitest: 0.33.0
     vitest-fetch-mock: ^0.2.2
-    vitest-mock-extended: ^1.2.0
+    vitest-mock-extended: ^1.2.1
   languageName: unknown
   linkType: soft
 
@@ -34077,15 +34077,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest-mock-extended@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "vitest-mock-extended@npm:1.2.0"
+"vitest-mock-extended@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "vitest-mock-extended@npm:1.2.1"
   dependencies:
     ts-essentials: ^9.3.2
   peerDependencies:
     typescript: 3.x || 4.x || 5.x
     vitest: ">=0.31.1"
-  checksum: 8b8c7a4085a7988f0ce1b764fe6d94428eb9c1454647401f5da7a9eda3230660dc4ec0ab63ccab735c9b03e536b278a9c2697f5bbce54f0dc1cb2ff125534de8
+  checksum: d3dc3940513cc053166bc912b0b9fdda0b073c5a5d2c2deba4f87ddae7a3b8c53a31227030a9f0eeb9f48c443b6978c451946ef0d36eea6976ef77e5bb4d6c04
   languageName: node
   linkType: hard
 
