@@ -109,7 +109,7 @@ export async function buildShowcaseWorkspace(
       favorite: true,
       jumpOnce: true,
     },
-    [edgelessPage1]: {
+    '0773e198-5de0-45d4-a35e-de22ea72b96b': {
       createDate: 1691548220794,
       tags: [],
       updatedDate: 1691676775642,
@@ -138,7 +138,7 @@ export async function buildShowcaseWorkspace(
       tags: [],
       updatedDate: 1691646845195,
     },
-    [edgelessPage2]: {
+    '512b1cb3-d22d-4b20-a7aa-58e2afcb1238': {
       createDate: 1691574743531,
       tags: ['icg1n5UdkP'],
       updatedDate: 1691647117761,
@@ -170,7 +170,7 @@ export async function buildShowcaseWorkspace(
       tags: ['q3mceOl_zi', 'g1L5dXKctL'],
       updatedDate: 1691645102104,
     },
-    [edgelessPage3]: {
+    '9d6e716e-a071-45a2-88ac-2f2f6eec0109': {
       createDate: 1691574743531,
       tags: ['icg1n5UdkP'],
       updatedDate: 1691574743531,
@@ -269,7 +269,7 @@ export async function buildShowcaseWorkspace(
     })
   );
   Object.entries(pageMetas).forEach(([oldId, meta]) => {
-    const newId = idMap[oldId] ?? oldId;
+    const newId = idMap[oldId];
     workspace.setPageMeta(newId, meta);
   });
 }
