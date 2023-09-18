@@ -1,6 +1,5 @@
 import { DebugLogger } from '@affine/debug';
 import {
-  DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   DEFAULT_WORKSPACE_NAME,
   PageNotFoundError,
 } from '@affine/env/constant';
@@ -61,8 +60,9 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           logger.error('init page with preloading failed', err);
         });
       } else {
-        const page = blockSuiteWorkspace.createPage({
-          id: `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
+        const page = blockSuiteWorkspace.createPage();
+        blockSuiteWorkspace.setPageMeta(page.id, {
+          jumpOnce: true,
         });
         initEmptyPage(page).catch(error => {
           logger.error('init page with empty failed', error);
