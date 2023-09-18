@@ -11,7 +11,6 @@ import {
   Workspace,
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
-import { validate } from 'uuid';
 import type { Doc } from 'yjs';
 import type { Transaction } from 'yjs';
 
@@ -141,16 +140,6 @@ export function getOrCreateWorkspace(
   });
   createMonitor(workspace.doc);
   setEditorFlags(workspace);
-  const originalGetPage = workspace.getPage.bind(workspace);
-  workspace.getPage = (id: string) => {
-    const page = originalGetPage(id);
-    if (page && !validate(page.spaceDoc.guid)) {
-      // fixme:
-      //  this is a hack to make sure the page has a correct guid for backward compatibility
-      page.spaceDoc.guid = `${workspace.id}:space:${id}`;
-    }
-    return page;
-  };
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);
   return workspace;
 }
