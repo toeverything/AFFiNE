@@ -269,7 +269,7 @@ export async function buildShowcaseWorkspace(
     })
   );
   Object.entries(pageMetas).forEach(([oldId, meta]) => {
-    const newId = idMap[oldId];
+    const newId = idMap[oldId] ?? oldId;
     workspace.setPageMeta(newId, meta);
   });
 }
