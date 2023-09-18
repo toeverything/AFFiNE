@@ -17,7 +17,7 @@
     "@blocksuite/editor": "0.0.0-20230913110404-34f93652-nightly",
     "@blocksuite/global": "0.0.0-20230913110404-34f93652-nightly",
     "@blocksuite/lit": "0.0.0-20230913110404-34f93652-nightly",
-    "@blocksuite/store": "0.0.0-20230913110404-34f93652-nightly",
+    "@blocksuite/store": "0.8.0",
     "@types/lodash.debounce": "^4.0.7"
   },
   "peerDependencies": {
