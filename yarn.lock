@@ -687,7 +687,7 @@ __metadata:
     "@napi-rs/image": ^1.6.1
     "@nestjs/apollo": ^12.0.7
     "@nestjs/common": ^10.2.4
-    "@nestjs/core": ^10.2.4
+    "@nestjs/core": ^10.2.5
     "@nestjs/graphql": ^12.0.8
     "@nestjs/platform-express": ^10.2.4
     "@nestjs/platform-socket.io": ^10.2.4
@@ -7188,9 +7188,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/core@npm:^10.2.4":
-  version: 10.2.4
-  resolution: "@nestjs/core@npm:10.2.4"
+"@nestjs/core@npm:^10.2.5":
+  version: 10.2.5
+  resolution: "@nestjs/core@npm:10.2.5"
   dependencies:
     "@nuxtjs/opencollective": 0.3.2
     fast-safe-stringify: 2.1.1
@@ -7212,7 +7212,7 @@ __metadata:
       optional: true
     "@nestjs/websockets":
       optional: true
-  checksum: eb34108e284991b84c9a31ef0f1969f8d5b6a1d2ecae04b924ee585bd1e04de29776fbce26c5242edad349d932e49a1e4c4d6ac8d893735e12eddd299d8220d4
+  checksum: 5bb57aa90127cd42dd4407ccd3812af69648c430ac4f8ed9ce84da4dcbe6d33e30635f2024968575a8fef01d10c027d3178f658a6d5cf795011051082801bc02
   languageName: node
   linkType: hard
 
