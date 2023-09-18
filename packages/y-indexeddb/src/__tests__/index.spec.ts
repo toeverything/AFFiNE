@@ -120,7 +120,7 @@ describe('indexeddb provider', () => {
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
-      const subPage = testWorkspace.doc.spaces.get('space:page0');
+      const subPage = testWorkspace.doc.spaces.get('page0');
       {
         assertExists(subPage);
         await store.get(subPage.guid);
