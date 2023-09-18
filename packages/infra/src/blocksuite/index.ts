@@ -93,12 +93,11 @@ export async function buildShowcaseWorkspace(
     },
   };
   workspace.meta.setProperties(prototypes);
+  const edgelessPage1 = uuid();
+  const edgelessPage2 = uuid();
+  const edgelessPage3 = uuid();
   const { store, atoms } = options;
-  [
-    '0773e198-5de0-45d4-a35e-de22ea72b96b',
-    '512b1cb3-d22d-4b20-a7aa-58e2afcb1238',
-    '9d6e716e-a071-45a2-88ac-2f2f6eec0109',
-  ].forEach(pageId => {
+  [edgelessPage1, edgelessPage2, edgelessPage3].forEach(pageId => {
     store.set(atoms.pageMode, pageId, 'edgeless');
   });
 
@@ -110,7 +109,7 @@ export async function buildShowcaseWorkspace(
       favorite: true,
       jumpOnce: true,
     },
-    '0773e198-5de0-45d4-a35e-de22ea72b96b': {
+    [edgelessPage1]: {
       createDate: 1691548220794,
       tags: [],
       updatedDate: 1691676775642,
@@ -139,7 +138,7 @@ export async function buildShowcaseWorkspace(
       tags: [],
       updatedDate: 1691646845195,
     },
-    '512b1cb3-d22d-4b20-a7aa-58e2afcb1238': {
+    [edgelessPage2]: {
       createDate: 1691574743531,
       tags: ['icg1n5UdkP'],
       updatedDate: 1691647117761,
@@ -171,7 +170,7 @@ export async function buildShowcaseWorkspace(
       tags: ['q3mceOl_zi', 'g1L5dXKctL'],
       updatedDate: 1691645102104,
     },
-    '9d6e716e-a071-45a2-88ac-2f2f6eec0109': {
+    [edgelessPage3]: {
       createDate: 1691574743531,
       tags: ['icg1n5UdkP'],
       updatedDate: 1691574743531,
@@ -181,67 +180,98 @@ export async function buildShowcaseWorkspace(
     [
       '9f6f3c04-cf32-470c-9648-479dc838f10e',
       import('@affine/templates/v1/getting-started.json'),
+      uuid(),
     ],
     [
       '0773e198-5de0-45d4-a35e-de22ea72b96b',
       import('@affine/templates/v1/preloading.json'),
+      edgelessPage1,
     ],
     [
       '59b140eb-4449-488f-9eeb-42412dcc044e',
       import('@affine/templates/v1/template-galleries.json'),
+      uuid(),
     ],
     [
       '7217fbe2-61db-4a91-93c6-ad5c800e5a43',
       import('@affine/templates/v1/personal-home.json'),
+      uuid(),
     ],
     [
       '6eb43ea8-8c11-456d-bb1d-5193937961ab',
       import('@affine/templates/v1/working-home.json'),
+      uuid(),
     ],
     [
       '3ddc8a4f-62c7-4fd4-8064-9ed9f61e437a',
       import('@affine/templates/v1/personal-project-management.json'),
+      uuid(),
     ],
     [
       '512b1cb3-d22d-4b20-a7aa-58e2afcb1238',
       import('@affine/templates/v1/travel-plan.json'),
+      edgelessPage2,
     ],
     [
       '22163830-8252-43fe-b62d-fd9bbeaa4caa',
       import('@affine/templates/v1/personal-knowledge-management.json'),
+      uuid(),
     ],
     [
       'b7a9e1bc-e205-44aa-8dad-7e328269d00b',
       import('@affine/templates/v1/annual-performance-review.json'),
+      uuid(),
     ],
     [
       '646305d9-93e0-48df-bb92-d82944ceb5a3',
       import('@affine/templates/v1/brief-event-planning.json'),
+      uuid(),
     ],
     [
       '0350509d-8702-4797-b4d7-168f5e9359c7',
       import('@affine/templates/v1/meeting-summary.json'),
+      uuid(),
     ],
     [
       'aa02af3c-5c5c-4856-b7ce-947ad17331f3',
       import('@affine/templates/v1/okr-template.json'),
+      uuid(),
     ],
     [
       '9d6e716e-a071-45a2-88ac-2f2f6eec0109',
       import('@affine/templates/v1/travel-note.json'),
+      edgelessPage3,
     ],
   ] as const;
+  const idMap = await Promise.all(data).then(async data => {
+    return data.reduce<Record<string, string>>(
+      (record, currentValue) => {
+        const [oldId, _, newId] = currentValue;
+        record[oldId] = newId;
+        return record;
+      },
+      {} as Record<string, string>
+    );
+  });
   await Promise.all(
-    data.map(async ([id, promise]) => {
+    data.map(async ([id, promise, newId]) => {
       const { default: template } = await promise;
+      let json = JSON.stringify(template);
+      Object.entries(idMap).forEach(([oldId, newId]) => {
+        json = json.replaceAll(oldId, newId);
+      });
+      json = JSON.parse(json);
       await workspace
-        .importPageSnapshot(structuredClone(template), id)
+        .importPageSnapshot(structuredClone(json), newId)
         .catch(error => {
           console.error('error importing page', id, error);
         });
-      workspace.setPageMeta(id, pageMetas[id]);
     })
   );
+  Object.entries(pageMetas).forEach(([oldId, meta]) => {
+    const newId = idMap[oldId];
+    workspace.setPageMeta(newId, meta);
+  });
 }
 
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
