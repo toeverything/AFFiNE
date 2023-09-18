@@ -12584,6 +12584,7 @@ __metadata:
     electron: "link:../../apps/electron/node_modules/electron"
     jotai: ^2.4.1
     react: ^18.2.0
+    tinykeys: ^2.1.0
     vite: ^4.4.9
     vite-plugin-dts: 3.5.3
     yjs: ^13.6.7
@@ -32802,6 +32803,13 @@ __metadata:
   version: 2.5.0
   resolution: "tinybench@npm:2.5.0"
   checksum: 284bb9428f197ec8b869c543181315e65e41ccfdad3c4b6c916bb1fdae1b5c6785661b0d90cf135b48d833b03cb84dc5357b2d33ec65a1f5971fae0ab2023821
+  languageName: node
+  linkType: hard
+
+"tinykeys@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "tinykeys@npm:2.1.0"
+  checksum: 49e8f7cf09c29372758f434d072429ed5a93cd3148d218af9938ccbbac4e15a2697c93a34dcfe7138a11e569a2145b35709947e5d2b74e48a8e17c575b8beb7f
   languageName: node
   linkType: hard
 

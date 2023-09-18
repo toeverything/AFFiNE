@@ -42,26 +42,6 @@ export const QuickSearchModal = ({
     setOpen(false);
   }, [setOpen]);
 
-  // Add ‘⌘+K’ shortcut keys as switches
-  useEffect(() => {
-    const keydown = (e: KeyboardEvent) => {
-      if ((e.key === 'k' && e.metaKey) || (e.key === 'k' && e.ctrlKey)) {
-        const selection = window.getSelection();
-        // prevent search bar focus in firefox
-        e.preventDefault();
-        setQuery('');
-        if (selection?.toString()) {
-          setOpen(false);
-          return;
-        }
-        setOpen(!open);
-      }
-    };
-    document.addEventListener('keydown', keydown, { capture: true });
-    return () =>
-      document.removeEventListener('keydown', keydown, { capture: true });
-  }, [open, setOpen, setQuery]);
-
   useEffect(() => {
     if (open) {
       // Waiting for DOM rendering

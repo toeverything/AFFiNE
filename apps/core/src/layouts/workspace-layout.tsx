@@ -30,7 +30,11 @@ import {
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
-import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
+import {
+  currentWorkspaceIdAtom,
+  getCurrentStore,
+} from '@toeverything/infra/atom';
+import { registerAffineCommand } from '@toeverything/infra/command';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
@@ -66,6 +70,20 @@ const QuickSearchModal = lazy(() =>
     default: module.QuickSearchModal,
   }))
 );
+
+// hmm ... seems a little verbose?
+registerAffineCommand({
+  id: 'affine:show-quick-search',
+  description: 'Show quick search modal',
+  category: 'affine:ui',
+  keyBinding: {
+    binding: '$mod+K',
+  },
+  run() {
+    const store = getCurrentStore();
+    store.set(openQuickSearchModalAtom, true);
+  },
+});
 
 export const QuickSearch = () => {
   const [currentWorkspace] = useCurrentWorkspace();
