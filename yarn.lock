@@ -710,7 +710,7 @@ __metadata:
     "@prisma/client": ^5.2.0
     "@prisma/instrumentation": ^5.2.0
     "@socket.io/redis-adapter": ^8.2.1
-    "@types/cookie-parser": ^1.4.3
+    "@types/cookie-parser": ^1.4.4
     "@types/engine.io": ^3.1.7
     "@types/express": ^4.17.17
     "@types/graphql-upload": ^16.0.1
@@ -12881,12 +12881,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie-parser@npm:^1.4.3":
-  version: 1.4.3
-  resolution: "@types/cookie-parser@npm:1.4.3"
+"@types/cookie-parser@npm:^1.4.4":
+  version: 1.4.4
+  resolution: "@types/cookie-parser@npm:1.4.4"
   dependencies:
     "@types/express": "*"
-  checksum: f390f3af1b1711190dee2c2ecd9af33af81fbde8d81ee820dadb6fe1e0d80c3faba40af37c6ed36fb88b04b64870f6a021f7e9edceecd17c42fe22abe0af5005
+  checksum: 5c81ac4b7d90a567e0c7a904ecbc09c82c43e30c6b5b507aee5147bc06bc8c6418e6719d63fcf68e6a83c71870485ab3fc579a30891b56a0be05d64753e3f74a
   languageName: node
   linkType: hard
 
