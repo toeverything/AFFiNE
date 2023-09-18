@@ -175,6 +175,7 @@
     "typed-array-length": "npm:@nolyfill/typed-array-length@latest",
     "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest",
     "which-boxed-primitive": "npm:@nolyfill/which-boxed-primitive@latest",
-    "which-typed-array": "npm:@nolyfill/which-typed-array@latest"
+    "which-typed-array": "npm:@nolyfill/which-typed-array@latest",
+    "@blocksuite/store@0.0.0-20230917124854-21f7463c-nightly": "patch:@blocksuite/store@npm%3A0.0.0-20230916185147-0c6fecc0-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230916185147-0c6fecc0-nightly-8d210809ee.patch"
   }
 }

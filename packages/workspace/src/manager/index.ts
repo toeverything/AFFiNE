@@ -11,8 +11,8 @@ import {
   Workspace,
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
-import type { Doc } from 'yjs';
 import type { Transaction } from 'yjs';
+import type { Doc as YDoc } from 'yjs';
 
 import { createCloudBlobStorage } from '../blob/cloud-blob-storage';
 import { createStaticStorage } from '../blob/local-static-storage';
@@ -35,23 +35,23 @@ function setEditorFlags(workspace: Workspace) {
 type UpdateCallback = (
   update: Uint8Array,
   origin: string | number | null,
-  doc: Doc,
+  doc: YDoc,
   transaction: Transaction
 ) => void;
 
 type SubdocEvent = {
-  loaded: Set<Doc>;
-  removed: Set<Doc>;
-  added: Set<Doc>;
+  loaded: Set<YDoc>;
+  removed: Set<YDoc>;
+  added: Set<YDoc>;
 };
 
-const docUpdateCallbackWeakMap = new WeakMap<Doc, UpdateCallback>();
+const docUpdateCallbackWeakMap = new WeakMap<YDoc, UpdateCallback>();
 
 export const globalBlockSuiteSchema = new Schema();
 
 globalBlockSuiteSchema.register(AffineSchemas).register(__unstableSchemas);
 
-const createMonitor = (doc: Doc) => {
+const createMonitor = (doc: YDoc) => {
   const onUpdate: UpdateCallback = (_, origin) => {
     if (process.env.NODE_ENV === 'development') {
       if (typeof origin !== 'string' && typeof origin !== 'number') {

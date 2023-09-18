@@ -1,0 +1,38 @@
+diff --git a/dist/workspace/space.js b/dist/workspace/space.js
+index 0cb14afcd586b20f4b54efb50052ca83297a0362..0a59908106cb0e885cb83af3e1587d0a7b0466da 100644
+--- a/dist/workspace/space.js
++++ b/dist/workspace/space.js
+@@ -1,22 +1,31 @@
+ import { Slot } from '@blocksuite/global/utils';
+ import * as Y from 'yjs';
++import { validate } from 'uuid';
++
+ export class Space {
+     constructor(id, doc, awarenessStore) {
+         this._onLoadSlot = new Slot();
+         this._initSubDoc = () => {
+             let subDoc = this.doc.spaces.get(this.id);
+             if (!subDoc) {
+-                subDoc = new Y.Doc({
+-                    guid: this.id,
++                let id = this.id;
++                if (!validate(id)) {
++                    const rootDocId = this.doc.guid;
++                    const prefixId = id.startsWith('space:') ? id.slice(6) : id;
++                    id = `${rootDocId}:space:${prefixId}`;
++                }
++                subDoc = new Y.Doc({
++                    guid: id,
+                 });
+                 this.doc.spaces.set(this.id, subDoc);
++                subDoc.emit('load', []);
+                 this._loaded = true;
+                 this._onLoadSlot.emit();
+             }
+             else {
+                 this._loaded = false;
+                 this.doc.on('subdocs', this._onSubdocEvent);
+             }
+             return subDoc;
+         };
+         this._onSubdocEvent = ({ loaded }) => {
