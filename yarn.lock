@@ -3599,7 +3599,7 @@ __metadata:
 
 "@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230916185147-0c6fecc0-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230916185147-0c6fecc0-nightly-8d210809ee.patch::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-20230916185147-0c6fecc0-nightly
-  resolution: "@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230916185147-0c6fecc0-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230916185147-0c6fecc0-nightly-8d210809ee.patch::version=0.0.0-20230916185147-0c6fecc0-nightly&hash=23bc0a&locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/store@patch:@blocksuite/store@npm%3A0.0.0-20230916185147-0c6fecc0-nightly#./.yarn/patches/@blocksuite-store-npm-0.0.0-20230916185147-0c6fecc0-nightly-8d210809ee.patch::version=0.0.0-20230916185147-0c6fecc0-nightly&hash=4d3137&locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/global": 0.0.0-20230916185147-0c6fecc0-nightly
     "@blocksuite/virgo": 0.0.0-20230916185147-0c6fecc0-nightly
@@ -3617,7 +3617,7 @@ __metadata:
   peerDependencies:
     async-call-rpc: ^6
     yjs: ^13
-  checksum: ef5da7d61caefd63b1c7a26934e73720d4950ce606444450d3d4324b319d25a7f1c9843681b546f164dc9254c1f9eb0cf74e7e8e79f3aa80d957b7600ff01b9b
+  checksum: fc3828cd5875111c3be56595de29cd86082fef20e512fc4436372ddee86a1e1c46ee3c64a2db592261acd7e79fa88334db2bb248031a9d402b394a9e3bf37ca4
   languageName: node
   linkType: hard
 
