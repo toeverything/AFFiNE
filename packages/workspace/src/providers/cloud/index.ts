@@ -19,7 +19,10 @@ export async function downloadBinaryFromCloud(
   }
   const response = await fetchWithTraceReport(
     runtimeConfig.serverUrlPrefix +
-      `/api/workspaces/${rootGuid}/docs/${pageGuid}`
+      `/api/workspaces/${rootGuid}/docs/${pageGuid}`,
+    {
+      priority: 'high',
+    }
   );
   if (response.ok) {
     const arrayBuffer = await response.arrayBuffer();
