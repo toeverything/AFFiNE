@@ -78,7 +78,7 @@
     "@affine/storage": "workspace:*",
     "@napi-rs/image": "^1.6.1",
     "@nestjs/testing": "^10.2.4",
-    "@types/cookie-parser": "^1.4.3",
+    "@types/cookie-parser": "^1.4.4",
     "@types/engine.io": "^3.1.7",
     "@types/express": "^4.17.17",
     "@types/graphql-upload": "^16.0.1",
