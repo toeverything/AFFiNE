@@ -7,6 +7,8 @@ import {
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 
+process.env.DEV_SERVER_URL = 'http://localhost:8080';
+
 let user: {
   name: string;
   email: string;
@@ -18,7 +20,9 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await loginUser(page, user.email);
+  await loginUser(page, user.email, {
+    isElectron: true,
+  });
 });
 
 test('new page', async ({ page }) => {
