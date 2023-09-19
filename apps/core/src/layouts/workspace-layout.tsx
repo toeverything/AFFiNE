@@ -30,12 +30,8 @@ import {
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
-import {
-  currentWorkspaceIdAtom,
-  getCurrentStore,
-} from '@toeverything/infra/atom';
-import { registerAffineCommand } from '@toeverything/infra/command';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -44,6 +40,9 @@ import { Map as YMap } from 'yjs';
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
+import { registerAffineCreationCommands } from '../commands/affine-creation';
+import { registerAffineLayoutCommands } from '../commands/affine-layout';
+import { registerAffineUiCommands } from '../commands/affine-ui';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -70,20 +69,6 @@ const QuickSearchModal = lazy(() =>
     default: module.QuickSearchModal,
   }))
 );
-
-// hmm ... seems a little verbose?
-registerAffineCommand({
-  id: 'affine:show-quick-search',
-  description: 'Show quick search modal',
-  category: 'affine:ui',
-  keyBinding: {
-    binding: '$mod+K',
-  },
-  run() {
-    const store = getCurrentStore();
-    store.set(openQuickSearchModalAtom, true);
-  },
-});
 
 export const QuickSearch = () => {
   const [currentWorkspace] = useCurrentWorkspace();
@@ -159,6 +144,24 @@ export const WorkspaceLayoutInner = ({
 }: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
+  const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
+  const store = useStore();
+
+  useEffect(() => {
+    const unsubs: Array<() => void> = [];
+    unsubs.push(registerAffineUiCommands({ store }));
+    unsubs.push(registerAffineLayoutCommands({ store }));
+    unsubs.push(
+      registerAffineCreationCommands({
+        store,
+        pageHelper: pageHelper,
+      })
+    );
+
+    return () => {
+      unsubs.forEach(unsub => unsub());
+    };
+  }, [store, pageHelper]);
 
   useEffect(() => {
     // hotfix for blockVersions
@@ -182,15 +185,13 @@ export const WorkspaceLayoutInner = ({
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
-  const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
-
   const handleCreatePage = useCallback(() => {
     const id = nanoid();
-    helper.createPage(id);
+    pageHelper.createPage(id);
     const page = currentWorkspace.blockSuiteWorkspace.getPage(id);
     assertExists(page);
     return page;
-  }, [currentWorkspace.blockSuiteWorkspace, helper]);
+  }, [currentWorkspace.blockSuiteWorkspace, pageHelper]);
 
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenQuickSearchModal = useCallback(() => {

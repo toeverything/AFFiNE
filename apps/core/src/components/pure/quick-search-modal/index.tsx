@@ -58,6 +58,11 @@ export const QuickSearchModal = ({
       onOpenChange={setOpen}
       width={608}
       withoutCloseButton
+      overlayOptions={{
+        style: {
+          background: 'transparent',
+        },
+      }}
       contentOptions={{
         ['data-testid' as string]: 'quickSearch',
         style: {

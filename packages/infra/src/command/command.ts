@@ -28,10 +28,11 @@ export interface AffineCommandOptions {
   id: string;
   preconditionStrategy?: PreconditionStrategy;
   description?: string; // todo: i18n & interpolation
-  icon?: string;
+  icon?: React.ReactNode; // todo: need a mapping from string -> React element/SVG
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
   // for both mac and windows
+  // todo: render keybinding in command palette
   keyBinding?: KeybindingOptions | string;
   run: () => void | Promise<void>;
 }
@@ -40,7 +41,7 @@ export interface AffineCommand {
   readonly id: string;
   readonly preconditionStrategy: PreconditionStrategy;
   readonly description?: string;
-  readonly icon?: string; // icon name
+  readonly icon?: React.ReactNode; // icon name
   readonly category?: CommandCategory;
   readonly keyBinding?: KeybindingOptions;
   run(): void | Promise<void>;

@@ -37,9 +37,11 @@ export const AffineCommandRegistry = new (class {
       });
     }
 
+    console.debug(`Registered command ${command.id}`);
     return () => {
       unsubKb?.();
       this.commands.delete(command.id);
+      console.debug(`Unregistered command ${command.id}`);
     };
   }
 
@@ -47,8 +49,8 @@ export const AffineCommandRegistry = new (class {
     return this.commands.get(id);
   }
 
-  getAll(): IterableIterator<AffineCommand> {
-    return this.commands.values();
+  getAll(): AffineCommand[] {
+    return Array.from(this.commands.values());
   }
 })();
 
