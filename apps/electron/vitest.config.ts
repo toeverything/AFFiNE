@@ -12,6 +12,7 @@ export default defineConfig({
       // prevent tests using two different sources of yjs
       yjs: resolve(rootDir, 'node_modules/yjs'),
     },
+    conditions: ['node'],
   },
   define: {
     'process.env.PLUGIN_DIR': JSON.stringify(pluginOutputDir),
