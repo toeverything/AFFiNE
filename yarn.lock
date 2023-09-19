@@ -80,6 +80,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine-test/affine-desktop-cloud@workspace:tests/affine-desktop-cloud":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-desktop-cloud@workspace:tests/affine-desktop-cloud"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": ^1.37.1
+    "@types/fs-extra": ^11.0.1
+    fs-extra: ^11.1.1
+  languageName: unknown
+  linkType: soft
+
+"@affine-test/affine-desktop@workspace:tests/affine-desktop":
+  version: 0.0.0-use.local
+  resolution: "@affine-test/affine-desktop@workspace:tests/affine-desktop"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@playwright/test": ^1.37.1
+    "@types/fs-extra": ^11.0.1
+    fs-extra: ^11.1.1
+  languageName: unknown
+  linkType: soft
+
 "@affine-test/affine-local@workspace:tests/affine-local":
   version: 0.0.0-use.local
   resolution: "@affine-test/affine-local@workspace:tests/affine-local"
@@ -837,7 +861,7 @@ __metadata:
     async-call-rpc: ^6.3.1
     jotai: ^2.4.2
     js-base64: ^3.7.5
-    ky: ^0.33.3
+    ky: ^1.0.1
     lib0: ^0.2.83
     react: 18.2.0
     react-dom: 18.2.0
@@ -25161,10 +25185,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ky@npm:^0.33.3":
-  version: 0.33.3
-  resolution: "ky@npm:0.33.3"
-  checksum: d1869e1f33c0165355f621b6726fcc1a9de20a31f4a826ca0cfd5753d83b9cba8723402d554a00194e0ee3959e0dda0638f4b99d54a3a7de928b55ff870b0bcc
+"ky@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "ky@npm:1.0.1"
+  checksum: 1cc8237422b901417bcced1a1fd4d0b2c9b9140ef625fcb9c6c6b78f0e4ddf169e6ba97f497d8be31db0d8f6fb17ad63bcb03aef927b8d7d562d87db3da13474
   languageName: node
   linkType: hard
 

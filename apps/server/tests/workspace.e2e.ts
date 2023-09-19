@@ -132,6 +132,26 @@ test('should share a page', async t => {
   t.is(pages.length, 1, 'failed to get shared pages');
   t.is(pages[0], 'page1', 'failed to get shared page: page1');
 
+  const resp1 = await request(app.getHttpServer())
+    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+    .auth(u1.token.token, { type: 'bearer' });
+  t.is(resp1.statusCode, 200, 'failed to get root doc with u1 token');
+  const resp2 = await request(app.getHttpServer()).get(
+    `/api/workspaces/${workspace.id}/docs/${workspace.id}`
+  );
+  t.is(resp2.statusCode, 200, 'should not get root doc without token');
+
+  const resp3 = await request(app.getHttpServer())
+    .get(`/api/workspaces/${workspace.id}/docs/page1`)
+    .auth(u1.token.token, { type: 'bearer' });
+  // 404 because we don't put the page doc to server
+  t.is(resp3.statusCode, 404, 'failed to get shared doc with u1 token');
+  const resp4 = await request(app.getHttpServer()).get(
+    `/api/workspaces/${workspace.id}/docs/page1`
+  );
+  // 404 because we don't put the page doc to server
+  t.is(resp4.statusCode, 404, 'should not get shared doc without token');
+
   const msg1 = await sharePage(app, u2.token.token, 'not_exists_ws', 'page2');
   t.is(msg1, 'Permission denied', 'unauthorized user can share page');
   const msg2 = await revokePage(app, u2.token.token, 'not_exists_ws', 'page2');
