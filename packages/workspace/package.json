@@ -33,7 +33,7 @@
     "socket.io-client": "^4.7.2",
     "swr": "2.2.0",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.7",
+    "yjs": "^13.6.8",
     "zod": "^3.22.2"
   },
   "devDependencies": {

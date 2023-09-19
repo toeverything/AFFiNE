@@ -67,7 +67,7 @@
     "electron-updater": "^6.1.4",
     "link-preview-js": "^3.0.5",
     "nanoid": "^4.0.2",
-    "yjs": "^13.6.7"
+    "yjs": "^13.6.8"
   },
   "build": {
     "protocols": [

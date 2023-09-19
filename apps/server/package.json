@@ -71,7 +71,7 @@
     "semver": "^7.5.4",
     "socket.io": "^4.7.2",
     "ws": "^8.13.0",
-    "yjs": "^13.6.7"
+    "yjs": "^13.6.8"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
