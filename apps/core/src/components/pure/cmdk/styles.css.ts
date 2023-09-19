@@ -5,6 +5,11 @@ const contentShow = keyframes({
   to: { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
 });
 
+const contentHide = keyframes({
+  to: { opacity: 0, transform: 'translate(-50%, -48%) scale(0.96)' },
+  from: { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+});
+
 export const modalOverlay = style({
   position: 'fixed',
   inset: 0,
@@ -28,13 +33,14 @@ export const modalContent = style({
   zIndex: 'var(--affine-z-index-modal)',
   top: 'calc(50% + 25px)',
   left: '50%',
-  transform: 'translate(-50%, -50%)',
-  animation: `${contentShow} 120ms cubic-bezier(0.42, 0, 0.58, 1)`,
+
   selectors: {
-    '&[data-hiding=true]': {
-      transition: '120ms cubic-bezier(0.42, 0, 0.58, 1)',
-      opacity: 0,
-      transform: 'translate(-50%, -48%) scale(0.96)',
+    '&[data-state=entered], &[data-state=entering]': {
+      animation: `${contentShow} 120ms cubic-bezier(0.42, 0, 0.58, 1)`,
+      animationFillMode: 'forwards',
+    },
+    '&[data-state=exited], &[data-state=exiting]': {
+      animation: `${contentHide} 120ms cubic-bezier(0.42, 0, 0.58, 1)`,
     },
   },
 });

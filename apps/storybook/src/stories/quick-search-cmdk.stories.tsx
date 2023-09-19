@@ -12,16 +12,15 @@ export default {
 
 export const CMDKModalStory: StoryFn = () => {
   const [open, setOpen] = useState(false);
+  const [counter, setCounter] = useState(0);
   return (
     <>
       <Button onClick={() => setOpen(true)}>Open Modal</Button>
-      <CMDKModal open={open} onOpenChange={setOpen}>
-        CONTENTS
+      <CMDKModal key={counter} open={open} onOpenChange={setOpen}>
+        <Button onClick={() => setCounter(c => c + 1)}>
+          Trigger new modal
+        </Button>
       </CMDKModal>
     </>
   );
-};
-
-CMDKModalStory.args = {
-  open: true,
 };

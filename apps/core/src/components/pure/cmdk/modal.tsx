@@ -1,5 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useLayoutEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useReducer
+} from 'react';
 
 import * as styles from './styles.css';
 
@@ -11,43 +14,52 @@ interface CMDKModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+type ModalAnimationState = 'entering' | 'entered' | 'exiting' | 'exited';
+
+function reduceAnimationState(
+  state: ModalAnimationState,
+  action: 'open' | 'close' | 'finish'
+) {
+  switch (action) {
+    case 'open':
+      return state === 'entered' || state === 'entering' ? state : 'entering';
+    case 'close':
+      return state === 'exited' || state === 'exiting' ? state : 'exiting';
+    case 'finish':
+      return state === 'entering' ? 'entered' : 'exited';
+  }
+}
+
 export const CMDKModal = ({
   onOpenChange,
   open,
   children,
 }: React.PropsWithChildren<CMDKModalProps>) => {
-  const firstRef = useRef(false);
-  const [hiding, setHiding] = useState(false);
-  const [show, setShow] = useState(false);
+  const [animationState, dispatch] = useReducer(reduceAnimationState, 'exited');
 
-  useLayoutEffect(() => {
-    if (!open && firstRef.current) {
-      setHiding(true);
-      setShow(true);
-      const timeout = setTimeout(() => {
-        setHiding(false);
-        setShow(false);
-      }, 120);
+  useEffect(() => {
+    dispatch(open ? 'open' : 'close');
+    const timeout = setTimeout(() => {
+      dispatch('finish');
+    }, 120);
 
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-
-    firstRef.current = true;
-
-    if (open) {
-      setShow(true);
-      setHiding(false);
-    }
-    return;
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [open]);
 
   return (
-    <Dialog.Root modal open={show} onOpenChange={onOpenChange}>
+    <Dialog.Root
+      modal
+      open={animationState !== 'exited'}
+      onOpenChange={onOpenChange}
+    >
       <Dialog.Portal>
         <Dialog.Overlay className={styles.modalOverlay} />
-        <Dialog.Content className={styles.modalContent} data-hiding={hiding}>
+        <Dialog.Content
+          className={styles.modalContent}
+          data-state={animationState}
+        >
           {children}
         </Dialog.Content>
       </Dialog.Portal>
