@@ -133,12 +133,15 @@ export async function loginUser(
   page: Page,
   userEmail: string,
   config?: {
+    isElectron?: boolean;
     beforeLogin?: () => Promise<void>;
     afterLogin?: () => Promise<void>;
   }
 ) {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
+  if (config?.isElectron !== true) {
+    await openHomePage(page);
+    await waitForEditorLoad(page);
+  }
 
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('cloud-signin-button').click({
