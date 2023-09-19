@@ -11,8 +11,10 @@ import {
   Workspace,
 } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
-import type { Transaction } from 'yjs';
-import type { Doc as YDoc } from 'yjs';
+import { validate } from 'uuid';
+import type { Map as YMap, Transaction as YTransaction } from 'yjs';
+import { Doc as YDoc } from 'yjs';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { createCloudBlobStorage } from '../blob/cloud-blob-storage';
 import { createStaticStorage } from '../blob/local-static-storage';
@@ -36,7 +38,7 @@ type UpdateCallback = (
   update: Uint8Array,
   origin: string | number | null,
   doc: YDoc,
-  transaction: Transaction
+  transaction: YTransaction
 ) => void;
 
 type SubdocEvent = {
@@ -138,6 +140,32 @@ export function getOrCreateWorkspace(
     idGenerator,
     schema: globalBlockSuiteSchema,
   });
+  const originalGetPage = workspace.getPage.bind(workspace);
+  workspace.getPage = function (pageId: string) {
+    if (!validate(pageId)) {
+      const page = originalGetPage(pageId);
+      const oldId = `${workspace.id}:space:${pageId}`;
+      const docMap = workspace.doc.get('spaces') as YMap<YDoc>;
+      const oldDoc = new YDoc({
+        guid: oldId,
+      });
+      docMap.set(oldId, oldDoc);
+      if (page) {
+        oldDoc.whenLoaded
+          .then(() => {
+            applyUpdate(page.spaceDoc, encodeStateAsUpdate(oldDoc));
+          })
+          .catch(e => {
+            console.error(e);
+          });
+        oldDoc.load();
+        return page;
+      }
+      return null;
+    } else {
+      return originalGetPage(pageId);
+    }
+  };
   createMonitor(workspace.doc);
   setEditorFlags(workspace);
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);
