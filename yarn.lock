@@ -237,7 +237,7 @@ __metadata:
     rxjs: ^7.8.1
     typescript: ^5.2.2
     vite: ^4.4.9
-    yjs: ^13.6.7
+    yjs: ^13.6.8
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
@@ -349,7 +349,7 @@ __metadata:
     webpack-dev-server: ^4.15.1
     webpack-merge: ^5.9.0
     y-protocols: ^1.0.5
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zod: ^3.22.2
   languageName: unknown
   linkType: soft
@@ -433,7 +433,7 @@ __metadata:
     uuid: ^9.0.0
     vitest: 0.33.0
     which: ^4.0.0
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zx: ^7.2.3
   peerDependencies:
     ts-node: "*"
@@ -755,7 +755,7 @@ __metadata:
     ts-node: ^10.9.1
     typescript: ^5.2.2
     ws: ^8.13.0
-    yjs: ^13.6.7
+    yjs: ^13.6.8
   bin:
     run-test: ./scripts/run-test.ts
   languageName: unknown
@@ -767,7 +767,7 @@ __metadata:
   dependencies:
     "@napi-rs/cli": ^3.0.0-alpha.5
     lib0: ^0.2.83
-    yjs: ^13.6.7
+    yjs: ^13.6.8
   languageName: unknown
   linkType: soft
 
@@ -868,7 +868,7 @@ __metadata:
     swr: 2.2.0
     ws: ^8.13.0
     y-protocols: ^1.0.5
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zod: ^3.22.2
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -12609,7 +12609,7 @@ __metadata:
     react: ^18.2.0
     vite: ^4.4.9
     vite-plugin-dts: 3.5.3
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zod: ^3.22.2
   peerDependencies:
     "@affine/templates": "*"
@@ -35216,12 +35216,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yjs@npm:^13.6.7":
-  version: 13.6.7
-  resolution: "yjs@npm:13.6.7"
+"yjs@npm:^13.6.8":
+  version: 13.6.8
+  resolution: "yjs@npm:13.6.8"
   dependencies:
     lib0: ^0.2.74
-  checksum: 8e89257c8b565ab97cf3354fca2ce0b6bc3d1abe90b9d45a218a94b35da372c88d2411b353ed8ca03a6619004c4da76c96f7c203c38506c3758c9f8c1a730ca4
+  checksum: a2a6fd17a2cce6461b64bedd69f66845b9dfd4702e285be0b5e382840337232e54ba5cf5d48f871263074de625d3902d17ab8a1766695af3fc05a0b4da8d95e0
   languageName: node
   linkType: hard
 
