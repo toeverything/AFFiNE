@@ -4,14 +4,14 @@ import {
   useReducer
 } from 'react';
 
-import * as styles from './styles.css';
+import * as styles from './modal.css';
 
 // a CMDK modal that can be used to display a CMDK command
 // it has a smooth animation and can be closed by clicking outside of the modal
 
-interface CMDKModalProps {
+export interface CMDKModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type ModalAnimationState = 'entering' | 'entered' | 'exiting' | 'exited';

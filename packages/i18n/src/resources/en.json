@@ -577,5 +577,6 @@
   "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud",
   "404.hint": "Sorry, you do not have access or this content does not exist...",
   "404.back": "Back to My Content",
-  "404.signOut": "Sign in to another account"
+  "404.signOut": "Sign in to another account",
+  "cmdk.placeholder": "Type a command or search anything..."
 }

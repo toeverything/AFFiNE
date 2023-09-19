@@ -1,3 +1,4 @@
+// TODO: need better way for composing different precondition strategies
 export enum PreconditionStrategy {
   Always,
   InPaperOrEdgeless,

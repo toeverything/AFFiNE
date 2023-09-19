@@ -12,7 +12,8 @@ export const AffineCommandRegistry = new (class {
 
   register(options: AffineCommandOptions) {
     if (this.commands.has(options.id)) {
-      throw new Error(`Command ${options.id} already registered.`);
+      console.warn(`Command ${options.id} already registered.`);
+      return () => {};
     }
     const command = createAffineCommand(options);
     this.commands.set(command.id, command);
