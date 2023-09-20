@@ -2,7 +2,7 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import {
@@ -50,6 +50,19 @@ export const Setting = () => {
   const [{ open, workspaceId, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
   assertExists(currentWorkspace);
+
+  // Add ‘⌘+,’ shortcut keys as switches
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if ((e.key === ',' && e.metaKey) || (e.key === ',' && e.ctrlKey)) {
+        e.preventDefault();
+        setOpenSettingModalAtom(prev => ({ ...prev, open: !prev.open }));
+      }
+    };
+    document.addEventListener('keydown', keydown, { capture: true });
+    return () =>
+      document.removeEventListener('keydown', keydown, { capture: true });
+  }, [setOpenSettingModalAtom]);
 
   const onSettingClick = useCallback(
     ({
