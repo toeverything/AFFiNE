@@ -53,6 +53,10 @@ SettingPage.play = async ({ canvasElement, step }) => {
       document.body.querySelector('[data-testid="language-menu-button"]')
     );
   });
+
+  // Menu button may have "pointer-events: none" style, await 100ms to avoid this weird situation.
+  await new Promise(resolve => window.setTimeout(resolve, 100));
+
   await step('click language menu button', async () => {
     await userEvent.click(
       document.body.querySelector(
