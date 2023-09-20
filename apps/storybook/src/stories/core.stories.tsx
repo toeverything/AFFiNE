@@ -54,7 +54,7 @@ SettingPage.play = async ({ canvasElement, step }) => {
     );
   });
 
-  // Menu button may have "pointer-events: none" style, await 100ms to avoid this wired situation.
+  // Menu button may have "pointer-events: none" style, await 100ms to avoid this weird situation.
   await new Promise(resolve => window.setTimeout(resolve, 100));
 
   await step('click language menu button', async () => {
