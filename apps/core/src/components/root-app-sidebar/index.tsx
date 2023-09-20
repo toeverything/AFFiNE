@@ -19,7 +19,7 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { Popover } from '@toeverything/components/popover';
+import { Menu } from '@toeverything/components/menu';
 import { useAtom } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
 import {
@@ -175,9 +175,11 @@ export const RootAppSidebar = ({
         }
       >
         <SidebarContainer>
-          <Popover
-            open={openUserWorkspaceList}
-            content={
+          <Menu
+            rootOptions={{
+              open: openUserWorkspaceList,
+            }}
+            items={
               <Suspense>
                 <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
               </Suspense>
@@ -187,6 +189,9 @@ export const RootAppSidebar = ({
               sideOffset: -58,
               onInteractOutside: closeUserWorkspaceList,
               onEscapeKeyDown: closeUserWorkspaceList,
+              style: {
+                width: '300px',
+              },
             }}
           >
             <WorkspaceCard
@@ -195,7 +200,7 @@ export const RootAppSidebar = ({
                 setOpenUserWorkspaceList(true);
               }, [])}
             />
-          </Popover>
+          </Menu>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}

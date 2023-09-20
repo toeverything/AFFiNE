@@ -28,16 +28,25 @@ export interface WorkspaceListProps {
   onClick: (workspaceId: string) => void;
   onSettingClick: (workspaceId: string) => void;
   onDragEnd: (event: DragEndEvent) => void;
+  useIsWorkspaceOwner?: (workspaceId: string) => boolean;
 }
 
 interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
   item: RootWorkspaceMetadata;
+  useIsWorkspaceOwner?: (workspaceId: string) => boolean;
 }
 
-const SortableWorkspaceItem = (props: SortableWorkspaceItemProps) => {
+const SortableWorkspaceItem = ({
+  disabled,
+  item,
+  useIsWorkspaceOwner,
+  currentWorkspaceId,
+  onClick,
+  onSettingClick,
+}: SortableWorkspaceItemProps) => {
   const { setNodeRef, attributes, listeners, transform, transition } =
     useSortable({
-      id: props.item.id,
+      id: item.id,
     });
   const style: CSSProperties = useMemo(
     () => ({
@@ -45,11 +54,12 @@ const SortableWorkspaceItem = (props: SortableWorkspaceItemProps) => {
         ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
         : undefined,
       transition,
-      pointerEvents: props.disabled ? 'none' : undefined,
-      opacity: props.disabled ? 0.6 : undefined,
+      pointerEvents: disabled ? 'none' : undefined,
+      opacity: disabled ? 0.6 : undefined,
     }),
-    [props.disabled, transform, transition]
+    [disabled, transform, transition]
   );
+  const isOwner = useIsWorkspaceOwner?.(item.id);
   return (
     <div
       className={workspaceItemStyle}
@@ -60,10 +70,11 @@ const SortableWorkspaceItem = (props: SortableWorkspaceItemProps) => {
       {...listeners}
     >
       <WorkspaceCard
-        currentWorkspaceId={props.currentWorkspaceId}
-        meta={props.item}
-        onClick={props.onClick}
-        onSettingClick={props.onSettingClick}
+        currentWorkspaceId={currentWorkspaceId}
+        meta={item}
+        onClick={onClick}
+        onSettingClick={onSettingClick}
+        isOwner={isOwner}
       />
     </div>
   );

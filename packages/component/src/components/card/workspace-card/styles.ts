@@ -5,30 +5,16 @@ import { displayFlex, styled, textEllipsis } from '../../../styles';
 export const StyledWorkspaceInfo = styled('div')(() => {
   return {
     marginLeft: '12px',
-    width: '202px',
-    p: {
-      height: '20px',
-      fontSize: 'var(--affine-font-sm)',
-      ...displayFlex('flex-start', 'center'),
-    },
-    svg: {
-      marginRight: '10px',
-      fontSize: '16px',
-      flexShrink: 0,
-    },
-    span: {
-      flexGrow: 1,
-      ...textEllipsis(1),
-    },
+    width: '100%',
   };
 });
 
 export const StyledWorkspaceTitle = styled('div')(() => {
   return {
-    fontSize: 'var(--affine-font-base)',
-    fontWeight: 600,
-    lineHeight: '24px',
-    maxWidth: '200px',
+    fontSize: 'var(--affine-font-sm)',
+    fontWeight: 700,
+    lineHeight: '22px',
+    maxWidth: '190px',
     color: 'var(--affine-text-primary-color)',
     ...textEllipsis(1),
   };
@@ -38,13 +24,12 @@ export const StyledCard = styled('div')<{
   active?: boolean;
 }>(({ active }) => {
   const borderColor = active ? 'var(--affine-primary-color)' : 'transparent';
-  const backgroundColor = active ? 'var(--affine-white)' : 'transparent';
+  const backgroundColor = active ? 'var(--affine-white-30)' : 'transparent';
   return {
-    width: '280px',
-    height: '58px',
+    width: '100%',
     cursor: 'pointer',
     padding: '12px',
-    borderRadius: '12px',
+    borderRadius: '8px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
     transition: 'background .2s',
@@ -91,8 +76,8 @@ export const StyledModalHeader = styled('div')(() => {
 export const StyledSettingLink = styled(IconButton)(() => {
   return {
     position: 'absolute',
-    right: '6px',
-    bottom: '6px',
+    right: '10px',
+    top: '10px',
     opacity: 0,
     borderRadius: '4px',
     color: 'var(--affine-primary-color)',
@@ -104,9 +89,11 @@ export const StyledSettingLink = styled(IconButton)(() => {
   };
 });
 
-export const StyledWorkspaceType = styled('p')(() => {
+export const StyledWorkspaceType = styled('div')(() => {
   return {
-    fontSize: 10,
+    ...displayFlex('flex-start', 'center'),
+    width: '100%',
+    height: '20px',
   };
 });
 
@@ -114,5 +101,37 @@ export const StyledWorkspaceTitleArea = styled('div')(() => {
   return {
     display: 'flex',
     justifyContent: 'space-between',
+  };
+});
+
+export const StyledWorkspaceTypeEllipse = styled('div')<{
+  cloud?: boolean;
+}>(({ cloud }) => {
+  return {
+    width: '5px',
+    height: '5px',
+    borderRadius: '50%',
+    background: cloud
+      ? 'var(--affine-palette-shape-blue)'
+      : 'var(--affine-palette-shape-green)',
+  };
+});
+
+export const StyledWorkspaceTypeText = styled('div')(() => {
+  return {
+    fontSize: '12px',
+    fontWeight: 500,
+    lineHeight: '20px',
+    marginLeft: '4px',
+    color: 'var(--affine-text-secondary-color)',
+  };
+});
+
+export const StyledIconContainer = styled('div')(() => {
+  return {
+    ...displayFlex('flex-start', 'center'),
+    fontSize: '14px',
+    gap: '8px',
+    color: 'var(--affine-icon-secondary)',
   };
 });
