@@ -32,6 +32,8 @@ import { Metrics } from './metrics/metrics';
             res,
           }),
           plugins: [new GQLLoggerPlugin(metrics)],
+          // only able to use playground in dev mode
+          playground: config.affine.canary,
         };
       },
       inject: [Config, Metrics],

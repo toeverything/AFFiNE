@@ -139,7 +139,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         numberScalarMode: 'integer',
       },
       introspection: true,
-      playground: true,
+      playground: false,
     },
     auth: {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
