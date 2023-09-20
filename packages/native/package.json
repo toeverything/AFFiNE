@@ -16,7 +16,7 @@
       "constEnum": false
     }
   },
-  "license": "MPL-2.0",
+  "license": "MIT",
   "devDependencies": {
     "@napi-rs/cli": "^2.16.2",
     "@types/node": "^18.17.12",

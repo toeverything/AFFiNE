@@ -237,7 +237,7 @@ __metadata:
     rxjs: ^7.8.1
     typescript: ^5.2.2
     vite: ^4.4.9
-    yjs: ^13.6.7
+    yjs: ^13.6.8
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
@@ -349,7 +349,7 @@ __metadata:
     webpack-dev-server: ^4.15.1
     webpack-merge: ^5.9.0
     y-protocols: ^1.0.5
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zod: ^3.22.2
   languageName: unknown
   linkType: soft
@@ -433,7 +433,7 @@ __metadata:
     uuid: ^9.0.0
     vitest: 0.33.0
     which: ^4.0.0
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zx: ^7.2.3
   peerDependencies:
     ts-node: "*"
@@ -710,7 +710,7 @@ __metadata:
     "@prisma/client": ^5.2.0
     "@prisma/instrumentation": ^5.2.0
     "@socket.io/redis-adapter": ^8.2.1
-    "@types/cookie-parser": ^1.4.3
+    "@types/cookie-parser": ^1.4.4
     "@types/engine.io": ^3.1.7
     "@types/express": ^4.17.17
     "@types/graphql-upload": ^16.0.1
@@ -755,7 +755,7 @@ __metadata:
     ts-node: ^10.9.1
     typescript: ^5.2.2
     ws: ^8.13.0
-    yjs: ^13.6.7
+    yjs: ^13.6.8
   bin:
     run-test: ./scripts/run-test.ts
   languageName: unknown
@@ -767,7 +767,7 @@ __metadata:
   dependencies:
     "@napi-rs/cli": ^3.0.0-alpha.5
     lib0: ^0.2.83
-    yjs: ^13.6.7
+    yjs: ^13.6.8
   languageName: unknown
   linkType: soft
 
@@ -860,7 +860,7 @@ __metadata:
     async-call-rpc: ^6.3.1
     jotai: ^2.4.1
     js-base64: ^3.7.5
-    ky: ^0.33.3
+    ky: ^1.0.1
     lib0: ^0.2.83
     react: 18.2.0
     react-dom: 18.2.0
@@ -868,7 +868,7 @@ __metadata:
     swr: 2.2.0
     ws: ^8.13.0
     y-protocols: ^1.0.5
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zod: ^3.22.2
   peerDependencies:
     "@blocksuite/blocks": "*"
@@ -12610,7 +12610,7 @@ __metadata:
     react: ^18.2.0
     vite: ^4.4.9
     vite-plugin-dts: 3.5.3
-    yjs: ^13.6.7
+    yjs: ^13.6.8
     zod: ^3.22.2
   peerDependencies:
     "@affine/templates": "*"
@@ -12882,12 +12882,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie-parser@npm:^1.4.3":
-  version: 1.4.3
-  resolution: "@types/cookie-parser@npm:1.4.3"
+"@types/cookie-parser@npm:^1.4.4":
+  version: 1.4.4
+  resolution: "@types/cookie-parser@npm:1.4.4"
   dependencies:
     "@types/express": "*"
-  checksum: f390f3af1b1711190dee2c2ecd9af33af81fbde8d81ee820dadb6fe1e0d80c3faba40af37c6ed36fb88b04b64870f6a021f7e9edceecd17c42fe22abe0af5005
+  checksum: 5c81ac4b7d90a567e0c7a904ecbc09c82c43e30c6b5b507aee5147bc06bc8c6418e6719d63fcf68e6a83c71870485ab3fc579a30891b56a0be05d64753e3f74a
   languageName: node
   linkType: hard
 
@@ -24718,10 +24718,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ky@npm:^0.33.3":
-  version: 0.33.3
-  resolution: "ky@npm:0.33.3"
-  checksum: d1869e1f33c0165355f621b6726fcc1a9de20a31f4a826ca0cfd5753d83b9cba8723402d554a00194e0ee3959e0dda0638f4b99d54a3a7de928b55ff870b0bcc
+"ky@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "ky@npm:1.0.1"
+  checksum: 1cc8237422b901417bcced1a1fd4d0b2c9b9140ef625fcb9c6c6b78f0e4ddf169e6ba97f497d8be31db0d8f6fb17ad63bcb03aef927b8d7d562d87db3da13474
   languageName: node
   linkType: hard
 
@@ -35217,12 +35217,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yjs@npm:^13.6.7":
-  version: 13.6.7
-  resolution: "yjs@npm:13.6.7"
+"yjs@npm:^13.6.8":
+  version: 13.6.8
+  resolution: "yjs@npm:13.6.8"
   dependencies:
     lib0: ^0.2.74
-  checksum: 8e89257c8b565ab97cf3354fca2ce0b6bc3d1abe90b9d45a218a94b35da372c88d2411b353ed8ca03a6619004c4da76c96f7c203c38506c3758c9f8c1a730ca4
+  checksum: a2a6fd17a2cce6461b64bedd69f66845b9dfd4702e285be0b5e382840337232e54ba5cf5d48f871263074de625d3902d17ab8a1766695af3fc05a0b4da8d95e0
   languageName: node
   linkType: hard
 
