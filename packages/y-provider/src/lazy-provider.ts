@@ -95,8 +95,16 @@ export const createLazyProvider = (
     callbackSet.forEach(cb => cb());
   };
 
-  async function syncDoc(doc: Doc) {
-    const guid = doc.guid;
+  async function syncDoc(doc: Doc, guid: string, fallback: boolean) {
+    const notRootDoc = doc.guid !== rootDoc.guid;
+    if (!fallback && notRootDoc) {
+      // backport from `@blocksuite/store`
+      const prefixId = guid.startsWith('space:') ? guid.slice(6) : guid;
+      const possible1 = `${rootDoc.guid}:space:${prefixId}`;
+      const possible2 = `space:${prefixId}`;
+      await syncDoc(rootDoc, possible1, true);
+      await syncDoc(rootDoc, possible2, true);
+    }
     if (!connected) {
       return;
     }
@@ -239,7 +247,7 @@ export const createLazyProvider = (
     }
     connectedDocs.add(doc.guid);
     setupDocListener(doc);
-    await syncDoc(doc);
+    await syncDoc(doc, doc.guid, false);
 
     await Promise.all(
       [...doc.subdocs]
@@ -304,7 +312,7 @@ export const createLazyProvider = (
   }
 
   const syncDocRecursive = async (doc: Doc) => {
-    await syncDoc(doc);
+    await syncDoc(doc, doc.guid, false);
     await Promise.all(
       [...doc.subdocs.values()].map(subdoc => syncDocRecursive(subdoc))
     );
@@ -315,7 +323,7 @@ export const createLazyProvider = (
       connected = true;
       try {
         if (onlyRootDoc) {
-          await syncDoc(rootDoc);
+          await syncDoc(rootDoc, rootDoc.guid, false);
         } else {
           await syncDocRecursive(rootDoc);
         }
