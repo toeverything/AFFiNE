@@ -158,6 +158,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           clientSecret: config.auth.oauthProviders.google.clientSecret,
           checks: 'nonce',
           allowDangerousEmailAccountLinking: true,
+          authorization: {
+            params: { scope: 'openid email profile', prompt: 'select_account' },
+          },
         })
       );
     }
