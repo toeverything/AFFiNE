@@ -1,8 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import {
-  useEffect,
-  useReducer
-} from 'react';
+import { useEffect, useReducer } from 'react';
 
 import * as styles from './modal.css';
 
@@ -56,12 +53,14 @@ export const CMDKModal = ({
     >
       <Dialog.Portal>
         <Dialog.Overlay className={styles.modalOverlay} />
-        <Dialog.Content
-          className={styles.modalContent}
-          data-state={animationState}
-        >
-          {children}
-        </Dialog.Content>
+        <div className={styles.modalContentWrapper}>
+          <Dialog.Content
+            className={styles.modalContent}
+            data-state={animationState}
+          >
+            {children}
+          </Dialog.Content>
+        </div>
       </Dialog.Portal>
     </Dialog.Root>
   );

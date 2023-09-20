@@ -47,3 +47,7 @@ globalStyle(`${root} [cmdk-list]`, {
   transitionProperty: 'height',
   height: 'min(330px, var(--cmdk-list-height))',
 });
+
+globalStyle(`${root} [cmdk-item]`, {
+  height: 44,
+});

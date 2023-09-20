@@ -1,13 +1,13 @@
 import { keyframes, style } from '@vanilla-extract/css';
 
 const contentShow = keyframes({
-  from: { opacity: 0, transform: 'translate(-50%, -48%) scale(0.96)' },
-  to: { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+  from: { opacity: 0, transform: 'translateY(-2%) scale(0.96)' },
+  to: { opacity: 1, transform: 'translateY(0) scale(1)' },
 });
 
 const contentHide = keyframes({
-  to: { opacity: 0, transform: 'translate(-50%, -48%) scale(0.96)' },
-  from: { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+  to: { opacity: 0, transform: 'translateY(-2%) scale(0.96)' },
+  from: { opacity: 1, transform: 'translateY(0) scale(1)' },
 });
 
 export const modalOverlay = style({
@@ -17,6 +17,16 @@ export const modalOverlay = style({
   zIndex: 'var(--affine-z-index-modal)',
 });
 
+export const modalContentWrapper = style({
+  position: 'fixed',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  zIndex: 'var(--affine-z-index-modal)',
+  padding: '13vh 16px 16px',
+});
+
 export const modalContent = style({
   width: 640,
   // height: 530,
@@ -24,15 +34,13 @@ export const modalContent = style({
   boxShadow: 'var(--affine-cmd-shadow)',
   borderRadius: '12px',
   maxWidth: 'calc(100vw - 50px)',
-  maxHeight: 'calc(100vh - 110px)',
   minWidth: 480,
   // minHeight: 420,
   // :focus-visible will set outline
   outline: 'none',
-  position: 'fixed',
+  position: 'relative',
   zIndex: 'var(--affine-z-index-modal)',
-  top: 'calc(50% + 25px)',
-  left: '50%',
+  willChange: 'transform, opacity',
 
   selectors: {
     '&[data-state=entered], &[data-state=entering]': {
