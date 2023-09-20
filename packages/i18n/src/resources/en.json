@@ -586,5 +586,17 @@
   "com.affine.cmdk.affine.color-scheme.to-light": "Change Colour Scheme to Light",
   "com.affine.cmdk.affine.color-scheme.to-dark": "Change Colour Scheme to Dark",
   "com.affine.cmdk.affine.left-sidebar.expand": "Expand Left Sidebar",
-  "com.affine.cmdk.affine.left-sidebar.collapse": "Collapse Left Sidebar"
+  "com.affine.cmdk.affine.left-sidebar.collapse": "Collapse Left Sidebar",
+  "com.affine.cmdk.affine.category.affine.recent": "Recent",
+  "com.affine.cmdk.affine.category.affine.navigation": "Navigation",
+  "com.affine.cmdk.affine.category.affine.pages": "Pages",
+  "com.affine.cmdk.affine.category.affine.creation": "Create",
+  "com.affine.cmdk.affine.category.affine.settings": "Settings",
+  "com.affine.cmdk.affine.category.affine.layout": "Layout Controls",
+  "com.affine.cmdk.affine.category.affine.help": "Help",
+  "com.affine.cmdk.affine.category.affine.updates": "Updates",
+  "com.affine.cmdk.affine.category.affine.general": "General",
+  "com.affine.cmdk.affine.category.editor.insert-object": "Insert Object",
+  "com.affine.cmdk.affine.category.editor.page": "Page Commands",
+  "com.affine.cmdk.affine.category.editor.edgeless": "Edgeless Commands"
 }

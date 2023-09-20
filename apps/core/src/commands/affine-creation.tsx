@@ -3,6 +3,7 @@ import { PlusIcon } from '@blocksuite/icons';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
 
+import { openCreateWorkspaceModalAtom } from '../atoms';
 import type { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 
 export function registerAffineCreationCommands({
@@ -21,10 +22,12 @@ export function registerAffineCreationCommands({
       category: 'affine:creation',
       label: t['com.affine.cmdk.affine.new-page'],
       icon: <PlusIcon />,
-      keyBinding: {
-        // this only works for Desktop app
-        binding: '$mod+N',
-      },
+      keyBinding: environment.isDesktop
+        ? {
+            binding: '$mod+N',
+            skipRegister: true,
+          }
+        : undefined,
       run() {
         pageHelper.createPage();
       },
@@ -50,7 +53,7 @@ export function registerAffineCreationCommands({
       icon: <PlusIcon />,
       label: t['com.affine.cmdk.affine.new-workspace'],
       run() {
-        store;
+        store.set(openCreateWorkspaceModalAtom, 'new');
       },
     })
   );

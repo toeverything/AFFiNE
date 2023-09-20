@@ -49,6 +49,7 @@ export const modalContent = style({
     },
     '&[data-state=exited], &[data-state=exiting]': {
       animation: `${contentHide} 120ms cubic-bezier(0.42, 0, 0.58, 1)`,
+      animationFillMode: 'forwards',
     },
   },
 });

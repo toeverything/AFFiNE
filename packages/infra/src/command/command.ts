@@ -19,6 +19,7 @@ export type CommandCategory =
   | 'affine:creation'
   | 'affine:settings'
   | 'affine:layout'
+  | 'affine:updates'
   | 'affine:help'
   | 'affine:general';
 
@@ -52,7 +53,7 @@ export interface AffineCommand {
   readonly icon?: React.ReactNode; // icon name
   readonly category: CommandCategory;
   readonly keyBinding?: KeybindingOptions;
-  run(e: Event): void | Promise<void>;
+  run(): void | Promise<void>;
 }
 
 export function createAffineCommand(

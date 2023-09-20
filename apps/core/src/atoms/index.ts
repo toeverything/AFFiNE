@@ -70,6 +70,8 @@ export const pageSettingFamily: AtomFamily<
         ...defaultPageSetting,
       },
     (get, set, patch) => {
+      // fixme: this does not work when page reload,
+      // since atomWithStorage is async
       set(recentPageIdsBaseAtom, ids => {
         // pick 3 recent page ids
         return [...new Set([pageId, ...ids]).values()].slice(0, 3);

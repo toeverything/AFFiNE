@@ -32,6 +32,7 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useTheme } from 'next-themes';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -148,10 +149,11 @@ export const WorkspaceLayoutInner = ({
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const store = useStore();
   const t = useAFFiNEI18N();
+  const theme = useTheme();
 
   useEffect(() => {
     const unsubs: Array<() => void> = [];
-    unsubs.push(registerAffineSettingsCommands({ store, t }));
+    unsubs.push(registerAffineSettingsCommands({ store, t, theme }));
     unsubs.push(registerAffineLayoutCommands({ store, t }));
     unsubs.push(
       registerAffineCreationCommands({
@@ -164,7 +166,7 @@ export const WorkspaceLayoutInner = ({
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [store, pageHelper, t]);
+  }, [store, pageHelper, t, theme]);
 
   useEffect(() => {
     // hotfix for blockVersions

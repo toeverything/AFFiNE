@@ -5,16 +5,20 @@ import {
   registerAffineCommand,
 } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
+import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
 
 export function registerAffineSettingsCommands({
   store,
   t,
+  theme,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
+  theme: ReturnType<typeof useTheme>;
 }) {
+  console.log('theme', theme)
   const unsubs: Array<() => void> = [];
   unsubs.push(
     registerAffineCommand({
@@ -38,8 +42,9 @@ export function registerAffineSettingsCommands({
       label: t['com.affine.cmdk.affine.color-scheme.to-auto'],
       category: 'affine:settings',
       icon: <SettingsIcon />,
+      preconditionStrategy: () => theme.theme !== 'auto',
       run() {
-        store.set(openQuickSearchModalAtom, true);
+        theme.setTheme('auto');
       },
     })
   );
@@ -49,8 +54,9 @@ export function registerAffineSettingsCommands({
       label: t['com.affine.cmdk.affine.color-scheme.to-dark'],
       category: 'affine:settings',
       icon: <SettingsIcon />,
+      preconditionStrategy: () => theme.theme !== 'dark',
       run() {
-        store.set(openQuickSearchModalAtom, true);
+        theme.setTheme('dark');
       },
     })
   );
@@ -61,8 +67,9 @@ export function registerAffineSettingsCommands({
       label: t['com.affine.cmdk.affine.color-scheme.to-light'],
       category: 'affine:settings',
       icon: <SettingsIcon />,
+      preconditionStrategy: () => theme.theme !== 'light',
       run() {
-        store.set(openQuickSearchModalAtom, true);
+        theme.setTheme('light');
       },
     })
   );

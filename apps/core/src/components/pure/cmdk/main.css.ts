@@ -23,6 +23,46 @@ export const panelContainer = style({
   flexDirection: 'column',
 });
 
+export const itemIcon = style({
+  fontSize: 20,
+  marginRight: 16,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  color: 'var(--affine-icon-secondary)',
+});
+
+export const itemLabel = style({
+  fontSize: 14,
+  lineHeight: '1.5',
+  color: 'var(--affine-text-primary-color)',
+  flex: 1,
+});
+
+export const timestamp = style({
+  display: 'flex',
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-secondary-color)',
+});
+
+export const keybinding = style({
+  display: 'flex',
+  fontSize: 'var(--affine-font-xs)',
+  columnGap: 2,
+});
+
+export const keybindingFragment = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 4px',
+  borderRadius: 4,
+  color: 'var(--affine-text-secondary-color)',
+  backgroundColor: 'var(--affine-background-tertiary-color)',
+  width: 24,
+  height: 20,
+});
+
 globalStyle(`${root} [cmdk-root]`, {
   height: '100%',
 });
@@ -45,9 +85,21 @@ globalStyle(`${root} [cmdk-list]`, {
   overscrollBehavior: 'contain',
   transition: '.1s ease',
   transitionProperty: 'height',
-  height: 'min(330px, var(--cmdk-list-height))',
+  height: 'min(330px, calc(var(--cmdk-list-height) + 8px))',
+  padding: '0 6px 8px 6px',
 });
 
 globalStyle(`${root} [cmdk-item]`, {
+  display: 'flex',
   height: 44,
+  padding: '0 12px',
+  alignItems: 'center',
+  cursor: 'default',
+  borderRadius: 4,
+  userSelect: 'none',
+});
+
+
+globalStyle(`${root} [cmdk-item][data-selected=true]`, {
+  background: 'var(--affine-background-secondary-color)',
 });

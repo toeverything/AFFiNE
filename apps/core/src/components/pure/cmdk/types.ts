@@ -14,8 +14,8 @@ export interface CMDKCommand {
   label: string;
   icon?: React.ReactNode;
   category: CommandCategory;
-  keyBinding?: string;
+  keyBinding?: string | { binding: string };
   timestamp?: number;
   value?: string; // this is used for item filtering
-  run: (e: Event) => void | Promise<void>;
+  run: (e?: Event) => void | Promise<void>;
 }
