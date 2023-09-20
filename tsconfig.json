@@ -159,6 +159,9 @@
     {
       "path": "./packages/y-indexeddb"
     },
+    {
+      "path": "./packages/cmdk"
+    },
     // Tests
     {
       "path": "./tests/kit"

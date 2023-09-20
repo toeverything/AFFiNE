@@ -19,14 +19,14 @@ export const modalOverlay = style({
 
 export const modalContent = style({
   width: 640,
-  height: 530,
+  // height: 530,
   backgroundColor: 'var(--affine-background-overlay-panel-color)',
   boxShadow: 'var(--affine-cmd-shadow)',
   borderRadius: '12px',
   maxWidth: 'calc(100vw - 50px)',
   maxHeight: 'calc(100vh - 110px)',
   minWidth: 480,
-  minHeight: 420,
+  // minHeight: 420,
   // :focus-visible will set outline
   outline: 'none',
   position: 'fixed',

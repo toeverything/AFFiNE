@@ -20,7 +20,7 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Popover } from '@toeverything/components/popover';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
 import {
   forwardRef,

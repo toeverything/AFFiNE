@@ -1,5 +1,5 @@
+import { Command } from '@affine/cmdk';
 import { SearchIcon } from '@blocksuite/icons';
-import { Command } from 'cmdk';
 import { forwardRef } from 'react';
 
 import { StyledInputContent, StyledLabel } from './style';

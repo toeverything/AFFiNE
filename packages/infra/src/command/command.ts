@@ -6,6 +6,7 @@ export enum PreconditionStrategy {
   InEdgeless,
   InEdgelessPresentationMode,
   NoSearchResult,
+  Never,
 }
 
 export type CommandCategory =
@@ -32,10 +33,10 @@ export interface AffineCommandOptions {
   id: string;
   // a set of predefined precondition strategies, but also allow user to customize their own
   preconditionStrategy?: PreconditionStrategy | (() => boolean);
-  // main text on the left. If it is null, we will hide this command in the command palette.
+  // main text on the left..
   // make text a function so that we can do i18n and interpolation when we need to
   label?: string | (() => string);
-  icon?: React.ReactNode; // todo: need a mapping from string -> React element/SVG
+  icon: React.ReactNode; // todo: need a mapping from string -> React element/SVG
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
   // for both mac and windows

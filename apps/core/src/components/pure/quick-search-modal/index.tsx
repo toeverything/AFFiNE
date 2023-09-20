@@ -1,6 +1,6 @@
+import { Command } from '@affine/cmdk';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Modal } from '@toeverything/components/modal';
-import { Command } from 'cmdk';
 import { startTransition, Suspense } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

@@ -1,3 +1,4 @@
+import { Command } from '@affine/cmdk';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -5,7 +6,6 @@ import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { Command } from 'cmdk';
 import { type Atom, atom, useAtomValue } from 'jotai';
 import type { Dispatch, SetStateAction } from 'react';
 import { startTransition, useEffect } from 'react';

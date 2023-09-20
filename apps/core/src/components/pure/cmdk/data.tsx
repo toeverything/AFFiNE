@@ -80,6 +80,9 @@ function filterCommandByContext(
   if (command.preconditionStrategy === PreconditionStrategy.InPaperOrEdgeless) {
     return !!context.currentPage;
   }
+  if (command.preconditionStrategy === PreconditionStrategy.Never) {
+    return false;
+  }
   return true;
 }
 
