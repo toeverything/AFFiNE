@@ -1,6 +1,6 @@
 import {
+  CMDKContainer,
   CMDKModal,
-  CMDKPanelContainer,
 } from '@affine/core/components/pure/cmdk';
 import type { Meta, StoryFn } from '@storybook/react';
 import { Button } from '@toeverything/components/button';
@@ -33,7 +33,7 @@ export const CMDKPanelStory: StoryFn = () => {
   return (
     <>
       <CMDKModal open>
-        <CMDKPanelContainer query={query} onQueryChange={setQuery} />
+        <CMDKContainer query={query} onQueryChange={setQuery} />
       </CMDKModal>
     </>
   );

@@ -18,7 +18,7 @@ const SearchInput = forwardRef<
   );
 });
 
-export const CMDKPanelContainer = forwardRef<
+export const CMDKContainer = forwardRef<
   HTMLDivElement,
   React.HtmlHTMLAttributes<HTMLDivElement> & {
     query: string;
@@ -35,7 +35,6 @@ export const CMDKPanelContainer = forwardRef<
   return (
     <div ref={ref} {...rest} className={clsx(className, styles.panelContainer)}>
       <Command
-        shouldFilter={false}
         // Handle KeyboardEvent conflicts with blocksuite
         onKeyDown={(e: React.KeyboardEvent) => {
           if (
@@ -52,7 +51,7 @@ export const CMDKPanelContainer = forwardRef<
         <SearchInput
           value={query}
           onChange={handleQueryChange}
-          placeholder={t['cmdk.placeholder']()}
+          placeholder={t['com.affine.cmdk.placeholder']()}
         />
         {children}
       </Command>

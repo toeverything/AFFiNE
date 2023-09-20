@@ -12,11 +12,14 @@ export type CommandCategory =
   | 'editor:insert-object'
   | 'editor:page'
   | 'editor:edgeless'
+  | 'affine:recent'
+  | 'affine:pages'
   | 'affine:navigation'
   | 'affine:creation'
-  | 'affine:ui'
+  | 'affine:settings'
   | 'affine:layout'
-  | 'affine:help';
+  | 'affine:help'
+  | 'affine:general';
 
 export interface KeybindingOptions {
   binding: string;
@@ -27,8 +30,11 @@ export interface KeybindingOptions {
 
 export interface AffineCommandOptions {
   id: string;
-  preconditionStrategy?: PreconditionStrategy;
-  description?: string; // todo: i18n & interpolation
+  // a set of predefined precondition strategies, but also allow user to customize their own
+  preconditionStrategy?: PreconditionStrategy | (() => boolean);
+  // main text on the left. If it is null, we will hide this command in the command palette.
+  // make text a function so that we can do i18n and interpolation when we need to
+  label?: string | (() => string);
   icon?: React.ReactNode; // todo: need a mapping from string -> React element/SVG
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
@@ -40,21 +46,28 @@ export interface AffineCommandOptions {
 
 export interface AffineCommand {
   readonly id: string;
-  readonly preconditionStrategy: PreconditionStrategy;
-  readonly description?: string;
+  readonly preconditionStrategy: PreconditionStrategy | (() => boolean);
+  readonly label?: string;
   readonly icon?: React.ReactNode; // icon name
-  readonly category?: CommandCategory;
+  readonly category: CommandCategory;
   readonly keyBinding?: KeybindingOptions;
-  run(): void | Promise<void>;
+  run(e: Event): void | Promise<void>;
 }
 
 export function createAffineCommand(
   options: AffineCommandOptions
 ): AffineCommand {
   return {
-    ...options,
+    id: options.id,
+    run: options.run,
+    icon: options.icon,
     preconditionStrategy:
       options.preconditionStrategy ?? PreconditionStrategy.Always,
+    category: options.category ?? 'affine:general',
+    get label() {
+      const label = options.label;
+      return typeof label === 'string' ? label : label?.();
+    },
     keyBinding:
       typeof options.keyBinding === 'string'
         ? { binding: options.keyBinding }

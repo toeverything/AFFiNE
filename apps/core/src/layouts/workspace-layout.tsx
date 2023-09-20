@@ -40,9 +40,11 @@ import { Map as YMap } from 'yjs';
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
-import { registerAffineCreationCommands } from '../commands/affine-creation';
-import { registerAffineLayoutCommands } from '../commands/affine-layout';
-import { registerAffineUiCommands } from '../commands/affine-ui';
+import {
+  registerAffineCreationCommands,
+  registerAffineLayoutCommands,
+  registerAffineSettingsCommands,
+} from '../commands';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -64,9 +66,9 @@ import {
 import { pathGenerator } from '../shared';
 import { toast } from '../utils';
 
-const QuickSearchModal = lazy(() =>
-  import('../components/pure/quick-search-modal').then(module => ({
-    default: module.QuickSearchModal,
+const CMDKQuickSearchModal = lazy(() =>
+  import('../components/pure/cmdk').then(module => ({
+    default: module.CMDKQuickSearchModal,
   }))
 );
 
@@ -82,10 +84,9 @@ export const QuickSearch = () => {
   }
 
   return (
-    <QuickSearchModal
-      workspace={currentWorkspace}
+    <CMDKQuickSearchModal
       open={openQuickSearchModal}
-      setOpen={setOpenQuickSearchModalAtom}
+      onOpenChange={setOpenQuickSearchModalAtom}
     />
   );
 };
@@ -146,22 +147,24 @@ export const WorkspaceLayoutInner = ({
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const store = useStore();
+  const t = useAFFiNEI18N();
 
   useEffect(() => {
     const unsubs: Array<() => void> = [];
-    unsubs.push(registerAffineUiCommands({ store }));
-    unsubs.push(registerAffineLayoutCommands({ store }));
+    unsubs.push(registerAffineSettingsCommands({ store, t }));
+    unsubs.push(registerAffineLayoutCommands({ store, t }));
     unsubs.push(
       registerAffineCreationCommands({
         store,
         pageHelper: pageHelper,
+        t,
       })
     );
 
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [store, pageHelper]);
+  }, [store, pageHelper, t]);
 
   useEffect(() => {
     // hotfix for blockVersions
@@ -224,7 +227,6 @@ export const WorkspaceLayoutInner = ({
   const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const t = useAFFiNEI18N();
 
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {

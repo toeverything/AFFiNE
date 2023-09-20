@@ -578,5 +578,13 @@
   "404.hint": "Sorry, you do not have access or this content does not exist...",
   "404.back": "Back to My Content",
   "404.signOut": "Sign in to another account",
-  "cmdk.placeholder": "Type a command or search anything..."
+  "com.affine.cmdk.placeholder": "Type a command or search anything...",
+  "com.affine.cmdk.affine.new-page": "New Page",
+  "com.affine.cmdk.affine.new-edgeless-page": "New Edgeless",
+  "com.affine.cmdk.affine.new-workspace": "New Workspace",
+  "com.affine.cmdk.affine.color-scheme.to-auto": "Change Colour Scheme to Auto",
+  "com.affine.cmdk.affine.color-scheme.to-light": "Change Colour Scheme to Light",
+  "com.affine.cmdk.affine.color-scheme.to-dark": "Change Colour Scheme to Dark",
+  "com.affine.cmdk.affine.left-sidebar.expand": "Expand Left Sidebar",
+  "com.affine.cmdk.affine.left-sidebar.collapse": "Collapse Left Sidebar"
 }

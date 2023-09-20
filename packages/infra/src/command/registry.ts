@@ -47,6 +47,10 @@ export const AffineCommandRegistry = new (class {
   }
 
   get(id: string): AffineCommand | undefined {
+    if (!this.commands.has(id)) {
+      console.warn(`Command ${id} not registered.`);
+      return undefined;
+    }
     return this.commands.get(id);
   }
 

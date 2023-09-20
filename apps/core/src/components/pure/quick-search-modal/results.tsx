@@ -10,7 +10,7 @@ import { type Atom, atom, useAtomValue } from 'jotai';
 import type { Dispatch, SetStateAction } from 'react';
 import { startTransition, useEffect } from 'react';
 
-import { recentPageSettingsAtom } from '../../../atoms';
+import { recentPageIdsBaseAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import type { AllWorkspace } from '../../../shared';
 import { useSwitchToConfig } from './config';
@@ -58,7 +58,7 @@ export const Results = ({
   const list = useSwitchToConfig(workspace.id);
   useAtomValue(getLoadAllPage(blockSuiteWorkspace));
 
-  const recentPageSetting = useAtomValue(recentPageSettingsAtom);
+  const recentPageSetting = useAtomValue(recentPageIdsBaseAtom);
   const t = useAFFiNEI18N();
   const { jumpToPage, jumpToSubPath } = useNavigateHelper();
   const pageIds = [...blockSuiteWorkspace.search({ query }).values()].map(
