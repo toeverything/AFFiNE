@@ -99,7 +99,6 @@ globalStyle(`${root} [cmdk-item]`, {
   userSelect: 'none',
 });
 
-
 globalStyle(`${root} [cmdk-item][data-selected=true]`, {
   background: 'var(--affine-background-secondary-color)',
 });

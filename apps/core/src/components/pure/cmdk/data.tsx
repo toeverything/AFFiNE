@@ -175,7 +175,7 @@ export const usePageCommands = () => {
     if (query.trim() !== '') {
       // queried pages that has matched contents
       const pageIds = Array.from(
-        workspace.blockSuiteWorkspace.search({ query }).values(),
+        workspace.blockSuiteWorkspace.search({ query }).values()
       ).map(id => {
         if (id.startsWith('space:')) {
           return id.slice(6);
@@ -192,7 +192,7 @@ export const usePageCommands = () => {
             page,
             store,
             navigationHelper,
-            t,
+            t
           );
 
           if (pageIds.includes(page.id)) {
@@ -205,7 +205,15 @@ export const usePageCommands = () => {
       ];
     }
     return results;
-  }, [navigationHelper, pages, query, recentPages, store, t]);
+  }, [
+    navigationHelper,
+    pages,
+    query,
+    recentPages,
+    store,
+    t,
+    workspace.blockSuiteWorkspace,
+  ]);
 };
 
 export const useCMDKCommandGroups = () => {
