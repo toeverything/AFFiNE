@@ -197,6 +197,7 @@ export const AFFiNEWorkspaceList = ({
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
+
   return (
     <ScrollableContainer
       className={styles.workspaceListsWrapper}

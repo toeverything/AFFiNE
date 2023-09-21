@@ -22,14 +22,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
 import { useAtom } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
-import {
-  forwardRef,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
@@ -180,9 +173,7 @@ export const RootAppSidebar = ({
               open: openUserWorkspaceList,
             }}
             items={
-              <Suspense>
-                <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
-              </Suspense>
+              <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
             }
             contentOptions={{
               // hide trigger

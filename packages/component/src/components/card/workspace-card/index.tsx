@@ -2,6 +2,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
+import { Skeleton } from '@mui/material';
 import { Avatar } from '@toeverything/components/avatar';
 import { Divider } from '@toeverything/components/divider';
 import { Tooltip } from '@toeverything/components/tooltip';
@@ -73,6 +74,22 @@ export interface WorkspaceCardProps {
   isOwner?: boolean;
 }
 
+export const WorkspaceCardSkeleton = () => {
+  return (
+    <div>
+      <StyledCard data-testid="workspace-card">
+        <Skeleton variant="circular" width={28} height={28} />
+        <Skeleton
+          variant="rectangular"
+          height={43}
+          width={220}
+          style={{ marginLeft: '12px' }}
+        />
+      </StyledCard>
+    </div>
+  );
+};
+
 export const WorkspaceCard = ({
   onClick,
   onSettingClick,
@@ -105,7 +122,7 @@ export const WorkspaceCard = ({
             }}
             withoutHoverStyle={true}
           >
-            <SettingsIcon style={{ margin: '0px' }} />
+            <SettingsIcon />
           </StyledSettingLink>
         </StyledWorkspaceTitleArea>
         <WorkspaceType isOwner={isOwner} flavour={meta.flavour} />

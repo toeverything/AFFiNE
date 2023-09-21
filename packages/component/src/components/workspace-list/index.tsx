@@ -16,9 +16,12 @@ import {
 } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import type { CSSProperties } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { WorkspaceCard } from '../../components/card/workspace-card';
+import {
+  WorkspaceCard,
+  WorkspaceCardSkeleton,
+} from '../../components/card/workspace-card';
 import { workspaceItemStyle } from './index.css';
 
 export interface WorkspaceListProps {
@@ -117,7 +120,9 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
     <DndContext sensors={sensors} onDragEnd={onDragEnd} modifiers={modifiers}>
       <SortableContext items={optimisticList}>
         {optimisticList.map(item => (
-          <SortableWorkspaceItem {...props} item={item} key={item.id} />
+          <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
+            <SortableWorkspaceItem {...props} item={item} key={item.id} />
+          </Suspense>
         ))}
       </SortableContext>
     </DndContext>
