@@ -1,4 +1,4 @@
-import { Command } from '@affine/cmdk';
+import { Command, commandScore } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
@@ -105,6 +105,12 @@ const QuickSearchCommands = ({
   });
 };
 
+const customFilter = (value: string, search: string) => {
+  // strip off the part between __>>> and <<<__
+  const label = value.replace(/__>>>.*<<<__/g, '');
+  return commandScore(label, search);
+}
+
 export const CMDKContainer = ({
   className,
   onQueryChange,
@@ -120,7 +126,7 @@ export const CMDKContainer = ({
   return (
     <Command
       {...rest}
-      shouldFilter
+      filter={customFilter}
       className={clsx(className, styles.panelContainer)}
       // Handle KeyboardEvent conflicts with blocksuite
       onKeyDown={(e: React.KeyboardEvent) => {

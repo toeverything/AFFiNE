@@ -998,6 +998,7 @@ export { Separator as CommandSeparator };
 export { Dialog as CommandDialog };
 export { Empty as CommandEmpty };
 export { Loading as CommandLoading };
+export { commandScore };
 
 /**
  *

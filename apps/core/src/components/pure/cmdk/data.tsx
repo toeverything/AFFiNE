@@ -143,7 +143,9 @@ export const pageToCommand = (
   return {
     id: page.id,
     label: page.title || t['Untitled'](),
-    value: page.title + '|' + page.id,
+    // hack: when comparing, the part between >>> and <<< will be ignored
+    // adding this patch so that CMDK will not complain about duplicated commands
+    value: page.title + '__>>>' + page.id + '.' + category + '<<<__',
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
