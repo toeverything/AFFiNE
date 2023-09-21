@@ -18,7 +18,6 @@ export function registerAffineSettingsCommands({
   store: ReturnType<typeof createStore>;
   theme: ReturnType<typeof useTheme>;
 }) {
-  console.log('theme', theme);
   const unsubs: Array<() => void> = [];
   unsubs.push(
     registerAffineCommand({

@@ -26,7 +26,15 @@ function useRegisterCommands() {
   const store = useStore();
   useEffect(() => {
     const unsubs = [
-      registerAffineSettingsCommands({ t, store }),
+      registerAffineSettingsCommands({
+        t,
+        store,
+        theme: {
+          setTheme: () => {},
+          theme: 'auto',
+          themes: ['auto', 'dark', 'light'],
+        },
+      }),
       registerAffineCreationCommands({
         t,
         store,
