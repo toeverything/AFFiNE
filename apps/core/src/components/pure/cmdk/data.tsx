@@ -1,4 +1,5 @@
 import { commandScore } from '@affine/cmdk';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
@@ -217,14 +218,18 @@ export const usePageCommands = () => {
         return command;
       });
 
-      // check the length of results after filtering
-      // if the length is 0, we should show the "create page" command
-      if (getCommandFilteredCount(results, query) === 0) {
+      // check if the pages have exact match. if not, we should show the "create page" command
+      if (results.filter(command => command.value === query).length === 0) {
         results.push({
           id: 'affine:pages:create-page',
-          label: t['com.affine.cmdk.affine.create-new-page-as']({
-            name: query,
-          }),
+          label: (
+            <Trans
+              i18nKey="com.affine.cmdk.affine.create-new-page-as"
+              values={{ query }}
+            >
+              Create New Page as: <strong>query</strong>
+            </Trans>
+          ),
           value: 'affine::create-page' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: () => {
@@ -239,9 +244,14 @@ export const usePageCommands = () => {
 
         results.push({
           id: 'affine:pages:create-edgeless',
-          label: t['com.affine.cmdk.affine.create-new-edgeless-as']({
-            name: query,
-          }),
+          label: (
+            <Trans
+              values={{ query }}
+              i18nKey="com.affine.cmdk.affine.create-new-edgeless-as"
+            >
+              Create New Edgeless as: <strong>query</strong>
+            </Trans>
+          ),
           value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: () => {
@@ -287,6 +297,20 @@ export const customCommandFilter = (value: string, search: string) => {
     ''
   );
   return commandScore(label, search);
+};
+
+export const useCommandFilteredStatus = (
+  groups: [CommandCategory, CMDKCommand[]][]
+) => {
+  // for each of the groups, show the count of commands that has matched the query
+  const query = useAtomValue(cmdkQueryAtom);
+  return useMemo(() => {
+    return Object.fromEntries(
+      groups.map(([category, commands]) => {
+        return [category, getCommandFilteredCount(commands, query)] as const;
+      })
+    ) as Record<CommandCategory, number>;
+  }, [groups, query]);
 };
 
 function getCommandFilteredCount(commands: CMDKCommand[], query: string) {

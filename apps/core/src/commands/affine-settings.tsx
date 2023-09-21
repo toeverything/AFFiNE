@@ -1,3 +1,4 @@
+import { Trans } from '@affine/i18n';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import {
@@ -38,7 +39,14 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-auto',
-      label: t['com.affine.cmdk.affine.color-scheme.to-auto'],
+      label: (
+        <Trans
+          i18nKey="com.affine.cmdk.affine.color-scheme.to"
+          values={{ colour: 'Auto' }}
+        >
+          Change Colour Scheme to <strong>colour</strong>
+        </Trans>
+      ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'system',
@@ -50,7 +58,14 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-dark',
-      label: t['com.affine.cmdk.affine.color-scheme.to-dark'],
+      label: (
+        <Trans
+          i18nKey="com.affine.cmdk.affine.color-scheme.to"
+          values={{ colour: 'Dark' }}
+        >
+          Change Colour Scheme to <strong>colour</strong>
+        </Trans>
+      ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'dark',
@@ -63,7 +78,14 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-light',
-      label: t['com.affine.cmdk.affine.color-scheme.to-light'],
+      label: (
+        <Trans
+          i18nKey="com.affine.cmdk.affine.color-scheme.to"
+          values={{ colour: 'Light' }}
+        >
+          Change Colour Scheme to <strong>colour</strong>
+        </Trans>
+      ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'light',
