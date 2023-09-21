@@ -13,7 +13,11 @@ import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
 import { trimGuid } from '../../../utils/doc';
+import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
+import { UserType } from '../../users';
+import { PermissionService } from '../../workspaces/permission';
+import { Permission } from '../../workspaces/types';
 
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
@@ -25,7 +29,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly docManager: DocManager,
-    private readonly metric: Metrics
+    private readonly metric: Metrics,
+    private readonly permissions: PermissionService
   ) {}
 
   @WebSocketServer()
@@ -41,8 +46,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.metric.socketIOConnectionGauge(this.connectionCount, {});
   }
 
+  @Auth()
   @SubscribeMessage('client-handshake')
   async handleClientHandShake(
+    @CurrentUser() user: UserType,
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ) {
@@ -50,8 +57,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const endTimer = this.metric.socketIOEventTimer({
       event: 'client-handshake',
     });
-    await client.join(workspaceId);
+
+    const canWrite = await this.permissions.tryCheck(
+      workspaceId,
+      user.id,
+      Permission.Write
+    );
+    if (canWrite) await client.join(workspaceId);
+
     endTimer();
+    return canWrite;
   }
 
   @SubscribeMessage('client-leave')
@@ -80,21 +95,26 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.metric.socketIOEventCounter(1, { event: 'client-update' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
     if (client.rooms.has(message.workspaceId)) {
-      const update = Buffer.from(message.update, 'base64');
-      client.to(message.workspaceId).emit('server-update', message);
-      const guid = trimGuid(message.workspaceId, message.guid);
-
-      await this.docManager.push(message.workspaceId, guid, update);
-    } else {
       this.logger.verbose(
         `Client ${client.id} tried to push update to workspace ${message.workspaceId} without joining it first`
       );
+      endTimer();
+      return;
     }
+
+    const update = Buffer.from(message.update, 'base64');
+    client.to(message.workspaceId).emit('server-update', message);
+
+    const guid = trimGuid(message.workspaceId, message.guid);
+    await this.docManager.push(message.workspaceId, guid, update);
+
     endTimer();
   }
 
+  @Auth()
   @SubscribeMessage('doc-load')
   async loadDoc(
+    @CurrentUser() user: UserType,
     @MessageBody()
     message: {
       workspaceId: string;
@@ -107,11 +127,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.metric.socketIOEventCounter(1, { event: 'doc-load' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
     if (!client.rooms.has(message.workspaceId)) {
-      this.logger.verbose(
-        `Client ${client.id} tried to load doc for workspace ${message.workspaceId} without joining it first`
+      const canRead = await this.permissions.tryCheck(
+        message.workspaceId,
+        user.id
       );
-      endTimer();
-      return false;
+      if (!canRead) {
+        endTimer();
+        return false;
+      }
     }
 
     const guid = trimGuid(message.workspaceId, message.guid);
