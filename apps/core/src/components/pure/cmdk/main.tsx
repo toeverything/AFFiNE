@@ -1,4 +1,4 @@
-import { Command, useCommandState } from '@affine/cmdk';
+import { Command } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
@@ -96,7 +96,6 @@ const QuickSearchCommands = ({
   onOpenChange?: (open: boolean) => void;
 }) => {
   const groups = useCMDKCommandGroups();
-  console.log(useCommandState(a => a));
 
   return groups.map(([category, commands]) => {
     return (

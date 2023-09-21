@@ -582,6 +582,8 @@
   "com.affine.cmdk.affine.new-page": "New Page",
   "com.affine.cmdk.affine.new-edgeless-page": "New Edgeless",
   "com.affine.cmdk.affine.new-workspace": "New Workspace",
+  "com.affine.cmdk.affine.create-new-page-as": "Create New Page as: <b>{{name}}</b>",
+  "com.affine.cmdk.affine.create-new-edgeless-as": "Create New Edgeless as: <b>{{name}}</b>",
   "com.affine.cmdk.affine.color-scheme.to-auto": "Change Colour Scheme to <b>Auto</b>",
   "com.affine.cmdk.affine.color-scheme.to-light": "Change Colour Scheme to <b>Light</b>",
   "com.affine.cmdk.affine.color-scheme.to-dark": "Change Colour Scheme to <b>Dark</b>",

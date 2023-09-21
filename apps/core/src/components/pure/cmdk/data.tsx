@@ -2,7 +2,10 @@ import { commandScore } from '@affine/cmdk';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@toeverything/hooks/use-block-suite-page-meta';
 import {
   getWorkspace,
   waitForWorkspace,
@@ -29,6 +32,7 @@ import {
 } from '../../../atoms';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 
 export const cmdkQueryAtom = atom('');
@@ -144,18 +148,14 @@ export const pageToCommand = (
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+  const label = page.title || t['Untitled']();
   return {
     id: page.id,
-    label: page.title || t['Untitled'](),
+    label: label,
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
     value:
-      page.title +
-      valueWrapperStart +
-      page.id +
-      '.' +
-      category +
-      valueWrapperEnd,
+      label + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
@@ -176,9 +176,12 @@ export const usePageCommands = () => {
   const pages = useWorkspacePages();
   const store = getCurrentStore();
   const [workspace] = useCurrentWorkspace();
+  const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
+  const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
+
   return useMemo(() => {
     let results: CMDKCommand[] = [];
     if (query.trim() === '') {
@@ -197,28 +200,65 @@ export const usePageCommands = () => {
         }
       });
 
-      results = [
-        ...results,
-        ...pages.map(page => {
-          const command = pageToCommand(
-            'affine:pages',
-            page,
-            store,
-            navigationHelper,
-            t
-          );
+      results = pages.map(page => {
+        const command = pageToCommand(
+          'affine:pages',
+          page,
+          store,
+          navigationHelper,
+          t
+        );
 
-          if (pageIds.includes(page.id)) {
-            // hack to make the page always showing in the search result
-            command.value += query;
-          }
+        if (pageIds.includes(page.id)) {
+          // hack to make the page always showing in the search result
+          command.value += query;
+        }
 
-          return command;
-        }),
-      ];
+        return command;
+      });
+
+      // check the length of results after filtering
+      // if the length is 0, we should show the "create page" command
+      if (getCommandFilteredCount(results, query) === 0) {
+        results.push({
+          id: 'affine:pages:create-page',
+          label: t['com.affine.cmdk.affine.create-new-page-as']({
+            name: query,
+          }),
+          value: 'affine::create-page' + query, // hack to make the page always showing in the search result
+          category: 'affine:creation',
+          run: () => {
+            const pageId = pageHelper.createPage();
+            // need to wait for the page to be created
+            setTimeout(() => {
+              pageMetaHelper.setPageTitle(pageId, query);
+            });
+          },
+          icon: <PageIcon />,
+        });
+
+        results.push({
+          id: 'affine:pages:create-edgeless',
+          label: t['com.affine.cmdk.affine.create-new-edgeless-as']({
+            name: query,
+          }),
+          value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
+          category: 'affine:creation',
+          run: () => {
+            const pageId = pageHelper.createEdgeless();
+            // need to wait for the page to be created
+            setTimeout(() => {
+              pageMetaHelper.setPageTitle(pageId, query);
+            });
+          },
+          icon: <EdgelessIcon />,
+        });
+      }
     }
     return results;
   }, [
+    pageHelper,
+    pageMetaHelper,
     navigationHelper,
     pages,
     query,
@@ -249,4 +289,8 @@ export const customCommandFilter = (value: string, search: string) => {
   return commandScore(label, search);
 };
 
-export const usePageSearchStatus = () => {};
+function getCommandFilteredCount(commands: CMDKCommand[], query: string) {
+  return commands.filter(command => {
+    return command.value && customCommandFilter(command.value, query) > 0;
+  }).length;
+}

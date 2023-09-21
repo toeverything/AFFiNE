@@ -31,8 +31,7 @@ import {
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
-import { useTheme } from 'next-themes';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -41,11 +40,6 @@ import { Map as YMap } from 'yjs';
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
-import {
-  registerAffineCreationCommands,
-  registerAffineLayoutCommands,
-  registerAffineSettingsCommands,
-} from '../commands';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -66,6 +60,7 @@ import {
 } from '../providers/modal-provider';
 import { pathGenerator } from '../shared';
 import { toast } from '../utils';
+import { useRegisterWorkspaceCommands } from './register-workspace-commands';
 
 const CMDKQuickSearchModal = lazy(() =>
   import('../components/pure/cmdk').then(module => ({
@@ -147,26 +142,9 @@ export const WorkspaceLayoutInner = ({
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
-  const store = useStore();
   const t = useAFFiNEI18N();
-  const theme = useTheme();
 
-  useEffect(() => {
-    const unsubs: Array<() => void> = [];
-    unsubs.push(registerAffineSettingsCommands({ store, t, theme }));
-    unsubs.push(registerAffineLayoutCommands({ store, t }));
-    unsubs.push(
-      registerAffineCreationCommands({
-        store,
-        pageHelper: pageHelper,
-        t,
-      })
-    );
-
-    return () => {
-      unsubs.forEach(unsub => unsub());
-    };
-  }, [store, pageHelper, t, theme]);
+  useRegisterWorkspaceCommands();
 
   useEffect(() => {
     // hotfix for blockVersions
