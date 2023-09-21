@@ -18,7 +18,6 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'file',
