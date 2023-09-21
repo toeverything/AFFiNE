@@ -94,7 +94,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     this.metric.socketIOEventCounter(1, { event: 'client-update' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
-    if (client.rooms.has(message.workspaceId)) {
+    if (!client.rooms.has(message.workspaceId)) {
       this.logger.verbose(
         `Client ${client.id} tried to push update to workspace ${message.workspaceId} without joining it first`
       );
