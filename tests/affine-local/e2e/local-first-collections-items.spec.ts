@@ -74,8 +74,6 @@ test('Show collections items in sidebar', async ({ page }) => {
     skipInitialPage: true,
   });
   expect(await items.count()).toBe(1);
-
-  await clickSideBarCurrentWorkspaceBanner(page);
   await createLocalWorkspace(
     {
       name: 'Test 1',
