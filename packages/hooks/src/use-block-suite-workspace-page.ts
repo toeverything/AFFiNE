@@ -2,7 +2,6 @@ import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
-import { useEffect } from 'react';
 
 const weakMap = new WeakMap<Workspace, Map<string, Atom<Page | null>>>();
 
@@ -52,13 +51,5 @@ export function useBlockSuiteWorkspacePage(
 ): Page | null {
   const pageAtom = getAtom(blockSuiteWorkspace, pageId);
   assertExists(pageAtom);
-  const page = useAtomValue(pageAtom);
-
-  useEffect(() => {
-    if (!page?.loaded) {
-      page?.waitForLoaded().catch(console.error);
-    }
-  }, [page]);
-
-  return page;
+  return useAtomValue(pageAtom);
 }

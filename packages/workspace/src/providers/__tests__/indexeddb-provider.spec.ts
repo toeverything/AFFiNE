@@ -45,7 +45,6 @@ describe('download provider', () => {
       const page = workspace.createPage({
         id: 'page0',
       });
-      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', {
         title: new page.Text(''),
       });

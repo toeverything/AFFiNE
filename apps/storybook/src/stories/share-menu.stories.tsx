@@ -39,7 +39,6 @@ const useIsSharedPage = (
 };
 
 async function initPage(page: Page) {
-  await page.waitForLoaded();
   // Add page block and surface block at root level
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text('Hello, world!'),

@@ -93,7 +93,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     assertExists(currentPage);
     const currentPageMeta = currentPage.meta;
     const newPage = createPage();
-    await newPage.waitForLoaded();
     const update = encodeStateAsUpdate(currentPage.spaceDoc);
     applyUpdate(newPage.spaceDoc, update);
     setPageMeta(newPage.id, {

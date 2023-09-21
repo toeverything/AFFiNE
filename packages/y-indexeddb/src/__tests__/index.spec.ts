@@ -99,7 +99,6 @@ describe('indexeddb provider', () => {
         ],
       });
       const page = workspace.createPage({ id: 'page0' });
-      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
@@ -128,7 +127,7 @@ describe('indexeddb provider', () => {
           | WorkspacePersist
           | undefined;
         assertExists(data);
-        await testWorkspace.getPage('page0')?.waitForLoaded();
+        testWorkspace.getPage('page0');
         data.updates.forEach(({ update }) => {
           Workspace.Y.applyUpdate(subPage, update);
         });
@@ -147,7 +146,6 @@ describe('indexeddb provider', () => {
     expect(provider.connected).toBe(false);
     {
       const page = workspace.createPage({ id: 'page0' });
-      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       page.addBlock('affine:paragraph', {}, frameId);
@@ -202,7 +200,6 @@ describe('indexeddb provider', () => {
     provider.connect();
     {
       const page = workspace.createPage({ id: 'page0' });
-      await page.waitForLoaded();
       const pageBlockId = page.addBlock('affine:page', { title: '' });
       const frameId = page.addBlock('affine:note', {}, pageBlockId);
       for (let i = 0; i < 99; i++) {
@@ -368,14 +365,12 @@ describe('subDoc', () => {
     const page0 = workspace.createPage({
       id: 'page0',
     });
-    await page0.waitForLoaded();
     const { paragraphBlockId: paragraphBlockIdPage1 } = initEmptyPage(page0);
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();
     const page1 = workspace.createPage({
       id: 'page1',
     });
-    await page1.waitForLoaded();
     const { paragraphBlockId: paragraphBlockIdPage2 } = initEmptyPage(page1);
     await setTimeout(200);
     provider.disconnect();
@@ -389,14 +384,12 @@ describe('subDoc', () => {
       provider.connect();
       await setTimeout(200);
       const page0 = newWorkspace.getPage('page0') as Page;
-      await page0.waitForLoaded();
       await setTimeout(200);
       {
         const block = page0.getBlockById(paragraphBlockIdPage1);
         assertExists(block);
       }
       const page1 = newWorkspace.getPage('page1') as Page;
-      await page1.waitForLoaded();
       await setTimeout(200);
       {
         const block = page1.getBlockById(paragraphBlockIdPage2);
@@ -409,7 +402,6 @@ describe('subDoc', () => {
 describe('utils', () => {
   test('download binary', async () => {
     const page = workspace.createPage({ id: 'page0' });
-    await page.waitForLoaded();
     initEmptyPage(page);
     const provider = createIndexedDBProvider(workspace.doc, rootDBName);
     provider.connect();

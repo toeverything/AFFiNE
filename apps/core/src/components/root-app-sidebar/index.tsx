@@ -110,7 +110,6 @@ export const RootAppSidebar = ({
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useState(false);
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
-    await page.waitForLoaded();
     openPage(page.id);
   }, [createPage, openPage]);
 

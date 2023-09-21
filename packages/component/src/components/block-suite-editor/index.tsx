@@ -1,10 +1,8 @@
 import type { BlockHub } from '@blocksuite/blocks';
 import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
-import type { LitBlockSpec } from '@blocksuite/lit';
 import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
-import { use } from 'foxact/use';
 import type { CSSProperties, ReactElement } from 'react';
 import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
@@ -23,8 +21,6 @@ export type EditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
-  pagePreset?: LitBlockSpec[];
-  edgelessPreset?: LitBlockSpec[];
 };
 
 export type ErrorBoundaryProps = {
@@ -40,9 +36,6 @@ declare global {
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   const { onLoad, page, mode, style } = props;
-  if (!page.loaded) {
-    use(page.waitForLoaded());
-  }
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   const blockHubRef = useRef<BlockHub | null>(null);
@@ -50,11 +43,6 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editorRef.current = new EditorContainer();
     editorRef.current.autofocus = true;
     globalThis.currentEditor = editorRef.current;
-
-    // set page preset
-    if (props.pagePreset) editorRef.current.pagePreset = props.pagePreset;
-    if (props.edgelessPreset)
-      editorRef.current.edgelessPreset = props.edgelessPreset;
   }
   const editor = editorRef.current;
   assertExists(editorRef, 'editorRef.current should not be null');

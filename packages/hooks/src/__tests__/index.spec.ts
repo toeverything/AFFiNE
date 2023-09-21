@@ -24,7 +24,6 @@ schema.register(AffineSchemas).register(__unstableSchemas);
 beforeEach(async () => {
   blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test', schema });
   const initPage = async (page: Page) => {
-    await page.waitForLoaded();
     expect(page).not.toBeNull();
     assertExists(page);
     const pageBlockId = page.addBlock('affine:page', {

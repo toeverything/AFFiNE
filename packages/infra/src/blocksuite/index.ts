@@ -10,7 +10,6 @@ export const idGenerator: IdGenerator = () => {
 };
 
 export async function initEmptyPage(page: Page, title?: string) {
-  await page.waitForLoaded();
   const pageBlockId = page.addBlock('affine:page', {
     title: new page.Text(title ?? ''),
   });

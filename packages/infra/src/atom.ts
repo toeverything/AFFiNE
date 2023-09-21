@@ -39,9 +39,6 @@ export const currentPageAtom = atom<Promise<Page>>(async get => {
   await waitForWorkspace(workspace);
   const page = workspace.getPage(currentPageId);
   assertExists(page);
-  if (!page.loaded) {
-    await page.waitForLoaded();
-  }
   return page;
 });
 

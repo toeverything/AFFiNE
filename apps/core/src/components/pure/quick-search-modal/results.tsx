@@ -34,9 +34,7 @@ function getLoadAllPage(workspace: Workspace) {
       //  there might have performance issue
       await Promise.all(
         [...workspace.pages.values()].map(page =>
-          page.waitForLoaded().then(() => {
-            workspace.indexer.search.refreshPageIndex(page.id, page.spaceDoc);
-          })
+          workspace.indexer.search.refreshPageIndex(page.id, page.spaceDoc)
         )
       );
     });

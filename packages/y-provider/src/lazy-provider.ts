@@ -102,8 +102,8 @@ export const createLazyProvider = (
       const prefixId = guid.startsWith('space:') ? guid.slice(6) : guid;
       const possible1 = `${rootDoc.guid}:space:${prefixId}`;
       const possible2 = `space:${prefixId}`;
-      await syncDoc(rootDoc, possible1, true);
-      await syncDoc(rootDoc, possible2, true);
+      await syncDoc(doc, possible1, true);
+      await syncDoc(doc, possible2, true);
     }
     if (!connected) {
       return;

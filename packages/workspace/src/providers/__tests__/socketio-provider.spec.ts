@@ -37,7 +37,6 @@ describe('sockio provider', () => {
         id: 'page',
       });
 
-      await page.waitForLoaded();
       page.addBlock('affine:page', {
         title: new page.Text('123123'),
       });
@@ -63,7 +62,6 @@ describe('sockio provider', () => {
 
       await new Promise(resolve => setTimeout(resolve, 1000));
       const page = workspace.getPage('page')!;
-      await page.waitForLoaded();
       const block = page.getBlockByFlavour('affine:page');
       expect(block[0].flavour).toEqual('affine:page');
     }
