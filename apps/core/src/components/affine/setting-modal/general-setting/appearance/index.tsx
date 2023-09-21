@@ -46,6 +46,7 @@ export const ThemeSettings = () => {
 };
 
 const FontFamilySettings = () => {
+  const t = useAFFiNEI18N();
   const [appSettings, setAppSettings] = useAppSetting();
   return (
     <RadioButtonGroup
@@ -60,6 +61,20 @@ const FontFamilySettings = () => {
       )}
     >
       {fontStyleOptions.map(({ key, value }) => {
+        let font = '';
+        switch (key) {
+          case 'Sans':
+            font = t['com.affine.appearanceSettings.fontStyle.sans']();
+            break;
+          case 'Serif':
+            font = t['com.affine.appearanceSettings.fontStyle.serif']();
+            break;
+          case 'Mono':
+            font = t[`com.affine.appearanceSettings.fontStyle.mono`]();
+            break;
+          default:
+            break;
+        }
         return (
           <RadioButton
             key={key}
@@ -69,7 +84,7 @@ const FontFamilySettings = () => {
               fontFamily: value,
             }}
           >
-            {key}
+            {font}
           </RadioButton>
         );
       })}
