@@ -108,16 +108,24 @@ export const AFFiNEWorkspaceList = ({
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
   const { jumpToSubPath } = useNavigateHelper();
+
   const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
+
   const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
     currentWorkspaceIdAtom
   );
+
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
+
   const [, startCloseTransition] = useTransition();
+
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
+
   // TODO: AFFiNE Cloud support
   const { status } = useSession();
+
   const isAuthenticated = useMemo(() => status === 'authenticated', [status]);
+
   const cloudWorkspaces = useMemo(
     () =>
       workspaces.filter(
@@ -125,6 +133,7 @@ export const AFFiNEWorkspaceList = ({
       ) as (AffineCloudWorkspace | LocalWorkspace)[],
     [workspaces]
   );
+
   const localWorkspaces = useMemo(
     () =>
       workspaces.filter(
@@ -132,6 +141,7 @@ export const AFFiNEWorkspaceList = ({
       ) as (AffineCloudWorkspace | LocalWorkspace)[],
     [workspaces]
   );
+
   const onClickWorkspaceSetting = useCallback(
     (workspaceId: string) => {
       setOpenSettingModalAtom({
@@ -147,6 +157,7 @@ export const AFFiNEWorkspaceList = ({
   const onMoveWorkspace = useCallback(
     (activeId: string, overId: string) => {
       const oldIndex = workspaces.findIndex(w => w.id === activeId);
+
       const newIndex = workspaces.findIndex(w => w.id === overId);
       startTransition(() => {
         setWorkspaces(workspaces => arrayMove(workspaces, oldIndex, newIndex));
@@ -154,6 +165,7 @@ export const AFFiNEWorkspaceList = ({
     },
     [setWorkspaces, workspaces]
   );
+
   const onClickWorkspace = useCallback(
     (workspaceId: string) => {
       startCloseTransition(() => {
@@ -165,6 +177,7 @@ export const AFFiNEWorkspaceList = ({
     },
     [jumpToSubPath, onEventEnd, setCurrentPageId, setCurrentWorkspaceId]
   );
+
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -174,10 +187,12 @@ export const AFFiNEWorkspaceList = ({
     },
     [onMoveWorkspace]
   );
+
   const onNewWorkspace = useCallback(() => {
     setOpenCreateWorkspaceModal('new');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
+
   const onAddWorkspace = useCallback(async () => {
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();

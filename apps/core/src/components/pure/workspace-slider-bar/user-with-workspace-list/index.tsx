@@ -20,8 +20,11 @@ import { AFFiNEWorkspaceList } from './workspace-list';
 
 const SignInItem = () => {
   const setDisableCloudOpen = useSetAtom(openDisableCloudAlertModalAtom);
+
   const setOpen = useSetAtom(authAtom);
+
   const t = useAFFiNEI18N();
+
   const onClickSignIn = useCallback(async () => {
     if (!runtimeConfig.enableCloud) {
       setDisableCloudOpen(true);
@@ -63,8 +66,11 @@ export const UserWithWorkspaceList = ({
   onEventEnd?: () => void;
 }) => {
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+
   const { data: session, status } = useSession();
+
   const isAuthenticated = useMemo(() => status === 'authenticated', [status]);
+
   const onOpenAccountSetting = useCallback(() => {
     setSettingModalAtom(prev => ({
       ...prev,
@@ -72,6 +78,7 @@ export const UserWithWorkspaceList = ({
       activeTab: 'account',
     }));
   }, [setSettingModalAtom]);
+
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom, {
     delay: 0,
   });

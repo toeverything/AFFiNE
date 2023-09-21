@@ -61,6 +61,7 @@ const UserAccountItem = ({
   onEventEnd?: () => void;
 }) => {
   const { jumpToIndex } = useNavigateHelper();
+
   const onSignOut = useCallback(async () => {
     signOutCloud()
       .then(() => {

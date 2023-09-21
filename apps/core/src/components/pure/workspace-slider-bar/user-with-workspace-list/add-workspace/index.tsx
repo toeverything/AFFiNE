@@ -9,14 +9,17 @@ import * as styles from './index.css';
 
 export const AddWorkspace = ({ onEventEnd }: { onEventEnd?: () => void }) => {
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
+
   const onNewWorkspace = useCallback(() => {
     setOpenCreateWorkspaceModal('new');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
+
   const onAddWorkspace = useCallback(async () => {
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
+
   const t = useAFFiNEI18N();
   return (
     <div>
