@@ -1,3 +1,4 @@
+import { commandScore } from '@affine/cmdk';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
@@ -131,6 +132,9 @@ const useRecentPages = () => {
   }, [recentPageIds, pages]);
 };
 
+const valueWrapperStart = '__>>>';
+const valueWrapperEnd = '<<<__';
+
 export const pageToCommand = (
   category: CommandCategory,
   page: PageMeta,
@@ -145,7 +149,13 @@ export const pageToCommand = (
     label: page.title || t['Untitled'](),
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
-    value: page.title + '__>>>' + page.id + '.' + category + '<<<__',
+    value:
+      page.title +
+      valueWrapperStart +
+      page.id +
+      '.' +
+      category +
+      valueWrapperEnd,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
@@ -170,11 +180,12 @@ export const usePageCommands = () => {
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
   return useMemo(() => {
-    let results = recentPages.map(page => {
-      return pageToCommand('affine:recent', page, store, navigationHelper, t);
-    });
-
-    if (query.trim() !== '') {
+    let results: CMDKCommand[] = [];
+    if (query.trim() === '') {
+      results = recentPages.map(page => {
+        return pageToCommand('affine:recent', page, store, navigationHelper, t);
+      });
+    } else {
       // queried pages that has matched contents
       const pageIds = Array.from(
         workspace.blockSuiteWorkspace.search({ query }).values()
@@ -228,3 +239,14 @@ export const useCMDKCommandGroups = () => {
     return Object.entries(groups) as [CommandCategory, CMDKCommand[]][];
   }, [affineCommands, pageCommands]);
 };
+
+export const customCommandFilter = (value: string, search: string) => {
+  // strip off the part between __>>> and <<<__
+  const label = value.replace(
+    new RegExp(valueWrapperStart + '.*' + valueWrapperEnd, 'g'),
+    ''
+  );
+  return commandScore(label, search);
+};
+
+export const usePageSearchStatus = () => {};

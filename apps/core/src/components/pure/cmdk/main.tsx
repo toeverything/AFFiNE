@@ -1,4 +1,4 @@
-import { Command, commandScore } from '@affine/cmdk';
+import { Command, useCommandState } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
@@ -6,7 +6,11 @@ import clsx from 'clsx';
 import { useAtom, useSetAtom } from 'jotai';
 import { Suspense, useEffect, useMemo } from 'react';
 
-import { cmdkQueryAtom, useCMDKCommandGroups } from './data';
+import {
+  cmdkQueryAtom,
+  customCommandFilter,
+  useCMDKCommandGroups,
+} from './data';
 import * as styles from './main.css';
 import { CMDKModal, type CMDKModalProps } from './modal';
 import type { CMDKCommand } from './types';
@@ -92,6 +96,7 @@ const QuickSearchCommands = ({
   onOpenChange?: (open: boolean) => void;
 }) => {
   const groups = useCMDKCommandGroups();
+  console.log(useCommandState(a => a));
 
   return groups.map(([category, commands]) => {
     return (
@@ -104,12 +109,6 @@ const QuickSearchCommands = ({
     );
   });
 };
-
-const customFilter = (value: string, search: string) => {
-  // strip off the part between __>>> and <<<__
-  const label = value.replace(/__>>>.*<<<__/g, '');
-  return commandScore(label, search);
-}
 
 export const CMDKContainer = ({
   className,
@@ -126,7 +125,7 @@ export const CMDKContainer = ({
   return (
     <Command
       {...rest}
-      filter={customFilter}
+      filter={customCommandFilter}
       className={clsx(className, styles.panelContainer)}
       // Handle KeyboardEvent conflicts with blocksuite
       onKeyDown={(e: React.KeyboardEvent) => {

@@ -89,6 +89,25 @@ globalStyle(`${root} [cmdk-list]`, {
   padding: '0 6px 8px 6px',
 });
 
+globalStyle(`${root} [cmdk-list]::-webkit-scrollbar`, {
+  width: 8,
+  height: 8,
+});
+
+globalStyle(`${root} [cmdk-list]::-webkit-scrollbar-thumb`, {
+  borderRadius: 4,
+  border: '1px solid transparent',
+  backgroundClip: 'padding-box',
+});
+
+globalStyle(`${root} [cmdk-list]:hover::-webkit-scrollbar-thumb`, {
+  backgroundColor: 'var(--affine-divider-color)',
+});
+
+globalStyle(`${root} [cmdk-list]:hover::-webkit-scrollbar-thumb:hover`, {
+  backgroundColor: 'var(--affine-icon-color)',
+});
+
 globalStyle(`${root} [cmdk-item]`, {
   display: 'flex',
   height: 44,
