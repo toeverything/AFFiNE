@@ -102,8 +102,21 @@ export const createLazyProvider = (
       const prefixId = guid.startsWith('space:') ? guid.slice(6) : guid;
       const possible1 = `${rootDoc.guid}:space:${prefixId}`;
       const possible2 = `space:${prefixId}`;
-      await syncDoc(doc, possible1, true);
-      await syncDoc(doc, possible2, true);
+      const update1 = await datasource.queryDocState(possible1);
+      const update2 = await datasource.queryDocState(possible2);
+      if (update1) {
+        applyUpdate(doc, update1.missing, origin);
+      }
+      if (update2) {
+        applyUpdate(doc, update2.missing, origin);
+      }
+      await datasource.sendDocUpdate(
+        guid,
+        encodeStateAsUpdate(
+          doc,
+          update1 ? update1.state : update2 ? update2.state : undefined
+        )
+      );
     }
     if (!connected) {
       return;
@@ -112,9 +125,12 @@ export const createLazyProvider = (
     changeStatus({
       type: 'syncing',
     });
+
+    const previousStateVector = encodeStateVector(doc);
+
     const remoteUpdate = await datasource
       .queryDocState(guid, {
-        stateVector: encodeStateVector(doc),
+        stateVector: previousStateVector,
       })
       .then(remoteUpdate => {
         changeStatus({
@@ -148,7 +164,7 @@ export const createLazyProvider = (
       encodeStateAsUpdate(doc, remoteUpdate ? remoteUpdate.state : undefined)
     );
 
-    doc.emit('sync', []);
+    doc.emit('sync', [true]);
   }
 
   /**
@@ -186,8 +202,8 @@ export const createLazyProvider = (
       removed: Set<Doc>;
       added: Set<Doc>;
     }) => {
-      event.loaded.forEach(subdoc => {
-        connectDoc(subdoc).catch(console.error);
+      event.added.forEach(subdoc => {
+        connectDoc(subdoc);
       });
       event.removed.forEach(subdoc => {
         disposeDoc(subdoc);
@@ -240,20 +256,36 @@ export const createLazyProvider = (
   }
 
   // when a subdoc is loaded, we need to sync it with the datasource and setup listeners
-  async function connectDoc(doc: Doc) {
+  function connectDoc(doc: Doc) {
     // skip if already connected
     if (connectedDocs.has(doc.guid)) {
       return;
     }
     connectedDocs.add(doc.guid);
     setupDocListener(doc);
-    await syncDoc(doc, doc.guid, false);
 
-    await Promise.all(
-      [...doc.subdocs]
-        .filter(subdoc => subdoc.shouldLoad)
-        .map(subdoc => connectDoc(subdoc))
-    );
+    doc.on('sync', sync => {
+      if (sync === false) {
+        changeStatus({
+          type: 'syncing',
+        });
+        syncDoc(doc, doc.guid, false)
+          .then(() => {
+            changeStatus({
+              type: 'synced',
+            });
+          })
+          .catch(error => {
+            changeStatus({
+              type: 'error',
+              error,
+            });
+            console.error(error);
+          });
+      }
+    });
+
+    [...doc.subdocs].map(subdoc => connectDoc(subdoc));
   }
 
   function disposeDoc(doc: Doc) {
@@ -282,24 +314,7 @@ export const createLazyProvider = (
     connected = true;
     abortController = new AbortController();
 
-    changeStatus({
-      type: 'syncing',
-    });
-    // root doc should be already loaded,
-    // but we want to populate the cache for later update events
-    connectDoc(rootDoc)
-      .then(() => {
-        changeStatus({
-          type: 'synced',
-        });
-      })
-      .catch(error => {
-        changeStatus({
-          type: 'error',
-          error,
-        });
-        console.error(error);
-      });
+    connectDoc(rootDoc);
     setupDatasourceListeners();
   }
 

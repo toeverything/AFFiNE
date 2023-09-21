@@ -26,10 +26,10 @@ export function setMergeCount(count: number) {
 }
 
 export const createIndexedDBDatasource = ({
-  dbName,
+  dbName = DEFAULT_DB_NAME,
   mergeCount,
 }: {
-  dbName: string;
+  dbName?: string;
   mergeCount?: number;
 }) => {
   let dbPromise: Promise<IDBPDatabase<BlockSuiteBinaryDB>> | null = null;

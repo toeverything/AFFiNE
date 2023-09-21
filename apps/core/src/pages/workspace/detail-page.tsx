@@ -109,6 +109,10 @@ export const DetailPage = (): ReactElement => {
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;
 
+  if (page && !page.spaceDoc.isLoaded) {
+    page.spaceDoc.emit('sync', [false]);
+  }
+
   if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }

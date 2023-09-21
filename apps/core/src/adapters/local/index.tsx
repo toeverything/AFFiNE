@@ -3,7 +3,6 @@ import {
   DEFAULT_WORKSPACE_NAME,
   PageNotFoundError,
 } from '@affine/env/constant';
-import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
@@ -18,11 +17,12 @@ import {
   getOrCreateWorkspace,
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
-import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
+import { syncDataSourceFromDoc } from '@affine/y-provider';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { createIndexedDBDatasource } from '@toeverything/y-indexeddb';
 import { useCallback } from 'react';
 import { v4 as uuid } from 'uuid';
 
@@ -68,15 +68,12 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           logger.error('init page with empty failed', error);
         });
       }
-      const provider = createIndexedDBDownloadProvider(
-        blockSuiteWorkspace.id,
-        blockSuiteWorkspace.doc,
-        {
-          awareness: blockSuiteWorkspace.awarenessStore.awareness,
+      const datasource = createIndexedDBDatasource({});
+      syncDataSourceFromDoc(blockSuiteWorkspace.doc, datasource).catch(
+        error => {
+          logger.error('sync datasource failed', error);
         }
-      ) as LocalIndexedDBDownloadProvider;
-      provider.sync();
-      provider.whenReady.catch(console.error);
+      );
       saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);
       logger.debug('create first workspace');
       return [blockSuiteWorkspace.id];
