@@ -8,6 +8,7 @@ import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
+import { enablePassiveProviders } from '@toeverything/infra/__internal__/workspace';
 import {
   contentLayoutAtom,
   currentPageIdAtom,
@@ -109,10 +110,6 @@ export const DetailPage = (): ReactElement => {
     ? currentWorkspace.blockSuiteWorkspace.getPage(currentPageId)
     : null;
 
-  if (page && !page.spaceDoc.isLoaded) {
-    page.spaceDoc.emit('sync', [false]);
-  }
-
   if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
@@ -127,6 +124,7 @@ export const loader: LoaderFunction = async args => {
     rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
   }
   const currentWorkspace = await rootStore.get(currentWorkspaceAtom);
+  enablePassiveProviders(currentWorkspace);
   if (args.params.pageId) {
     const pageId = args.params.pageId;
     localStorage.setItem('last_page_id', pageId);
@@ -134,6 +132,11 @@ export const loader: LoaderFunction = async args => {
     if (!page) {
       return redirect('/404');
     }
+    if (!page.spaceDoc.isLoaded) {
+      page.spaceDoc.emit('sync', [false]);
+      await page.spaceDoc.whenLoaded;
+    }
+
     if (page.meta.jumpOnce) {
       currentWorkspace.setPageMeta(page.id, {
         jumpOnce: false,

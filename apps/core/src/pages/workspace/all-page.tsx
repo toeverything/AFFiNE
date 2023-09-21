@@ -1,7 +1,10 @@
 import { useCollectionManager } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
-import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
+import {
+  getActiveBlockSuiteWorkspaceAtom,
+  waitForWorkspace,
+} from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
@@ -18,13 +21,18 @@ export const loader: LoaderFunction = async args => {
   assertExists(workspaceId);
   const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);
   const workspace = await rootStore.get(workspaceAtom);
+  await waitForWorkspace(workspace);
   for (const pageId of workspace.pages.keys()) {
     const page = workspace.getPage(pageId);
-    if (page && page.meta.jumpOnce) {
-      workspace.meta.setPageMeta(page.id, {
-        jumpOnce: false,
-      });
-      return redirect(`/workspace/${workspace.id}/${page.id}`);
+    if (page) {
+      page.spaceDoc.emit('sync', [false]);
+      await page.spaceDoc.whenLoaded;
+      if (page.meta.jumpOnce) {
+        workspace.meta.setPageMeta(page.id, {
+          jumpOnce: false,
+        });
+        return redirect(`/workspace/${workspace.id}/${page.id}`);
+      }
     }
   }
   return null;
