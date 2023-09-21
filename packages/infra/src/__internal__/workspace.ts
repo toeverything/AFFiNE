@@ -17,8 +17,12 @@ const workspaceActiveAtomWeakMap = new WeakMap<
 // Whether the workspace is active to use
 const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
 
-// Whether the workspace has been enabled the passive effect (background)
-const workspacePassiveEffectWeakMap = new WeakMap<Workspace, number>();
+/**
+ * Whether the workspace has been enabled the passive effect (background)
+ *
+ * @internal
+ */
+export const workspacePassiveEffectWeakMap = new WeakMap<Workspace, number>();
 
 export function enablePassiveProviders(workspace: Workspace) {
   const value = workspacePassiveEffectWeakMap.get(workspace);
