@@ -16,6 +16,11 @@ export enum ExternalAccount {
   firebase = 'firebase',
 }
 
+export enum PaymentRecurringPlan {
+  Monthly = 'monthly',
+  Yearly = 'yearly',
+}
+
 type EnvConfigType = 'string' | 'int' | 'float' | 'boolean';
 type ConfigPaths = LeafPaths<
   Omit<
@@ -341,5 +346,18 @@ export interface AFFiNEConfig {
        */
       experimentalMergeWithJwstCodec: boolean;
     };
+  };
+
+  payment: {
+    stripe: {
+      keys: {
+        APIKey: string;
+        webhookKey: string;
+      };
+      prices: {
+        [PaymentRecurringPlan.Monthly]: string;
+        [PaymentRecurringPlan.Yearly]: string;
+      };
+    } & import('stripe').Stripe.StripeConfig;
   };
 }
