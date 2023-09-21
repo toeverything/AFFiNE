@@ -33,7 +33,7 @@ const WorkspaceType = ({ flavour, isOwner }: WorkspaceTypeProps) => {
     return (
       <StyledWorkspaceType>
         <StyledWorkspaceTypeEllipse />
-        <StyledWorkspaceTypeText>Local</StyledWorkspaceTypeText>
+        <StyledWorkspaceTypeText>{t['Local']()}</StyledWorkspaceTypeText>
       </StyledWorkspaceType>
     );
   }

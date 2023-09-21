@@ -40,7 +40,9 @@ export const AddWorkspace = ({ onEventEnd }: { onEventEnd?: () => void }) => {
         data-testid="new-workspace"
         className={styles.ItemContainer}
       >
-        <div className={styles.ItemText}>Create Workspace</div>
+        <div className={styles.ItemText}>
+          {t['com.affine.workspaceList.addWorkspace.create']()}
+        </div>
       </MenuItem>
     </div>
   );

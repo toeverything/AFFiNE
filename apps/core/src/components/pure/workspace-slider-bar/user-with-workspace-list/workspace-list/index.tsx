@@ -5,6 +5,7 @@ import type {
   LocalWorkspace,
 } from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -46,12 +47,15 @@ const CloudWorkSpaceList = ({
   currentWorkspaceId,
   onDragEnd,
 }: WorkspaceModalProps) => {
+  const t = useAFFiNEI18N();
   if (workspaces.length === 0) {
     return null;
   }
   return (
     <div className={styles.workspaceListWrapper}>
-      <div className={styles.workspaceType}>Cloud Sync</div>
+      <div className={styles.workspaceType}>
+        {t['com.affine.workspaceList.workspaceListType.cloud']()}
+      </div>
       <WorkspaceList
         disabled={disabled}
         items={workspaces}
@@ -73,12 +77,15 @@ const LocalWorkspaces = ({
   currentWorkspaceId,
   onDragEnd,
 }: WorkspaceModalProps) => {
+  const t = useAFFiNEI18N();
   if (workspaces.length === 0) {
     return null;
   }
   return (
     <div className={styles.workspaceListWrapper}>
-      <div className={styles.workspaceType}>Local Storage</div>
+      <div className={styles.workspaceType}>
+        {t['com.affine.workspaceList.workspaceListType.local']()}
+      </div>
       <WorkspaceList
         disabled={disabled}
         items={workspaces}
