@@ -18,10 +18,12 @@ const workspaceActiveAtomWeakMap = new WeakMap<
 const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
 
 // Whether the workspace has been enabled the passive effect (background)
-const workspacePassiveEffectWeakMap = new WeakMap<Workspace, boolean>();
+const workspacePassiveEffectWeakMap = new WeakMap<Workspace, number>();
 
 export function enablePassiveProviders(workspace: Workspace) {
-  if (workspacePassiveEffectWeakMap.get(workspace) === true) {
+  const value = workspacePassiveEffectWeakMap.get(workspace);
+  if (value !== undefined && value !== 0) {
+    workspacePassiveEffectWeakMap.set(workspace, value + 1);
     return;
   }
   const providers = workspace.providers.filter(
@@ -31,21 +33,25 @@ export function enablePassiveProviders(workspace: Workspace) {
   providers.forEach(provider => {
     provider.connect();
   });
-  workspacePassiveEffectWeakMap.set(workspace, true);
+  workspacePassiveEffectWeakMap.set(workspace, 1);
 }
 
 export function disablePassiveProviders(workspace: Workspace) {
-  if (workspacePassiveEffectWeakMap.get(workspace) !== true) {
+  const value = workspacePassiveEffectWeakMap.get(workspace);
+  if (value && value > 0) {
+    workspacePassiveEffectWeakMap.set(workspace, value - 1);
+    if (value - 1 === 0) {
+      const providers = workspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive === true
+      );
+      providers.forEach(provider => {
+        provider.disconnect();
+      });
+      workspacePassiveEffectWeakMap.delete(workspace);
+    }
     return;
   }
-  const providers = workspace.providers.filter(
-    (provider): provider is PassiveDocProvider =>
-      'passive' in provider && provider.passive === true
-  );
-  providers.forEach(provider => {
-    provider.disconnect();
-  });
-  workspacePassiveEffectWeakMap.delete(workspace);
 }
 
 export async function waitForWorkspace(workspace: Workspace) {
