@@ -94,10 +94,18 @@ function filterCommandByContext(
   return true;
 }
 
+let quickSearchOpenCounter = 0;
+const openCountAtom = atom(get => {
+  if (get(openQuickSearchModalAtom)) {
+    quickSearchOpenCounter++;
+  }
+  return quickSearchOpenCounter;
+});
+
 export const filteredAffineCommands = atom(async get => {
   const context = await get(commandContextAtom);
-  // reset when modal open/close
-  get(openQuickSearchModalAtom);
+  // reset when modal open
+  get(openCountAtom);
   const commands = AffineCommandRegistry.getAll();
   return commands.filter(command => {
     return filterCommandByContext(command, context);

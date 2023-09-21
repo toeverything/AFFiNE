@@ -42,9 +42,9 @@ export function registerAffineSettingsCommands({
       label: t['com.affine.cmdk.affine.color-scheme.to-auto'],
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => theme.theme !== 'auto',
+      preconditionStrategy: () => theme.theme !== 'system',
       run() {
-        theme.setTheme('auto');
+        theme.setTheme('system');
       },
     })
   );

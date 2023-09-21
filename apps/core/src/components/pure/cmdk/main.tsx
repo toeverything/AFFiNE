@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { useAtom, useSetAtom } from 'jotai';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 
 import { cmdkQueryAtom, useCMDKCommandGroups } from './data';
 import * as styles from './main.css';
@@ -59,7 +59,12 @@ const QuickSearchGroup = ({
             value={command.value}
           >
             <div className={styles.itemIcon}>{command.icon}</div>
-            <div className={styles.itemLabel}>{command.label}</div>
+            <div
+              className={styles.itemLabel}
+              dangerouslySetInnerHTML={{
+                __html: command.label,
+              }}
+            />
             {command.timestamp ? (
               <div className={styles.timestamp}>
                 {formatDate(new Date(command.timestamp))}
@@ -145,6 +150,11 @@ export const CMDKContainer = ({
 
 export const CMDKQuickSearchModal = (props: CMDKModalProps) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
+  useEffect(() => {
+    if (props.open) {
+      setQuery('');
+    }
+  }, [props.open, setQuery]);
   return (
     <CMDKModal {...props}>
       <CMDKContainer
