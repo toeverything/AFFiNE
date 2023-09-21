@@ -12,7 +12,6 @@ import { openQuickSearchModalAtom } from '../atoms';
 
 export function registerAffineSettingsCommands({
   store,
-  t,
   theme,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;

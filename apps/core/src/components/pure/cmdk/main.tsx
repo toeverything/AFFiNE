@@ -111,7 +111,7 @@ export const CMDKContainer = ({
   children,
   ...rest
 }: React.PropsWithChildren<{
-  className: string;
+  className?: string;
   query: string;
   onQueryChange: (query: string) => void;
 }>) => {
