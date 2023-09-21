@@ -163,6 +163,7 @@ export const usePageCommands = () => {
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
   const store = getCurrentStore();
+  const [workspace] = useCurrentWorkspace();
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
@@ -172,16 +173,34 @@ export const usePageCommands = () => {
     });
 
     if (query.trim() !== '') {
+      // queried pages that has matched contents
+      const pageIds = Array.from(
+        workspace.blockSuiteWorkspace.search({ query }).values(),
+      ).map(id => {
+        if (id.startsWith('space:')) {
+          return id.slice(6);
+        } else {
+          return id;
+        }
+      });
+
       results = [
         ...results,
         ...pages.map(page => {
-          return pageToCommand(
+          const command = pageToCommand(
             'affine:pages',
             page,
             store,
             navigationHelper,
-            t
+            t,
           );
+
+          if (pageIds.includes(page.id)) {
+            // hack to make the page always showing in the search result
+            command.value += query;
+          }
+
+          return command;
         }),
       ];
     }
