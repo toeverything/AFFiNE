@@ -8,8 +8,10 @@ import {
   registerAffineLayoutCommands,
   registerAffineSettingsCommands,
 } from '../commands';
+import { registerAffineNavigationCommands } from '../commands/affine-navigation';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../hooks/use-navigate-helper';
 
 export function useRegisterWorkspaceCommands() {
   const store = useStore();
@@ -17,8 +19,17 @@ export function useRegisterWorkspaceCommands() {
   const theme = useTheme();
   const [currentWorkspace] = useCurrentWorkspace();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
+  const navigationHelper = useNavigateHelper();
   useEffect(() => {
     const unsubs: Array<() => void> = [];
+    unsubs.push(
+      registerAffineNavigationCommands({
+        store,
+        t,
+        workspace: currentWorkspace.blockSuiteWorkspace,
+        navigationHelper,
+      })
+    );
     unsubs.push(registerAffineSettingsCommands({ store, t, theme }));
     unsubs.push(registerAffineLayoutCommands({ store, t }));
     unsubs.push(
@@ -32,5 +43,12 @@ export function useRegisterWorkspaceCommands() {
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [store, pageHelper, t, theme]);
+  }, [
+    store,
+    pageHelper,
+    t,
+    theme,
+    currentWorkspace.blockSuiteWorkspace,
+    navigationHelper,
+  ]);
 }

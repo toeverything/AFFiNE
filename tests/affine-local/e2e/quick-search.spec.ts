@@ -44,7 +44,7 @@ test('Click slider bar button', async ({ page }) => {
     '[data-testid=slider-bar-quick-search-button]'
   );
   await quickSearchButton.click();
-  const quickSearch = page.locator('[data-testid=quickSearch]');
+  const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible();
 });
 

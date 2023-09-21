@@ -119,6 +119,7 @@ export const CMDKContainer = ({
   return (
     <Command
       {...rest}
+      data-testid="cmdk-quick-search"
       filter={customCommandFilter}
       className={clsx(className, styles.panelContainer)}
       // Handle KeyboardEvent conflicts with blocksuite
