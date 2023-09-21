@@ -4,6 +4,7 @@ import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Divider } from '@toeverything/components/divider';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
@@ -55,10 +56,11 @@ const WorkspaceType = ({ flavour, isOwner }: WorkspaceTypeProps) => {
         size="thinner"
         style={{ margin: '0px 8px', height: '7px' }}
       />
-
-      <StyledIconContainer>
-        <CollaborationIcon />
-      </StyledIconContainer>
+      <Tooltip content={t['com.affine.workspaceType.joined']()}>
+        <StyledIconContainer>
+          <CollaborationIcon />
+        </StyledIconContainer>
+      </Tooltip>
     </StyledWorkspaceType>
   );
 };
