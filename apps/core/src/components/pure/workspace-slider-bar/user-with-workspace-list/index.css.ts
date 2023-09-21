@@ -1,12 +1,12 @@
 import { style } from '@vanilla-extract/css';
 
-export const WorkspaceListWrapper = style({
+export const workspaceListWrapper = style({
   display: 'flex',
   width: '100%',
   flexDirection: 'column',
 });
 
-export const SignInWrapper = style({
+export const signInWrapper = style({
   display: 'flex',
   width: '100%',
   gap: '12px',
@@ -15,7 +15,7 @@ export const SignInWrapper = style({
   borderRadius: '8px',
 });
 
-export const IconContainer = style({
+export const iconContainer = style({
   width: '28px',
   padding: '2px 4px 4px',
   borderRadius: '14px',
@@ -28,12 +28,12 @@ export const IconContainer = style({
   fontSize: '20px',
 });
 
-export const SignInTextContainer = style({
+export const signInTextContainer = style({
   display: 'flex',
   flexDirection: 'column',
 });
 
-export const SignInTextPrimary = style({
+export const signInTextPrimary = style({
   fontSize: 'var(--affine-font-sm)',
   fontWeight: 600,
   lineHeight: '22px',
@@ -42,7 +42,7 @@ export const SignInTextPrimary = style({
   whiteSpace: 'nowrap',
 });
 
-export const SignInTextSecondary = style({
+export const signInTextSecondary = style({
   fontSize: 'var(--affine-font-xs)',
   fontWeight: 400,
   lineHeight: '20px',
@@ -50,4 +50,8 @@ export const SignInTextSecondary = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+});
+
+export const menuItem = style({
+  borderRadius: '8px',
 });

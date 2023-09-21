@@ -10,12 +10,12 @@ import { useCallback, useMemo } from 'react';
 
 import {
   authAtom,
+  openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
-  openSettingModalAtom,
 } from '../../../../atoms';
 import { AddWorkspace } from './add-workspace';
 import * as styles from './index.css';
-import { UserAccount } from './user-account';
+import { UserAccountItem } from './user-account';
 import { AFFiNEWorkspaceList } from './workspace-list';
 
 const SignInItem = () => {
@@ -38,20 +38,20 @@ const SignInItem = () => {
 
   return (
     <MenuItem
-      style={{ borderRadius: '8px' }}
+      className={styles.menuItem}
       onClick={onClickSignIn}
       data-testid="cloud-signin-button"
     >
-      <div className={styles.SignInWrapper}>
-        <div className={styles.IconContainer}>
+      <div className={styles.signInWrapper}>
+        <div className={styles.iconContainer}>
           <Logo1Icon />
         </div>
 
-        <div className={styles.SignInTextContainer}>
-          <div className={styles.SignInTextPrimary}>
+        <div className={styles.signInTextContainer}>
+          <div className={styles.signInTextPrimary}>
             {t['com.affine.workspace.cloud.auth']()}
           </div>
-          <div className={styles.SignInTextSecondary}>
+          <div className={styles.signInTextSecondary}>
             {t['com.affine.workspace.cloud.description']()}
           </div>
         </div>
@@ -65,29 +65,31 @@ export const UserWithWorkspaceList = ({
 }: {
   onEventEnd?: () => void;
 }) => {
-  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-
   const { data: session, status } = useSession();
 
   const isAuthenticated = useMemo(() => status === 'authenticated', [status]);
 
-  const onOpenAccountSetting = useCallback(() => {
-    setSettingModalAtom(prev => ({
-      ...prev,
-      open: true,
-      activeTab: 'account',
-    }));
-  }, [setSettingModalAtom]);
+  const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
+
+  const onNewWorkspace = useCallback(() => {
+    setOpenCreateWorkspaceModal('new');
+    onEventEnd?.();
+  }, [onEventEnd, setOpenCreateWorkspaceModal]);
+
+  const onAddWorkspace = useCallback(async () => {
+    setOpenCreateWorkspaceModal('add');
+    onEventEnd?.();
+  }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
   const workspaces = useAtomValue(rootWorkspacesMetadataAtom, {
     delay: 0,
   });
+
   return (
-    <div className={styles.WorkspaceListWrapper}>
+    <div className={styles.workspaceListWrapper}>
       {isAuthenticated ? (
-        <UserAccount
+        <UserAccountItem
           email={session?.user.email ?? 'Unknown User'}
-          onOpenAccountSetting={onOpenAccountSetting}
           onEventEnd={onEventEnd}
         />
       ) : (
@@ -96,7 +98,10 @@ export const UserWithWorkspaceList = ({
       <Divider size="thinner" />
       <AFFiNEWorkspaceList workspaces={workspaces} onEventEnd={onEventEnd} />
       {workspaces.length > 0 ? <Divider size="thinner" /> : null}
-      <AddWorkspace />
+      <AddWorkspace
+        onAddWorkspace={onAddWorkspace}
+        onNewWorkspace={onNewWorkspace}
+      />
     </div>
   );
 };

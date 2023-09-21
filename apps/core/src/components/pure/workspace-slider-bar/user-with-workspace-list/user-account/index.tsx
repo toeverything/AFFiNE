@@ -7,19 +7,36 @@ import {
 import { IconButton } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
+import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
+import { openSettingModalAtom } from '../../../../../atoms';
 import { signOutCloud } from '../../../../../utils/cloud-utils';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
 import * as styles from './index.css';
 
-const AccountMenu = ({
-  onOpenAccountSetting,
-  onSignOut,
-}: {
-  onOpenAccountSetting: () => void;
-  onSignOut: () => void;
-}) => {
+const AccountMenu = ({ onEventEnd }: { onEventEnd?: () => void }) => {
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+
+  const { jumpToIndex } = useNavigateHelper();
+
+  const onOpenAccountSetting = useCallback(() => {
+    setSettingModalAtom(prev => ({
+      ...prev,
+      open: true,
+      activeTab: 'account',
+    }));
+  }, [setSettingModalAtom]);
+
+  const onSignOut = useCallback(async () => {
+    signOutCloud()
+      .then(() => {
+        jumpToIndex();
+      })
+      .catch(console.error);
+    onEventEnd?.();
+  }, [onEventEnd, jumpToIndex]);
+
   const t = useAFFiNEI18N();
 
   return (
@@ -51,35 +68,18 @@ const AccountMenu = ({
   );
 };
 
-const UserAccountItem = ({
+export const UserAccountItem = ({
   email,
-  onOpenAccountSetting,
   onEventEnd,
 }: {
   email: string;
-  onOpenAccountSetting: () => void;
   onEventEnd?: () => void;
 }) => {
-  const { jumpToIndex } = useNavigateHelper();
-
-  const onSignOut = useCallback(async () => {
-    signOutCloud()
-      .then(() => {
-        jumpToIndex();
-      })
-      .catch(console.error);
-    onEventEnd?.();
-  }, [onEventEnd, jumpToIndex]);
   return (
     <div className={styles.userAccountContainer}>
       <div className={styles.userEmail}>{email}</div>
       <Menu
-        items={
-          <AccountMenu
-            onOpenAccountSetting={onOpenAccountSetting}
-            onSignOut={onSignOut}
-          />
-        }
+        items={<AccountMenu onEventEnd={onEventEnd} />}
         contentOptions={{
           side: 'right',
           sideOffset: 12,
@@ -92,23 +92,5 @@ const UserAccountItem = ({
         />
       </Menu>
     </div>
-  );
-};
-
-export const UserAccount = ({
-  email,
-  onOpenAccountSetting,
-  onEventEnd,
-}: {
-  email: string;
-  onOpenAccountSetting: () => void;
-  onEventEnd?: () => void;
-}) => {
-  return (
-    <UserAccountItem
-      email={email}
-      onOpenAccountSetting={onOpenAccountSetting}
-      onEventEnd={onEventEnd}
-    />
   );
 };
