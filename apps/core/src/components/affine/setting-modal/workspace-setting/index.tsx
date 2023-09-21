@@ -3,6 +3,7 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { useSetAtom } from 'jotai';
 import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
@@ -33,6 +34,7 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
   const pushNotification = useSetAtom(pushNotificationAtom);
 
   const leaveWorkspace = useLeaveWorkspace();
+  usePassiveWorkspaceEffect(workspace.blockSuiteWorkspace);
   const setSettingModal = useSetAtom(openSettingModalAtom);
   const { deleteWorkspace } = useAppHelper();
 
