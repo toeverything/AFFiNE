@@ -10,8 +10,8 @@ import {
 } from '../commands';
 import { registerAffineNavigationCommands } from '../commands/affine-navigation';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
-import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { useCurrentWorkspace } from './current/use-current-workspace';
+import { useNavigateHelper } from './use-navigate-helper';
 
 export function useRegisterWorkspaceCommands() {
   const store = useStore();

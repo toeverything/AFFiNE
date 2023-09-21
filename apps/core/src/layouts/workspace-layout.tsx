@@ -54,13 +54,13 @@ import {
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
 } from '../providers/modal-provider';
 import { pathGenerator } from '../shared';
 import { toast } from '../utils';
-import { useRegisterWorkspaceCommands } from './register-workspace-commands';
 
 const CMDKQuickSearchModal = lazy(() =>
   import('../components/pure/cmdk').then(module => ({

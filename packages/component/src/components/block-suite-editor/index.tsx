@@ -14,6 +14,7 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
+import { useRegisterBlocksuiteEditorCommands } from './use-register-blocksuite-editor-commands';
 
 export type EditorProps = {
   page: Page;
@@ -172,6 +173,7 @@ export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
   props: EditorProps & ErrorBoundaryProps
 ): ReactElement {
+  useRegisterBlocksuiteEditorCommands();
   return (
     <ErrorBoundary
       fallbackRender={useCallback(

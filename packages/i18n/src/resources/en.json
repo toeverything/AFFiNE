@@ -601,5 +601,6 @@
   "com.affine.cmdk.affine.category.affine.general": "General",
   "com.affine.cmdk.affine.category.editor.insert-object": "Insert Object",
   "com.affine.cmdk.affine.category.editor.page": "Page Commands",
-  "com.affine.cmdk.affine.category.editor.edgeless": "Edgeless Commands"
+  "com.affine.cmdk.affine.category.editor.edgeless": "Edgeless Commands",
+  "com.affine.cmdk.affine.editor.edgeless.presentation-start": "Start Presentation"
 }
