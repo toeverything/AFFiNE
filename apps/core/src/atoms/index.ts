@@ -43,10 +43,6 @@ type PageLocalSetting = {
   mode: PageMode;
 };
 
-type PartialPageLocalSettingWithPageId = Partial<PageLocalSetting> & {
-  id: string;
-};
-
 const pageSettingsBaseAtom = atomWithStorage(
   'pageSettings',
   {} as Record<string, PageLocalSetting>
@@ -55,20 +51,9 @@ const pageSettingsBaseAtom = atomWithStorage(
 // readonly atom by design
 export const pageSettingsAtom = atom(get => get(pageSettingsBaseAtom));
 
-const recentPageSettingsBaseAtom = atomWithStorage<string[]>(
+export const recentPageIdsBaseAtom = atomWithStorage<string[]>(
   'recentPageSettings',
   []
-);
-
-export const recentPageSettingsAtom = atom<PartialPageLocalSettingWithPageId[]>(
-  get => {
-    const recentPageIDs = get(recentPageSettingsBaseAtom);
-    const pageSettings = get(pageSettingsAtom);
-    return recentPageIDs.map(id => ({
-      ...pageSettings[id],
-      id,
-    }));
-  }
 );
 
 const defaultPageSetting = {
@@ -85,7 +70,9 @@ export const pageSettingFamily: AtomFamily<
         ...defaultPageSetting,
       },
     (get, set, patch) => {
-      set(recentPageSettingsBaseAtom, ids => {
+      // fixme: this does not work when page reload,
+      // since atomWithStorage is async
+      set(recentPageIdsBaseAtom, ids => {
         // pick 3 recent page ids
         return [...new Set([pageId, ...ids]).values()].slice(0, 3);
       });

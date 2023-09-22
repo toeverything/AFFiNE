@@ -15,6 +15,11 @@
       "import": "./dist/blocksuite.js",
       "require": "./dist/blocksuite.cjs"
     },
+    "./command": {
+      "types": "./dist/src/command/index.d.ts",
+      "import": "./dist/command.js",
+      "require": "./dist/command.cjs"
+    },
     "./core/*": {
       "types": "./dist/src/core/*.d.ts",
       "import": "./dist/core/*.js",
@@ -54,6 +59,7 @@
     "@blocksuite/global": "0.0.0-20230921103931-38d8f07a-nightly",
     "@blocksuite/store": "0.0.0-20230921103931-38d8f07a-nightly",
     "jotai": "^2.4.1",
+    "tinykeys": "^2.1.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {

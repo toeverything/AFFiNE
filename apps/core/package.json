@@ -12,7 +12,8 @@
     "./app": "./src/app.tsx",
     "./router": "./src/router.ts",
     "./bootstrap/setup": "./src/bootstrap/setup.ts",
-    "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts"
+    "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts",
+    "./components/pure/*": "./src/components/pure/*/index.tsx"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
@@ -41,7 +42,6 @@
     "@react-hookz/web": "^23.1.0",
     "@toeverything/components": "^0.0.43",
     "async-call-rpc": "^6.3.1",
-    "cmdk": "^0.2.0",
     "css-spring": "^4.1.0",
     "cssnano": "^6.0.1",
     "graphql": "^16.8.0",

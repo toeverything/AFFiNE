@@ -20,7 +20,7 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
-import { useAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -115,7 +115,7 @@ export const RootAppSidebar = ({
     return;
   }, [onClickNewPage]);
 
-  const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop) {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
@@ -123,17 +123,6 @@ export const RootAppSidebar = ({
       });
     }
   }, [sidebarOpen]);
-
-  useEffect(() => {
-    const keydown = (e: KeyboardEvent) => {
-      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
-        setSidebarOpen(!sidebarOpen);
-      }
-    };
-    document.addEventListener('keydown', keydown, { capture: true });
-    return () =>
-      document.removeEventListener('keydown', keydown, { capture: true });
-  }, [sidebarOpen, setSidebarOpen]);
 
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
