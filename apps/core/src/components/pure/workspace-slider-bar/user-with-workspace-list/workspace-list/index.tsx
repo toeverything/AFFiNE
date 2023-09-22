@@ -214,7 +214,9 @@ export const AFFiNEWorkspaceList = ({
             currentWorkspaceId={currentWorkspaceId}
             onDragEnd={onDragEnd}
           />
-          {localWorkspaces.length > 0 ? <Divider size="thinner" /> : null}
+          {localWorkspaces.length > 0 && cloudWorkspaces.length > 0 ? (
+            <Divider size="thinner" />
+          ) : null}
         </div>
       ) : null}
       <LocalWorkspaces
