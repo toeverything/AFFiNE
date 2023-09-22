@@ -221,7 +221,7 @@ test.describe('collaboration members', () => {
     await openSettingModal(page);
     await openWorkspaceSettingPanel(page, 'test');
 
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(1000);
 
     const firstPageMemberItemCount = await page
       .locator('[data-testid="member-item"]')
