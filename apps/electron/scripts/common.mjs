@@ -45,7 +45,7 @@ export const config = () => {
         '@toeverything/plugin-infra',
         'yjs',
         'semver',
-        'tinykeys'
+        'tinykeys',
       ],
       define: define,
       format: 'cjs',
