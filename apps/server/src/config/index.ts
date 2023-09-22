@@ -73,4 +73,4 @@ export class ConfigModule {
 }
 
 export type { AFFiNEConfig } from './def';
-export { PaymentRecurringPlan } from './def';
+export { SubscriptionPlan } from './def';
