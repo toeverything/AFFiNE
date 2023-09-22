@@ -13,6 +13,20 @@ const openQuickSearchByShortcut = async (page: Page) => {
   await page.waitForTimeout(500);
 };
 
+const keyboardDownAndSelect = async (page: Page, label: string) => {
+  await page.keyboard.press('ArrowDown');
+  if (
+    (await page
+      .locator('[cmdk-item][data-selected] [data-testid="cmdk-label"]')
+      .innerText()) !== label
+  ) {
+    await keyboardDownAndSelect(page, label);
+  } else {
+    await page.pause();
+    await page.keyboard.press('Enter');
+  }
+};
+
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
@@ -180,7 +194,16 @@ test('Focus title after creating a new page', async ({ page }) => {
   await titleIsFocused(page);
 });
 
-test.only('assert the recent browse pages are on the recent list', async ({
+test.only('can use keyboard down to select goto setting', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openQuickSearchByShortcut(page);
+  await keyboardDownAndSelect(page, 'Go to Settings');
+
+  await expect(page.getByTestId('setting-modal')).toBeVisible();
+});
+
+test('assert the recent browse pages are on the recent list', async ({
   page,
 }) => {
   await openHomePage(page);
