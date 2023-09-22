@@ -1,6 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { Menu } from '@toeverything/components/menu';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { lazy } from 'react';
@@ -61,15 +62,29 @@ export const Component = () => {
     <>
       <div
         style={{
-          width: 300,
-          margin: '80px auto',
-          borderRadius: '8px',
-          boxShadow: 'var(--affine-shadow-2)',
-          backgroundColor: 'var(--affine-background-overlay-panel-color)',
-          padding: '16px 12px',
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
         }}
       >
-        <UserWithWorkspaceList />
+        <Menu
+          rootOptions={{
+            open: true,
+          }}
+          items={<UserWithWorkspaceList />}
+          contentOptions={{
+            style: {
+              width: 300,
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '8px',
+              boxShadow: 'var(--affine-shadow-2)',
+              backgroundColor: 'var(--affine-background-overlay-panel-color)',
+              padding: '16px 12px',
+            },
+          }}
+        >
+          <div></div>
+        </Menu>
       </div>
       <AllWorkspaceModals />
     </>
