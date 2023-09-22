@@ -157,6 +157,7 @@ export const pageToCommand = (
     // adding this patch so that CMDK will not complain about duplicated commands
     value:
       label + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+    originalValue: label,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
@@ -219,7 +220,7 @@ export const usePageCommands = () => {
       });
 
       // check if the pages have exact match. if not, we should show the "create page" command
-      if (results.filter(command => command.value === query).length === 0) {
+      if (results.every(command => command.originalValue !== query)) {
         results.push({
           id: 'affine:pages:create-page',
           label: (

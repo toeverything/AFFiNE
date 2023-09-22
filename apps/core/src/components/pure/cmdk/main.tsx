@@ -63,7 +63,15 @@ const QuickSearchGroup = ({
             value={command.value}
           >
             <div className={styles.itemIcon}>{command.icon}</div>
-            <div className={styles.itemLabel}>{command.label}</div>
+            <div
+              data-testid="cmdk-label"
+              className={styles.itemLabel}
+              data-value={
+                command.originalValue ? command.originalValue : undefined
+              }
+            >
+              {command.label}
+            </div>
             {command.timestamp ? (
               <div className={styles.timestamp}>
                 {formatDate(new Date(command.timestamp))}

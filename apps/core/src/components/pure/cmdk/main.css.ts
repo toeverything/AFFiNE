@@ -15,6 +15,10 @@ export const searchInput = style({
   width: '100%',
   borderBottom: '1px solid var(--affine-border-color)',
   flexShrink: 0,
+
+  '::placeholder': {
+    color: 'var(--affine-text-secondary-color)',
+  },
 });
 
 export const panelContainer = style({
@@ -120,4 +124,8 @@ globalStyle(`${root} [cmdk-item]`, {
 
 globalStyle(`${root} [cmdk-item][data-selected=true]`, {
   background: 'var(--affine-background-secondary-color)',
+});
+
+globalStyle(`${root} [cmdk-item][data-selected=true] ${itemIcon}`, {
+  color: 'var(--affine-icon-color)',
 });
