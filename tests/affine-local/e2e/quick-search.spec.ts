@@ -194,7 +194,7 @@ test('Focus title after creating a new page', async ({ page }) => {
   await titleIsFocused(page);
 });
 
-test.only('can use keyboard down to select goto setting', async ({ page }) => {
+test('can use keyboard down to select goto setting', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
