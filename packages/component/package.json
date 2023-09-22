@@ -69,5 +69,5 @@
     "vite": "^4.4.9",
     "yjs": "^13.6.8"
   },
-  "version": "0.9.0-canary.13"
+  "version": "0.9.0-beta.0"
 }
