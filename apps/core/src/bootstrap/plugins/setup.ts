@@ -17,7 +17,7 @@ import {
 import {
   contentLayoutAtom,
   currentPageIdAtom,
-  currentWorkspaceIdAtom,
+  currentWorkspaceAtom,
 } from '@toeverything/infra/atom';
 import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
@@ -148,8 +148,8 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     '@blocksuite/blocks': import('@blocksuite/blocks'),
     '@affine/sdk/entry': {
       rootStore,
-      currentWorkspaceIdAtom,
-      currentPageIdAtom,
+      currentWorkspaceAtom: currentWorkspaceAtom,
+      currentPageIdAtom: currentPageIdAtom,
       pushLayoutAtom: pushLayoutAtom,
       deleteLayoutAtom: deleteLayoutAtom,
     },
