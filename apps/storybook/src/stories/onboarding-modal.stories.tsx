@@ -11,7 +11,7 @@ export default {
 } satisfies Meta;
 
 export const Basic: StoryFn = () => {
-  return <TourModal open={true} onClose={() => {}} />;
+  return <TourModal open={true} />;
 };
 Basic.args = {
   logoSrc: '/imgs/affine-text-logo.png',

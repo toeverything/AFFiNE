@@ -2,7 +2,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 export const header = style({
   position: 'relative',
-  height: '44px',
+  marginTop: '44px',
 });
 
 export const content = style({

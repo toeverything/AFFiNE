@@ -1,0 +1,5 @@
+mutation removeAvatar {
+  removeAvatar {
+    success
+  }
+}

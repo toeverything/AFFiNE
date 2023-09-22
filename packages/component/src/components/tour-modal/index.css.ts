@@ -5,7 +5,6 @@ export const modalStyle = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  position: 'relative',
   backgroundColor: 'var(--affine-background-secondary-color)',
   borderRadius: '16px',
   overflow: 'hidden',

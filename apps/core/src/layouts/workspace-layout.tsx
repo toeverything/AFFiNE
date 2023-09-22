@@ -4,7 +4,6 @@ import {
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
-import { NotificationCenter } from '@affine/component/notification-center';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
 import { StyledTitleLink } from '@affine/component/page-list';
 import {
@@ -29,6 +28,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -37,11 +37,7 @@ import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
-import {
-  openQuickSearchModalAtom,
-  openSettingModalAtom,
-  openWorkspacesModalAtom,
-} from '../atoms';
+import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
 import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
@@ -168,7 +164,6 @@ export const WorkspaceLayoutInner = ({
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
-  const [, setOpenWorkspacesModal] = useAtom(openWorkspacesModalAtom);
   const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 
   const handleCreatePage = useCallback(() => {
@@ -178,10 +173,6 @@ export const WorkspaceLayoutInner = ({
     assertExists(page);
     return page;
   }, [currentWorkspace.blockSuiteWorkspace, helper]);
-
-  const handleOpenWorkspaceListModal = useCallback(() => {
-    setOpenWorkspacesModal(true);
-  }, [setOpenWorkspacesModal]);
 
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenQuickSearchModal = useCallback(() => {
@@ -238,7 +229,10 @@ export const WorkspaceLayoutInner = ({
   const [appSetting] = useAppSetting();
   const location = useLocation();
   const { pageId } = useParams();
-
+  const pageMeta = useBlockSuitePageMeta(
+    currentWorkspace.blockSuiteWorkspace
+  ).find(meta => meta.id === pageId);
+  const inTrashPage = pageMeta?.trash ?? false;
   const setMainContainer = useSetAtom(mainContainerAtom);
 
   return (
@@ -256,7 +250,6 @@ export const WorkspaceLayoutInner = ({
               onOpenQuickSearchModal={handleOpenQuickSearchModal}
               onOpenSettingModal={handleOpenSettingModal}
               currentWorkspace={currentWorkspace}
-              onOpenWorkspaceListModal={handleOpenWorkspaceListModal}
               openPage={useCallback(
                 (pageId: string) => {
                   assertExists(currentWorkspace);
@@ -273,9 +266,10 @@ export const WorkspaceLayoutInner = ({
             <MainContainer
               ref={setMainContainer}
               padding={appSetting.clientBorder}
+              inTrashPage={inTrashPage}
             >
               {incompatible ? <MigrationFallback /> : children}
-              <ToolContainer>
+              <ToolContainer inTrashPage={inTrashPage}>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
                 <HelpIsland showList={pageId ? undefined : showList} />
               </ToolContainer>
@@ -285,7 +279,6 @@ export const WorkspaceLayoutInner = ({
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
-      {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
     </>
   );
 };

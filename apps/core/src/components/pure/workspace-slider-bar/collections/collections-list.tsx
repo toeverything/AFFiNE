@@ -1,6 +1,6 @@
 import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import {
-  EditCollectionModel,
+  EditCollectionModal,
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
@@ -203,13 +203,13 @@ const CollectionRenderer = ({
 
   return (
     <Collapsible.Root open={!collapsed}>
-      <EditCollectionModel
+      <EditCollectionModal
         propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
         init={collection}
         onConfirm={setting.saveCollection}
         open={show}
-        onClose={() => showUpdateCollection(false)}
+        onOpenChange={showUpdateCollection}
       />
       <CollectionItem
         data-testid="collection-item"

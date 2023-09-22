@@ -12,6 +12,18 @@ import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { z } from 'zod';
 
+export async function getCurrentMailMessageCount() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.total;
+}
+
+export async function getLatestMailMessage() {
+  const response = await fetch('http://localhost:8025/api/v2/messages');
+  const data = await response.json();
+  return data.items[0];
+}
+
 export async function getLoginCookie(
   context: BrowserContext
 ): Promise<Cookie | undefined> {
@@ -121,29 +133,28 @@ export async function loginUser(
   page: Page,
   userEmail: string,
   config?: {
+    isElectron?: boolean;
     beforeLogin?: () => Promise<void>;
     afterLogin?: () => Promise<void>;
   }
 ) {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
+  if (config?.isElectron !== true) {
+    await openHomePage(page);
+    await waitForEditorLoad(page);
+  }
 
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('cloud-signin-button').click({
     delay: 200,
   });
-  await page.getByPlaceholder('Enter your email address').type(userEmail, {
-    delay: 50,
-  });
+  await page.getByPlaceholder('Enter your email address').fill(userEmail);
   await page.getByTestId('continue-login-button').click({
     delay: 200,
   });
   await page.getByTestId('sign-in-with-password').click({
     delay: 200,
   });
-  await page.getByTestId('password-input').type('123456', {
-    delay: 50,
-  });
+  await page.getByTestId('password-input').fill('123456');
   if (config?.beforeLogin) {
     await config.beforeLogin();
   }

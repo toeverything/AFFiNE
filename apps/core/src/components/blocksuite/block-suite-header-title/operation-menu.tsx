@@ -231,9 +231,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>
         <Menu
           items={EditMenu}
-          portalOptions={{
-            container: ref.current,
-          }}
           contentOptions={{
             align: 'center',
           }}
@@ -244,9 +241,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           open={openConfirm}
           title={pageMeta.title}
           onConfirm={handleOnConfirm}
-          onCancel={() => {
-            setOpenConfirm(false);
-          }}
+          onOpenChange={setOpenConfirm}
         />
       </FlexWrapper>
     </>

@@ -5,16 +5,16 @@
 
     // Type Checking
     "strict": true,
-    // exactOptionalPropertyTypes: false,
+    "exactOptionalPropertyTypes": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // noPropertyAccessFromIndexSignature: false,
-    // noUncheckedIndexedAccess: false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
     "useUnknownInCatchVariables": true,
 
     // Modules
@@ -97,6 +97,9 @@
       "path": "./apps/server"
     },
     {
+      "path": "./apps/server/tests"
+    },
+    {
       "path": "./apps/storybook"
     },
     {
@@ -177,6 +180,9 @@
     },
     {
       "path": "./tests/affine-cloud"
+    },
+    {
+      "path": "./tests/affine-desktop"
     },
     {
       "path": "./tests/affine-legacy/0.8.0-canary.7"

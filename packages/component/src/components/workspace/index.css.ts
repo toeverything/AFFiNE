@@ -65,6 +65,7 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
 
 export const mainContainerStyle = style({
   position: 'relative',
+  zIndex: 0, // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
   flex: 1,
   maxWidth: '100%',
@@ -85,6 +86,12 @@ export const mainContainerStyle = style({
     },
     '&[data-show-padding="true"][data-is-macos="true"]': {
       borderRadius: '6px',
+    },
+    '&[data-in-trash-page="true"]': {
+      marginBottom: '66px',
+    },
+    '&[data-in-trash-page="true"][data-show-padding="true"]': {
+      marginBottom: '66px',
     },
     '&[data-show-padding="true"]:before': {
       content: '""',
@@ -149,6 +156,22 @@ export const toolStyle = style({
     },
     print: {
       display: 'none',
+    },
+  },
+  selectors: {
+    '&[data-in-trash-page="true"]': {
+      bottom: '70px',
+      '@media': {
+        [breakpoints.down('md', true)]: {
+          bottom: '80px',
+        },
+        [breakpoints.down('sm', true)]: {
+          bottom: '85px',
+        },
+        print: {
+          display: 'none',
+        },
+      },
     },
   },
 });

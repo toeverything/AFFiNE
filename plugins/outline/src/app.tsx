@@ -60,7 +60,12 @@ export const HeaderItem = ({
       }}
     >
       <IconButton
+        size="large"
         ref={setContainer}
+        style={{
+          width: '32px',
+          fontSize: '24px',
+        }}
         onClick={useCallback(() => {
           if (!open) {
             setOpen(true);

@@ -6,7 +6,7 @@ import {
   encodeStateVector,
 } from 'yjs';
 
-import type { DatasourceDocAdapter } from './data-source';
+import type { DocDataSource } from './data-source';
 import type { DataSourceAdapter } from './types';
 import type { Status } from './types';
 
@@ -43,7 +43,7 @@ export type DocProvider = {
  */
 export const createLazyProvider = (
   rootDoc: Doc,
-  datasource: DatasourceDocAdapter,
+  datasource: DocDataSource,
   options: LazyProviderOptions = {}
 ): DocProvider & DataSourceAdapter => {
   let connected = false;

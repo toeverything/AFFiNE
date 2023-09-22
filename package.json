@@ -1,9 +1,9 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.9.0-canary.11",
+  "version": "0.9.0-canary.13",
   "private": true,
   "author": "toeverything",
-  "license": "MPL-2.0",
+  "license": "MIT",
   "workspaces": [
     ".",
     "apps/*",
@@ -14,6 +14,8 @@
     "tests/kit",
     "tests/affine-legacy/*",
     "tests/affine-local",
+    "tests/affine-desktop",
+    "tests/affine-desktop-cloud",
     "tests/affine-plugin",
     "tests/affine-prototype",
     "tests/affine-cloud"
@@ -43,7 +45,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "notify": "node scripts/notify.mjs",
-    "circular": "madge --circular --ts-config ./tsconfig.json ./apps/core/src/pages/**/*.tsx",
+    "circular": "madge --circular --ts-config ./tsconfig.json ./apps/core/src/pages/**/*.tsx ./apps/core/src/index.tsx ./apps/electron/src/*/index.ts",
     "typecheck": "tsc -b tsconfig.json --diagnostics",
     "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install"
   },
@@ -67,7 +69,7 @@
     "@faker-js/faker": "^8.0.2",
     "@istanbuljs/schema": "^0.1.3",
     "@magic-works/i18n-codegen": "^0.5.0",
-    "@nx/vite": "16.7.4",
+    "@nx/vite": "16.8.1",
     "@perfsee/sdk": "^1.9.0",
     "@playwright/test": "^1.37.1",
     "@taplo/cli": "^0.5.2",
@@ -101,7 +103,7 @@
     "madge": "^6.1.0",
     "msw": "^1.2.5",
     "nanoid": "^4.0.2",
-    "nx": "16.7.4",
+    "nx": "16.8.1",
     "nx-cloud": "latest",
     "nyc": "^15.1.0",
     "prettier": "^3.0.3",
@@ -115,7 +117,7 @@
     "vite-tsconfig-paths": "^4.2.0",
     "vitest": "0.33.0",
     "vitest-fetch-mock": "^0.2.2",
-    "vitest-mock-extended": "^1.2.0"
+    "vitest-mock-extended": "^1.2.1"
   },
   "packageManager": "yarn@3.6.3",
   "resolutions": {

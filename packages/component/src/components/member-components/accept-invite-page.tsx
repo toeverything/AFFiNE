@@ -23,12 +23,6 @@ export const AcceptInvitePage = ({
             url={inviteInfo.user.avatarUrl || ''}
             name={inviteInfo.user.name}
             size={20}
-            // FIXME: fix it in @toeverything/components/avatar
-            imageProps={{
-              style: {
-                objectFit: 'cover',
-              },
-            }}
           />
           <span className={styles.inviteName}>{inviteInfo.user.name}</span>
           {t['invited you to join']()}
@@ -37,7 +31,7 @@ export const AcceptInvitePage = ({
             name={inviteInfo.workspace.name}
             size={20}
             style={{ marginLeft: 4 }}
-            colorfulFallback={true}
+            colorfulFallback
           />
           <span className={styles.inviteName}>{inviteInfo.workspace.name}</span>
         </FlexWrapper>

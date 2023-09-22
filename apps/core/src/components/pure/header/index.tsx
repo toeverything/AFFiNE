@@ -3,7 +3,6 @@ import {
   appSidebarOpenAtom,
   SidebarSwitch,
 } from '@affine/component/app-sidebar';
-import { isDesktop } from '@affine/env/constant';
 import { useIsTinyScreen } from '@toeverything/hooks/use-is-tiny-screen';
 import clsx from 'clsx';
 import { type Atom, useAtomValue } from 'jotai';
@@ -45,7 +44,7 @@ export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
     rightStatic: windowControlsRef,
   });
 
-  const isWindowsDesktop = globalThis.platform === 'win32' && isDesktop;
+  const isWindowsDesktop = environment.isDesktop && environment.isWindows;
   const open = useAtomValue(appSidebarOpenAtom);
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
   return (

@@ -26,11 +26,9 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, Workspace } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
-import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -139,7 +137,6 @@ export class WorkspaceResolver {
 
   constructor(
     private readonly auth: AuthService,
-    private readonly config: Config,
     private readonly mailer: MailService,
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
@@ -220,9 +217,14 @@ export class WorkspaceResolver {
       },
       skip,
       take: take || 8,
-      orderBy: {
-        type: 'desc',
-      },
+      orderBy: [
+        {
+          createdAt: 'asc',
+        },
+        {
+          type: 'desc',
+        },
+      ],
       include: {
         user: true,
       },
@@ -644,8 +646,15 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Admin);
-
+    const userWorkspace = await this.prisma.userWorkspacePermission.findFirst({
+      where: {
+        userId: user.id,
+        workspaceId,
+      },
+    });
+    if (!userWorkspace?.accepted) {
+      throw new ForbiddenException('Permission denied');
+    }
     return this.permissions.grantPage(workspaceId, pageId);
   }
 

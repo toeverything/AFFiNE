@@ -2,7 +2,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 
 import * as styles from './share.css';
 
@@ -26,7 +26,6 @@ export const StorageProgress = ({
   onUpgrade,
 }: StorageProgressProgress) => {
   const t = useAFFiNEI18N();
-  const ref = useRef(null);
   const percent = useMemo(
     () => Math.round((value / upperLimit) * 100),
     [upperLimit, value]
@@ -57,17 +56,12 @@ export const StorageProgress = ({
           </div>
         </div>
 
-        <Tooltip
-          content={t['com.affine.storage.disabled.hint']()}
-          portalOptions={{
-            container: ref.current,
-          }}
-        >
-          <div ref={ref}>
+        <Tooltip content={t['com.affine.storage.disabled.hint']()}>
+          <span tabIndex={0}>
             <Button disabled onClick={onUpgrade}>
               {t['com.affine.storage.upgrade']()}
             </Button>
-          </div>
+          </span>
         </Tooltip>
       </div>
       {percent > 80 ? (

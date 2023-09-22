@@ -1,33 +1,26 @@
-import { Modal, ModalWrapper } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon } from '@blocksuite/icons';
-import { Button, IconButton } from '@toeverything/components/button';
+import {
+  ConfirmModal,
+  type ConfirmModalProps,
+} from '@toeverything/components/modal';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { authAtom } from '../../../atoms';
 import { setOnceSignedInEventAtom } from '../../../atoms/event';
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
-import { ButtonContainer, Content, Header, StyleTips, Title } from './style';
-
-interface EnableAffineCloudModalProps {
-  open: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}
 
 export const EnableAffineCloudModal = ({
   onConfirm: propsOnConfirm,
-  open,
-  onClose,
-}: EnableAffineCloudModalProps) => {
+  ...props
+}: ConfirmModalProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
   const setAuthAtom = useSetAtom(authAtom);
   const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
 
   const confirm = useCallback(async () => {
-    return propsOnConfirm();
+    return propsOnConfirm?.();
   }, [propsOnConfirm]);
 
   const onConfirm = useCallback(() => {
@@ -39,42 +32,29 @@ export const EnableAffineCloudModal = ({
       setOnceSignedInEvent(confirm);
     }
     if (loginStatus === 'authenticated') {
-      return propsOnConfirm();
+      return propsOnConfirm?.();
     }
   }, [confirm, loginStatus, propsOnConfirm, setAuthAtom, setOnceSignedInEvent]);
 
   return (
-    <Modal open={open} onClose={onClose} data-testid="logout-modal">
-      <ModalWrapper width={480}>
-        <Header>
-          <Title>{t['Enable AFFiNE Cloud']()}</Title>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Header>
-        <Content>
-          <StyleTips>{t['Enable AFFiNE Cloud Description']()}</StyleTips>
-          <ButtonContainer>
-            <div>
-              <Button onClick={onClose} block>
-                {t['com.affine.enableAffineCloudModal.button.cancel']()}
-              </Button>
-            </div>
-            <div>
-              <Button
-                data-testid="confirm-enable-affine-cloud-button"
-                type="primary"
-                block
-                onClick={onConfirm}
-              >
-                {loginStatus === 'authenticated'
-                  ? t['Enable']()
-                  : t['Sign in and Enable']()}
-              </Button>
-            </div>
-          </ButtonContainer>
-        </Content>
-      </ModalWrapper>
-    </Modal>
+    <ConfirmModal
+      width={480}
+      title={t['Enable AFFiNE Cloud']()}
+      description={t['Enable AFFiNE Cloud Description']()}
+      cancelText={t['com.affine.enableAffineCloudModal.button.cancel']()}
+      onConfirm={onConfirm}
+      confirmButtonOptions={{
+        type: 'primary',
+        ['data-testid' as string]: 'confirm-enable-affine-cloud-button',
+        children:
+          loginStatus === 'authenticated'
+            ? t['Enable']()
+            : t['Sign in and Enable'](),
+      }}
+      contentOptions={{
+        ['data-testid' as string]: 'enable-cloud-modal',
+      }}
+      {...props}
+    />
   );
 };

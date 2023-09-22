@@ -1,7 +1,8 @@
-import type { LoaderFunction } from 'react-router-dom';
+import { getSession } from 'next-auth/react';
+import { type LoaderFunction } from 'react-router-dom';
 import { z } from 'zod';
 
-import { signInCloud } from '../utils/cloud-utils';
+import { signInCloud, signOutCloud } from '../utils/cloud-utils';
 
 const supportedProvider = z.enum(['google']);
 
@@ -13,6 +14,16 @@ export const loader: LoaderFunction = async ({ request }) => {
   if (!callback_url) {
     return null;
   }
+
+  const session = await getSession();
+
+  if (session) {
+    // already signed in, need to sign out first
+    await signOutCloud({
+      callbackUrl: request.url, // retry
+    });
+  }
+
   const maybeProvider = supportedProvider.safeParse(provider);
   if (maybeProvider.success) {
     const provider = maybeProvider.data;

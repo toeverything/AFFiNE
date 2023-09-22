@@ -1,6 +1,6 @@
-import { UserAvatar } from '@affine/component/user-avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 
 import { useCurrentLoginStatus } from '../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../hooks/affine/use-current-user';
@@ -37,12 +37,7 @@ const UserCard = () => {
         alignItems: 'center',
       }}
     >
-      <UserAvatar
-        size={28}
-        name={user.name}
-        url={user.image}
-        className="avatar"
-      />
+      <Avatar size={28} name={user.name} url={user.image} />
       <div style={{ marginLeft: '15px' }}>
         <div>{user.name}</div>
         <div>{user.email}</div>

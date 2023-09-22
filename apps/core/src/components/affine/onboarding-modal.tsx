@@ -8,12 +8,16 @@ import { guideOnboardingAtom } from '../../atoms/guide';
 export const OnboardingModal = memo(function OnboardingModal() {
   const [open, setOpen] = useAtom(openOnboardingModalAtom);
   const [guideOpen, setShowOnboarding] = useAtom(guideOnboardingAtom);
-  const onCloseTourModal = useCallback(() => {
-    setShowOnboarding(false);
-    setOpen(false);
-  }, [setOpen, setShowOnboarding]);
+  const onOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) return;
+      setShowOnboarding(false);
+      setOpen(false);
+    },
+    [setOpen, setShowOnboarding]
+  );
 
   return (
-    <TourModal open={!open ? guideOpen : open} onClose={onCloseTourModal} />
+    <TourModal open={!open ? guideOpen : open} onOpenChange={onOpenChange} />
   );
 });

@@ -7,6 +7,8 @@ import { lazy } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 
+import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
+
 const AllWorkspaceModals = lazy(() =>
   import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
     default: AllWorkspaceModals,
@@ -54,5 +56,22 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const Component = () => {
-  return <AllWorkspaceModals />;
+  // TODO: We need a no workspace page
+  return (
+    <>
+      <div
+        style={{
+          width: 300,
+          margin: '80px auto',
+          borderRadius: '8px',
+          boxShadow: 'var(--affine-shadow-2)',
+          backgroundColor: 'var(--affine-background-overlay-panel-color)',
+          padding: '16px 12px',
+        }}
+      >
+        <UserWithWorkspaceList />
+      </div>
+      <AllWorkspaceModals />
+    </>
+  );
 };

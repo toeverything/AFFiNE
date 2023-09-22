@@ -10,7 +10,7 @@ import {
 } from '@blocksuite/icons';
 import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 import { getContentParser } from './get-content-parser';
 import { transitionStyle } from './index.css';
@@ -248,42 +248,36 @@ export const ExportToMarkdownMenuItem = ({
 
 // fixme: refactor this file, export function may should be passed by 'props', this file is just a ui component
 export const Export = () => {
-  const ref = useRef(null);
   const t = useAFFiNEI18N();
   return (
-    <div ref={ref}>
-      <MenuSub
-        items={
-          <>
-            <ExportToPdfMenuItem
-              className={transitionStyle}
-            ></ExportToPdfMenuItem>
-            <ExportToHtmlMenuItem
-              className={transitionStyle}
-            ></ExportToHtmlMenuItem>
-            <ExportToPngMenuItem
-              className={transitionStyle}
-            ></ExportToPngMenuItem>
-            <ExportToMarkdownMenuItem
-              className={transitionStyle}
-            ></ExportToMarkdownMenuItem>
-          </>
-        }
-        triggerOptions={{
-          className: transitionStyle,
-          preFix: (
-            <MenuIcon>
-              <ExportIcon />
-            </MenuIcon>
-          ),
-          ['data-testid' as string]: 'export-menu',
-        }}
-        portalOptions={{
-          container: ref.current,
-        }}
-      >
-        {t.Export()}
-      </MenuSub>
-    </div>
+    <MenuSub
+      items={
+        <>
+          <ExportToPdfMenuItem
+            className={transitionStyle}
+          ></ExportToPdfMenuItem>
+          <ExportToHtmlMenuItem
+            className={transitionStyle}
+          ></ExportToHtmlMenuItem>
+          <ExportToPngMenuItem
+            className={transitionStyle}
+          ></ExportToPngMenuItem>
+          <ExportToMarkdownMenuItem
+            className={transitionStyle}
+          ></ExportToMarkdownMenuItem>
+        </>
+      }
+      triggerOptions={{
+        className: transitionStyle,
+        preFix: (
+          <MenuIcon>
+            <ExportIcon />
+          </MenuIcon>
+        ),
+        ['data-testid' as string]: 'export-menu',
+      }}
+    >
+      {t.Export()}
+    </MenuSub>
   );
 };

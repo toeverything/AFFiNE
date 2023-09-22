@@ -93,14 +93,15 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
     // initial value
     subscriber.next([]);
     if (useLocalStorage) {
-      getCollections(localCRUD).then(collections => {
-        subscriber.next(collections);
-      });
       const fn = () => {
-        getCollections(localCRUD).then(collections => {
-          subscriber.next(collections);
+        getCollections(localCRUD).then(async collections => {
+          const workspaceId = (await currentWorkspacePromise).id;
+          subscriber.next(
+            collections.filter(c => c.workspaceId === workspaceId)
+          );
         });
       };
+      fn();
       callbackSet.add(fn);
       return () => {
         callbackSet.delete(fn);
@@ -164,7 +165,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
 
 export const currentCollectionsAtom: CollectionsAtom = atom(
   get => get(pageCollectionBaseAtom),
-  async (get, set, apply) => {
+  async (get, _, apply) => {
     const collections = await get(pageCollectionBaseAtom);
     let newCollections: Collection[];
     if (typeof apply === 'function') {

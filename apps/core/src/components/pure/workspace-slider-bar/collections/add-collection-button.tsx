@@ -1,5 +1,5 @@
 import {
-  EditCollectionModel,
+  EditCollectionModal,
   useCollectionManager,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
@@ -46,12 +46,12 @@ export const AddCollectionButton = ({
         <PlusIcon />
       </IconButton>
 
-      <EditCollectionModel
+      <EditCollectionModal
         propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
         onConfirm={setting.saveCollection}
         open={show}
-        onClose={() => showUpdateCollection(false)}
+        onOpenChange={showUpdateCollection}
         title={t['com.affine.editCollection.saveCollection']()}
         init={defaultCollection}
       />

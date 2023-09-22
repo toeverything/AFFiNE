@@ -16,6 +16,9 @@ import { createStore } from 'jotai/vanilla';
 import { _setCurrentStore } from '@toeverything/infra/atom';
 import { setupGlobal } from '@affine/env/global';
 
+import type { Preview } from '@storybook/react';
+import { useLayoutEffect, useRef } from 'react';
+
 setupGlobal();
 export const parameters = {
   backgrounds: { disable: true },
@@ -140,4 +143,58 @@ const withContextDecorator: Decorator = (Story, context) => {
   );
 };
 
-export const decorators = [withContextDecorator, withI18n, withMockAuth];
+const platforms = ['web', 'desktop-macos', 'desktop-windows'] as const;
+
+const withPlatformSelectionDecorator: Decorator = (Story, context) => {
+  const setupCounterRef = useRef(0);
+  useLayoutEffect(() => {
+    if (setupCounterRef.current++ === 0) {
+      return;
+    }
+    switch (context.globals.platform) {
+      case 'desktop-macos':
+        environment.isDesktop = true;
+        environment.isMacOs = true;
+        environment.isWindows = false;
+        break;
+      case 'desktop-windows':
+        environment.isDesktop = true;
+        environment.isMacOs = false;
+        environment.isWindows = true;
+        break;
+      default:
+        globalThis.$AFFINE_SETUP = false;
+        setupGlobal();
+        break;
+    }
+  }, [context.globals.platform]);
+
+  return <Story key={context.globals.platform} {...context} />;
+};
+
+const decorators = [
+  withContextDecorator,
+  withI18n,
+  withMockAuth,
+  withPlatformSelectionDecorator,
+];
+
+const preview: Preview = {
+  decorators,
+  globalTypes: {
+    platform: {
+      description: 'Rendering platform target',
+      defaultValue: 'web',
+      toolbar: {
+        // The label to show for this toolbar item
+        title: 'platform',
+        // Array of plain string values or MenuItem shape (see below)
+        items: platforms,
+        // Change title based on selected value
+        dynamicTitle: true,
+      },
+    },
+  },
+};
+
+export default preview;
