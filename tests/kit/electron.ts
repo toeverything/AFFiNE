@@ -1,19 +1,21 @@
-/* eslint-disable no-empty-pattern */
 import crypto from 'node:crypto';
 import { join, resolve } from 'node:path';
+
+import type { Page } from '@playwright/test';
+import fs from 'fs-extra';
+import type { ElectronApplication } from 'playwright';
+import { _electron as electron } from 'playwright';
 
 import {
   enableCoverage,
   istanbulTempDir,
   test as base,
   testResultDir,
-} from '@affine-test/kit/playwright';
-import type { Page } from '@playwright/test';
-import fs from 'fs-extra';
-import type { ElectronApplication } from 'playwright';
-import { _electron as electron } from 'playwright';
+} from './playwright';
+import { removeWithRetry } from './utils/utils';
 
-import { removeWithRetry } from '../tests/utils';
+const projectRoot = resolve(__dirname, '..', '..');
+const electronRoot = resolve(projectRoot, 'apps', 'electron');
 
 function generateUUID() {
   return crypto.randomUUID();
@@ -37,14 +39,7 @@ export const test = base.extend<{
     await page.getByTestId('onboarding-modal-close-button').click({
       delay: 100,
     });
-    if (!process.env.CI) {
-      await electronApp.evaluate(({ BrowserWindow }) => {
-        BrowserWindow.getAllWindows()[0].webContents.openDevTools({
-          mode: 'detach',
-        });
-      });
-    }
-    // wat for blocksuite to be loaded
+    // wait for blocksuite to be loaded
     await page.waitForSelector('v-line');
     if (enableCoverage) {
       await fs.promises.mkdir(istanbulTempDir, { recursive: true });
@@ -71,15 +66,16 @@ export const test = base.extend<{
     }
     await page.close();
   },
+  // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use) => {
     // a random id to avoid conflicts between tests
     const id = generateUUID();
     const ext = process.platform === 'win32' ? '.cmd' : '';
-    const dist = resolve(__dirname, '..', 'dist');
-    const clonedDist = resolve(__dirname, '../e2e-dist-' + id);
+    const dist = resolve(electronRoot, 'dist');
+    const clonedDist = resolve(electronRoot, 'e2e-dist-' + id);
     await fs.copy(dist, clonedDist);
     const packageJson = await fs.readJSON(
-      resolve(__dirname, '..', 'package.json')
+      resolve(electronRoot, 'package.json')
     );
     // overwrite the app name
     packageJson.name = 'affine-test-' + id;
@@ -88,15 +84,27 @@ export const test = base.extend<{
     // write to the cloned dist
     await fs.writeJSON(resolve(clonedDist, 'package.json'), packageJson);
 
+    const env: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value) {
+        env[key] = value;
+      }
+    }
+
+    if (process.env.DEV_SERVER_URL) {
+      env.DEV_SERVER_URL = process.env.DEV_SERVER_URL;
+    }
+
     const electronApp = await electron.launch({
       args: [clonedDist],
+      env,
       executablePath: resolve(
-        __dirname,
-        '..',
+        electronRoot,
         'node_modules',
         '.bin',
         `electron${ext}`
       ),
+      cwd: clonedDist,
       recordVideo: {
         dir: testResultDir,
       },

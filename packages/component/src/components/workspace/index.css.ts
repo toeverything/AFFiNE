@@ -65,6 +65,7 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
 
 export const mainContainerStyle = style({
   position: 'relative',
+  zIndex: 0, // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
   flex: 1,
   maxWidth: '100%',

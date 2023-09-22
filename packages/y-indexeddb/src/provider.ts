@@ -1,6 +1,6 @@
 import {
   createLazyProvider,
-  type DatasourceDocAdapter,
+  type DocDataSource,
   writeOperation,
 } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
@@ -26,10 +26,10 @@ export function setMergeCount(count: number) {
 }
 
 export const createIndexedDBDatasource = ({
-  dbName,
+  dbName = DEFAULT_DB_NAME,
   mergeCount,
 }: {
-  dbName: string;
+  dbName?: string;
   mergeCount?: number;
 }) => {
   let dbPromise: Promise<IDBPDatabase<BlockSuiteBinaryDB>> | null = null;
@@ -99,7 +99,7 @@ export const createIndexedDBDatasource = ({
         }
       }
     },
-  } satisfies DatasourceDocAdapter;
+  } satisfies DocDataSource;
 
   return {
     ...adapter,

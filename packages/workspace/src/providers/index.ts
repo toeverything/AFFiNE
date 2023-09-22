@@ -10,10 +10,10 @@ import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
 import {
+  createIndexedDBDatasource,
   createIndexedDBProvider as create,
-  downloadBinary,
 } from '@toeverything/y-indexeddb';
-import type { Doc } from 'yjs';
+import { encodeStateVector } from 'yjs';
 
 import { createAffineDataSource } from '../affine';
 import {
@@ -87,18 +87,13 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
   id,
   doc
 ): LocalIndexedDBDownloadProvider => {
+  const datasource = createIndexedDBDatasource({});
   let _resolve: () => void;
   let _reject: (error: unknown) => void;
   const promise = new Promise<void>((resolve, reject) => {
     _resolve = resolve;
     _reject = reject;
   });
-  async function downloadAndApply(doc: Doc) {
-    const binary = await downloadBinary(doc.guid);
-    if (binary) {
-      Y.applyUpdate(doc, binary, indexedDBDownloadOrigin);
-    }
-  }
 
   return {
     flavour: 'local-indexeddb',
@@ -111,7 +106,17 @@ const createIndexedDBDownloadProvider: DocProviderCreator = (
     },
     sync: () => {
       logger.info('sync indexeddb provider', id);
-      downloadAndApply(doc).then(_resolve).catch(_reject);
+      datasource
+        .queryDocState(doc.guid, {
+          stateVector: encodeStateVector(doc),
+        })
+        .then(docState => {
+          if (docState) {
+            Y.applyUpdate(doc, docState.missing, indexedDBDownloadOrigin);
+          }
+          _resolve();
+        })
+        .catch(_reject);
     },
   };
 };

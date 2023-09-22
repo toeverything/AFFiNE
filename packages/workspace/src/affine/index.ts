@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { DatasourceDocAdapter } from '@affine/y-provider';
+import type { DocDataSource } from '@affine/y-provider';
 import type { Socket } from 'socket.io-client';
 import { Manager } from 'socket.io-client';
 import {
@@ -129,7 +129,7 @@ export const createAffineDataSource = (
         socket.disconnect();
       };
     },
-  } satisfies DatasourceDocAdapter & { readonly socket: Socket };
+  } satisfies DocDataSource & { readonly socket: Socket };
 };
 
 function setupAffineAwareness(

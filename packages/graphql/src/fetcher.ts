@@ -217,7 +217,7 @@ export const gqlFetcherFactory = (endpoint: string) => {
 
 export const fetchWithTraceReport = async (
   input: RequestInfo | URL,
-  init?: RequestInit,
+  init?: RequestInit & { priority?: 'auto' | 'low' | 'high' }, // https://github.com/microsoft/TypeScript/issues/54472
   traceOptions?: { event: string }
 ): Promise<Response> => {
   const startTime = new Date().toISOString();

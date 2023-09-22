@@ -1,9 +1,8 @@
 import { platform } from 'node:os';
 
+import { test } from '@affine-test/kit/electron';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
-
-import { test } from './fixture';
 
 test('new page', async ({ page, workspace }) => {
   await page.getByTestId('new-page-button').click({

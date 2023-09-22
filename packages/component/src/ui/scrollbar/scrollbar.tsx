@@ -11,6 +11,7 @@ export type ScrollableContainerProps = {
   className?: string;
   viewPortClassName?: string;
   styles?: React.CSSProperties;
+  scrollBarClassName?: string;
 };
 
 export const ScrollableContainer = ({
@@ -20,6 +21,7 @@ export const ScrollableContainer = ({
   className,
   styles: _styles,
   viewPortClassName,
+  scrollBarClassName,
 }: PropsWithChildren<ScrollableContainerProps>) => {
   const [hasScrollTop, ref] = useHasScrollTop();
   return (
@@ -39,7 +41,7 @@ export const ScrollableContainer = ({
       </ScrollArea.Viewport>
       <ScrollArea.Scrollbar
         orientation="vertical"
-        className={clsx(styles.scrollbar, {
+        className={clsx(styles.scrollbar, scrollBarClassName, {
           [styles.TableScrollbar]: inTableView,
         })}
       >

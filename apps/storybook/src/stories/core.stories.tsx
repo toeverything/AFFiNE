@@ -1,7 +1,7 @@
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
-import { userEvent, waitFor, within } from '@storybook/testing-library';
+import { screen, userEvent, waitFor, within } from '@storybook/testing-library';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,
@@ -53,6 +53,10 @@ SettingPage.play = async ({ canvasElement, step }) => {
       document.body.querySelector('[data-testid="language-menu-button"]')
     );
   });
+
+  // Menu button may have "pointer-events: none" style, await 100ms to avoid this weird situation.
+  await new Promise(resolve => window.setTimeout(resolve, 100));
+
   await step('click language menu button', async () => {
     await userEvent.click(
       document.body.querySelector(
@@ -157,10 +161,10 @@ ImportPage.play = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByTestId('header-dropDownButton'));
   await waitFor(() => {
     assertExists(
-      canvasElement.querySelector('[data-testid="editor-option-menu-import"]')
+      document.body.querySelector('[data-testid="editor-option-menu-import"]')
     );
   });
-  await userEvent.click(canvas.getByTestId('editor-option-menu-import'));
+  await userEvent.click(screen.getByTestId('editor-option-menu-import'));
 };
 ImportPage.decorators = [withRouter];
 ImportPage.parameters = {
