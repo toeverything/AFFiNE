@@ -16,8 +16,8 @@ import {
 } from '@toeverything/infra/__internal__/plugin';
 import {
   contentLayoutAtom,
-  currentPageAtom,
-  currentWorkspaceAtom,
+  currentPageIdAtom,
+  currentWorkspaceIdAtom,
 } from '@toeverything/infra/atom';
 import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
@@ -129,7 +129,7 @@ export function createSetup(rootStore: ReturnType<typeof createStore>) {
 
 function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
   // clean up plugin windows when switching to other pages
-  rootStore.sub(currentPageAtom, () => {
+  rootStore.sub(currentPageIdAtom, () => {
     rootStore.set(contentLayoutAtom, 'editor');
   });
 
@@ -148,8 +148,8 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     '@blocksuite/blocks': import('@blocksuite/blocks'),
     '@affine/sdk/entry': {
       rootStore,
-      currentWorkspaceAtom: currentWorkspaceAtom,
-      currentPageAtom: currentPageAtom,
+      currentWorkspaceIdAtom,
+      currentPageIdAtom,
       pushLayoutAtom: pushLayoutAtom,
       deleteLayoutAtom: deleteLayoutAtom,
     },
