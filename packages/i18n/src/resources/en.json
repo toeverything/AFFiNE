@@ -580,5 +580,9 @@
   "Successfully enabled AFFiNE Cloud": "Successfully enabled AFFiNE Cloud",
   "404.hint": "Sorry, you do not have access or this content does not exist...",
   "404.back": "Back to My Content",
-  "404.signOut": "Sign in to another account"
+  "404.signOut": "Sign in to another account",
+  "com.affine.workspaceList.addWorkspace.create": "Create Workspace",
+  "com.affine.workspaceList.workspaceListType.local": "Local Storage",
+  "com.affine.workspaceList.workspaceListType.cloud": "Cloud Sync",
+  "Local": "Local"
 }

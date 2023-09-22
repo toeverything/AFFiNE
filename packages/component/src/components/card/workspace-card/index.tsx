@@ -1,8 +1,11 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { SettingsIcon } from '@blocksuite/icons';
+import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
+import { Skeleton } from '@mui/material';
 import { Avatar } from '@toeverything/components/avatar';
+import { Divider } from '@toeverything/components/divider';
+import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
@@ -10,46 +13,56 @@ import { useCallback } from 'react';
 
 import {
   StyledCard,
+  StyledIconContainer,
   StyledSettingLink,
   StyledWorkspaceInfo,
   StyledWorkspaceTitle,
   StyledWorkspaceTitleArea,
+  StyledWorkspaceType,
+  StyledWorkspaceTypeEllipse,
+  StyledWorkspaceTypeText,
 } from './styles';
 
 export interface WorkspaceTypeProps {
   flavour: WorkspaceFlavour;
+  isOwner: boolean;
 }
 
-const WorkspaceType = ({ flavour }: WorkspaceTypeProps) => {
+const WorkspaceType = ({ flavour, isOwner }: WorkspaceTypeProps) => {
   const t = useAFFiNEI18N();
-  // fixme: cloud regression
-  const isOwner = true;
-
   if (flavour === WorkspaceFlavour.LOCAL) {
     return (
-      <p
-        style={{ fontSize: '10px' }}
-        title={t['com.affine.workspaceType.local']()}
-      >
-        <span>{t['com.affine.workspaceType.local']()}</span>
-      </p>
+      <StyledWorkspaceType>
+        <StyledWorkspaceTypeEllipse />
+        <StyledWorkspaceTypeText>{t['Local']()}</StyledWorkspaceTypeText>
+      </StyledWorkspaceType>
     );
   }
 
   return isOwner ? (
-    <p
-      style={{ fontSize: '10px' }}
-      title={t['com.affine.workspaceType.cloud']()}
-    >
-      <span>{t['com.affine.workspaceType.cloud']()}</span>
-    </p>
+    <StyledWorkspaceType>
+      <StyledWorkspaceTypeEllipse cloud={true} />
+      <StyledWorkspaceTypeText>
+        {t['com.affine.brand.affineCloud']()}
+      </StyledWorkspaceTypeText>
+    </StyledWorkspaceType>
   ) : (
-    <p
-      style={{ fontSize: '10px' }}
-      title={t['com.affine.workspaceType.joined']()}
-    >
-      <span>{t['com.affine.workspaceType.joined']()}</span>
-    </p>
+    <StyledWorkspaceType>
+      <StyledWorkspaceTypeEllipse cloud={true} />
+      <StyledWorkspaceTypeText>
+        {t['com.affine.brand.affineCloud']()}
+      </StyledWorkspaceTypeText>
+      <Divider
+        orientation="vertical"
+        size="thinner"
+        style={{ margin: '0px 8px', height: '7px' }}
+      />
+      <Tooltip content={t['com.affine.workspaceType.joined']()}>
+        <StyledIconContainer>
+          <CollaborationIcon />
+        </StyledIconContainer>
+      </Tooltip>
+    </StyledWorkspaceType>
   );
 };
 
@@ -58,19 +71,35 @@ export interface WorkspaceCardProps {
   meta: RootWorkspaceMetadata;
   onClick: (workspaceId: string) => void;
   onSettingClick: (workspaceId: string) => void;
+  isOwner?: boolean;
 }
+
+export const WorkspaceCardSkeleton = () => {
+  return (
+    <div>
+      <StyledCard data-testid="workspace-card">
+        <Skeleton variant="circular" width={28} height={28} />
+        <Skeleton
+          variant="rectangular"
+          height={43}
+          width={220}
+          style={{ marginLeft: '12px' }}
+        />
+      </StyledCard>
+    </div>
+  );
+};
 
 export const WorkspaceCard = ({
   onClick,
   onSettingClick,
   currentWorkspaceId,
   meta,
+  isOwner = true,
 }: WorkspaceCardProps) => {
-  // const t = useAFFiNEI18N();
   const workspace = useStaticBlockSuiteWorkspace(meta.id);
   const [name] = useBlockSuiteWorkspaceName(workspace);
   const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
-
   return (
     <StyledCard
       data-testid="workspace-card"
@@ -85,6 +114,7 @@ export const WorkspaceCard = ({
           <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>
 
           <StyledSettingLink
+            size="small"
             className="setting-entry"
             onClick={e => {
               e.stopPropagation();
@@ -92,17 +122,10 @@ export const WorkspaceCard = ({
             }}
             withoutHoverStyle={true}
           >
-            <SettingsIcon style={{ margin: '0px' }} />
+            <SettingsIcon />
           </StyledSettingLink>
         </StyledWorkspaceTitleArea>
-        {/* {meta.flavour === WorkspaceFlavour.LOCAL && (
-          <p title={t['com.affine.workspaceType.offline']()}>
-            <LocalDataIcon />
-            <WorkspaceType flavour={meta.flavour} />
-          </p>
-
-        )} */}
-        <WorkspaceType flavour={meta.flavour} />
+        <WorkspaceType isOwner={isOwner} flavour={meta.flavour} />
       </StyledWorkspaceInfo>
     </StyledCard>
   );

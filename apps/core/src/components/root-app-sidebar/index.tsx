@@ -19,17 +19,10 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { Popover } from '@toeverything/components/popover';
+import { Menu } from '@toeverything/components/menu';
 import { useAtom } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
-import {
-  forwardRef,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
@@ -175,18 +168,21 @@ export const RootAppSidebar = ({
         }
       >
         <SidebarContainer>
-          <Popover
-            open={openUserWorkspaceList}
-            content={
-              <Suspense>
-                <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
-              </Suspense>
+          <Menu
+            rootOptions={{
+              open: openUserWorkspaceList,
+            }}
+            items={
+              <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
             }
             contentOptions={{
               // hide trigger
               sideOffset: -58,
               onInteractOutside: closeUserWorkspaceList,
               onEscapeKeyDown: closeUserWorkspaceList,
+              style: {
+                width: '300px',
+              },
             }}
           >
             <WorkspaceCard
@@ -195,7 +191,7 @@ export const RootAppSidebar = ({
                 setOpenUserWorkspaceList(true);
               }, [])}
             />
-          </Popover>
+          </Menu>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}

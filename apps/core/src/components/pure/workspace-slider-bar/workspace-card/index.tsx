@@ -30,6 +30,7 @@ import {
 } from './styles';
 
 const hoverAtom = atom(false);
+
 // FIXME:
 // 1. Remove mui style
 // 2. Refactor the code to improve readability
@@ -41,6 +42,7 @@ const CloudWorkspaceStatus = () => {
     </>
   );
 };
+
 const SyncingWorkspaceStatus = () => {
   return (
     <>
@@ -49,6 +51,7 @@ const SyncingWorkspaceStatus = () => {
     </>
   );
 };
+
 const UnSyncWorkspaceStatus = () => {
   return (
     <>
@@ -82,11 +85,14 @@ const WorkspaceStatus = ({
   currentWorkspace: AllWorkspace;
 }) => {
   const isOnline = useSystemOnline();
+
   // todo: finish display sync status
   const [forceSyncStatus, startForceSync] = useDatasourceSync(
     currentWorkspace.blockSuiteWorkspace
   );
+
   const setIsHovered = useSetAtom(hoverAtom);
+
   const content = useMemo(() => {
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
       return 'Saved locally';
@@ -103,6 +109,7 @@ const WorkspaceStatus = ({
         return 'Sync with AFFiNE Cloud';
     }
   }, [currentWorkspace.flavour, forceSyncStatus.type, isOnline]);
+
   const CloudWorkspaceSyncStatus = useCallback(() => {
     if (forceSyncStatus.type === 'syncing') {
       return SyncingWorkspaceStatus();
@@ -160,6 +167,7 @@ export const WorkspaceCard = forwardRef<
   const [name] = useBlockSuiteWorkspaceName(
     currentWorkspace.blockSuiteWorkspace
   );
+
   const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(
     currentWorkspace.blockSuiteWorkspace
   );
