@@ -16,8 +16,7 @@ import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 
 export function getUserFromContext(context: ExecutionContext) {
-  const req = getRequestResponseFromContext(context).req;
-  return req.user;
+  return getRequestResponseFromContext(context).req.user;
 }
 
 /**

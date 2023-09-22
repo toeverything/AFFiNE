@@ -16,6 +16,7 @@ export const Content = styled('div')({
 
 export const ContentTitle = styled('h1')(() => {
   return {
+    marginTop: 44,
     fontSize: 'var(--affine-font-h6)',
     lineHeight: '28px',
     fontWeight: 600,
@@ -24,8 +25,7 @@ export const ContentTitle = styled('h1')(() => {
 
 export const StyleTips = styled('div')(() => {
   return {
-    userSelect: 'none',
-    margin: '20px 0',
+    margin: '0 0 20px 0',
     a: {
       color: 'var(--affine-primary-color)',
     },
@@ -35,7 +35,6 @@ export const StyleTips = styled('div')(() => {
 export const StyleButton = styled(Button)(() => {
   return {
     textAlign: 'center',
-    margin: '20px 0',
     borderRadius: '8px',
     backgroundColor: 'var(--affine-primary-color)',
     span: {
@@ -46,11 +45,12 @@ export const StyleButton = styled(Button)(() => {
 export const StyleButtonContainer = styled('div')(() => {
   return {
     width: '100%',
+    marginTop: 20,
     ...displayFlex('flex-end', 'center'),
   };
 });
 export const StyleImage = styled('div')(() => {
   return {
-    width: '100%',
+    ...displayFlex('center', 'center'),
   };
 });

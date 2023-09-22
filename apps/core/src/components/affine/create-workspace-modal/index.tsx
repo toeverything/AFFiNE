@@ -1,14 +1,9 @@
-import {
-  Input,
-  Modal,
-  ModalCloseButton,
-  ModalWrapper,
-  toast,
-} from '@affine/component';
+import { Input, toast } from '@affine/component';
 import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Modal } from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
 import type {
   LoadDBFileResult,
@@ -16,7 +11,7 @@ import type {
 } from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -127,7 +122,6 @@ const SetDBLocationContent = ({
   onConfirmLocation,
 }: SetDBLocationContentProps) => {
   const t = useAFFiNEI18N();
-  const ref = useRef(null);
   const defaultDBLocation = useDefaultDBLocation();
   const [opening, setOpening] = useState(false);
 
@@ -169,9 +163,6 @@ const SetDBLocationContent = ({
           content={t['com.affine.setDBLocation.tooltip.defaultLocation']({
             location: defaultDBLocation,
           })}
-          portalOptions={{
-            container: ref.current,
-          }}
         >
           <Button
             data-testid="create-workspace-default-location-button"
@@ -181,7 +172,6 @@ const SetDBLocationContent = ({
             }}
             icon={<HelpIcon />}
             iconPosition="end"
-            ref={ref}
           >
             {t['com.affine.setDBLocation.button.defaultLocation']()}
           </Button>
@@ -386,16 +376,28 @@ export const CreateWorkspaceModal = ({
       />
     ) : null;
 
+  const onOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
   return (
-    <Modal open={mode !== false && !!step} onClose={onClose}>
-      <ModalWrapper width={560} style={{ padding: '10px' }}>
-        <div className={style.header}>
-          <ModalCloseButton top={6} right={6} onClick={onClose} />
-        </div>
-        {nameWorkspaceNode}
-        {setDBLocationNode}
-        {setSyncingModeNode}
-      </ModalWrapper>
+    <Modal
+      open={mode !== false && !!step}
+      width={560}
+      onOpenChange={onOpenChange}
+      contentOptions={{
+        style: { padding: '10px' },
+      }}
+    >
+      <div className={style.header}></div>
+      {nameWorkspaceNode}
+      {setDBLocationNode}
+      {setSyncingModeNode}
     </Modal>
   );
 };

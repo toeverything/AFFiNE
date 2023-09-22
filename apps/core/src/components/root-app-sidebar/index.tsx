@@ -11,7 +11,6 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { useCollectionManager } from '@affine/component/page-list';
-import { isDesktop } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -20,10 +19,10 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { NoSsr } from '@mui/material';
-import { useAtom } from 'jotai';
-import type { ReactElement } from 'react';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import { Menu } from '@toeverything/components/menu';
+import { useAtomValue } from 'jotai';
+import type { HTMLAttributes, ReactElement } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
@@ -33,14 +32,14 @@ import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
 import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
-import { WorkspaceSelector } from '../pure/workspace-slider-bar/WorkspaceSelector';
+import { UserWithWorkspaceList } from '../pure/workspace-slider-bar/user-with-workspace-list';
+import { WorkspaceCard } from '../pure/workspace-slider-bar/workspace-card';
 import ImportPage from './import-page';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenSettingModal: () => void;
-  onOpenWorkspaceListModal: () => void;
   currentWorkspace: AllWorkspace;
   openPage: (pageId: string) => void;
   createPage: () => Page;
@@ -52,15 +51,15 @@ export type RootAppSidebarProps = {
   };
 };
 
-const RouteMenuLinkItem = React.forwardRef<
-  HTMLButtonElement,
+const RouteMenuLinkItem = forwardRef<
+  HTMLDivElement,
   {
     currentPath: string; // todo: pass through useRouter?
     path: string;
     icon: ReactElement;
     children?: ReactElement;
     isDraggedOver?: boolean;
-  } & React.HTMLAttributes<HTMLButtonElement>
+  } & HTMLAttributes<HTMLDivElement>
 >(({ currentPath, path, icon, children, isDraggedOver, ...props }, ref) => {
   // Force active style when a page is dragged over
   const active = isDraggedOver || currentPath === path;
@@ -94,7 +93,6 @@ export const RootAppSidebar = ({
   currentPath,
   paths,
   onOpenQuickSearchModal,
-  onOpenWorkspaceListModal,
   onOpenSettingModal,
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
@@ -102,6 +100,7 @@ export const RootAppSidebar = ({
   const { backToAll } = useCollectionManager(currentCollectionsAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
+  const [openUserWorkspaceList, setOpenUserWorkspaceList] = useState(false);
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
     await page.waitForLoaded();
@@ -110,31 +109,20 @@ export const RootAppSidebar = ({
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
-    if (isDesktop) {
+    if (environment.isDesktop) {
       return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
     return;
   }, [onClickNewPage]);
 
-  const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
-    if (isDesktop) {
+    if (environment.isDesktop) {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
     }
   }, [sidebarOpen]);
-
-  useEffect(() => {
-    const keydown = (e: KeyboardEvent) => {
-      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
-        setSidebarOpen(!sidebarOpen);
-      }
-    };
-    document.addEventListener('keydown', keydown, { capture: true });
-    return () =>
-      document.removeEventListener('keydown', keydown, { capture: true });
-  }, [sidebarOpen, setSidebarOpen]);
 
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
@@ -152,6 +140,9 @@ export const RootAppSidebar = ({
   const trashDroppable = useDroppable({
     id: DROPPABLE_SIDEBAR_TRASH,
   });
+  const closeUserWorkspaceList = useCallback(() => {
+    setOpenUserWorkspaceList(false);
+  }, []);
 
   return (
     <>
@@ -166,12 +157,30 @@ export const RootAppSidebar = ({
         }
       >
         <SidebarContainer>
-          <NoSsr>
-            <WorkspaceSelector
+          <Menu
+            rootOptions={{
+              open: openUserWorkspaceList,
+            }}
+            items={
+              <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
+            }
+            contentOptions={{
+              // hide trigger
+              sideOffset: -58,
+              onInteractOutside: closeUserWorkspaceList,
+              onEscapeKeyDown: closeUserWorkspaceList,
+              style: {
+                width: '300px',
+              },
+            }}
+          >
+            <WorkspaceCard
               currentWorkspace={currentWorkspace}
-              onClick={onOpenWorkspaceListModal}
+              onClick={useCallback(() => {
+                setOpenUserWorkspaceList(true);
+              }, [])}
             />
-          </NoSsr>
+          </Menu>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}
@@ -227,7 +236,7 @@ export const RootAppSidebar = ({
           )}
         </SidebarScrollableContainer>
         <SidebarContainer>
-          {isDesktop && <AppUpdaterButton />}
+          {environment.isDesktop && <AppUpdaterButton />}
           <div style={{ height: '4px' }} />
           <AddPageButton onClick={onClickNewPage} />
         </SidebarContainer>

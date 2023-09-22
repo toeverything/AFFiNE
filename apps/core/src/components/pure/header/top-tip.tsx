@@ -1,6 +1,5 @@
 import { BrowserWarning } from '@affine/component/affine-banner';
 import { DownloadTips } from '@affine/component/affine-banner';
-import { isDesktop } from '@affine/env/constant';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtom } from 'jotai';
@@ -11,7 +10,7 @@ import { guideDownloadClientTipAtom } from '../../../atoms/guide';
 const minimumChromeVersion = 102;
 
 const shouldShowWarning = () => {
-  if (isDesktop) {
+  if (environment.isDesktop) {
     // even though desktop has compatibility issues,
     //  we don't want to show the warning
     return false;
@@ -64,7 +63,7 @@ export const TopTip = () => {
     setShowWarning(shouldShowWarning());
   }, []);
 
-  if (showDownloadTip && isDesktop) {
+  if (showDownloadTip && environment.isDesktop) {
     return (
       <DownloadTips
         onClose={() => {

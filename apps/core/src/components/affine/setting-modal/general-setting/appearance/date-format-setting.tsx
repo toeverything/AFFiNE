@@ -1,6 +1,6 @@
 import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import dayjs from 'dayjs';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 import {
   dateFormatOptions,
@@ -35,7 +35,6 @@ const DateFormatMenuContent = ({
 };
 
 export const DateFormatSetting = () => {
-  const ref = useRef(null);
   const [appearanceSettings, setAppSettings] = useAppSetting();
   const handleSelect = useCallback(
     (option: DateFormats) => {
@@ -52,9 +51,8 @@ export const DateFormatSetting = () => {
           currentOption={appearanceSettings.dateFormat}
         />
       }
-      portalOptions={{ container: ref.current }}
     >
-      <MenuTrigger ref={ref} data-testid="date-format-menu-trigger" block>
+      <MenuTrigger data-testid="date-format-menu-trigger" block>
         {dayjs(new Date()).format(appearanceSettings.dateFormat)}
       </MenuTrigger>
     </Menu>

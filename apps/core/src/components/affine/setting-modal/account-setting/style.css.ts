@@ -14,7 +14,6 @@ export const avatarWrapper = style({
   height: '56px',
   borderRadius: '50%',
   position: 'relative',
-  overflow: 'hidden',
   cursor: 'pointer',
   flexShrink: '0',
   selectors: {
@@ -28,8 +27,9 @@ globalStyle(`${avatarWrapper}:hover .camera-icon-wrapper`, {
   display: 'flex',
 });
 globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
-  width: '100%',
-  height: '100%',
+  width: '56px',
+  height: '56px',
+  borderRadius: '50%',
   position: 'absolute',
   display: 'none',
   justifyContent: 'center',

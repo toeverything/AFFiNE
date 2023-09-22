@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "rootDir": ".",
+    "outDir": "../lib/tests",
+    "tsBuildInfoFile": "../lib/tests/.tsbuildinfo"
+  },
+  "references": [
+    {
+      "path": "../tsconfig.json"
+    },
+    {
+      "path": "../../../tests/kit/tsconfig.json"
+    }
+  ],
+  "include": ["."],
+  "exclude": []
+}

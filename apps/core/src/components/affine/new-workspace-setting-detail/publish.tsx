@@ -142,9 +142,7 @@ const PublishPanelLocal = ({
       {runtimeConfig.enableCloud ? (
         <EnableAffineCloudModal
           open={open}
-          onClose={() => {
-            setOpen(false);
-          }}
+          onOpenChange={setOpen}
           onConfirm={() => {
             onTransferWorkspace(
               WorkspaceFlavour.LOCAL,
@@ -155,12 +153,7 @@ const PublishPanelLocal = ({
           }}
         />
       ) : (
-        <TmpDisableAffineCloudModal
-          open={open}
-          onClose={() => {
-            setOpen(false);
-          }}
-        />
+        <TmpDisableAffineCloudModal open={open} onOpenChange={setOpen} />
       )}
     </>
   );

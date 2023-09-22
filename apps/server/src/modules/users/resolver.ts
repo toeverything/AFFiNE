@@ -15,7 +15,6 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma/service';
@@ -60,6 +59,11 @@ export class UserType implements Partial<User> {
 
 @ObjectType()
 export class DeleteAccount {
+  @Field()
+  success!: boolean;
+}
+@ObjectType()
+export class RemoveAvatar {
   @Field()
   success!: boolean;
 }
@@ -136,19 +140,34 @@ export class UserResolver {
     description: 'Upload user avatar',
   })
   async uploadAvatar(
-    @Args('id') id: string,
+    @CurrentUser() user: UserType,
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
-    const user = await this.users.findUserById(id);
     if (!user) {
-      throw new BadRequestException(`User ${id} not found`);
+      throw new BadRequestException(`User not found`);
     }
-    const url = await this.storage.uploadFile(`${id}-avatar`, avatar);
+    const url = await this.storage.uploadFile(`${user.id}-avatar`, avatar);
     return this.prisma.user.update({
-      where: { id },
+      where: { id: user.id },
       data: { avatarUrl: url },
     });
+  }
+
+  @Throttle(10, 60)
+  @Mutation(() => RemoveAvatar, {
+    name: 'removeAvatar',
+    description: 'Remove user avatar',
+  })
+  async removeAvatar(@CurrentUser() user: UserType) {
+    if (!user) {
+      throw new BadRequestException(`User not found`);
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { avatarUrl: null },
+    });
+    return { success: true };
   }
 
   @Throttle(10, 60)

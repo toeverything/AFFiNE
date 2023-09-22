@@ -7,13 +7,17 @@
     "resolveJsonModule": true,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "outDir": "dist/scripts",
+    "outDir": "./lib/scripts",
     "rootDir": "."
   },
   "references": [
     {
       "path": "../../tests/fixtures"
+    },
+    {
+      "path": "../../tests/kit"
     }
   ],
-  "include": ["scripts", "package.json"]
+  "include": ["scripts", "package.json"],
+  "exclude": ["tests"]
 }

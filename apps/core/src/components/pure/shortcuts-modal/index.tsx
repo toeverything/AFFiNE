@@ -1,9 +1,7 @@
-import {
-  ModalCloseButton,
-  MuiClickAwayListener,
-  MuiSlide,
-} from '@affine/component';
+import { MuiClickAwayListener, MuiSlide } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { CloseIcon } from '@blocksuite/icons';
+import { IconButton } from '@toeverything/components/button';
 
 import {
   type ShortcutsInfo,
@@ -14,13 +12,7 @@ import {
 } from '../../../hooks/affine/use-shortcuts';
 import { KeyboardIcon } from './icons';
 import * as styles from './style.css';
-// import {
-//   StyledListItem,
-//   StyledModalHeader,
-//   StyledShortcutsModal,
-//   StyledSubTitle,
-//   StyledTitle,
-// } from './style';
+
 type ModalProps = {
   open: boolean;
   onClose: () => void;
@@ -81,12 +73,16 @@ export const ShortcutsModal = ({ open, onClose }: ModalProps) => {
                 {t['Shortcuts']()}
               </div>
 
-              <ModalCloseButton
-                top={6}
-                right={6}
+              <IconButton
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  top: 6,
+                }}
                 onClick={() => {
                   onClose();
                 }}
+                icon={<CloseIcon />}
               />
             </div>
             <ShortcutsPanel shortcutsInfo={generalShortcutsInfo} />

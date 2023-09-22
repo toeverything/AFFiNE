@@ -61,7 +61,6 @@ export const sidebarSelectItem = style({
     },
   },
 });
-
 globalStyle(`${settingSlideBar} .icon`, {
   width: '16px',
   height: '16px',
@@ -106,13 +105,6 @@ export const accountButton = style({
   ':hover': {
     background: 'var(--affine-hover-color)',
   },
-});
-
-globalStyle(`${accountButton} .avatar`, {
-  border: '1px solid',
-  borderColor: 'var(--affine-white)',
-  marginRight: '10px',
-  flexShrink: 0,
 });
 
 globalStyle(`${accountButton} .avatar.not-sign`, {

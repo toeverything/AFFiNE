@@ -59,7 +59,7 @@ async function handleAffineUrl(url: string) {
   logger.info('handle affine schema action', urlObj.hostname);
   // handle more actions here
   // hostname is the action name
-  if (urlObj.hostname === 'oauth-jwt') {
+  if (urlObj.hostname === 'signin-redirect') {
     await handleOauthJwt(url);
   }
 }

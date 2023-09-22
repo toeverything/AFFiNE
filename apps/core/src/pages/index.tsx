@@ -1,11 +1,14 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX } from '@affine/env/constant';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { Menu } from '@toeverything/components/menu';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { lazy } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
+
+import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 
 const AllWorkspaceModals = lazy(() =>
   import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
@@ -54,5 +57,36 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const Component = () => {
-  return <AllWorkspaceModals />;
+  // TODO: We need a no workspace page
+  return (
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
+        }}
+      >
+        <Menu
+          rootOptions={{
+            open: true,
+          }}
+          items={<UserWithWorkspaceList />}
+          contentOptions={{
+            style: {
+              width: 300,
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '8px',
+              boxShadow: 'var(--affine-shadow-2)',
+              backgroundColor: 'var(--affine-background-overlay-panel-color)',
+              padding: '16px 12px',
+            },
+          }}
+        >
+          <div></div>
+        </Menu>
+      </div>
+      <AllWorkspaceModals />
+    </>
+  );
 };

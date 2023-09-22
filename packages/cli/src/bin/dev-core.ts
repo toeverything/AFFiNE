@@ -30,6 +30,8 @@ if (process.argv.includes('--static')) {
         'serve',
         '--mode',
         'development',
+        '--no-client-overlay',
+        '--no-live-reload',
         '--env',
         'flags=' + Buffer.from(JSON.stringify(flags), 'utf-8').toString('hex'),
       ].filter((v): v is string => !!v),

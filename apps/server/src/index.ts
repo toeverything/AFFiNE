@@ -19,7 +19,6 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node';
 import { PrismaInstrumentation } from '@prisma/instrumentation';
 import cookieParser from 'cookie-parser';
 import { static as staticMiddleware } from 'express';
-// @ts-expect-error graphql-upload is not typed
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';

@@ -1,4 +1,3 @@
-import { isDesktop } from '@affine/env/constant';
 import {
   generateRandUTF16Chars,
   SPAN_ID_BYTES,
@@ -48,13 +47,13 @@ function onRejectHandleTrace<T>(
 
 export const signInCloud: typeof signIn = async (provider, ...rest) => {
   const traceParams = genTraceParams();
-  if (isDesktop) {
+  if (environment.isDesktop) {
     if (provider === 'google') {
       open(
         `${
           runtimeConfig.serverUrlPrefix
         }/desktop-signin?provider=google&callback_url=${buildCallbackUrl(
-          '/open-app/oauth-jwt'
+          '/open-app/signin-redirect'
         )}`,
         '_target'
       );
@@ -63,7 +62,9 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
       const [options, ...tail] = rest;
       const callbackUrl =
         runtimeConfig.serverUrlPrefix +
-        (provider === 'email' ? '/open-app/oauth-jwt' : location.pathname);
+        (provider === 'email'
+          ? '/open-app/signin-redirect'
+          : location.pathname);
       return signIn(
         provider,
         {
@@ -85,8 +86,8 @@ export const signInCloud: typeof signIn = async (provider, ...rest) => {
 export const signOutCloud: typeof signOut = async options => {
   const traceParams = genTraceParams();
   return signOut({
-    ...options,
     callbackUrl: '/',
+    ...options,
   })
     .then(result => {
       if (result) {
@@ -102,7 +103,7 @@ export const signOutCloud: typeof signOut = async options => {
 
 export function buildCallbackUrl(callbackUrl: string) {
   const params: string[][] = [];
-  if (isDesktop && window.appInfo.schema) {
+  if (environment.isDesktop && window.appInfo.schema) {
     params.push(['schema', window.appInfo.schema]);
   }
   const query =

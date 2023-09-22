@@ -8,4 +8,5 @@ export * from './operation-menu-items';
 export * from './styles';
 export * from './type';
 export * from './use-collection-manager';
+export * from './utils';
 export * from './view';
