@@ -99,6 +99,7 @@ jobs:
         uses: ./.github/actions/setup-node
         timeout-minutes: 10
         with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo @toeverything/y-indexeddb @affine/sdk @affine-test/affine-desktop
           playwright-install: true
           hard-link-nm: false
 
