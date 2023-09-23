@@ -27,11 +27,11 @@
     "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "dependencies": {
-    "i18next": "^23.4.6",
+    "i18next": "^23.5.1",
     "react-i18next": "^13.1.2"
   },
   "devDependencies": {
-    "@types/node": "^18.17.12",
+    "@types/node": "^18.17.18",
     "@types/prettier": "^3.0.0",
     "prettier": "^3.0.3",
     "ts-node": "^10.9.1",

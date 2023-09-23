@@ -81,7 +81,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             sendVerificationRequest(config, logger, mailer, session, params),
         }),
       ],
-      // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {

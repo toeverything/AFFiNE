@@ -44,7 +44,7 @@ jobs:
     outputs:
       RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
@@ -101,7 +101,7 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       SKIP_GENERATE_ASSETS: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -172,7 +172,7 @@ jobs:
     env:
       SKIP_GENERATE_ASSETS: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -240,7 +240,7 @@ jobs:
     outputs:
       FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -318,7 +318,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v3
         with:

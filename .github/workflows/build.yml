@@ -42,7 +42,7 @@ jobs:
     environment: development
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run check
         run: |
           yarn set version $(node -e "console.log(require('./package.json').packageManager.split('@')[1])")
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -117,7 +117,7 @@ jobs:
         shard: [1, 2, 3, 4, 5]
     environment: development
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -161,7 +161,7 @@ jobs:
           - { package: 0.8.0-canary.7 }
           - { package: 0.8.3 }
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -189,7 +189,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:

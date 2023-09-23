@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import ava, { TestFn } from 'ava';
+import ava, { type TestFn } from 'ava';
 import { stub } from 'sinon';
 
 import { AppModule } from '../src/app';

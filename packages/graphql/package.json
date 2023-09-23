@@ -23,7 +23,10 @@
   },
   "dependencies": {
     "@affine/env": "workspace:*",
-    "graphql": "^16.8.0",
+    "graphql": "^16.8.1",
     "nanoid": "^4.0.2"
+  },
+  "installConfig": {
+    "hoistingLimits": "workspaces"
   }
 }

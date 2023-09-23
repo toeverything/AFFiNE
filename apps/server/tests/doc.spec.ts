@@ -1,6 +1,6 @@
 import { mock } from 'node:test';
 
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 import { register } from 'prom-client';

@@ -50,7 +50,12 @@ export class AuthResolver {
     private readonly session: SessionService
   ) {}
 
-  @Throttle(20, 60)
+  @Throttle({
+    default: {
+      limit: 20,
+      ttl: 60,
+    },
+  })
   @ResolveField(() => TokenType)
   async token(
     @Context() ctx: { req: Request },
@@ -82,7 +87,12 @@ export class AuthResolver {
     };
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => UserType)
   async signUp(
     @Context() ctx: { req: Request },
@@ -95,7 +105,12 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => UserType)
   async signIn(
     @Context() ctx: { req: Request },
@@ -107,7 +122,12 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle(5, 60)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Mutation(() => UserType)
   @Auth()
   async changePassword(
@@ -126,7 +146,12 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle(5, 60)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Mutation(() => UserType)
   @Auth()
   async changeEmail(
@@ -147,7 +172,12 @@ export class AuthResolver {
     return user;
   }
 
-  @Throttle(5, 60)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Mutation(() => Boolean)
   @Auth()
   async sendChangePasswordEmail(
@@ -165,7 +195,12 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
-  @Throttle(5, 60)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Mutation(() => Boolean)
   @Auth()
   async sendSetPasswordEmail(
@@ -190,7 +225,12 @@ export class AuthResolver {
   // 4. user open confirm email page from new email
   // 5. user click confirm button
   // 6. send notification email
-  @Throttle(5, 60)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Mutation(() => Boolean)
   @Auth()
   async sendChangeEmail(
@@ -208,7 +248,12 @@ export class AuthResolver {
     return !res.rejected.length;
   }
 
-  @Throttle(5, 60)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Mutation(() => Boolean)
   @Auth()
   async sendVerifyChangeEmail(
