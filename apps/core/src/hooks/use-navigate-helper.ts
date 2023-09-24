@@ -1,5 +1,5 @@
 import type { WorkspaceSubPath } from '@affine/env/workspace';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   type NavigateOptions,
   useLocation,
@@ -103,14 +103,26 @@ export function useNavigateHelper() {
     [navigate]
   );
 
-  return {
-    jumpToPage,
-    jumpToPublicWorkspacePage,
-    jumpToSubPath,
-    jumpToIndex,
-    jumpTo404,
-    openPage,
-    jumpToExpired,
-    jumpToSignIn,
-  };
+  return useMemo(
+    () => ({
+      jumpToPage,
+      jumpToPublicWorkspacePage,
+      jumpToSubPath,
+      jumpToIndex,
+      jumpTo404,
+      openPage,
+      jumpToExpired,
+      jumpToSignIn,
+    }),
+    [
+      jumpTo404,
+      jumpToExpired,
+      jumpToIndex,
+      jumpToPage,
+      jumpToPublicWorkspacePage,
+      jumpToSignIn,
+      jumpToSubPath,
+      openPage,
+    ]
+  );
 }
