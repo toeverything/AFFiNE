@@ -28,7 +28,7 @@ export function uint8ArrayToBase64(array: Uint8Array): Promise<string> {
         return;
       }
       // The result includes the `data:` URL prefix and the MIME type. We only want the Base64 data
-      const base64 = dataUrl.split(',')[1];
+      const base64 = dataUrl.split(',')[1]
       resolve(base64);
     };
 
