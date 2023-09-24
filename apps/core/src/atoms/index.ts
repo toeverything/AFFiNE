@@ -100,3 +100,5 @@ export const setPageModeAtom = atom(
 
 export type PageModeOption = 'all' | 'page' | 'edgeless';
 export const allPageModeSelectAtom = atom<PageModeOption>('all');
+
+export const openWorkspaceListModalAtom = atom(false);

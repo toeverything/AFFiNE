@@ -20,10 +20,11 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
-import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
+import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
@@ -100,7 +101,9 @@ export const RootAppSidebar = ({
   const { backToAll } = useCollectionManager(currentCollectionsAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
-  const [openUserWorkspaceList, setOpenUserWorkspaceList] = useState(false);
+  const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
+    openWorkspaceListModalAtom
+  );
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
     await page.waitForLoaded();
@@ -142,7 +145,7 @@ export const RootAppSidebar = ({
   });
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
-  }, []);
+  }, [setOpenUserWorkspaceList]);
 
   return (
     <>
@@ -178,7 +181,7 @@ export const RootAppSidebar = ({
               currentWorkspace={currentWorkspace}
               onClick={useCallback(() => {
                 setOpenUserWorkspaceList(true);
-              }, [])}
+              }, [setOpenUserWorkspaceList])}
             />
           </Menu>
           <QuickSearchInput
