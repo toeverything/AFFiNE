@@ -612,5 +612,6 @@
   "com.affine.cmdk.affine.editor.edgeless.presentation-start": "Start Presentation",
   "com.affine.cmdk.affine.navigation.goto-page-list": "Go to Page List",
   "com.affine.cmdk.affine.navigation.goto-edgeless-list": "Go to Edgeless List",
-  "com.affine.cmdk.affine.navigation.goto-workspace": "Go to Workspace"
+  "com.affine.cmdk.affine.navigation.goto-workspace": "Go to Workspace",
+  "com.affine.cmdk.affine.category.affine.edgeless": "Edgeless"
 }

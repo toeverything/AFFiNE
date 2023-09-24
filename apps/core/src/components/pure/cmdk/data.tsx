@@ -203,8 +203,11 @@ export const usePageCommands = () => {
       });
 
       results = pages.map(page => {
+        const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
+        const category =
+          pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
         const command = pageToCommand(
-          'affine:pages',
+          category,
           page,
           store,
           navigationHelper,
