@@ -54,5 +54,7 @@ export function useRegisterWorkspaceCommands() {
     theme,
     currentWorkspace.blockSuiteWorkspace,
     navigationHelper,
+    pageMode,
+    setPageMode,
   ]);
 }
