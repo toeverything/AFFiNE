@@ -29,6 +29,7 @@ const categoryToI18nKey: Record<CommandCategory, i18nKey> = {
   'affine:layout': 'com.affine.cmdk.affine.category.affine.layout',
   'affine:pages': 'com.affine.cmdk.affine.category.affine.pages',
   'affine:edgeless': 'com.affine.cmdk.affine.category.affine.edgeless',
+  'affine:collections': 'com.affine.cmdk.affine.category.affine.collections',
   'affine:settings': 'com.affine.cmdk.affine.category.affine.settings',
   'affine:updates': 'com.affine.cmdk.affine.category.affine.updates',
   'affine:help': 'com.affine.cmdk.affine.category.affine.help',
