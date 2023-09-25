@@ -7833,12 +7833,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/nx-cloud@npm:16.3.0":
-  version: 16.3.0
-  resolution: "@nrwl/nx-cloud@npm:16.3.0"
+"@nrwl/nx-cloud@npm:16.4.0":
+  version: 16.4.0
+  resolution: "@nrwl/nx-cloud@npm:16.4.0"
   dependencies:
-    nx-cloud: 16.3.0
-  checksum: 2a2c1d3c60eb9add85d078f957c6d76cd9a819f80bc48ff9f339df17a3d18d13616cf4f595b853d3d52d1ecdbeb85709592a6b478ebe526050694da4303438e4
+    nx-cloud: 16.4.0
+  checksum: d72db82bcc0fa07547fc8388069ca012d974803922600885088ef5321f5f92d3944c6b4c005f98d540a414a8c2a53a57a0e365a33df3e0656c6b4ac7d2f1cf64
   languageName: node
   linkType: hard
 
@@ -27083,11 +27083,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx-cloud@npm:16.3.0, nx-cloud@npm:latest":
-  version: 16.3.0
-  resolution: "nx-cloud@npm:16.3.0"
+"nx-cloud@npm:16.4.0, nx-cloud@npm:latest":
+  version: 16.4.0
+  resolution: "nx-cloud@npm:16.4.0"
   dependencies:
-    "@nrwl/nx-cloud": 16.3.0
+    "@nrwl/nx-cloud": 16.4.0
     axios: 1.1.3
     chalk: ^4.1.0
     dotenv: ~10.0.0
@@ -27099,7 +27099,7 @@ __metadata:
     yargs-parser: ">=21.1.1"
   bin:
     nx-cloud: bin/nx-cloud.js
-  checksum: dd4b1a5aa379212db7c0a0d5bfa34785306fec9eaac477792a4888849ced190db84c3e60abc9aa4bdd8443f08ab10ac0c0168e85bcd9e0a621e3c32e71c15605
+  checksum: 41319b77ea3c2a9a80610d50eb52a43f6d86fe84233373697930a6aa887350295785739c9b68cb56f5be60928d67549fa5ec8af3a8091c68851c2758ed5f4dfe
   languageName: node
   linkType: hard
 
