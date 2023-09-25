@@ -7,7 +7,6 @@ export const appStyle = style({
   width: '100%',
   position: 'relative',
   height: '100vh',
-  transition: 'background-color .5s',
   display: 'flex',
   flexGrow: '1',
   flexDirection: 'row',
