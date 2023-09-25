@@ -24,7 +24,7 @@
     "@keyv/redis": "^2.7.0",
     "@nestjs/apollo": "^12.0.7",
     "@nestjs/common": "^10.2.4",
-    "@nestjs/core": "^10.2.4",
+    "@nestjs/core": "^10.2.6",
     "@nestjs/graphql": "^12.0.8",
     "@nestjs/platform-express": "^10.2.4",
     "@nestjs/platform-socket.io": "^10.2.4",
