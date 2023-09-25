@@ -269,7 +269,11 @@ export const CreateWorkspaceModal = ({
         const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           setAddedId(result.workspaceId);
-          setStep('set-syncing-mode');
+          // setStep('set-syncing-mode');
+          const id = await addLocalWorkspace(result.workspaceId);
+          if (id) {
+            onCreate(id);
+          }
         } else if (result.error || result.canceled) {
           if (result.error) {
             toast(t[result.error]());
@@ -287,7 +291,7 @@ export const CreateWorkspaceModal = ({
     return () => {
       canceled = true;
     };
-  }, [mode, onClose, t]);
+  }, [addLocalWorkspace, mode, onClose, onCreate, t]);
 
   const onConfirmEnableCloudSyncing = useCallback(
     (enableCloudSyncing: boolean) => {
@@ -332,19 +336,19 @@ export const CreateWorkspaceModal = ({
   const onConfirmName = useCallback(
     (name: string) => {
       setWorkspaceName(name);
-      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-        setStep('set-syncing-mode');
-      } else {
-        // this will be the last step for web for now
-        // fix me later
-        createLocalWorkspace(name)
-          .then(id => {
-            onCreate(id);
-          })
-          .catch(err => {
-            logger.error(err);
-          });
-      }
+      // if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
+      // setStep('set-syncing-mode');
+      // } else {
+      // this will be the last step for web for now
+      // fix me later
+      createLocalWorkspace(name)
+        .then(id => {
+          onCreate(id);
+        })
+        .catch(err => {
+          logger.error(err);
+        });
+      // }
     },
     [createLocalWorkspace, onCreate]
   );
