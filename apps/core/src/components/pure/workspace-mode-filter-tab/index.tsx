@@ -17,7 +17,7 @@ export const WorkspaceModeFilterTab = () => {
   return (
     <RadioButtonGroup
       width={300}
-      defaultValue={value}
+      value={value}
       onValueChange={handleValueChange}
     >
       <RadioButton value="all" style={{ textTransform: 'capitalize' }}>

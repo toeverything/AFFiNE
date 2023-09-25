@@ -1,7 +1,9 @@
 import { commandScore } from '@affine/cmdk';
+import { useCollectionManager } from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
@@ -33,6 +35,8 @@ import {
 } from '../../../atoms';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../../../shared';
+import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 
@@ -203,8 +207,11 @@ export const usePageCommands = () => {
       });
 
       results = pages.map(page => {
+        const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
+        const category =
+          pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
         const command = pageToCommand(
-          'affine:pages',
+          category,
           page,
           store,
           navigationHelper,
@@ -280,15 +287,86 @@ export const usePageCommands = () => {
   ]);
 };
 
+export const collectionToCommand = (
+  collection: Collection,
+  store: ReturnType<typeof getCurrentStore>,
+  navigationHelper: ReturnType<typeof useNavigateHelper>,
+  selectCollection: ReturnType<typeof useCollectionManager>['selectCollection'],
+  t: ReturnType<typeof useAFFiNEI18N>
+): CMDKCommand => {
+  const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+  const label = collection.name || t['Untitled']();
+  const category = 'affine:collections';
+  return {
+    id: collection.id,
+    label: label,
+    // hack: when comparing, the part between >>> and <<< will be ignored
+    // adding this patch so that CMDK will not complain about duplicated commands
+    value:
+      label +
+      valueWrapperStart +
+      collection.id +
+      '.' +
+      category +
+      valueWrapperEnd,
+    originalValue: label,
+    category: category,
+    run: () => {
+      if (!currentWorkspaceId) {
+        console.error('current workspace not found');
+        return;
+      }
+      navigationHelper.jumpToSubPath(currentWorkspaceId, WorkspaceSubPath.ALL);
+      selectCollection(collection.id);
+    },
+    icon: <ViewLayersIcon />,
+  };
+};
+
+export const useCollectionsCommands = () => {
+  // todo: considering collections for searching pages
+  const { savedCollections, selectCollection } = useCollectionManager(
+    currentCollectionsAtom
+  );
+  const store = getCurrentStore();
+  const query = useAtomValue(cmdkQueryAtom);
+  const navigationHelper = useNavigateHelper();
+  const t = useAFFiNEI18N();
+
+  return useMemo(() => {
+    let results: CMDKCommand[] = [];
+    if (query.trim() === '') {
+      return results;
+    } else {
+      results = savedCollections.map(collection => {
+        const command = collectionToCommand(
+          collection,
+          store,
+          navigationHelper,
+          selectCollection,
+          t
+        );
+        return command;
+      });
+      return results;
+    }
+  }, [query, savedCollections, store, navigationHelper, selectCollection, t]);
+};
+
 export const useCMDKCommandGroups = () => {
   const pageCommands = usePageCommands();
+  const collectionCommands = useCollectionsCommands();
   const affineCommands = useAtomValue(filteredAffineCommands);
 
   return useMemo(() => {
-    const commands = [...pageCommands, ...affineCommands];
+    const commands = [
+      ...pageCommands,
+      ...collectionCommands,
+      ...affineCommands,
+    ];
     const groups = groupBy(commands, command => command.category);
     return Object.entries(groups) as [CommandCategory, CMDKCommand[]][];
-  }, [affineCommands, pageCommands]);
+  }, [affineCommands, collectionCommands, pageCommands]);
 };
 
 export const customCommandFilter = (value: string, search: string) => {

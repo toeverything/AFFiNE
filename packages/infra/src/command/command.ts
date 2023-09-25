@@ -17,6 +17,8 @@ export type CommandCategory =
   | 'editor:edgeless'
   | 'affine:recent'
   | 'affine:pages'
+  | 'affine:edgeless'
+  | 'affine:collections'
   | 'affine:navigation'
   | 'affine:creation'
   | 'affine:settings'

@@ -1,5 +1,5 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { PlusIcon } from '@blocksuite/icons';
+import { ImportIcon, PlusIcon } from '@blocksuite/icons';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
 
@@ -54,6 +54,20 @@ export function registerAffineCreationCommands({
       label: t['com.affine.cmdk.affine.new-workspace'],
       run() {
         store.set(openCreateWorkspaceModalAtom, 'new');
+      },
+    })
+  );
+  unsubs.push(
+    registerAffineCommand({
+      id: 'affine:import-workspace',
+      category: 'affine:creation',
+      icon: <ImportIcon />,
+      label: t['com.affine.cmdk.affine.import-workspace'],
+      preconditionStrategy: () => {
+        return environment.isDesktop;
+      },
+      run() {
+        store.set(openCreateWorkspaceModalAtom, 'add');
       },
     })
   );

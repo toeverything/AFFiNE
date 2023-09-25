@@ -1,8 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useStore } from 'jotai';
+import { useAtom, useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
+import { allPageModeSelectAtom } from '../atoms';
 import {
   registerAffineCreationCommands,
   registerAffineLayoutCommands,
@@ -20,6 +21,7 @@ export function useRegisterWorkspaceCommands() {
   const [currentWorkspace] = useCurrentWorkspace();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
+  const [pageMode, setPageMode] = useAtom(allPageModeSelectAtom);
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     unsubs.push(
@@ -28,6 +30,8 @@ export function useRegisterWorkspaceCommands() {
         t,
         workspace: currentWorkspace.blockSuiteWorkspace,
         navigationHelper,
+        pageMode,
+        setPageMode,
       })
     );
     unsubs.push(registerAffineSettingsCommands({ store, t, theme }));
@@ -50,5 +54,7 @@ export function useRegisterWorkspaceCommands() {
     theme,
     currentWorkspace.blockSuiteWorkspace,
     navigationHelper,
+    pageMode,
+    setPageMode,
   ]);
 }
