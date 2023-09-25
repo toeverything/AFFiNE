@@ -100,6 +100,7 @@ export const accountButton = style({
   cursor: 'pointer',
   userSelect: 'none',
   display: 'flex',
+  columnGap: '10px',
   justifyContent: 'space-between',
   alignItems: 'center',
   ':hover': {
@@ -107,7 +108,7 @@ export const accountButton = style({
   },
 });
 
-globalStyle(`${accountButton} .avatar.not-sign`, {
+globalStyle(`${accountButton} .avatar`, {
   width: '28px',
   height: '28px',
   borderRadius: '50%',
@@ -115,6 +116,10 @@ globalStyle(`${accountButton} .avatar.not-sign`, {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
+  flexShrink: 0,
+});
+
+globalStyle(`${accountButton} .avatar.not-sign`, {
   borderColor: 'var(--affine-icon-secondary)',
   color: 'var(--affine-icon-secondary)',
   background: 'var(--affine-white)',

@@ -83,24 +83,32 @@ globalStyle(`${root} [cmdk-group][hidden]`, {
   display: 'none',
 });
 
+globalStyle(
+  `${root} [cmdk-group]:not([hidden]):first-of-type [cmdk-group-heading]`,
+  {
+    paddingTop: 16,
+  }
+);
+
 globalStyle(`${root} [cmdk-list]`, {
   maxHeight: 400,
+  minHeight: 120,
   overflow: 'auto',
   overscrollBehavior: 'contain',
   transition: '.1s ease',
   transitionProperty: 'height',
   height: 'min(330px, calc(var(--cmdk-list-height) + 8px))',
-  padding: '0 6px 8px 6px',
+  padding: '0 0 8px 6px',
+  scrollbarGutter: 'stable',
 });
 
 globalStyle(`${root} [cmdk-list]::-webkit-scrollbar`, {
-  width: 8,
-  height: 8,
+  width: 6,
+  height: 6,
 });
 
 globalStyle(`${root} [cmdk-list]::-webkit-scrollbar-thumb`, {
   borderRadius: 4,
-  border: '1px solid transparent',
   backgroundClip: 'padding-box',
 });
 

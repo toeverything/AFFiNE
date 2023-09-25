@@ -4,10 +4,11 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { useAtom, useSetAtom } from 'jotai';
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useLayoutEffect, useMemo } from 'react';
 
 import {
   cmdkQueryAtom,
+  cmdkValueAtom,
   customCommandFilter,
   useCMDKCommandGroups,
 } from './data';
@@ -126,12 +127,15 @@ export const CMDKContainer = ({
   onQueryChange: (query: string) => void;
 }>) => {
   const t = useAFFiNEI18N();
+  const [value, setValue] = useAtom(cmdkValueAtom);
   return (
     <Command
       {...rest}
       data-testid="cmdk-quick-search"
       filter={customCommandFilter}
       className={clsx(className, styles.panelContainer)}
+      value={value}
+      onValueChange={setValue}
       // Handle KeyboardEvent conflicts with blocksuite
       onKeyDown={(e: React.KeyboardEvent) => {
         if (
@@ -160,7 +164,7 @@ export const CMDKContainer = ({
 
 export const CMDKQuickSearchModal = (props: CMDKModalProps) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.open) {
       setQuery('');
     }

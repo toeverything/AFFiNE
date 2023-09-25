@@ -41,6 +41,7 @@ import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 
 export const cmdkQueryAtom = atom('');
+export const cmdkValueAtom = atom('');
 
 // like currentWorkspaceAtom, but not throw error
 const safeCurrentPageAtom = atom<Promise<Page | undefined>>(async get => {
