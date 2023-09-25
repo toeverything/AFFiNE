@@ -114,7 +114,7 @@
     "vite": "^4.4.9",
     "vite-plugin-istanbul": "^5.0.0",
     "vite-plugin-static-copy": "^0.17.0",
-    "vite-tsconfig-paths": "^4.2.0",
+    "vite-tsconfig-paths": "^4.2.1",
     "vitest": "0.33.0",
     "vitest-fetch-mock": "^0.2.2",
     "vitest-mock-extended": "^1.2.1"
