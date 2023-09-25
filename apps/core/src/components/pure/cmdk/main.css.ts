@@ -83,8 +83,13 @@ globalStyle(`${root} [cmdk-group][hidden]`, {
   display: 'none',
 });
 
+globalStyle(`${root} [cmdk-group]:first-of-type [cmdk-group-heading]`, {
+  paddingTop: 16,
+});
+
 globalStyle(`${root} [cmdk-list]`, {
   maxHeight: 400,
+  minHeight: 120,
   overflow: 'auto',
   overscrollBehavior: 'contain',
   transition: '.1s ease',
