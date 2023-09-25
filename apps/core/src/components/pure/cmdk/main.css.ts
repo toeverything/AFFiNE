@@ -83,9 +83,12 @@ globalStyle(`${root} [cmdk-group][hidden]`, {
   display: 'none',
 });
 
-globalStyle(`${root} [cmdk-group]:first-of-type [cmdk-group-heading]`, {
-  paddingTop: 16,
-});
+globalStyle(
+  `${root} [cmdk-group]:not([hidden]):first-of-type [cmdk-group-heading]`,
+  {
+    paddingTop: 16,
+  }
+);
 
 globalStyle(`${root} [cmdk-list]`, {
   maxHeight: 400,
