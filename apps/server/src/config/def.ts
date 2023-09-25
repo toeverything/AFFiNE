@@ -16,7 +16,7 @@ export enum ExternalAccount {
   firebase = 'firebase',
 }
 
-export enum PaymentRecurringPlan {
+export enum SubscriptionPlan {
   Monthly = 'monthly',
   Yearly = 'yearly',
 }
@@ -353,10 +353,6 @@ export interface AFFiNEConfig {
       keys: {
         APIKey: string;
         webhookKey: string;
-      };
-      prices: {
-        [PaymentRecurringPlan.Monthly]: string;
-        [PaymentRecurringPlan.Yearly]: string;
       };
     } & import('stripe').Stripe.StripeConfig;
   };
