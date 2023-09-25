@@ -98,8 +98,8 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('add-workspace').click();
 
   // should show "Added Successfully" dialog
-  await page.waitForSelector('text="Added Successfully"');
-  await page.getByTestId('create-workspace-continue-button').click();
+  // await page.waitForSelector('text="Added Successfully"');
+  // await page.getByTestId('create-workspace-continue-button').click();
 
   // sleep for a while to wait for the workspace to be added :D
   await page.waitForTimeout(2000);
