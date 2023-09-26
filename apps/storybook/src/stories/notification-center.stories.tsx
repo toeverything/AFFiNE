@@ -17,8 +17,10 @@ export default {
 let id = 0;
 const image = (
   <video autoPlay muted loop>
-    <source src="/editingVideo.mp4" type="video/mp4" />
-    <source src="/editingVideo.webm" type="video/webm" />
+    <source
+      src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      type="video/mp4"
+    />
   </video>
 );
 export const Basic = () => {

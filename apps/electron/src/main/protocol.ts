@@ -18,6 +18,20 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'file',
+    privileges: {
+      secure: false,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      standard: true,
+      bypassCSP: true,
+      stream: true,
+    },
+  },
+]);
+
 const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
 const webStaticDir = join(__dirname, '../resources/web-static');
 

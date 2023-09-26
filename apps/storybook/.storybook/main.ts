@@ -36,6 +36,13 @@ export default {
   async viteFinal(config, _options) {
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
+      resolve: {
+        alias: {
+          '@toeverything/infra': fileURLToPath(
+            new URL('../../../packages/infra/src', import.meta.url)
+          ),
+        },
+      },
       plugins: [
         vanillaExtractPlugin(),
         tsconfigPaths({

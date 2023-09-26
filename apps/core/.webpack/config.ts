@@ -291,7 +291,7 @@ export const createConfiguration: (
               exclude: [/node_modules/],
             },
             {
-              test: /\.(png|jpg|gif|svg|webp)$/,
+              test: /\.(png|jpg|gif|svg|webp|mp4)$/,
               type: 'asset/resource',
             },
             {

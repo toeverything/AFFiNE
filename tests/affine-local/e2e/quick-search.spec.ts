@@ -13,6 +13,20 @@ const openQuickSearchByShortcut = async (page: Page) => {
   await page.waitForTimeout(500);
 };
 
+const keyboardDownAndSelect = async (page: Page, label: string) => {
+  await page.keyboard.press('ArrowDown');
+  if (
+    (await page
+      .locator('[cmdk-item][data-selected] [data-testid="cmdk-label"]')
+      .innerText()) !== label
+  ) {
+    await keyboardDownAndSelect(page, label);
+  } else {
+    await page.pause();
+    await page.keyboard.press('Enter');
+  }
+};
+
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
@@ -23,7 +37,9 @@ async function assertTitle(page: Page, text: string) {
 }
 
 async function assertResultList(page: Page, texts: string[]) {
-  const actual = await page.locator('[cmdk-item]').allInnerTexts();
+  const actual = await page
+    .locator('[cmdk-item] [data-testid=cmdk-label]')
+    .allInnerTexts();
   expect(actual).toEqual(texts);
 }
 
@@ -44,29 +60,21 @@ test('Click slider bar button', async ({ page }) => {
     '[data-testid=slider-bar-quick-search-button]'
   );
   await quickSearchButton.click();
-  const quickSearch = page.locator('[data-testid=quickSearch]');
+  const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible();
 });
 
-test('Click arrowDown icon after title', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await clickNewPageButton(page);
-  const quickSearchButton = page.locator(
-    '[data-testid=slider-bar-quick-search-button]'
-  );
-  await quickSearchButton.click();
-  const quickSearch = page.locator('[data-testid=quickSearch]');
-  await expect(quickSearch).toBeVisible();
-});
-
-test('Press the shortcut key cmd+k', async ({ page }) => {
+test('Press the shortcut key cmd+k and close with esc', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  const quickSearch = page.locator('[data-testid=quickSearch]');
+  const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible();
+
+  // press esc to close quick search
+  await page.keyboard.press('Escape');
+  await expect(quickSearch).toBeVisible({ visible: false });
 });
 
 test('Create a new page without keyword', async ({ page }) => {
@@ -74,7 +82,7 @@ test('Create a new page without keyword', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
+  const addNewPage = page.locator('[cmdk-item] >> text=New Page');
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, '');
@@ -86,7 +94,9 @@ test('Create a new page with keyword', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
-  const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
+  const addNewPage = page.locator(
+    '[cmdk-item] >> text=Create New Page as: test123456'
+  );
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
@@ -110,7 +120,9 @@ test('Create a new page and search this page', async ({ page }) => {
   // input title and create new page
   await page.keyboard.insertText('test123456');
   await page.waitForTimeout(300);
-  const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
+  const addNewPage = page.locator(
+    '[cmdk-item] >> text=Create New Page as: test123456'
+  );
   await addNewPage.click();
 
   await page.waitForTimeout(300);
@@ -137,10 +149,10 @@ test('Navigate to the 404 page and try to open quick search', async ({
   page,
 }) => {
   await page.goto('http://localhost:8080/404');
-  const notFoundTip = page.getByTestId('not-found');
+  const notFoundTip = page.locator('button >> text=Back to My Content');
   await expect(notFoundTip).toBeVisible();
   await openQuickSearchByShortcut(page);
-  const quickSearch = page.locator('[data-testid=quickSearch]');
+  const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible({ visible: false });
 });
 
@@ -177,18 +189,18 @@ test('Focus title after creating a new page', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.locator('[data-testid=quick-search-add-new-page]');
+  const addNewPage = page.locator('[cmdk-item] >> text=New Page');
   await addNewPage.click();
   await titleIsFocused(page);
 });
 
-test('Not show navigation path if page is not a subpage or current page is not in editor', async ({
-  page,
-}) => {
+test('can use keyboard down to select goto setting', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
-  expect(await page.getByTestId('navigation-path').count()).toBe(0);
+  await keyboardDownAndSelect(page, 'Go to Settings');
+
+  await expect(page.getByTestId('setting-modal')).toBeVisible();
 });
 
 test('assert the recent browse pages are on the recent list', async ({
@@ -209,7 +221,7 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create second page
   await openQuickSearchByShortcut(page);
-  const addNewPage = page.getByTestId('quick-search-add-new-page');
+  const addNewPage = page.locator('[cmdk-item] >> text=New Page');
   await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
@@ -234,7 +246,9 @@ test('assert the recent browse pages are on the recent list', async ({
   await page.waitForTimeout(200);
   {
     // check does all 3 pages exists on recent page list
-    const quickSearchItems = page.locator('[cmdk-item]');
+    const quickSearchItems = page.locator(
+      '[cmdk-item] [data-testid="cmdk-label"]'
+    );
     expect(await quickSearchItems.nth(0).textContent()).toBe('battlekot');
     expect(await quickSearchItems.nth(1).textContent()).toBe('theliquidhorse');
     expect(await quickSearchItems.nth(2).textContent()).toBe('sgtokidoki');
@@ -245,7 +259,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   {
-    const addNewPage = page.getByTestId('quick-search-add-new-page');
+    const addNewPage = page.locator('[cmdk-item] >> text=New Page');
     await addNewPage.click();
   }
   await page.waitForTimeout(200);
@@ -258,7 +272,9 @@ test('assert the recent browse pages are on the recent list', async ({
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
   {
-    const quickSearchItems = page.locator('[cmdk-item]');
+    const quickSearchItems = page.locator(
+      '[cmdk-item] [data-testid="cmdk-label"]'
+    );
     expect(await quickSearchItems.nth(0).textContent()).toBe(
       'affine is the best'
     );

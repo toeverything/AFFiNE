@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "exclude": ["lib"],
-  "include": ["./src/**/*", "./src/**/*.json"],
+  "include": ["./src/**/*", "./src/**/*.json", "./src/type.d.ts"],
   "compilerOptions": {
     "composite": true,
     "noEmit": false,

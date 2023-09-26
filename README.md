@@ -147,18 +147,7 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 
 Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
 
-# Contributors
-
-## Current Core members
-
-Team members who are currently maintaining the project:
-
-- [JimmFly](https://github.com/JimmFly) - Jinfei Yang <yangjinfei001@gmail.com> (he/him)
-- [pengx17](https://github.com/pengx17) - Peng Xiao <pengxiao@outlook.com> (he/him)
-- [QiShaoXuan](https://github.com/QiSHaoXuan) - Shaoxuan Qi <qishaoxuan777@gmail.com> (he/him)
-- [himself65](https://github.com/himself65) - Zeyu "Alex" Yang <himself65@outlook.com> (he/him)
-
-## All Contributors
+## Contributors
 
 We would like to express our gratitude to all the individuals who have already contributed to AFFiNE! If you have any AFFiNE-related project, documentation, tool or template, please feel free to contribute it by submitting a pull request to our curated list on GitHub: [awesome-affine](https://github.com/toeverything/awesome-affine).
 

@@ -1,4 +1,4 @@
-import type { DatasourceDocAdapter } from './data-source';
+import type { DocDataSource } from './data-source';
 
 export type Status =
   | {
@@ -16,7 +16,7 @@ export type Status =
     };
 
 export interface DataSourceAdapter {
-  datasource: DatasourceDocAdapter;
+  datasource: DocDataSource;
   readonly status: Status;
 
   subscribeStatusChange(onStatusChange: () => void): () => void;
