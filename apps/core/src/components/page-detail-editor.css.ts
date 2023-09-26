@@ -15,7 +15,7 @@ export const pluginContainer = style({
 });
 
 export const editor = style({
-  height: 'calc(100% - 52px)',
+  height: '100%',
   selectors: {
     '&.full-screen': {
       vars: {
