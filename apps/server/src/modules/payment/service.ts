@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
-import type { User } from '@prisma/client';
+import type { User, UserSubscription } from '@prisma/client';
 import Stripe from 'stripe';
 
 import { Config, SubscriptionPlan } from '../../config';
@@ -32,9 +32,9 @@ export enum InvoiceStatus {
 }
 
 @Injectable()
-export class PaymentService {
+export class SubscriptionService {
   private readonly paymentConfig: Config['payment'];
-  private readonly logger = new Logger(PaymentService.name);
+  private readonly logger = new Logger(SubscriptionService.name);
 
   constructor(
     config: Config,
@@ -52,15 +52,25 @@ export class PaymentService {
     }
   }
 
-  async checkout({
-    email,
+  async createCheckoutSession({
+    user,
     plan,
     redirectUrl,
   }: {
-    email: string;
+    user: User;
     plan: SubscriptionPlan;
     redirectUrl: string;
   }) {
+    const existsSub = await this.db.userSubscription.count({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (existsSub !== 0) {
+      throw new Error('User already has a subscription');
+    }
+
     const prices = await this.stripe.prices.list({
       lookup_keys: [plan],
     });
@@ -82,8 +92,89 @@ export class PaymentService {
       },
       mode: 'subscription',
       success_url: redirectUrl,
-      customer_email: email,
+      customer_email: user.email,
     });
+  }
+
+  async cancelSubscription(userId: string): Promise<UserSubscription> {
+    const user = await this.db.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        subscription: true,
+      },
+    });
+
+    if (!user?.subscription) {
+      throw new Error('User has no subscription');
+    }
+
+    // let customer contact support if they want to cancel immediately
+    // see https://stripe.com/docs/billing/subscriptions/cancel
+    const subscription = await this.stripe.subscriptions.update(
+      user.subscription.stripeSubscriptionId,
+      {
+        cancel_at_period_end: true,
+      }
+    );
+
+    return await this.saveSubscription(user, subscription);
+  }
+
+  async updateSubscriptionPlan(
+    userId: string,
+    plan: string
+  ): Promise<UserSubscription> {
+    const user = await this.db.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        subscription: true,
+      },
+    });
+
+    if (!user?.subscription) {
+      throw new Error('User has no subscription');
+    }
+
+    if (user.subscription.plan === plan) {
+      throw new Error('User has already subscribed to this plan');
+    }
+
+    const prices = await this.stripe.prices.list({
+      lookup_keys: [plan],
+    });
+
+    if (!prices.data.length) {
+      throw new Error(`Unknown subscription plan: ${plan}`);
+    }
+
+    const subscriptionItem = await this.stripe.subscriptionItems.list({
+      subscription: user.subscription.id,
+    });
+
+    const newSubscription = await this.stripe.subscriptions.update(
+      user.subscription.id,
+      {
+        items: [
+          {
+            // delete the old subscription item
+            id: subscriptionItem.data[0].id,
+            deleted: true,
+          },
+          {
+            // add new one
+            price: prices.data[0].id,
+            quantity: 1,
+          },
+        ],
+        off_session: true,
+      }
+    );
+
+    return this.saveSubscription(user, newSubscription);
   }
 
   @OnEvent('checkout.session.completed')
@@ -124,40 +215,28 @@ export class PaymentService {
   @OnEvent('customer.subscription.updated')
   async onSubscriptionUpdated(subscription: Stripe.Subscription) {
     this.logger.debug('Subscription updated', subscription);
-    let customer: Stripe.Customer | Stripe.DeletedCustomer | null = null;
-    if (typeof subscription.customer === 'string') {
-      customer = await this.stripe.customers.retrieve(subscription.customer);
-    } else {
-      customer = subscription.customer;
-    }
-
-    if (!customer || customer.deleted) {
-      throw new Error(
-        `Unexpected subscription update with nonexisted customer ${customer.id}`
-      );
-    }
-
-    const user = await this.db.user.findUnique({
+    const userSubscription = await this.db.userSubscription.findUnique({
       where: {
-        // @ts-expect-error never null
-        email: customer.email,
+        stripeSubscriptionId: subscription.id,
+      },
+      include: {
+        user: true,
       },
     });
 
-    if (!user) {
+    if (!userSubscription) {
       throw new Error(
-        `Unexpected subscription update with nonexisted user ${customer.email}`
+        `Unexpected subscription update with nonexisted subscription ${subscription.id}`
       );
     }
 
-    await this.saveSubscription(user, subscription);
+    await this.saveSubscription(userSubscription.user, subscription);
   }
 
   private async saveSubscription(
     user: User,
     subscription: Stripe.Subscription
-  ) {
-    this.logger.verbose('Saving subscription', subscription);
+  ): Promise<UserSubscription> {
     // get next bill date from upcoming invoice
     // see https://stripe.com/docs/api/invoices/upcoming
     let nextBillAt: Date | null = null;
@@ -171,7 +250,6 @@ export class PaymentService {
       });
 
       nextBillAt = new Date(nextInvoice.created * 1000);
-      this.logger.verbose('Subscription next bill date', nextBillAt);
     }
 
     const price = subscription.items.data[0].price;
@@ -191,7 +269,7 @@ export class PaymentService {
       nextBillAt,
     };
 
-    await this.db.userSubscription.upsert({
+    return await this.db.userSubscription.upsert({
       where: {
         userId: user.id,
       },

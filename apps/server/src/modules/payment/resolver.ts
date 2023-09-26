@@ -15,7 +15,7 @@ import { Config, SubscriptionPlan } from '../../config';
 import { PrismaService } from '../../prisma';
 import { Auth, CurrentUser } from '../auth';
 import { UserType } from '../users';
-import { PaymentService, SubscriptionStatus } from './service';
+import { SubscriptionService, SubscriptionStatus } from './service';
 
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 registerEnumType(SubscriptionPlan, { name: 'SubscriptionPlan' });
@@ -57,7 +57,7 @@ class UserSubscriptionType implements Partial<UserSubscription> {
 @Resolver(() => UserSubscriptionType)
 export class SubscriptionResolver {
   constructor(
-    private readonly service: PaymentService,
+    private readonly service: SubscriptionService,
     private readonly config: Config
   ) {}
 
@@ -68,8 +68,8 @@ export class SubscriptionResolver {
     @CurrentUser() user: User,
     @Args({ name: 'plan', type: () => SubscriptionPlan }) plan: SubscriptionPlan
   ) {
-    const session = await this.service.checkout({
-      email: user.email,
+    const session = await this.service.createCheckoutSession({
+      user,
       plan,
       // TODO: replace with frontend url
       redirectUrl: `${this.config.baseUrl}/api/stripe/success`,
@@ -82,6 +82,19 @@ export class SubscriptionResolver {
     }
 
     return session.url;
+  }
+
+  @Mutation(() => UserSubscriptionType)
+  async cancelSubscription(@CurrentUser() user: User) {
+    return this.service.cancelSubscription(user.id);
+  }
+
+  @Mutation(() => UserSubscriptionType)
+  async updateSubscriptionPlan(
+    @CurrentUser() user: User,
+    @Args({ name: 'plan', type: () => SubscriptionPlan }) plan: SubscriptionPlan
+  ) {
+    return this.service.updateSubscriptionPlan(user.id, plan);
   }
 }
 
