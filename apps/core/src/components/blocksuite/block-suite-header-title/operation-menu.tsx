@@ -29,6 +29,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useBlocksuitePageOperation } from '../../../hooks/affine/use-page-operation';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
@@ -87,10 +88,16 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   };
   const { openPage } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  assertExists(currentPage);
+  const {
+    onClickExportPDF,
+    onClickExportPNG,
+    onClickExportHtml,
+    onClickExportMarkdown,
+  } = useBlocksuitePageOperation(currentPage);
   const setPageMode = useSetAtom(setPageModeAtom);
   const duplicate = useCallback(async () => {
-    const currentPage = blockSuiteWorkspace.getPage(pageId);
-    assertExists(currentPage);
     const currentPageMeta = currentPage.meta;
     const newPage = createPage();
     await newPage.waitForLoaded();
@@ -104,11 +111,12 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
     openPage(blockSuiteWorkspace.id, newPage.id);
   }, [
-    blockSuiteWorkspace,
+    blockSuiteWorkspace.id,
     createPage,
+    currentPage.meta,
+    currentPage.spaceDoc,
     mode,
     openPage,
-    pageId,
     setPageMeta,
     setPageMode,
     setPageTitle,
@@ -194,7 +202,12 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Import']()}
       </MenuItem>
-      <Export />
+      <Export
+        exportHtml={onClickExportHtml}
+        exportMarkdown={onClickExportMarkdown}
+        exportPdf={onClickExportPDF}
+        exportPng={onClickExportPNG}
+      />
       <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"

@@ -1,6 +1,4 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageBlockModel } from '@blocksuite/blocks';
 import {
   ExportIcon,
   ExportToHtmlIcon,
@@ -9,264 +7,128 @@ import {
   ExportToPngIcon,
 } from '@blocksuite/icons';
 import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
-import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 
-import { getContentParser } from './get-content-parser';
 import { transitionStyle } from './index.css';
-import type { CommonMenuItemProps } from './types';
 
-export const ExportToPdfMenuItem = ({
+interface ExportMenuItemProps<T> {
+  onSelect?: (type: T) => void;
+  className?: string;
+  type: T;
+  icon: ReactNode;
+  label: string;
+}
+
+interface ExportProps {
+  exportPdf: () => void;
+  exportHtml: () => void;
+  exportPng: () => void;
+  exportMarkdown: () => void;
+  className?: string;
+}
+
+export const ExportMenuItem = <T,>({
   onSelect,
   className,
-}: CommonMenuItemProps<{ type: 'pdf' }>) => {
-  const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
-  const setPushNotification = useSetAtom(pushNotificationAtom);
-
-  const onClickDownloadPDF = useCallback(() => {
-    if (!currentEditor) {
-      return;
-    }
-
-    if (environment.isDesktop && currentEditor.mode === 'page') {
-      window.apis?.export
-        .savePDFFileAs(
-          (currentEditor.page.root as PageBlockModel).title.toString()
-        )
-        .then(() => {
-          onSelect?.({ type: 'pdf' });
-          setPushNotification({
-            title: t['com.affine.export.success.title'](),
-            message: t['com.affine.export.success.message'](),
-            type: 'success',
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          setPushNotification({
-            title: t['com.affine.export.error.title'](),
-            message: t['com.affine.export.error.message'](),
-            type: 'error',
-          });
-        });
-    } else {
-      const contentParser = getContentParser(currentEditor.page);
-
-      contentParser
-        .exportPdf()
-        .then(() => {
-          onSelect?.({ type: 'pdf' });
-          setPushNotification({
-            title: t['com.affine.export.success.title'](),
-            message: t['com.affine.export.success.message'](),
-            type: 'success',
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          setPushNotification({
-            title: t['com.affine.export.error.title'](),
-            message: t['com.affine.export.error.message'](),
-            type: 'error',
-          });
-        });
-    }
-  }, [currentEditor, onSelect, setPushNotification, t]);
-
+  type,
+  icon,
+  label,
+}: ExportMenuItemProps<T>) => {
+  const handleSelect = useCallback(() => {
+    onSelect?.(type);
+  }, [onSelect, type]);
   return (
     <MenuItem
       className={className}
-      data-testid="export-to-pdf"
-      onSelect={onClickDownloadPDF}
+      data-testid={`export-to-${type}`}
+      onSelect={handleSelect}
       block
-      preFix={
-        <MenuIcon>
-          <ExportToPdfIcon />
-        </MenuIcon>
-      }
+      preFix={<MenuIcon>{icon}</MenuIcon>}
     >
-      {t['Export to PDF']()}
+      {label}
     </MenuItem>
   );
 };
 
-export const ExportToHtmlMenuItem = ({
-  onSelect,
-  className,
-}: CommonMenuItemProps<{ type: 'html' }>) => {
+export const ExportMenuItems = ({
+  exportPdf,
+  exportHtml,
+  exportPng,
+  exportMarkdown,
+  className = transitionStyle,
+}: ExportProps) => {
   const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
-  const setPushNotification = useSetAtom(pushNotificationAtom);
-  const onClickExportHtml = useCallback(() => {
-    if (!currentEditor) {
-      return;
-    }
-    const contentParser = getContentParser(currentEditor.page);
-    contentParser
-      .exportHtml()
-      .then(() => {
-        onSelect?.({ type: 'html' });
-        setPushNotification({
-          title: t['com.affine.export.success.title'](),
-          message: t['com.affine.export.success.message'](),
-          type: 'success',
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        setPushNotification({
-          title: t['com.affine.export.error.title'](),
-          message: t['com.affine.export.error.message'](),
-          type: 'error',
-        });
-      });
-    onSelect?.({ type: 'html' });
-  }, [currentEditor, onSelect, setPushNotification, t]);
-  return (
-    <>
-      <MenuItem
-        className={className}
-        data-testid="export-to-html"
-        onSelect={onClickExportHtml}
-        block
-        preFix={
-          <MenuIcon>
-            <ExportToHtmlIcon />
-          </MenuIcon>
-        }
-      >
-        {t['Export to HTML']()}
-      </MenuItem>
-    </>
+  const itemMap = useMemo(
+    () => [
+      {
+        component: ExportMenuItem,
+        props: {
+          onSelect: exportPdf,
+          className: className,
+          type: 'pdf',
+          icon: <ExportToPdfIcon />,
+          label: t['Export to PDF'](),
+        },
+      },
+      {
+        component: ExportMenuItem,
+        props: {
+          onSelect: exportHtml,
+          className: className,
+          type: 'html',
+          icon: <ExportToHtmlIcon />,
+          label: t['Export to HTML'](),
+        },
+      },
+      {
+        component: ExportMenuItem,
+        props: {
+          onSelect: exportPng,
+          className: className,
+          type: 'png',
+          icon: <ExportToPngIcon />,
+          label: t['Export to PNG'](),
+        },
+      },
+      {
+        component: ExportMenuItem,
+        props: {
+          onSelect: exportMarkdown,
+          className: className,
+          type: 'markdown',
+          icon: <ExportToMarkdownIcon />,
+          label: t['Export to Markdown'](),
+        },
+      },
+    ],
+    [className, exportHtml, exportMarkdown, exportPdf, exportPng, t]
   );
+  const items = itemMap.map(({ component: Component, props }) => (
+    <Component key={props.label} {...props} />
+  ));
+  return <>{items}</>;
 };
 
-export const ExportToPngMenuItem = ({
-  onSelect,
+export const Export = ({
+  exportPdf,
+  exportHtml,
+  exportPng,
+  exportMarkdown,
   className,
-}: CommonMenuItemProps<{ type: 'png' }>) => {
+}: ExportProps) => {
   const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
-  const setPushNotification = useSetAtom(pushNotificationAtom);
-
-  const onClickDownloadPNG = useCallback(() => {
-    if (!currentEditor) {
-      return;
-    }
-    const contentParser = getContentParser(currentEditor.page);
-
-    contentParser
-      .exportPng()
-      .then(() => {
-        onSelect?.({ type: 'png' });
-        setPushNotification({
-          title: t['com.affine.export.success.title'](),
-          message: t['com.affine.export.success.message'](),
-          type: 'success',
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        setPushNotification({
-          title: t['com.affine.export.error.title'](),
-          message: t['com.affine.export.error.message'](),
-          type: 'error',
-        });
-      });
-  }, [currentEditor, onSelect, setPushNotification, t]);
-
-  return (
-    <>
-      <MenuItem
-        className={className}
-        data-testid="export-to-png"
-        onSelect={onClickDownloadPNG}
-        block
-        preFix={
-          <MenuIcon>
-            <ExportToPngIcon />
-          </MenuIcon>
-        }
-      >
-        {t['Export to PNG']()}
-      </MenuItem>
-    </>
+  const items = (
+    <ExportMenuItems
+      exportHtml={exportHtml}
+      exportMarkdown={exportMarkdown}
+      exportPdf={exportPdf}
+      exportPng={exportPng}
+      className={className}
+    />
   );
-};
-
-export const ExportToMarkdownMenuItem = ({
-  onSelect,
-  className,
-}: CommonMenuItemProps<{ type: 'markdown' }>) => {
-  const t = useAFFiNEI18N();
-  const { currentEditor } = globalThis;
-  const setPushNotification = useSetAtom(pushNotificationAtom);
-  const onClickExportMarkdown = useCallback(() => {
-    if (!currentEditor) {
-      return;
-    }
-    const contentParser = getContentParser(currentEditor.page);
-    contentParser
-      .exportMarkdown()
-      .then(() => {
-        onSelect?.({ type: 'markdown' });
-        setPushNotification({
-          title: t['com.affine.export.success.title'](),
-          message: t['com.affine.export.success.message'](),
-          type: 'success',
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        setPushNotification({
-          title: t['com.affine.export.error.title'](),
-          message: t['com.affine.export.error.message'](),
-          type: 'error',
-        });
-      });
-    onSelect?.({ type: 'markdown' });
-  }, [currentEditor, onSelect, setPushNotification, t]);
-  return (
-    <>
-      <MenuItem
-        className={className}
-        data-testid="export-to-markdown"
-        onSelect={onClickExportMarkdown}
-        block
-        preFix={
-          <MenuIcon>
-            <ExportToMarkdownIcon />
-          </MenuIcon>
-        }
-      >
-        {t['Export to Markdown']()}
-      </MenuItem>
-    </>
-  );
-};
-
-// fixme: refactor this file, export function may should be passed by 'props', this file is just a ui component
-export const Export = () => {
-  const t = useAFFiNEI18N();
   return (
     <MenuSub
-      items={
-        <>
-          <ExportToPdfMenuItem
-            className={transitionStyle}
-          ></ExportToPdfMenuItem>
-          <ExportToHtmlMenuItem
-            className={transitionStyle}
-          ></ExportToHtmlMenuItem>
-          <ExportToPngMenuItem
-            className={transitionStyle}
-          ></ExportToPngMenuItem>
-          <ExportToMarkdownMenuItem
-            className={transitionStyle}
-          ></ExportToMarkdownMenuItem>
-        </>
-      }
+      items={items}
       triggerOptions={{
         className: transitionStyle,
         preFix: (
