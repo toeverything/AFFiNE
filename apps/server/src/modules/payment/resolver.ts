@@ -28,11 +28,11 @@ class UserSubscriptionType implements Partial<UserSubscription> {
   @Field(() => SubscriptionStatus)
   status!: SubscriptionStatus;
 
-  @Field(() => Date, { nullable: true })
-  start?: Date | null;
+  @Field(() => Date)
+  start!: Date;
 
-  @Field(() => Date, { nullable: true })
-  end?: Date | null;
+  @Field(() => Date)
+  end!: Date;
 
   @Field(() => Date, { nullable: true })
   trialStart?: Date | null;
@@ -87,6 +87,11 @@ export class SubscriptionResolver {
   @Mutation(() => UserSubscriptionType)
   async cancelSubscription(@CurrentUser() user: User) {
     return this.service.cancelSubscription(user.id);
+  }
+
+  @Mutation(() => UserSubscriptionType)
+  async resumeSubscription(@CurrentUser() user: User) {
+    return this.service.resumeCanceledSubscriptin(user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
