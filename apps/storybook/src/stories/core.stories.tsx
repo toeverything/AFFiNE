@@ -131,7 +131,7 @@ SearchPage.play = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByTestId('slider-bar-quick-search-button'));
   await waitFor(
     () => {
-      assertExists(canvas.getByTestId('cmdk-quick-search'));
+      assertExists(screen.getByTestId('cmdk-quick-search'));
     },
     {
       timeout: 3000,
