@@ -110,12 +110,50 @@ export class SubscriptionService {
       throw new Error('User has no subscription');
     }
 
+    if (user.subscription.canceledAt) {
+      throw new Error('User subscription has already been canceled ');
+    }
+
     // let customer contact support if they want to cancel immediately
     // see https://stripe.com/docs/billing/subscriptions/cancel
     const subscription = await this.stripe.subscriptions.update(
       user.subscription.stripeSubscriptionId,
       {
         cancel_at_period_end: true,
+      }
+    );
+
+    return await this.saveSubscription(user, subscription);
+  }
+
+  async resumeCanceledSubscriptin(userId: string): Promise<UserSubscription> {
+    const user = await this.db.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        subscription: true,
+      },
+    });
+
+    if (!user?.subscription) {
+      throw new Error('User has no subscription');
+    }
+
+    if (!user.subscription.canceledAt) {
+      throw new Error('User subscription is not canceled');
+    }
+
+    if (user.subscription.end < new Date()) {
+      throw new Error(
+        'User subscription has already expired, please checkout again.'
+      );
+    }
+
+    const subscription = await this.stripe.subscriptions.update(
+      user.subscription.stripeSubscriptionId,
+      {
+        cancel_at_period_end: false,
       }
     );
 
@@ -214,7 +252,6 @@ export class SubscriptionService {
 
   @OnEvent('customer.subscription.updated')
   async onSubscriptionUpdated(subscription: Stripe.Subscription) {
-    this.logger.debug('Subscription updated', subscription);
     const userSubscription = await this.db.userSubscription.findUnique({
       where: {
         stripeSubscriptionId: subscription.id,
@@ -241,15 +278,21 @@ export class SubscriptionService {
     // see https://stripe.com/docs/api/invoices/upcoming
     let nextBillAt: Date | null = null;
     if (
-      subscription.status === SubscriptionStatus.Active ||
-      subscription.status === SubscriptionStatus.Trialing
+      (subscription.status === SubscriptionStatus.Active ||
+        subscription.status === SubscriptionStatus.Trialing) &&
+      !subscription.canceled_at
     ) {
-      const nextInvoice = await this.stripe.invoices.retrieveUpcoming({
-        customer: subscription.customer as string,
-        subscription: subscription.id,
-      });
+      try {
+        const nextInvoice = await this.stripe.invoices.retrieveUpcoming({
+          customer: subscription.customer as string,
+          subscription: subscription.id,
+        });
 
-      nextBillAt = new Date(nextInvoice.created * 1000);
+        nextBillAt = new Date(nextInvoice.created * 1000);
+      } catch (e) {
+        // no upcoming invoice
+        // safe to ignore
+      }
     }
 
     const price = subscription.items.data[0].price;
@@ -267,6 +310,9 @@ export class SubscriptionService {
         ? new Date(subscription.trial_end * 1000)
         : null,
       nextBillAt,
+      canceledAt: subscription.canceled_at
+        ? new Date(subscription.canceled_at * 1000)
+        : null,
     };
 
     return await this.db.userSubscription.upsert({

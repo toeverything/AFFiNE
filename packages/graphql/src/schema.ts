@@ -44,6 +44,22 @@ export enum Permission {
   Write = 'Write',
 }
 
+export enum SubscriptionPlan {
+  Monthly = 'Monthly',
+  Yearly = 'Yearly',
+}
+
+export enum SubscriptionStatus {
+  Active = 'Active',
+  Canceled = 'Canceled',
+  Incomplete = 'Incomplete',
+  IncompleteExpired = 'IncompleteExpired',
+  PastDue = 'PastDue',
+  Paused = 'Paused',
+  Trialing = 'Trialing',
+  Unpaid = 'Unpaid',
+}
+
 export interface UpdateWorkspaceInput {
   id: Scalars['ID']['input'];
   /** is Public workspace */
