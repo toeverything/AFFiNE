@@ -623,7 +623,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/plugin-cli@workspace:packages/plugin-cli"
   dependencies:
-    "@endo/static-module-record": ^0.8.2
+    "@plugxjs/vite-plugin": 0.0.2
     "@swc/core": ^1.3.81
     "@toeverything/infra": "workspace:^"
     "@vanilla-extract/rollup-plugin": ^1.3.0
@@ -8754,6 +8754,15 @@ __metadata:
   bin:
     playwright: cli.js
   checksum: b7038f29000289103c08b215eff7aabdda70cdc1375fa7dad0e81651be71086a1e2fc0e0e29dc70348037c366cf0cc69f762373fda34ba1a74aa1658741d9195
+  languageName: node
+  linkType: hard
+
+"@plugxjs/vite-plugin@npm:0.0.2":
+  version: 0.0.2
+  resolution: "@plugxjs/vite-plugin@npm:0.0.2"
+  dependencies:
+    "@endo/static-module-record": ^0.8.2
+  checksum: 12add55abfca3b29d0a709dd852ec69f335013b78bf06d4b27e9851d9c8ade097ac875f8d509ac5915abe74f9b457c89fa17587dc1bd534e11d76846ba643717
   languageName: node
   linkType: hard
 
