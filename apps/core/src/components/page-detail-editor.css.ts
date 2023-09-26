@@ -25,6 +25,11 @@ export const editor = style({
     },
   },
 });
+
+globalStyle(`${editor} .affine-doc-viewport`, {
+  paddingBottom: '150px',
+});
+
 globalStyle('.is-public-page affine-page-meta-data', {
   display: 'none',
 });
