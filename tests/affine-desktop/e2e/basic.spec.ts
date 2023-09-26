@@ -161,9 +161,9 @@ test('delete workspace', async ({ page }) => {
   await page.getByTestId('create-workspace-create-button').click({
     delay: 100,
   });
-  await page.getByTestId('create-workspace-continue-button').click({
-    delay: 100,
-  });
+  // await page.getByTestId('create-workspace-continue-button').click({
+  //   delay: 100,
+  // });
   await page.waitForTimeout(1000);
   await clickSideBarSettingButton(page);
   await page.getByTestId('current-workspace-label').click();
