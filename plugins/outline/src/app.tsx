@@ -1,5 +1,6 @@
 import {
-  currentPageAtom,
+  currentPageIdAtom,
+  currentWorkspaceAtom,
   deleteLayoutAtom,
   pushLayoutAtom,
 } from '@affine/sdk/entry';
@@ -15,7 +16,11 @@ import { createRoot } from 'react-dom/client';
 
 const Outline = () => {
   const tocPanelRef = useRef<TOCNotesPanel | null>(null);
-  const currentPage = useAtomValue(currentPageAtom);
+  const currentPageId = useAtomValue(currentPageIdAtom);
+  assertExists(currentPageId, 'current page id');
+  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const currentPage = currentWorkspace.getPage(currentPageId);
+  assertExists(currentPage, 'current page');
 
   if (!tocPanelRef.current) {
     tocPanelRef.current = new TOCNotesPanel();
