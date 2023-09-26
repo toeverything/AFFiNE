@@ -176,6 +176,8 @@ export const pageToCommand = (
   };
 };
 
+const contentMatchedMagicString = '__$$content_matched$$__';
+
 export const usePageCommands = () => {
   // todo: considering collections for searching pages
   // const { savedCollections } = useCollectionManager(currentCollectionsAtom);
@@ -221,7 +223,7 @@ export const usePageCommands = () => {
 
         if (pageIds.includes(page.id)) {
           // hack to make the page always showing in the search result
-          command.value += query;
+          command.value += contentMatchedMagicString;
         }
 
         return command;
@@ -372,11 +374,24 @@ export const useCMDKCommandGroups = () => {
 
 export const customCommandFilter = (value: string, search: string) => {
   // strip off the part between __>>> and <<<__
-  const label = value.replace(
+  let label = value.replace(
     new RegExp(valueWrapperStart + '.*' + valueWrapperEnd, 'g'),
     ''
   );
-  return commandScore(label, search);
+
+  const pageContentMatched = label.includes(contentMatchedMagicString);
+  if (pageContentMatched) {
+    label = label.replace(contentMatchedMagicString, '');
+  }
+
+  const originalScore = commandScore(label, search);
+
+  // if the command has matched the content but not the label,
+  // we should give it a higher score, but not too high
+  if (originalScore < 0.01 && pageContentMatched) {
+    return 0.3;
+  }
+  return originalScore;
 };
 
 export const useCommandFilteredStatus = (
