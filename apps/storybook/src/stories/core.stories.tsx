@@ -101,7 +101,7 @@ WorkspaceList.play = async ({ canvasElement }) => {
     }
   );
 
-  // todo: figure out why userEvent cannot click this element
+  // todo: figure out why userEvent cannot click this element?
   // await userEvent.click(currentWorkspace);
   currentWorkspace.click();
 };
