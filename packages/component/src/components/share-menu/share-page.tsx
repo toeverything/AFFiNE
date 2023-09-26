@@ -12,7 +12,7 @@ import { toast } from '../../ui/toast';
 import { PublicLinkDisableModal } from './disable-public-link';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import { UrlType, useSharingUrl } from './use-share-url';
+import { useSharingUrl } from './use-share-url';
 
 const CloudSvg = () => (
   <svg
@@ -80,7 +80,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
   const { sharingUrl, onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId,
-    urlType: UrlType.Public,
+    urlType: 'share',
   });
   const t = useAFFiNEI18N();
 

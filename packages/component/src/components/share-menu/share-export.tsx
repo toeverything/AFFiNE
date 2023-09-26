@@ -11,7 +11,7 @@ import {
 } from '../page-list/operation-menu-items/export';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
-import { UrlType, useSharingUrl } from './use-share-url';
+import { useSharingUrl } from './use-share-url';
 
 export const ShareExport = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
@@ -20,7 +20,7 @@ export const ShareExport = (props: ShareMenuProps) => {
   const { onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId,
-    urlType: UrlType.UnPublic,
+    urlType: 'workspace',
   });
 
   return (

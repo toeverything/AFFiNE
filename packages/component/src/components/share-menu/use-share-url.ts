@@ -3,10 +3,7 @@ import { useCallback, useMemo } from 'react';
 
 import { toast } from '../../ui/toast';
 
-export enum UrlType {
-  Public = 'share',
-  UnPublic = 'workspace',
-}
+type UrlType = 'share' | 'workspace';
 
 type UseSharingUrl = {
   workspaceId: string;
