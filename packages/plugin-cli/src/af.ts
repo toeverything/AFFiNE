@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { StaticModuleRecord } from '@endo/static-module-record';
+import plugx from '@plugxjs/vite-plugin';
 import {
   packageJsonInputSchema,
   packageJsonOutputSchema,
@@ -185,38 +185,9 @@ await build({
     vanillaExtractPlugin(),
     vue(),
     react(),
-    {
-      name: 'parse-bundle',
-      renderChunk(code, chunk) {
-        if (chunk.fileName.endsWith('js')) {
-          const record = new StaticModuleRecord(code, chunk.fileName);
-          const reexports = record.__reexportMap__ as Record<
-            string,
-            [localName: string, exportedName: string][]
-          >;
-          const exports = Object.assign(
-            {},
-            record.__fixedExportMap__,
-            record.__liveExportMap__
-          );
-          this.emitFile({
-            type: 'asset',
-            fileName: `${chunk.fileName}.json`,
-            source: JSON.stringify(
-              {
-                exports: exports,
-                imports: record.imports,
-                reexports: reexports,
-              },
-              null,
-              2
-            ),
-          });
-          return record.__syncModuleProgram__;
-        }
-        return code;
-      },
-    },
+    plugx({
+      staticJsonSuffix: '.json',
+    }),
     generatePackageJson,
   ],
 });
