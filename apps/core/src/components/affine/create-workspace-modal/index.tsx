@@ -269,10 +269,8 @@ export const CreateWorkspaceModal = ({
         const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           setAddedId(result.workspaceId);
-          const id = await addLocalWorkspace(result.workspaceId);
-          if (id) {
-            onCreate(id);
-          }
+          const newWorkspaceId = await addLocalWorkspace(result.workspaceId);
+          onCreate(newWorkspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {
             toast(t[result.error]());
@@ -337,14 +335,9 @@ export const CreateWorkspaceModal = ({
       setWorkspaceName(name);
       // this will be the last step for web for now
       // fix me later
-      createLocalWorkspace(name)
-        .then(id => {
-          onCreate(id);
-        })
-        .catch(err => {
-          logger.error(err);
-        });
-      // }
+      createLocalWorkspace(name).then(id => {
+        onCreate(id);
+      });
     },
     [createLocalWorkspace, onCreate]
   );
