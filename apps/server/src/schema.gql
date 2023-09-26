@@ -59,8 +59,8 @@ type TokenType {
 type UserSubscription {
   plan: SubscriptionPlan!
   status: SubscriptionStatus!
-  start: DateTime
-  end: DateTime
+  start: DateTime!
+  end: DateTime!
   trialStart: DateTime
   trialEnd: DateTime
   nextBillAt: DateTime
@@ -237,6 +237,9 @@ type Mutation {
 
   """Create a subscription checkout link of stripe"""
   checkout(plan: SubscriptionPlan!): String!
+  cancelSubscription: UserSubscription!
+  resumeSubscription: UserSubscription!
+  updateSubscriptionPlan(plan: SubscriptionPlan!): UserSubscription!
 }
 
 """The `Upload` scalar type represents a file upload."""
