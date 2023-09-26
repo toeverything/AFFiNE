@@ -269,7 +269,6 @@ export const CreateWorkspaceModal = ({
         const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           setAddedId(result.workspaceId);
-          // setStep('set-syncing-mode');
           const id = await addLocalWorkspace(result.workspaceId);
           if (id) {
             onCreate(id);
@@ -336,9 +335,6 @@ export const CreateWorkspaceModal = ({
   const onConfirmName = useCallback(
     (name: string) => {
       setWorkspaceName(name);
-      // if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-      // setStep('set-syncing-mode');
-      // } else {
       // this will be the last step for web for now
       // fix me later
       createLocalWorkspace(name)
