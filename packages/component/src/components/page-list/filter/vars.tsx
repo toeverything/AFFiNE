@@ -42,9 +42,15 @@ export const createDefaultFilter = (
   }
   return {
     type: 'filter',
-    left: { type: 'ref', name: variable.name },
+    left: {
+      type: 'ref',
+      name: variable.name,
+    },
     funcName: data.name,
-    args: data.defaultArgs().map(value => ({ type: 'literal', value })),
+    args: data.defaultArgs().map(value => ({
+      type: 'literal',
+      value,
+    })),
   };
 };
 
@@ -137,7 +143,10 @@ filterMatcher.register(
 );
 
 filterMatcher.register(
-  tFunction({ args: [tDate.create(), tDate.create()], rt: tBoolean.create() }),
+  tFunction({
+    args: [tDate.create(), tDate.create()],
+    rt: tBoolean.create(),
+  }),
   {
     name: 'after',
     defaultArgs: () => {
@@ -153,7 +162,10 @@ filterMatcher.register(
 );
 
 filterMatcher.register(
-  tFunction({ args: [tDate.create(), tDate.create()], rt: tBoolean.create() }),
+  tFunction({
+    args: [tDate.create(), tDate.create()],
+    rt: tBoolean.create(),
+  }),
   {
     name: 'before',
     defaultArgs: () => [dayjs().endOf('day').valueOf()],
@@ -165,31 +177,35 @@ filterMatcher.register(
     },
   }
 );
-
+const safeArray = (arr: unknown): LiteralValue[] => {
+  return Array.isArray(arr) ? arr : [];
+};
 filterMatcher.register(
-  tFunction({ args: [tArray(tTag.create())], rt: tBoolean.create() }),
+  tFunction({
+    args: [tArray(tTag.create())],
+    rt: tBoolean.create(),
+  }),
   {
     name: 'is not empty',
     defaultArgs: () => [],
     impl: tags => {
-      if (Array.isArray(tags)) {
-        return tags.length > 0;
-      }
-      return true;
+      const safeTags = safeArray(tags);
+      return safeTags.length > 0;
     },
   }
 );
 
 filterMatcher.register(
-  tFunction({ args: [tArray(tTag.create())], rt: tBoolean.create() }),
+  tFunction({
+    args: [tArray(tTag.create())],
+    rt: tBoolean.create(),
+  }),
   {
     name: 'is empty',
     defaultArgs: () => [],
     impl: tags => {
-      if (Array.isArray(tags)) {
-        return tags.length == 0;
-      }
-      return true;
+      const safeTags = safeArray(tags);
+      return safeTags.length == 0;
     },
   }
 );
@@ -204,10 +220,11 @@ filterMatcher.register(
     name: 'contains all',
     defaultArgs: () => [],
     impl: (tags, target) => {
-      if (Array.isArray(tags) && Array.isArray(target)) {
-        return target.every(id => tags.includes(id));
+      if (!Array.isArray(target)) {
+        return true;
       }
-      return true;
+      const safeTags = safeArray(tags);
+      return target.every(id => safeTags.includes(id));
     },
   }
 );
@@ -222,10 +239,11 @@ filterMatcher.register(
     name: 'contains one of',
     defaultArgs: () => [],
     impl: (tags, target) => {
-      if (Array.isArray(tags) && Array.isArray(target)) {
-        return target.some(id => tags.includes(id));
+      if (!Array.isArray(target)) {
+        return true;
       }
-      return true;
+      const safeTags = safeArray(tags);
+      return target.some(id => safeTags.includes(id));
     },
   }
 );
@@ -240,10 +258,11 @@ filterMatcher.register(
     name: 'does not contains all',
     defaultArgs: () => [],
     impl: (tags, target) => {
-      if (Array.isArray(tags) && Array.isArray(target)) {
-        return !target.every(id => tags.includes(id));
+      if (!Array.isArray(target)) {
+        return true;
       }
-      return true;
+      const safeTags = safeArray(tags);
+      return !target.every(id => safeTags.includes(id));
     },
   }
 );
@@ -258,10 +277,11 @@ filterMatcher.register(
     name: 'does not contains one of',
     defaultArgs: () => [],
     impl: (tags, target) => {
-      if (Array.isArray(tags) && Array.isArray(target)) {
-        return !target.some(id => tags.includes(id));
+      if (!Array.isArray(target)) {
+        return true;
       }
-      return true;
+      const safeTags = safeArray(tags);
+      return !target.some(id => safeTags.includes(id));
     },
   }
 );

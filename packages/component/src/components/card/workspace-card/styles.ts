@@ -47,7 +47,6 @@ export const StyledCard = styled('div')<{
     borderRadius: '12px',
     border: `1px solid ${borderColor}`,
     ...displayFlex('flex-start', 'flex-start'),
-    marginBottom: '12px',
     transition: 'background .2s',
     alignItems: 'center',
     position: 'relative',
@@ -62,6 +61,12 @@ export const StyledCard = styled('div')<{
       '.setting-entry': {
         opacity: 1,
         pointerEvents: 'auto',
+        backgroundColor: 'var(--affine-white-30)',
+        boxShadow: 'var(--affine-shadow-1)',
+        ':hover': {
+          background:
+            'linear-gradient(0deg, var(--affine-hover-color) 0%, var(--affine-hover-color) 100%), var(--affine-white-30)',
+        },
       },
     },
     '@media (max-width: 720px)': {

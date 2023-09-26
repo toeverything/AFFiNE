@@ -1,19 +1,25 @@
 import { useState } from 'react';
 
-type SorterConfig<T> = {
+type SorterConfig<
+  T extends Record<string | number | symbol, unknown> = Record<
+    string | number | symbol,
+    unknown
+  >,
+> = {
   data: T[];
   key: keyof T;
   order: 'asc' | 'desc' | 'none';
+  sortingFn?: (
+    ctx: {
+      key: keyof T;
+      order: 'asc' | 'desc';
+    },
+    a: T,
+    b: T
+  ) => number;
 };
 
-const defaultSortingFn = <T extends Record<keyof any, unknown>>(
-  ctx: {
-    key: keyof T;
-    order: 'asc' | 'desc';
-  },
-  a: T,
-  b: T
-) => {
+const defaultSortingFn: SorterConfig['sortingFn'] = (ctx, a, b) => {
   const valA = a[ctx.key];
   const valB = b[ctx.key];
   const revert = ctx.order === 'desc';
@@ -33,6 +39,10 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
   if (!valB) {
     return 1 * revertSymbol;
   }
+
+  if (Array.isArray(valA) && Array.isArray(valB)) {
+    return (valA.length - valB.length) * revertSymbol;
+  }
   console.warn(
     'Unsupported sorting type! Please use custom sorting function.',
     valA,
@@ -43,6 +53,7 @@ const defaultSortingFn = <T extends Record<keyof any, unknown>>(
 
 export const useSorter = <T extends Record<keyof any, unknown>>({
   data,
+  sortingFn = defaultSortingFn,
   ...defaultSorter
 }: SorterConfig<T> & { order: 'asc' | 'desc' }) => {
   const [sorter, setSorter] = useState<Omit<SorterConfig<T>, 'data'>>({
@@ -60,9 +71,8 @@ export const useSorter = <T extends Record<keyof any, unknown>>({
           key: sorter.key,
           order: sorter.order,
         };
-  // TODO supports custom sorting function
-  const sortingFn = (a: T, b: T) => defaultSortingFn(sortCtx, a, b);
-  const sortedData = data.sort(sortingFn);
+  const compareFn = (a: T, b: T) => sortingFn(sortCtx, a, b);
+  const sortedData = data.sort(compareFn);
 
   const shiftOrder = (key?: keyof T) => {
     const orders = ['asc', 'desc', 'none'] as const;

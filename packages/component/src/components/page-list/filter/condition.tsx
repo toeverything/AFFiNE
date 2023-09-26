@@ -63,9 +63,7 @@ export const Condition = ({
               <div className={styles.filterTypeIconStyle}>
                 {variableDefineMap[ast.left.name].icon}
               </div>
-              <div>
-                <FilterTag name={ast.left.name} />
-              </div>
+              <FilterTag name={ast.left.name} />
             </div>
           </Menu>
           <Menu

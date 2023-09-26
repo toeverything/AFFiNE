@@ -53,6 +53,8 @@ export const switchStyle = style({
   color: 'var(--affine-text-secondary-color)',
   padding: '2px 4px',
   transition: 'all 0.15s ease-in-out',
+  display: 'flex',
+  alignItems: 'center',
   ':hover': {
     cursor: 'pointer',
     background: 'var(--affine-hover-color)',
@@ -62,6 +64,7 @@ export const switchStyle = style({
 export const filterTypeStyle = style({
   fontSize: 'var(--affine-font-sm)',
   display: 'flex',
+  alignItems: 'center',
   padding: '2px 4px',
   transition: 'all 0.15s ease-in-out',
   marginRight: '6px',
@@ -76,5 +79,6 @@ export const filterTypeIconStyle = style({
   marginRight: '6px',
   padding: '1px 0',
   display: 'flex',
+  alignItems: 'center',
   color: 'var(--affine-icon-color)',
 });

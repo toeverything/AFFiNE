@@ -35,7 +35,7 @@ export const navWrapperStyle = style({
     '&[data-enable-animation="true"]': {
       transition: 'margin-left .3s, width .3s',
     },
-    '&.has-background': {
+    '&[data-is-floating="false"].has-background': {
       backgroundColor: 'var(--affine-white-60)',
       borderRight: '1px solid var(--affine-border-color)',
     },

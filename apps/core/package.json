@@ -60,7 +60,7 @@
     "react-resizable-panels": "^0.0.55",
     "react-router-dom": "^6.15.0",
     "rxjs": "^7.8.1",
-    "ses": "^0.18.7",
+    "ses": "^0.18.8",
     "swr": "2.2.1",
     "y-protocols": "^1.0.5",
     "yjs": "^13.6.7",

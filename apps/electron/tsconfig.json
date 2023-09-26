@@ -33,9 +33,6 @@
     {
       "path": "./tsconfig.node.json"
     },
-    {
-      "path": "./e2e/tsconfig.json"
-    },
     { "path": "../../tests/kit" }
   ],
   "ts-node": {

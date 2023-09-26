@@ -32,8 +32,7 @@
         "{projectRoot}/dist",
         "{projectRoot}/build",
         "{projectRoot}/out",
-        "{projectRoot}/storybook-static",
-        "{workspaceRoot}/packages/i18n/src/i18n-generated.ts"
+        "{projectRoot}/storybook-static"
       ],
       "inputs": [
         "{workspaceRoot}/infra/**/*",

@@ -70,10 +70,13 @@ export const registerUpdater = async () => {
   autoUpdater.on('checking-for-update', () => {
     logger.info('Checking for update');
   });
+  let downloading = false;
   autoUpdater.on('update-available', info => {
     logger.info('Update available', info);
-    if (allowAutoUpdate) {
+    if (allowAutoUpdate && !downloading) {
+      downloading = true;
       autoUpdater?.downloadUpdate().catch(e => {
+        downloading = false;
         logger.error('Failed to download update', e);
       });
       logger.info('Update available, downloading...', info);
@@ -91,6 +94,7 @@ export const registerUpdater = async () => {
     updaterSubjects.downloadProgress.next(e.percent);
   });
   autoUpdater.on('update-downloaded', e => {
+    downloading = false;
     updaterSubjects.updateReady.next({
       version: e.version,
       allowAutoUpdate,
