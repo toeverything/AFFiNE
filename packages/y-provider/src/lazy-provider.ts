@@ -104,19 +104,34 @@ export const createLazyProvider = (
       const possible2 = `space:${prefixId}`;
       const update1 = await datasource.queryDocState(possible1);
       const update2 = await datasource.queryDocState(possible2);
-      if (update1) {
+      let hasUpdate = false;
+      if (
+        update1 &&
+        update1.missing.length !== 2 &&
+        update1.missing[0] !== 0 &&
+        update1.missing[1] !== 0
+      ) {
         applyUpdate(doc, update1.missing, origin);
+        hasUpdate = true;
       }
-      if (update2) {
+      if (
+        update2 &&
+        update2.missing.length !== 2 &&
+        update2.missing[0] !== 0 &&
+        update2.missing[1] !== 0
+      ) {
         applyUpdate(doc, update2.missing, origin);
+        hasUpdate = true;
       }
-      await datasource.sendDocUpdate(
-        guid,
-        encodeStateAsUpdate(
-          doc,
-          update1 ? update1.state : update2 ? update2.state : undefined
-        )
-      );
+      if (hasUpdate) {
+        await datasource.sendDocUpdate(
+          guid,
+          encodeStateAsUpdate(
+            doc,
+            update1 ? update1.state : update2 ? update2.state : undefined
+          )
+        );
+      }
     }
     if (!connected) {
       return;

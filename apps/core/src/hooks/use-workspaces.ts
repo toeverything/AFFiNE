@@ -6,7 +6,6 @@ import {
   getOrCreateWorkspace,
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
-import { nanoid } from '@blocksuite/store';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
@@ -14,6 +13,7 @@ import {
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
+import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { LocalAdapter } from '../adapters/local';
