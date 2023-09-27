@@ -97,6 +97,27 @@ export const createLazyProvider = (
 
   async function syncDoc(doc: Doc) {
     const guid = doc.guid;
+    {
+      // backport from `@blocksuite/store`
+      const prefixId = guid.startsWith('space:') ? guid.slice(6) : guid;
+      const possible1 = `${rootDoc.guid}:space:${prefixId}`;
+      const possible2 = `space:${prefixId}`;
+      const update1 = await datasource.queryDocState(possible1);
+      const update2 = await datasource.queryDocState(possible2);
+      if (update1) {
+        applyUpdate(doc, update1.missing, origin);
+      }
+      if (update2) {
+        applyUpdate(doc, update2.missing, origin);
+      }
+      await datasource.sendDocUpdate(
+        guid,
+        encodeStateAsUpdate(
+          doc,
+          update1 ? update1.state : update2 ? update2.state : undefined
+        )
+      );
+    }
     if (!connected) {
       return;
     }
