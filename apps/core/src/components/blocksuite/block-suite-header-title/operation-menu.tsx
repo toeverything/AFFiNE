@@ -24,13 +24,14 @@ import {
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
 import { currentModeAtom } from '../../../atoms/mode';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '../../../hooks/affine/use-export-page';
+import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
@@ -45,7 +46,6 @@ type PageMenuProps = {
 export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
   const ref = useRef(null);
-  const [openConfirm, setOpenConfirm] = useState(false);
   const { openPage } = useNavigateHelper();
 
   // fixme(himself65): remove these hooks ASAP
@@ -61,10 +61,19 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const favorite = pageMeta.favorite ?? false;
 
   const { setPageMeta, setPageTitle } = usePageMetaHelper(blockSuiteWorkspace);
-  const { removeToTrash, togglePageMode, toggleFavorite } =
+  const { togglePageMode, toggleFavorite } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
+
+  const handleOpenTrashModal = useCallback(() => {
+    setTrashModal({
+      open: true,
+      pageId,
+      pageTitle: pageMeta.title,
+    });
+  }, [pageId, pageMeta.title, setTrashModal]);
 
   const handleFavorite = useCallback(() => {
     toggleFavorite(pageId);
@@ -82,11 +91,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         : t['com.affine.toastMessage.pageMode']()
     );
   }, [currentMode, pageId, t, togglePageMode]);
-  const handleOnConfirm = useCallback(() => {
-    removeToTrash(pageId);
-    toast(t['com.affine.toastMessage.movedTrash']());
-    setOpenConfirm(false);
-  }, [pageId, removeToTrash, t]);
   const menuItemStyle = {
     padding: '4px 12px',
     transition: 'all 0.3s',
@@ -216,9 +220,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"
-        onSelect={() => {
-          setOpenConfirm(true);
-        }}
+        onSelect={handleOpenTrashModal}
       />
     </>
   );
@@ -236,12 +238,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         >
           <HeaderDropDownButton />
         </Menu>
-        <MoveToTrash.ConfirmModal
-          open={openConfirm}
-          title={pageMeta.title}
-          onConfirm={handleOnConfirm}
-          onOpenChange={setOpenConfirm}
-        />
       </FlexWrapper>
     </>
   );

@@ -8,10 +8,11 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra/command';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { useExportPage } from './use-export-page';
+import { useTrashModalHelper } from './use-trash-modal-helper';
 
 export function useRegisterBlocksuiteEditorCommands(
   blockSuiteWorkspace: Workspace,
@@ -27,7 +28,7 @@ export function useRegisterBlocksuiteEditorCommands(
   const favorite = pageMeta.favorite ?? false;
   const trash = pageMeta.trash ?? false;
 
-  const { removeToTrash, togglePageMode, toggleFavorite } =
+  const { togglePageMode, toggleFavorite } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const {
     onClickExportHtml,
@@ -35,6 +36,14 @@ export function useRegisterBlocksuiteEditorCommands(
     onClickExportPDF,
     onClickExportPNG,
   } = useExportPage(currentPage);
+  const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
+  const onClickDelete = useCallback(() => {
+    setTrashModal({
+      open: true,
+      pageId: pageId,
+      pageTitle: pageMeta.title,
+    });
+  }, [pageId, pageMeta.title, setTrashModal]);
 
   useEffect(() => {
     const unsubs: Array<() => void> = [];
@@ -163,7 +172,7 @@ export function useRegisterBlocksuiteEditorCommands(
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['com.affine.moveToTrash.title'](),
         run() {
-          removeToTrash(pageId);
+          onClickDelete();
         },
       })
     );
@@ -174,13 +183,13 @@ export function useRegisterBlocksuiteEditorCommands(
   }, [
     favorite,
     mode,
+    onClickDelete,
     onClickExportHtml,
     onClickExportMarkdown,
     onClickExportPDF,
     onClickExportPNG,
     pageId,
     pageMeta.title,
-    removeToTrash,
     t,
     toggleFavorite,
     togglePageMode,

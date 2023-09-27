@@ -24,7 +24,6 @@ export const AffineOperationCell: StoryFn<OperationCellProps> = ({
 }) => <OperationCell {...props} />;
 
 AffineOperationCell.args = {
-  title: 'Example Page',
   favorite: false,
   isPublic: true,
   onToggleFavoritePage: () => toast('Toggle favorite page'),
