@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
-import type { User, UserSubscription } from '@prisma/client';
+import type {
+  User,
+  UserStripeCustomer,
+  UserSubscription,
+} from '@prisma/client';
 import Stripe from 'stripe';
 
 import { Config, SubscriptionPlan } from '../../config';
@@ -27,7 +31,7 @@ export enum InvoiceStatus {
   Draft = 'draft',
   Open = 'open',
   Void = 'void',
-  Paid = 'Paid',
+  Paid = 'paid',
   Uncollectible = 'uncollectible',
 }
 
@@ -61,13 +65,13 @@ export class SubscriptionService {
     plan: SubscriptionPlan;
     redirectUrl: string;
   }) {
-    const existsSub = await this.db.userSubscription.count({
+    const currentSubscription = await this.db.userSubscription.findUnique({
       where: {
         userId: user.id,
       },
     });
 
-    if (existsSub !== 0) {
+    if (currentSubscription && currentSubscription.end < new Date()) {
       throw new Error('User already has a subscription');
     }
 
@@ -79,6 +83,7 @@ export class SubscriptionService {
       throw new Error(`Unknown subscription plan: ${plan}`);
     }
 
+    const customer = await this.getOrCreateCustomer(user);
     return await this.stripe.checkout.sessions.create({
       line_items: [
         {
@@ -92,7 +97,7 @@ export class SubscriptionService {
       },
       mode: 'subscription',
       success_url: redirectUrl,
-      customer_email: user.email,
+      customer: customer.stripeCustomerId,
     });
   }
 
@@ -215,59 +220,27 @@ export class SubscriptionService {
     return this.saveSubscription(user, newSubscription);
   }
 
-  @OnEvent('checkout.session.completed')
-  async onCheckoutCompleted(checkout: Stripe.Checkout.Session) {
-    this.logger.debug('Checkout completed', checkout);
-    if (!checkout.customer_email) {
-      throw new Error('Unexpected checkout session with no customer email');
-    }
-
-    if (typeof checkout.subscription !== 'string') {
-      throw new Error(
-        'Unexpected checkout session with no subscription information'
-      );
-    }
-
-    const user = await this.db.user.findUnique({
-      where: {
-        email: checkout.customer_email,
-      },
-      include: {
-        subscription: true,
-      },
-    });
-
-    if (!user) {
-      throw new Error(
-        `Unexpected checkout session with unknown customer email: ${checkout.customer_email}`
-      );
-    }
-
-    const subscription = await this.stripe.subscriptions.retrieve(
-      checkout.subscription
+  @OnEvent('customer.subscription.created')
+  @OnEvent('customer.subscription.updated')
+  async onSubscriptionChanges(subscription: Stripe.Subscription) {
+    const user = await this.retrieveUserFromCustomer(
+      subscription.customer as string
     );
 
     await this.saveSubscription(user, subscription);
   }
 
-  @OnEvent('customer.subscription.updated')
-  async onSubscriptionUpdated(subscription: Stripe.Subscription) {
-    const userSubscription = await this.db.userSubscription.findUnique({
+  @OnEvent('customer.subscription.deleted')
+  async onSubscriptionDeleted(subscription: Stripe.Subscription) {
+    const user = await this.retrieveUserFromCustomer(
+      subscription.customer as string
+    );
+
+    await this.db.userSubscription.delete({
       where: {
-        stripeSubscriptionId: subscription.id,
-      },
-      include: {
-        user: true,
+        userId: user.id,
       },
     });
-
-    if (!userSubscription) {
-      throw new Error(
-        `Unexpected subscription update with nonexisted subscription ${subscription.id}`
-      );
-    }
-
-    await this.saveSubscription(userSubscription.user, subscription);
   }
 
   private async saveSubscription(
@@ -325,5 +298,75 @@ export class SubscriptionService {
         ...update,
       },
     });
+  }
+
+  private async getOrCreateCustomer(user: User): Promise<UserStripeCustomer> {
+    const customer = await this.db.userStripeCustomer.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (customer) {
+      return customer;
+    }
+
+    const stripeCustomer = await this.stripe.customers.create({
+      email: user.email,
+    });
+
+    return await this.db.userStripeCustomer.create({
+      data: {
+        userId: user.id,
+        stripeCustomerId: stripeCustomer.id,
+      },
+    });
+  }
+
+  private async retrieveUserFromCustomer(customerId: string) {
+    const customer = await this.db.userStripeCustomer.findUnique({
+      where: {
+        stripeCustomerId: customerId,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (customer?.user) {
+      return customer.user;
+    }
+
+    // customer may not saved is db, check it with stripe
+    const stripeCustomer = await this.stripe.customers.retrieve(customerId);
+
+    if (stripeCustomer.deleted) {
+      throw new Error('Unexpected subscription created with deleted customer');
+    }
+
+    if (!stripeCustomer.email) {
+      throw new Error('Unexpected subscription created with no email customer');
+    }
+
+    const user = await this.db.user.findUnique({
+      where: {
+        email: stripeCustomer.email,
+      },
+    });
+
+    if (!user) {
+      throw new Error(
+        `Unexpected subscription created with unknown customer ${stripeCustomer.email}`
+      );
+    }
+
+    await this.db.userStripeCustomer.create({
+      data: {
+        userId: user.id,
+        stripeCustomerId: stripeCustomer.id,
+      },
+    });
+
+    return user;
   }
 }

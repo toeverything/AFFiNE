@@ -49,6 +49,7 @@ model User {
   /// Not available if user signed up through OAuth providers
   password      String?                   @db.VarChar
   features      UserFeatureGates[]
+  customer      UserStripeCustomer?
   subscription  UserSubscription?
   invoices      UserInvoice[]
 
@@ -164,6 +165,16 @@ model NewFeaturesWaitingList {
   @@map("new_features_waiting_list")
 }
 
+model UserStripeCustomer {
+  userId           String   @id @map("user_id") @db.VarChar
+  stripeCustomerId String   @unique @map("stripe_customer_id") @db.VarChar
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stripe_customers")
+}
+
 model UserSubscription {
   id                   String    @id @default(uuid()) @db.VarChar(36)
   userId               String    @unique @map("user_id") @db.VarChar(36)
@@ -195,14 +206,15 @@ model UserSubscription {
 }
 
 model UserInvoice {
-  id              String   @id @default(uuid()) @db.VarChar(36)
-  userId          String   @map("user_id") @db.VarChar(36)
-  stripeInvoiceId String   @unique @map("stripe_invoice_id")
-  currency        String   @db.VarChar(3)
-  price           Int      @db.Integer
-  status          String   @db.VarChar(20)
-  plan            String   @db.VarChar
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id               String   @id @default(uuid()) @db.VarChar(36)
+  userId           String   @map("user_id") @db.VarChar(36)
+  stripeInvoiceId  String   @unique @map("stripe_invoice_id")
+  currency         String   @db.VarChar(3)
+  price            Int      @db.Integer
+  status           String   @db.VarChar(20)
+  plan             String   @db.VarChar
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastPaymentError String?  @map("last_payment_error") @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
