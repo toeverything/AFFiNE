@@ -1,7 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
-  HttpException,
+  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -15,6 +15,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
+import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma/service';
@@ -120,9 +121,14 @@ export class UserResolver {
   @Public()
   async user(@Args('email') email: string) {
     if (!(await this.users.canEarlyAccess(email))) {
-      return new HttpException(
+      return new GraphQLError(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
-        401
+        {
+          extensions: {
+            status: HttpStatus[HttpStatus.PAYMENT_REQUIRED],
+            code: HttpStatus.PAYMENT_REQUIRED,
+          },
+        }
       );
     }
     // TODO: need to limit a user can only get another user witch is in the same workspace

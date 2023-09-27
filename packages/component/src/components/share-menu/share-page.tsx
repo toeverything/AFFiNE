@@ -42,6 +42,7 @@ const CloudSvg = () => (
 
 export const LocalSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
+
   return (
     <>
       <div className={styles.titleContainerStyle}>
@@ -73,15 +74,21 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     workspace: { id: workspaceId },
     currentPage: { id: pageId },
   } = props;
+
   const [isPublic, setIsPublic] = props.useIsSharedPage(workspaceId, pageId);
+
   const [showDisable, setShowDisable] = useState(false);
+
   const t = useAFFiNEI18N();
+
   const sharingUrl = useMemo(() => {
     return `${runtimeConfig.serverUrlPrefix}/share/${workspaceId}/${pageId}`;
   }, [workspaceId, pageId]);
+
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
   }, [setIsPublic]);
+
   const onClickCopyLink = useCallback(() => {
     navigator.clipboard
       .writeText(sharingUrl)
@@ -92,11 +99,13 @@ export const AffineSharePage = (props: ShareMenuProps) => {
         console.error(err);
       });
   }, [sharingUrl, t]);
+
   const onDisablePublic = useCallback(() => {
     setIsPublic(false);
     toast('Successfully disabled', {
       portal: document.body,
     });
+    setShowDisable(false);
   }, [setIsPublic]);
 
   return (

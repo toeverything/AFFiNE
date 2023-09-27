@@ -16,3 +16,6 @@ export const wrapper = style({
   justifyContent: 'center',
   margin: '24px auto 0',
 });
+export const largeButtonEffect = style({
+  boxShadow: 'var(--affine-large-button-effect) !important',
+});

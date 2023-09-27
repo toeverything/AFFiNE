@@ -5,7 +5,11 @@ import { Button, IconButton } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 
 import { NotFoundPattern } from './not-found-pattern';
-import { notFoundPageContainer, wrapper } from './styles.css';
+import {
+  largeButtonEffect,
+  notFoundPageContainer,
+  wrapper,
+} from './styles.css';
 
 export interface NotFoundPageProps {
   user: {
@@ -29,12 +33,18 @@ export const NotFoundPage = ({
         <div className={wrapper}>
           <NotFoundPattern />
         </div>
+        <p className={wrapper}>{t['404.hint']()}</p>
         <div className={wrapper}>
-          <Button type="primary" size="extraLarge" onClick={onBack}>
+          <Button
+            type="primary"
+            size="extraLarge"
+            onClick={onBack}
+            className={largeButtonEffect}
+          >
             {t['404.back']()}
           </Button>
         </div>
-        <p className={wrapper}>{t['404.hint']()}</p>
+
         {user ? (
           <div className={wrapper}>
             <Avatar url={user.avatar} name={user.name} />

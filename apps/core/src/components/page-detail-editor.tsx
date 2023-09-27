@@ -4,7 +4,7 @@ import { PageNotFoundError } from '@affine/env/constant';
 import type { LayoutNode } from '@affine/sdk//entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
@@ -98,13 +98,17 @@ const EditorWrapper = memo(function EditorWrapper({
         setBlockHub={setBlockHub}
         onLoad={useCallback(
           (page: Page, editor: EditorContainer) => {
-            page.workspace.setPageMeta(page.id, {
-              updatedDate: Date.now(),
-            });
+            const disposableGroup = new DisposableGroup();
+            disposableGroup.add(
+              page.slots.blockUpdated.once(() => {
+                page.workspace.setPageMeta(page.id, {
+                  updatedDate: Date.now(),
+                });
+              })
+            );
             localStorage.setItem('last_page_id', page.id);
-            let dispose = () => {};
             if (onLoad) {
-              dispose = onLoad(page, editor);
+              disposableGroup.add(onLoad(page, editor));
             }
             const rootStore = getCurrentStore();
             const editorItems = rootStore.get(pluginEditorAtom);
@@ -124,7 +128,7 @@ const EditorWrapper = memo(function EditorWrapper({
             });
 
             return () => {
-              dispose();
+              disposableGroup.dispose();
               clearTimeout(renderTimeout);
               window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());

@@ -1,6 +1,6 @@
 import {
   createLazyProvider,
-  type DatasourceDocAdapter,
+  type DocDataSource,
   writeOperation,
 } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
@@ -99,7 +99,7 @@ export const createIndexedDBDatasource = ({
         }
       }
     },
-  } satisfies DatasourceDocAdapter;
+  } satisfies DocDataSource;
 
   return {
     ...adapter,

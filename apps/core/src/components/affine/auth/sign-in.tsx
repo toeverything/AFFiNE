@@ -3,12 +3,13 @@ import {
   CountDownRender,
   ModalHeader,
 } from '@affine/component/auth-components';
-import { getUserQuery } from '@affine/graphql';
+import { type GetUserQuery, getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { GraphQLError } from 'graphql';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
 
@@ -56,7 +57,25 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsValidEmail(true);
-    const { user } = await verifyUser({ email });
+    // 0 for no access for internal beta
+    let user: GetUserQuery['user'] | null | 0 = null;
+    await verifyUser({ email })
+      .then(({ user: u }) => {
+        user = u;
+      })
+      .catch(err => {
+        const e = err?.[0];
+        if (e instanceof GraphQLError && e.extensions?.code === 402) {
+          setAuthState('noAccess');
+          user = 0;
+        } else {
+          throw err;
+        }
+      });
+
+    if (user === 0) {
+      return;
+    }
     setAuthEmail(email);
 
     if (user) {

@@ -1,0 +1,12 @@
+{
+  "name": "@affine/cmdk",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.tsx",
+  "module": "./src/index.tsx",
+  "devDependencies": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "version": "0.2.1"
+}

@@ -21,7 +21,14 @@ import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
@@ -96,6 +103,20 @@ export const CloudWorkspaceMembersPanel = ({
     [invite, pushNotification, t]
   );
 
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const [memberListHeight, setMemberListHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (
+      memberCount > COUNT_PER_PAGE &&
+      listContainerRef.current &&
+      memberListHeight === null
+    ) {
+      const rect = listContainerRef.current.getBoundingClientRect();
+      setMemberListHeight(rect.height);
+    }
+  }, [listContainerRef, memberCount, memberListHeight]);
+
   const onRevoke = useCallback<OnRevoke>(
     async memberId => {
       const res = await revokeMemberPermission(memberId);
@@ -129,7 +150,11 @@ export const CloudWorkspaceMembersPanel = ({
         ) : null}
       </SettingRow>
 
-      <div className={style.membersPanel}>
+      <div
+        className={style.membersPanel}
+        ref={listContainerRef}
+        style={memberListHeight ? { height: memberListHeight } : {}}
+      >
         <Suspense fallback={<MemberListFallback memberCount={memberCount} />}>
           <MemberList
             workspaceId={workspaceId}
@@ -139,11 +164,13 @@ export const CloudWorkspaceMembersPanel = ({
           />
         </Suspense>
 
-        <Pagination
-          totalCount={memberCount}
-          countPerPage={COUNT_PER_PAGE}
-          onPageChange={onPageChange}
-        />
+        {memberCount > COUNT_PER_PAGE && (
+          <Pagination
+            totalCount={memberCount}
+            countPerPage={COUNT_PER_PAGE}
+            onPageChange={onPageChange}
+          />
+        )}
       </div>
     </>
   );
@@ -186,7 +213,7 @@ const MemberList = ({
   const currentUser = useCurrentUser();
 
   return (
-    <>
+    <div className={style.memberList}>
       {members.map(member => (
         <MemberItem
           key={member.id}
@@ -196,7 +223,7 @@ const MemberList = ({
           onRevoke={onRevoke}
         />
       ))}
-    </>
+    </div>
   );
 };
 
@@ -225,54 +252,56 @@ const MemberItem = ({
   }, [currentUser.id, isOwner, member.id, t]);
 
   return (
-    <>
-      <div key={member.id} className={style.listItem} data-testid="member-item">
-        <Avatar
-          size={36}
-          url={member.avatarUrl}
-          name={(member.emailVerified ? member.name : member.email) as string}
-        />
-        <div className={style.memberContainer}>
-          {member.emailVerified ? (
-            <>
-              <div className={style.memberName}>{member.name}</div>
-              <div className={style.memberEmail}>{member.email}</div>
-            </>
-          ) : (
-            <div className={style.memberName}>{member.email}</div>
-          )}
-        </div>
-        <div
-          className={clsx(style.roleOrStatus, {
-            pending: !member.accepted,
-          })}
-        >
-          {member.accepted
-            ? member.permission === Permission.Owner
-              ? 'Workspace Owner'
-              : 'Member'
-            : 'Pending'}
-        </div>
-        <Menu
-          items={
-            <MenuItem data-member-id={member.id} onClick={handleRevoke}>
-              {operationButtonInfo.leaveOrRevokeText}
-            </MenuItem>
-          }
-        >
-          <IconButton
-            disabled={!operationButtonInfo.show}
-            type="plain"
-            style={{
-              visibility: operationButtonInfo.show ? 'visible' : 'hidden',
-              flexShrink: 0,
-            }}
-          >
-            <MoreVerticalIcon />
-          </IconButton>
-        </Menu>
+    <div
+      key={member.id}
+      className={style.memberListItem}
+      data-testid="member-item"
+    >
+      <Avatar
+        size={36}
+        url={member.avatarUrl}
+        name={(member.emailVerified ? member.name : member.email) as string}
+      />
+      <div className={style.memberContainer}>
+        {member.emailVerified ? (
+          <>
+            <div className={style.memberName}>{member.name}</div>
+            <div className={style.memberEmail}>{member.email}</div>
+          </>
+        ) : (
+          <div className={style.memberName}>{member.email}</div>
+        )}
       </div>
-    </>
+      <div
+        className={clsx(style.roleOrStatus, {
+          pending: !member.accepted,
+        })}
+      >
+        {member.accepted
+          ? member.permission === Permission.Owner
+            ? 'Workspace Owner'
+            : 'Member'
+          : 'Pending'}
+      </div>
+      <Menu
+        items={
+          <MenuItem data-member-id={member.id} onClick={handleRevoke}>
+            {operationButtonInfo.leaveOrRevokeText}
+          </MenuItem>
+        }
+      >
+        <IconButton
+          disabled={!operationButtonInfo.show}
+          type="plain"
+          style={{
+            visibility: operationButtonInfo.show ? 'visible' : 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          <MoreVerticalIcon />
+        </IconButton>
+      </Menu>
+    </div>
   );
 };
 

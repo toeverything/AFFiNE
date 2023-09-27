@@ -17,6 +17,7 @@ import {
   rootWorkspacesMetadataAtom,
 } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
+import { nanoid } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -34,7 +35,6 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { v4 as uuid } from 'uuid';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
@@ -54,6 +54,7 @@ import {
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
@@ -61,9 +62,9 @@ import {
 import { pathGenerator } from '../shared';
 import { toast } from '../utils';
 
-const QuickSearchModal = lazy(() =>
-  import('../components/pure/quick-search-modal').then(module => ({
-    default: module.QuickSearchModal,
+const CMDKQuickSearchModal = lazy(() =>
+  import('../components/pure/cmdk').then(module => ({
+    default: module.CMDKQuickSearchModal,
   }))
 );
 
@@ -79,10 +80,9 @@ export const QuickSearch = () => {
   }
 
   return (
-    <QuickSearchModal
-      workspace={currentWorkspace}
+    <CMDKQuickSearchModal
       open={openQuickSearchModal}
-      setOpen={setOpenQuickSearchModalAtom}
+      onOpenChange={setOpenQuickSearchModalAtom}
     />
   );
 };
@@ -141,6 +141,10 @@ export const WorkspaceLayoutInner = ({
 }: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
+  const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
+  const t = useAFFiNEI18N();
+
+  useRegisterWorkspaceCommands();
 
   useEffect(() => {
     // hotfix for blockVersions
@@ -164,15 +168,13 @@ export const WorkspaceLayoutInner = ({
 
   usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
-  const helper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
-
   const handleCreatePage = useCallback(() => {
-    const id = uuid();
-    helper.createPage(id);
+    const id = nanoid();
+    pageHelper.createPage(id);
     const page = currentWorkspace.blockSuiteWorkspace.getPage(id);
     assertExists(page);
     return page;
-  }, [currentWorkspace.blockSuiteWorkspace, helper]);
+  }, [currentWorkspace.blockSuiteWorkspace, pageHelper]);
 
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenQuickSearchModal = useCallback(() => {
@@ -205,7 +207,6 @@ export const WorkspaceLayoutInner = ({
   const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const t = useAFFiNEI18N();
 
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {

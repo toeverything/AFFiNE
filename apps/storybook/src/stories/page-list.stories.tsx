@@ -1,10 +1,11 @@
-import { Empty } from '@affine/component';
-import { toast } from '@affine/component';
+import { Empty, toast } from '@affine/component';
 import type { OperationCellProps } from '@affine/component/page-list';
-import { PageListTrashView } from '@affine/component/page-list';
-import { PageList } from '@affine/component/page-list';
-import { NewPageButton } from '@affine/component/page-list';
-import { OperationCell } from '@affine/component/page-list';
+import {
+  NewPageButton,
+  OperationCell,
+  PageList,
+  PageListTrashView,
+} from '@affine/component/page-list';
 import { PageIcon } from '@blocksuite/icons';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';

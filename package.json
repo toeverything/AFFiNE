@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.9.0-canary.12",
+  "version": "0.9.0-canary.13",
   "private": true,
   "author": "toeverything",
   "license": "MIT",
@@ -114,10 +114,10 @@
     "vite": "^4.4.9",
     "vite-plugin-istanbul": "^5.0.0",
     "vite-plugin-static-copy": "^0.17.0",
-    "vite-tsconfig-paths": "^4.2.0",
+    "vite-tsconfig-paths": "^4.2.1",
     "vitest": "0.33.0",
     "vitest-fetch-mock": "^0.2.2",
-    "vitest-mock-extended": "^1.2.0"
+    "vitest-mock-extended": "^1.2.1"
   },
   "packageManager": "yarn@3.6.3",
   "resolutions": {
