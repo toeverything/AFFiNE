@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import plugx from '@plugxjs/vite-plugin';
+import { plugx } from '@plugxjs/vite-plugin';
 import {
   packageJsonInputSchema,
   packageJsonOutputSchema,
