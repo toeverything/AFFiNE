@@ -159,7 +159,7 @@ jobs:
         spec:
           - { package: 0.7.0-canary.18 }
           - { package: 0.8.0-canary.7 }
-          - { package: 0.8.3 }
+          - { package: 0.8.4 }
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -169,12 +169,10 @@ jobs:
           electron-install: false
 
       - name: Unzip
-        run: yarn unzip
-        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
+        run: yarn workspace @affine-legacy/${{ matrix.spec.package }} unzip
 
       - name: Run playwright tests
-        run: yarn e2e --forbid-only
-        working-directory: ./tests/affine-legacy/${{ matrix.spec.package }}
+        run: yarn workspace @affine-legacy/${{ matrix.spec.package }} e2e --forbid-only
 
       - name: Upload test results
         if: ${{ failure() }}

@@ -179,16 +179,16 @@
       "path": "./tests/affine-legacy/0.7.0-canary.18"
     },
     {
+      "path": "./tests/affine-legacy/0.8.0-canary.7"
+    },
+    {
       "path": "./tests/affine-cloud"
     },
     {
       "path": "./tests/affine-desktop"
     },
     {
-      "path": "./tests/affine-legacy/0.8.0-canary.7"
-    },
-    {
-      "path": "./tests/affine-legacy/0.8.3"
+      "path": "./tests/affine-legacy/0.8.4"
     }
   ],
   "files": [],

@@ -46,16 +46,16 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.37.1
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
     serve: ^14.2.1
   languageName: unknown
   linkType: soft
 
-"@affine-legacy/0.8.3@workspace:tests/affine-legacy/0.8.3":
+"@affine-legacy/0.8.4@workspace:tests/affine-legacy/0.8.4":
   version: 0.0.0-use.local
-  resolution: "@affine-legacy/0.8.3@workspace:tests/affine-legacy/0.8.3"
+  resolution: "@affine-legacy/0.8.4@workspace:tests/affine-legacy/0.8.4"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
@@ -8797,7 +8797,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.38.1":
+"@playwright/test@npm:^1.37.1, @playwright/test@npm:^1.38.1":
   version: 1.38.1
   resolution: "@playwright/test@npm:1.38.1"
   dependencies:

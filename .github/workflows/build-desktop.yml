@@ -44,8 +44,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Build Plugins
-        run: yarn run build:plugins
+        with:
+          electron-install: false
       - name: Build Core
         run: yarn nx build @affine/core
       - name: Upload core artifact

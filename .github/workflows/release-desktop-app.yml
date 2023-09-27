@@ -119,9 +119,6 @@ jobs:
           name: core
           path: apps/electron/resources/web-static
 
-      - name: Build Plugins
-        run: yarn run build:plugins
-
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
 
@@ -319,6 +316,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: web-static
+      - name: Zip web-static
+        run: zip -r web-static.zip web-static
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v3
         with:
