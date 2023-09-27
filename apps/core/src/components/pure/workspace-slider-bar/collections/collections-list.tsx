@@ -13,7 +13,6 @@ import {
   FilterIcon,
   InformationIcon,
   MoreHorizontalIcon,
-  UnpinIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
@@ -31,10 +30,10 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import type { ReactElement } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
+import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { filterPage } from '../../../../utils/filter';
-import { currentCollectionsAtom } from '../../../../utils/user-setting';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -84,20 +83,6 @@ const CollectionOperations = ({
         ),
         name: t['Edit Filter'](),
         click: showUpdateCollection,
-      },
-      {
-        icon: (
-          <MenuIcon>
-            <UnpinIcon />
-          </MenuIcon>
-        ),
-        name: t['Unpin'](),
-        click: () => {
-          return setting.updateCollection({
-            ...view,
-            pinned: false,
-          });
-        },
       },
       {
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
@@ -150,7 +135,7 @@ const CollectionRenderer = ({
   getPageInfo: GetPageInfoById;
 }) => {
   const [collapsed, setCollapsed] = useState(true);
-  const setting = useCollectionManager(currentCollectionsAtom);
+  const setting = useCollectionManager(collectionsCRUDAtom);
   const { jumpToSubPath } = useNavigateHelper();
   const clickCollection = useCallback(() => {
     jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
@@ -175,24 +160,11 @@ const CollectionRenderer = ({
     () => new Set(collection.allowList),
     [collection.allowList]
   );
-  const excludeList = useMemo(
-    () => new Set(collection.excludeList),
-    [collection.excludeList]
-  );
   const removeFromAllowList = useCallback(
     (id: string) => {
       return setting.updateCollection({
         ...collection,
         allowList: collection.allowList?.filter(v => v != id),
-      });
-    },
-    [collection, setting]
-  );
-  const addToExcludeList = useCallback(
-    (id: string) => {
-      return setting.updateCollection({
-        ...collection,
-        excludeList: [id, ...(collection.excludeList ?? [])],
       });
     },
     [collection, setting]
@@ -207,7 +179,7 @@ const CollectionRenderer = ({
         propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
         init={collection}
-        onConfirm={setting.saveCollection}
+        onConfirm={setting.updateCollection}
         open={show}
         onOpenChange={showUpdateCollection}
       />
@@ -257,8 +229,6 @@ const CollectionRenderer = ({
               <Page
                 inAllowList={allowList.has(page.id)}
                 removeFromAllowList={removeFromAllowList}
-                inExcludeList={excludeList.has(page.id)}
-                addToExcludeList={addToExcludeList}
                 allPageMeta={allPagesMeta}
                 page={page}
                 key={page.id}
@@ -273,14 +243,10 @@ const CollectionRenderer = ({
 };
 export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
-  const { savedCollections } = useSavedCollections(currentCollectionsAtom);
+  const { collections } = useSavedCollections(collectionsCRUDAtom);
   const getPageInfo = useGetPageInfoById(workspace);
-  const pinedCollections = useMemo(
-    () => savedCollections.filter(v => v.pinned),
-    [savedCollections]
-  );
   const t = useAFFiNEI18N();
-  if (pinedCollections.length === 0) {
+  if (collections.length === 0) {
     return (
       <CollectionItem
         data-testid="slider-bar-collection-null-description"
@@ -293,7 +259,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   }
   return (
     <div data-testid="collections" className={styles.wrapper}>
-      {pinedCollections.map(view => {
+      {collections.map(view => {
         return (
           <CollectionRenderer
             getPageInfo={getPageInfo}

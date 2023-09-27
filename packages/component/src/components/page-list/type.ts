@@ -1,4 +1,4 @@
-import type { CollectionsAtom } from '@affine/component/page-list/use-collection-manager';
+import type { CollectionsCRUDAtom } from '@affine/component/page-list/use-collection-manager';
 import type { Tag } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -47,7 +47,7 @@ export type TrashListData = {
 
 export type PageListProps = {
   isPublicWorkspace?: boolean;
-  collectionsAtom: CollectionsAtom;
+  collectionsAtom: CollectionsCRUDAtom;
   list: ListData[];
   fallback?: ReactNode;
   onCreateNewPage: () => void;

@@ -50,10 +50,8 @@ export const collectionSchema = z.object({
   id: z.string(),
   workspaceId: z.string(),
   name: z.string(),
-  pinned: z.boolean().optional(),
   filterList: z.array(filterSchema),
   allowList: z.array(z.string()).optional(),
-  excludeList: z.array(z.string()).optional(),
 });
 
 export type Collection = z.input<typeof collectionSchema>;

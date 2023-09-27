@@ -4,7 +4,6 @@ import {
   DeleteIcon,
   EdgelessIcon,
   FilterMinusIcon,
-  FilterUndoIcon,
   MoreHorizontalIcon,
   PageIcon,
 } from '@blocksuite/icons';
@@ -32,17 +31,13 @@ import * as styles from './styles.css';
 export const PageOperations = ({
   page,
   inAllowList,
-  addToExcludeList,
   removeFromAllowList,
-  inExcludeList,
   workspace,
 }: {
   workspace: Workspace;
   page: PageMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
-  inExcludeList: boolean;
-  addToExcludeList: (id: string) => void;
 }) => {
   const { removeToTrash } = useBlockSuiteMetaHelper(workspace);
   const t = useAFFiNEI18N();
@@ -74,19 +69,6 @@ export const PageOperations = ({
             },
           ]
         : []),
-      ...(!inExcludeList
-        ? [
-            {
-              icon: (
-                <MenuIcon>
-                  <FilterUndoIcon />
-                </MenuIcon>
-              ),
-              name: t['Exclude from filter'](),
-              click: () => addToExcludeList(page.id),
-            },
-          ]
-        : []),
       {
         element: <div key="divider" className={styles.menuDividerStyle}></div>,
       },
@@ -103,15 +85,7 @@ export const PageOperations = ({
         type: 'danger',
       },
     ],
-    [
-      inAllowList,
-      t,
-      inExcludeList,
-      removeFromAllowList,
-      page.id,
-      addToExcludeList,
-      removeToTrash,
-    ]
+    [inAllowList, t, removeFromAllowList, page.id, removeToTrash]
   );
   return (
     <>
@@ -139,15 +113,11 @@ export const Page = ({
   workspace,
   allPageMeta,
   inAllowList,
-  inExcludeList,
   removeFromAllowList,
-  addToExcludeList,
 }: {
   page: PageMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
-  inExcludeList: boolean;
-  addToExcludeList: (id: string) => void;
   workspace: Workspace;
   allPageMeta: Record<string, PageMeta>;
 }) => {
@@ -181,8 +151,6 @@ export const Page = ({
               <PageOperations
                 inAllowList={inAllowList}
                 removeFromAllowList={removeFromAllowList}
-                inExcludeList={inExcludeList}
-                addToExcludeList={addToExcludeList}
                 page={page}
                 workspace={workspace}
               />

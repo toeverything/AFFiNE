@@ -24,7 +24,7 @@ import { AllPageListMobileView, TrashListMobileView } from './mobile';
 import { TrashOperationCell } from './operation-cell';
 import { StyledTableContainer } from './styles';
 import type { ListData, PageListProps, TrashListData } from './type';
-import type { CollectionsAtom } from './use-collection-manager';
+import type { CollectionsCRUDAtom } from './use-collection-manager';
 import { useSorter } from './use-sorter';
 import { formatDate, useIsSmallDevices } from './utils';
 import { CollectionBar } from './view/collection-bar';
@@ -37,7 +37,7 @@ interface AllPagesHeadProps {
   importFile: () => void;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  collectionsAtom: CollectionsAtom;
+  collectionsAtom: CollectionsCRUDAtom;
 }
 
 const AllPagesHead = ({

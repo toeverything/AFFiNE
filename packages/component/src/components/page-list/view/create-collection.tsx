@@ -128,15 +128,6 @@ export const EditCollection = ({
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
-  const removeFromExcludeList = useCallback(
-    (id: string) => {
-      onChange({
-        ...value,
-        excludeList: value.excludeList?.filter(v => v !== id),
-      });
-    },
-    [value]
-  );
   const removeFromAllowList = useCallback(
     (id: string) => {
       onChange({
@@ -167,28 +158,6 @@ export const EditCollection = ({
         className={styles.scrollContainer}
         viewPortClassName={styles.container}
       >
-        {value.excludeList?.length ? (
-          <div className={styles.excludeList}>
-            <div className={styles.excludeTitle}>
-              Exclude from this collection
-            </div>
-            <div className={styles.excludeListContent}>
-              {value.excludeList.map(id => {
-                return (
-                  <Page
-                    id={id}
-                    getPageInfo={getPageInfo}
-                    key={id}
-                    onClick={removeFromExcludeList}
-                  />
-                );
-              })}
-            </div>
-            <div className={styles.excludeTip}>
-              These pages will never appear in the current collection
-            </div>
-          </div>
-        ) : null}
         <div
           style={{
             backgroundColor: 'var(--affine-hover-color)',

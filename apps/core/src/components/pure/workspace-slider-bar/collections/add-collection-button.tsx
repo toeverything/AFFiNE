@@ -10,8 +10,8 @@ import { uuidv4 } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
 import { useCallback, useState } from 'react';
 
+import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
-import { currentCollectionsAtom } from '../../../../utils/user-setting';
 
 type AddCollectionButtonProps = {
   workspace: Workspace;
@@ -21,7 +21,7 @@ export const AddCollectionButton = ({
   workspace,
 }: AddCollectionButtonProps) => {
   const getPageInfo = useGetPageInfoById(workspace);
-  const setting = useCollectionManager(currentCollectionsAtom);
+  const setting = useCollectionManager(collectionsCRUDAtom);
   const t = useAFFiNEI18N();
   const [show, showUpdateCollection] = useState(false);
   const [defaultCollection, setDefaultCollection] = useState<Collection>();
@@ -30,7 +30,6 @@ export const AddCollectionButton = ({
     setDefaultCollection({
       id: uuidv4(),
       name: '',
-      pinned: true,
       filterList: [],
       workspaceId: workspace.id,
     });
@@ -49,7 +48,7 @@ export const AddCollectionButton = ({
       <EditCollectionModal
         propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
-        onConfirm={setting.saveCollection}
+        onConfirm={setting.createCollection}
         open={show}
         onOpenChange={showUpdateCollection}
         title={t['com.affine.editCollection.saveCollection']()}

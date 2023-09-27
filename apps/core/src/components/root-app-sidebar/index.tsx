@@ -25,10 +25,10 @@ import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
+import { collectionsCRUDAtom } from '../../atoms/collections';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import type { AllWorkspace } from '../../shared';
-import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
@@ -98,7 +98,7 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const [appSettings] = useAppSetting();
-  const { backToAll } = useCollectionManager(currentCollectionsAtom);
+  const { backToAll } = useCollectionManager(collectionsCRUDAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(

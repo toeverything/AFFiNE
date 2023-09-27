@@ -15,10 +15,10 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useSetAtom } from 'jotai/react';
 import { useCallback } from 'react';
 
+import { collectionsCRUDAtom } from '../atoms/collections';
 import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
 import { useWorkspace } from '../hooks/use-workspace';
-import { currentCollectionsAtom } from '../utils/user-setting';
 import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
 import { filterContainerStyle } from './filter-container.css';
@@ -28,10 +28,10 @@ import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
 
 const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
   const currentWorkspace = useWorkspace(workspaceId);
-  const setting = useCollectionManager(currentCollectionsAtom);
+  const setting = useCollectionManager(collectionsCRUDAtom);
   const saveToCollection = useCallback(
     async (collection: Collection) => {
-      await setting.saveCollection(collection);
+      await setting.createCollection(collection);
       setting.selectCollection(collection.id);
     },
     [setting]
@@ -82,7 +82,7 @@ export function WorkspaceHeader({
   const setAppHeader = useSetAtom(appHeaderAtom);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
-  const setting = useCollectionManager(currentCollectionsAtom);
+  const setting = useCollectionManager(collectionsCRUDAtom);
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );

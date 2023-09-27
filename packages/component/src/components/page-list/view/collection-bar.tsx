@@ -8,7 +8,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 
 import {
-  type CollectionsAtom,
+  type CollectionsCRUDAtom,
   useCollectionManager,
 } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
@@ -18,7 +18,7 @@ import { useActions } from './use-action';
 interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  collectionsAtom: CollectionsAtom;
+  collectionsAtom: CollectionsCRUDAtom;
   columnsCount: number;
 }
 

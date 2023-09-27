@@ -1,5 +1,5 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import { useAtom } from 'jotai';
+import { type Atom, useAtom } from 'jotai';
 import { atomWithReset, RESET } from 'jotai/utils';
 import type { WritableAtom } from 'jotai/vanilla';
 import { useCallback } from 'react';
@@ -27,60 +27,49 @@ export type CollectionsAtom = WritableAtom<
   [Collection[] | ((collection: Collection[]) => Collection[])],
   Promise<void>
 >;
+export type Updater<T> = (value: T) => T;
+export type CollectionUpdater = Updater<Collection>;
+export type CollectionsCRUD = {
+  addCollection: (...collections: Collection[]) => Promise<void>;
+  collections: Collection[];
+  updateCollection: (id: string, updater: CollectionUpdater) => Promise<void>;
+  deleteCollection: (...ids: string[]) => Promise<void>;
+};
+export type CollectionsCRUDAtom = Atom<CollectionsCRUD>;
 
-export const useSavedCollections = (collectionAtom: CollectionsAtom) => {
-  const [savedCollections, setCollections] = useAtom(collectionAtom);
-
-  const saveCollection = useCallback(
-    async (collection: Collection) => {
-      if (collection.id === NIL) {
-        return;
-      }
-      await setCollections(old => [...old, collection]);
-    },
-    [setCollections]
-  );
-  const deleteCollection = useCallback(
-    async (id: string) => {
-      if (id === NIL) {
-        return;
-      }
-      await setCollections(old => old.filter(v => v.id !== id));
-    },
-    [setCollections]
-  );
+export const useSavedCollections = (collectionAtom: CollectionsCRUDAtom) => {
+  const [{ collections, addCollection, deleteCollection, updateCollection }] =
+    useAtom(collectionAtom);
   const addPage = useCallback(
     async (collectionId: string, pageId: string) => {
-      await setCollections(old => {
-        const collection = old.find(v => v.id === collectionId);
-        if (!collection) {
-          return old;
-        }
-        return [
-          ...old.filter(v => v.id !== collectionId),
-          {
-            ...collection,
-            allowList: [pageId, ...(collection.allowList ?? [])],
-          },
-        ];
+      await updateCollection(collectionId, old => {
+        return {
+          ...old,
+          allowList: [pageId, ...(old.allowList ?? [])],
+        };
       });
     },
-    [setCollections]
+    [updateCollection]
   );
   return {
-    savedCollections,
-    saveCollection,
+    collections,
+    addCollection,
+    updateCollection,
     deleteCollection,
     addPage,
   };
 };
 
-export const useCollectionManager = (collectionsAtom: CollectionsAtom) => {
-  const { savedCollections, saveCollection, deleteCollection, addPage } =
-    useSavedCollections(collectionsAtom);
+export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
+  const {
+    collections,
+    updateCollection,
+    addCollection,
+    deleteCollection,
+    addPage,
+  } = useSavedCollections(collectionsAtom);
   const [collectionData, setCollectionData] = useAtom(collectionAtom);
-
-  const updateCollection = useCallback(
+  const update = useCallback(
     async (collection: Collection) => {
       if (collection.id === NIL) {
         setCollectionData({
@@ -88,10 +77,10 @@ export const useCollectionManager = (collectionsAtom: CollectionsAtom) => {
           defaultCollection: collection,
         });
       } else {
-        await saveCollection(collection);
+        await updateCollection(collection.id, () => collection);
       }
     },
-    [collectionData, saveCollection, setCollectionData]
+    [setCollectionData, collectionData, updateCollection]
   );
   const selectCollection = useCallback(
     (id: string) => {
@@ -120,19 +109,19 @@ export const useCollectionManager = (collectionsAtom: CollectionsAtom) => {
   const currentCollection =
     collectionData.currentId === NIL
       ? collectionData.defaultCollection
-      : savedCollections.find(v => v.id === collectionData.currentId) ??
+      : collections.find(v => v.id === collectionData.currentId) ??
         collectionData.defaultCollection;
   return {
     currentCollection: currentCollection,
-    savedCollections,
+    savedCollections: collections,
     isDefault: currentCollection.id === NIL,
 
     // actions
-    saveCollection,
-    updateCollection,
+    createCollection: addCollection,
+    updateCollection: update,
+    deleteCollection,
     selectCollection,
     backToAll,
-    deleteCollection,
     addPage,
     setTemporaryFilter,
   };

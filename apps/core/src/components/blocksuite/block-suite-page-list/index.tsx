@@ -14,12 +14,12 @@ import { useAtom, useAtomValue } from 'jotai';
 import { Suspense, useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
+import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
 import { filterPage } from '../../../utils/filter';
-import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
@@ -278,7 +278,7 @@ export const BlockSuitePageList = ({
 
   return (
     <PageList
-      collectionsAtom={currentCollectionsAtom}
+      collectionsAtom={collectionsCRUDAtom}
       propertiesMeta={blockSuiteWorkspace.meta.properties}
       getPageInfo={getPageInfo}
       onCreateNewPage={createPage}
