@@ -45,7 +45,7 @@
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.3",
     "cross-env": "7.0.3",
-    "electron": "^26.1.0",
+    "electron": "^26.2.1",
     "electron-log": "^5.0.0-beta.28",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
