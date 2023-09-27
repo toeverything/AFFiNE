@@ -99,7 +99,7 @@ jobs:
         uses: ./.github/actions/setup-node
         timeout-minutes: 10
         with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo @toeverything/y-indexeddb @affine/sdk @affine/component @affine-test/affine-desktop
+          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop
           playwright-install: true
           hard-link-nm: false
 
@@ -119,9 +119,6 @@ jobs:
         with:
           name: core
           path: apps/electron/resources/web-static
-
-      - name: Build Plugins
-        run: yarn run build:plugins
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build

@@ -20,4 +20,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - run: echo "${{ github.event.pull_request.title }}" | npx commitlint -g ./.commitlintrc.json
+        with:
+          electron-install: false
+      - run: echo "${{ github.event.pull_request.title }}" | yarn dlx commitlint -g ./.commitlintrc.json

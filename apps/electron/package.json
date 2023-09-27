@@ -88,9 +88,6 @@
     ]
   },
   "stableVersion": "0.5.3",
-  "installConfig": {
-    "hoistingLimits": "workspaces"
-  },
   "peerDependencies": {
     "ts-node": "*"
   }
