@@ -1,4 +1,13 @@
 -- CreateTable
+CREATE TABLE "user_stripe_customers" (
+    "user_id" VARCHAR NOT NULL,
+    "stripe_customer_id" VARCHAR NOT NULL,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_stripe_customers_pkey" PRIMARY KEY ("user_id")
+);
+
+-- CreateTable
 CREATE TABLE "user_subscriptions" (
     "id" VARCHAR(36) NOT NULL,
     "user_id" VARCHAR(36) NOT NULL,
@@ -27,9 +36,13 @@ CREATE TABLE "user_invoices" (
     "status" VARCHAR(20) NOT NULL,
     "plan" VARCHAR NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "last_payment_error" TEXT,
 
     CONSTRAINT "user_invoices_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_stripe_customers_stripe_customer_id_key" ON "user_stripe_customers"("stripe_customer_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_subscriptions_user_id_key" ON "user_subscriptions"("user_id");
@@ -39,6 +52,9 @@ CREATE UNIQUE INDEX "user_subscriptions_stripe_subscription_id_key" ON "user_sub
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_invoices_stripe_invoice_id_key" ON "user_invoices"("stripe_invoice_id");
+
+-- AddForeignKey
+ALTER TABLE "user_stripe_customers" ADD CONSTRAINT "user_stripe_customers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_subscriptions" ADD CONSTRAINT "user_subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
