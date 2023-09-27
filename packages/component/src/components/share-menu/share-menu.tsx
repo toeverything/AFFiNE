@@ -13,7 +13,6 @@ import { Menu } from '@toeverything/components/menu';
 import * as styles from './index.css';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
-
 export interface ShareMenuProps<
   Workspace extends AffineOfficialWorkspace =
     | AffineCloudWorkspace
@@ -43,7 +42,7 @@ export const ShareMenu = (props: ShareMenuProps) => {
       <div className={styles.columnContainerStyle}>
         <Divider size="thinner" />
       </div>
-      <ShareExport />
+      <ShareExport {...props} />
     </div>
   );
   return (
