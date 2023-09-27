@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 export function useRegisterBlocksuiteEditorCommands() {
   const t = useAFFiNEI18N();
+
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     const getEdgeless = () => {
