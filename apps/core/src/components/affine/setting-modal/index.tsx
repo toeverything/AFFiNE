@@ -12,7 +12,7 @@ import {
   useGeneralSettingList,
 } from './general-setting';
 import { SettingSidebar } from './setting-sidebar';
-import { footerIconWrapper, settingContent } from './style.css';
+import * as style from './style.css';
 import { WorkspaceSetting } from './workspace-setting';
 
 type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
@@ -84,33 +84,32 @@ export const SettingModal = ({
         onAccountSettingClick={onAccountSettingClick}
       />
 
-      <div data-testid="setting-modal-content" className={settingContent}>
-        <div className="wrapper">
-          <div className="content">
-            {activeTab === 'workspace' && workspaceId ? (
-              <Suspense fallback={<WorkspaceDetailSkeleton />}>
-                <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
-              </Suspense>
-            ) : null}
-            {generalSettingList.find(v => v.key === activeTab) ? (
-              <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
-            ) : null}
-            {activeTab === 'account' && loginStatus === 'authenticated' ? (
-              <AccountSetting />
-            ) : null}
-          </div>
-          <div className="footer">
-            <div className={footerIconWrapper}>
+      <div data-testid="setting-modal-content" className={style.wrapper}>
+        <div className={style.content}>
+          {activeTab === 'workspace' && workspaceId ? (
+            <Suspense fallback={<WorkspaceDetailSkeleton />}>
+              <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+            </Suspense>
+          ) : null}
+          {generalSettingList.find(v => v.key === activeTab) ? (
+            <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
+          ) : null}
+          {activeTab === 'account' && loginStatus === 'authenticated' ? (
+            <AccountSetting />
+          ) : null}
+        </div>
+        <div className="footer">
+          <a
+            href="https://community.affine.pro/home"
+            target="_blank"
+            rel="noreferrer"
+            className={style.suggestionLink}
+          >
+            <span className={style.suggestionLinkIcon}>
               <ContactWithUsIcon />
-            </div>
-            <a
-              href="https://community.affine.pro/home"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t['com.affine.settings.suggestion']()}
-            </a>
-          </div>
+            </span>
+            {t['com.affine.settings.suggestion']()}
+          </a>
         </div>
       </div>
     </Modal>
