@@ -23,11 +23,12 @@ import {
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useRef, useState } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
+import { setPageModeAtom } from '../../../atoms';
+import { currentModeAtom } from '../../../atoms/mode';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '../../../hooks/affine/use-export-page';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
@@ -44,39 +45,43 @@ type PageMenuProps = {
 export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
   const ref = useRef(null);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const { openPage } = useNavigateHelper();
+
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
-
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
+  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  assertExists(currentPage);
+
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   ) as PageMeta;
-  const [setting, setSetting] = useAtom(pageSettingFamily(pageId));
-  const mode = setting?.mode ?? 'page';
-
+  const currentMode = useAtomValue(currentModeAtom);
   const favorite = pageMeta.favorite ?? false;
+
   const { setPageMeta, setPageTitle } = usePageMetaHelper(blockSuiteWorkspace);
-  const [openConfirm, setOpenConfirm] = useState(false);
-  const { removeToTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const { removeToTrash, togglePageMode, toggleFavorite } =
+    useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
+  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+
   const handleFavorite = useCallback(() => {
-    setPageMeta(pageId, { favorite: !favorite });
+    toggleFavorite(pageId);
     toast(
       favorite
         ? t['com.affine.toastMessage.removedFavorites']()
         : t['com.affine.toastMessage.addedFavorites']()
     );
-  }, [favorite, pageId, setPageMeta, t]);
+  }, [favorite, pageId, t, toggleFavorite]);
   const handleSwitchMode = useCallback(() => {
-    setSetting(setting => ({
-      mode: setting?.mode === 'page' ? 'edgeless' : 'page',
-    }));
+    togglePageMode(pageId);
     toast(
-      mode === 'page'
+      currentMode === 'page'
         ? t['com.affine.toastMessage.edgelessMode']()
         : t['com.affine.toastMessage.pageMode']()
     );
-  }, [mode, setSetting, t]);
+  }, [currentMode, pageId, t, togglePageMode]);
   const handleOnConfirm = useCallback(() => {
     removeToTrash(pageId);
     toast(t['com.affine.toastMessage.movedTrash']());
@@ -86,10 +91,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     padding: '4px 12px',
     transition: 'all 0.3s',
   };
-  const { openPage } = useNavigateHelper();
-  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
-  const currentPage = blockSuiteWorkspace.getPage(pageId);
-  assertExists(currentPage);
+
   const {
     onClickExportPDF,
     onClickExportPNG,
@@ -97,25 +99,28 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     onClickExportMarkdown,
   } = useExportPage(currentPage);
   const setPageMode = useSetAtom(setPageModeAtom);
+
   const duplicate = useCallback(async () => {
     const currentPageMeta = currentPage.meta;
     const newPage = createPage();
     await newPage.waitForLoaded();
+
     const update = encodeStateAsUpdate(currentPage.spaceDoc);
     applyUpdate(newPage.spaceDoc, update);
+
     setPageMeta(newPage.id, {
       tags: currentPageMeta.tags,
       favorite: currentPageMeta.favorite,
     });
-    setPageMode(newPage.id, mode);
+    setPageMode(newPage.id, currentMode);
     setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
     openPage(blockSuiteWorkspace.id, newPage.id);
   }, [
     blockSuiteWorkspace.id,
     createPage,
+    currentMode,
     currentPage.meta,
     currentPage.spaceDoc,
-    mode,
     openPage,
     setPageMeta,
     setPageMode,
@@ -138,7 +143,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       <MenuItem
         preFix={
           <MenuIcon>
-            {mode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+            {currentMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
           </MenuIcon>
         }
         data-testid="editor-option-menu-edgeless"
@@ -146,7 +151,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
         style={menuItemStyle}
       >
         {t['Convert to ']()}
-        {mode === 'page'
+        {currentMode === 'page'
           ? t['com.affine.pageMode.edgeless']()
           : t['com.affine.pageMode.page']()}
       </MenuItem>
