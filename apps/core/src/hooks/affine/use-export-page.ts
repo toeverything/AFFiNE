@@ -25,7 +25,7 @@ const getContentParser = (page: Page) => {
   return contentParserWeakMap.get(page) as ContentParser;
 };
 
-export const useBlocksuitePageOperation = (page: Page) => {
+export const useExportPage = (page: Page) => {
   const pushNotification = useSetAtom(pushNotificationAtom);
   const t = useAFFiNEI18N();
 

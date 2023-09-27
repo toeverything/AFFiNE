@@ -29,7 +29,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { pageSettingFamily, setPageModeAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useBlocksuitePageOperation } from '../../../hooks/affine/use-page-operation';
+import { useExportPage } from '../../../hooks/affine/use-export-page';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
@@ -95,7 +95,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     onClickExportPNG,
     onClickExportHtml,
     onClickExportMarkdown,
-  } = useBlocksuitePageOperation(currentPage);
+  } = useExportPage(currentPage);
   const setPageMode = useSetAtom(setPageModeAtom);
   const duplicate = useCallback(async () => {
     const currentPageMeta = currentPage.meta;

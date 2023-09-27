@@ -6,8 +6,8 @@ import {
 import type { Page } from '@blocksuite/store';
 import { useState } from 'react';
 
+import { useExportPage } from '../../../hooks/affine/use-export-page';
 import { useIsSharedPage } from '../../../hooks/affine/use-is-shared-page';
-import { useBlocksuitePageOperation } from '../../../hooks/affine/use-page-operation';
 import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-workspace';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
 
@@ -24,7 +24,7 @@ export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
     onClickExportPNG,
     onClickExportHtml,
     onClickExportMarkdown,
-  } = useBlocksuitePageOperation(page);
+  } = useExportPage(page);
   return (
     <>
       <ShareMenu
