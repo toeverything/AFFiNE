@@ -169,7 +169,10 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     Map<string, Map<string, any>>
   >();
 
-  const pluginImportsFunctionMap = new Map<string, (imports: any) => void>();
+  const pluginImportsFunctionMap = new Map<
+    string,
+    (newUpdaters: [string, [string, ((val: any) => void)[]][]][]) => void
+  >();
   const createImports = (pluginName: string) => {
     if (pluginImportsFunctionMap.has(pluginName)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
