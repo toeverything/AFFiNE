@@ -5,13 +5,14 @@ import { ArrowRightSmallIcon, WebIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import { useState } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import Input from '../../ui/input';
 import { toast } from '../../ui/toast';
 import { PublicLinkDisableModal } from './disable-public-link';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
+import { useSharingUrl } from './use-share-url';
 
 const CloudSvg = () => (
   <svg
@@ -74,31 +75,18 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     workspace: { id: workspaceId },
     currentPage: { id: pageId },
   } = props;
-
   const [isPublic, setIsPublic] = props.useIsSharedPage(workspaceId, pageId);
-
   const [showDisable, setShowDisable] = useState(false);
-
+  const { sharingUrl, onClickCopyLink } = useSharingUrl({
+    workspaceId,
+    pageId,
+    urlType: 'share',
+  });
   const t = useAFFiNEI18N();
-
-  const sharingUrl = useMemo(() => {
-    return `${runtimeConfig.serverUrlPrefix}/share/${workspaceId}/${pageId}`;
-  }, [workspaceId, pageId]);
 
   const onClickCreateLink = useCallback(() => {
     setIsPublic(true);
   }, [setIsPublic]);
-
-  const onClickCopyLink = useCallback(() => {
-    navigator.clipboard
-      .writeText(sharingUrl)
-      .then(() => {
-        toast(t['Copied link to clipboard']());
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [sharingUrl, t]);
 
   const onDisablePublic = useCallback(() => {
     setIsPublic(false);
