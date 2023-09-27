@@ -133,7 +133,23 @@ globalStyle(`${root} [cmdk-item]`, {
 globalStyle(`${root} [cmdk-item][data-selected=true]`, {
   background: 'var(--affine-background-secondary-color)',
 });
+globalStyle(`${root} [cmdk-item][data-selected=true][data-is-danger=true]`, {
+  background: 'var(--affine-background-error-color)',
+  color: 'var(--affine-error-color)',
+});
 
 globalStyle(`${root} [cmdk-item][data-selected=true] ${itemIcon}`, {
   color: 'var(--affine-icon-color)',
 });
+globalStyle(
+  `${root} [cmdk-item][data-selected=true][data-is-danger=true] ${itemIcon}`,
+  {
+    color: 'var(--affine-error-color)',
+  }
+);
+globalStyle(
+  `${root} [cmdk-item][data-selected=true][data-is-danger=true] ${itemLabel}`,
+  {
+    color: 'var(--affine-error-color)',
+  }
+);
