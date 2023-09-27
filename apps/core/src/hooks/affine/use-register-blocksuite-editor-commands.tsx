@@ -1,20 +1,49 @@
+import { toast } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon } from '@blocksuite/icons';
-import { registerAffineCommand } from '@toeverything/infra/command';
+import { assertExists } from '@blocksuite/global/utils';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import type { Workspace } from '@blocksuite/store';
+import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
+import {
+  PreconditionStrategy,
+  registerAffineCommand,
+} from '@toeverything/infra/command';
 import { useEffect } from 'react';
 
-export function useRegisterBlocksuiteEditorCommands() {
+import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
+import { useExportPage } from './use-export-page';
+
+export function useRegisterBlocksuiteEditorCommands(
+  blockSuiteWorkspace: Workspace,
+  pageId: string,
+  mode: 'page' | 'edgeless'
+) {
   const t = useAFFiNEI18N();
+  const { getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
+  const currentPage = blockSuiteWorkspace.getPage(pageId);
+  assertExists(currentPage);
+  const pageMeta = getPageMeta(pageId);
+  assertExists(pageMeta);
+  const favorite = pageMeta.favorite ?? false;
+  const trash = pageMeta.trash ?? false;
+
+  const { removeToTrash, togglePageMode, toggleFavorite } =
+    useBlockSuiteMetaHelper(blockSuiteWorkspace);
+  const {
+    onClickExportHtml,
+    onClickExportMarkdown,
+    onClickExportPDF,
+    onClickExportPNG,
+  } = useExportPage(currentPage);
 
   useEffect(() => {
     const unsubs: Array<() => void> = [];
-    const getEdgeless = () => {
-      return document.querySelector('affine-edgeless-page');
-    };
+    const preconditionStrategy = () =>
+      PreconditionStrategy.InPaperOrEdgeless && !trash;
     unsubs.push(
       registerAffineCommand({
         id: 'editor:edgeless-presentation-start',
-        preconditionStrategy: () => !!getEdgeless(),
+        preconditionStrategy,
         category: 'editor:edgeless',
         icon: <EdgelessIcon />,
         label: t['com.affine.cmdk.affine.editor.edgeless.presentation-start'](),
@@ -29,8 +58,132 @@ export function useRegisterBlocksuiteEditorCommands() {
         },
       })
     );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-${favorite ? 'remove-from' : 'add-to'}-favourites`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: favorite
+          ? t['com.affine.favoritePageOperation.remove']()
+          : t['com.affine.favoritePageOperation.add'](),
+        run() {
+          toggleFavorite(pageId);
+          toast(
+            favorite
+              ? t['com.affine.cmdk.affine.editor.remove-from-favourites']()
+              : t['com.affine.cmdk.affine.editor.add-to-favourites']()
+          );
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-convert-to-${
+          mode === 'page' ? 'edgeless' : 'page'
+        }`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: `${t['Convert to ']()}${
+          mode === 'page'
+            ? t['com.affine.pageMode.edgeless']()
+            : t['com.affine.pageMode.page']()
+        }`,
+        run() {
+          togglePageMode(pageId);
+          toast(
+            mode === 'page'
+              ? t['com.affine.toastMessage.edgelessMode']()
+              : t['com.affine.toastMessage.pageMode']()
+          );
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-export-to-pdf`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['Export to PDF'](),
+        run() {
+          onClickExportPDF();
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-export-to-html`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['Export to HTML'](),
+        run() {
+          onClickExportHtml();
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-export-to-png`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['Export to PNG'](),
+        run() {
+          onClickExportPNG();
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-export-to-markdown`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['Export to Markdown'](),
+        run() {
+          onClickExportMarkdown();
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-move-to-trash`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['com.affine.moveToTrash.title'](),
+        run() {
+          removeToTrash(pageId);
+        },
+      })
+    );
+
     return () => {
       unsubs.forEach(unsub => unsub());
     };
-  }, [t]);
+  }, [
+    favorite,
+    mode,
+    onClickExportHtml,
+    onClickExportMarkdown,
+    onClickExportPDF,
+    onClickExportPNG,
+    pageId,
+    pageMeta.title,
+    removeToTrash,
+    t,
+    toggleFavorite,
+    togglePageMode,
+    trash,
+  ]);
 }

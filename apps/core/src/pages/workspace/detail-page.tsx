@@ -39,7 +39,7 @@ const DetailPageImpl = (): ReactElement => {
   const collectionManager = useCollectionManager(currentCollectionsAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
-  useRegisterBlocksuiteEditorCommands();
+  useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       try {
