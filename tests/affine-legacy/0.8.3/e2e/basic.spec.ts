@@ -53,7 +53,7 @@ test('surface migration', async ({ page, context }) => {
   await page.waitForTimeout(1000);
   await page.goto(url);
   //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(5000);
   await page.reload();
   //#endregion
   await waitForEditorLoad(page);
