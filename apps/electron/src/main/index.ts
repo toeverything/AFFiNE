@@ -5,7 +5,7 @@ import path from 'node:path';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
-import { buildType } from './config';
+import { buildType, overrideSession } from './config';
 import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
@@ -19,8 +19,9 @@ import { registerUpdater } from './updater';
 app.enableSandbox();
 
 // use the same data for internal & beta for testing
-if (buildType === 'internal') {
-  const userDataPath = path.join(app.getPath('appData'), 'AFFiNE-beta');
+if (overrideSession) {
+  const appName = buildType === 'stable' ? 'AFFiNE' : `AFFiNE-${buildType}`;
+  const userDataPath = path.join(app.getPath('appData'), appName);
   app.setPath('userData', userDataPath);
   app.setPath('sessionData', userDataPath);
 }

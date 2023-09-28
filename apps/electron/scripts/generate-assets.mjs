@@ -46,6 +46,8 @@ if (!process.env.SKIP_WEB_BUILD) {
   await $`yarn -T run build:plugins`;
   await $`yarn nx build @affine/core`;
 
+  await $`yarn workspace @affine/electron build`;
+
   // step 1.5: amend sourceMappingURL to allow debugging in devtools
   await glob('**/*.{js,css}', { cwd: affineCoreOutDir }).then(files => {
     return files.map(async file => {
