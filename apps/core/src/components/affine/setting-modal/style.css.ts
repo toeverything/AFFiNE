@@ -1,45 +1,38 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
-export const settingContent = style({
+export const wrapper = style({
   flexGrow: '1',
-  height: '100%',
-  padding: '40px 15px',
-  overflow: 'hidden',
-});
-
-globalStyle(`${settingContent} .wrapper`, {
-  padding: '0 15px',
   height: '100%',
   maxWidth: '560px',
   margin: '0 auto',
-  overflowY: 'auto',
-});
+  padding: '40px 15px 20px 15px',
+  overflow: 'hidden auto',
 
-globalStyle(`${settingContent} .wrapper::-webkit-scrollbar`, {
-  display: 'none',
-});
-globalStyle(`${settingContent} .content`, {
-  minHeight: '100%',
-  paddingBottom: '80px',
-});
-globalStyle(`${settingContent} .footer`, {
-  cursor: 'pointer',
-  paddingTop: '40px',
-  marginTop: '-80px',
-  fontSize: 'var(--affine-font-sm)',
+  // children
   display: 'flex',
-  minHeight: '100px',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+
+  '::-webkit-scrollbar': {
+    display: 'none',
+  },
 });
 
-globalStyle(`${settingContent} .footer a`, {
-  color: 'var(--affine-text-primary-color)',
-  lineHeight: 'normal',
+export const content = style({
+  width: '100%',
+  marginBottom: '24px',
 });
-export const footerIconWrapper = style({
-  fontSize: 'var(--affine-font-base)',
-  color: 'var(--affine-icon-color)',
-  marginRight: '12px',
-  height: '19px',
+
+export const suggestionLink = style({
+  fontSize: 'var(--affine-font-sm)',
+  color: 'var(--affine-text-primary-color)',
   display: 'flex',
   alignItems: 'center',
+});
+
+export const suggestionLinkIcon = style({
+  color: 'var(--affine-icon-color)',
+  marginRight: '12px',
+  display: 'flex',
 });
