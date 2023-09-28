@@ -96,12 +96,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     transition: 'all 0.3s',
   };
 
-  const {
-    onClickExportPDF,
-    onClickExportPNG,
-    onClickExportHtml,
-    onClickExportMarkdown,
-  } = useExportPage(currentPage);
+  const exportHandler = useExportPage(currentPage);
   const setPageMode = useSetAtom(setPageModeAtom);
 
   const duplicate = useCallback(async () => {
@@ -211,12 +206,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Import']()}
       </MenuItem>
-      <Export
-        exportHtml={onClickExportHtml}
-        exportMarkdown={onClickExportMarkdown}
-        exportPdf={onClickExportPDF}
-        exportPng={onClickExportPNG}
-      />
+      <Export exportHandler={exportHandler} />
       <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"

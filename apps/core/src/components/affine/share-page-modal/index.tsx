@@ -19,12 +19,7 @@ type SharePageModalProps = {
 export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
   const onTransformWorkspace = useOnTransformWorkspace();
   const [open, setOpen] = useState(false);
-  const {
-    onClickExportPDF,
-    onClickExportPNG,
-    onClickExportHtml,
-    onClickExportMarkdown,
-  } = useExportPage(page);
+  const exportHandler = useExportPage(page);
   return (
     <>
       <ShareMenu
@@ -33,12 +28,7 @@ export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
         useIsSharedPage={useIsSharedPage}
         onEnableAffineCloud={() => setOpen(true)}
         togglePagePublic={async () => {}}
-        exportOperations={{
-          exportHtml: onClickExportHtml,
-          exportMarkdown: onClickExportMarkdown,
-          exportPdf: onClickExportPDF,
-          exportPng: onClickExportPNG,
-        }}
+        exportHandler={exportHandler}
       />
       {workspace.flavour === WorkspaceFlavour.LOCAL ? (
         <EnableAffineCloudModal

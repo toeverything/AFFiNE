@@ -7,7 +7,12 @@ import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 type ExportType = 'pdf' | 'html' | 'png' | 'markdown';
-type ExportMethod = 'exportPdf' | 'exportHtml' | 'exportPng' | 'exportMarkdown';
+const typeToContentParserMethodMap = {
+  pdf: 'exportPdf',
+  html: 'exportHtml',
+  png: 'exportPng',
+  markdown: 'exportMarkdown',
+} satisfies Record<ExportType, keyof ContentParser>;
 
 const contentParserWeakMap = new WeakMap<Page, ContentParser>();
 
@@ -25,79 +30,50 @@ const getContentParser = (page: Page) => {
   return contentParserWeakMap.get(page) as ContentParser;
 };
 
+interface ExportHandlerOptions {
+  page: Page;
+  type: ExportType;
+}
+
+async function exportHandler({ page, type }: ExportHandlerOptions) {
+  if (type === 'pdf' && environment.isDesktop && page.meta.mode === 'page') {
+    window.apis?.export.savePDFFileAs(
+      (page.root as PageBlockModel).title.toString()
+    );
+  } else {
+    const contentParser = getContentParser(page);
+    const method = typeToContentParserMethodMap[type];
+    await contentParser[method]();
+  }
+}
+
 export const useExportPage = (page: Page) => {
   const pushNotification = useSetAtom(pushNotificationAtom);
   const t = useAFFiNEI18N();
 
   const onClickHandler = useCallback(
-    (exportMethod: ExportMethod, type: ExportType) => () => {
-      const contentParser = getContentParser(page);
-      const exportHandler = async ({
-        exportMethod,
-        type,
-        contentParser,
-        onSelect,
-      }: {
-        exportMethod: ExportMethod;
-        type: ExportType;
-        contentParser: ContentParser;
-        onSelect?: ({ type }: { type: ExportType }) => void;
-      }) => {
-        await contentParser[exportMethod]()
-          .then(() => {
-            onSelect?.({ type });
-            pushNotification({
-              title: t['com.affine.export.success.title'](),
-              message: t['com.affine.export.success.message'](),
-              type: 'success',
-            });
-          })
-          .catch(err => {
-            console.error(err);
-            pushNotification({
-              title: t['com.affine.export.error.title'](),
-              message: t['com.affine.export.error.message'](),
-              type: 'error',
-            });
-          });
-      };
-      if (
-        type === 'pdf' &&
-        environment.isDesktop &&
-        page.meta.mode === 'page'
-      ) {
-        window.apis?.export
-          .savePDFFileAs((page.root as PageBlockModel).title.toString())
-          .then(() => {
-            pushNotification({
-              title: t['com.affine.export.success.title'](),
-              message: t['com.affine.export.success.message'](),
-              type: 'success',
-            });
-          })
-          .catch(err => {
-            console.error(err);
-            pushNotification({
-              title: t['com.affine.export.error.title'](),
-              message: t['com.affine.export.error.message'](),
-              type: 'error',
-            });
-          });
-      } else {
-        exportHandler({
-          exportMethod,
+    async (type: ExportType) => {
+      try {
+        await exportHandler({
+          page,
           type,
-          contentParser,
+        });
+        pushNotification({
+          title: t['com.affine.export.success.title'](),
+          message: t['com.affine.export.success.message'](),
+          type: 'success',
+        });
+      } catch (err) {
+        console.error(err);
+        pushNotification({
+          title: t['com.affine.export.error.title'](),
+          message: t['com.affine.export.error.message'](),
+          type: 'error',
         });
       }
     },
     [page, pushNotification, t]
   );
 
-  return {
-    onClickExportPDF: onClickHandler('exportPdf', 'pdf'),
-    onClickExportHtml: onClickHandler('exportHtml', 'html'),
-    onClickExportPNG: onClickHandler('exportPng', 'png'),
-    onClickExportMarkdown: onClickHandler('exportMarkdown', 'markdown'),
-  };
+  return onClickHandler;
 };

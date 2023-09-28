@@ -7,12 +7,12 @@ import {
   ExportToPngIcon,
 } from '@blocksuite/icons';
 import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
-import { type ReactNode, useCallback, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import { transitionStyle } from './index.css';
 
 interface ExportMenuItemProps<T> {
-  onSelect?: (type: T) => void;
+  onSelect: () => void;
   className?: string;
   type: T;
   icon: ReactNode;
@@ -20,41 +20,32 @@ interface ExportMenuItemProps<T> {
 }
 
 interface ExportProps {
-  exportPdf: () => void;
-  exportHtml: () => void;
-  exportPng: () => void;
-  exportMarkdown: () => void;
+  exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => Promise<void>;
   className?: string;
 }
 
-export const ExportMenuItem = <T,>({
+export function ExportMenuItem<T>({
   onSelect,
   className,
   type,
   icon,
   label,
-}: ExportMenuItemProps<T>) => {
-  const handleSelect = useCallback(() => {
-    onSelect?.(type);
-  }, [onSelect, type]);
+}: ExportMenuItemProps<T>) {
   return (
     <MenuItem
       className={className}
       data-testid={`export-to-${type}`}
-      onSelect={handleSelect}
+      onSelect={onSelect}
       block
       preFix={<MenuIcon>{icon}</MenuIcon>}
     >
       {label}
     </MenuItem>
   );
-};
+}
 
 export const ExportMenuItems = ({
-  exportPdf,
-  exportHtml,
-  exportPng,
-  exportMarkdown,
+  exportHandler,
   className = transitionStyle,
 }: ExportProps) => {
   const t = useAFFiNEI18N();
@@ -63,7 +54,7 @@ export const ExportMenuItems = ({
       {
         component: ExportMenuItem,
         props: {
-          onSelect: exportPdf,
+          onSelect: () => exportHandler('pdf'),
           className: className,
           type: 'pdf',
           icon: <ExportToPdfIcon />,
@@ -73,7 +64,7 @@ export const ExportMenuItems = ({
       {
         component: ExportMenuItem,
         props: {
-          onSelect: exportHtml,
+          onSelect: () => exportHandler('html'),
           className: className,
           type: 'html',
           icon: <ExportToHtmlIcon />,
@@ -83,7 +74,7 @@ export const ExportMenuItems = ({
       {
         component: ExportMenuItem,
         props: {
-          onSelect: exportPng,
+          onSelect: () => exportHandler('png'),
           className: className,
           type: 'png',
           icon: <ExportToPngIcon />,
@@ -93,7 +84,7 @@ export const ExportMenuItems = ({
       {
         component: ExportMenuItem,
         props: {
-          onSelect: exportMarkdown,
+          onSelect: () => exportHandler('markdown'),
           className: className,
           type: 'markdown',
           icon: <ExportToMarkdownIcon />,
@@ -101,7 +92,7 @@ export const ExportMenuItems = ({
         },
       },
     ],
-    [className, exportHtml, exportMarkdown, exportPdf, exportPng, t]
+    [className, exportHandler, t]
   );
   const items = itemMap.map(({ component: Component, props }) => (
     <Component key={props.label} {...props} />
@@ -109,22 +100,10 @@ export const ExportMenuItems = ({
   return <>{items}</>;
 };
 
-export const Export = ({
-  exportPdf,
-  exportHtml,
-  exportPng,
-  exportMarkdown,
-  className,
-}: ExportProps) => {
+export const Export = ({ exportHandler, className }: ExportProps) => {
   const t = useAFFiNEI18N();
   const items = (
-    <ExportMenuItems
-      exportHtml={exportHtml}
-      exportMarkdown={exportMarkdown}
-      exportPdf={exportPdf}
-      exportPng={exportPng}
-      className={className}
-    />
+    <ExportMenuItems exportHandler={exportHandler} className={className} />
   );
   return (
     <MenuSub

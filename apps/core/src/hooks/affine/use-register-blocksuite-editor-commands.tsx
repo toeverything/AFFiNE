@@ -30,12 +30,7 @@ export function useRegisterBlocksuiteEditorCommands(
 
   const { togglePageMode, toggleFavorite, restoreFromTrash } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
-  const {
-    onClickExportHtml,
-    onClickExportMarkdown,
-    onClickExportPDF,
-    onClickExportPNG,
-  } = useExportPage(currentPage);
+  const exportHandler = useExportPage(currentPage);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
   const onClickDelete = useCallback(() => {
     setTrashModal({
@@ -123,7 +118,7 @@ export function useRegisterBlocksuiteEditorCommands(
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to PDF'](),
         run() {
-          onClickExportPDF();
+          exportHandler('pdf');
         },
       })
     );
@@ -136,7 +131,7 @@ export function useRegisterBlocksuiteEditorCommands(
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to HTML'](),
         run() {
-          onClickExportHtml();
+          exportHandler('html');
         },
       })
     );
@@ -149,7 +144,7 @@ export function useRegisterBlocksuiteEditorCommands(
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to PNG'](),
         run() {
-          onClickExportPNG();
+          exportHandler('png');
         },
       })
     );
@@ -162,7 +157,7 @@ export function useRegisterBlocksuiteEditorCommands(
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to Markdown'](),
         run() {
-          onClickExportMarkdown();
+          exportHandler('markdown');
         },
       })
     );
@@ -201,10 +196,7 @@ export function useRegisterBlocksuiteEditorCommands(
     favorite,
     mode,
     onClickDelete,
-    onClickExportHtml,
-    onClickExportMarkdown,
-    onClickExportPDF,
-    onClickExportPNG,
+    exportHandler,
     pageId,
     pageMeta.title,
     restoreFromTrash,

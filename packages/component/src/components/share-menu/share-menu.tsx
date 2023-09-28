@@ -27,12 +27,7 @@ export interface ShareMenuProps<
   ) => [isSharePage: boolean, setIsSharePage: (enable: boolean) => void];
   onEnableAffineCloud: () => void;
   togglePagePublic: () => Promise<void>;
-  exportOperations: {
-    exportPdf: () => void;
-    exportHtml: () => void;
-    exportPng: () => void;
-    exportMarkdown: () => void;
-  };
+  exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => Promise<void>;
 }
 
 export const ShareMenu = (props: ShareMenuProps) => {
@@ -42,21 +37,13 @@ export const ShareMenu = (props: ShareMenuProps) => {
     props.currentPage.id
   );
   const t = useAFFiNEI18N();
-  const { exportHtml, exportMarkdown, exportPdf, exportPng } =
-    props.exportOperations;
   const content = (
     <div className={styles.containerStyle}>
       <SharePage {...props} />
       <div className={styles.columnContainerStyle}>
         <Divider size="thinner" />
       </div>
-      <ShareExport
-        exportHtml={exportHtml}
-        exportMarkdown={exportMarkdown}
-        exportPdf={exportPdf}
-        exportPng={exportPng}
-        {...props}
-      />
+      <ShareExport {...props} />
     </div>
   );
   return (

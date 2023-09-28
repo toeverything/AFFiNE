@@ -8,23 +8,14 @@ import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 import { useSharingUrl } from './use-share-url';
 
-type ExportProps = {
-  exportPdf: () => void;
-  exportHtml: () => void;
-  exportPng: () => void;
-  exportMarkdown: () => void;
-};
-
 export const ShareExport = ({
-  exportPdf,
-  exportHtml,
-  exportPng,
-  exportMarkdown,
-  ...props
-}: ShareMenuProps & ExportProps) => {
+  workspace,
+  currentPage,
+  exportHandler,
+}: ShareMenuProps) => {
   const t = useAFFiNEI18N();
-  const workspaceId = props.workspace.id;
-  const pageId = props.currentPage.id;
+  const workspaceId = workspace.id;
+  const pageId = currentPage.id;
   const { onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId,
@@ -38,10 +29,7 @@ export const ShareExport = ({
       </div>
       <div>
         <ExportMenuItems
-          exportHtml={exportHtml}
-          exportMarkdown={exportMarkdown}
-          exportPdf={exportPdf}
-          exportPng={exportPng}
+          exportHandler={exportHandler}
           className={styles.menuItemStyle}
         />
       </div>
