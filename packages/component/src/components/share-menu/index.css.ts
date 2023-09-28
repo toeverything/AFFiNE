@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const menuItemStyle = style({
   padding: '4px',
@@ -12,6 +12,7 @@ export const descriptionStyle = style({
   lineHeight: '20px',
   color: 'var(--affine-text-secondary-color)',
   textAlign: 'left',
+  padding: '0 2px',
 });
 
 export const buttonStyle = style({
@@ -66,7 +67,7 @@ export const columnContainerStyle = style({
   justifyContent: 'center',
   padding: '0 4px',
   width: '100%',
-  gap: '12px',
+  gap: '8px',
 });
 
 export const rowContainerStyle = style({
@@ -130,4 +131,19 @@ export const shareIconStyle = style({
   color: 'var(--affine-icon-color)',
   display: 'flex',
   alignItems: 'center',
+});
+
+export const shareLinkStyle = style({
+  padding: '4px',
+  fontSize: 'var(--affine-font-xs)',
+  fontWeight: 500,
+  lineHeight: '20px',
+  transform: 'translateX(-4px)',
+  gap: '4px',
+});
+globalStyle(`${shareLinkStyle} > span`, {
+  color: 'var(--affine-link-color)',
+});
+globalStyle(`${shareLinkStyle} > div > svg`, {
+  color: 'var(--affine-link-color)',
 });
