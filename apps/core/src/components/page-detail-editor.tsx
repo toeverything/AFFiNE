@@ -211,6 +211,7 @@ const LayoutPanel = memo(function LayoutPanel(
     return (
       <PanelGroup
         direction={node.direction}
+        style={depth === 0 ? { height: 'calc(100% - 52px)' } : undefined}
         className={depth === 0 ? editorContainer : undefined}
       >
         <Panel
@@ -260,7 +261,11 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   if (layout === 'editor') {
     return (
       <Suspense>
-        <PanelGroup direction="horizontal" className={editorContainer}>
+        <PanelGroup
+          style={{ height: 'calc(100% - 52px)' }}
+          direction="horizontal"
+          className={editorContainer}
+        >
           <Panel>
             <EditorWrapper {...props} />
           </Panel>
