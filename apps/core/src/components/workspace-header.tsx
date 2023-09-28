@@ -1,12 +1,11 @@
 import {
   CollectionList,
+  EditCollectionButton,
   FilterList,
-  SaveCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
 import { Unreachable } from '@affine/env/constant';
 import type { Collection } from '@affine/env/filter';
-import type { PropertiesMeta } from '@affine/env/filter';
 import {
   WorkspaceFlavour,
   type WorkspaceHeaderProps,
@@ -36,9 +35,6 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
     },
     [setting]
   );
-  const getPageInfoById = useGetPageInfoById(
-    currentWorkspace.blockSuiteWorkspace
-  );
   if (!setting.isDefault || !setting.currentCollection.filterList.length) {
     return null;
   }
@@ -59,16 +55,11 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
       </div>
       <div>
         {setting.currentCollection.filterList.length > 0 ? (
-          <SaveCollectionButton
-            propertiesMeta={
-              currentWorkspace.blockSuiteWorkspace.meta
-                .properties as PropertiesMeta
-            }
-            getPageInfo={getPageInfoById}
+          <EditCollectionButton
             onConfirm={saveToCollection}
             filterList={setting.currentCollection.filterList}
             workspaceId={workspaceId}
-          ></SaveCollectionButton>
+          ></EditCollectionButton>
         ) : null}
       </div>
     </div>

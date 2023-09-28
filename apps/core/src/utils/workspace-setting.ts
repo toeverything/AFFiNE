@@ -41,7 +41,6 @@ export class WorkspaceSetting {
 
   addCollection(...collections: Collection[]) {
     this.doc.transact(() => {
-      console.log('update');
       this.collectionsYArray.insert(0, collections);
     });
   }
