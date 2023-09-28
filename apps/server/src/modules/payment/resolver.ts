@@ -2,6 +2,7 @@ import { InternalServerErrorException } from '@nestjs/common';
 import {
   Args,
   Field,
+  Int,
   Mutation,
   ObjectType,
   Parent,
@@ -9,19 +10,27 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User, UserSubscription } from '@prisma/client';
+import type { User, UserInvoice, UserSubscription } from '@prisma/client';
 
 import { Config, SubscriptionPlan } from '../../config';
 import { PrismaService } from '../../prisma';
 import { Auth, CurrentUser } from '../auth';
 import { UserType } from '../users';
-import { SubscriptionService, SubscriptionStatus } from './service';
+import {
+  InvoiceStatus,
+  SubscriptionService,
+  SubscriptionStatus,
+} from './service';
 
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 registerEnumType(SubscriptionPlan, { name: 'SubscriptionPlan' });
+registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
 
 @ObjectType('UserSubscription')
 class UserSubscriptionType implements Partial<UserSubscription> {
+  @Field({ name: 'id' })
+  stripeSubscriptionId!: string;
+
   @Field(() => SubscriptionPlan)
   plan!: SubscriptionPlan;
 
@@ -45,6 +54,33 @@ class UserSubscriptionType implements Partial<UserSubscription> {
 
   @Field(() => Date, { nullable: true })
   canceledAt?: Date | null;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+}
+
+@ObjectType('UserInvoice')
+class UserInvoiceType implements Partial<UserInvoice> {
+  @Field({ name: 'id' })
+  stripeInvoiceId!: string;
+
+  @Field(() => SubscriptionPlan)
+  plan!: SubscriptionPlan;
+
+  @Field()
+  currency!: string;
+
+  @Field()
+  price!: number;
+
+  @Field(() => InvoiceStatus)
+  status!: InvoiceStatus;
+
+  @Field(() => String, { nullable: true })
+  lastPaymentError?: string | null;
 
   @Field(() => Date)
   createdAt!: Date;
@@ -112,6 +148,25 @@ export class UserSubscriptionResolver {
     return this.db.userSubscription.findUnique({
       where: {
         userId: user.id,
+      },
+    });
+  }
+
+  @ResolveField(() => [UserInvoiceType])
+  async invoices(
+    @Parent() user: User,
+    @Args('take', { type: () => Int, nullable: true, defaultValue: 8 })
+    take: number,
+    @Args('skip', { type: () => Int, nullable: true }) skip?: number
+  ) {
+    return this.db.userInvoice.findMany({
+      where: {
+        userId: user.id,
+      },
+      take,
+      skip,
+      orderBy: {
+        id: 'desc',
       },
     });
   }

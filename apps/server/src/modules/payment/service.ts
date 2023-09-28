@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
 import type {
   User,
+  UserInvoice,
   UserStripeCustomer,
   UserSubscription,
 } from '@prisma/client';
@@ -98,6 +99,10 @@ export class SubscriptionService {
       mode: 'subscription',
       success_url: redirectUrl,
       customer: customer.stripeCustomerId,
+      customer_update: {
+        address: 'auto',
+        name: 'auto',
+      },
     });
   }
 
@@ -195,11 +200,11 @@ export class SubscriptionService {
     }
 
     const subscriptionItem = await this.stripe.subscriptionItems.list({
-      subscription: user.subscription.id,
+      subscription: user.subscription.stripeSubscriptionId,
     });
 
     const newSubscription = await this.stripe.subscriptions.update(
-      user.subscription.id,
+      user.subscription.stripeSubscriptionId,
       {
         items: [
           {
@@ -236,11 +241,32 @@ export class SubscriptionService {
       subscription.customer as string
     );
 
-    await this.db.userSubscription.delete({
+    await this.db.userSubscription.deleteMany({
       where: {
+        stripeSubscriptionId: subscription.id,
         userId: user.id,
       },
     });
+  }
+
+  @OnEvent('invoice.created')
+  async onInvoiceCreated(invoice: Stripe.Invoice) {
+    await this.saveInvoice(invoice);
+  }
+
+  @OnEvent('invoice.paid')
+  async onInvoicePaid(invoice: Stripe.Invoice) {
+    await this.saveInvoice(invoice);
+  }
+
+  @OnEvent('invoice.finalization_failed')
+  async onInvoiceFinalizeFailed(invoice: Stripe.Invoice) {
+    await this.saveInvoice(invoice);
+  }
+
+  @OnEvent('invoice.payment_failed')
+  async onInvoicePaymentFailed(invoice: Stripe.Invoice) {
+    await this.saveInvoice(invoice);
   }
 
   private async saveSubscription(
@@ -311,9 +337,19 @@ export class SubscriptionService {
       return customer;
     }
 
-    const stripeCustomer = await this.stripe.customers.create({
+    const stripeCustomersList = await this.stripe.customers.list({
       email: user.email,
+      limit: 1,
     });
+
+    let stripeCustomer: Stripe.Customer | undefined;
+    if (stripeCustomersList.data.length) {
+      stripeCustomer = stripeCustomersList.data[0];
+    } else {
+      stripeCustomer = await this.stripe.customers.create({
+        email: user.email,
+      });
+    }
 
     return await this.db.userStripeCustomer.create({
       data: {
@@ -368,5 +404,77 @@ export class SubscriptionService {
     });
 
     return user;
+  }
+
+  private async saveInvoice(stripeInvoice: Stripe.Invoice) {
+    if (!stripeInvoice.customer) {
+      throw new Error('Unexpected invoice with no customer');
+    }
+
+    const user = await this.retrieveUserFromCustomer(
+      stripeInvoice.customer as string
+    );
+
+    const invoice = await this.db.userInvoice.findUnique({
+      where: {
+        stripeInvoiceId: stripeInvoice.id,
+      },
+    });
+
+    const data: Partial<UserInvoice> = {
+      currency: stripeInvoice.currency,
+      price: stripeInvoice.total,
+      status: stripeInvoice.status ?? InvoiceStatus.Void,
+    };
+
+    // handle payment error
+    if (stripeInvoice.attempt_count > 1) {
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(
+        stripeInvoice.payment_intent as string
+      );
+
+      if (paymentIntent.last_payment_error) {
+        if (paymentIntent.last_payment_error.type === 'card_error') {
+          data.lastPaymentError =
+            paymentIntent.last_payment_error.message ?? 'Failed to pay';
+        } else {
+          data.lastPaymentError = 'Internal Payment error';
+        }
+      }
+    } else if (stripeInvoice.last_finalization_error) {
+      if (stripeInvoice.last_finalization_error.type === 'card_error') {
+        data.lastPaymentError =
+          stripeInvoice.last_finalization_error.message ??
+          'Failed to finalize invoice';
+      } else {
+        data.lastPaymentError = 'Internal Payment error';
+      }
+    }
+
+    // update invoice
+    if (invoice) {
+      await this.db.userInvoice.update({
+        where: {
+          stripeInvoiceId: stripeInvoice.id,
+        },
+        data,
+      });
+    } else {
+      // create invoice
+      const price = stripeInvoice.lines.data[0].price;
+
+      if (!price || price.type !== 'recurring') {
+        throw new Error('Unexpected invoice with no recurring price');
+      }
+
+      await this.db.userInvoice.create({
+        data: {
+          userId: user.id,
+          stripeInvoiceId: stripeInvoice.id,
+          plan: price.lookup_key ?? price.id,
+          ...(data as any),
+        },
+      });
+    }
   }
 }

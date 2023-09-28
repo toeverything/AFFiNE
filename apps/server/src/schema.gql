@@ -24,6 +24,7 @@ type UserType {
   hasPassword: Boolean
   token: TokenType!
   subscription: UserSubscription
+  invoices(take: Int = 8, skip: Int): [UserInvoice!]!
 }
 
 """
@@ -57,6 +58,7 @@ type TokenType {
 }
 
 type UserSubscription {
+  id: String!
   plan: SubscriptionPlan!
   status: SubscriptionStatus!
   start: DateTime!
@@ -83,6 +85,25 @@ enum SubscriptionStatus {
   Paused
   IncompleteExpired
   Trialing
+}
+
+type UserInvoice {
+  id: String!
+  plan: SubscriptionPlan!
+  currency: String!
+  price: Int!
+  status: InvoiceStatus!
+  lastPaymentError: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum InvoiceStatus {
+  Draft
+  Open
+  Void
+  Paid
+  Uncollectible
 }
 
 type InviteUserType {
