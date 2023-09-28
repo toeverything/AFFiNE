@@ -33,7 +33,7 @@ describe('migration', () => {
     }
     const blocks = doc.getMap('space:hello-world').toJSON();
     const newDoc = migrateToSubdoc(doc);
-    const subDoc = newDoc.getMap('spaces').get('space:hello-world') as Doc;
+    const subDoc = newDoc.getMap('spaces').values().next().value as Doc;
     const data = (subDoc.toJSON() as any).blocks;
     Object.keys(data).forEach(id => {
       if (id === 'xyWNqindHH') {

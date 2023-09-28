@@ -243,12 +243,10 @@ export const usePageCommands = () => {
           ),
           value: 'affine::create-page' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
-          run: () => {
-            const pageId = pageHelper.createPage();
-            // need to wait for the page to be created
-            setTimeout(() => {
-              pageMetaHelper.setPageTitle(pageId, query);
-            });
+          run: async () => {
+            const page = pageHelper.createPage();
+            await page.waitForLoaded();
+            pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <PageIcon />,
         });
@@ -265,12 +263,10 @@ export const usePageCommands = () => {
           ),
           value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
-          run: () => {
-            const pageId = pageHelper.createEdgeless();
-            // need to wait for the page to be created
-            setTimeout(() => {
-              pageMetaHelper.setPageTitle(pageId, query);
-            });
+          run: async () => {
+            const page = pageHelper.createEdgeless();
+            await page.waitForLoaded();
+            pageMetaHelper.setPageTitle(page.id, query);
           },
           icon: <EdgelessIcon />,
         });

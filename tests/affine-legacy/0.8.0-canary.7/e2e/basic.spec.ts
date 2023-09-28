@@ -37,6 +37,10 @@ test('database migration', async ({ page, context }) => {
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto(url);
+  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
+  await page.waitForTimeout(5000);
+  await page.reload();
+  //#endregion
   await waitForEditorLoad(page);
   // check page mode is correct
   expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');

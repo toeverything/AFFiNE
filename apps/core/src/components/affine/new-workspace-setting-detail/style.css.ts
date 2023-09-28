@@ -93,14 +93,17 @@ export const membersFallback = style({
   color: 'var(--affine-primary-color)',
 });
 export const membersPanel = style({
-  marginTop: '24px',
   padding: '4px',
   borderRadius: '12px',
   background: 'var(--affine-background-primary-color)',
   border: '1px solid var(--affine-border-color)',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
 });
 
-export const listItem = style({
+export const memberList = style({});
+export const memberListItem = style({
   padding: '0 4px 0 16px',
   height: '58px',
   display: 'flex',
@@ -155,7 +158,7 @@ export const memberEmail = style({
 });
 export const iconButton = style({});
 
-globalStyle(`${listItem}:hover ${iconButton}`, {
+globalStyle(`${memberListItem}:hover ${iconButton}`, {
   opacity: 1,
   pointerEvents: 'all',
 });

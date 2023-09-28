@@ -3,6 +3,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import {
@@ -20,6 +21,13 @@ export default {
     chromatic: { disableSnapshot: true },
   },
 } satisfies Meta;
+
+const createMockedPage = () => {
+  return {
+    id: 'test-page',
+    waitForLoaded: () => Promise.resolve(),
+  } as any as Page;
+};
 
 function useRegisterCommands() {
   const t = useAFFiNEI18N();
@@ -39,8 +47,8 @@ function useRegisterCommands() {
         t,
         store,
         pageHelper: {
-          createEdgeless: () => 'noop',
-          createPage: () => 'noop',
+          createEdgeless: createMockedPage,
+          createPage: createMockedPage,
           importFile: () => Promise.resolve(),
           isPreferredEdgeless: () => false,
         },

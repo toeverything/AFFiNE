@@ -174,6 +174,9 @@ export class WorkspaceResolver {
     return this.prisma.userWorkspacePermission.count({
       where: {
         workspaceId: workspace.id,
+        userId: {
+          not: null,
+        },
       },
     });
   }
@@ -214,6 +217,9 @@ export class WorkspaceResolver {
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         workspaceId: workspace.id,
+        userId: {
+          not: null,
+        },
       },
       skip,
       take: take || 8,

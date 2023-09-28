@@ -36,6 +36,7 @@ export default defineConfig({
         'zod',
         'react',
         'yjs',
+        'nanoid',
         /^jotai/,
         /^@blocksuite/,
         /^@affine\/templates/,

@@ -5,6 +5,7 @@ import { currentWorkspaceAtom } from '@toeverything/infra/atom';
 import { type DBSchema, openDB } from 'idb';
 import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
+import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
@@ -116,7 +117,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
           settingMap.set(
             userId,
             new YDoc({
-              guid: `${rootDoc.guid}:settings:${userId}`,
+              guid: nanoid(),
             })
           );
         }

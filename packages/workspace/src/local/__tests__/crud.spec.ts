@@ -60,7 +60,7 @@ describe('crud', () => {
     expect(localWorkspace.blockSuiteWorkspace.doc.toJSON()).toEqual({
       meta: expect.anything(),
       spaces: expect.objectContaining({
-        'space:page0': expect.anything(),
+        page0: expect.anything(),
       }),
     });
 
