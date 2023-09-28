@@ -8,9 +8,9 @@ import {
   RemoveIcon,
   SaveIcon,
 } from '@blocksuite/icons';
-import { uuidv4 } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
+import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 
 import { Input, ScrollableContainer } from '../../..';
@@ -280,7 +280,7 @@ export const SaveCollectionButton = ({
   const handleClick = useCallback(() => {
     changeShow(true);
     setInit({
-      id: uuidv4(),
+      id: nanoid(),
       name: '',
       filterList,
       workspaceId,

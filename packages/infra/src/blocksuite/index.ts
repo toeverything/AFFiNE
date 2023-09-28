@@ -213,6 +213,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 const migrationOrigin = 'affine-migration';
 
 import type { Schema } from '@blocksuite/store';
+import { nanoid } from 'nanoid';
 
 type XYWH = [number, number, number, number];
 
@@ -404,7 +405,11 @@ function updateBlockVersions(versions: YMap<number>) {
   }
 }
 
-function migrateMeta(oldDoc: YDoc, newDoc: YDoc) {
+function migrateMeta(
+  oldDoc: YDoc,
+  newDoc: YDoc,
+  idMap: Record<string, string>
+) {
   const originalMeta = oldDoc.getMap('space:meta');
   const originalVersions = originalMeta.get('versions') as YMap<number>;
   const originalPages = originalMeta.get('pages') as YArray<YMap<unknown>>;
@@ -423,24 +428,34 @@ function migrateMeta(oldDoc: YDoc, newDoc: YDoc) {
     Array.from(page.entries())
       .filter(([key]) => key !== 'subpageIds')
       .forEach(([key, value]) => {
-        map.set(key, value);
+        if (key === 'id') {
+          idMap[value] = nanoid();
+          map.set(key, idMap[value]);
+        } else {
+          map.set(key, value);
+        }
       });
     return map;
   });
   pages.push(mapList);
 }
 
-function migrateBlocks(oldDoc: YDoc, newDoc: YDoc) {
+function migrateBlocks(
+  oldDoc: YDoc,
+  newDoc: YDoc,
+  idMap: Record<string, string>
+) {
   const spaces = newDoc.getMap('spaces');
   const originalMeta = oldDoc.getMap('space:meta');
   const originalVersions = originalMeta.get('versions') as YMap<number>;
   const originalPages = originalMeta.get('pages') as YArray<YMap<unknown>>;
   originalPages.forEach(page => {
     const id = page.get('id') as string;
+    const newId = idMap[id];
     const spaceId = id.startsWith('space:') ? id : `space:${id}`;
     const originalBlocks = oldDoc.getMap(spaceId) as YMap<unknown>;
     const subdoc = new YDoc();
-    spaces.set(spaceId, subdoc);
+    spaces.set(newId, subdoc);
     const blocks = subdoc.getMap('blocks');
     Array.from(originalBlocks.entries()).forEach(([key, value]) => {
       const blockData = value.clone();
@@ -461,8 +476,9 @@ export function migrateToSubdoc(oldDoc: YDoc): YDoc {
     return oldDoc;
   }
   const newDoc = new YDoc();
-  migrateMeta(oldDoc, newDoc);
-  migrateBlocks(oldDoc, newDoc);
+  const idMap = {} as Record<string, string>;
+  migrateMeta(oldDoc, newDoc, idMap);
+  migrateBlocks(oldDoc, newDoc, idMap);
   return newDoc;
 }
 

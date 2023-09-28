@@ -1,5 +1,5 @@
-import { uuidv4 } from '@blocksuite/store';
 import { atom } from 'jotai';
+import { nanoid } from 'nanoid';
 
 export type Notification = {
   key?: string;
@@ -42,7 +42,7 @@ export const removeNotificationAtom = atom(null, (_, set, key: string) => {
 export const pushNotificationAtom = atom<null, [Notification], void>(
   null,
   (_, set, newNotification) => {
-    newNotification.key = newNotification.key || uuidv4();
+    newNotification.key = newNotification.key || nanoid();
     const key = newNotification.key;
     const removeNotification = () =>
       set(notificationsBaseAtom, notifications =>

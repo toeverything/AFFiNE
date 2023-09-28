@@ -20,11 +20,11 @@ import {
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { setPageModeAtom } from '../../atoms';

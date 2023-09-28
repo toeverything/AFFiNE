@@ -6,8 +6,8 @@ import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
-import { uuidv4 } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
+import { nanoid } from 'nanoid';
 import { useCallback, useState } from 'react';
 
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
@@ -28,7 +28,7 @@ export const AddCollectionButton = ({
   const handleClick = useCallback(() => {
     showUpdateCollection(true);
     setDefaultCollection({
-      id: uuidv4(),
+      id: nanoid(),
       name: '',
       pinned: true,
       filterList: [],

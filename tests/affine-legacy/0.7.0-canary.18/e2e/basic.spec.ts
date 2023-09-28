@@ -9,6 +9,7 @@ import {
   check8080Available,
   setupProxyServer,
 } from '@affine-test/kit/utils/proxy';
+import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
 const { switchToNext } = setupProxyServer(
@@ -27,6 +28,9 @@ test('init page', async ({ page, context }) => {
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto('http://localhost:8081/');
+  await waitForEditorLoad(page);
+  await clickSideBarAllPageButton(page);
+  await page.getByText('hello').click();
   await waitForEditorLoad(page);
   expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
 });
