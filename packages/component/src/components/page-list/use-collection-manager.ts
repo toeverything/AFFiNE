@@ -7,12 +7,24 @@ import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 
-const defaultCollection = {
-  id: NIL,
-  name: 'All',
-  filterList: [],
-  workspaceId: 'temporary',
+export const createEmptyCollection = (
+  id: string,
+  data?: Partial<Omit<Collection, 'id'>>
+): Collection => {
+  return {
+    id,
+    name: '',
+    mode: 'page',
+    filterList: [],
+    pages: [],
+    allowList: [],
+    ...data,
+  };
 };
+const defaultCollection: Collection = createEmptyCollection(NIL, {
+  name: 'All',
+  mode: 'rule',
+});
 
 const collectionAtom = atomWithReset<{
   currentId: string;

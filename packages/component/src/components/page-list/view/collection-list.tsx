@@ -14,7 +14,7 @@ import { useCallback, useState } from 'react';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
-import { EditCollectionModal } from './create-collection';
+import { EditCollectionModal } from './edit-collection';
 import { useActions } from './use-action';
 
 const CollectionOption = ({

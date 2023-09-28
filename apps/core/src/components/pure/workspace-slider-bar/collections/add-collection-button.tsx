@@ -1,8 +1,8 @@
 import {
-  EditCollectionModal,
+  CreateCollectionModal,
+  createEmptyCollection,
   useCollectionManager,
 } from '@affine/component/page-list';
-import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
@@ -11,7 +11,6 @@ import { nanoid } from 'nanoid';
 import { useCallback, useState } from 'react';
 
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
-import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 
 type AddCollectionButtonProps = {
   workspace: Workspace;
@@ -20,21 +19,20 @@ type AddCollectionButtonProps = {
 export const AddCollectionButton = ({
   workspace,
 }: AddCollectionButtonProps) => {
-  const getPageInfo = useGetPageInfoById(workspace);
   const setting = useCollectionManager(collectionsCRUDAtom);
   const t = useAFFiNEI18N();
   const [show, showUpdateCollection] = useState(false);
-  const [defaultCollection, setDefaultCollection] = useState<Collection>();
   const handleClick = useCallback(() => {
     showUpdateCollection(true);
-    setDefaultCollection({
-      id: nanoid(),
-      name: '',
-      filterList: [],
-      workspaceId: workspace.id,
-    });
   }, [showUpdateCollection, workspace.id]);
-
+  const createCollection = useCallback(
+    (title: string) => {
+      return setting.createCollection(
+        createEmptyCollection(nanoid(), { name: title })
+      );
+    },
+    [setting]
+  );
   return (
     <>
       <IconButton
@@ -45,14 +43,12 @@ export const AddCollectionButton = ({
         <PlusIcon />
       </IconButton>
 
-      <EditCollectionModal
-        propertiesMeta={workspace.meta.properties}
-        getPageInfo={getPageInfo}
-        onConfirm={setting.createCollection}
+      <CreateCollectionModal
+        onConfirm={createCollection}
         open={show}
         onOpenChange={showUpdateCollection}
-        title={t['com.affine.editCollection.saveCollection']()}
-        init={defaultCollection}
+        title={t['com.affine.editCollection.createCollection']()}
+        init=""
       />
     </>
   );

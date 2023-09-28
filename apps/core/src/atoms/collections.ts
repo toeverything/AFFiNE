@@ -1,5 +1,5 @@
 import type { CollectionsCRUDAtom } from '@affine/component/page-list';
-import type { Collection } from '@affine/env/filter';
+import type { Collection, DeprecatedCollection } from '@affine/env/filter';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { currentWorkspaceAtom } from '@toeverything/infra/atom';
@@ -17,8 +17,8 @@ import { sessionAtom } from './cloud-user';
  */
 export interface PageCollectionDBV1 extends DBSchema {
   view: {
-    key: Collection['id'];
-    value: Collection;
+    key: DeprecatedCollection['id'];
+    value: DeprecatedCollection;
   };
 }
 
@@ -53,7 +53,7 @@ const localCollectionCRUDAtom = atom(get => ({
     const t = db.transaction('view').objectStore('view');
     return (await t.get(key)) ?? null;
   },
-  set: async (key: string, value: Collection) => {
+  set: async (key: string, value: DeprecatedCollection) => {
     const db = await get(collectionDBAtom);
     const t = db.transaction('view', 'readwrite').objectStore('view');
     await t.put(value);
@@ -74,13 +74,13 @@ const localCollectionCRUDAtom = atom(get => ({
  * @deprecated
  */
 const getCollections = async (
-  storage: StorageCRUD<Collection>
-): Promise<Collection[]> => {
+  storage: StorageCRUD<DeprecatedCollection>
+): Promise<DeprecatedCollection[]> => {
   return storage
     .list()
     .then(async keys => {
       return await Promise.all(keys.map(key => storage.get(key))).then(v =>
-        v.filter((v): v is Collection => v !== null)
+        v.filter((v): v is DeprecatedCollection => v !== null)
       );
     })
     .catch(error => {
@@ -106,7 +106,16 @@ export const pageCollectionBaseAtom = atomWithObservable<Collection[]>(
       ).catch(error => {
         console.error('Failed to delete collections from indexeddb', error);
       });
-      return result;
+      return result.map(v => {
+        return {
+          id: v.id,
+          name: v.name,
+          mode: 'rule',
+          filterList: v.filterList,
+          allowList: v.allowList ?? [],
+          pages: [],
+        };
+      });
     };
     const migrateCollectionsFromUserData = async (
       workspace: Workspace
@@ -118,10 +127,19 @@ export const pageCollectionBaseAtom = atomWithObservable<Collection[]>(
       await userSetting.loaded;
       const view = userSetting.view;
       if (view) {
-        const collections = [...view.values()];
+        const collections: DeprecatedCollection[] = [...view.values()];
         //delete collections
         view.clear();
-        return collections;
+        return collections.map(v => {
+          return {
+            id: v.id,
+            name: v.name,
+            mode: 'rule',
+            filterList: v.filterList,
+            allowList: v.allowList ?? [],
+            pages: [],
+          };
+        });
       }
       return [];
     };

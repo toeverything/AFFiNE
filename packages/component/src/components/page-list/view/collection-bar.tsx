@@ -12,7 +12,7 @@ import {
   useCollectionManager,
 } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
-import { EditCollectionModal } from './create-collection';
+import { EditCollectionModal } from './edit-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {
