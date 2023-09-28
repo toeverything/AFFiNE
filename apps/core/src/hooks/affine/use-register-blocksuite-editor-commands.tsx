@@ -28,7 +28,7 @@ export function useRegisterBlocksuiteEditorCommands(
   const favorite = pageMeta.favorite ?? false;
   const trash = pageMeta.trash ?? false;
 
-  const { togglePageMode, toggleFavorite } =
+  const { togglePageMode, toggleFavorite, restoreFromTrash } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const {
     onClickExportHtml,
@@ -49,24 +49,27 @@ export function useRegisterBlocksuiteEditorCommands(
     const unsubs: Array<() => void> = [];
     const preconditionStrategy = () =>
       PreconditionStrategy.InPaperOrEdgeless && !trash;
-    unsubs.push(
-      registerAffineCommand({
-        id: 'editor:edgeless-presentation-start',
-        preconditionStrategy,
-        category: 'editor:edgeless',
-        icon: <EdgelessIcon />,
-        label: t['com.affine.cmdk.affine.editor.edgeless.presentation-start'](),
-        run() {
-          // this is pretty hack and easy to break. need a better way to communicate with blocksuite editor
-          document
-            .querySelector<HTMLElement>('edgeless-toolbar')
-            ?.shadowRoot?.querySelector<HTMLElement>(
-              '.edgeless-toolbar-left-part > edgeless-tool-icon-button:last-child'
-            )
-            ?.click();
-        },
-      })
-    );
+
+    //TODO: add back when edgeless presentation is ready
+
+    // this is pretty hack and easy to break. need a better way to communicate with blocksuite editor
+    // unsubs.push(
+    //   registerAffineCommand({
+    //     id: 'editor:edgeless-presentation-start',
+    //     preconditionStrategy: () => PreconditionStrategy.InEdgeless && !trash,
+    //     category: 'editor:edgeless',
+    //     icon: <EdgelessIcon />,
+    //     label: t['com.affine.cmdk.affine.editor.edgeless.presentation-start'](),
+    //     run() {
+    //       document
+    //         .querySelector<HTMLElement>('edgeless-toolbar')
+    //         ?.shadowRoot?.querySelector<HTMLElement>(
+    //           '.edgeless-toolbar-left-part > edgeless-tool-icon-button:last-child'
+    //         )
+    //         ?.click();
+    //     },
+    //   })
+    // );
 
     unsubs.push(
       registerAffineCommand({
@@ -177,6 +180,20 @@ export function useRegisterBlocksuiteEditorCommands(
       })
     );
 
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-restore-from-trash`,
+        preconditionStrategy: () =>
+          PreconditionStrategy.InPaperOrEdgeless && trash,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['com.affine.cmdk.affine.editor.restore-from-trash'](),
+        run() {
+          restoreFromTrash(pageId);
+        },
+      })
+    );
+
     return () => {
       unsubs.forEach(unsub => unsub());
     };
@@ -190,6 +207,7 @@ export function useRegisterBlocksuiteEditorCommands(
     onClickExportPNG,
     pageId,
     pageMeta.title,
+    restoreFromTrash,
     t,
     toggleFavorite,
     togglePageMode,
