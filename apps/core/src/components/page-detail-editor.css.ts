@@ -15,7 +15,7 @@ export const pluginContainer = style({
 });
 
 export const editor = style({
-  height: 'calc(100% - 52px)',
+  height: '100%',
   selectors: {
     '&.full-screen': {
       vars: {
@@ -25,6 +25,11 @@ export const editor = style({
     },
   },
 });
+
+globalStyle(`${editor} .affine-doc-viewport`, {
+  paddingBottom: '150px',
+});
+
 globalStyle('.is-public-page affine-page-meta-data', {
   display: 'none',
 });
