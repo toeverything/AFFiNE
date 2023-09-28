@@ -1,8 +1,8 @@
 import type { Collection } from '@affine/env/filter';
 import type { Workspace } from '@blocksuite/store';
+import { nanoid } from 'nanoid';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
-
 export class UserSetting {
   constructor(
     private workspace: Workspace,
@@ -16,7 +16,7 @@ export class UserSetting {
       settingMap.set(
         this.userId,
         new YDoc({
-          guid: `${rootDoc.guid}:settings:${this.userId}`,
+          guid: nanoid(),
         })
       );
     }

@@ -59,7 +59,7 @@ describe('migrateToSubdocAndReplaceDatabase', () => {
     expect(pageMeta.title).toBe('Welcome to AFFiNEd');
 
     // get the subdoc through id
-    const subDoc = rootDoc.getMap('spaces').get(`space:${pageMeta.id}`) as YDoc;
+    const subDoc = rootDoc.getMap('spaces').get(pageMeta.id) as YDoc;
     expect(subDoc).toEqual(rootDoc.subdocs.values().next().value);
 
     await db.close();

@@ -76,7 +76,7 @@ describe('download provider', () => {
         ...prev,
         // download provider only download the root doc
         spaces: {
-          'space:page0': {
+          page0: {
             blocks: {},
           },
         },

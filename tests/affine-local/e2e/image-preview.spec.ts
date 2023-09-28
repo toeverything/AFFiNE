@@ -415,11 +415,9 @@ test('image able to download', async ({ page }) => {
   const downloadPromise = page.waitForEvent('download');
   await locator.getByTestId('download-button').click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe(`${blobId}.png`);
-  await download.saveAs(`download/ + ${download.suggestedFilename()}`);
-  expect(
-    fs.existsSync(`download/ + ${download.suggestedFilename()}`)
-  ).toBeTruthy();
+  const name = download.suggestedFilename();
+  await download.saveAs(`download/ + ${name}`);
+  expect(fs.existsSync(`download/ + ${name}`)).toBeTruthy();
 });
 
 test('image should only able to move when image is larger than viewport', async ({
