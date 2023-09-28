@@ -71,13 +71,19 @@ export const EditorModeSwitch = ({
   }, [currentMode, pageId, t, togglePageMode, trash]);
 
   const onSwitchToPageMode = useCallback(() => {
+    if (currentMode === 'page') {
+      return;
+    }
     switchToPageMode(pageId);
     toast(t['com.affine.toastMessage.pageMode']());
-  }, [pageId, switchToPageMode, t]);
+  }, [currentMode, pageId, switchToPageMode, t]);
   const onSwitchToEdgelessMode = useCallback(() => {
+    if (currentMode === 'edgeless') {
+      return;
+    }
     switchToEdgelessMode(pageId);
     toast(t['com.affine.toastMessage.edgelessMode']());
-  }, [pageId, switchToEdgelessMode, t]);
+  }, [currentMode, pageId, switchToEdgelessMode, t]);
 
   return (
     <Tooltip content={<TooltipContent />}>
