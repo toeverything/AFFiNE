@@ -300,8 +300,21 @@ test('can use cmdk to export pdf', async ({ page }) => {
   ]);
   expect(download.suggestedFilename()).toBe('this is a new page to export.pdf');
 });
+test('can use cmdk to export png', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page to export');
+  await openQuickSearchByShortcut(page);
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    keyboardDownAndSelect(page, 'Export to PNG'),
+  ]);
+  expect(download.suggestedFilename()).toBe('this is a new page to export.png');
+});
 
-test('can use cmdk to delete page', async ({ page }) => {
+test('can use cmdk to delete page and restore it', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
