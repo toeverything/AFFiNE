@@ -91,7 +91,12 @@ export class UserResolver {
     private readonly users: UsersService
   ) {}
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Query(() => UserType, {
     name: 'currentUser',
     description: 'Get current user',
@@ -112,7 +117,12 @@ export class UserResolver {
     };
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
@@ -140,7 +150,12 @@ export class UserResolver {
     return user;
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => UserType, {
     name: 'uploadAvatar',
     description: 'Upload user avatar',
@@ -160,7 +175,12 @@ export class UserResolver {
     });
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => RemoveAvatar, {
     name: 'removeAvatar',
     description: 'Remove user avatar',
@@ -176,14 +196,24 @@ export class UserResolver {
     return { success: true };
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
     await this.users.deleteUser(user.id);
     return { success: true };
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => AddToNewFeaturesWaitingList)
   async addToNewFeaturesWaitingList(
     @CurrentUser() user: UserType,

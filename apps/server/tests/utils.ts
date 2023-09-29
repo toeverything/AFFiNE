@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
 import { hashSync } from '@node-rs/argon2';
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import request from 'supertest';
 
 import type { TokenType } from '../src/modules/auth';

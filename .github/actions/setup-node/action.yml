@@ -21,6 +21,14 @@ inputs:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
     default: 'true'
+  build-infra:
+    description: 'Build infra'
+    required: false
+    default: 'true'
+  build-plugins:
+    description: 'Build plugins'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -42,7 +50,7 @@ runs:
       if: ${{ inputs.package-install == 'true' }}
       continue-on-error: true
       shell: bash
-      run: yarn install ${{ inputs.extra-flags }}
+      run: yarn ${{ inputs.extra-flags }}
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -52,7 +60,7 @@ runs:
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
       shell: bash
-      run: yarn install ${{ inputs.extra-flags }}
+      run: yarn ${{ inputs.extra-flags }}
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -89,11 +97,11 @@ runs:
           ${{ runner.os }}-${{ runner.arch }}-playwright-
 
     # If the Playwright browser binaries weren't able to be restored, we tell
-    # paywright to install everything for us.
+    # playwright to install everything for us.
     - name: Install Playwright's dependencies
       shell: bash
-      if: inputs.playwright-install == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-      run: yarn playwright install --with-deps
+      if: inputs.playwright-install == 'true'
+      run: yarn playwright install --with-deps chromium
 
     - name: Get installed Electron version
       id: electron-version
@@ -114,14 +122,16 @@ runs:
     - name: Install Electron binary
       shell: bash
       if: inputs.electron-install == 'true'
-      run: node apps/electron/node_modules/electron/install.js
+      run: node ./node_modules/electron/install.js
       env:
         ELECTRON_OVERRIDE_DIST_PATH: ./node_modules/.cache/electron
 
     - name: Build Infra
       shell: bash
+      if: inputs.build-infra == 'true'
       run: yarn run build:infra
 
     - name: Build Plugins
+      if: inputs.build-plugins == 'true'
       shell: bash
       run: yarn run build:plugins

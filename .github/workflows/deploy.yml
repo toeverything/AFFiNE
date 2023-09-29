@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.flavor }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -43,7 +43,7 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Plugins
@@ -70,7 +70,7 @@ jobs:
     environment: ${{ github.event.inputs.flavor }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup Rust
@@ -95,7 +95,7 @@ jobs:
       - build-core
       - build-storage
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download core artifact
         uses: actions/download-artifact@v3
         with:
@@ -180,7 +180,7 @@ jobs:
       - build-docker
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Deploy to dev
         uses: ./.github/actions/deploy
         with:

@@ -1,7 +1,7 @@
 /// <reference types="../src/global.d.ts" />
 
 import { Test, TestingModule } from '@nestjs/testing';
-import ava, { TestFn } from 'ava';
+import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
 import { SessionModule, SessionService } from '../src/session';

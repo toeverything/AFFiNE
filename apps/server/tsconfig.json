@@ -13,7 +13,6 @@
     "types": ["node"],
     "outDir": "dist",
     "noEmit": false,
-    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "verbatimModuleSyntax": false,
     "rootDir": "./src"
   },

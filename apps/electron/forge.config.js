@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+const path = require('node:path');
+const { rm, symlink } = require('node:fs/promises');
+
 const {
   utils: { fromBuildIdentifier },
 } = require('@electron-forge/core');
-
-const path = require('node:path');
 
 const {
   arch,
@@ -25,7 +26,7 @@ const makers = [
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
-        background: path.resolve(
+        background: path.join(
           __dirname,
           './resources/icons/dmg-background.png'
         ),
@@ -34,7 +35,7 @@ const makers = [
             x: 176,
             y: 192,
             type: 'file',
-            path: path.resolve(
+            path: path.join(
               __dirname,
               'out',
               buildType,
@@ -45,7 +46,7 @@ const makers = [
           { x: 432, y: 192, type: 'link', path: '/Applications' },
         ],
         iconSize: 118,
-        file: path.resolve(
+        file: path.join(
           __dirname,
           'out',
           buildType,
@@ -129,35 +130,14 @@ module.exports = {
       packageJson.productName = productName;
     },
     prePackage: async () => {
-      const { rm, cp } = require('node:fs/promises');
-      const { resolve } = require('node:path');
-
-      await rm(resolve(__dirname, './node_modules/@toeverything/infra'), {
+      await rm(path.join(__dirname, 'node_modules'), {
         recursive: true,
         force: true,
       });
 
-      await cp(
-        resolve(__dirname, '../../packages/infra'),
-        resolve(__dirname, './node_modules/@toeverything/infra'),
-        {
-          recursive: true,
-          force: true,
-        }
-      );
-
-      await rm(resolve(__dirname, './node_modules/@affine/sdk'), {
-        recursive: true,
-        force: true,
-      });
-
-      await cp(
-        resolve(__dirname, '../../packages/sdk'),
-        resolve(__dirname, './node_modules/@affine/sdk'),
-        {
-          recursive: true,
-          force: true,
-        }
+      await symlink(
+        path.join(__dirname, '..', '..', 'node_modules'),
+        path.join(__dirname, 'node_modules')
       );
     },
     generateAssets: async (_, platform, arch) => {
