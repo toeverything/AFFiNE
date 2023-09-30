@@ -1,8 +1,8 @@
-import { logger } from '@affine/electron/main/logger';
 import { app, BrowserWindow, nativeTheme } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
+import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
 import { getGoogleOauthCode } from './google-auth';
 
