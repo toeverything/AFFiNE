@@ -146,19 +146,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/bookmark-plugin@workspace:*, @affine/bookmark-plugin@workspace:plugins/bookmark":
-  version: 0.0.0-use.local
-  resolution: "@affine/bookmark-plugin@workspace:plugins/bookmark"
-  dependencies:
-    "@affine/component": "workspace:*"
-    "@affine/plugin-cli": "workspace:*"
-    "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.33
-    foxact: ^0.2.20
-    link-preview-js: ^3.0.5
-  languageName: unknown
-  linkType: soft
-
 "@affine/cli@workspace:*, @affine/cli@workspace:packages/cli":
   version: 0.0.0-use.local
   resolution: "@affine/cli@workspace:packages/cli"
@@ -368,7 +355,6 @@ __metadata:
   resolution: "@affine/electron@workspace:apps/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@affine/bookmark-plugin": "workspace:*"
     "@affine/copilot-plugin": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/hello-world-plugin": "workspace:*"

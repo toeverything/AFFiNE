@@ -26,7 +26,6 @@
   "main": "./dist/main.js",
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
-    "@affine/bookmark-plugin": "workspace:*",
     "@affine/copilot-plugin": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/hello-world-plugin": "workspace:*",

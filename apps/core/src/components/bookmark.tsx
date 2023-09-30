@@ -4,13 +4,7 @@ import type { SerializedBlock } from '@blocksuite/blocks';
 import type { BaseBlockModel } from '@blocksuite/store';
 import type { Page } from '@blocksuite/store';
 import type { VEditor } from '@blocksuite/virgo';
-import type { ReactElement } from 'react';
-import { StrictMode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
-export type BookMarkProps = {
-  page: Page;
-};
 
 type ShortcutMap = {
   [key: string]: (e: KeyboardEvent, page: Page) => void;
@@ -121,7 +115,11 @@ const shouldShowBookmarkMenu = (pastedBlocks: Record<string, unknown>[]) => {
   return !!firstBlock.text[0].attributes?.link;
 };
 
-const BookMarkUI = ({ page }: BookMarkProps) => {
+export type BookmarkProps = {
+  page: Page;
+};
+
+export const Bookmark = ({ page }: BookmarkProps) => {
   const [anchor, setAnchor] = useState<Range | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>(
     menuOptions[0].id
@@ -243,16 +241,4 @@ const BookMarkUI = ({ page }: BookMarkProps) => {
       </div>
     </MuiClickAwayListener>
   ) : null;
-};
-
-type AppProps = {
-  page: Page;
-};
-
-export const App = (props: AppProps): ReactElement => {
-  return (
-    <StrictMode>
-      <BookMarkUI page={props.page} />
-    </StrictMode>
-  );
 };
