@@ -120,9 +120,6 @@
       "path": "./packages/sdk"
     },
     {
-      "path": "./plugins/bookmark"
-    },
-    {
       "path": "./plugins/copilot"
     },
     {

@@ -31,6 +31,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
+import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
@@ -139,6 +140,7 @@ const EditorWrapper = memo(function EditorWrapper({
         )}
       />
       {meta.trash && <TrashButtonGroup />}
+      <Bookmark page={page} />
     </>
   );
 });

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
+import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
 import type { NamespaceHandlers } from '../type';
@@ -43,12 +44,30 @@ export const uiHandlers = {
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
   },
-  /**
-   * @deprecated Remove this when bookmark block plugin is migrated to plugin-infra
-   */
   getBookmarkDataByLink: async (_, link: string) => {
-    return globalThis.asyncCall[
-      'com.blocksuite.bookmark-block.get-bookmark-data-by-link'
-    ](link);
+    const previewData = (await getLinkPreview(link, {
+      timeout: 6000,
+      headers: {
+        'user-agent': 'googlebot',
+      },
+      followRedirects: 'follow',
+    }).catch(() => {
+      return {
+        title: '',
+        siteName: '',
+        description: '',
+        images: [],
+        videos: [],
+        contentType: `text/html`,
+        favicons: [],
+      };
+    })) as any;
+
+    return {
+      title: previewData.title,
+      description: previewData.description,
+      icon: previewData.favicons[0],
+      image: previewData.images[0],
+    };
   },
 } satisfies NamespaceHandlers;
