@@ -19,8 +19,6 @@ const outputList = [
       'plugins',
     ],
   ],
-  ['dist/plugins', ['bookmark']],
-  ['dist/plugins/bookmark', ['index.cjs']],
 ] as [entry: string, expected: string[]][];
 
 await Promise.all(
