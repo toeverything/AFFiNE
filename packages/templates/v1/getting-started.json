@@ -65,7 +65,7 @@
           }
         },
         {
-          "insert": "(put a symbol) at the bottom right of the page to insert a new block, list,database, etc."
+          "insert": "(put a symbol) at the bottom right of the page to insert a new block, list, database, etc."
         }
       ],
       "prop:checked": false

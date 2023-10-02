@@ -42,7 +42,6 @@ export const pluginPackageJson = atom<
 >([]);
 
 export const enabledPluginAtom = atomWithStorage('affine-enabled-plugin', [
-  '@affine/bookmark-plugin',
   '@affine/image-preview-plugin',
   '@affine/outline-plugin',
 ]);

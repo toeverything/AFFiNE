@@ -14,8 +14,8 @@ import {
 } from './playwright';
 import { removeWithRetry } from './utils/utils';
 
-const projectRoot = resolve(__dirname, '..', '..');
-const electronRoot = resolve(projectRoot, 'apps', 'electron');
+const projectRoot = join(__dirname, '..', '..');
+const electronRoot = join(projectRoot, 'apps', 'electron');
 
 function generateUUID() {
   return crypto.randomUUID();
@@ -99,7 +99,7 @@ export const test = base.extend<{
       args: [clonedDist],
       env,
       executablePath: resolve(
-        electronRoot,
+        projectRoot,
         'node_modules',
         '.bin',
         `electron${ext}`

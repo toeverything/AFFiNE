@@ -1,0 +1,15 @@
+diff --git a/package.json b/package.json
+index b64804360e64896c2eafde5e976dde0db480b4e3..63566d9e2725630827daefeeb211b950d329521b 100644
+--- a/package.json
++++ b/package.json
+@@ -31,6 +31,10 @@
+       "types": "./index.d.ts",
+       "default": "./index.js"
+     },
++    "./core": {
++      "types": "./core/index.d.ts",
++      "default": "./core/index.js"
++    },
+     "./adapters": {
+       "types": "./adapters.d.ts"
+     },

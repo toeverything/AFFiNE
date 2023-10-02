@@ -64,7 +64,6 @@ export const registerHandlers = () => {
       ipcMain.handle(chan, async (e, ...args) => {
         const start = performance.now();
         try {
-          // @ts-expect-error - TODO: fix this
           const result = await handler(e, ...args);
           logger.info(
             '[ipc-api]',

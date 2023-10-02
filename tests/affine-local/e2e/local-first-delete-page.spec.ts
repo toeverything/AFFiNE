@@ -90,11 +90,13 @@ test('page delete -> create new page -> refresh page -> new page should be appea
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page1');
+  await page.waitForTimeout(1000);
   const newPageId1 = page.url().split('/').reverse()[0];
   await page.getByTestId('all-pages').click();
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page2');
+  await page.waitForTimeout(1000);
   const newPageId2 = page.url().split('/').reverse()[0];
   await page.getByTestId('all-pages').click();
   await page.reload();

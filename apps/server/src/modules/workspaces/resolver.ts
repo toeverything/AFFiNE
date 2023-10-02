@@ -282,7 +282,12 @@ export class WorkspaceResolver {
     });
   }
 
-  @Throttle(10, 30)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 30,
+    },
+  })
   @Public()
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
@@ -515,7 +520,12 @@ export class WorkspaceResolver {
     }
   }
 
-  @Throttle(10, 30)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 30,
+    },
+  })
   @Public()
   @Query(() => InvitationType, {
     description: 'Update workspace',

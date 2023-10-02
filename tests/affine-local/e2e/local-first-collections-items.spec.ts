@@ -33,9 +33,15 @@ const createAndPinCollection = async (
     name: 'test page',
   });
   await expect(cell).toBeVisible();
-  await page.getByTestId('create-first-filter').click();
-  await page.getByTestId(`filler-tag-Created`).click();
-  await page.getByTestId('save-as-collection').click();
+  await page.getByTestId('create-first-filter').click({
+    delay: 200,
+  });
+  await page.getByTestId(`filler-tag-Created`).click({
+    delay: 200,
+  });
+  await page.getByTestId('save-as-collection').click({
+    delay: 200,
+  });
   const title = page.getByTestId('input-collection-title');
   await title.isVisible();
   await title.fill(options?.collectionName ?? 'test collection');

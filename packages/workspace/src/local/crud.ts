@@ -1,8 +1,9 @@
 import { DebugLogger } from '@affine/debug';
 import type { LocalWorkspace, WorkspaceCRUD } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { nanoid, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { createJSONStorage } from 'jotai/utils';
+import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
 import { getOrCreateWorkspace } from '../manager';
