@@ -64,6 +64,10 @@ const QuickSearchGroup = ({
               onOpenChange?.(false);
             }}
             value={command.value}
+            data-is-danger={
+              command.id === 'editor:page-move-to-trash' ||
+              command.id === 'editor:edgeless-move-to-trash'
+            }
           >
             <div className={styles.itemIcon}>{command.icon}</div>
             <div

@@ -21,7 +21,7 @@ export function useRegisterWorkspaceCommands() {
   const [currentWorkspace] = useCurrentWorkspace();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
-  const [pageMode, setPageMode] = useAtom(allPageModeSelectAtom);
+  const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     unsubs.push(
@@ -30,8 +30,8 @@ export function useRegisterWorkspaceCommands() {
         t,
         workspace: currentWorkspace.blockSuiteWorkspace,
         navigationHelper,
-        pageMode,
-        setPageMode,
+        pageListMode,
+        setPageListMode,
       })
     );
     unsubs.push(registerAffineSettingsCommands({ store, t, theme }));
@@ -54,7 +54,7 @@ export function useRegisterWorkspaceCommands() {
     theme,
     currentWorkspace.blockSuiteWorkspace,
     navigationHelper,
-    pageMode,
-    setPageMode,
+    pageListMode,
+    setPageListMode,
   ]);
 }

@@ -2,8 +2,11 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
+import { setPageModeAtom } from '../../atoms';
+import { currentModeAtom } from '../../atoms/mode';
 import type { BlockSuiteWorkspace } from '../../shared';
 import { useReferenceLinkHelper } from './use-reference-link-helper';
 
@@ -14,6 +17,27 @@ export function useBlockSuiteMetaHelper(
     usePageMetaHelper(blockSuiteWorkspace);
   const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
+  const setPageMode = useSetAtom(setPageModeAtom);
+  const currentMode = useAtomValue(currentModeAtom);
+
+  const switchToPageMode = useCallback(
+    (pageId: string) => {
+      setPageMode(pageId, 'page');
+    },
+    [setPageMode]
+  );
+  const switchToEdgelessMode = useCallback(
+    (pageId: string) => {
+      setPageMode(pageId, 'edgeless');
+    },
+    [setPageMode]
+  );
+  const togglePageMode = useCallback(
+    (pageId: string) => {
+      setPageMode(pageId, currentMode === 'edgeless' ? 'page' : 'edgeless');
+    },
+    [currentMode, setPageMode]
+  );
 
   const addToFavorite = useCallback(
     (pageId: string) => {
@@ -115,6 +139,10 @@ export function useBlockSuiteMetaHelper(
   );
 
   return {
+    switchToPageMode,
+    switchToEdgelessMode,
+    togglePageMode,
+
     publicPage,
     cancelPublicPage,
 

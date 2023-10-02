@@ -10,7 +10,7 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { useCollectionManager } from '@affine/component/page-list';
+import { MoveToTrash, useCollectionManager } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -27,6 +27,7 @@ import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
+import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import type { AllWorkspace } from '../../shared';
 import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
@@ -110,6 +111,20 @@ export const RootAppSidebar = ({
     openPage(page.id);
   }, [createPage, openPage]);
 
+  const { trashModal, setTrashModal, handleOnConfirm } =
+    useTrashModalHelper(blockSuiteWorkspace);
+  const deletePageTitle = trashModal.pageTitle;
+  const trashConfirmOpen = trashModal.open;
+  const onTrashConfirmOpenChange = useCallback(
+    (open: boolean) => {
+      setTrashModal({
+        ...trashModal,
+        open,
+      });
+    },
+    [trashModal, setTrashModal]
+  );
+
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
@@ -159,6 +174,12 @@ export const RootAppSidebar = ({
           )
         }
       >
+        <MoveToTrash.ConfirmModal
+          open={trashConfirmOpen}
+          onConfirm={handleOnConfirm}
+          onOpenChange={onTrashConfirmOpenChange}
+          title={deletePageTitle}
+        />
         <SidebarContainer>
           <Menu
             rootOptions={{

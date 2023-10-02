@@ -615,5 +615,8 @@
   "com.affine.cmdk.affine.navigation.goto-workspace": "Go to Workspace",
   "com.affine.cmdk.affine.category.affine.edgeless": "Edgeless",
   "com.affine.cmdk.affine.category.affine.collections": "Collections",
-  "com.affine.cmdk.affine.import-workspace": "Import Workspace"
+  "com.affine.cmdk.affine.import-workspace": "Import Workspace",
+  "com.affine.cmdk.affine.editor.add-to-favourites": "Add to Favourites",
+  "com.affine.cmdk.affine.editor.remove-from-favourites": "Remove from Favourites",
+  "com.affine.cmdk.affine.editor.restore-from-trash": "Restore from Trash"
 }

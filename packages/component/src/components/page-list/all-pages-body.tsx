@@ -131,7 +131,6 @@ export const AllPagesBody = ({
                       active={!!favorite}
                     />
                     <OperationCell
-                      title={title}
                       favorite={favorite}
                       isPublic={isPublicPage}
                       onOpenPageInNewTab={onOpenPageInNewTab}
