@@ -19,7 +19,7 @@
     "@toeverything/components": "^0.0.43",
     "idb": "^7.1.1",
     "langchain": "^0.0.138",
-    "marked": "^7.0.5",
+    "marked": "^9.0.3",
     "marked-gfm-heading-id": "^3.1.0",
     "marked-mangle": "^1.1.4",
     "zod": "^3.22.2"
