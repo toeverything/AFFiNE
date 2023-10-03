@@ -248,7 +248,7 @@ __metadata:
     idb: ^7.1.1
     jotai: ^2.4.2
     langchain: ^0.0.138
-    marked: ^7.0.5
+    marked: ^9.0.3
     marked-gfm-heading-id: ^3.1.0
     marked-mangle: ^1.1.4
     react: 18.2.0
@@ -26004,12 +26004,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^7.0.5":
-  version: 7.0.5
-  resolution: "marked@npm:7.0.5"
+"marked@npm:^9.0.3":
+  version: 9.0.3
+  resolution: "marked@npm:9.0.3"
   bin:
     marked: bin/marked.js
-  checksum: e136ab58cffae78e9e661136e8ba51c221aed1a4b7e60dcb9ae7d7241e87869e972b3d352ca3b9b7f56dba85709f848414d33060c4d0e88b3b80e01a3509e2ed
+  checksum: e10e0d36ed53f50e84727997daf2019b0931d31329cf0504f8b242baf8309255748f8e2cb79eb011862928432a91a941a3ceabca7919d20fbe9db2fd34283dc8
   languageName: node
   linkType: hard
 
