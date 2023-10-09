@@ -1,4 +1,5 @@
 import type { Tag } from '@affine/env/filter';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
@@ -18,24 +19,17 @@ export interface PageListItemProps {
   selectable?: boolean; // show selection checkbox
   selected?: boolean;
   operations?: ReactNode; // operations to show on the right side of the item
-  onClickPage: (newTab?: boolean) => void;
+  onClickPage?: (newTab?: boolean) => void;
   onSelectedChange?: (selected: boolean) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
-  onFavoritePage?: (favorite: boolean) => void;
-}
-
-export interface PageListGroupHeaderProps {
-  title: string;
-  icon?: JSX.Element;
-  count?: number;
-  totalCount?: number;
+  onToggleFavorite?: () => void;
 }
 
 export interface PageListHeaderProps {}
 
 // todo: a temporary solution. may need to be refactored later
-export type GroupBy = 'createDate' | 'updatedDate'; // todo: can add more later
+export type PagesGroupByType = 'createDate' | 'updatedDate'; // todo: can add more later
 
 // todo: a temporary solution. may need to be refactored later
 export interface SortBy {
@@ -45,8 +39,41 @@ export interface SortBy {
 
 export interface PageListProps {
   className?: string;
-  list: PageListItemProps[];
-  groupBy?: GroupBy;
+  pages: PageMeta[];
+  blockSuiteWorkspace: Workspace;
+  groupBy?: PagesGroupByType;
   sortBy?: SortBy;
   fallback?: ReactNode; // fixme: shall we use loading rows number instead?
+  isPreferredEdgeless: (pageId: string) => boolean;
+  onToggleFavorite: (pageId: string) => void;
+  renderPageAsLink?: boolean; // whether or not to render each page as a router Link
+  selectable?: boolean; // show selection checkbox
+  selectedPageIds?: string[]; // selected page ids
+  onSelectedPageIdsChange?: (selected: string[]) => void;
+  onOpenPage?: (pageId: string, newTab?: boolean) => void;
+  draggable?: boolean; // whether or not to allow dragging this page item
+  onDragStart?: (pageId: string) => void;
+  onDragEnd?: (pageId: string) => void;
+  // we also need the following to make sure the page list functions properly
+  // maybe we could also give a function to render PageListItem?
+  pageOperationsRenderer?: (page: PageMeta) => ReactNode;
+}
+
+export interface PageGroupDefinition {
+  id: string;
+  // using a function to render custom group header
+  label:
+    | ((
+        filtered: PageListItemProps[],
+        allItems: PageListItemProps[]
+      ) => ReactNode)
+    | ReactNode;
+  match: (item: PageListItemProps) => boolean;
+}
+
+export interface PageGroupProps {
+  id: string;
+  label?: ReactNode; // if there is no label, it is a default group (without header)
+  items: PageListItemProps[];
+  allItems: PageListItemProps[];
 }

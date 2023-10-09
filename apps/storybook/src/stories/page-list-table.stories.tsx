@@ -1,6 +1,8 @@
 import {
+  PageList,
   PageListItem,
   type PageListItemProps,
+  type PageListProps,
   PageTags,
   type PageTagsProps,
 } from '@affine/component/page-list-table';
@@ -66,4 +68,31 @@ export const ListItemTags: StoryFn<PageTagsProps> = props => (
 
 ListItemTags.args = {
   tags: testTags,
+};
+
+export const PageListStory: StoryFn<PageListProps> = props => (
+  <PageList {...props}></PageList>
+);
+
+PageListStory.args = {
+  pages: [
+    {
+      id: 'test-page-id-1',
+      title: 'Test Page Title 1',
+      createDate: new Date('2021-01-01').getTime(),
+      updatedDate: new Date('2023-08-15').getTime(),
+      favorite: true,
+      subpageIds: [],
+      tags: [],
+    },
+    {
+      id: 'test-page-id-2',
+      title: 'Test Page Title 2',
+      createDate: new Date('2021-01-01').getTime(),
+      updatedDate: new Date('2023-08-15').getTime(),
+      favorite: false,
+      subpageIds: [],
+      tags: [],
+    },
+  ],
 };

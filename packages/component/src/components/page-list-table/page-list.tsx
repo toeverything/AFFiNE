@@ -1,218 +1,135 @@
-import { Checkbox } from '@mui/material';
-import {
-  type MouseEventHandler,
-  type PropsWithChildren,
-  useCallback,
-  useMemo,
-} from 'react';
-import { Link } from 'react-router-dom';
+import type { Tag } from '@affine/env/filter';
+import { assertExists } from '@blocksuite/global/utils';
+import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import type { PageMeta, Workspace } from '@blocksuite/store';
+import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
+import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
+import clsx from 'clsx';
+import { useAtomValue } from 'jotai';
+import { Suspense, useMemo } from 'react';
 
-import { FavoriteTag, formatDate } from '../page-list';
+import { PageGroup, pagesToPageGroups } from './page-group';
 import * as styles from './page-list.css';
-import { PageTags } from './page-tags';
-import type {
-  PageListGroupHeaderProps,
-  PageListHeaderProps,
-  PageListItemProps,
-  PageListProps,
-} from './types';
+import type { PageListItemProps, PageListProps } from './types';
 
-export const PageList = ({ className, list }: PageListProps) => {
+/**
+ * Given a list of pages, render a list of pages
+ */
+export const PageList = (props: PageListProps) => {
+  const groups = useMemo(() => {
+    const itemListProps: PageListItemProps[] = props.pages.map(pageMeta =>
+      pageMetaToPageItemProp(pageMeta, props)
+    );
+    const groups = pagesToPageGroups(itemListProps, props.groupBy);
+    return groups;
+  }, [props]);
   return (
-    <div className={className}>
-      {list.map(item => (
-        <PageListItem key={item.pageId} {...item} />
+    <div className={clsx(props.className, styles.root)}>
+      {groups.map(group => (
+        <PageGroup key={group.id} {...group} />
       ))}
     </div>
   );
 };
 
-function stopPropagation(event: React.MouseEvent) {
-  event.stopPropagation();
-  event.preventDefault();
+interface PagePreviewInnerProps {
+  workspace: Workspace;
+  pageId: string;
 }
 
-const PageListTitleCell = (
-  props: Pick<PageListItemProps, 'title' | 'preview'>
-) => {
+const PagePreviewInner = ({ workspace, pageId }: PagePreviewInnerProps) => {
+  const page = useBlockSuiteWorkspacePage(workspace, pageId);
+  assertExists(page);
+  const previewAtom = useBlockSuitePagePreview(page);
+  const preview = useAtomValue(previewAtom);
+  return preview;
+};
+
+interface PagePreviewProps {
+  workspace: Workspace;
+  pageId: string;
+}
+
+const PagePreview = ({ workspace, pageId }: PagePreviewProps) => {
   return (
-    <div data-testid="page-list-item-title" className={styles.titleCell}>
-      <div
-        data-testid="page-list-item-title-text"
-        className={styles.titleCellMain}
-      >
-        {props.title}
-      </div>
-      <div
-        data-testid="page-list-item-preview-text"
-        className={styles.titleCellPreview}
-      >
-        {props.preview}
-      </div>
-    </div>
+    <Suspense>
+      <PagePreviewInner workspace={workspace} pageId={pageId} />
+    </Suspense>
   );
 };
 
-const PageListIconCell = (props: Pick<PageListItemProps, 'icon'>) => {
-  return (
-    <div data-testid="page-list-item-icon" className={styles.iconCell}>
-      {props.icon}
-    </div>
+function tagIdToTagOption(
+  tagId: string,
+  blockSuiteWorkspace: Workspace
+): Tag | undefined {
+  return blockSuiteWorkspace.meta.properties.tags?.options.find(
+    opt => opt.id === tagId
   );
-};
+}
 
-const PageSelectionCell = (
-  props: Pick<PageListItemProps, 'selectable' | 'onSelectedChange' | 'selected'>
-) => {
-  const onSelectionChange = useCallback(
-    (_event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-      return props.onSelectedChange?.(checked);
+export function pageMetaToPageItemProp(
+  pageMeta: PageMeta,
+  props: PageListProps
+): PageListItemProps {
+  const itemProps: PageListItemProps = {
+    pageId: pageMeta.id,
+    title: pageMeta.title,
+    preview: (
+      <PagePreview workspace={props.blockSuiteWorkspace} pageId={pageMeta.id} />
+    ),
+    createDate: new Date(pageMeta.createDate),
+    updatedDate: new Date(pageMeta.updatedDate ?? pageMeta.createDate),
+    to: props.renderPageAsLink
+      ? `/workspace/${props.blockSuiteWorkspace.id}/page/${pageMeta.id}`
+      : undefined,
+    onClickPage: props.onOpenPage
+      ? newTab => {
+          props.onOpenPage?.(pageMeta.id, newTab);
+        }
+      : undefined,
+    favorite: !!pageMeta.favorite,
+    onToggleFavorite() {
+      props.onToggleFavorite?.(pageMeta.id);
     },
-    [props]
-  );
-  return props.selectable ? (
-    <div className={styles.selectionCell}>
-      <Checkbox
-        onClick={stopPropagation}
-        checked={props.selected}
-        value={props.selected}
-        onChange={onSelectionChange}
-        size="small"
-      />
-    </div>
-  ) : null;
-};
+    icon: props.isPreferredEdgeless?.(pageMeta.id) ? (
+      <EdgelessIcon />
+    ) : (
+      <PageIcon />
+    ),
+    tags:
+      pageMeta.tags
+        ?.map(id => tagIdToTagOption(id, props.blockSuiteWorkspace))
+        .filter((v): v is Tag => v != null) ?? [],
+    operations: props.pageOperationsRenderer?.(pageMeta),
+    selectable: props.selectable,
+    selected: props.selectedPageIds?.includes(pageMeta.id),
+    onSelectedChange: props.onSelectedPageIdsChange
+      ? selected => {
+          assertExists(props.selectedPageIds);
+          const prevSelected = props.selectedPageIds.includes(pageMeta.id);
+          const shouldAdd = selected && !prevSelected;
+          const shouldRemove = !selected && prevSelected;
 
-export const PageTagsCell = (props: Pick<PageListItemProps, 'tags'>) => {
-  return (
-    <div data-testid="page-list-item-tags" className={styles.tagsCell}>
-      {/* fixme: give dynamic width & maxWidth */}
-      <PageTags tags={props.tags} width={100} maxWidth={600} />
-    </div>
-  );
-};
-
-const PageCreateDateCell = (props: Pick<PageListItemProps, 'createDate'>) => {
-  return (
-    <div data-testid="page-list-item-date" className={styles.dateCell}>
-      {formatDate(props.createDate)}
-    </div>
-  );
-};
-
-const PageUpdatedDateCell = (props: Pick<PageListItemProps, 'updatedDate'>) => {
-  return (
-    <div data-testid="page-list-item-date" className={styles.dateCell}>
-      {formatDate(props.updatedDate)}
-    </div>
-  );
-};
-
-const PageFavoriteCell = (
-  props: Pick<PageListItemProps, 'favorite' | 'onFavoritePage'>
-) => {
-  const onClick: MouseEventHandler = useCallback(
-    e => {
-      stopPropagation(e);
-      props.onFavoritePage?.(props.favorite);
-    },
-    [props]
-  );
-  return (
-    <div data-testid="page-list-item-favorite" className={styles.favoriteCell}>
-      <FavoriteTag onClick={onClick} active={!!props.favorite} />
-    </div>
-  );
-};
-
-const PageListOperationsCell = (
-  props: Pick<PageListItemProps, 'operations'>
-) => {
-  return props.operations ? (
-    <div
-      onClick={stopPropagation}
-      data-testid="page-list-group-header"
-      className={styles.operationsCell}
-    >
-      {props.operations}
-    </div>
-  ) : null;
-};
-
-export const PageListItem = (props: PageListItemProps) => {
-  return (
-    <PageListItemWrapper {...props}>
-      <FlexWrapper flex={6}>
-        <PageSelectionCell {...props} />
-        <PageListIconCell {...props} />
-        <PageListTitleCell {...props} />
-      </FlexWrapper>
-      <FlexWrapper flex={3} alignment="end">
-        <PageTagsCell {...props} />
-      </FlexWrapper>
-      <FlexWrapper flex={1} alignment="end">
-        <PageCreateDateCell {...props} />
-      </FlexWrapper>
-      <FlexWrapper flex={1} alignment="end">
-        <PageUpdatedDateCell {...props} />
-      </FlexWrapper>
-      <FlexWrapper flex={1} alignment="end">
-        <PageFavoriteCell {...props} />
-        <PageListOperationsCell {...props} />
-      </FlexWrapper>
-    </PageListItemWrapper>
-  );
-};
-
-export const PageListHeader = (props: PageListHeaderProps) => {
-  return <div {...props}></div>;
-};
-
-export const PageListGroupHeader = (props: PageListGroupHeaderProps) => {
-  return <div {...props}></div>;
-};
-
-const PageListItemWrapper = (
-  props: Pick<PageListItemProps, 'to' | 'pageId'> & PropsWithChildren
-) => {
-  const commonProps = useMemo(
-    () => ({
-      'data-testid': 'page-list-item',
-      'data-page-id': props.pageId,
-      className: styles.itemWrapper,
-    }),
-    [props.pageId]
-  );
-  if (props.to) {
-    return (
-      <Link {...commonProps} to={props.to}>
-        {props.children}
-      </Link>
-    );
-  } else {
-    return <div {...commonProps}>{props.children}</div>;
-  }
-};
-
-const FlexWrapper = (
-  props: PropsWithChildren<{
-    flex: number;
-    alignment?: 'start' | 'center' | 'end';
-    styles?: React.CSSProperties;
-  }>
-) => {
-  return (
-    <div
-      data-testid="page-list-item-flex-wrapper"
-      style={{
-        ...styles,
-        flexGrow: props.flex,
-        flexBasis: `${(props.flex / 12) * 100}%`,
-        justifyContent: props.alignment,
-      }}
-      className={styles.flexWrapper}
-    >
-      {props.children}
-    </div>
-  );
-};
+          if (shouldAdd) {
+            props.onSelectedPageIdsChange?.([
+              ...props.selectedPageIds,
+              pageMeta.id,
+            ]);
+          } else if (shouldRemove) {
+            props.onSelectedPageIdsChange?.(
+              props.selectedPageIds.filter(id => id !== pageMeta.id)
+            );
+          }
+        }
+      : undefined,
+    draggable: props.draggable,
+    isPublicPage: !!pageMeta.isPublic,
+    onDragStart: props.onDragStart
+      ? () => props.onDragStart?.(pageMeta.id)
+      : undefined,
+    onDragEnd: props.onDragEnd
+      ? () => props.onDragEnd?.(pageMeta.id)
+      : undefined,
+  };
+  return itemProps;
+}
