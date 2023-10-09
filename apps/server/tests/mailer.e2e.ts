@@ -8,7 +8,7 @@ import {
 } from '@affine-test/kit/utils/cloud';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import ava, { TestFn } from 'ava';
+import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
 import { GqlModule } from '../src/graphql.module';

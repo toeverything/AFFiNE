@@ -42,10 +42,15 @@ jobs:
     environment: development
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Setup Rust
+        with:
+          extra-flags: workspaces focus @affine/storage
+          electron-install: false
+          build-infra: false
+          build-plugins: false
+      - name: Build Rust
         uses: ./.github/actions/build-rust
         with:
           target: 'x86_64-unknown-linux-gnu'
@@ -81,10 +86,12 @@ jobs:
           - 1025:1025
           - 8025:8025
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
 
       - name: Initialize database
         run: |
@@ -150,7 +157,7 @@ jobs:
           - 1025:1025
           - 8025:8025
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -232,7 +239,7 @@ jobs:
           - 1025:1025
           - 8025:8025
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -257,15 +264,13 @@ jobs:
 
       - name: Generate prisma client
         run: |
-          yarn exec prisma generate
-          yarn exec prisma db push
-        working-directory: apps/server
+          yarn workspace @affine/server exec prisma generate
+          yarn workspace @affine/server prisma db push
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn exec ts-node-esm ./scripts/init-db.ts
-        working-directory: apps/server
+        run: yarn workspace @affine/server exec ts-node-esm ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 

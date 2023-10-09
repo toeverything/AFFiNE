@@ -17,14 +17,14 @@ export function registerAffineNavigationCommands({
   store,
   workspace,
   navigationHelper,
-  pageMode,
-  setPageMode,
+  pageListMode,
+  setPageListMode,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
   navigationHelper: ReturnType<typeof useNavigateHelper>;
-  pageMode: PageModeOption;
-  setPageMode: React.Dispatch<React.SetStateAction<PageModeOption>>;
+  pageListMode: PageModeOption;
+  setPageListMode: React.Dispatch<React.SetStateAction<PageModeOption>>;
   workspace: Workspace;
 }) {
   const unsubs: Array<() => void> = [];
@@ -36,7 +36,7 @@ export function registerAffineNavigationCommands({
       label: () => t['com.affine.cmdk.affine.navigation.goto-all-pages'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-        setPageMode('all');
+        setPageListMode('all');
       },
     })
   );
@@ -47,12 +47,12 @@ export function registerAffineNavigationCommands({
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
       preconditionStrategy: () => {
-        return pageMode !== 'page';
+        return pageListMode !== 'page';
       },
       label: () => t['com.affine.cmdk.affine.navigation.goto-page-list'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-        setPageMode('page');
+        setPageListMode('page');
       },
     })
   );
@@ -63,12 +63,12 @@ export function registerAffineNavigationCommands({
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
       preconditionStrategy: () => {
-        return pageMode !== 'edgeless';
+        return pageListMode !== 'edgeless';
       },
       label: () => t['com.affine.cmdk.affine.navigation.goto-edgeless-list'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-        setPageMode('edgeless');
+        setPageListMode('edgeless');
       },
     })
   );
@@ -109,7 +109,7 @@ export function registerAffineNavigationCommands({
       label: () => t['com.affine.cmdk.affine.navigation.goto-trash'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.TRASH);
-        setPageMode('all');
+        setPageListMode('all');
       },
     })
   );

@@ -3,20 +3,19 @@ import { LinkIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
 
-import {
-  ExportToHtmlMenuItem,
-  ExportToMarkdownMenuItem,
-  ExportToPdfMenuItem,
-  ExportToPngMenuItem,
-} from '../page-list/operation-menu-items/export';
+import { ExportMenuItems } from '../page-list/operation-menu-items/export';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 import { useSharingUrl } from './use-share-url';
 
-export const ShareExport = (props: ShareMenuProps) => {
+export const ShareExport = ({
+  workspace,
+  currentPage,
+  exportHandler,
+}: ShareMenuProps) => {
   const t = useAFFiNEI18N();
-  const workspaceId = props.workspace.id;
-  const pageId = props.currentPage.id;
+  const workspaceId = workspace.id;
+  const pageId = currentPage.id;
   const { onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId,
@@ -29,10 +28,10 @@ export const ShareExport = (props: ShareMenuProps) => {
         {t['com.affine.share-menu.ShareViaExport']()}
       </div>
       <div>
-        <ExportToPdfMenuItem className={styles.menuItemStyle} />
-        <ExportToHtmlMenuItem className={styles.menuItemStyle} />
-        <ExportToPngMenuItem className={styles.menuItemStyle} />
-        <ExportToMarkdownMenuItem className={styles.menuItemStyle} />
+        <ExportMenuItems
+          exportHandler={exportHandler}
+          className={styles.menuItemStyle}
+        />
       </div>
       <div className={styles.columnContainerStyle}>
         <div className={styles.descriptionStyle}>

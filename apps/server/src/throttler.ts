@@ -20,8 +20,12 @@ import { getRequestResponseFromContext } from './utils/nestjs';
       inject: [Config],
       useFactory: (config: Config): ThrottlerModuleOptions => {
         const options: ThrottlerModuleOptions = {
-          ttl: config.rateLimiter.ttl,
-          limit: config.rateLimiter.limit,
+          throttlers: [
+            {
+              ttl: config.rateLimiter.ttl,
+              limit: config.rateLimiter.limit,
+            },
+          ],
           skipIf: () => {
             return !config.node.prod || config.affine.canary;
           },
@@ -49,8 +53,10 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     return getRequestResponseFromContext(context) as any;
   }
 
-  protected override getTracker(req: Record<string, any>): string {
-    return req?.get('CF-Connecting-IP') ?? req?.get('CF-ray') ?? req?.ip;
+  protected override getTracker(req: Record<string, any>): Promise<string> {
+    return Promise.resolve(
+      req?.get('CF-Connecting-IP') ?? req?.get('CF-ray') ?? req?.ip
+    );
   }
 }
 
@@ -65,10 +71,16 @@ export class AuthThrottlerGuard extends CloudThrottlerGuard {
 
     if (req?.url === '/api/auth/session') {
       // relax throttle for session auto renew
-      return super.handleRequest(context, limit * 20, ttl);
+      return super.handleRequest(context, limit * 20, ttl, {
+        ttl: ttl * 20,
+        limit: limit * 20,
+      });
     }
 
-    return super.handleRequest(context, limit, ttl);
+    return super.handleRequest(context, limit, ttl, {
+      ttl,
+      limit,
+    });
   }
 }
 

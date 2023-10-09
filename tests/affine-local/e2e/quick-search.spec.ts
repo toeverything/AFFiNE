@@ -27,6 +27,12 @@ const keyboardDownAndSelect = async (page: Page, label: string) => {
   }
 };
 
+const commandsIsVisible = async (page: Page, label: string) => {
+  const locators = page.locator('[cmdk-item] [data-testid="cmdk-label"]');
+  const actual = (await locators.allInnerTexts()).find(text => text === label);
+  return !!actual;
+};
+
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
@@ -279,4 +285,50 @@ test('assert the recent browse pages are on the recent list', async ({
       'affine is the best'
     );
   }
+});
+
+test('can use cmdk to export pdf', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page to export');
+  await openQuickSearchByShortcut(page);
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    keyboardDownAndSelect(page, 'Export to PDF'),
+  ]);
+  expect(download.suggestedFilename()).toBe('this is a new page to export.pdf');
+});
+test('can use cmdk to export png', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page to export');
+  await openQuickSearchByShortcut(page);
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    keyboardDownAndSelect(page, 'Export to PNG'),
+  ]);
+  expect(download.suggestedFilename()).toBe('this is a new page to export.png');
+});
+
+test('can use cmdk to delete page and restore it', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
+  await openQuickSearchByShortcut(page);
+  await keyboardDownAndSelect(page, 'Move to Trash');
+  await page.getByTestId('confirm-delete-page').click();
+  const restoreButton = page.getByTestId('page-restore-button');
+  await expect(restoreButton).toBeVisible();
+  await openQuickSearchByShortcut(page);
+  expect(await commandsIsVisible(page, 'Move to Trash')).toBe(false);
+  expect(await commandsIsVisible(page, 'Export to PDF')).toBe(false);
+  expect(await commandsIsVisible(page, 'Restore from Trash')).toBe(true);
+  await keyboardDownAndSelect(page, 'Restore from Trash');
+  await expect(restoreButton).not.toBeVisible();
 });
