@@ -90,15 +90,7 @@ export const PageOperations = ({
         type: 'danger',
       },
     ],
-    [
-      inAllowList,
-      t,
-      inExcludeList,
-      onClickDelete,
-      removeFromAllowList,
-      page.id,
-      addToExcludeList,
-    ]
+    [inAllowList, t, onClickDelete, removeFromAllowList, page.id]
   );
   return (
     <>
