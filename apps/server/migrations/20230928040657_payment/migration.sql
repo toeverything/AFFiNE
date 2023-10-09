@@ -9,7 +9,7 @@ CREATE TABLE "user_stripe_customers" (
 
 -- CreateTable
 CREATE TABLE "user_subscriptions" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" SERIAL NOT NULL,
     "user_id" VARCHAR(36) NOT NULL,
     "plan" VARCHAR(20) NOT NULL,
     "stripe_subscription_id" TEXT NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE "user_subscriptions" (
 
 -- CreateTable
 CREATE TABLE "user_invoices" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" SERIAL NOT NULL,
     "user_id" VARCHAR(36) NOT NULL,
     "stripe_invoice_id" TEXT NOT NULL,
     "currency" VARCHAR(3) NOT NULL,
@@ -36,6 +36,7 @@ CREATE TABLE "user_invoices" (
     "status" VARCHAR(20) NOT NULL,
     "plan" VARCHAR NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
     "last_payment_error" TEXT,
 
     CONSTRAINT "user_invoices_pkey" PRIMARY KEY ("id")

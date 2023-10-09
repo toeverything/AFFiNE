@@ -179,7 +179,7 @@ model UserStripeCustomer {
 }
 
 model UserSubscription {
-  id                   String    @id @default(uuid()) @db.VarChar(36)
+  id                   Int       @id @default(autoincrement()) @db.Integer
   userId               String    @unique @map("user_id") @db.VarChar(36)
   // monthly or yearly
   plan                 String    @db.VarChar(20)
@@ -209,14 +209,16 @@ model UserSubscription {
 }
 
 model UserInvoice {
-  id               String   @id @default(uuid()) @db.VarChar(36)
+  id               Int      @id @default(autoincrement()) @db.Integer
   userId           String   @map("user_id") @db.VarChar(36)
   stripeInvoiceId  String   @unique @map("stripe_invoice_id")
   currency         String   @db.VarChar(3)
+  // CNY 12.50 stored as 1250
   price            Int      @db.Integer
   status           String   @db.VarChar(20)
   plan             String   @db.VarChar
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   lastPaymentError String?  @map("last_payment_error") @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
