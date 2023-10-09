@@ -8,7 +8,7 @@ import {
   type ConfirmModalProps,
 } from '@toeverything/components/modal';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import * as styles from './style.css';
 
@@ -20,12 +20,19 @@ export const WorkspaceDeleteModal = ({
   workspace,
   ...props
 }: WorkspaceDeleteProps) => {
+  const { onConfirm } = props;
   const [workspaceName] = useBlockSuiteWorkspaceName(
     workspace.blockSuiteWorkspace
   );
   const [deleteStr, setDeleteStr] = useState<string>('');
   const allowDelete = deleteStr === workspaceName;
   const t = useAFFiNEI18N();
+
+  const handleOnEnter = useCallback(() => {
+    if (allowDelete) {
+      return onConfirm?.();
+    }
+  }, [allowDelete, onConfirm]);
 
   return (
     <ConfirmModal
@@ -68,6 +75,7 @@ export const WorkspaceDeleteModal = ({
           }}
           onChange={setDeleteStr}
           data-testid="delete-workspace-input"
+          onEnter={handleOnEnter}
           placeholder={t['com.affine.workspaceDelete.placeholder']()}
           size="large"
         />

@@ -231,6 +231,7 @@ export const EditCollection = ({
             placeholder={t['com.affine.editCollection.untitledCollection']()}
             defaultValue={value.name}
             onChange={name => onChange({ ...value, name })}
+            onEnter={onSaveCollection}
           />
         </div>
       </ScrollableContainer>
