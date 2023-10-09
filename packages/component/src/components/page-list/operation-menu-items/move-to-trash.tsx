@@ -38,6 +38,7 @@ const MoveToTrashConfirm = ({
 
   return (
     <ConfirmModal
+      width={480}
       title={t['com.affine.moveToTrash.confirmModal.title']()}
       description={t['com.affine.moveToTrash.confirmModal.description']({
         title: title || 'Untitled',

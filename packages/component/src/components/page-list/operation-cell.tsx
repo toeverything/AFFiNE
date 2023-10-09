@@ -138,6 +138,7 @@ export const TrashOperationCell = ({
         </IconButton>
       </Tooltip>
       <ConfirmModal
+        width={480}
         title={`${t['com.affine.trashOperation.deletePermanently']()}?`}
         description={t['com.affine.trashOperation.deleteDescription']()}
         cancelText={t['com.affine.confirmModal.button.cancel']()}

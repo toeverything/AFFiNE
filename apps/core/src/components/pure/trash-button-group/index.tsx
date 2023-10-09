@@ -131,6 +131,7 @@ export const TrashButtonGroup = () => {
           </Tooltip>
         </div>
         <ConfirmModal
+          width={480}
           title={t['com.affine.trashOperation.delete.title']()}
           cancelText={t['com.affine.confirmModal.button.cancel']()}
           description={t['com.affine.trashOperation.delete.description']()}
