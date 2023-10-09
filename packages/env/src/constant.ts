@@ -17,7 +17,6 @@ export const isDesktop = isBrowser && !!window.appInfo?.electron;
 //#endregion
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';
-export const DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX = 'hello-world';
 
 export const DEFAULT_SORT_KEY = 'updatedDate';
 export const MessageCode = {
