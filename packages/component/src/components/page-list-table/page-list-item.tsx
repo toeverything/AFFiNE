@@ -10,9 +10,7 @@ import { Link } from 'react-router-dom';
 import { FavoriteTag, formatDate } from '../page-list';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
-import type {
-  PageListItemProps,
-} from './types';
+import type { PageListItemProps } from './types';
 
 function stopPropagation(event: React.MouseEvent) {
   event.stopPropagation();
@@ -30,12 +28,14 @@ const PageListTitleCell = (
       >
         {props.title}
       </div>
-      <div
-        data-testid="page-list-item-preview-text"
-        className={styles.titleCellPreview}
-      >
-        {props.preview}
-      </div>
+      {props.preview ? (
+        <div
+          data-testid="page-list-item-preview-text"
+          className={styles.titleCellPreview}
+        >
+          {props.preview}
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -57,17 +57,19 @@ const PageSelectionCell = (
     },
     [props]
   );
-  return props.selectable ? (
+  return (
     <div className={styles.selectionCell}>
-      <Checkbox
-        onClick={stopPropagation}
-        checked={props.selected}
-        value={props.selected}
-        onChange={onSelectionChange}
-        size="small"
-      />
+      {props.selectable ? (
+        <Checkbox
+          onClick={stopPropagation}
+          checked={props.selected}
+          value={props.selected}
+          onChange={onSelectionChange}
+          size="small"
+        />
+      ) : null}
     </div>
-  ) : null;
+  );
 };
 
 export const PageTagsCell = (props: Pick<PageListItemProps, 'tags'>) => {

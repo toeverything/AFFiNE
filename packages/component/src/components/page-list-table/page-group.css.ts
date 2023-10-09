@@ -3,15 +3,16 @@ import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  columnGap: '8px',
+  rowGap: '8px',
 });
 
 export const header = style({
   display: 'flex',
   alignItems: 'center',
   padding: '0px 16px 0px 4px',
+  height: '28px',
   ':hover': {
-    background: '',
+    background: 'var(--affine-hover-color)',
   },
 });
 
@@ -24,22 +25,25 @@ export const headerCollapseIcon = style({
 });
 
 export const headerLabel = style({
-  fontSize: '14px',
-  lineHeight: '20px',
-  color: '#666',
+  fontSize: 'var(--affine-font-sm)',
+  color: 'var(--affine-text-secondary-color)',
 });
 
 export const headerCount = style({
-  fontSize: '12px',
-  lineHeight: '16px',
-  color: '#999',
+  fontSize: 'var(--affine-font-sm)',
+  color: 'var(--affine-text-disable-color)',
+  marginLeft: '8px',
 });
 
 export const collapsedIcon = style({
+  display: 'none',
   transition: 'transform 0.2s ease-in-out',
   selectors: {
     '&[data-collapsed="true"]': {
       transform: 'rotate(-90deg)',
+    },
+    [`${header}:hover &`]: {
+      display: 'block',
     },
   },
 });

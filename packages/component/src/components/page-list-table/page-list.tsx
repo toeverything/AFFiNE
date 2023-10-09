@@ -42,7 +42,9 @@ const PagePreviewInner = ({ workspace, pageId }: PagePreviewInnerProps) => {
   assertExists(page);
   const previewAtom = useBlockSuitePagePreview(page);
   const preview = useAtomValue(previewAtom);
-  return preview;
+  return preview ? (
+    <span className={styles.pagePreviewInner}>{preview}</span>
+  ) : null;
 };
 
 interface PagePreviewProps {

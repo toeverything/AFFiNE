@@ -6,7 +6,9 @@ import {
   PageTags,
   type PageTagsProps,
 } from '@affine/component/page-list-table';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { PageIcon } from '@blocksuite/icons';
+import { Schema, Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { withRouter } from 'storybook-addon-react-router-v6';
 
@@ -70,29 +72,24 @@ ListItemTags.args = {
   tags: testTags,
 };
 
+const schema = new Schema();
+schema.register(AffineSchemas).register(__unstableSchemas);
+const workspace = new Workspace({
+  id: 'test-workspace-id',
+  schema,
+});
+
+workspace.createPage();
+workspace.createPage();
+
+workspace.meta.pageMetas[0].title = 'Test Page Title 1';
+workspace.meta.pageMetas[1].title = 'Test Page Title 2';
+
 export const PageListStory: StoryFn<PageListProps> = props => (
-  <PageList {...props}></PageList>
+  <PageList {...props} blockSuiteWorkspace={workspace}></PageList>
 );
 
 PageListStory.args = {
-  pages: [
-    {
-      id: 'test-page-id-1',
-      title: 'Test Page Title 1',
-      createDate: new Date('2021-01-01').getTime(),
-      updatedDate: new Date('2023-08-15').getTime(),
-      favorite: true,
-      subpageIds: [],
-      tags: [],
-    },
-    {
-      id: 'test-page-id-2',
-      title: 'Test Page Title 2',
-      createDate: new Date('2021-01-01').getTime(),
-      updatedDate: new Date('2023-08-15').getTime(),
-      favorite: false,
-      subpageIds: [],
-      tags: [],
-    },
-  ],
+  pages: workspace.meta.pageMetas,
+  groupBy: 'createDate',
 };

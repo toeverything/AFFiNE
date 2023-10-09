@@ -2,7 +2,7 @@ import { style } from '@vanilla-extract/css';
 
 export const itemWrapper = style({
   display: 'flex',
-  color: 'var(--affine-color-text-primary)',
+  color: 'var(--affine-text-primary-color)',
   height: '62px',
   width: '100%',
   alignItems: 'stretch',
@@ -25,6 +25,7 @@ export const selectionCell = style({
   display: 'flex',
   alignItems: 'center',
   flexShrink: 0,
+  minWidth: '16px',
 });
 
 export const titleCell = style({
@@ -32,8 +33,8 @@ export const titleCell = style({
   flexDirection: 'column',
   alignItems: 'flex-start',
   padding: '0 16px',
-  rowGap: '4px',
   maxWidth: 'calc(100% - 64px)',
+  cursor: 'default',
 });
 
 export const titleCellMain = style({
@@ -50,6 +51,11 @@ export const titleCellPreview = style({
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   maxWidth: 'calc(100% - 32px)',
+  selectors: {
+    '&:not(:empty)': {
+      marginTop: '4px',
+    },
+  },
 });
 
 export const iconCell = style({

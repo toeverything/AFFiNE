@@ -10,14 +10,15 @@ import {
   isToday,
   isYesterday,
 } from '../page-list';
-import { PageListItem } from '.';
 import * as styles from './page-group.css';
+import { PageListItem } from './page-list-item';
 import type {
   PageGroupDefinition,
   PageGroupProps,
   PageListItemProps,
 } from './types';
 
+// todo: optimize date matchers
 const getDateGroupDefinitions = (key: DateKey): PageGroupDefinition[] => [
   {
     id: 'today',
@@ -32,17 +33,27 @@ const getDateGroupDefinitions = (key: DateKey): PageGroupDefinition[] => [
   {
     id: 'last7Days',
     label: <Trans i18nKey="com.affine.last7Days" />,
-    match: item => isLastWeek(item[key]) && !isYesterday(item[key]),
+    match: item =>
+      isLastWeek(item[key]) && !isYesterday(item[key]) && !isToday(item[key]),
   },
   {
     id: 'last30Days',
     label: <Trans i18nKey="com.affine.last30Days" />,
-    match: item => isLastMonth(item[key]) && !isLastWeek(item[key]),
+    match: item =>
+      isLastMonth(item[key]) &&
+      !isLastWeek(item[key]) &&
+      !isYesterday(item[key]) &&
+      !isToday(item[key]),
   },
   {
     id: 'currentYear',
     label: <Trans i18nKey="com.affine.currentYear" />,
-    match: item => isLastYear(item[key]) && !isLastMonth(item[key]),
+    match: item =>
+      isLastYear(item[key]) &&
+      !isLastMonth(item[key]) &&
+      !isLastWeek(item[key]) &&
+      !isYesterday(item[key]) &&
+      !isToday(item[key]),
   },
 ];
 
@@ -68,19 +79,21 @@ export function pagesToPageGroups(
 
   const groupDefs = pageGroupDefinitions[key];
 
-  return groupDefs.map(groupDef => {
-    const filtered = pages.filter(page => groupDef.match(page));
-    const label =
-      typeof groupDef.label === 'function'
-        ? groupDef.label(filtered, pages)
-        : groupDef.label;
-    return {
-      id: groupDef.id,
-      label,
-      items: filtered,
-      allItems: pages,
-    };
-  });
+  return groupDefs
+    .map(groupDef => {
+      const filtered = pages.filter(page => groupDef.match(page));
+      const label =
+        typeof groupDef.label === 'function'
+          ? groupDef.label(filtered, pages)
+          : groupDef.label;
+      return {
+        id: groupDef.id,
+        label,
+        items: filtered,
+        allItems: pages,
+      };
+    })
+    .filter(group => group.items.length > 0);
 }
 
 export const PageGroup = (props: PageGroupProps) => {
@@ -105,10 +118,8 @@ export const PageGroup = (props: PageGroupProps) => {
               data-collapsed={collapsed !== false}
             />
           </div>
-          <div>
-            <div className={styles.headerLabel}>{props.label}</div>
-            <div className={styles.headerCount}>{props.items.length}</div>
-          </div>
+          <div className={styles.headerLabel}>{props.label}</div>
+          <div className={styles.headerCount}>{props.items.length}</div>
         </div>
       ) : null}
       {collapsed
