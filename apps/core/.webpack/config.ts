@@ -266,7 +266,6 @@ export const createConfiguration: (
                     useDefineForClassFields: false,
                   },
                   experimental: {
-                    keepImportAssertions: true,
                     plugins: [
                       buildFlags.coverage && [
                         'swc-plugin-coverage-instrument',

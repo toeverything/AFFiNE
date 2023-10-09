@@ -25,6 +25,7 @@ import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
+import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 
@@ -38,7 +39,7 @@ const DetailPageImpl = (): ReactElement => {
   const collectionManager = useCollectionManager(collectionsCRUDAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
-
+  useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       try {

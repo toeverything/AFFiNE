@@ -64,9 +64,6 @@ const external = [
 
   // css
   /^@vanilla-extract/,
-
-  // remove this when bookmark plugin is ready
-  'link-preview-js',
 ];
 
 const allPluginDir = path.resolve(projectRoot, 'plugins');
@@ -103,15 +100,6 @@ const outDir = path.resolve(projectRoot, 'apps', 'core', 'public', 'plugins');
 
 const coreOutDir = path.resolve(outDir, plugin);
 
-const serverOutDir = path.resolve(
-  projectRoot,
-  'apps',
-  'electron',
-  'dist',
-  'plugins',
-  plugin
-);
-
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
 
 const generatePackageJson: PluginOption = {
@@ -127,7 +115,6 @@ const generatePackageJson: PluginOption = {
           core: 'index.js',
         },
         assets: [...metadata.assets],
-        serverCommand: json.affinePlugin.serverCommand,
       },
     } satisfies z.infer<typeof packageJsonOutputSchema>;
     packageJsonOutputSchema.parse(packageJson);
@@ -191,25 +178,3 @@ await build({
     generatePackageJson,
   ],
 });
-
-// step 2: generate server bundle
-if (json.affinePlugin.entry.server) {
-  const serverEntry = path.resolve(pluginDir, json.affinePlugin.entry.server);
-  await build({
-    build: {
-      watch: isWatch ? {} : undefined,
-      minify: false,
-      outDir: serverOutDir,
-      emptyOutDir: true,
-      lib: {
-        entry: serverEntry,
-        fileName: 'index',
-        formats: ['cjs'],
-      },
-      rollupOptions: {
-        external,
-      },
-    },
-    plugins: [generatePackageJson],
-  });
-}

@@ -27,6 +27,7 @@ export interface ShareMenuProps<
   ) => [isSharePage: boolean, setIsSharePage: (enable: boolean) => void];
   onEnableAffineCloud: () => void;
   togglePagePublic: () => Promise<void>;
+  exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => Promise<void>;
 }
 
 export const ShareMenu = (props: ShareMenuProps) => {

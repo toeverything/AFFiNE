@@ -67,6 +67,7 @@ test('Show collections items in sidebar', async ({ page }) => {
     .getByTestId('collection-page-option')
     .getByText('Delete');
   await deletePage.click();
+  await page.getByTestId('confirm-delete-page').click();
   expect(await collections.getByTestId('collection-page').count()).toBe(0);
   await first.hover();
   await first.getByTestId('collection-options').click();

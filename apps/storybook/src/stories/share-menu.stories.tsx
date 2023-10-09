@@ -92,6 +92,7 @@ export const Basic: StoryFn = () => {
       workspace={localWorkspace}
       onEnableAffineCloud={unimplemented}
       togglePagePublic={unimplemented}
+      exportHandler={unimplemented}
     />
   );
 };
@@ -122,6 +123,7 @@ export const AffineBasic: StoryFn = () => {
       workspace={affineWorkspace}
       onEnableAffineCloud={unimplemented}
       togglePagePublic={unimplemented}
+      exportHandler={unimplemented}
     />
   );
 };

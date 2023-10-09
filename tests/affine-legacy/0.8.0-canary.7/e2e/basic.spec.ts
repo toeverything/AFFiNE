@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { join } from 'node:path';
 
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test';
 
 const { switchToNext } = setupProxyServer(
   test,
-  resolve(__dirname, '..', 'static')
+  join(__dirname, '..', 'web-static')
 );
 
 test('database migration', async ({ page, context }) => {

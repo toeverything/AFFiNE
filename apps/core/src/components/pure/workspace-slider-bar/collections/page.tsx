@@ -23,7 +23,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
-import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
+import { useTrashModalHelper } from '../../../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
@@ -39,8 +39,15 @@ export const PageOperations = ({
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
 }) => {
-  const { removeToTrash } = useBlockSuiteMetaHelper(workspace);
   const t = useAFFiNEI18N();
+  const { setTrashModal } = useTrashModalHelper(workspace);
+  const onClickDelete = useCallback(() => {
+    setTrashModal({
+      open: true,
+      pageId: page.id,
+      pageTitle: page.title,
+    });
+  }, [page.id, page.title, setTrashModal]);
   const actions = useMemo<
     Array<
       | {
@@ -79,13 +86,19 @@ export const PageOperations = ({
           </MenuIcon>
         ),
         name: t['com.affine.trashOperation.delete'](),
-        click: () => {
-          removeToTrash(page.id);
-        },
+        click: onClickDelete,
         type: 'danger',
       },
     ],
-    [inAllowList, t, removeFromAllowList, page.id, removeToTrash]
+    [
+      inAllowList,
+      t,
+      inExcludeList,
+      onClickDelete,
+      removeFromAllowList,
+      page.id,
+      addToExcludeList,
+    ]
   );
   return (
     <>
