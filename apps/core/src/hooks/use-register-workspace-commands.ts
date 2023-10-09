@@ -11,6 +11,7 @@ import {
 } from '../commands';
 import { registerAffineNavigationCommands } from '../commands/affine-navigation';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { useLanguageHelper } from './affine/use-language-helper';
 import { useCurrentWorkspace } from './current/use-current-workspace';
 import { useNavigateHelper } from './use-navigate-helper';
 
@@ -19,6 +20,7 @@ export function useRegisterWorkspaceCommands() {
   const t = useAFFiNEI18N();
   const theme = useTheme();
   const [currentWorkspace] = useCurrentWorkspace();
+  const languageHelper = useLanguageHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
   const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
@@ -34,7 +36,9 @@ export function useRegisterWorkspaceCommands() {
         setPageListMode,
       })
     );
-    unsubs.push(registerAffineSettingsCommands({ store, t, theme }));
+    unsubs.push(
+      registerAffineSettingsCommands({ store, t, theme, languageHelper })
+    );
     unsubs.push(registerAffineLayoutCommands({ store, t }));
     unsubs.push(
       registerAffineCreationCommands({
@@ -56,5 +60,6 @@ export function useRegisterWorkspaceCommands() {
     navigationHelper,
     pageListMode,
     setPageListMode,
+    languageHelper,
   ]);
 }

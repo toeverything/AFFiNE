@@ -42,6 +42,18 @@ function useRegisterCommands() {
           theme: 'auto',
           themes: ['auto', 'dark', 'light'],
         },
+        languageHelper: {
+          onSelect: () => {},
+          languagesList: [
+            { tag: 'en', name: 'English', originalName: 'English' },
+            {
+              tag: 'zh-Hans',
+              name: 'Simplified Chinese',
+              originalName: '简体中文',
+            },
+          ],
+          currentLanguage: undefined,
+        },
       }),
       registerAffineCreationCommands({
         t,
