@@ -79,7 +79,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     >
       {preFix}
       <input
-        className={clsx(input)}
+        className={clsx(input, {
+          large: size === 'large',
+          'extra-large': size === 'extraLarge',
+        })}
         ref={ref}
         disabled={disabled}
         style={inputStyle}

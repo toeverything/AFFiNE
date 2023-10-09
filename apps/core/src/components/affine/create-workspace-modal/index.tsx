@@ -76,6 +76,7 @@ const NameWorkspaceContent = ({
         maxLength={64}
         minLength={0}
         onChange={setWorkspaceName}
+        size="large"
       />
       <div className={style.buttonGroup}>
         <Button data-testid="create-workspace-close-button" onClick={onClose}>
