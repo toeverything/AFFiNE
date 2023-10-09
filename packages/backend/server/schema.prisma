@@ -28,6 +28,7 @@ model User {
   invoices             UserInvoice[]
   workspacePermissions WorkspaceUserPermission[]
   pagePermissions      WorkspacePageUserPermission[]
+  UserQuotaGates       UserQuotaGates[]
 
   @@map("users")
 }
@@ -113,15 +114,57 @@ model WorkspacePageUserPermission {
   @@map("workspace_page_user_permissions")
 }
 
+// feature gates is a way to enable/disable features for a user
+// for example, early access is a feature that allow some users to access the insider version
 model UserFeatureGates {
-  id        String   @id @default(uuid()) @db.VarChar
-  userId    String   @map("user_id") @db.VarChar
-  feature   String   @db.VarChar
-  reason    String   @db.VarChar
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id      String @id @default(uuid()) @db.VarChar
+  userId  String @map("user_id") @db.VarChar
+  feature String @db.VarChar
+
+  reason       String       @db.VarChar
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user_feature UserFeatures @relation(fields: [feature], references: [id], onDelete: Cascade)
 
   @@map("user_feature_gates")
+}
+
+model UserFeatures {
+  id        String   @id @default(uuid()) @db.VarChar
+  feature   String   @db.VarChar
+  configs   Json     @db.Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  UserFeatureGates UserFeatureGates[]
+
+  @@map("user_features")
+}
+
+// quota gates is a way to enable/disable quotas for a user
+// for example, pro plan is a quota that allow some users access to more resources after they pay
+model UserQuotaGates {
+  id      String  @id @default(uuid()) @db.VarChar
+  userId  String  @map("user_id") @db.VarChar
+  quotaId String? @db.VarChar
+
+  reason    String   @db.VarChar
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quota UserQuotas? @relation(fields: [quotaId], references: [id])
+
+  @@map("user_quota_gates")
+}
+
+model UserQuotas {
+  id        String   @id @default(uuid()) @db.VarChar
+  quota     String   @db.VarChar
+  configs   Json     @db.Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  UserQuotaGates UserQuotaGates[]
+
+  @@map("user_quotas")
 }
 
 model Account {

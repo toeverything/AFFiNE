@@ -6,6 +6,7 @@ import { GqlModule } from '../graphql.module';
 import { ServerConfigModule } from './config';
 import { DocModule } from './doc';
 import { PaymentModule } from './payment';
+import { QuotaModule } from './quota';
 import { SelfHostedModule } from './self-hosted';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
@@ -43,7 +44,8 @@ switch (SERVER_FLAVOR) {
       WorkspaceModule,
       UsersModule,
       DocModule.forRoot(),
-      PaymentModule
+      PaymentModule,
+      QuotaModule
     );
     break;
   case 'allinone':
@@ -54,6 +56,7 @@ switch (SERVER_FLAVOR) {
       GqlModule,
       WorkspaceModule,
       UsersModule,
+      QuotaModule,
       SyncModule,
       DocModule.forRoot(),
       PaymentModule
