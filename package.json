@@ -84,7 +84,7 @@
     "@vanilla-extract/webpack-plugin": "^2.3.1",
     "@vitejs/plugin-react-swc": "^3.3.2",
     "@vitest/coverage-istanbul": "0.34.5",
-    "@vitest/ui": "0.34.5",
+    "@vitest/ui": "0.34.6",
     "eslint": "^8.50.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-i": "^2.28.1",
