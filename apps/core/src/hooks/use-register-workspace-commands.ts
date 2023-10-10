@@ -7,10 +7,11 @@ import { allPageModeSelectAtom } from '../atoms';
 import { appSettingAtom } from '../atoms/settings';
 import {
   registerAffineCreationCommands,
+  registerAffineHelpCommands,
   registerAffineLayoutCommands,
+  registerAffineNavigationCommands,
   registerAffineSettingsCommands,
 } from '../commands';
-import { registerAffineNavigationCommands } from '../commands/affine-navigation';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { useLanguageHelper } from './affine/use-language-helper';
 import { useCurrentWorkspace } from './current/use-current-workspace';
@@ -52,6 +53,12 @@ export function useRegisterWorkspaceCommands() {
       registerAffineCreationCommands({
         store,
         pageHelper: pageHelper,
+        t,
+      })
+    );
+    unsubs.push(
+      registerAffineHelpCommands({
+        store,
         t,
       })
     );
