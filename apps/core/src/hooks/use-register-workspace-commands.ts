@@ -11,6 +11,7 @@ import {
   registerAffineLayoutCommands,
   registerAffineNavigationCommands,
   registerAffineSettingsCommands,
+  registerAffineUpdatesCommands,
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { useLanguageHelper } from './affine/use-language-helper';
@@ -29,6 +30,12 @@ export function useRegisterWorkspaceCommands() {
   const [appSettings] = useAtom(appSettingAtom);
   useEffect(() => {
     const unsubs: Array<() => void> = [];
+    unsubs.push(
+      registerAffineUpdatesCommands({
+        store,
+        t,
+      })
+    );
     unsubs.push(
       registerAffineNavigationCommands({
         store,
