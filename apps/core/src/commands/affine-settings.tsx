@@ -211,7 +211,6 @@ export function registerAffineSettingsCommands({
       })
     );
   });
-  console.log('gg');
 
   //Layout Style
   unsubs.push(
