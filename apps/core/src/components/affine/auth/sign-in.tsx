@@ -8,7 +8,6 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '@toeverything/components/button';
 import { GraphQLError } from 'graphql';
 import { type FC, useState } from 'react';
@@ -19,6 +18,7 @@ import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { INTERNAL_BETA_URL, useAuth } from './use-auth';
+import { useCaptcha } from './use-captcha';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -32,7 +32,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, setVerifyToken] = useState<string>();
+  const [verifyToken, Captcha] = useCaptcha();
 
   const {
     isMutating: isSigningIn,
@@ -145,39 +145,38 @@ export const SignIn: FC<AuthPanelProps> = ({
           onEnter={onContinue}
         />
 
-        <Turnstile
-          siteKey="1x00000000000000000000AA"
-          onSuccess={setVerifyToken}
-        />
+        {verifyToken ? null : <Captcha />}
 
-        <Button
-          size="extraLarge"
-          data-testid="continue-login-button"
-          block
-          loading={isMutating || isSigningIn}
-          disabled={!allowSendEmail || !verifyToken}
-          icon={
-            allowSendEmail || isMutating ? (
-              <ArrowDownBigIcon
-                width={20}
-                height={20}
-                style={{
-                  transform: 'rotate(-90deg)',
-                  color: 'var(--affine-blue)',
-                }}
-              />
-            ) : (
-              <CountDownRender
-                className={style.resendCountdownInButton}
-                timeLeft={resendCountDown}
-              />
-            )
-          }
-          iconPosition="end"
-          onClick={onContinue}
-        >
-          {t['com.affine.auth.sign.email.continue']()}
-        </Button>
+        {verifyToken ? (
+          <Button
+            size="extraLarge"
+            data-testid="continue-login-button"
+            block
+            loading={isMutating || isSigningIn}
+            disabled={!allowSendEmail}
+            icon={
+              allowSendEmail || isMutating ? (
+                <ArrowDownBigIcon
+                  width={20}
+                  height={20}
+                  style={{
+                    transform: 'rotate(-90deg)',
+                    color: 'var(--affine-blue)',
+                  }}
+                />
+              ) : (
+                <CountDownRender
+                  className={style.resendCountdownInButton}
+                  timeLeft={resendCountDown}
+                />
+              )
+            }
+            iconPosition="end"
+            onClick={onContinue}
+          >
+            {t['com.affine.auth.sign.email.continue']()}
+          </Button>
+        ) : null}
 
         <div className={style.authMessage}>
           {/*prettier-ignore*/}

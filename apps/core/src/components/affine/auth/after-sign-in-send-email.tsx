@@ -13,6 +13,7 @@ import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-s
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
+import { useCaptcha } from './use-captcha';
 
 export const AfterSignInSendEmail = ({
   setAuthState,
@@ -21,6 +22,7 @@ export const AfterSignInSendEmail = ({
 }: AuthPanelProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
+  const [verifyToken, Captcha] = useCaptcha();
 
   const { resendCountDown, allowSendEmail, signIn } = useAuth();
   if (loginStatus === 'authenticated') {
@@ -28,8 +30,10 @@ export const AfterSignInSendEmail = ({
   }
 
   const onResendClick = useCallback(async () => {
-    await signIn(email);
-  }, [email, signIn]);
+    if (verifyToken) {
+      await signIn(email, verifyToken);
+    }
+  }, [email, signIn, verifyToken]);
 
   return (
     <>
@@ -45,9 +49,17 @@ export const AfterSignInSendEmail = ({
 
       <div className={style.resendWrapper}>
         {allowSendEmail ? (
-          <Button type="plain" size="large" onClick={onResendClick}>
-            {t['com.affine.auth.sign.auth.code.resend.hint']()}
-          </Button>
+          <>
+            <Captcha />
+            <Button
+              type="plain"
+              size="large"
+              disabled={!verifyToken}
+              onClick={onResendClick}
+            >
+              {t['com.affine.auth.sign.auth.code.resend.hint']()}
+            </Button>
+          </>
         ) : (
           <>
             <span className="resend-code-hint">

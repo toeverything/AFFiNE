@@ -4,6 +4,11 @@ export const authModalContent = style({
   marginTop: '30px',
 });
 
+export const captchaWrapper = style({
+  margin: 'auto',
+  marginBottom: '4px',
+});
+
 export const authMessage = style({
   marginTop: '30px',
   color: 'var(--affine-text-secondary-color)',
