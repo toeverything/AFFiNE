@@ -43,7 +43,8 @@ export function registerAffineSettingsCommands({
       },
       icon: <SettingsIcon />,
       run() {
-        store.set(openQuickSearchModalAtom, true);
+        const quickSearchModalState = store.get(openQuickSearchModalAtom);
+        store.set(openQuickSearchModalAtom, !quickSearchModalState);
       },
     })
   );
