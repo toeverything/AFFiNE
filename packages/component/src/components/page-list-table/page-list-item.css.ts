@@ -14,13 +14,6 @@ export const root = style({
   cursor: 'default',
 });
 
-export const flexWrapper = style({
-  display: 'flex',
-  alignItems: 'center',
-  flexShrink: 0,
-  overflow: 'hidden',
-});
-
 export const selectionCell = style({
   paddingLeft: '4px',
   display: 'flex',

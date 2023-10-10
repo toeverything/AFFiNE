@@ -1,33 +1,165 @@
+import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { Tag } from '@affine/env/filter';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import {
+  EdgelessIcon,
+  PageIcon,
+  SortDownIcon,
+  SortUpIcon,
+} from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
-import { Suspense, useMemo } from 'react';
+import {
+  type MouseEventHandler,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useMemo,
+} from 'react';
 
+import { ScrollableContainer } from '../../ui/scrollbar';
+import { useSorter } from '../page-list/use-sorter';
 import { PageGroup, pagesToPageGroups } from './page-group';
 import * as styles from './page-list.css';
 import type { PageListItemProps, PageListProps } from './types';
+import { FlexWrapper, type FlexWrapperProps } from './utils';
+
+type Sorter = ReturnType<typeof useSorter<PageListItemProps>>;
 
 /**
  * Given a list of pages, render a list of pages
  */
 export const PageList = (props: PageListProps) => {
-  const groups = useMemo(() => {
-    const itemListProps: PageListItemProps[] = props.pages.map(pageMeta =>
-      pageMetaToPageItemProp(pageMeta, props)
-    );
-    const groups = pagesToPageGroups(itemListProps, props.groupBy);
-    return groups;
+  const pageItems = useMemo(() => {
+    return props.pages.map(pageMeta => pageMetaToPageItemProp(pageMeta, props));
   }, [props]);
+  const sorter = useSorter<PageListItemProps>({
+    data: pageItems,
+    key: DEFAULT_SORT_KEY,
+    order: 'desc',
+  });
+  const groupKey = useMemo(() => {
+    return (
+      props.groupBy ||
+      (sorter.key === 'createDate' || sorter.key === 'updatedDate'
+        ? sorter.key
+        : // default sort
+        !sorter.key
+        ? DEFAULT_SORT_KEY
+        : undefined)
+    );
+  }, [props.groupBy, sorter.key]);
+  const groups = useMemo(() => {
+    const groups = pagesToPageGroups(pageItems, groupKey);
+    return groups;
+  }, [pageItems, groupKey]);
   return (
     <div className={clsx(props.className, styles.root)}>
-      {groups.map(group => (
-        <PageGroup key={group.id} {...group} />
-      ))}
+      <PageListHeader {...props} sorter={sorter} />
+      {groups.length === 0 && props.fallback ? (
+        props.fallback
+      ) : (
+        <ScrollableContainer>
+          {groups.map(group => (
+            <PageGroup key={group.id} {...group} />
+          ))}
+        </ScrollableContainer>
+      )}
+    </div>
+  );
+};
+
+interface HeaderCellProps extends FlexWrapperProps {
+  sortKey: Sorter['key'];
+  label: ReactNode;
+  sortable?: boolean;
+  sorter: Sorter;
+}
+
+export const PageListHeaderCell = (props: HeaderCellProps) => {
+  const onClick: MouseEventHandler = useCallback(() => {
+    if (props.sortable && props.sortKey) {
+      props.sorter.shiftOrder(props.sortKey);
+    }
+  }, [props.sortKey, props.sortable, props.sorter]);
+
+  const sorting = props.sorter.key === props.sortKey;
+
+  return (
+    <FlexWrapper
+      flex={props.flex}
+      alignment={props.alignment}
+      onClick={onClick}
+      className={styles.headerCell}
+      data-sortable={props.sortable ? true : undefined}
+      data-sorting={sorting ? true : undefined}
+    >
+      {props.label}
+      {sorting ? (
+        props.sorter.order === 'asc' ? (
+          <SortUpIcon />
+        ) : (
+          <SortDownIcon />
+        )
+      ) : null}
+    </FlexWrapper>
+  );
+};
+
+export const PageListHeader = (props: PageListProps & { sorter: Sorter }) => {
+  const t = useAFFiNEI18N();
+  const sorter = props.sorter;
+  const headerCols = useMemo(() => {
+    return [
+      {
+        key: 'title',
+        label: t['Title'](),
+        flex: 6,
+      },
+      {
+        key: 'tags',
+        label: t['Tags'](),
+        flex: 3,
+        alignment: 'end',
+      },
+      {
+        key: 'createDate',
+        label: t['Created'](),
+        flex: 1,
+        sortable: true,
+        alignment: 'end',
+      },
+      {
+        key: 'updatedDate',
+        label: t['Updated'](),
+        flex: 1,
+        sortable: true,
+        alignment: 'end',
+      },
+      {
+        key: 'action',
+        label: t['Actions'](),
+        flex: 1,
+        alignment: 'end',
+      },
+    ] as const;
+  }, [t]);
+  return (
+    <div className={clsx(props.className, styles.header)}>
+      {headerCols.map(col => {
+        return (
+          <PageListHeaderCell
+            {...col}
+            sorter={sorter}
+            key={col.key}
+            sortKey={col.key as Sorter['key']}
+          />
+        );
+      })}
     </div>
   );
 };

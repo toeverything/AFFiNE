@@ -11,6 +11,7 @@ import { FavoriteTag, formatDate } from '../page-list';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 import type { PageListItemProps } from './types';
+import { FlexWrapper } from './utils';
 
 function stopPropagation(event: React.MouseEvent) {
   event.stopPropagation();
@@ -175,27 +176,4 @@ const PageListItemWrapper = (
   } else {
     return <div {...commonProps}>{props.children}</div>;
   }
-};
-
-const FlexWrapper = (
-  props: PropsWithChildren<{
-    flex: number;
-    alignment?: 'start' | 'center' | 'end';
-    styles?: React.CSSProperties;
-  }>
-) => {
-  return (
-    <div
-      data-testid="page-list-item-flex-wrapper"
-      style={{
-        ...styles,
-        flexGrow: props.flex,
-        flexBasis: `${(props.flex / 12) * 100}%`,
-        justifyContent: props.alignment,
-      }}
-      className={styles.flexWrapper}
-    >
-      {props.children}
-    </div>
-  );
 };

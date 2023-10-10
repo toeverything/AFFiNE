@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
 // TODO: consider reducing the number of props here
-export interface PageListItemProps {
+// using type instead of interface to make it Record compatible
+export type PageListItemProps = {
   pageId: string;
   icon: JSX.Element;
   title: ReactNode; // using ReactNode to allow for rich content rendering
@@ -24,7 +25,7 @@ export interface PageListItemProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onToggleFavorite?: () => void;
-}
+};
 
 export interface PageListHeaderProps {}
 
@@ -42,7 +43,6 @@ export interface PageListProps {
   pages: PageMeta[];
   blockSuiteWorkspace: Workspace;
   groupBy?: PagesGroupByType;
-  sortBy?: SortBy;
   fallback?: ReactNode; // fixme: shall we use loading rows number instead?
   isPreferredEdgeless: (pageId: string) => boolean;
   onToggleFavorite: (pageId: string) => void;
