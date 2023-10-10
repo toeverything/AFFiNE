@@ -41,7 +41,7 @@ export const AfterSignInSendEmail = ({
         title={t['com.affine.auth.sign.in']()}
         subTitle={t['com.affine.auth.sign.in.sent.email.subtitle']()}
       />
-      <AuthContent style={{ height: 162 }}>
+      <AuthContent style={{ height: 100 }}>
         {t['com.affine.auth.sign.sent.email.message.start']()}
         <a href={`mailto:${email}`}>{email}</a>
         {t['com.affine.auth.sign.sent.email.message.end']()}
@@ -52,9 +52,10 @@ export const AfterSignInSendEmail = ({
           <>
             <Captcha />
             <Button
+              style={!verifyToken ? { cursor: 'not-allowed' } : {}}
+              disabled={!verifyToken}
               type="plain"
               size="large"
-              disabled={!verifyToken}
               onClick={onResendClick}
             >
               {t['com.affine.auth.sign.auth.code.resend.hint']()}
