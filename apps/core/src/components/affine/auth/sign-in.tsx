@@ -8,6 +8,7 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '@toeverything/components/button';
 import { GraphQLError } from 'graphql';
 import { type FC, useState } from 'react';
@@ -31,6 +32,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
+  const [verifyToken, setVerifyToken] = useState<string>();
 
   const {
     isMutating: isSigningIn,
@@ -78,20 +80,30 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
     setAuthEmail(email);
 
-    if (user) {
-      const res = await signIn(email);
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        return setAuthState('noAccess');
+    if (verifyToken) {
+      if (user) {
+        const res = await signIn(email, verifyToken);
+        if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+          return setAuthState('noAccess');
+        }
+        setAuthState('afterSignInSendEmail');
+      } else {
+        const res = await signUp(email, verifyToken);
+        if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+          return setAuthState('noAccess');
+        }
+        setAuthState('afterSignUpSendEmail');
       }
-      setAuthState('afterSignInSendEmail');
-    } else {
-      const res = await signUp(email);
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        return setAuthState('noAccess');
-      }
-      setAuthState('afterSignUpSendEmail');
     }
-  }, [email, setAuthEmail, setAuthState, signIn, signUp, verifyUser]);
+  }, [
+    email,
+    setAuthEmail,
+    setAuthState,
+    signIn,
+    signUp,
+    verifyToken,
+    verifyUser,
+  ]);
 
   return (
     <>
@@ -133,12 +145,17 @@ export const SignIn: FC<AuthPanelProps> = ({
           onEnter={onContinue}
         />
 
+        <Turnstile
+          siteKey="1x00000000000000000000AA"
+          onSuccess={setVerifyToken}
+        />
+
         <Button
           size="extraLarge"
           data-testid="continue-login-button"
           block
           loading={isMutating || isSigningIn}
-          disabled={!allowSendEmail}
+          disabled={!allowSendEmail || !verifyToken}
           icon={
             allowSendEmail || isMutating ? (
               <ArrowDownBigIcon
@@ -167,7 +184,7 @@ export const SignIn: FC<AuthPanelProps> = ({
           <Trans i18nKey="com.affine.auth.sign.message">
               By clicking &quot;Continue with Google/Email&quot; above, you acknowledge that
               you agree to AFFiNE&apos;s <a href="https://affine.pro/terms" target="_blank" rel="noreferrer">Terms of Conditions</a> and <a href="https://affine.pro/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
-            </Trans>
+          </Trans>
         </div>
       </div>
     </>

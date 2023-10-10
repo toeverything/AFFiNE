@@ -303,6 +303,7 @@ __metadata:
     "@emotion/react": ^11.11.1
     "@emotion/server": ^11.11.0
     "@emotion/styled": ^11.11.0
+    "@marsidev/react-turnstile": ^0.3.1
     "@mui/material": ^5.14.12
     "@perfsee/webpack": ^1.8.4
     "@pmmmwh/react-refresh-webpack-plugin": ^0.5.11
@@ -6593,6 +6594,16 @@ __metadata:
   peerDependencies:
     react: ">=16.8.0"
   checksum: c33e2eba6d78e2b07c222c79a086da9d43a39a1fb8e409b10ab5775f6855325fd30c56b17fd67f9a827497eff2fdc22fff4b9190c2d7069b2c58565d63b3a450
+  languageName: node
+  linkType: hard
+
+"@marsidev/react-turnstile@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "@marsidev/react-turnstile@npm:0.3.1"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: 4dee0e16ea3fee42fc3e303b51f4afc539ec4decea561b07b6805b7d82738153cb7bf264ff5c991c10efec1acf9873d74947127722f8bcc3dfe2371b6b7764fb
   languageName: node
   linkType: hard
 
