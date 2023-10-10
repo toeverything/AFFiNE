@@ -5,34 +5,85 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra/command';
-import type { createStore } from 'jotai';
+import { type createStore, useAtomValue } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
-import { type AppSetting, appSettingAtom } from '../atoms/settings';
+import { appSettingAtom } from '../atoms/settings';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
+
+// todo - find a better way to abstract the following translations components
+const ClientBorderStyleLabel = () => {
+  const { clientBorder } = useAtomValue(appSettingAtom);
+  return (
+    <Trans
+      i18nKey="com.affine.cmdk.affine.client-border-style.to"
+      values={{
+        state: clientBorder ? 'OFF' : 'ON',
+      }}
+    >
+      Change Client Border Style to
+      <strong>state</strong>
+    </Trans>
+  );
+};
+
+const FullWidthLayoutLabel = () => {
+  const { fullWidthLayout } = useAtomValue(appSettingAtom);
+  return (
+    <Trans
+      i18nKey="com.affine.cmdk.affine.full-width-layout.to"
+      values={{
+        state: fullWidthLayout ? 'OFF' : 'ON',
+      }}
+    >
+      Change Full Width Layout to
+      <strong>state</strong>
+    </Trans>
+  );
+};
+
+const NoisyBackgroundLabel = () => {
+  const { enableNoisyBackground } = useAtomValue(appSettingAtom);
+  return (
+    <Trans
+      i18nKey="com.affine.cmdk.affine.noise-background-on-the-sidebar.to"
+      values={{
+        state: enableNoisyBackground ? 'OFF' : 'ON',
+      }}
+    >
+      Change Noise Background On The Sidebar to <strong>state</strong>
+    </Trans>
+  );
+};
+
+const BlurBackgroundLabel = () => {
+  const { enableBlurBackground } = useAtomValue(appSettingAtom);
+  return (
+    <Trans
+      i18nKey="com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to"
+      values={{
+        state: enableBlurBackground ? 'OFF' : 'ON',
+      }}
+    >
+      Change Translucent UI On The Sidebar to <strong>state</strong>
+    </Trans>
+  );
+};
 
 export function registerAffineSettingsCommands({
   t,
   store,
-  appSettings,
   theme,
   languageHelper,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
-  appSettings: AppSetting;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;
 }) {
   const unsubs: Array<() => void> = [];
   const { onSelect, languagesList, currentLanguage } = languageHelper;
-  const {
-    clientBorder,
-    fullWidthLayout,
-    enableBlurBackground,
-    enableNoisyBackground,
-  } = appSettings;
   unsubs.push(
     registerAffineCommand({
       id: 'affine:show-quick-search',
@@ -223,18 +274,8 @@ export function registerAffineSettingsCommands({
   //Layout Style
   unsubs.push(
     registerAffineCommand({
-      id: `affine:change-client-border-style-to-${clientBorder ? 'off' : 'on'}`,
-      label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.client-border-style.to"
-          values={{
-            state: clientBorder ? 'OFF' : 'ON',
-          }}
-        >
-          Change Client Border Style to
-          <strong>state</strong>
-        </Trans>
-      ),
+      id: `affine:change-client-border-style`,
+      label: <ClientBorderStyleLabel />,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
@@ -249,20 +290,8 @@ export function registerAffineSettingsCommands({
 
   unsubs.push(
     registerAffineCommand({
-      id: `affine:change-full-width-layout-to-${
-        fullWidthLayout ? 'off' : 'on'
-      }`,
-      label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.full-width-layout.to"
-          values={{
-            state: fullWidthLayout ? 'OFF' : 'ON',
-          }}
-        >
-          Change Full Width Layout to
-          <strong>state</strong>
-        </Trans>
-      ),
+      id: `affine:change-full-width-layout`,
+      label: <FullWidthLayoutLabel />,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       run() {
@@ -276,19 +305,8 @@ export function registerAffineSettingsCommands({
 
   unsubs.push(
     registerAffineCommand({
-      id: `affine:change-noise-background-on-the-sidebar-to-${
-        enableNoisyBackground ? 'off' : 'on'
-      }`,
-      label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.noise-background-on-the-sidebar.to"
-          values={{
-            state: enableNoisyBackground ? 'OFF' : 'ON',
-          }}
-        >
-          Change Noise Background On The Sidebar to <strong>state</strong>
-        </Trans>
-      ),
+      id: `affine:change-noise-background-on-the-sidebar`,
+      label: <NoisyBackgroundLabel />,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
@@ -303,19 +321,8 @@ export function registerAffineSettingsCommands({
 
   unsubs.push(
     registerAffineCommand({
-      id: `affine:change-translucent-ui-on-the-sidebar-to-${
-        enableBlurBackground ? 'off' : 'on'
-      }`,
-      label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to"
-          values={{
-            state: enableBlurBackground ? 'OFF' : 'ON',
-          }}
-        >
-          Change Translucent UI On The Sidebar to <strong>state</strong>
-        </Trans>
-      ),
+      id: `affine:change-translucent-ui-on-the-sidebar`,
+      label: <BlurBackgroundLabel />,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,

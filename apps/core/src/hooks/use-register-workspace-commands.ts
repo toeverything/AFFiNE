@@ -4,7 +4,6 @@ import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
 import { allPageModeSelectAtom } from '../atoms';
-import { appSettingAtom } from '../atoms/settings';
 import {
   registerAffineCreationCommands,
   registerAffineHelpCommands,
@@ -27,7 +26,6 @@ export function useRegisterWorkspaceCommands() {
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
   const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
-  const [appSettings] = useAtom(appSettingAtom);
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     unsubs.push(
@@ -50,7 +48,6 @@ export function useRegisterWorkspaceCommands() {
       registerAffineSettingsCommands({
         store,
         t,
-        appSettings,
         theme,
         languageHelper,
       })
@@ -83,6 +80,5 @@ export function useRegisterWorkspaceCommands() {
     pageListMode,
     setPageListMode,
     languageHelper,
-    appSettings,
   ]);
 }

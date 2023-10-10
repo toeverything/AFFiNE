@@ -625,7 +625,7 @@
   "com.affine.cmdk.affine.full-width-layout.to": "Change Full Width Layout to <1>{{state}}</1>",
   "com.affine.cmdk.affine.noise-background-on-the-sidebar.to": "Change Noise Background On The Sidebar to <1>{{state}}</1>",
   "com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to": "Change Translucent UI On The Sidebar to <1>{{state}}</1>",
-  "com.affine.cmdk.affine.whats-new": "what's New",
+  "com.affine.cmdk.affine.whats-new": "What's New",
   "com.affine.cmdk.affine.getting-started": "Getting Started",
   "com.affine.cmdk.affine.contact-us": "Contact Us",
   "com.affine.cmdk.affine.restart-to-upgrade": "Restart to Upgrade"
