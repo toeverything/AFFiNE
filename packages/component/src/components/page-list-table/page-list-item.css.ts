@@ -35,12 +35,18 @@ export const titleCell = style({
   alignItems: 'flex-start',
   padding: '0 16px',
   maxWidth: 'calc(100% - 64px)',
+  flex: 1,
+  whiteSpace: 'nowrap',
 });
 
 export const titleCellMain = style({
   overflow: 'hidden',
   fontSize: 'var(--affine-font-sm)',
   fontWeight: 600,
+  whiteSpace: 'nowrap',
+  flex: 1,
+  textOverflow: 'ellipsis',
+  alignSelf: 'stretch',
 });
 
 export const titleCellPreview = style({
@@ -50,7 +56,7 @@ export const titleCellPreview = style({
   flex: 1,
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
-  maxWidth: 'calc(100% - 32px)',
+  alignSelf: 'stretch',
   selectors: {
     '&:not(:empty)': {
       marginTop: '4px',

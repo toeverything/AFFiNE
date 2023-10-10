@@ -5,7 +5,3 @@ export const root = style({
   flexDirection: 'column',
   rowGap: '16px',
 });
-
-export const pagePreviewInner = style({
-  marginTop: '4px',
-});

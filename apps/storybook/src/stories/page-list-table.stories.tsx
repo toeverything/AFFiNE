@@ -10,6 +10,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { PageIcon } from '@blocksuite/icons';
 import { Schema, Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { withRouter } from 'storybook-addon-react-router-v6';
 
 export default {
@@ -39,6 +40,51 @@ const testTags = [
     color: 'black',
     id: 'test-tag-id-3',
     value: 'affine',
+  },
+  {
+    color: 'orange',
+    id: 'test-tag-id-4',
+    value: 'blocksuite',
+  },
+  {
+    color: 'yellow',
+    id: 'test-tag-id-5',
+    value: 'toeverything',
+  },
+  {
+    color: 'green',
+    id: 'test-tag-id-6',
+    value: 'toeverything',
+  },
+  {
+    color: 'blue',
+    id: 'test-tag-id-7',
+    value: 'toeverything',
+  },
+  {
+    color: 'indigo',
+    id: 'test-tag-id-8',
+    value: 'toeverything',
+  },
+  {
+    color: 'teal',
+    id: 'test-tag-id-9',
+    value: 'toeverything',
+  },
+  {
+    color: 'cyan',
+    id: 'test-tag-id-10',
+    value: 'toeverything',
+  },
+  {
+    color: 'gray',
+    id: 'test-tag-id-11',
+    value: 'toeverything',
+  },
+  {
+    color: 'red',
+    id: 'test-tag-id-12',
+    value: 'toeverything',
   },
 ];
 
@@ -72,24 +118,61 @@ ListItemTags.args = {
   tags: testTags,
 };
 
-const schema = new Schema();
-schema.register(AffineSchemas).register(__unstableSchemas);
-const workspace = new Workspace({
-  id: 'test-workspace-id',
-  schema,
-});
-
-workspace.createPage();
-workspace.createPage();
-
-workspace.meta.pageMetas[0].title = 'Test Page Title 1';
-workspace.meta.pageMetas[1].title = 'Test Page Title 2';
-
-export const PageListStory: StoryFn<PageListProps> = props => (
-  <PageList {...props} blockSuiteWorkspace={workspace}></PageList>
-);
+export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
+  return <PageList {...props} {...loaded}></PageList>;
+};
 
 PageListStory.args = {
-  pages: workspace.meta.pageMetas,
   groupBy: 'createDate',
 };
+
+async function createAndInitPage(
+  workspace: Workspace,
+  title: string,
+  preview: string
+) {
+  const page = workspace.createPage();
+  await initEmptyPage(page, title);
+  page.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
+  return page;
+}
+
+PageListStory.loaders = [
+  async () => {
+    const schema = new Schema();
+    schema.register(AffineSchemas).register(__unstableSchemas);
+    const workspace = new Workspace({
+      id: 'test-workspace-id',
+      schema,
+    });
+
+    workspace.meta.setProperties({
+      tags: {
+        options: structuredClone(testTags),
+      },
+    });
+
+    await createAndInitPage(
+      workspace,
+      'This is page 1',
+      'Hello World from page 1'
+    );
+    await createAndInitPage(
+      workspace,
+      'This is page 2',
+      'Hello World from page 2'
+    );
+    await createAndInitPage(
+      workspace,
+      'This is page 3',
+      'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
+    );
+
+    workspace.meta.pageMetas[2].tags = ['test-tag-id-0', 'test-tag-id-1'];
+
+    return {
+      blockSuiteWorkspace: workspace,
+      pages: workspace.meta.pages,
+    };
+  },
+];

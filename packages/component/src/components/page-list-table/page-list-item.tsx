@@ -131,13 +131,15 @@ const PageListOperationsCell = (
 export const PageListItem = (props: PageListItemProps) => {
   return (
     <PageListItemWrapper {...props}>
-      <FlexWrapper flex={6}>
-        <PageSelectionCell {...props} />
-        <PageListIconCell {...props} />
-        <PageListTitleCell {...props} />
-      </FlexWrapper>
-      <FlexWrapper flex={3} alignment="end">
-        <PageTagsCell {...props} />
+      <FlexWrapper flex={9}>
+        <FlexWrapper flex={8}>
+          <PageSelectionCell {...props} />
+          <PageListIconCell {...props} />
+          <PageListTitleCell {...props} />
+        </FlexWrapper>
+        <FlexWrapper flex={4} alignment="end">
+          <PageTagsCell {...props} />
+        </FlexWrapper>
       </FlexWrapper>
       <FlexWrapper flex={1} alignment="end">
         <PageCreateDateCell {...props} />

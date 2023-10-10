@@ -14,7 +14,7 @@ export const getPagePreviewText = (page: Page) => {
     .slice(0, 10)
     .map(block => block.text.toString())
     .join('\n');
-  return text.slice(0, 30);
+  return text.slice(0, 300);
 };
 
 export function useBlockSuitePagePreview(page: Page): Atom<string> {
