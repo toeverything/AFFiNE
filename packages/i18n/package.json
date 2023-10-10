@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "i18next": "^23.5.1",
-    "react-i18next": "^13.1.2"
+    "react-i18next": "^13.2.2"
   },
   "devDependencies": {
     "@types/node": "^18.17.18",
