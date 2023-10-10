@@ -184,7 +184,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/editor": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
-    "@blocksuite/icons": ^2.1.33
+    "@blocksuite/icons": 2.1.34
     "@blocksuite/lit": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     "@dnd-kit/core": ^6.0.8
@@ -237,14 +237,14 @@ __metadata:
     rxjs: ^7.8.1
     typescript: ^5.2.2
     uuid: ^9.0.1
-    vite: ^4.4.9
+    vite: ^4.4.11
     vitest: 0.34.6
     yjs: ^13.6.8
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
     "@blocksuite/global": "*"
-    "@blocksuite/icons": "*"
+    "@blocksuite/icons": 2.1.34
     "@blocksuite/lit": "*"
     "@blocksuite/store": "*"
   languageName: unknown
@@ -257,7 +257,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.34
+    "@blocksuite/icons": 2.1.34
     "@toeverything/components": ^0.0.43
     "@types/marked": ^5.0.1
     "@vanilla-extract/css": ^1.13.0
@@ -294,7 +294,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/editor": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
-    "@blocksuite/icons": ^2.1.33
+    "@blocksuite/icons": 2.1.34
     "@blocksuite/lit": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     "@dnd-kit/core": ^6.0.8
@@ -470,7 +470,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.33
+    "@blocksuite/icons": 2.1.34
     "@toeverything/components": ^0.0.43
   languageName: unknown
   linkType: soft
@@ -496,7 +496,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.33
+    "@blocksuite/icons": 2.1.34
     "@toeverything/components": ^0.0.43
     "@toeverything/theme": ^0.7.18
     clsx: ^2.0.0
@@ -561,7 +561,7 @@ __metadata:
     string-width: ^5.1.2
     ts-node: ^10.9.1
     typescript: ^5.2.2
-    vite: ^4.4.9
+    vite: ^4.4.11
     vite-plugin-istanbul: ^5.0.0
     vite-plugin-static-copy: ^0.17.0
     vite-tsconfig-paths: ^4.2.1
@@ -595,7 +595,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": ^2.1.33
+    "@blocksuite/icons": 2.1.34
     "@toeverything/components": ^0.0.43
     jotai: ^2.4.3
     react: 18.2.0
@@ -630,7 +630,7 @@ __metadata:
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     jotai: ^2.4.3
-    vite: ^4.4.9
+    vite: ^4.4.11
     vite-plugin-dts: 3.5.4
     zod: ^3.22.4
   languageName: unknown
@@ -748,7 +748,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/editor": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
-    "@blocksuite/icons": ^2.1.33
+    "@blocksuite/icons": 2.1.34
     "@blocksuite/lit": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     "@dnd-kit/sortable": ^7.0.2
@@ -785,7 +785,7 @@ __metadata:
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
     "@blocksuite/global": "*"
-    "@blocksuite/icons": "*"
+    "@blocksuite/icons": 2.1.34
     "@blocksuite/lit": "*"
     "@blocksuite/store": "*"
   languageName: unknown
@@ -3543,17 +3543,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:^2.1.33":
-  version: 2.1.33
-  resolution: "@blocksuite/icons@npm:2.1.33"
-  peerDependencies:
-    "@types/react": ^18.0.25
-    react: ^18.2.0
-  checksum: b29f5ffb19f09937a9053028b1fd70e497f54be82673b91889a2b9d2b23e2f853872415bd638f81dc4917370f555c330573139e4a58d88c588d04a0111f5117b
-  languageName: node
-  linkType: hard
-
-"@blocksuite/icons@npm:^2.1.34":
+"@blocksuite/icons@npm:2.1.34, @blocksuite/icons@npm:^2.1.33":
   version: 2.1.34
   resolution: "@blocksuite/icons@npm:2.1.34"
   peerDependencies:
@@ -12825,7 +12815,7 @@ __metadata:
     react: ^18.2.0
     rxjs: ^7.8.1
     tinykeys: ^2.1.0
-    vite: ^4.4.9
+    vite: ^4.4.11
     vite-plugin-dts: 3.5.4
     vitest: 0.34.6
     yjs: ^13.6.8
@@ -12873,7 +12863,7 @@ __metadata:
     fake-indexeddb: ^4.0.2
     idb: ^7.1.1
     nanoid: ^5.0.1
-    vite: ^4.4.9
+    vite: ^4.4.11
     vite-plugin-dts: 3.5.4
     vitest: 0.34.6
     y-indexeddb: ^9.0.11
@@ -25254,19 +25244,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.42, lib0@npm:^0.2.74, lib0@npm:^0.2.83":
-  version: 0.2.83
-  resolution: "lib0@npm:0.2.83"
-  dependencies:
-    isomorphic.js: ^0.2.4
-  bin:
-    0gentesthtml: bin/gentesthtml.js
-    0serve: bin/0serve.js
-  checksum: 2c05609146b25c14a72c99683f6f71e10c74b60be39618f25117d3f03a2435b6d6219876641fa019fe1acde7fdfa75dc3eb3a23e37c9ae30eae7be05225e2263
-  languageName: node
-  linkType: hard
-
-"lib0@npm:^0.2.85":
+"lib0@npm:^0.2.42, lib0@npm:^0.2.74, lib0@npm:^0.2.83, lib0@npm:^0.2.85":
   version: 0.2.85
   resolution: "lib0@npm:0.2.85"
   dependencies:
@@ -34043,47 +34021,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^3.0.0 || ^4.0.0, vite@npm:^3.0.0 || ^4.0.0 || ^5.0.0-0, vite@npm:^3.1.0 || ^4.0.0 || ^5.0.0-0, vite@npm:^4.1.4, vite@npm:^4.4.9":
-  version: 4.4.9
-  resolution: "vite@npm:4.4.9"
-  dependencies:
-    esbuild: ^0.18.10
-    fsevents: ~2.3.2
-    postcss: ^8.4.27
-    rollup: ^3.27.1
-  peerDependencies:
-    "@types/node": ">= 14"
-    less: "*"
-    lightningcss: ^1.21.0
-    sass: "*"
-    stylus: "*"
-    sugarss: "*"
-    terser: ^5.4.0
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  peerDependenciesMeta:
-    "@types/node":
-      optional: true
-    less:
-      optional: true
-    lightningcss:
-      optional: true
-    sass:
-      optional: true
-    stylus:
-      optional: true
-    sugarss:
-      optional: true
-    terser:
-      optional: true
-  bin:
-    vite: bin/vite.js
-  checksum: c511024ceae39c68c7dbf2ac4381ee655cd7bb62cf43867a14798bc835d3320b8fa7867a336143c30825c191c1fb4e9aa3348fce831ab617e96203080d3d2908
-  languageName: node
-  linkType: hard
-
-"vite@npm:^4.4.11":
+"vite@npm:^3.0.0 || ^4.0.0, vite@npm:^3.0.0 || ^4.0.0 || ^5.0.0-0, vite@npm:^3.1.0 || ^4.0.0 || ^5.0.0-0, vite@npm:^4.1.4, vite@npm:^4.4.11":
   version: 4.4.11
   resolution: "vite@npm:4.4.11"
   dependencies:

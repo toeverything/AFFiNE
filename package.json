@@ -112,7 +112,7 @@
     "string-width": "^5.1.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2",
-    "vite": "^4.4.9",
+    "vite": "^4.4.11",
     "vite-plugin-istanbul": "^5.0.0",
     "vite-plugin-static-copy": "^0.17.0",
     "vite-tsconfig-paths": "^4.2.1",

@@ -11,7 +11,7 @@
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
     "@blocksuite/global": "*",
-    "@blocksuite/icons": "*",
+    "@blocksuite/icons": "2.1.34",
     "@blocksuite/lit": "*",
     "@blocksuite/store": "*"
   },
@@ -65,7 +65,7 @@
     "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/editor": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/global": "0.0.0-20230926212737-6d4b1569-nightly",
-    "@blocksuite/icons": "^2.1.33",
+    "@blocksuite/icons": "2.1.34",
     "@blocksuite/lit": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
     "@storybook/jest": "^0.2.3",
@@ -78,7 +78,7 @@
     "@vanilla-extract/css": "^1.13.0",
     "fake-indexeddb": "^4.0.2",
     "typescript": "^5.2.2",
-    "vite": "^4.4.9",
+    "vite": "^4.4.11",
     "vitest": "0.34.6",
     "yjs": "^13.6.8"
   },
