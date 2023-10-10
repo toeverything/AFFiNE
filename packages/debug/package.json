@@ -6,7 +6,8 @@
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@types/debug": "^4.1.9"
+    "@types/debug": "^4.1.9",
+    "vitest": "0.34.6"
   },
   "version": "0.9.0-canary.13"
 }

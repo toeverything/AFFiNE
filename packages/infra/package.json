@@ -58,18 +58,23 @@
     "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/global": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
-    "jotai": "^2.4.2",
+    "jotai": "^2.4.3",
     "tinykeys": "^2.1.0",
-    "zod": "^3.22.2"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
     "@blocksuite/editor": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/lit": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@testing-library/react": "^14.0.0",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../apps/electron/node_modules/electron",
+    "nanoid": "^5.0.1",
     "react": "^18.2.0",
-    "vite": "^4.4.9",
+    "rxjs": "^7.8.1",
+    "vite": "^4.4.11",
     "vite-plugin-dts": "3.5.4",
+    "vitest": "0.34.6",
     "yjs": "^13.6.8"
   },
   "peerDependencies": {

@@ -1,4 +1,3 @@
-import { RadioButton, RadioButtonGroup, Switch } from '@affine/component';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, WebIcon } from '@blocksuite/icons';
@@ -7,7 +6,9 @@ import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import { useState } from 'react';
 import { useCallback } from 'react';
 
+import { RadioButton, RadioButtonGroup } from '../../ui/button';
 import Input from '../../ui/input';
+import { Switch } from '../../ui/switch';
 import { toast } from '../../ui/toast';
 import { PublicLinkDisableModal } from './disable-public-link';
 import * as styles from './index.css';
