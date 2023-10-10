@@ -160,7 +160,7 @@ const PageListItemWrapper = (
     () => ({
       'data-testid': 'page-list-item',
       'data-page-id': props.pageId,
-      className: styles.itemWrapper,
+      className: styles.root,
     }),
     [props.pageId]
   );

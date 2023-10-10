@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css';
 
-export const itemWrapper = style({
+export const root = style({
   display: 'flex',
   color: 'var(--affine-text-primary-color)',
   height: '62px',
@@ -11,6 +11,7 @@ export const itemWrapper = style({
     backgroundColor: 'var(--affine-hover-color)',
   },
   overflow: 'hidden',
+  cursor: 'default',
 });
 
 export const flexWrapper = style({
@@ -34,7 +35,6 @@ export const titleCell = style({
   alignItems: 'flex-start',
   padding: '0 16px',
   maxWidth: 'calc(100% - 64px)',
-  cursor: 'default',
 });
 
 export const titleCellMain = style({
