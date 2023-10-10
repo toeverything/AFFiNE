@@ -37,6 +37,18 @@ function useRegisterCommands() {
       registerAffineSettingsCommands({
         t,
         store,
+        appSettings: {
+          clientBorder: false,
+          enableBlurBackground: false,
+          enableNoisyBackground: false,
+          fullWidthLayout: false,
+          fontStyle: 'Sans',
+          windowFrameStyle: 'frameless',
+          dateFormat: 'MM/dd/YYYY',
+          startWeekOnMonday: false,
+          autoCheckUpdate: false,
+          autoDownloadUpdate: false,
+        },
         theme: {
           setTheme: () => {},
           theme: 'auto',

@@ -9,23 +9,30 @@ import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
-import { appSettingAtom } from '../atoms/settings';
+import { type AppSetting, appSettingAtom } from '../atoms/settings';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
 
 export function registerAffineSettingsCommands({
   t,
   store,
+  appSettings,
   theme,
   languageHelper,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
+  appSettings: AppSetting;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;
 }) {
   const unsubs: Array<() => void> = [];
   const { onSelect, languagesList, currentLanguage } = languageHelper;
-  const { clientBorder, fullWidthLayout } = store.get(appSettingAtom);
+  const {
+    clientBorder,
+    fullWidthLayout,
+    enableBlurBackground,
+    enableNoisyBackground,
+  } = appSettings;
   unsubs.push(
     registerAffineCommand({
       id: 'affine:show-quick-search',
@@ -261,6 +268,60 @@ export function registerAffineSettingsCommands({
         store.set(appSettingAtom, prev => ({
           ...prev,
           fullWidthLayout: !prev.fullWidthLayout,
+        }));
+      },
+    })
+  );
+
+  unsubs.push(
+    registerAffineCommand({
+      id: `affine:change-noise-background-on-the-sidebar-to-${
+        enableNoisyBackground ? 'off' : 'on'
+      }`,
+      label: (
+        <Trans
+          i18nKey="com.affine.cmdk.affine.noise-background-on-the-sidebar.to"
+          values={{
+            state: enableNoisyBackground ? 'OFF' : 'ON',
+          }}
+        >
+          Change Noise Background On The Sidebar to <strong>state</strong>
+        </Trans>
+      ),
+      category: 'affine:settings',
+      icon: <SettingsIcon />,
+      preconditionStrategy: () => environment.isDesktop,
+      run() {
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          enableNoisyBackground: !prev.enableNoisyBackground,
+        }));
+      },
+    })
+  );
+
+  unsubs.push(
+    registerAffineCommand({
+      id: `affine:change-translucent-ui-on-the-sidebar-to-${
+        enableBlurBackground ? 'off' : 'on'
+      }`,
+      label: (
+        <Trans
+          i18nKey="com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to"
+          values={{
+            state: enableBlurBackground ? 'OFF' : 'ON',
+          }}
+        >
+          Change Translucent UI On The Sidebar to <strong>state</strong>
+        </Trans>
+      ),
+      category: 'affine:settings',
+      icon: <SettingsIcon />,
+      preconditionStrategy: () => environment.isDesktop,
+      run() {
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          enableBlurBackground: !prev.enableBlurBackground,
         }));
       },
     })
