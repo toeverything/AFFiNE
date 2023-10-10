@@ -23,5 +23,12 @@ export function useLanguageHelper() {
     [i18n]
   );
 
-  return { languagesList, currentLanguage, onSelect };
+  return useMemo(
+    () => ({
+      currentLanguage,
+      languagesList,
+      onSelect,
+    }),
+    [currentLanguage, languagesList, onSelect]
+  );
 }
