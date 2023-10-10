@@ -219,7 +219,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await clickNewPageButton(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('sgtokidoki', {
+    await title.pressSequentially('sgtokidoki', {
       delay: 50,
     });
   }
@@ -231,7 +231,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('theliquidhorse', {
+    await title.pressSequentially('theliquidhorse', {
       delay: 50,
     });
   }
@@ -242,7 +242,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('battlekot', {
+    await title.pressSequentially('battlekot', {
       delay: 50,
     });
   }
@@ -271,7 +271,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await page.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('affine is the best', {
+    await title.pressSequentially('affine is the best', {
       delay: 50,
     });
   }

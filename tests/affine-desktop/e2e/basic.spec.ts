@@ -1,6 +1,7 @@
 import { platform } from 'node:os';
 
 import { test } from '@affine-test/kit/electron';
+import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
@@ -27,8 +28,9 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-doc-page-block-title');
-      await page.type('.affine-doc-page-block-title', 'test1', {
+      const title = getBlockSuiteEditorTitle(page);
+      await title.focus();
+      await title.pressSequentially('test1', {
         delay: 100,
       });
       await page.waitForTimeout(500);
@@ -36,8 +38,9 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-doc-page-block-title');
-      await page.type('.affine-doc-page-block-title', 'test2', {
+
+      await title.focus();
+      await title.pressSequentially('test2', {
         delay: 100,
       });
       await page.waitForTimeout(500);
@@ -45,8 +48,8 @@ if (platform() === 'darwin') {
         delay: 100,
       });
       await page.waitForSelector('v-line');
-      await page.focus('.affine-doc-page-block-title');
-      await page.type('.affine-doc-page-block-title', 'test3', {
+      await title.focus();
+      await title.pressSequentially('test3', {
         delay: 100,
       });
     }
@@ -155,9 +158,11 @@ test('windows only check', async ({ page }) => {
 test('delete workspace', async ({ page }) => {
   await page.getByTestId('current-workspace').click();
   await page.getByTestId('new-workspace').click();
-  await page.getByTestId('create-workspace-input').type('Delete Me', {
-    delay: 100,
-  });
+  await page
+    .getByTestId('create-workspace-input')
+    .pressSequentially('Delete Me', {
+      delay: 100,
+    });
   await page.getByTestId('create-workspace-create-button').click({
     delay: 100,
   });
@@ -170,7 +175,7 @@ test('delete workspace', async ({ page }) => {
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
     'Delete Me'
   );
-  const contentElement = await page.getByTestId('setting-modal-content');
+  const contentElement = page.getByTestId('setting-modal-content');
   const boundingBox = await contentElement.boundingBox();
   if (!boundingBox) {
     throw new Error('boundingBox is null');
@@ -181,7 +186,9 @@ test('delete workspace', async ({ page }) => {
   );
   await page.mouse.wheel(0, 500);
   await page.getByTestId('delete-workspace-button').click();
-  await page.getByTestId('delete-workspace-input').type('Delete Me');
+  await page
+    .getByTestId('delete-workspace-input')
+    .pressSequentially('Delete Me');
   await page.getByTestId('delete-workspace-confirm-button').click();
   await page.waitForTimeout(1000);
   expect(await page.getByTestId('workspace-name').textContent()).toBe(

@@ -124,7 +124,7 @@ test.describe('basic', () => {
       });
       const nameInput = page.getByPlaceholder('Input account name');
       await nameInput.clear();
-      await nameInput.type(newName, {
+      await nameInput.pressSequentially(newName, {
         delay: 50,
       });
       await page.getByTestId('save-user-name').click({
