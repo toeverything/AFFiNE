@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css';
 
-export const root = style({
+export const groupsContainer = style({
   display: 'flex',
   flexDirection: 'column',
   rowGap: '16px',
@@ -9,11 +9,11 @@ export const root = style({
 export const header = style({
   display: 'flex',
   alignItems: 'center',
+  padding: '12px 16px 8px 56px',
 });
 
 export const headerCell = style({
   cursor: 'pointer',
-  paddingLeft: '16px',
   paddingRight: '8px',
   userSelect: 'none',
   fontSize: 'var(--affine-font-xs)',

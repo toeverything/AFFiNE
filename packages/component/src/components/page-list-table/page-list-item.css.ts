@@ -6,7 +6,6 @@ export const root = style({
   height: '62px',
   width: '100%',
   alignItems: 'stretch',
-  borderRadius: '10px',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },

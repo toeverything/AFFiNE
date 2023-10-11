@@ -63,17 +63,20 @@ export interface PageGroupDefinition {
   id: string;
   // using a function to render custom group header
   label:
-    | ((
-        filtered: PageListItemProps[],
-        allItems: PageListItemProps[]
-      ) => ReactNode)
+    | ((filtered: PageMeta[], allItems: PageMeta[]) => ReactNode)
     | ReactNode;
-  match: (item: PageListItemProps) => boolean;
+  match: (item: PageMeta) => boolean;
 }
 
 export interface PageGroupProps {
   id: string;
   label?: ReactNode; // if there is no label, it is a default group (without header)
-  items: PageListItemProps[];
-  allItems: PageListItemProps[];
+  items: PageMeta[];
+  allItems: PageMeta[];
 }
+
+type MakeRecord<T> = {
+  [P in keyof T]: T[P];
+};
+
+export type PageMetaRecord = MakeRecord<PageMeta>;

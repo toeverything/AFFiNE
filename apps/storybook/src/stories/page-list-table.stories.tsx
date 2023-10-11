@@ -16,6 +16,7 @@ import { withRouter } from 'storybook-addon-react-router-v6';
 export default {
   title: 'AFFiNE/PageListTable',
   parameters: {
+    layout: 'fullscreen',
     chromatic: { disableSnapshot: true },
   },
 } satisfies Meta;
@@ -124,6 +125,7 @@ export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
 
 PageListStory.args = {
   groupBy: 'createDate',
+  selectable: true,
 };
 
 async function createAndInitPage(

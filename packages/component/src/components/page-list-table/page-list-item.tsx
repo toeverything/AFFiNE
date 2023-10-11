@@ -18,53 +18,56 @@ function stopPropagation(event: React.MouseEvent) {
   event.preventDefault();
 }
 
-const PageListTitleCell = (
-  props: Pick<PageListItemProps, 'title' | 'preview'>
-) => {
+const PageListTitleCell = ({
+  title,
+  preview,
+}: Pick<PageListItemProps, 'title' | 'preview'>) => {
   return (
     <div data-testid="page-list-item-title" className={styles.titleCell}>
       <div
         data-testid="page-list-item-title-text"
         className={styles.titleCellMain}
       >
-        {props.title}
+        {title}
       </div>
-      {props.preview ? (
+      {preview ? (
         <div
           data-testid="page-list-item-preview-text"
           className={styles.titleCellPreview}
         >
-          {props.preview}
+          {preview}
         </div>
       ) : null}
     </div>
   );
 };
 
-const PageListIconCell = (props: Pick<PageListItemProps, 'icon'>) => {
+const PageListIconCell = ({ icon }: Pick<PageListItemProps, 'icon'>) => {
   return (
     <div data-testid="page-list-item-icon" className={styles.iconCell}>
-      {props.icon}
+      {icon}
     </div>
   );
 };
 
-const PageSelectionCell = (
-  props: Pick<PageListItemProps, 'selectable' | 'onSelectedChange' | 'selected'>
-) => {
+const PageSelectionCell = ({
+  selectable,
+  onSelectedChange,
+  selected,
+}: Pick<PageListItemProps, 'selectable' | 'onSelectedChange' | 'selected'>) => {
   const onSelectionChange = useCallback(
     (_event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-      return props.onSelectedChange?.(checked);
+      return onSelectedChange?.(checked);
     },
-    [props]
+    [onSelectedChange]
   );
   return (
     <div className={styles.selectionCell}>
-      {props.selectable ? (
+      {selectable ? (
         <Checkbox
           onClick={stopPropagation}
-          checked={props.selected}
-          value={props.selected}
+          checked={selected}
+          value={selected}
           onChange={onSelectionChange}
           size="small"
         />
@@ -73,58 +76,63 @@ const PageSelectionCell = (
   );
 };
 
-export const PageTagsCell = (props: Pick<PageListItemProps, 'tags'>) => {
+export const PageTagsCell = ({ tags }: Pick<PageListItemProps, 'tags'>) => {
   return (
     <div data-testid="page-list-item-tags" className={styles.tagsCell}>
       {/* fixme: give dynamic width & maxWidth */}
-      <PageTags tags={props.tags} width={100} maxWidth={600} />
+      <PageTags tags={tags} width={100} maxWidth={600} />
     </div>
   );
 };
 
-const PageCreateDateCell = (props: Pick<PageListItemProps, 'createDate'>) => {
+const PageCreateDateCell = ({
+  createDate,
+}: Pick<PageListItemProps, 'createDate'>) => {
   return (
     <div data-testid="page-list-item-date" className={styles.dateCell}>
-      {formatDate(props.createDate)}
+      {formatDate(createDate)}
     </div>
   );
 };
 
-const PageUpdatedDateCell = (props: Pick<PageListItemProps, 'updatedDate'>) => {
+const PageUpdatedDateCell = ({
+  updatedDate,
+}: Pick<PageListItemProps, 'updatedDate'>) => {
   return (
     <div data-testid="page-list-item-date" className={styles.dateCell}>
-      {formatDate(props.updatedDate)}
+      {formatDate(updatedDate)}
     </div>
   );
 };
 
-const PageFavoriteCell = (
-  props: Pick<PageListItemProps, 'favorite' | 'onToggleFavorite'>
-) => {
+const PageFavoriteCell = ({
+  favorite,
+  onToggleFavorite,
+}: Pick<PageListItemProps, 'favorite' | 'onToggleFavorite'>) => {
   const onClick: MouseEventHandler = useCallback(
     e => {
       stopPropagation(e);
-      props.onToggleFavorite?.();
+      onToggleFavorite?.();
     },
-    [props]
+    [onToggleFavorite]
   );
   return (
     <div data-testid="page-list-item-favorite" className={styles.favoriteCell}>
-      <FavoriteTag onClick={onClick} active={!!props.favorite} />
+      <FavoriteTag onClick={onClick} active={!!favorite} />
     </div>
   );
 };
 
-const PageListOperationsCell = (
-  props: Pick<PageListItemProps, 'operations'>
-) => {
-  return props.operations ? (
+const PageListOperationsCell = ({
+  operations,
+}: Pick<PageListItemProps, 'operations'>) => {
+  return operations ? (
     <div
       onClick={stopPropagation}
       data-testid="page-list-group-header"
       className={styles.operationsCell}
     >
-      {props.operations}
+      {operations}
     </div>
   ) : null;
 };
@@ -156,24 +164,26 @@ export const PageListItem = (props: PageListItemProps) => {
   );
 };
 
-const PageListItemWrapper = (
-  props: Pick<PageListItemProps, 'to' | 'pageId'> & PropsWithChildren
-) => {
+const PageListItemWrapper = ({
+  to,
+  pageId,
+  children,
+}: Pick<PageListItemProps, 'to' | 'pageId'> & PropsWithChildren) => {
   const commonProps = useMemo(
     () => ({
       'data-testid': 'page-list-item',
-      'data-page-id': props.pageId,
+      'data-page-id': pageId,
       className: styles.root,
     }),
-    [props.pageId]
+    [pageId]
   );
-  if (props.to) {
+  if (to) {
     return (
-      <Link {...commonProps} to={props.to}>
-        {props.children}
+      <Link {...commonProps} to={to}>
+        {children}
       </Link>
     );
   } else {
-    return <div {...commonProps}>{props.children}</div>;
+    return <div {...commonProps}>{children}</div>;
   }
 };
