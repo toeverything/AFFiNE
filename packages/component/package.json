@@ -38,7 +38,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/infra": "workspace:*",
-    "@toeverything/theme": "^0.7.18",
+    "@toeverything/theme": "^0.7.20",
     "@vanilla-extract/dynamic": "^2.0.3",
     "check-password-strength": "^2.0.7",
     "clsx": "^2.0.0",
