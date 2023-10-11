@@ -227,10 +227,8 @@ test('image should able to go left and right by buttons', async ({ page }) => {
     await importImage(page, 'http://localhost:8081/affine-preview.png');
   }
   const locator = page.getByTestId('image-preview-modal');
-  await expect(locator).toBeVisible();
   await page.locator('img').first().dblclick();
-  // ensure the new image was imported
-  await page.waitForTimeout(1000);
+  await expect(locator).toBeVisible();
   {
     const newBlobId = (await locator
       .getByTestId('image-content')
@@ -385,7 +383,6 @@ test('image able to copy to clipboard', async ({ page }) => {
   }
   const locator = page.getByTestId('image-preview-modal');
   await expect(locator).toBeVisible();
-  await page.waitForTimeout(500);
   await locator.getByTestId('copy-to-clipboard-button').click();
   await new Promise<void>(resolve => {
     page.on('console', message => {

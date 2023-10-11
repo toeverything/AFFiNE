@@ -10,7 +10,9 @@ import { expect, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
-  await page.waitForTimeout(500);
+  await page.getByTestId('cmdk-quick-search').waitFor({
+    state: 'visible',
+  });
 };
 
 const keyboardDownAndSelect = async (page: Page, label: string) => {
@@ -249,7 +251,6 @@ test('assert the recent browse pages are on the recent list', async ({
   await page.waitForTimeout(200);
 
   await openQuickSearchByShortcut(page);
-  await page.waitForTimeout(200);
   {
     // check does all 3 pages exists on recent page list
     const quickSearchItems = page.locator(
