@@ -505,8 +505,8 @@ test('image should able to delete and when delete, it will move to previous/next
     await importImage(page, 'http://localhost:8081/affine-preview.png');
   }
   const locator = page.getByTestId('image-preview-modal');
-  await expect(locator).toBeVisible();
   await page.locator('img').first().dblclick();
+  await expect(locator).toBeVisible();
   // ensure the new image was imported
   await page.waitForTimeout(1000);
   {
