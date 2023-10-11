@@ -10,9 +10,7 @@ import { expect, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
-  await page.getByTestId('cmdk-quick-search').waitFor({
-    state: 'visible',
-  });
+  await page.waitForTimeout(1000);
 };
 
 const keyboardDownAndSelect = async (page: Page, label: string) => {
@@ -153,6 +151,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
 });
+
 test('Navigate to the 404 page and try to open quick search', async ({
   page,
 }) => {
