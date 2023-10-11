@@ -1,6 +1,7 @@
 import { Command } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { PageMeta } from '@blocksuite/store';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { useAtom, useSetAtom } from 'jotai';
@@ -124,14 +125,17 @@ export const CMDKContainer = ({
   onQueryChange,
   query,
   children,
+  pageMeta,
   ...rest
 }: React.PropsWithChildren<{
   className?: string;
   query: string;
+  pageMeta?: PageMeta;
   onQueryChange: (query: string) => void;
 }>) => {
   const t = useAFFiNEI18N();
   const [value, setValue] = useAtom(cmdkValueAtom);
+  const isInEditor = pageMeta !== undefined;
   return (
     <Command
       {...rest}
@@ -153,20 +157,32 @@ export const CMDKContainer = ({
       }}
     >
       {/* todo: add page context here */}
+      {isInEditor ? (
+        <div className={styles.pageTitleWrapper}>
+          <span className={styles.pageTitle}>
+            {pageMeta.title ? pageMeta.title : t['Untitled']()}
+          </span>
+        </div>
+      ) : null}
       <Command.Input
         placeholder={t['com.affine.cmdk.placeholder']()}
         autoFocus
         {...rest}
         value={query}
         onValueChange={onQueryChange}
-        className={clsx(className, styles.searchInput)}
+        className={clsx(className, styles.searchInput, {
+          inEditor: isInEditor,
+        })}
       />
       <Command.List>{children}</Command.List>
     </Command>
   );
 };
 
-export const CMDKQuickSearchModal = (props: CMDKModalProps) => {
+export const CMDKQuickSearchModal = ({
+  pageMeta,
+  ...props
+}: CMDKModalProps & { pageMeta?: PageMeta }) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
   useLayoutEffect(() => {
     if (props.open) {
@@ -179,6 +195,7 @@ export const CMDKQuickSearchModal = (props: CMDKModalProps) => {
         className={styles.root}
         query={query}
         onQueryChange={setQuery}
+        pageMeta={pageMeta}
       >
         <Suspense fallback={<Command.Loading />}>
           <QuickSearchCommands onOpenChange={props.onOpenChange} />

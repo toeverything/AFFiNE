@@ -24,7 +24,7 @@ export const ThemeSettings = () => {
     <RadioButtonGroup
       width={250}
       className={settingWrapper}
-      defaultValue={theme}
+      value={theme}
       onValueChange={useCallback(
         (value: string) => {
           setTheme(value);
@@ -52,7 +52,7 @@ const FontFamilySettings = () => {
     <RadioButtonGroup
       width={250}
       className={settingWrapper}
-      defaultValue={appSettings.fontStyle}
+      value={appSettings.fontStyle}
       onValueChange={useCallback(
         (key: AppSetting['fontStyle']) => {
           setAppSettings({ fontStyle: key });

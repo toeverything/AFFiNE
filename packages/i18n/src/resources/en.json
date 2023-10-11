@@ -618,5 +618,15 @@
   "com.affine.cmdk.affine.import-workspace": "Import Workspace",
   "com.affine.cmdk.affine.editor.add-to-favourites": "Add to Favourites",
   "com.affine.cmdk.affine.editor.remove-from-favourites": "Remove from Favourites",
-  "com.affine.cmdk.affine.editor.restore-from-trash": "Restore from Trash"
+  "com.affine.cmdk.affine.editor.restore-from-trash": "Restore from Trash",
+  "com.affine.cmdk.affine.font-style.to": "Change Font Style to <1>{{fontFamily}}</1>",
+  "com.affine.cmdk.affine.display-language.to": "Change Display Language to <1>{{language}}</1>",
+  "com.affine.cmdk.affine.client-border-style.to": "Change Client Border Style to <1>{{state}}</1>",
+  "com.affine.cmdk.affine.full-width-layout.to": "Change Full Width Layout to <1>{{state}}</1>",
+  "com.affine.cmdk.affine.noise-background-on-the-sidebar.to": "Change Noise Background On The Sidebar to <1>{{state}}</1>",
+  "com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to": "Change Translucent UI On The Sidebar to <1>{{state}}</1>",
+  "com.affine.cmdk.affine.whats-new": "What's New",
+  "com.affine.cmdk.affine.getting-started": "Getting Started",
+  "com.affine.cmdk.affine.contact-us": "Contact Us",
+  "com.affine.cmdk.affine.restart-to-upgrade": "Restart to Upgrade"
 }
