@@ -128,6 +128,21 @@ export class NextAuthController {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       options.callbacks!.session = this.callbackSession;
     }
+
+    if (req.method === 'POST' && action === 'signin') {
+      const isVerified = await this.authService.verifyCaptchaToken(
+        req.query?.token,
+        req.headers['CF-Connecting-IP'] as string
+      );
+      if (!isVerified) {
+        res.status(403);
+        res.json({
+          error: `You don't have early access permission`,
+        });
+        return;
+      }
+    }
+
     const { status, headers, body, redirect, cookies } = await AuthHandler({
       req: {
         body: req.body,

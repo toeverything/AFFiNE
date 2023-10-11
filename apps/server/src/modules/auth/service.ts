@@ -9,6 +9,7 @@ import {
 import { hash, verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import type { User } from '@prisma/client';
+import { nanoid } from 'nanoid';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
@@ -110,11 +111,15 @@ export class AuthService {
     }
   }
 
-  async verifyCaptchaToken(token: string, ip: string) {
+  async verifyCaptchaToken(token: any, ip: string) {
+    if (typeof token !== 'string' || !token) return false;
+
     const formData = new FormData();
     formData.append('secret', this.config.auth.captchaSecret);
     formData.append('response', token);
     formData.append('remoteip', ip);
+    // prevent replay attack
+    formData.append('idempotency_key', nanoid());
 
     const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
     const result = await fetch(url, {
@@ -122,9 +127,12 @@ export class AuthService {
       method: 'POST',
     });
     const outcome = await result.json();
-    if (!outcome.success) {
-      throw new BadRequestException('Invalid Captcha');
-    }
+
+    return (
+      !!outcome.success &&
+      // skip hostname check in dev mode
+      (this.config.affineEnv === 'dev' || outcome.hostname === this.config.host)
+    );
   }
 
   async signIn(email: string, password: string): Promise<User> {

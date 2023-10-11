@@ -35,6 +35,7 @@ export const forgetPasswordButton = style({
 export const resendWrapper = style({
   height: 77,
   display: 'flex',
+  flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
   marginTop: 30,
