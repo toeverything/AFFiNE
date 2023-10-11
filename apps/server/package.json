@@ -77,7 +77,7 @@
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/storage": "workspace:*",
-    "@napi-rs/image": "^1.6.1",
+    "@napi-rs/image": "^1.7.0",
     "@nestjs/testing": "^10.2.6",
     "@types/cookie-parser": "^1.4.4",
     "@types/engine.io": "^3.1.7",

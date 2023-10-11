@@ -76,7 +76,7 @@
     "async-call-rpc": "^6.3.1",
     "electron-updater": "^6.1.5",
     "link-preview-js": "^3.0.5",
-    "nanoid": "^4.0.2",
+    "nanoid": "^5.0.1",
     "yjs": "^13.6.8"
   },
   "build": {
