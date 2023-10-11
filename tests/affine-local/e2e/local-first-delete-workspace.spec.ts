@@ -51,7 +51,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
 test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const workspaceNameDom = await page.getByTestId('workspace-name');
+  const workspaceNameDom = page.getByTestId('workspace-name');
   const currentWorkspaceName = await workspaceNameDom.evaluate(
     node => node.textContent
   );

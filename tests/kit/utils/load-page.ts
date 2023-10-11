@@ -14,3 +14,7 @@ export async function openPluginPage(page: Page) {
 export async function openPrototypeProviderStatusPage(page: Page) {
   await page.goto(`${prototypeUrl}/suite/provider-status.html`);
 }
+
+export async function open404Page(page: Page) {
+  await page.goto(`${coreUrl}/404`);
+}
