@@ -1,6 +1,6 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import { type Atom, useAtom } from 'jotai';
-import { atomWithReset, RESET } from 'jotai/utils';
+import { type Atom, useAtom, useAtomValue } from 'jotai';
+import { atomWithReset } from 'jotai/utils';
 import type { WritableAtom } from 'jotai/vanilla';
 import { useCallback } from 'react';
 import { NIL } from 'uuid';
@@ -25,14 +25,8 @@ const defaultCollection: Collection = createEmptyCollection(NIL, {
   name: 'All',
   mode: 'rule',
 });
-
-const collectionAtom = atomWithReset<{
-  currentId: string;
-  defaultCollection: Collection;
-}>({
-  currentId: NIL,
-  defaultCollection: defaultCollection,
-});
+const defaultCollectionAtom = atomWithReset<Collection>(defaultCollection);
+export const currentCollectionAtom = atomWithReset<string>(NIL);
 
 export type CollectionsAtom = WritableAtom<
   Collection[] | Promise<Collection[]>,
@@ -80,60 +74,40 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
     deleteCollection,
     addPage,
   } = useSavedCollections(collectionsAtom);
-  const [collectionData, setCollectionData] = useAtom(collectionAtom);
+  const currentCollectionId = useAtomValue(currentCollectionAtom);
+  const [defaultCollection, updateDefaultCollection] = useAtom(
+    defaultCollectionAtom
+  );
   const update = useCallback(
     async (collection: Collection) => {
       if (collection.id === NIL) {
-        setCollectionData({
-          ...collectionData,
-          defaultCollection: collection,
-        });
+        updateDefaultCollection(collection);
       } else {
         await updateCollection(collection.id, () => collection);
       }
     },
-    [setCollectionData, collectionData, updateCollection]
+    [updateCollection]
   );
-  const selectCollection = useCallback(
-    (id: string) => {
-      setCollectionData({
-        ...collectionData,
-        currentId: id,
-      });
-    },
-    [collectionData, setCollectionData]
-  );
-  const backToAll = useCallback(() => {
-    setCollectionData(RESET);
-  }, [setCollectionData]);
-  const setTemporaryFilter = useCallback(
-    (filterList: Filter[]) => {
-      setCollectionData({
-        currentId: NIL,
-        defaultCollection: {
-          ...defaultCollection,
-          filterList: filterList,
-        },
-      });
-    },
-    [setCollectionData]
-  );
+  const setTemporaryFilter = useCallback((filterList: Filter[]) => {
+    updateDefaultCollection({
+      ...defaultCollection,
+      filterList: filterList,
+    });
+  }, []);
   const currentCollection =
-    collectionData.currentId === NIL
-      ? collectionData.defaultCollection
-      : collections.find(v => v.id === collectionData.currentId) ??
-        collectionData.defaultCollection;
+    currentCollectionId === NIL
+      ? defaultCollection
+      : collections.find(v => v.id === currentCollectionId) ??
+        defaultCollection;
   return {
     currentCollection: currentCollection,
     savedCollections: collections,
-    isDefault: currentCollection.id === NIL,
+    isDefault: currentCollectionId === NIL,
 
     // actions
     createCollection: addCollection,
     updateCollection: update,
     deleteCollection,
-    selectCollection,
-    backToAll,
     addPage,
     setTemporaryFilter,
   };

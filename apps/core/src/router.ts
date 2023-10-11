@@ -15,6 +15,10 @@ export const routes = [
         lazy: () => import('./pages/workspace/all-page'),
       },
       {
+        path: 'collection/:collectionId',
+        lazy: () => import('./pages/workspace/collection'),
+      },
+      {
         path: 'trash',
         lazy: () => import('./pages/workspace/trash-page'),
       },

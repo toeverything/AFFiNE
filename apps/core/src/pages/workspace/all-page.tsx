@@ -1,4 +1,7 @@
-import { useCollectionManager } from '@affine/component/page-list';
+import {
+  currentCollectionAtom,
+  useCollectionManager,
+} from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
@@ -6,6 +9,7 @@ import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
+import { NIL } from 'uuid';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { collectionsCRUDAtom } from '../../atoms/collections';
@@ -27,6 +31,7 @@ export const loader: LoaderFunction = async args => {
       return redirect(`/workspace/${workspace.id}/${page.id}`);
     }
   }
+  rootStore.set(currentCollectionAtom, NIL);
   return null;
 };
 

@@ -55,6 +55,7 @@ export type PageListProps = {
   onImportFile: () => void;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  backToAll: () => void;
 };
 
 export type DraggableTitleCellData = {

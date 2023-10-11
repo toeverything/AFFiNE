@@ -64,7 +64,6 @@ const DetailPageImpl = (): ReactElement => {
       });
       const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
         jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-        collectionManager.backToAll();
         collectionManager.setTemporaryFilter([createTagFilter(tagId)]);
       });
       return () => {
