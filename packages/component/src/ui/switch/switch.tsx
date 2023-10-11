@@ -39,6 +39,7 @@ export const Switch = ({
       <input
         className={clsx(styles.inputStyle)}
         type="checkbox"
+        value={checked ? 'on' : 'off'}
         checked={checked}
         onChange={onChange}
       />
