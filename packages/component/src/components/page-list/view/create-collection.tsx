@@ -1,7 +1,11 @@
 import { Input } from '@affine/component';
+import { createEmptyCollection } from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { SaveIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
+import { nanoid } from 'nanoid';
 import { useCallback, useState } from 'react';
 
 import * as styles from './create-collection.css';
@@ -98,5 +102,45 @@ export const CreateCollection = ({
         </Button>
       </div>
     </div>
+  );
+};
+
+interface SaveAsCollectionButtonProps {
+  onConfirm: (collection: Collection) => Promise<void>;
+}
+
+export const SaveAsCollectionButton = ({
+  onConfirm,
+}: SaveAsCollectionButtonProps) => {
+  const [show, changeShow] = useState(false);
+  const handleClick = useCallback(() => {
+    changeShow(true);
+  }, [changeShow]);
+  const t = useAFFiNEI18N();
+  const createCollection = useCallback(
+    (title: string) => {
+      return onConfirm(createEmptyCollection(nanoid(), { name: title }));
+    },
+    [onConfirm]
+  );
+  return (
+    <>
+      <Button
+        onClick={handleClick}
+        data-testid="save-as-collection"
+        icon={<SaveIcon />}
+        size="large"
+        style={{ padding: '7px 8px' }}
+      >
+        {t['com.affine.editCollection.saveCollection']()}
+      </Button>
+      <CreateCollectionModal
+        title={t['com.affine.editCollection.saveCollection']()}
+        init=""
+        onConfirm={createCollection}
+        open={show}
+        onOpenChange={changeShow}
+      />
+    </>
   );
 };

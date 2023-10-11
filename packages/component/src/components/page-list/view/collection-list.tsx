@@ -21,21 +21,21 @@ const CollectionOption = ({
   collection,
   setting,
   updateCollection,
+  jumpToCollection,
 }: {
   collection: Collection;
   setting: ReturnType<typeof useCollectionManager>;
   updateCollection: (view: Collection) => void;
+  jumpToCollection: (id: string) => void;
 }) => {
   const actions = useActions({
     collection,
     setting,
     openEdit: updateCollection,
   });
-
-  const selectCollection = useCallback(
-    () => setting.selectCollection(collection.id),
-    [setting, collection.id]
-  );
+  const jump = useCallback(() => {
+    jumpToCollection(collection.id);
+  }, [collection.id, jumpToCollection]);
   return (
     <MenuItem
       data-testid="collection-select-option"
@@ -44,7 +44,7 @@ const CollectionOption = ({
           <ViewLayersIcon />
         </MenuIcon>
       }
-      onClick={selectCollection}
+      onClick={jump}
       key={collection.id}
       className={styles.viewMenu}
     >
@@ -105,10 +105,14 @@ export const CollectionList = ({
   setting,
   getPageInfo,
   propertiesMeta,
+  backToAll,
+  jumpToCollection,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  backToAll: () => void;
+  jumpToCollection: (id: string) => void;
 }) => {
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
@@ -150,7 +154,7 @@ export const CollectionList = ({
                     <FolderIcon />
                   </MenuIcon>
                 }
-                onClick={setting.backToAll}
+                onClick={backToAll}
                 className={styles.viewMenu}
               >
                 <div
@@ -171,6 +175,7 @@ export const CollectionList = ({
                   collection={view}
                   setting={setting}
                   updateCollection={setCollection}
+                  jumpToCollection={jumpToCollection}
                 />
               ))}
             </div>
@@ -191,24 +196,26 @@ export const CollectionList = ({
           </Button>
         </Menu>
       )}
-      <Menu
-        items={
-          <CreateFilterMenu
-            propertiesMeta={propertiesMeta}
-            value={setting.currentCollection.filterList}
-            onChange={onChange}
-          />
-        }
-      >
-        <Button
-          className={styles.filterMenuTrigger}
-          type="default"
-          icon={<FilteredIcon />}
-          data-testid="create-first-filter"
+      {setting.isDefault ? (
+        <Menu
+          items={
+            <CreateFilterMenu
+              propertiesMeta={propertiesMeta}
+              value={setting.currentCollection.filterList}
+              onChange={onChange}
+            />
+          }
         >
-          {t['com.affine.filter']()}
-        </Button>
-      </Menu>
+          <Button
+            className={styles.filterMenuTrigger}
+            type="default"
+            icon={<FilteredIcon />}
+            data-testid="create-first-filter"
+          >
+            {t['com.affine.filter']()}
+          </Button>
+        </Menu>
+      ) : null}
       <EditCollectionModal
         propertiesMeta={propertiesMeta}
         getPageInfo={getPageInfo}

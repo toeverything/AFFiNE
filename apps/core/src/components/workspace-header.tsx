@@ -1,7 +1,7 @@
 import {
   CollectionList,
-  EditCollectionButton,
   FilterList,
+  SaveAsCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
 import { Unreachable } from '@affine/env/constant';
@@ -17,6 +17,7 @@ import { useCallback } from 'react';
 import { collectionsCRUDAtom } from '../atoms/collections';
 import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
 import { useGetPageInfoById } from '../hooks/use-get-page-info';
+import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useWorkspace } from '../hooks/use-workspace';
 import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
@@ -27,11 +28,12 @@ import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
 
 const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
   const currentWorkspace = useWorkspace(workspaceId);
+  const navigateHelper = useNavigateHelper();
   const setting = useCollectionManager(collectionsCRUDAtom);
   const saveToCollection = useCallback(
     async (collection: Collection) => {
       await setting.createCollection(collection);
-      setting.selectCollection(collection.id);
+      navigateHelper.jumpToCollection(workspaceId, collection.id);
     },
     [setting]
   );
@@ -55,11 +57,9 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
       </div>
       <div>
         {setting.currentCollection.filterList.length > 0 ? (
-          <EditCollectionButton
+          <SaveAsCollectionButton
             onConfirm={saveToCollection}
-            filterList={setting.currentCollection.filterList}
-            workspaceId={workspaceId}
-          ></EditCollectionButton>
+          ></SaveAsCollectionButton>
         ) : null}
       </div>
     </div>
@@ -77,7 +77,16 @@ export function WorkspaceHeader({
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
   );
-
+  const navigateHelper = useNavigateHelper();
+  const backToAll = useCallback(() => {
+    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+  }, [navigateHelper, currentWorkspace.id]);
+  const jumpToCollection = useCallback(
+    (id: string) => {
+      navigateHelper.jumpToCollection(currentWorkspace.id, id);
+    },
+    [navigateHelper, currentWorkspace.id]
+  );
   // route in all page
   if (
     'subPath' in currentEntry &&
@@ -90,6 +99,8 @@ export function WorkspaceHeader({
           ref={setAppHeader}
           left={
             <CollectionList
+              jumpToCollection={jumpToCollection}
+              backToAll={backToAll}
               setting={setting}
               getPageInfo={getPageInfoById}
               propertiesMeta={
@@ -99,7 +110,7 @@ export function WorkspaceHeader({
           }
           center={<WorkspaceModeFilterTab />}
         />
-        {<FilterContainer workspaceId={currentWorkspaceId} />}
+        <FilterContainer workspaceId={currentWorkspaceId} />
       </>
     );
   }

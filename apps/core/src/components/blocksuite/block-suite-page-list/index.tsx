@@ -18,7 +18,8 @@ import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
 import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
-import type { BlockSuiteWorkspace } from '../../../shared';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { type BlockSuiteWorkspace, WorkspaceSubPath } from '../../../shared';
 import { toast } from '../../../utils';
 import { filterPage } from '../../../utils/filter';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
@@ -156,6 +157,10 @@ export const BlockSuitePageList = ({
       ),
     [blockSuiteWorkspace.meta.properties.tags?.options]
   );
+  const navigateHelper = useNavigateHelper();
+  const backToAll = useCallback(() => {
+    navigateHelper.jumpToSubPath(blockSuiteWorkspace.id, WorkspaceSubPath.ALL);
+  }, [navigateHelper, blockSuiteWorkspace.id]);
   const list = useMemo(
     () =>
       pageMetas
@@ -291,6 +296,7 @@ export const BlockSuitePageList = ({
       onImportFile={importFile}
       isPublicWorkspace={isPublic}
       list={pageList}
+      backToAll={backToAll}
       fallback={<PageListEmpty createPage={createPage} listType={listType} />}
     />
   );

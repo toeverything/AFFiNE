@@ -38,6 +38,7 @@ interface AllPagesHeadProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   collectionsAtom: CollectionsCRUDAtom;
+  backToAll: () => void;
 }
 
 const AllPagesHead = ({
@@ -49,6 +50,7 @@ const AllPagesHead = ({
   getPageInfo,
   propertiesMeta,
   collectionsAtom,
+  backToAll,
 }: AllPagesHeadProps) => {
   const t = useAFFiNEI18N();
   const titleList = useMemo(
@@ -152,6 +154,7 @@ const AllPagesHead = ({
         getPageInfo={getPageInfo}
         propertiesMeta={propertiesMeta}
         collectionsAtom={collectionsAtom}
+        backToAll={backToAll}
       />
     </TableHead>
   );
@@ -167,6 +170,7 @@ export const PageList = ({
   fallback,
   getPageInfo,
   propertiesMeta,
+  backToAll,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
@@ -212,6 +216,7 @@ export const PageList = ({
             createNewEdgeless={onCreateNewEdgeless}
             importFile={onImportFile}
             getPageInfo={getPageInfo}
+            backToAll={backToAll}
           />
           <AllPagesBody
             isPublicWorkspace={isPublicWorkspace}

@@ -20,6 +20,7 @@ interface CollectionBarProps {
   propertiesMeta: PropertiesMeta;
   collectionsAtom: CollectionsCRUDAtom;
   columnsCount: number;
+  backToAll: () => void;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
@@ -33,7 +34,6 @@ export const CollectionBar = (props: CollectionBarProps) => {
     setting,
     openEdit: () => setOpen(true),
   });
-
   return !setting.isDefault ? (
     <tr style={{ userSelect: 'none' }}>
       <td>
@@ -96,7 +96,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
       >
         <Button
           style={{ border: 'none', position: 'static' }}
-          onClick={() => setting.backToAll()}
+          onClick={props.backToAll}
         >
           {t['com.affine.collectionBar.backToAll']()}
         </Button>
