@@ -110,6 +110,23 @@ export class AuthService {
     }
   }
 
+  async verifyCaptchaToken(token: string, ip: string) {
+    const formData = new FormData();
+    formData.append('secret', this.config.auth.captchaSecret);
+    formData.append('response', token);
+    formData.append('remoteip', ip);
+
+    const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+    const result = await fetch(url, {
+      body: formData,
+      method: 'POST',
+    });
+    const outcome = await result.json();
+    if (!outcome.success) {
+      throw new BadRequestException('Invalid Captcha');
+    }
+  }
+
   async signIn(email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findFirst({
       where: {

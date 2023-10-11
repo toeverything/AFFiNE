@@ -320,6 +320,11 @@ export interface AFFiNEConfig {
       sender: string;
       password: string;
     };
+    /**
+     * Cloudflare Turnstile CAPTCHA secret
+     * default value is demo secret key, witch always return success
+     */
+    captchaSecret: string;
   };
 
   doc: {
