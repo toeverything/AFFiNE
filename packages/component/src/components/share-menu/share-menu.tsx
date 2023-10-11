@@ -1,8 +1,9 @@
-import type {
-  AffineCloudWorkspace,
-  AffineOfficialWorkspace,
-  AffinePublicWorkspace,
-  LocalWorkspace,
+import {
+  type AffineCloudWorkspace,
+  type AffineOfficialWorkspace,
+  type AffinePublicWorkspace,
+  type LocalWorkspace,
+  WorkspaceFlavour,
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Page } from '@blocksuite/store';
@@ -30,14 +31,8 @@ export interface ShareMenuProps<
   exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => Promise<void>;
 }
 
-export const ShareMenu = (props: ShareMenuProps) => {
-  const { useIsSharedPage } = props;
-  const [isSharedPage] = useIsSharedPage(
-    props.workspace.id,
-    props.currentPage.id
-  );
-  const t = useAFFiNEI18N();
-  const content = (
+const ShareMenuContent = (props: ShareMenuProps) => {
+  return (
     <div className={styles.containerStyle}>
       <SharePage {...props} />
       <div className={styles.columnContainerStyle}>
@@ -46,22 +41,48 @@ export const ShareMenu = (props: ShareMenuProps) => {
       <ShareExport {...props} />
     </div>
   );
+};
+
+const LocalShareMenu = (props: ShareMenuProps) => {
+  const t = useAFFiNEI18N();
   return (
     <Menu
-      items={content}
+      items={<ShareMenuContent {...props} />}
       contentOptions={{
-        style: {
-          width: '410px',
-          height: 'auto',
-          padding: '12px',
-          transform: 'translateX(-10px)',
-        },
+        className: styles.menuStyle,
       }}
       rootOptions={{
         modal: false,
       }}
     >
-      <Button data-testid="share-menu-button" type="plain">
+      <Button data-testid="local-share-menu-button" type="plain">
+        {t['com.affine.share-menu.shareButton']()}
+      </Button>
+    </Menu>
+  );
+};
+
+const CloudShareMenu = (props: ShareMenuProps) => {
+  const t = useAFFiNEI18N();
+
+  const { workspace, currentPage, useIsSharedPage } = props;
+  const [isSharedPage] = useIsSharedPage(workspace.id, currentPage.id);
+
+  return (
+    <Menu
+      items={<ShareMenuContent {...props} />}
+      contentOptions={{
+        className: styles.menuStyle,
+      }}
+      rootOptions={{
+        modal: false,
+      }}
+    >
+      <Button
+        data-testid="cloud-share-menu-button"
+        type="plain"
+        onClick={() => console.log('gg')}
+      >
         <div
           style={{
             color: isSharedPage
@@ -76,4 +97,13 @@ export const ShareMenu = (props: ShareMenuProps) => {
       </Button>
     </Menu>
   );
+};
+
+export const ShareMenu = (props: ShareMenuProps) => {
+  const { workspace } = props;
+
+  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+    return <LocalShareMenu {...props} />;
+  }
+  return <CloudShareMenu {...props} />;
 };

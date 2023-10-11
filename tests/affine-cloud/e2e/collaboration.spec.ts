@@ -3,6 +3,7 @@ import {
   addUserToWorkspace,
   createRandomUser,
   enableCloudWorkspace,
+  enableCloudWorkspaceFromShareButton,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
 import {
@@ -47,14 +48,14 @@ test.describe('collaboration', () => {
       },
       page
     );
-    await enableCloudWorkspace(page);
+    await enableCloudWorkspaceFromShareButton(page);
     const title = getBlockSuiteEditorTitle(page);
     await title.pressSequentially('TEST TITLE', {
       delay: 50,
     });
     await page.keyboard.press('Enter', { delay: 50 });
     await page.keyboard.type('TEST CONTENT', { delay: 50 });
-    await page.getByTestId('share-menu-button').click();
+    await page.getByTestId('cloud-share-menu-button').click();
     await page.getByTestId('share-menu-create-link-button').click();
     await page.getByTestId('share-menu-copy-link-button').click();
 

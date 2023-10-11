@@ -59,7 +59,11 @@ export const LocalSharePage = (props: ShareMenuProps) => {
             {t['com.affine.share-menu.EnableCloudDescription']()}
           </div>
           <div>
-            <Button onClick={props.onEnableAffineCloud} type="primary">
+            <Button
+              onClick={props.onEnableAffineCloud}
+              type="primary"
+              data-testid="share-menu-enable-affine-cloud-button"
+            >
               {t['Enable AFFiNE Cloud']()}
             </Button>
           </div>

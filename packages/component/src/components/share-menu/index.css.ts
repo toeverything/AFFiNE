@@ -1,5 +1,12 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
+export const menuStyle = style({
+  width: '410px',
+  height: 'auto',
+  padding: '12px',
+  transform: 'translateX(-10px)',
+});
+
 export const menuItemStyle = style({
   padding: '4px',
   transition: 'all 0.3s',
