@@ -3,9 +3,8 @@
   "description": "AFFiNE 0.7.0-canary.18 static output",
   "scripts": {
     "unzip": "wget -O static.zip https://github.com/toeverything/AFFiNE/releases/download/v0.7.0-canary.18/web-static.zip && unzip static.zip -d static",
-    "start": "yarn exec serve -s static -l 8082",
-    "e2e": "yarn playwright test",
-    "test": "vitest --run"
+    "start": "yarn exec serve -s static -l 8081",
+    "e2e": "yarn playwright test"
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",

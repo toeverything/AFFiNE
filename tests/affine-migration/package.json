@@ -1,9 +1,9 @@
 {
-  "name": "@affine-legacy/0.8.0-canary.7",
-  "description": "AFFiNE 0.8.0-canary.7 static output",
+  "name": "@affine-test/affine-migration",
+  "description": "AFFiNE migration e2e tests",
   "scripts": {
-    "unzip": "wget -O static.zip https://github.com/toeverything/AFFiNE/releases/download/v0.8.0-canary.7/web-static.zip && unzip static.zip",
-    "start": "yarn exec serve -s web-static -l 8081",
+    "unzip": "wget -O static.zip https://github.com/toeverything/AFFiNE/releases/download/v0.8.4/web-static.zip && unzip static.zip",
+    "start": "yarn exec serve -s web-static -l 8082",
     "e2e": "yarn playwright test"
   },
   "devDependencies": {

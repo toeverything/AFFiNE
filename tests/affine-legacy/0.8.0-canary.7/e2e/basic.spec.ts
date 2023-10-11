@@ -1,20 +1,12 @@
-import { join } from 'node:path';
+import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
+import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { test } from '@playwright/test';
 
-import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
-import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
-import {
-  check8080Available,
-  setupProxyServer,
-} from '@affine-test/kit/utils/proxy';
-import { expect, test } from '@playwright/test';
+test.beforeEach(async ({ page }) => {
+  await patchDataEnhancement(page);
+});
 
-const { switchToNext } = setupProxyServer(
-  test,
-  join(__dirname, '..', 'web-static')
-);
-
-test('database migration', async ({ page, context }) => {
-  await check8080Available(context);
+test('record 0.8.0-canary.7 database legacy data', async ({ page }) => {
   await page.goto('http://localhost:8081/');
   await page.waitForSelector('v-line', {
     timeout: 10000,
@@ -32,22 +24,17 @@ test('database migration', async ({ page, context }) => {
   await page.keyboard.press('a', { delay: 50 });
   await page.keyboard.press('Enter', { delay: 50 });
 
-  const url = page.url();
+  const localStorageData = await page.evaluate(() =>
+    window.readAffineLocalStorage()
+  );
+  const { idbData, binaries } = await page.evaluate(() =>
+    window.readAffineDatabase()
+  );
 
-  await switchToNext();
-  await page.waitForTimeout(1000);
-  await page.goto(url);
-  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
-  await page.waitForTimeout(5000);
-  await page.reload();
-  //#endregion
-  await waitForEditorLoad(page);
-  // check page mode is correct
-  expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
-  expect(await page.locator('affine-database').isVisible()).toBe(true);
-
-  // check edgeless mode is correct
-  await clickEdgelessModeButton(page);
-  await page.waitForTimeout(200);
-  expect(await page.locator('affine-database').isVisible()).toBe(true);
+  const snapshotStorage = new SnapshotStorage('0.8.0-canary.7');
+  await snapshotStorage.write({
+    idbData,
+    localStorageData,
+    binaries,
+  });
 });
