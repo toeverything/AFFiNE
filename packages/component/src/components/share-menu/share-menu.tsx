@@ -6,6 +6,7 @@ import {
   WorkspaceFlavour,
 } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { WebIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Divider } from '@toeverything/components/divider';
@@ -32,8 +33,15 @@ export interface ShareMenuProps<
 }
 
 const ShareMenuContent = (props: ShareMenuProps) => {
+  const t = useAFFiNEI18N();
   return (
     <div className={styles.containerStyle}>
+      <div className={styles.headerStyle}>
+        <div className={styles.shareIconStyle}>
+          <WebIcon />
+        </div>
+        {t['com.affine.share-menu.SharePage']()}
+      </div>
       <SharePage {...props} />
       <div className={styles.columnContainerStyle}>
         <Divider size="thinner" />

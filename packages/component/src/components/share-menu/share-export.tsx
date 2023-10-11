@@ -1,3 +1,4 @@
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
@@ -24,8 +25,11 @@ export const ShareExport = ({
 
   return (
     <>
-      <div className={styles.titleContainerStyle} style={{ fontWeight: '500' }}>
+      <div className={styles.titleContainerStyle}>
         {t['com.affine.share-menu.ShareViaExport']()}
+      </div>
+      <div className={styles.descriptionStyle}>
+        {t['com.affine.share-menu.ShareViaExportDescription']()}
       </div>
       <div>
         <ExportMenuItems
@@ -33,22 +37,27 @@ export const ShareExport = ({
           className={styles.menuItemStyle}
         />
       </div>
-      <div className={styles.columnContainerStyle}>
-        <div className={styles.descriptionStyle}>
-          {t['com.affine.share-menu.ShareViaExportDescription']()}
+      {workspace.flavour !== WorkspaceFlavour.LOCAL ? (
+        <div className={styles.columnContainerStyle}>
+          <Divider size="thinner" />
+          <div className={styles.titleContainerStyle}>
+            {t['com.affine.share-menu.share-privately']()}
+          </div>
+          <div className={styles.descriptionStyle}>
+            {t['com.affine.share-menu.share-privately.description']()}
+          </div>
+          <div>
+            <Button
+              className={styles.shareLinkStyle}
+              onClick={onClickCopyLink}
+              icon={<LinkIcon />}
+              type="plain"
+            >
+              {t['com.affine.share-menu.copy-private-link']()}
+            </Button>
+          </div>
         </div>
-        <Divider size="thinner" />
-        <div>
-          <Button
-            className={styles.shareLinkStyle}
-            onClick={onClickCopyLink}
-            icon={<LinkIcon />}
-            type="plain"
-          >
-            {t['Copy Link']()}
-          </Button>
-        </div>
-      </div>
+      ) : null}
     </>
   );
 };
