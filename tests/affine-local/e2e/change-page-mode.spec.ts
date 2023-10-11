@@ -15,7 +15,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   }
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const btn = await page.getByTestId('switch-edgeless-mode-button');
+  const btn = page.getByTestId('switch-edgeless-mode-button');
   await page.evaluate(() => {
     // @ts-expect-error
     globalThis.__toastCount = 0;
@@ -94,9 +94,9 @@ test('Clearing out the title bar will remove the page title', async ({
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  const titleBarTextContent = page.getByTestId('title-edit-button');
   await titleBarTextContent.dblclick({ delay: 100 });
-  const titleContent = await page.getByTestId('title-content');
+  const titleContent = page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');

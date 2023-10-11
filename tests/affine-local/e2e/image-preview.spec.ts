@@ -207,7 +207,7 @@ test('image should able to go left and right by buttons', async ({ page }) => {
   await clickNewPageButton(page);
   let blobId: string;
   {
-    const title = await getBlockSuiteEditorTitle(page);
+    const title = getBlockSuiteEditorTitle(page);
     await title.click();
     await page.keyboard.press('Enter');
     await importImage(page, 'http://localhost:8081/large-image.png');
@@ -502,7 +502,7 @@ test('image should able to delete and when delete, it will move to previous/next
     await closeImagePreviewModal(page);
   }
   {
-    const title = await getBlockSuiteEditorTitle(page);
+    const title = getBlockSuiteEditorTitle(page);
     await title.click();
     await page.keyboard.press('Enter');
     await importImage(page, 'http://localhost:8081/affine-preview.png');
@@ -646,7 +646,7 @@ test('tooltips for all buttons should be visible when hovering', async ({
   await locator.getByTestId('delete-button').hover();
   await page.waitForTimeout(500);
   {
-    const element = await page.getByRole('tooltip');
+    const element = page.getByRole('tooltip');
     const downloadTooltip = await element.getByText('Delete').count();
     expect(downloadTooltip).toBe(1);
   }
