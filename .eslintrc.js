@@ -252,6 +252,7 @@ const config = {
           },
         ],
         '@typescript-eslint/no-misused-promises': ['error'],
+        'i/no-extraneous-dependencies': ['error'],
       },
     })),
     {

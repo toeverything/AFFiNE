@@ -16,18 +16,21 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
+    "@blocksuite/icons": "2.1.34",
     "@toeverything/components": "^0.0.43",
+    "@vanilla-extract/css": "^1.13.0",
+    "clsx": "^2.0.0",
     "idb": "^7.1.1",
     "langchain": "^0.0.138",
     "marked": "^9.0.3",
     "marked-gfm-heading-id": "^3.1.0",
     "marked-mangle": "^1.1.4",
-    "zod": "^3.22.2"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^5.0.1",
-    "jotai": "^2.4.2",
+    "jotai": "^2.4.3",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },

@@ -134,6 +134,8 @@ model Snapshot {
   id          String   @default(uuid()) @map("guid") @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
   blob        Bytes    @db.ByteA
+  seq         Int      @default(0) @db.Integer
+  state       Bytes?   @db.ByteA
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -144,12 +146,13 @@ model Snapshot {
 // backup during other update operation queue downtime
 model Update {
   objectId    String   @id @default(uuid()) @map("object_id") @db.VarChar
-  id          String   @map("guid") @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
+  id          String   @map("guid") @db.VarChar
+  seq         Int      @db.Integer
   blob        Bytes    @db.ByteA
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@index([id, workspaceId])
+  @@unique([workspaceId, id, seq])
   @@map("updates")
 }
 

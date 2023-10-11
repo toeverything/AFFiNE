@@ -63,7 +63,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
 
-const appSettingAtom = atom<
+export const appSettingAtom = atom<
   AppSetting,
   [SetStateAction<Partial<AppSetting>>],
   void

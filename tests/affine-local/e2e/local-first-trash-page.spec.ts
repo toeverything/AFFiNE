@@ -52,7 +52,7 @@ test('New a page , then delete it in page, blockHub and option menu will not app
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   const title = getBlockSuiteEditorTitle(page);
-  await title.type('test');
+  await title.pressSequentially('test');
   await clickPageMoreActions(page);
   await page.getByTestId('editor-option-menu-delete').click();
   await page.getByTestId('confirm-delete-page').click();
