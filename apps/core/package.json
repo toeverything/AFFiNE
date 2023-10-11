@@ -37,8 +37,8 @@
     "@emotion/react": "^11.11.1",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.14.12",
-    "@radix-ui/react-select": "^1.2.2",
+    "@mui/material": "^5.14.13",
+    "@radix-ui/react-select": "^2.0.0",
     "@react-hookz/web": "^23.1.0",
     "@toeverything/components": "^0.0.43",
     "async-call-rpc": "^6.3.1",
@@ -68,7 +68,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.418.0",
+    "@aws-sdk/client-s3": "3.427.0",
     "@perfsee/webpack": "^1.8.4",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.7.1",
