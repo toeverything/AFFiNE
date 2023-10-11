@@ -36,7 +36,6 @@ export const WorkspaceDeleteModal = ({
 
   return (
     <ConfirmModal
-      width={480}
       title={`${t['com.affine.workspaceDelete.title']()}?`}
       cancelText={t['com.affine.workspaceDelete.button.cancel']()}
       confirmButtonOptions={{

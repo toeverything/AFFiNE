@@ -72,7 +72,6 @@ export const DeleteLeaveWorkspace = ({
         />
       ) : (
         <ConfirmModal
-          width={480}
           open={showLeave}
           cancelText={t['com.affine.confirmModal.button.cancel']()}
           onConfirm={onLeaveConfirm}

@@ -63,7 +63,6 @@ const NameWorkspaceContent = ({
   const t = useAFFiNEI18N();
   return (
     <ConfirmModal
-      width={480}
       defaultOpen={true}
       title={t['com.affine.nameWorkspace.title']()}
       description={t['com.affine.nameWorkspace.description']()}
