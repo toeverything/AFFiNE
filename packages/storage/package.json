@@ -16,7 +16,7 @@
     }
   },
   "napi": {
-    "binaryName": "storage",
+    "name": "storage",
     "targets": [
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
@@ -36,10 +36,10 @@
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.5",
-    "lib0": "^0.2.85",
-    "nx": "^16.9.0",
-    "nx-cloud": "^16.4.0",
+    "@napi-rs/cli": "^2.16.3",
+    "lib0": "^0.2.86",
+    "nx": "^16.10.0",
+    "nx-cloud": "^16.5.1",
     "yjs": "^13.6.8"
   }
 }
