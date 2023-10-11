@@ -24,7 +24,7 @@ test('surface migration', async ({ page, context }) => {
   });
   await page.getByTestId('new-page-button').click();
   const title = getBlockSuiteEditorTitle(page);
-  await title.type('hello');
+  await title.pressSequentially('hello');
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.type('world', {
     delay: 50,

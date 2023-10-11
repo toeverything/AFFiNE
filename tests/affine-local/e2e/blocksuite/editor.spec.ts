@@ -23,7 +23,7 @@ test('database is useable', async ({ page }) => {
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
   const title = getBlockSuiteEditorTitle(page);
-  await title.type('test title');
+  await title.pressSequentially('test title');
   await page.keyboard.press('Enter');
   expect(await title.innerText()).toBe('test title');
   await addDatabase(page);
@@ -34,7 +34,7 @@ test('database is useable', async ({ page }) => {
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
   const title2 = getBlockSuiteEditorTitle(page);
-  await title2.type('test title2');
+  await title2.pressSequentially('test title2');
   await page.waitForTimeout(500);
   expect(await title2.innerText()).toBe('test title2');
   await page.keyboard.press('Enter');
@@ -48,14 +48,14 @@ test('link page is useable', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
-  const title = await getBlockSuiteEditorTitle(page);
-  await title.type('page1');
+  const title = getBlockSuiteEditorTitle(page);
+  await title.pressSequentially('page1');
   await page.keyboard.press('Enter');
   expect(await title.innerText()).toBe('page1');
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
-  const title2 = await getBlockSuiteEditorTitle(page);
-  await title2.type('page2');
+  const title2 = getBlockSuiteEditorTitle(page);
+  await title2.pressSequentially('page2');
   await page.keyboard.press('Enter');
   expect(await title2.innerText()).toBe('page2');
   await page.keyboard.press('@', { delay: 50 });

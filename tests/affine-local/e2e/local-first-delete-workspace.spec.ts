@@ -13,7 +13,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await page.getByTestId('new-workspace').click();
   await page
     .getByTestId('create-workspace-input')
-    .type('Test Workspace', { delay: 50 });
+    .pressSequentially('Test Workspace', { delay: 50 });
   await page.getByTestId('create-workspace-create-button').click();
 
   await page.waitForTimeout(1000);
@@ -25,12 +25,13 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await openWorkspaceSettingPanel(page, 'Test Workspace');
   await page.getByTestId('delete-workspace-button').click();
   const workspaceNameDom = await page.getByTestId('workspace-name');
-  const currentWorkspaceName = await workspaceNameDom.evaluate(
+  const currentWorkspaceName = (await workspaceNameDom.evaluate(
     node => node.textContent
-  );
+  )) as string;
+  expect(currentWorkspaceName).toBeDefined();
   await page
     .getByTestId('delete-workspace-input')
-    .type(currentWorkspaceName as string);
+    .pressSequentially(currentWorkspaceName);
   const promise = page
     .getByTestId('affine-notification')
     .waitFor({ state: 'attached' });
@@ -46,7 +47,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
 
   expect(currentWorkspace.flavour).toContain('local');
 });
-//FIXME: this test is broken
+
 test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
@@ -59,12 +60,14 @@ test('Delete last workspace', async ({ page }) => {
   await page.getByTestId('delete-workspace-button').click();
   await page
     .getByTestId('delete-workspace-input')
-    .type(currentWorkspaceName as string);
+    .pressSequentially(currentWorkspaceName as string);
   await page.getByTestId('delete-workspace-confirm-button').click();
   await openHomePage(page);
   await expect(page.getByTestId('new-workspace')).toBeVisible();
   await page.getByTestId('new-workspace').click();
-  await page.type('[data-testid="create-workspace-input"]', 'Test Workspace');
+  await page
+    .locator('[data-testid="create-workspace-input"]')
+    .pressSequentially('Test Workspace');
   await page.getByTestId('create-workspace-create-button').click();
   await page.waitForTimeout(1000);
   await page.waitForSelector('[data-testid="workspace-name"]');

@@ -21,7 +21,7 @@ test('database migration', async ({ page, context }) => {
   });
   await page.getByTestId('new-page-button').click();
   const title = page.locator('.affine-default-page-block-title');
-  await title.type('hello');
+  await title.pressSequentially('hello');
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.press('/', { delay: 50 });
   await page.keyboard.press('d');
