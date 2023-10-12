@@ -103,6 +103,8 @@ test.describe('basic', () => {
       // page 'F1SX6cgNxy' has edgeless mode
       `${coreUrl}/workspace/${workspaceId}/F1SX6cgNxy`
     );
+    await page.waitForTimeout(5000);
+    await page.reload();
     await waitForEditorLoad(page);
     await clickEdgelessModeButton(page);
     await expect(page.locator('affine-edgeless-page')).toBeVisible({

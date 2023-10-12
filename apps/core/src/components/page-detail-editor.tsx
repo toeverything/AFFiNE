@@ -42,7 +42,10 @@ export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
-  onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onInit: (
+    page: Page,
+    editor: Readonly<EditorContainer>
+  ) => Promise<void> | void;
   onLoad?: OnLoadEditor;
 }
 
