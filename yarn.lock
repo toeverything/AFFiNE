@@ -414,7 +414,7 @@ __metadata:
     async-call-rpc: ^6.3.1
     builder-util-runtime: ^9.2.1
     cross-env: 7.0.3
-    electron: ^26.4.0
+    electron: ^27.0.0
     electron-log: ^5.0.0-rc.1
     electron-squirrel-startup: 1.0.0
     electron-updater: ^6.1.5
@@ -447,6 +447,7 @@ __metadata:
   resolution: "@affine/env@workspace:packages/env"
   dependencies:
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
+    "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     lit: ^2.8.0
     react: 18.2.0
     react-dom: 18.2.0
@@ -547,7 +548,8 @@ __metadata:
     "@vanilla-extract/webpack-plugin": ^2.3.1
     "@vitejs/plugin-react-swc": ^3.4.0
     "@vitest/coverage-istanbul": 0.34.6
-    "@vitest/ui": 0.34.6
+    "@vitest/ui": 0.34.7
+    electron: ^27.0.0
     eslint: ^8.51.0
     eslint-config-prettier: ^9.0.0
     eslint-plugin-i: ^2.28.1
@@ -630,6 +632,7 @@ __metadata:
     rollup: ^3.29.4
     rollup-plugin-swc3: ^0.10.2
     ts-node: ^10.9.1
+    vue: ^3.3.4
   bin:
     af: ./src/af.mjs
   languageName: unknown
@@ -641,6 +644,7 @@ __metadata:
   dependencies:
     "@blocksuite/block-std": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
+    "@blocksuite/editor": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     jotai: ^2.4.3
@@ -12410,6 +12414,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/sdk": "workspace:*"
+    "@affine/templates": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/editor": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
@@ -12475,6 +12480,7 @@ __metadata:
     vitest: 0.34.6
     y-indexeddb: ^9.0.11
     y-provider: "workspace:*"
+    yjs: ^13.6.8
   peerDependencies:
     yjs: ^13
   languageName: unknown
@@ -14024,11 +14030,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/ui@npm:0.34.6":
-  version: 0.34.6
-  resolution: "@vitest/ui@npm:0.34.6"
+"@vitest/ui@npm:0.34.7":
+  version: 0.34.7
+  resolution: "@vitest/ui@npm:0.34.7"
   dependencies:
-    "@vitest/utils": 0.34.6
+    "@vitest/utils": 0.34.7
     fast-glob: ^3.3.0
     fflate: ^0.8.0
     flatted: ^3.2.7
@@ -14037,7 +14043,7 @@ __metadata:
     sirv: ^2.0.3
   peerDependencies:
     vitest: ">=0.30.1 <1"
-  checksum: aaea587823d38bf5bb1961bbfdddacd42bbcedd7a6f771d8e26f5f597267655a19527434099b11013d00100ddb25a9550d55d1a275c08763dc67407ac7d3baa1
+  checksum: 6d1c73ee3bb303645c62bdb4ffb87063631e1771c2dbee0a28537678d09ffc97fa9669e2de6d1cd7e469f2b48dfde88f46fb9686ee82591c24050b6723aa9758
   languageName: node
   linkType: hard
 
@@ -14049,6 +14055,17 @@ __metadata:
     loupe: ^2.3.6
     pretty-format: ^29.5.0
   checksum: acf716af2bab66037e49bd6d3e8bae40b605b9bff515d4926c46d6f8cc2366decfac5a1756ea55029968e71fba1da1f992764c3a57c9b46eccce3f6db7197bd6
+  languageName: node
+  linkType: hard
+
+"@vitest/utils@npm:0.34.7":
+  version: 0.34.7
+  resolution: "@vitest/utils@npm:0.34.7"
+  dependencies:
+    diff-sequences: ^29.4.3
+    loupe: ^2.3.6
+    pretty-format: ^29.5.0
+  checksum: d98b8809ada19c207ace43c88d452685adde6966b00e223ac2308b2ea7d0694bdd4d6ff9518ea505e2b5bd4d1b51f44bae430e22fa83ca32c77ad28b61209bc4
   languageName: node
   linkType: hard
 
@@ -18853,16 +18870,16 @@ __metadata:
   languageName: node
   linkType: soft
 
-"electron@npm:^26.4.0":
-  version: 26.4.0
-  resolution: "electron@npm:26.4.0"
+"electron@npm:^27.0.0":
+  version: 27.0.0
+  resolution: "electron@npm:27.0.0"
   dependencies:
     "@electron/get": ^2.0.0
     "@types/node": ^18.11.18
     extract-zip: ^2.0.1
   bin:
     electron: cli.js
-  checksum: eb68e980220dee407af33e5662e53dcf9c40f2c29ff2beac76e227368377979b6d649a529b49503227b59cdb8986dd348588338710059ffa93509aa50027bbee
+  checksum: 4a84cb894d5f626fe7a2b5171693e903ce82a7673aabc419e5d3d0d2f9cc8441e5088524ecd86a046beab4ba7dd13820b7a94c361c3e7bc2f0959d1a1a860df5
   languageName: node
   linkType: hard
 
@@ -34485,6 +34502,7 @@ __metadata:
     vite: ^4.4.11
     vite-plugin-dts: 3.6.0
     vitest: 0.34.6
+    yjs: ^13.6.8
   peerDependencies:
     yjs: ^13
   languageName: unknown

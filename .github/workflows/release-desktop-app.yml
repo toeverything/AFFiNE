@@ -67,6 +67,7 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
+          SKIP_PLUGIN_BUILD: 'true'
 
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
@@ -105,6 +106,11 @@ jobs:
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          build-plugins: false
+          nmHoistingLimits: workspaces
       - name: Setup Maker
         timeout-minutes: 10
         uses: ./.github/actions/setup-maker
@@ -131,6 +137,10 @@ jobs:
 
       - name: make
         run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+        env:
+          SKIP_PLUGIN_BUILD: 1
+          SKIP_WEB_BUILD: 1
+          HOIST_NODE_MODULES: 1
 
       - name: Save artifacts (mac)
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -173,6 +183,11 @@ jobs:
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          build-plugins: false
+          nmHoistingLimits: workspaces
       - name: Setup Maker
         timeout-minutes: 10
         uses: ./.github/actions/setup-maker
@@ -195,6 +210,10 @@ jobs:
 
       - name: package
         run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+        env:
+          SKIP_PLUGIN_BUILD: 1
+          SKIP_WEB_BUILD: 1
+          HOIST_NODE_MODULES: 1
 
       - name: get all files to be signed
         id: get_files_to_be_signed

@@ -29,6 +29,9 @@ inputs:
     description: 'Build plugins'
     required: false
     default: 'true'
+  nmHoistingLimits:
+    description: 'Set nmHoistingLimits in .yarnrc.yml'
+    required: false
 
 runs:
   using: 'composite'
@@ -45,6 +48,11 @@ runs:
       if: ${{ inputs.hard-link-nm == 'true' }}
       shell: bash
       run: yarn config set nmMode hardlinks-local
+
+    - name: Set nmHoistingLimits
+      if: ${{ inputs.nmHoistingLimits }}
+      shell: bash
+      run: yarn config set nmHoistingLimits ${{ inputs.nmHoistingLimits }}
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}
