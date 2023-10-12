@@ -27,3 +27,19 @@ export const FlexWrapper = (props: FlexWrapperProps) => {
     </div>
   );
 };
+
+export const withinDaysAgo = (date: Date, days: number): boolean => {
+  const startDate = new Date();
+  const day = startDate.getDay();
+  const month = startDate.getMonth();
+  const year = startDate.getFullYear();
+  return new Date(year, month, day - days) <= date;
+};
+
+export const betweenDaysAgo = (
+  date: Date,
+  days0: number,
+  days1: number
+): boolean => {
+  return !withinDaysAgo(date, days0) && withinDaysAgo(date, days1);
+};

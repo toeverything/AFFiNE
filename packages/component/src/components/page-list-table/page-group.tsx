@@ -10,11 +10,6 @@ import { type MouseEventHandler, useCallback, useState } from 'react';
 
 import {
   type DateKey,
-  isLastMonth,
-  isLastWeek,
-  isLastYear,
-  isToday,
-  isYesterday,
 } from '../page-list';
 import { PagePreview } from './page-content-preview';
 import * as styles from './page-group.css';
@@ -26,41 +21,35 @@ import type {
   PageListItemProps,
   PageListProps,
 } from './types';
+import { betweenDaysAgo, withinDaysAgo } from './utils';
 
 // todo: optimize date matchers
 const getDateGroupDefinitions = (key: DateKey): PageGroupDefinition[] => [
   {
     id: 'today',
     label: <Trans i18nKey="com.affine.today" />,
-    match: item => isToday(new Date(item[key] ?? item.createDate)),
+    match: item => withinDaysAgo(new Date(item[key] ?? item.createDate), 1),
   },
   {
     id: 'yesterday',
     label: <Trans i18nKey="com.affine.yesterday" />,
-    match: item =>
-      isYesterday(new Date(item[key] ?? item.createDate)) &&
-      !isToday(new Date(item[key] ?? item.createDate)),
+    match: item => betweenDaysAgo(new Date(item[key] ?? item.createDate), 1, 2),
   },
   {
     id: 'last7Days',
     label: <Trans i18nKey="com.affine.last7Days" />,
-    match: item =>
-      isLastWeek(new Date(item[key] ?? item.createDate)) &&
-      !isYesterday(new Date(item[key] ?? item.createDate)),
+    match: item => betweenDaysAgo(new Date(item[key] ?? item.createDate), 2, 7),
   },
   {
     id: 'last30Days',
     label: <Trans i18nKey="com.affine.last30Days" />,
     match: item =>
-      isLastMonth(new Date(item[key] ?? item.createDate)) &&
-      !isLastWeek(new Date(item[key] ?? item.createDate)),
+      betweenDaysAgo(new Date(item[key] ?? item.createDate), 7, 30),
   },
   {
-    id: 'currentYear',
-    label: <Trans i18nKey="com.affine.currentYear" />,
-    match: item =>
-      isLastYear(new Date(item[key] ?? item.createDate)) &&
-      !isLastMonth(new Date(item[key] ?? item.createDate)),
+    id: 'moreThan30Days',
+    label: <Trans i18nKey="com.affine.moreThan30Days" />,
+    match: item => !withinDaysAgo(new Date(item[key] ?? item.createDate), 30),
   },
 ];
 
@@ -84,23 +73,33 @@ export function pagesToPageGroups(
     ];
   }
 
+  // assume pages are already sorted, we will use the page order to determine the group order
   const groupDefs = pageGroupDefinitions[key];
+  const groups: PageGroupProps[] = [];
 
-  return groupDefs
-    .map(groupDef => {
-      const filtered = pages.filter(page => groupDef.match(page));
-      const label =
-        typeof groupDef.label === 'function'
-          ? groupDef.label(filtered, pages)
-          : groupDef.label;
-      return {
-        id: groupDef.id,
-        label,
-        items: filtered,
-        allItems: pages,
-      };
-    })
-    .filter(group => group.items.length > 0);
+  for (const page of pages) {
+    // for a single page, there could be multiple groups that it belongs to
+    const matchedGroups = groupDefs.filter(def => def.match(page));
+    console.log('matchedGroups', matchedGroups.map(g => g.id).join(', '));
+    for (const groupDef of matchedGroups) {
+      const group = groups.find(g => g.id === groupDef.id);
+      if (group) {
+        group.items.push(page);
+      } else {
+        const label =
+          typeof groupDef.label === 'function'
+            ? groupDef.label()
+            : groupDef.label;
+        groups.push({
+          id: groupDef.id,
+          label: label,
+          items: [page],
+          allItems: pages,
+        });
+      }
+    }
+  }
+  return groups;
 }
 
 export const PageGroup = ({ id, items, label }: PageGroupProps) => {
@@ -203,9 +202,11 @@ function pageMetaToPageItemProp(
       <PagePreview workspace={props.blockSuiteWorkspace} pageId={pageMeta.id} />
     ),
     createDate: new Date(pageMeta.createDate),
-    updatedDate: new Date(pageMeta.updatedDate ?? pageMeta.createDate),
+    updatedDate: pageMeta.updatedDate
+      ? new Date(pageMeta.updatedDate)
+      : undefined,
     to: props.renderPageAsLink
-      ? `/workspace/${props.blockSuiteWorkspace.id}/page/${pageMeta.id}`
+      ? `/workspace/${props.blockSuiteWorkspace.id}/${pageMeta.id}`
       : undefined,
     onClickPage: props.onOpenPage
       ? newTab => {

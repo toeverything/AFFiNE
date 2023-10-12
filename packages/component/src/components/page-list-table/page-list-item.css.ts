@@ -11,6 +11,11 @@ export const root = style({
   },
   overflow: 'hidden',
   cursor: 'default',
+  selectors: {
+    'a&': {
+      cursor: 'pointer',
+    },
+  },
 });
 
 export const selectionCell = style({

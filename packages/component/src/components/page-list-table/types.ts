@@ -13,7 +13,7 @@ export type PageListItemProps = {
   tags: Tag[];
   favorite: boolean;
   createDate: Date;
-  updatedDate: Date;
+  updatedDate?: Date;
   isPublicPage?: boolean;
   to?: To; // whether or not to render this item as a Link
   draggable?: boolean; // whether or not to allow dragging this item
@@ -62,9 +62,7 @@ export interface PageListProps {
 export interface PageGroupDefinition {
   id: string;
   // using a function to render custom group header
-  label:
-    | ((filtered: PageMeta[], allItems: PageMeta[]) => ReactNode)
-    | ReactNode;
+  label: (() => ReactNode) | ReactNode;
   match: (item: PageMeta) => boolean;
 }
 

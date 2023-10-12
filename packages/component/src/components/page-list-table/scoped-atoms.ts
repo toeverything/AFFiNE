@@ -66,34 +66,40 @@ export const pageListHandlersAtom = selectAtom(
 
 export const pagesAtom = selectAtom(pageListPropsAtom, props => props.pages);
 
-type SorterConfig<
-  T extends Record<string | number | symbol, unknown> = Record<
-    string | number | symbol,
-    unknown
-  >,
-> = {
-  key?: keyof T;
+type SortingContext<T extends string | number | symbol> = {
+  key: T;
   order: 'asc' | 'desc';
-  sortingFn: (
-    ctx: {
-      key: keyof T;
-      order: 'asc' | 'desc';
-    },
-    a: T,
-    b: T
-  ) => number;
+  fallbackKey?: T;
 };
 
-const defaultSortingFn: SorterConfig['sortingFn'] = (ctx, a, b) => {
-  const valA = a[ctx.key];
-  const valB = b[ctx.key];
+type SorterConfig<T extends Record<string, unknown> = Record<string, unknown>> =
+  {
+    key?: keyof T;
+    order: 'asc' | 'desc';
+    sortingFn: (ctx: SortingContext<keyof T>, a: T, b: T) => number;
+  };
+
+const defaultSortingFn: SorterConfig<PageMetaRecord>['sortingFn'] = (
+  ctx,
+  a,
+  b
+) => {
+  const val = (obj: PageMetaRecord) => {
+    let v = obj[ctx.key];
+    if (v === undefined && ctx.fallbackKey) {
+      v = obj[ctx.fallbackKey];
+    }
+    return v;
+  };
+  const valA = val(a);
+  const valB = val(b);
   const revert = ctx.order === 'desc';
   const revertSymbol = revert ? -1 : 1;
   if (typeof valA === 'string' && typeof valB === 'string') {
     return valA.localeCompare(valB) * revertSymbol;
   }
   if (typeof valA === 'number' && typeof valB === 'number') {
-    return valA - valB * revertSymbol;
+    return (valA - valB) * revertSymbol;
   }
   if (valA instanceof Date && valB instanceof Date) {
     return (valA.getTime() - valB.getTime()) * revertSymbol;
@@ -116,7 +122,7 @@ const defaultSortingFn: SorterConfig['sortingFn'] = (ctx, a, b) => {
   return 0;
 };
 
-const sorterStateAtom = atom<SorterConfig>({
+const sorterStateAtom = atom<SorterConfig<PageMetaRecord>>({
   key: DEFAULT_SORT_KEY,
   order: 'desc',
   sortingFn: defaultSortingFn,
@@ -126,13 +132,16 @@ export const sorterAtom = atom(
   get => {
     let pages = get(pagesAtom);
     const sorterState = get(sorterStateAtom);
-    const sortCtx = sorterState.key
+    const sortCtx: SortingContext<keyof PageMetaRecord> | null = sorterState.key
       ? {
           key: sorterState.key,
           order: sorterState.order,
         }
       : null;
     if (sortCtx) {
+      if (sorterState.key === 'updatedDate') {
+        sortCtx.fallbackKey = 'createDate';
+      }
       const compareFn = (a: PageMetaRecord, b: PageMetaRecord) =>
         sorterState.sortingFn(sortCtx, a, b);
       pages = [...pages].sort(compareFn);
@@ -161,7 +170,6 @@ export const sorterAtom = atom(
 );
 
 export const pageGroupsAtom = atom(get => {
-  const pages = get(pagesAtom);
   let groupBy = get(selectAtom(pageListPropsAtom, props => props.groupBy));
   const sorter = get(sorterAtom);
   groupBy =
@@ -172,5 +180,5 @@ export const pageGroupsAtom = atom(get => {
       !sorter.key
       ? DEFAULT_SORT_KEY
       : undefined);
-  return pagesToPageGroups(pages, groupBy);
+  return pagesToPageGroups(sorter.pages, groupBy);
 });

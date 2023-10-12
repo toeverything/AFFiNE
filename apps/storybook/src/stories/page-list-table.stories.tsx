@@ -120,11 +120,7 @@ ListItemTags.args = {
 };
 
 export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
-  return (
-    <div style={{ height: 300, overflow: 'auto' }}>
-      <PageList {...props} {...loaded}></PageList>
-    </div>
-  );
+  return <PageList {...props} {...loaded}></PageList>;
 };
 
 PageListStory.args = {
@@ -158,21 +154,31 @@ PageListStory.loaders = [
       },
     });
 
-    await createAndInitPage(
+    const page1 = await createAndInitPage(
       workspace,
       'This is page 1',
       'Hello World from page 1'
     );
-    await createAndInitPage(
+    const page2 = await createAndInitPage(
       workspace,
       'This is page 2',
       'Hello World from page 2'
     );
-    await createAndInitPage(
+    const page3 = await createAndInitPage(
       workspace,
       'This is page 3',
       'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
     );
+
+    await createAndInitPage(
+      workspace,
+      'This is page 4',
+      'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
+    );
+
+    page1.meta.createDate = new Date('2021-01-01').getTime();
+    page2.meta.createDate = page2.meta.createDate - 3600 * 1000 * 24;
+    page3.meta.createDate = page3.meta.createDate - 3600 * 1000 * 24 * 7;
 
     workspace.meta.pageMetas[2].tags = ['test-tag-id-0', 'test-tag-id-1'];
 

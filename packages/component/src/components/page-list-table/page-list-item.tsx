@@ -1,3 +1,4 @@
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Checkbox } from '@mui/material';
 import {
   type MouseEventHandler,
@@ -22,13 +23,14 @@ const PageListTitleCell = ({
   title,
   preview,
 }: Pick<PageListItemProps, 'title' | 'preview'>) => {
+  const t = useAFFiNEI18N();
   return (
     <div data-testid="page-list-item-title" className={styles.titleCell}>
       <div
         data-testid="page-list-item-title-text"
         className={styles.titleCellMain}
       >
-        {title}
+        {title || t['Untitled']()}
       </div>
       {preview ? (
         <div
@@ -100,7 +102,7 @@ const PageUpdatedDateCell = ({
 }: Pick<PageListItemProps, 'updatedDate'>) => {
   return (
     <div data-testid="page-list-item-date" className={styles.dateCell}>
-      {formatDate(updatedDate)}
+      {updatedDate ? formatDate(updatedDate) : '-'}
     </div>
   );
 };
@@ -152,7 +154,7 @@ export const PageListItem = (props: PageListItemProps) => {
             selected={props.selected}
           />
           <PageListIconCell icon={props.icon} />
-          <PageListTitleCell title={props.title} />
+          <PageListTitleCell title={props.title} preview={props.preview} />
         </FlexWrapper>
         <FlexWrapper flex={4} alignment="end">
           <PageTagsCell tags={props.tags} />
