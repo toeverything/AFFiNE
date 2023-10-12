@@ -9,10 +9,10 @@ import {
   type MouseEventHandler,
   type ReactNode,
   useCallback,
+  useEffect,
   useMemo,
 } from 'react';
 
-import { ScrollableContainer } from '../../ui/scrollbar';
 import { PageGroup } from './page-group';
 import * as styles from './page-list.css';
 import {
@@ -41,22 +41,28 @@ const PageListInner = (props: PageListProps) => {
   // push pageListProps to the atom so that downstream components can consume it
   useHydrateAtoms([[pageListPropsAtom, props]], {
     // note: by turning on dangerouslyForceHydrate, downstream component need to use selectAtom to consume the atom
-    dangerouslyForceHydrate: true,
+    // note2: not using it for now because it will cause some other issues
+    // dangerouslyForceHydrate: true,
   });
+
+  const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
+
+  useEffect(() => {
+    setPageListPropsAtom(props);
+  }, [props, setPageListPropsAtom]);
+
   const groups = useAtomValue(pageGroupsAtom);
   return (
-    <div className={clsx(props.className)}>
+    <div className={clsx(props.className, styles.root)}>
       <PageListHeader />
       {groups.length === 0 && props.fallback ? (
         props.fallback
       ) : (
-        <ScrollableContainer>
-          <div className={styles.groupsContainer}>
-            {groups.map(group => (
-              <PageGroup key={group.id} {...group} />
-            ))}
-          </div>
-        </ScrollableContainer>
+        <div className={styles.groupsContainer}>
+          {groups.map(group => (
+            <PageGroup key={group.id} {...group} />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -87,15 +93,18 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
       className={styles.headerCell}
       data-sortable={props.sortable ? true : undefined}
       data-sorting={sorting ? true : undefined}
+      style={props.style}
     >
       {props.children}
-      {sorting ? (
-        sorter.order === 'asc' ? (
-          <SortUpIcon />
-        ) : (
-          <SortDownIcon />
-        )
-      ) : null}
+      <div className={styles.headerCellSortIcon}>
+        {sorting ? (
+          sorter.order === 'asc' ? (
+            <SortUpIcon />
+          ) : (
+            <SortDownIcon />
+          )
+        ) : null}
+      </div>
     </FlexWrapper>
   );
 };
@@ -127,6 +136,10 @@ const PageListHeaderCheckbox = () => {
     [handlers, pages]
   );
 
+  if (!selectionState.selectable) {
+    return <div style={{ width: '56px' }}></div>;
+  }
+
   if (selectionState.selectionActive) {
     return (
       <Checkbox
@@ -142,21 +155,34 @@ const PageListHeaderCheckbox = () => {
     );
   } else {
     return (
-      <div onClick={onActivateSelection}>
+      <div
+        style={{ width: '56px' }}
+        className={styles.headerTitleSelectionIconWrapper}
+        onClick={onActivateSelection}
+      >
         <MultiSelectIcon />
       </div>
     );
   }
 };
 
+const PageListHeaderTitleCell = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <div className={styles.headerTitleCell}>
+      <PageListHeaderCheckbox />
+      {t['Title']()}
+    </div>
+  );
+};
+
 export const PageListHeader = () => {
   const t = useAFFiNEI18N();
-  const selectionState = useAtomValue(selectionStateAtom);
   const headerCols = useMemo(() => {
     const cols: HeaderColDef[] = [
       {
         key: 'title',
-        content: t['Title'](),
+        content: <PageListHeaderTitleCell />,
         flex: 6,
         alignment: 'start',
       },
@@ -187,17 +213,8 @@ export const PageListHeader = () => {
         alignment: 'end',
       },
     ];
-
-    if (selectionState.selectable) {
-      cols.unshift({
-        key: 'select',
-        content: <PageListHeaderCheckbox />,
-        flex: 1,
-        alignment: 'start',
-      });
-    }
     return cols;
-  }, [selectionState.selectable, t]);
+  }, [t]);
   return (
     <div className={styles.header}>
       {headerCols.map(col => {
@@ -207,6 +224,8 @@ export const PageListHeader = () => {
             alignment={col.alignment}
             key={col.key}
             sortKey={col.key as keyof PageMeta}
+            sortable={col.sortable}
+            style={{ overflow: 'visible' }}
           >
             {col.content}
           </PageListHeaderCell>

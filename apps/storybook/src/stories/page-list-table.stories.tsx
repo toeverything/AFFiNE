@@ -120,7 +120,11 @@ ListItemTags.args = {
 };
 
 export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
-  return <PageList {...props} {...loaded}></PageList>;
+  return (
+    <div style={{ height: 300, overflow: 'auto' }}>
+      <PageList {...props} {...loaded}></PageList>
+    </div>
+  );
 };
 
 PageListStory.args = {

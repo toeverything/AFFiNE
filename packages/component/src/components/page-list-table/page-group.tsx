@@ -19,7 +19,7 @@ import {
 import { PagePreview } from './page-content-preview';
 import * as styles from './page-group.css';
 import { PageListItem } from './page-list-item';
-import { pageListPropsAtom } from './scoped-atoms';
+import { pageListPropsAtom, selectionStateAtom } from './scoped-atoms';
 import type {
   PageGroupDefinition,
   PageGroupProps,
@@ -172,7 +172,15 @@ const listPropsAtom = selectAtom(
 
 const PageMetaListItemRenderer = (pageMeta: PageMeta) => {
   const props = useAtomValue(listPropsAtom);
-  return <PageListItem {...pageMetaToPageItemProp(pageMeta, props)} />;
+  const { selectionActive } = useAtomValue(selectionStateAtom);
+  return (
+    <PageListItem
+      {...pageMetaToPageItemProp(pageMeta, {
+        ...props,
+        selectable: selectionActive,
+      })}
+    />
+  );
 };
 
 function tagIdToTagOption(

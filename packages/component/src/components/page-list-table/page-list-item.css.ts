@@ -88,6 +88,12 @@ export const favoriteCell = style({
   justifyContent: 'flex-end',
   padding: '0 16px',
   flexShrink: 0,
+  opacity: 0,
+  selectors: {
+    [`&[data-favorite], ${root}:hover &`]: {
+      opacity: 1,
+    },
+  },
 });
 
 export const operationsCell = style({

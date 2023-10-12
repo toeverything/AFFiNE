@@ -16,7 +16,7 @@ export const FlexWrapper = (props: FlexWrapperProps) => {
       {...props}
       data-testid="page-list-flex-wrapper"
       style={{
-        ...props.styles,
+        ...props.style,
         flexGrow: props.flex,
         flexBasis: `${(props.flex / 12) * 100}%`,
         justifyContent: props.alignment,

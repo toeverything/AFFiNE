@@ -1,5 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
+export const root = style({});
+
 export const groupsContainer = style({
   display: 'flex',
   flexDirection: 'column',
@@ -9,7 +11,11 @@ export const groupsContainer = style({
 export const header = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '12px 16px 8px 56px',
+  padding: '16px 0 8px 0',
+  position: 'sticky',
+  top: 0,
+  left: 0,
+  background: 'var(--affine-background-primary-color)',
 });
 
 export const headerCell = style({
@@ -26,11 +32,25 @@ export const headerCell = style({
   display: 'flex',
   alignItems: 'center',
   columnGap: '4px',
+  position: 'relative',
+});
+
+export const headerTitleCell = style({
+  display: 'flex',
+  alignItems: 'center',
+});
+
+export const headerTitleSelectionIconWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 export const headerCellSortIcon = style({
   width: '14px',
   height: '14px',
+  position: 'absolute',
+  transform: 'translateX(14px)',
 });
 
 export const flexWrapper = style({

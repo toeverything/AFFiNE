@@ -117,7 +117,11 @@ const PageFavoriteCell = ({
     [onToggleFavorite]
   );
   return (
-    <div data-testid="page-list-item-favorite" className={styles.favoriteCell}>
+    <div
+      data-testid="page-list-item-favorite"
+      data-favorite={favorite ? true : undefined}
+      className={styles.favoriteCell}
+    >
       <FavoriteTag onClick={onClick} active={!!favorite} />
     </div>
   );
@@ -139,26 +143,33 @@ const PageListOperationsCell = ({
 
 export const PageListItem = (props: PageListItemProps) => {
   return (
-    <PageListItemWrapper {...props}>
+    <PageListItemWrapper to={props.to} pageId={props.pageId}>
       <FlexWrapper flex={9}>
         <FlexWrapper flex={8}>
-          <PageSelectionCell {...props} />
-          <PageListIconCell {...props} />
-          <PageListTitleCell {...props} />
+          <PageSelectionCell
+            onSelectedChange={props.onSelectedChange}
+            selectable={props.selectable}
+            selected={props.selected}
+          />
+          <PageListIconCell icon={props.icon} />
+          <PageListTitleCell title={props.title} />
         </FlexWrapper>
         <FlexWrapper flex={4} alignment="end">
-          <PageTagsCell {...props} />
+          <PageTagsCell tags={props.tags} />
         </FlexWrapper>
       </FlexWrapper>
       <FlexWrapper flex={1} alignment="end">
-        <PageCreateDateCell {...props} />
+        <PageCreateDateCell createDate={props.createDate} />
       </FlexWrapper>
       <FlexWrapper flex={1} alignment="end">
-        <PageUpdatedDateCell {...props} />
+        <PageUpdatedDateCell updatedDate={props.updatedDate} />
       </FlexWrapper>
       <FlexWrapper flex={1} alignment="end">
-        <PageFavoriteCell {...props} />
-        <PageListOperationsCell {...props} />
+        <PageFavoriteCell
+          favorite={props.favorite}
+          onToggleFavorite={props.onToggleFavorite}
+        />
+        <PageListOperationsCell operations={props.operations} />
       </FlexWrapper>
     </PageListItemWrapper>
   );
