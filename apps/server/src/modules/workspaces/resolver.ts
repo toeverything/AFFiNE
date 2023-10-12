@@ -33,6 +33,7 @@ import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
+import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
@@ -662,16 +663,24 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
+    const docId = new DocID(pageId, workspaceId);
+
+    if (docId.isWorkspace) {
+      throw new ForbiddenException('Expect page not to be workspace');
+    }
+
     const userWorkspace = await this.prisma.userWorkspacePermission.findFirst({
       where: {
         userId: user.id,
-        workspaceId,
+        workspaceId: docId.workspace,
       },
     });
+
     if (!userWorkspace?.accepted) {
       throw new ForbiddenException('Permission denied');
     }
-    return this.permissions.grantPage(workspaceId, pageId);
+
+    return this.permissions.grantPage(docId.workspace, docId.guid);
   }
 
   @Mutation(() => Boolean)
@@ -680,9 +689,15 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Admin);
+    const docId = new DocID(pageId, workspaceId);
 
-    return this.permissions.revokePage(workspaceId, pageId);
+    if (docId.isWorkspace) {
+      throw new ForbiddenException('Expect page not to be workspace');
+    }
+
+    await this.permissions.check(docId.workspace, user.id, Permission.Admin);
+
+    return this.permissions.revokePage(docId.workspace, docId.guid);
   }
 
   @Query(() => [String], {
