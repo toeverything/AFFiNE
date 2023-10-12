@@ -64,7 +64,7 @@
     "@affine-test/kit": "workspace:*",
     "@affine/cli": "workspace:*",
     "@affine/plugin-cli": "workspace:*",
-    "@commitlint/cli": "^17.7.1",
+    "@commitlint/cli": "^17.7.2",
     "@commitlint/config-conventional": "^17.7.0",
     "@faker-js/faker": "^8.1.0",
     "@istanbuljs/schema": "^0.1.3",
