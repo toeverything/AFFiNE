@@ -31,6 +31,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCloud: true,
       enableEnhanceShareMode: false,
       serverUrlPrefix: 'https://app.affine.pro',
+      // demo site key for captcha, always pass the request
+      captchaSiteKey: '1x00000000000000000000AA',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
@@ -64,6 +66,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCloud: true,
       enableEnhanceShareMode: false,
       serverUrlPrefix: 'https://affine.fail',
+      // demo site key for captcha, always pass the request
+      captchaSiteKey: '1x00000000000000000000AA',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
@@ -113,6 +117,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
+    captchaSiteKey:
+      process.env.CAPTCHA_SITE_KEY ?? currentBuildPreset.captchaSiteKey,
   };
 
   if (buildFlags.mode === 'development') {
@@ -124,6 +130,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     // environment preset will overwrite current build preset
     // this environment variable is for debug proposes only
     // do not put them into CI
-    ...(process.env.CI ? {} : environmentPreset),
+    ...(process.env.CI
+      ? {
+          captchaSiteKey:
+            process.env.CAPTCHA_SITE_KEY ?? currentBuildPreset.captchaSiteKey,
+        }
+      : environmentPreset),
   };
 }
