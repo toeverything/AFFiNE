@@ -273,6 +273,8 @@ test.describe('sign out', () => {
       },
       page
     );
+    await clickSideBarAllPageButton(page);
+    const currentUrl = page.url();
     await clickSideBarCurrentWorkspaceBanner(page);
     await page.getByTestId('workspace-modal-account-option').click();
     await page.getByTestId('workspace-modal-sign-out-option').click();
@@ -280,5 +282,6 @@ test.describe('sign out', () => {
     await clickSideBarCurrentWorkspaceBanner(page);
     const signInButton = page.getByTestId('cloud-signin-button');
     await expect(signInButton).toBeVisible();
+    expect(page.url()).toBe(currentUrl);
   });
 });
