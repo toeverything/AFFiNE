@@ -31,3 +31,14 @@ export interface Blob {
  * result binary.
  */
 export function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer;
+
+export function mintChallengeResponse(
+  resource: string,
+  bits?: number | undefined | null
+): string;
+
+export function verifyChallengeResponse(
+  response: string,
+  bits: number,
+  resource: string
+): boolean;

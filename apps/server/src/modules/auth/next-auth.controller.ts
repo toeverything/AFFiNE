@@ -4,6 +4,7 @@ import {
   All,
   BadRequestException,
   Controller,
+  Get,
   Inject,
   Logger,
   Next,
@@ -17,12 +18,15 @@ import { hash, verify } from '@node-rs/argon2';
 import type { User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { pick } from 'lodash-es';
+import { nanoid } from 'nanoid';
 import type { AuthAction, CookieOption, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
+import { SessionService } from '../../session';
+import { verifyChallengeResponse } from '../../storage';
 import { AuthThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
@@ -43,10 +47,26 @@ export class NextAuthController {
     private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,
-    private readonly metrics: Metrics
+    private readonly metrics: Metrics,
+    private readonly session: SessionService
   ) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.callbackSession = nextAuthOptions.callbacks!.session;
+  }
+
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60,
+    },
+  })
+  @Get('/challenge')
+  async getChallenge(@Res() res: Response) {
+    const challenge = nanoid();
+    const resource = nanoid();
+    await this.session.set(challenge, resource, 5 * 60 * 1000);
+    res.json({ challenge, resource });
   }
 
   @UseGuards(AuthThrottlerGuard)
@@ -130,12 +150,31 @@ export class NextAuthController {
     }
 
     if (req.method === 'POST' && action === 'signin') {
-      const isVerified = await this.authService.verifyCaptchaToken(
-        req.query?.token,
-        req.headers['CF-Connecting-IP'] as string
-      );
-      if (!isVerified) {
-        throw new BadRequestException('Invalid Captcha Response');
+      const challenge = req.query?.challenge;
+      if (typeof challenge === 'string' && challenge) {
+        const resource = await this.session.get(challenge);
+
+        if (!resource) {
+          throw new BadRequestException('Invalid Challenge');
+        }
+
+        const isChallengeVerified = verifyChallengeResponse(
+          req.query?.response,
+          resource
+        );
+
+        if (!isChallengeVerified) {
+          throw new BadRequestException('Invalid Captcha Response');
+        }
+      } else {
+        const isTokenVerified = await this.authService.verifyCaptchaToken(
+          req.query?.token,
+          req.headers['CF-Connecting-IP'] as string
+        );
+
+        if (!isTokenVerified) {
+          throw new BadRequestException('Invalid Captcha Response');
+        }
       }
     }
 

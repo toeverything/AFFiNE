@@ -270,6 +270,8 @@ const {
   moveFile,
   SqliteConnection,
   ValidationResult,
+  verifyChallengeResponse,
+  mintChallengeResponse,
 } = nativeBinding;
 
 module.exports.WatcherKind = WatcherKind;
@@ -278,3 +280,5 @@ module.exports.FsWatcher = FsWatcher;
 module.exports.moveFile = moveFile;
 module.exports.SqliteConnection = SqliteConnection;
 module.exports.ValidationResult = ValidationResult;
+module.exports.verifyChallengeResponse = verifyChallengeResponse;
+module.exports.mintChallengeResponse = mintChallengeResponse;

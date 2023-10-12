@@ -1,5 +1,7 @@
 #![deny(clippy::all)]
 
+pub mod hashcash;
+
 use std::{
   collections::HashMap,
   fmt::{Debug, Display},
