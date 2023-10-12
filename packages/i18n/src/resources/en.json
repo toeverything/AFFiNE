@@ -313,7 +313,7 @@
   "com.affine.settingSidebar.settings.general": "General",
   "com.affine.settingSidebar.settings.workspace": "Workspace",
   "com.affine.settingSidebar.title": "Settings",
-  "com.affine.share-menu.EnableCloudDescription": "Sharing page publicly requires AFFiNE Cloud service.",
+  "com.affine.share-menu.EnableCloudDescription": "Sharing page requires AFFiNE Cloud.",
   "com.affine.share-menu.shareButton": "Share",
   "com.affine.share-menu.sharedButton": "Shared",
   "com.affine.share-menu.SharedPage": "Shared Page",
@@ -628,5 +628,10 @@
   "com.affine.cmdk.affine.whats-new": "What's New",
   "com.affine.cmdk.affine.getting-started": "Getting Started",
   "com.affine.cmdk.affine.contact-us": "Contact Us",
-  "com.affine.cmdk.affine.restart-to-upgrade": "Restart to Upgrade"
+  "com.affine.cmdk.affine.restart-to-upgrade": "Restart to Upgrade",
+  "com.affine.share-menu.publish-to-web": "Publish to Web",
+  "com.affine.share-menu.publish-to-web.description": "Let anyone with a link view a read-only version of this page.",
+  "com.affine.share-menu.share-privately": "Share Privately",
+  "com.affine.share-menu.share-privately.description": "Only members of this Workspace can open this link.",
+  "com.affine.share-menu.copy-private-link": "Copy Private Link"
 }

@@ -7,9 +7,9 @@ import {
 import { Unreachable } from '@affine/env/constant';
 import type { Collection } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
-import {
+import type {
   WorkspaceFlavour,
-  type WorkspaceHeaderProps,
+  WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useSetAtom } from 'jotai/react';
@@ -130,15 +130,12 @@ export function WorkspaceHeader({
 
   // route in edit page
   if ('pageId' in currentEntry) {
-    const isCloudWorkspace =
-      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
     const currentPage = currentWorkspace.blockSuiteWorkspace.getPage(
       currentEntry.pageId
     );
-    const sharePageModal =
-      isCloudWorkspace && currentPage ? (
-        <SharePageModal workspace={currentWorkspace} page={currentPage} />
-      ) : null;
+    const sharePageModal = currentPage ? (
+      <SharePageModal workspace={currentWorkspace} page={currentPage} />
+    ) : null;
     return (
       <Header
         mainContainerAtom={mainContainerAtom}
