@@ -13,7 +13,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
   const { data: avatar, mutate } = useSWR(url, {
     fetcher: async avatar => {
       assertExists(blockSuiteWorkspace);
-      const blobs = await blockSuiteWorkspace.blobs;
+      const blobs = blockSuiteWorkspace.blobs;
       const blob = await blobs.get(avatar);
       if (blob) {
         return URL.createObjectURL(blob);
@@ -31,7 +31,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
         return;
       }
       const blob = new Blob([file], { type: file.type });
-      const blobs = await blockSuiteWorkspace.blobs;
+      const blobs = blockSuiteWorkspace.blobs;
       const blobId = await blobs.set(blob);
       blockSuiteWorkspace.meta.setAvatar(blobId);
       await mutate(blobId);

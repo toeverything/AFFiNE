@@ -7,13 +7,11 @@ test('Click right-bottom corner contact icon', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await page.locator('[data-testid=help-island]').click();
-  const rightBottomContactUs = page.locator(
-    '[data-testid=right-bottom-contact-us-icon]'
-  );
-  expect(await rightBottomContactUs.isVisible()).toEqual(true);
+  const rightBottomContactUs = page.getByTestId('right-bottom-contact-us-icon');
+  await expect(rightBottomContactUs).toBeVisible();
 
   await rightBottomContactUs.click();
 
-  const title = await page.getByTestId('about-title');
+  const title = page.getByTestId('about-title');
   await expect(title).toBeVisible();
 });

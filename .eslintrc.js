@@ -132,6 +132,7 @@ const config = {
     '@typescript-eslint/no-non-null-assertion': 'error',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
@@ -202,6 +203,7 @@ const config = {
         ignore: ['^\\[[a-zA-Z0-9-_]+\\]\\.tsx$'],
       },
     ],
+    'unicorn/no-unnecessary-await': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',
