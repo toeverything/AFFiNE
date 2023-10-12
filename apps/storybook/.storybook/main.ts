@@ -57,6 +57,7 @@ export default {
           process.env.SHOULD_REPORT_TRACE === 'true'
         )}`,
         'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
+        'process.env.CAPTCHA_SITE_KEY': `"${process.env.CAPTCHA_SITE_KEY}"`,
         runtimeConfig: getRuntimeConfig({
           distribution: 'browser',
           mode: 'development',

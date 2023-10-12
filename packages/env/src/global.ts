@@ -31,7 +31,6 @@ export const runtimeFlagsSchema = z.object({
   enableEnhanceShareMode: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
-  captchaSiteKey: z.string(),
   enableMoveDatabase: z.boolean(),
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),

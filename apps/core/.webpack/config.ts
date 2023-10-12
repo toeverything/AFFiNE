@@ -359,6 +359,9 @@ export const createConfiguration: (
         'process.env.TRACE_REPORT_ENDPOINT': JSON.stringify(
           process.env.TRACE_REPORT_ENDPOINT
         ),
+        'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
+          process.env.CAPTCHA_SITE_KEY
+        ),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({

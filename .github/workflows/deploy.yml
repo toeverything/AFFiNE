@@ -57,6 +57,7 @@ jobs:
           BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: true
           TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
+          CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:

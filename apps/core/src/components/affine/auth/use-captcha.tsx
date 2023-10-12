@@ -10,7 +10,7 @@ export const useCaptcha = (): [string | null, () => JSX.Element] => {
     return (
       <Turnstile
         className={style.captchaWrapper}
-        siteKey="1x00000000000000000000AA"
+        siteKey={process.env.CAPTCHA_SITE_KEY || '1x00000000000000000000AA'}
         onSuccess={setVerifyToken}
       />
     );

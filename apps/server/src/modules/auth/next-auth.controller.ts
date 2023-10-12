@@ -135,11 +135,7 @@ export class NextAuthController {
         req.headers['CF-Connecting-IP'] as string
       );
       if (!isVerified) {
-        res.status(403);
-        res.json({
-          error: `You don't have early access permission`,
-        });
-        return;
+        throw new BadRequestException('Invalid Captcha Response');
       }
     }
 
