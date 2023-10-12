@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "verbatimModuleSyntax": false,
+    "resolveJsonModule": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./lib/.webpack",
+    "rootDir": "."
+  },
+  "include": [".webpack/*.ts"],
+  "references": [
+    {
+      "path": "../../../tools/cli"
+    },
+    {
+      "path": "../../common/env"
+    }
+  ]
+}

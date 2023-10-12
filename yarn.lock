@@ -160,9 +160,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/cli@workspace:*, @affine/cli@workspace:packages/cli":
+"@affine/cli@workspace:*, @affine/cli@workspace:tools/cli":
   version: 0.0.0-use.local
-  resolution: "@affine/cli@workspace:packages/cli"
+  resolution: "@affine/cli@workspace:tools/cli"
   dependencies:
     "@clack/core": ^0.3.3
     "@clack/prompts": ^0.7.0
@@ -178,18 +178,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/cmdk@workspace:packages/cmdk":
+"@affine/cmdk@workspace:packages/common/cmdk":
   version: 0.0.0-use.local
-  resolution: "@affine/cmdk@workspace:packages/cmdk"
+  resolution: "@affine/cmdk@workspace:packages/common/cmdk"
   dependencies:
     react: 18.2.0
     react-dom: 18.2.0
   languageName: unknown
   linkType: soft
 
-"@affine/component@workspace:*, @affine/component@workspace:packages/component":
+"@affine/component@workspace:*, @affine/component@workspace:packages/frontend/component":
   version: 0.0.0-use.local
-  resolution: "@affine/component@workspace:packages/component"
+  resolution: "@affine/component@workspace:packages/frontend/component"
   dependencies:
     "@affine/debug": "workspace:*"
     "@affine/graphql": "workspace:*"
@@ -264,9 +264,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/copilot-plugin@workspace:*, @affine/copilot-plugin@workspace:plugins/copilot":
+"@affine/copilot-plugin@workspace:*, @affine/copilot-plugin@workspace:packages/plugins/copilot":
   version: 0.0.0-use.local
-  resolution: "@affine/copilot-plugin@workspace:plugins/copilot"
+  resolution: "@affine/copilot-plugin@workspace:packages/plugins/copilot"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
@@ -291,9 +291,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/core@workspace:apps/core":
+"@affine/core@workspace:packages/frontend/core":
   version: 0.0.0-use.local
-  resolution: "@affine/core@workspace:apps/core"
+  resolution: "@affine/core@workspace:packages/frontend/core"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/component": "workspace:*"
@@ -373,9 +373,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/debug@workspace:*, @affine/debug@workspace:packages/debug":
+"@affine/debug@workspace:*, @affine/debug@workspace:packages/common/debug":
   version: 0.0.0-use.local
-  resolution: "@affine/debug@workspace:packages/debug"
+  resolution: "@affine/debug@workspace:packages/common/debug"
   dependencies:
     "@types/debug": ^4.1.9
     debug: ^4.3.4
@@ -383,9 +383,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/electron@workspace:apps/electron":
+"@affine/electron@workspace:packages/frontend/electron":
   version: 0.0.0-use.local
-  resolution: "@affine/electron@workspace:apps/electron"
+  resolution: "@affine/electron@workspace:packages/frontend/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
     "@affine/copilot-plugin": "workspace:*"
@@ -441,9 +441,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/env@workspace:*, @affine/env@workspace:packages/env":
+"@affine/env@workspace:*, @affine/env@workspace:packages/common/env":
   version: 0.0.0-use.local
-  resolution: "@affine/env@workspace:packages/env"
+  resolution: "@affine/env@workspace:packages/common/env"
   dependencies:
     "@blocksuite/global": 0.0.0-20231018100009-361737d3-nightly
     "@blocksuite/store": 0.0.0-20231018100009-361737d3-nightly
@@ -459,9 +459,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/graphql@workspace:*, @affine/graphql@workspace:packages/graphql":
+"@affine/graphql@workspace:*, @affine/graphql@workspace:packages/frontend/graphql":
   version: 0.0.0-use.local
-  resolution: "@affine/graphql@workspace:packages/graphql"
+  resolution: "@affine/graphql@workspace:packages/frontend/graphql"
   dependencies:
     "@affine/env": "workspace:*"
     "@graphql-codegen/add": ^5.0.0
@@ -477,9 +477,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/hello-world-plugin@workspace:*, @affine/hello-world-plugin@workspace:plugins/hello-world":
+"@affine/hello-world-plugin@workspace:*, @affine/hello-world-plugin@workspace:packages/plugins/hello-world":
   version: 0.0.0-use.local
-  resolution: "@affine/hello-world-plugin@workspace:plugins/hello-world"
+  resolution: "@affine/hello-world-plugin@workspace:packages/plugins/hello-world"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
@@ -489,9 +489,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/i18n@workspace:*, @affine/i18n@workspace:packages/i18n":
+"@affine/i18n@workspace:*, @affine/i18n@workspace:packages/frontend/i18n":
   version: 0.0.0-use.local
-  resolution: "@affine/i18n@workspace:packages/i18n"
+  resolution: "@affine/i18n@workspace:packages/frontend/i18n"
   dependencies:
     "@types/node": ^18.18.5
     "@types/prettier": ^3.0.0
@@ -503,9 +503,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/image-preview-plugin@workspace:*, @affine/image-preview-plugin@workspace:plugins/image-preview":
+"@affine/image-preview-plugin@workspace:*, @affine/image-preview-plugin@workspace:packages/plugins/image-preview":
   version: 0.0.0-use.local
-  resolution: "@affine/image-preview-plugin@workspace:plugins/image-preview"
+  resolution: "@affine/image-preview-plugin@workspace:packages/plugins/image-preview"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
@@ -586,9 +586,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/native@workspace:*, @affine/native@workspace:packages/native":
+"@affine/native@workspace:*, @affine/native@workspace:packages/frontend/native":
   version: 0.0.0-use.local
-  resolution: "@affine/native@workspace:packages/native"
+  resolution: "@affine/native@workspace:packages/frontend/native"
   dependencies:
     "@napi-rs/cli": ^2.16.3
     "@types/node": ^18.18.5
@@ -604,9 +604,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/outline-plugin@workspace:*, @affine/outline-plugin@workspace:plugins/outline":
+"@affine/outline-plugin@workspace:*, @affine/outline-plugin@workspace:packages/plugins/outline":
   version: 0.0.0-use.local
-  resolution: "@affine/outline-plugin@workspace:plugins/outline"
+  resolution: "@affine/outline-plugin@workspace:packages/plugins/outline"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
@@ -619,9 +619,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/plugin-cli@workspace:*, @affine/plugin-cli@workspace:packages/plugin-cli":
+"@affine/plugin-cli@workspace:*, @affine/plugin-cli@workspace:tools/plugin-cli":
   version: 0.0.0-use.local
-  resolution: "@affine/plugin-cli@workspace:packages/plugin-cli"
+  resolution: "@affine/plugin-cli@workspace:tools/plugin-cli"
   dependencies:
     "@endo/static-module-record": ^0.8.2
     "@plugxjs/vite-plugin": 0.1.0
@@ -638,9 +638,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/sdk@workspace:*, @affine/sdk@workspace:packages/sdk":
+"@affine/sdk@workspace:*, @affine/sdk@workspace:packages/common/sdk":
   version: 0.0.0-use.local
-  resolution: "@affine/sdk@workspace:packages/sdk"
+  resolution: "@affine/sdk@workspace:packages/common/sdk"
   dependencies:
     "@blocksuite/block-std": 0.0.0-20231018100009-361737d3-nightly
     "@blocksuite/blocks": 0.0.0-20231018100009-361737d3-nightly
@@ -654,9 +654,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/server@workspace:apps/server":
+"@affine/server@workspace:packages/backend/server":
   version: 0.0.0-use.local
-  resolution: "@affine/server@workspace:apps/server"
+  resolution: "@affine/server@workspace:packages/backend/server"
   dependencies:
     "@affine-test/kit": "workspace:*"
     "@affine/storage": "workspace:*"
@@ -744,9 +744,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/storage@workspace:*, @affine/storage@workspace:packages/storage":
+"@affine/storage@workspace:*, @affine/storage@workspace:packages/backend/storage":
   version: 0.0.0-use.local
-  resolution: "@affine/storage@workspace:packages/storage"
+  resolution: "@affine/storage@workspace:packages/backend/storage"
   dependencies:
     "@napi-rs/cli": ^2.16.3
     lib0: ^0.2.87
@@ -756,9 +756,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/storybook@workspace:apps/storybook":
+"@affine/storybook@workspace:tests/storybook":
   version: 0.0.0-use.local
-  resolution: "@affine/storybook@workspace:apps/storybook"
+  resolution: "@affine/storybook@workspace:tests/storybook"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/i18n": "workspace:*"
@@ -809,15 +809,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/templates@workspace:*, @affine/templates@workspace:packages/templates":
+"@affine/templates@workspace:*, @affine/templates@workspace:packages/frontend/templates":
   version: 0.0.0-use.local
-  resolution: "@affine/templates@workspace:packages/templates"
+  resolution: "@affine/templates@workspace:packages/frontend/templates"
   languageName: unknown
   linkType: soft
 
-"@affine/vue-hello-world-plugin@workspace:*, @affine/vue-hello-world-plugin@workspace:plugins/vue-hello-world":
+"@affine/vue-hello-world-plugin@workspace:*, @affine/vue-hello-world-plugin@workspace:packages/plugins/vue-hello-world":
   version: 0.0.0-use.local
-  resolution: "@affine/vue-hello-world-plugin@workspace:plugins/vue-hello-world"
+  resolution: "@affine/vue-hello-world-plugin@workspace:packages/plugins/vue-hello-world"
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
@@ -827,17 +827,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/workers@workspace:packages/workers":
+"@affine/workers@workspace:tools/workers":
   version: 0.0.0-use.local
-  resolution: "@affine/workers@workspace:packages/workers"
+  resolution: "@affine/workers@workspace:tools/workers"
   dependencies:
     wrangler: ^3.13.1
   languageName: unknown
   linkType: soft
 
-"@affine/workspace@workspace:*, @affine/workspace@workspace:packages/workspace":
+"@affine/workspace@workspace:*, @affine/workspace@workspace:packages/frontend/workspace":
   version: 0.0.0-use.local
-  resolution: "@affine/workspace@workspace:packages/workspace"
+  resolution: "@affine/workspace@workspace:packages/frontend/workspace"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/debug": "workspace:*"
@@ -12687,9 +12687,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/hooks@workspace:*, @toeverything/hooks@workspace:packages/hooks":
+"@toeverything/hooks@workspace:*, @toeverything/hooks@workspace:packages/frontend/hooks":
   version: 0.0.0-use.local
-  resolution: "@toeverything/hooks@workspace:packages/hooks"
+  resolution: "@toeverything/hooks@workspace:packages/frontend/hooks"
   dependencies:
     "@affine/env": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20231018100009-361737d3-nightly
@@ -12736,9 +12736,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/infra@workspace:*, @toeverything/infra@workspace:^, @toeverything/infra@workspace:packages/infra":
+"@toeverything/infra@workspace:*, @toeverything/infra@workspace:^, @toeverything/infra@workspace:packages/common/infra":
   version: 0.0.0-use.local
-  resolution: "@toeverything/infra@workspace:packages/infra"
+  resolution: "@toeverything/infra@workspace:packages/common/infra"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/sdk": "workspace:*"
@@ -12750,7 +12750,7 @@ __metadata:
     "@blocksuite/store": 0.0.0-20231018100009-361737d3-nightly
     "@testing-library/react": ^14.0.0
     async-call-rpc: ^6.3.1
-    electron: "link:../../apps/electron/node_modules/electron"
+    electron: "link:../../frontend/electron/node_modules/electron"
     jotai: ^2.4.3
     jotai-effect: ^0.1.0
     nanoid: ^5.0.1
@@ -12795,9 +12795,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/y-indexeddb@workspace:*, @toeverything/y-indexeddb@workspace:packages/y-indexeddb":
+"@toeverything/y-indexeddb@workspace:*, @toeverything/y-indexeddb@workspace:packages/common/y-indexeddb":
   version: 0.0.0-use.local
-  resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
+  resolution: "@toeverything/y-indexeddb@workspace:packages/common/y-indexeddb"
   dependencies:
     "@blocksuite/blocks": 0.0.0-20231018100009-361737d3-nightly
     "@blocksuite/store": 0.0.0-20231018100009-361737d3-nightly
@@ -12883,9 +12883,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/affine__env@workspace:*, @types/affine__env@workspace:packages/@types/env":
+"@types/affine__env@workspace:*, @types/affine__env@workspace:tools/@types/env":
   version: 0.0.0-use.local
-  resolution: "@types/affine__env@workspace:packages/@types/env"
+  resolution: "@types/affine__env@workspace:tools/@types/env"
   dependencies:
     "@affine/env": "workspace:*"
     "@toeverything/infra": "workspace:*"
@@ -19216,9 +19216,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@link:../../apps/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Finfra":
+"electron@link:../../frontend/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Fcommon%2Finfra":
   version: 0.0.0-use.local
-  resolution: "electron@link:../../apps/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Finfra"
+  resolution: "electron@link:../../frontend/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Fcommon%2Finfra"
   languageName: node
   linkType: soft
 
@@ -34937,9 +34937,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"y-provider@workspace:*, y-provider@workspace:packages/y-provider":
+"y-provider@workspace:*, y-provider@workspace:packages/common/y-provider":
   version: 0.0.0-use.local
-  resolution: "y-provider@workspace:packages/y-provider"
+  resolution: "y-provider@workspace:packages/common/y-provider"
   dependencies:
     "@blocksuite/store": 0.0.0-20231018100009-361737d3-nightly
     vite: ^4.4.11

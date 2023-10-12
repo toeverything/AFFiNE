@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-  "./packages/native",
-  "./packages/native/schema",
-  "./packages/storage",
+  "./packages/frontend/native",
+  "./packages/frontend/native/schema",
+  "./packages/backend/storage",
 ]
 
 [profile.dev.package.sqlx-macros]

@@ -11,14 +11,14 @@
     "vite.config.ts",
     "vitest.config.ts",
     "scripts",
-    "apps/core/.webpack/runtime-config.ts"
+    "packages/frontend/core/.webpack/runtime-config.ts"
   ],
   "references": [
     {
-      "path": "./packages/env"
+      "path": "./packages/common/env"
     },
     {
-      "path": "./packages/cli"
+      "path": "./tools/cli"
     }
   ]
 }

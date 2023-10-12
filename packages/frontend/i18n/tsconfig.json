@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./src"],
+  "exclude": ["./src/resources", "./src/scripts"],
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "./tsconfig.resources.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

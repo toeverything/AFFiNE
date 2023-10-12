@@ -8,10 +8,10 @@
   "include": ["e2e"],
   "references": [
     {
-      "path": "../fixtures"
+      "path": "../../tests/kit"
     },
     {
-      "path": "../kit"
+      "path": "../../tests/fixtures"
     }
   ]
 }

@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: storage.node
-          path: ./packages/storage/storage.node
+          path: ./packages/backend/storage/storage.node
           if-no-files-found: error
 
   server-test:
@@ -117,7 +117,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storage.node
-          path: ./apps/server
+          path: ./packages/backend/server
 
       - name: Run server tests
         run: yarn workspace @affine/server test:coverage
@@ -129,7 +129,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./apps/server/.coverage/lcov.info
+          files: ./packages/backend/server/.coverage/lcov.info
           flags: server-test
           name: affine
           fail_ci_if_error: false
@@ -188,7 +188,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storage.node
-          path: ./apps/server
+          path: ./packages/backend/server
 
       - name: Run playwright tests
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-cloud e2e --forbid-only
@@ -278,7 +278,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: storage.node
-          path: ./apps/server
+          path: ./packages/backend/server
 
       - name: Build Plugins
         run: yarn run build:plugins

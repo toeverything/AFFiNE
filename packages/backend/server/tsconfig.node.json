@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./lib/scripts",
+    "rootDir": "."
+  },
+  "references": [
+    {
+      "path": "../../../tests/fixtures"
+    },
+    {
+      "path": "../../../tests/kit"
+    }
+  ],
+  "include": ["scripts", "package.json"],
+  "exclude": ["tests"]
+}

@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "references": [
+    { "path": "../../../tests/fixtures" },
+    { "path": "../../common/y-indexeddb" },
+    { "path": "../../common/y-provider" },
+    { "path": "../../common/env" },
+    { "path": "../../common/debug" },
+    { "path": "../../common/infra" },
+    { "path": "../../frontend/hooks" },
+    { "path": "../../frontend/graphql" }
+  ]
+}
