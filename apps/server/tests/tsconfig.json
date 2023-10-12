@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "target": "ESNext",
@@ -7,6 +7,7 @@
     "experimentalDecorators": true,
     "rootDir": ".",
     "outDir": "../lib/tests",
+    "verbatimModuleSyntax": false,
     "tsBuildInfoFile": "../lib/tests/.tsbuildinfo"
   },
   "references": [

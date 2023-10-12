@@ -23,8 +23,7 @@ test.afterEach.always(async () => {
 
 test('should be able to increment counter', async t => {
   metrics.socketIOEventCounter(1, { event: 'client-handshake' });
-  const socketIOCounterMetric =
-    await register.getSingleMetric('socket_io_counter');
+  const socketIOCounterMetric = register.getSingleMetric('socket_io_counter');
   t.truthy(socketIOCounterMetric);
 
   t.truthy(

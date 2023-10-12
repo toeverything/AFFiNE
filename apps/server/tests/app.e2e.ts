@@ -5,9 +5,9 @@ import { Transformer } from '@napi-rs/image';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
-import { User } from '@prisma/client';
-import ava, { TestFn } from 'ava';
-import { Express } from 'express';
+import { type User } from '@prisma/client';
+import ava, { type TestFn } from 'ava';
+import type { Express } from 'express';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 

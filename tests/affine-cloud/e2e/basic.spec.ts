@@ -103,6 +103,8 @@ test.describe('basic', () => {
       // page 'F1SX6cgNxy' has edgeless mode
       `${coreUrl}/workspace/${workspaceId}/F1SX6cgNxy`
     );
+    await page.waitForTimeout(5000);
+    await page.reload();
     await waitForEditorLoad(page);
     await clickEdgelessModeButton(page);
     await expect(page.locator('affine-edgeless-page')).toBeVisible({
@@ -124,7 +126,7 @@ test.describe('basic', () => {
       });
       const nameInput = page.getByPlaceholder('Input account name');
       await nameInput.clear();
-      await nameInput.type(newName, {
+      await nameInput.pressSequentially(newName, {
         delay: 50,
       });
       await page.getByTestId('save-user-name').click({

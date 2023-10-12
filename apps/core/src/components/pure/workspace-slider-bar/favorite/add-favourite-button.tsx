@@ -14,8 +14,9 @@ export const AddFavouriteButton = ({ workspace }: AddFavouriteButtonProps) => {
   const { createPage } = usePageHelper(workspace);
   const { setPageMeta } = usePageMetaHelper(workspace);
   const handleAddFavorite = useCallback(async () => {
-    const id = createPage();
-    setPageMeta(id, { favorite: true });
+    const page = createPage();
+    await page.waitForLoaded();
+    setPageMeta(page.id, { favorite: true });
   }, [createPage, setPageMeta]);
 
   return (

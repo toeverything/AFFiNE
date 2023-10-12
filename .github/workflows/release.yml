@@ -17,7 +17,7 @@ jobs:
     name: Try publishing npm@latest release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Try publishing to NPM
@@ -31,7 +31,7 @@ jobs:
     environment: development
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Plugins
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -72,7 +72,7 @@ jobs:
     environment: development
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup Rust
@@ -97,7 +97,7 @@ jobs:
       - build-core
       - build-storage
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download core artifact
         uses: actions/download-artifact@v3
         with:

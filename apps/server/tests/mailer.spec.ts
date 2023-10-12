@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
-import { User } from '@prisma/client';
-import ava, { TestFn } from 'ava';
+import { type User } from '@prisma/client';
+import ava, { type TestFn } from 'ava';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';

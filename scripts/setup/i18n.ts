@@ -1,15 +1,14 @@
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { runCli } from '@magic-works/i18n-codegen';
 import { beforeAll } from 'vitest';
 
 beforeAll(async () => {
-  await runCli(
+  runCli(
     {
       watch: false,
-      cwd: fileURLToPath(
-        new URL('../../../.i18n-codegen.json', import.meta.url)
-      ),
+      cwd: join(fileURLToPath(import.meta.url), '../../../.i18n-codegen.json'),
     },
     error => {
       console.error(error);

@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
-import ava, { TestFn } from 'ava';
+import ava, { type TestFn } from 'ava';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 

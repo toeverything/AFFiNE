@@ -15,9 +15,7 @@ export const packageJsonInputSchema = z.object({
     release: z.union([z.boolean(), z.enum(['development'])]),
     entry: z.object({
       core: z.string(),
-      server: z.string().optional(),
     }),
-    serverCommand: z.array(z.string()).optional(),
   }),
 });
 
@@ -31,7 +29,6 @@ export const packageJsonOutputSchema = z.object({
       core: z.string(),
     }),
     assets: z.array(z.string()),
-    serverCommand: z.array(z.string()).optional(),
   }),
 });
 

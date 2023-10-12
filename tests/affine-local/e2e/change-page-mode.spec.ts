@@ -15,7 +15,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
   }
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const btn = await page.getByTestId('switch-edgeless-mode-button');
+  const btn = page.getByTestId('switch-edgeless-mode-button');
   await page.evaluate(() => {
     // @ts-expect-error
     globalThis.__toastCount = 0;
@@ -31,7 +31,7 @@ test('Switch to edgeless by switch edgeless item', async ({ page }) => {
     expect(count).toBe(1);
   }
   const edgeless = page.locator('affine-edgeless-page');
-  expect(await edgeless.isVisible()).toBe(true);
+  await expect(edgeless).toBeVisible();
 
   const editorWrapperPadding = await page
     .locator('.editor-wrapper.edgeless-mode')
@@ -60,15 +60,15 @@ test('Convert to edgeless by editor header items', async ({ page }) => {
   const menusEdgelessItem = page.getByTestId('editor-option-menu-edgeless');
   await menusEdgelessItem.click({ delay: 100 });
   const edgeless = page.locator('affine-edgeless-page');
-  expect(await edgeless.isVisible()).toBe(true);
+  await expect(edgeless).toBeVisible();
 });
 
 test('Able to insert the title of an untitled page', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  const titleBarTextContent = page.getByTestId('title-edit-button');
   await titleBarTextContent.dblclick({ delay: 100 });
-  const titleContent = await page.getByTestId('title-content');
+  const titleContent = page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
@@ -77,9 +77,9 @@ test('Able to insert the title of an untitled page', async ({ page }) => {
 test('Able to edit the title of an existing page', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  const titleBarTextContent = page.getByTestId('title-edit-button');
   await titleBarTextContent.dblclick({ delay: 100 });
-  const titleContent = await page.getByTestId('title-content');
+  const titleContent = page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');
@@ -94,9 +94,9 @@ test('Clearing out the title bar will remove the page title', async ({
 }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  const titleBarTextContent = await page.getByTestId('title-edit-button');
+  const titleBarTextContent = page.getByTestId('title-edit-button');
   await titleBarTextContent.dblclick({ delay: 100 });
-  const titleContent = await page.getByTestId('title-content');
+  const titleContent = page.getByTestId('title-content');
   await titleContent.fill('test');
   await titleContent.blur();
   expect(await titleBarTextContent.textContent()).toBe('test');

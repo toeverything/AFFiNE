@@ -15,6 +15,7 @@ import { Suspense, useCallback, useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../../atoms';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
 import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import type { BlockSuiteWorkspace } from '../../../shared';
 import { toast } from '../../../utils';
@@ -134,7 +135,6 @@ export const BlockSuitePageList = ({
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const {
     toggleFavorite,
-    removeToTrash,
     restoreFromTrash,
     permanentlyDeletePage,
     cancelPublicPage,
@@ -144,6 +144,8 @@ export const BlockSuitePageList = ({
     usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
   const getPageInfo = useGetPageInfoById(blockSuiteWorkspace);
+  const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
+
   const tagOptionMap = useMemo(
     () =>
       Object.fromEntries(
@@ -246,10 +248,13 @@ export const BlockSuitePageList = ({
       onClickRestore: () => {
         restoreFromTrash(pageMeta.id);
       },
-      removeToTrash: () => {
-        removeToTrash(pageMeta.id);
-        toast(t['com.affine.toastMessage.successfullyDeleted']());
-      },
+      removeToTrash: () =>
+        setTrashModal({
+          open: true,
+          pageId: pageMeta.id,
+          pageTitle: pageMeta.title,
+        }),
+
       onRestorePage: () => {
         restoreFromTrash(pageMeta.id);
         toast(

@@ -9,18 +9,7 @@ const outputRoot = fileURLToPath(
 );
 
 const outputList = [
-  [
-    'dist',
-    [
-      'main.js',
-      'helper.js',
-      'preload.js',
-      'affine.darwin-arm64.node',
-      'plugins',
-    ],
-  ],
-  ['dist/plugins', ['bookmark']],
-  ['dist/plugins/bookmark', ['index.cjs']],
+  ['dist', ['main.js', 'helper.js', 'preload.js', 'affine.darwin-arm64.node']],
 ] as [entry: string, expected: string[]][];
 
 await Promise.all(

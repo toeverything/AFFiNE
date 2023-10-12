@@ -138,7 +138,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const guid = trimGuid(message.workspaceId, message.guid);
-    const doc = await this.docManager.getLatest(message.workspaceId, guid);
+    const doc = await this.docManager.get(message.workspaceId, guid);
 
     if (!doc) {
       endTimer();

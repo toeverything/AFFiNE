@@ -112,7 +112,7 @@ globalStyle(`${accountButton} .avatar`, {
   width: '28px',
   height: '28px',
   borderRadius: '50%',
-  fontSize: '22px',
+  fontSize: '20px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -120,9 +120,10 @@ globalStyle(`${accountButton} .avatar`, {
 });
 
 globalStyle(`${accountButton} .avatar.not-sign`, {
-  borderColor: 'var(--affine-icon-secondary)',
   color: 'var(--affine-icon-secondary)',
   background: 'var(--affine-white)',
+  paddingBottom: '2px',
+  border: '1px solid var(--affine-icon-secondary)',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

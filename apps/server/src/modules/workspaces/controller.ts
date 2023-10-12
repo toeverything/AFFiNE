@@ -72,7 +72,7 @@ export class WorkspacesController {
       throw new ForbiddenException('Permission denied');
     }
 
-    const update = await this.docManager.getLatestUpdate(ws, id);
+    const update = await this.docManager.getBinary(ws, id);
 
     if (!update) {
       throw new NotFoundException('Doc not found');

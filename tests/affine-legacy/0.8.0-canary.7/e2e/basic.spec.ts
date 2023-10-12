@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { join } from 'node:path';
 
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test';
 
 const { switchToNext } = setupProxyServer(
   test,
-  resolve(__dirname, '..', 'static')
+  join(__dirname, '..', 'web-static')
 );
 
 test('database migration', async ({ page, context }) => {
@@ -21,7 +21,7 @@ test('database migration', async ({ page, context }) => {
   });
   await page.getByTestId('new-page-button').click();
   const title = page.locator('.affine-default-page-block-title');
-  await title.type('hello');
+  await title.pressSequentially('hello');
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.press('/', { delay: 50 });
   await page.keyboard.press('d');
@@ -37,6 +37,10 @@ test('database migration', async ({ page, context }) => {
   await switchToNext();
   await page.waitForTimeout(1000);
   await page.goto(url);
+  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
+  await page.waitForTimeout(5000);
+  await page.reload();
+  //#endregion
   await waitForEditorLoad(page);
   // check page mode is correct
   expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');

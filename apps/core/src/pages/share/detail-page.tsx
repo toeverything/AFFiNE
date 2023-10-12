@@ -70,7 +70,7 @@ export const Component = (): ReactElement => {
           isPublic
           workspace={page.workspace}
           pageId={page.id}
-          onInit={useCallback(() => noop, [])}
+          onInit={noop}
           onLoad={useCallback(() => noop, [])}
         />
       </MainContainer>
