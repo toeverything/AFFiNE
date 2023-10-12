@@ -2,7 +2,10 @@ import { platform } from 'node:os';
 
 import { test } from '@affine-test/kit/electron';
 import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
-import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
+import {
+  clickSideBarCurrentWorkspaceBanner,
+  clickSideBarSettingButton,
+} from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 
 test('new page', async ({ page, workspace }) => {
@@ -156,7 +159,7 @@ test('windows only check', async ({ page }) => {
 });
 
 test('delete workspace', async ({ page }) => {
-  await page.getByTestId('current-workspace').click();
+  await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
   await page
     .getByTestId('create-workspace-input')
