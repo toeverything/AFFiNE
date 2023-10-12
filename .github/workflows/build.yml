@@ -154,12 +154,6 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     environment: development
-    strategy:
-      matrix:
-        spec:
-          - { package: 0.7.0-canary.18 }
-          - { package: 0.8.0-canary.7 }
-          - { package: 0.8.4 }
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -168,18 +162,15 @@ jobs:
           playwright-install: true
           electron-install: false
 
-      - name: Unzip
-        run: yarn workspace @affine-legacy/${{ matrix.spec.package }} unzip
-
       - name: Run playwright tests
-        run: yarn workspace @affine-legacy/${{ matrix.spec.package }} e2e --forbid-only
+        run: yarn workspace @affine-test/affine-migration e2e --forbid-only
 
       - name: Upload test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
-          name: test-results-e2e-migration-${{ matrix.spec.package }}
-          path: ./tests/affine-legacy/${{ matrix.spec.package }}/test-results
+          name: test-results-e2e-migration
+          path: ./tests/affine-migration/test-results
           if-no-files-found: ignore
 
   unit-test:
