@@ -100,9 +100,11 @@ test.describe('basic', () => {
       timeout: 60000,
     });
     await page.goto(
-      // page '0773e198-5de0-45d4-a35e-de22ea72b96b' has edgeless mode
-      `${coreUrl}/workspace/${workspaceId}/0773e198-5de0-45d4-a35e-de22ea72b96b`
+      // page 'F1SX6cgNxy' has edgeless mode
+      `${coreUrl}/workspace/${workspaceId}/F1SX6cgNxy`
     );
+    await page.waitForTimeout(5000);
+    await page.reload();
     await waitForEditorLoad(page);
     await clickEdgelessModeButton(page);
     await expect(page.locator('affine-edgeless-page')).toBeVisible({
