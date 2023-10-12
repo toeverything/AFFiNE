@@ -226,10 +226,12 @@ export const EditCollection = ({
         </div>
         <div style={{ marginTop: 20 }}>
           <Input
+            size="large"
             data-testid="input-collection-title"
             placeholder={t['com.affine.editCollection.untitledCollection']()}
             defaultValue={value.name}
             onChange={name => onChange({ ...value, name })}
+            onEnter={onSaveCollection}
           />
         </div>
       </ScrollableContainer>
