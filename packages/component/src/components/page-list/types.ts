@@ -1,6 +1,6 @@
 import type { Tag } from '@affine/env/filter';
 import type { PageMeta, Workspace } from '@blocksuite/store';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
 // TODO: consider reducing the number of props here
@@ -38,6 +38,8 @@ export interface SortBy {
   order: 'asc' | 'desc';
 }
 
+export type DateKey = 'createDate' | 'updatedDate';
+
 export interface PageListProps {
   className?: string;
   pages: PageMeta[];
@@ -45,7 +47,7 @@ export interface PageListProps {
   groupBy?: PagesGroupByType;
   fallback?: ReactNode; // fixme: shall we use loading rows number instead?
   isPreferredEdgeless: (pageId: string) => boolean;
-  onToggleFavorite: (pageId: string) => void;
+  onToggleFavorite?: (pageId: string) => void;
   renderPageAsLink?: boolean; // whether or not to render each page as a router Link
   selectable?: boolean; // show selection checkbox
   selectedPageIds?: string[]; // selected page ids
@@ -78,3 +80,10 @@ type MakeRecord<T> = {
 };
 
 export type PageMetaRecord = MakeRecord<PageMeta>;
+
+export type DraggableTitleCellData = {
+  pageId: string;
+  pageTitle: string;
+  pagePreview?: string;
+  icon: ReactElement;
+};

@@ -14,6 +14,7 @@ export const header = style({
   ':hover': {
     background: 'var(--affine-hover-color)',
   },
+  userSelect: 'none',
 });
 
 export const spacer = style({
@@ -37,10 +38,9 @@ export const headerCount = style({
 
 export const collapsedIcon = style({
   display: 'none',
-  transition: 'transform 0.2s ease-in-out',
   selectors: {
-    '&[data-collapsed="true"]': {
-      transform: 'rotate(-90deg)',
+    '&[data-collapsed="false"]': {
+      transform: 'rotate(90deg)',
     },
     [`${header}:hover &`]: {
       display: 'block',

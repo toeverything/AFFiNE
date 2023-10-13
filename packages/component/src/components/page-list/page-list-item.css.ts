@@ -87,11 +87,19 @@ export const dateCell = style({
   padding: '0 8px',
 });
 
+export const actionsCellWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  flexShrink: 0,
+  columnGap: '6px',
+  paddingRight: '16px',
+});
+
 export const favoriteCell = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end',
-  padding: '0 16px',
   flexShrink: 0,
   opacity: 0,
   selectors: {
@@ -105,6 +113,5 @@ export const operationsCell = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end',
-  padding: '0 16px',
   flexShrink: 0,
 });

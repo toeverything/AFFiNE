@@ -19,14 +19,22 @@ export const header = style({
 });
 
 export const headerCell = style({
-  cursor: 'pointer',
   paddingRight: '8px',
   userSelect: 'none',
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
   selectors: {
-    '&[data-sorting]': {
+    '&[data-sorting], &:hover': {
       color: 'var(--affine-text-primary-color)',
+    },
+    '&[data-sortable]': {
+      cursor: 'pointer',
+    },
+    '&:first-of-type': {
+      paddingLeft: '16px',
+    },
+    '&:last-of-type': {
+      paddingRight: '24px',
     },
   },
   display: 'flex',
@@ -49,8 +57,6 @@ export const headerTitleSelectionIconWrapper = style({
 export const headerCellSortIcon = style({
   width: '14px',
   height: '14px',
-  position: 'absolute',
-  transform: 'translateX(14px)',
 });
 
 export const flexWrapper = style({

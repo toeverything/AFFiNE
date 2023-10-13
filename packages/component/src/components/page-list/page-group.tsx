@@ -1,16 +1,13 @@
 import type { Tag } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
-import { ArrowDownSmallIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon, ToggleIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { isEqual } from 'lodash-es';
 import { type MouseEventHandler, useCallback, useState } from 'react';
 
-import {
-  type DateKey,
-} from '../page-list';
 import { PagePreview } from './page-content-preview';
 import * as styles from './page-group.css';
 import { PageListItem } from './page-list-item';
@@ -21,6 +18,7 @@ import type {
   PageListItemProps,
   PageListProps,
 } from './types';
+import { type DateKey } from './types';
 import { betweenDaysAgo, withinDaysAgo } from './utils';
 
 // todo: optimize date matchers
@@ -80,7 +78,6 @@ export function pagesToPageGroups(
   for (const page of pages) {
     // for a single page, there could be multiple groups that it belongs to
     const matchedGroups = groupDefs.filter(def => def.match(page));
-    console.log('matchedGroups', matchedGroups.map(g => g.id).join(', '));
     for (const groupDef of matchedGroups) {
       const group = groups.find(g => g.id === groupDef.id);
       if (group) {
@@ -123,7 +120,7 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
             data-testid="page-list-group-header-collapsed-button"
             className={styles.collapsedIconContainer}
           >
-            <ArrowDownSmallIcon
+            <ToggleIcon
               className={styles.collapsedIcon}
               data-collapsed={collapsed !== false}
             />

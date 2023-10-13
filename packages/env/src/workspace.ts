@@ -8,8 +8,6 @@ import type {
 } from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
 
-import type { Collection } from './filter.js';
-
 export enum WorkspaceSubPath {
   ALL = 'all',
   SETTING = 'setting',
@@ -167,12 +165,6 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
     onLoadEditor: (page: Page, editor: EditorContainer) => () => void;
   };
 
-type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  onOpenPage: (pageId: string, newTab?: boolean) => void;
-  collection: Collection;
-};
-
 interface FC<P> {
   (props: P): ReactNode;
 }
@@ -180,7 +172,6 @@ interface FC<P> {
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
   Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
-  PageList: FC<PageListProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
   LoginCard?: FC<object>;

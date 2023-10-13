@@ -8,11 +8,11 @@ import {
 } from 'react';
 import { Link } from 'react-router-dom';
 
-import { FavoriteTag, formatDate } from '../page-list';
+import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 import type { PageListItemProps } from './types';
-import { FlexWrapper } from './utils';
+import { FlexWrapper, formatDate } from './utils';
 
 function stopPropagation(event: React.MouseEvent) {
   event.stopPropagation();
@@ -133,11 +133,7 @@ const PageListOperationsCell = ({
   operations,
 }: Pick<PageListItemProps, 'operations'>) => {
   return operations ? (
-    <div
-      onClick={stopPropagation}
-      data-testid="page-list-group-header"
-      className={styles.operationsCell}
-    >
+    <div onClick={stopPropagation} className={styles.operationsCell}>
       {operations}
     </div>
   ) : null;
@@ -166,7 +162,11 @@ export const PageListItem = (props: PageListItemProps) => {
       <FlexWrapper flex={1} alignment="end">
         <PageUpdatedDateCell updatedDate={props.updatedDate} />
       </FlexWrapper>
-      <FlexWrapper flex={1} alignment="end">
+      <FlexWrapper
+        className={styles.actionsCellWrapper}
+        flex={1}
+        alignment="end"
+      >
         <PageFavoriteCell
           favorite={props.favorite}
           onToggleFavorite={props.onToggleFavorite}

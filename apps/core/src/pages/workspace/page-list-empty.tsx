@@ -1,18 +1,18 @@
-import { Empty } from "@affine/component";
-import { Trans } from "@affine/i18n";
-import { useAFFiNEI18N } from "@affine/i18n/hooks";
-import type { Workspace } from "@blocksuite/store";
-import { useCallback } from "react";
+import { Empty } from '@affine/component';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { Workspace } from '@blocksuite/store';
+import { useCallback } from 'react';
 
-import { usePageHelper } from "../../components/blocksuite/block-suite-page-list/utils";
+import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import * as styles from './page-list-empty.css';
 
-export const PageListEmpty = ({
+export const EmptyPageList = ({
   type,
-  blockSuiteWorkspace
+  blockSuiteWorkspace,
 }: {
   type: 'all' | 'trash' | 'shared' | 'public';
-  blockSuiteWorkspace: Workspace
+  blockSuiteWorkspace: Workspace;
 }) => {
   const { createPage } = usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
@@ -32,8 +32,8 @@ export const PageListEmpty = ({
         return (
           <Trans i18nKey="emptyAllPagesClient">
             Click on the {createNewPageButton} button Or press
-            <kbd className={styles.emptyDescKbd}>{{ shortcut } as any}</kbd> to create
-            your first page.
+            <kbd className={styles.emptyDescKbd}>{{ shortcut } as any}</kbd> to
+            create your first page.
           </Trans>
         );
       }

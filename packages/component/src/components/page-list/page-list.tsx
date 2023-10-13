@@ -96,15 +96,11 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
       style={props.style}
     >
       {props.children}
-      <div className={styles.headerCellSortIcon}>
-        {sorting ? (
-          sorter.order === 'asc' ? (
-            <SortUpIcon />
-          ) : (
-            <SortDownIcon />
-          )
-        ) : null}
-      </div>
+      {sorting ? (
+        <div className={styles.headerCellSortIcon}>
+          {sorter.order === 'asc' ? <SortUpIcon /> : <SortDownIcon />}
+        </div>
+      ) : null}
     </FlexWrapper>
   );
 };
@@ -137,7 +133,7 @@ const PageListHeaderCheckbox = () => {
   );
 
   if (!selectionState.selectable) {
-    return <div style={{ width: '56px' }}></div>;
+    return <div style={{ width: '40px' }}></div>;
   }
 
   if (selectionState.selectionActive) {
@@ -185,6 +181,7 @@ export const PageListHeader = () => {
         content: <PageListHeaderTitleCell />,
         flex: 6,
         alignment: 'start',
+        sortable: true,
       },
       {
         key: 'tags',
@@ -207,7 +204,8 @@ export const PageListHeader = () => {
         alignment: 'end',
       },
       {
-        key: 'action',
+        key: 'favorite',
+        sortable: true,
         content: t['Actions'](),
         flex: 1,
         alignment: 'end',
