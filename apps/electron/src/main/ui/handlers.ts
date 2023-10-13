@@ -4,6 +4,7 @@ import { getLinkPreview } from 'link-preview-js';
 import { isMacOS } from '../../shared/utils';
 import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
+import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
 
 export const uiHandlers = {
@@ -44,6 +45,9 @@ export const uiHandlers = {
   },
   getGoogleOauthCode: async () => {
     return getGoogleOauthCode();
+  },
+  getChallengeResponse: async (_, challenge: string) => {
+    return getChallengeResponse(challenge);
   },
   getBookmarkDataByLink: async (_, link: string) => {
     if (

@@ -174,6 +174,7 @@ export type UIHandlers = {
   handleMaximizeApp: () => Promise<any>;
   handleCloseApp: () => Promise<any>;
   getGoogleOauthCode: () => Promise<any>;
+  getChallengeResponse: (resource: string) => Promise<string>;
 };
 
 export type ClipboardHandlers = {
