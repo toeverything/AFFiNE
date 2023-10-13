@@ -155,16 +155,24 @@ export class NextAuthController {
         const resource = await this.session.get(challenge);
 
         if (!resource) {
-          throw new BadRequestException('Invalid Challenge');
+          res.status(400);
+          res.json({ error: 'Invalid Challenge' });
+          return;
         }
 
-        const isChallengeVerified = verifyChallengeResponse(
-          req.query?.response,
+        const isChallengeVerified = await verifyChallengeResponse(
+          req.query?.token,
           resource
         );
 
+        this.logger.log(
+          `Challenge: ${challenge}, Resource: ${resource}, Response: ${req.query?.token}, isChallengeVerified: ${isChallengeVerified}`
+        );
+
         if (!isChallengeVerified) {
-          throw new BadRequestException('Invalid Captcha Response');
+          res.status(400);
+          res.json({ error: 'Invalid Challenge Response' });
+          return;
         }
       } else {
         const isTokenVerified = await this.authService.verifyCaptchaToken(
@@ -173,7 +181,9 @@ export class NextAuthController {
         );
 
         if (!isTokenVerified) {
-          throw new BadRequestException('Invalid Captcha Response');
+          res.status(400);
+          res.json({ error: 'Invalid Captcha Response' });
+          return;
         }
       }
     }

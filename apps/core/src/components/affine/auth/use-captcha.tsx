@@ -1,7 +1,7 @@
 import { fetchWithTraceReport } from '@affine/graphql';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { useCallback, useState } from 'react';
-import useSWRImmutable from 'swr/immutable';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import useSWR from 'swr';
 
 import * as style from './style.css';
 
@@ -40,34 +40,54 @@ const challengeFetcher = async (url: string) => {
     throw new Error('Invalid challenge');
   }
 
-  return window.apis?.ui?.getChallengeResponse(challenge.challenge);
+  return challenge;
+};
+const generateChallengeResponse = async (challenge: string) => {
+  if (!environment.isDesktop) {
+    return undefined;
+  }
+
+  return await window.apis?.ui?.getChallengeResponse(challenge);
 };
 
 const Challenge = () => {
-  return <div style={{ margin: 'auto 0.5em' }}>Making Challenge...</div>;
+  return <div className={style.captchaWrapper}>Making Challenge</div>;
 };
 
 const Verified = () => {
-  return <div style={{ margin: 'auto 0.5em' }}>Verified Client</div>;
+  return <div className={style.captchaWrapper}>Verified Client</div>;
 };
 
-export const useCaptcha = (): [string | null, () => JSX.Element] => {
+export const useCaptcha = (): [string | null, () => JSX.Element, string?] => {
   const [verifyToken, Captcha] = useCloudflareCaptcha();
-  const {
-    data: response,
-    isLoading,
-    isValidating,
-  } = useSWRImmutable('/api/auth/challenge', challengeFetcher);
+  const { data: challenge } = useSWR('/api/auth/challenge', challengeFetcher, {
+    revalidateOnFocus: false,
+  });
+  const [response, setResponse] = useState<string>();
+  const prevChallenge = useRef('');
+
+  useEffect(() => {
+    if (
+      environment.isDesktop &&
+      challenge?.challenge &&
+      prevChallenge.current !== challenge.challenge
+    ) {
+      prevChallenge.current = challenge.challenge;
+      generateChallengeResponse(challenge.resource)
+        .then(setResponse)
+        .catch(err => {
+          console.error('Error getting challenge response:', err);
+        });
+    }
+  }, [challenge]);
 
   if (environment.isDesktop) {
-    console.log('challenge', response, isLoading, isValidating);
     if (response) {
-      return [response, Verified];
+      return [response, Verified, challenge?.challenge];
     } else {
-      return [null, Challenge];
+      return [null, Challenge, challenge?.challenge];
     }
   }
 
-  console.log('captcha', verifyToken);
   return [verifyToken, Captcha];
 };
