@@ -29,7 +29,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
     serve: ^14.2.1
@@ -46,7 +46,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
     serve: ^14.2.1
@@ -63,7 +63,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
     serve: ^14.2.1
@@ -76,7 +76,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
   languageName: unknown
   linkType: soft
 
@@ -86,7 +86,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     "@types/fs-extra": ^11.0.2
     fs-extra: ^11.1.1
   languageName: unknown
@@ -98,10 +98,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     "@types/fs-extra": ^11.0.2
     fs-extra: ^11.1.1
-    playwright: ^1.38.1
+    playwright: ^1.39.0
   languageName: unknown
   linkType: soft
 
@@ -111,7 +111,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
   languageName: unknown
   linkType: soft
 
@@ -125,7 +125,7 @@ __metadata:
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/global": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
   languageName: unknown
   linkType: soft
 
@@ -135,7 +135,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
   languageName: unknown
   linkType: soft
 
@@ -150,7 +150,7 @@ __metadata:
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
     "@node-rs/argon2": ^1.5.2
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     express: ^4.18.2
     http-proxy-middleware: ^3.0.0-beta.1
   peerDependencies:
@@ -534,7 +534,7 @@ __metadata:
     "@magic-works/i18n-codegen": ^0.5.0
     "@nx/vite": 16.10.0
     "@perfsee/sdk": ^1.9.0
-    "@playwright/test": ^1.38.1
+    "@playwright/test": ^1.39.0
     "@taplo/cli": ^0.5.2
     "@testing-library/react": ^14.0.0
     "@toeverything/infra": "workspace:*"
@@ -8639,14 +8639,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.38.1":
-  version: 1.38.1
-  resolution: "@playwright/test@npm:1.38.1"
+"@playwright/test@npm:^1.39.0":
+  version: 1.39.0
+  resolution: "@playwright/test@npm:1.39.0"
   dependencies:
-    playwright: 1.38.1
+    playwright: 1.39.0
   bin:
     playwright: cli.js
-  checksum: c5ec0b23261fe1ef163b6234f69263bc10e7e5a3fb676c7773ffc70b87459a7ab225f57c03b9de649475771638a04c2e00d9b2739304a4dcf5d3edf20a7a4a82
+  checksum: e93e58fc1af4239f239b890374f066c9a758e2492d25e2c1a532f3f00782ab8e7706956a07540fd14882c74e75f5de36273621adce9b79afb8e36e6c15f1d539
   languageName: node
   linkType: hard
 
@@ -28086,7 +28086,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:1.38.1, playwright@npm:^1.14.0, playwright@npm:^1.38.1":
+"playwright-core@npm:1.39.0":
+  version: 1.39.0
+  resolution: "playwright-core@npm:1.39.0"
+  bin:
+    playwright-core: cli.js
+  checksum: 556e78dee4f9890facf2af8249972e0d6e01a5ae98737b0f6b0166c660a95ffee4cb79350335b1ef96430a0ef01d3669daae9099fa46c8d403d11c623988238b
+  languageName: node
+  linkType: hard
+
+"playwright@npm:1.39.0, playwright@npm:^1.39.0":
+  version: 1.39.0
+  resolution: "playwright@npm:1.39.0"
+  dependencies:
+    fsevents: 2.3.2
+    playwright-core: 1.39.0
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    playwright: cli.js
+  checksum: 96d8ca5aa25465c1c5d554d0d6071981d55e22477800ff8f5d47a53ca75193d60ece2df538a01b7165b3277dd5493c67603a5acda713029df7fbd95ce2417bc9
+  languageName: node
+  linkType: hard
+
+"playwright@npm:^1.14.0":
   version: 1.38.1
   resolution: "playwright@npm:1.38.1"
   dependencies:
