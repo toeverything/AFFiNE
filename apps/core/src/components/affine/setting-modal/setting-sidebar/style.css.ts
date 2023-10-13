@@ -100,6 +100,7 @@ export const accountButton = style({
   cursor: 'pointer',
   userSelect: 'none',
   display: 'flex',
+  columnGap: '10px',
   justifyContent: 'space-between',
   alignItems: 'center',
   ':hover': {
@@ -107,17 +108,22 @@ export const accountButton = style({
   },
 });
 
-globalStyle(`${accountButton} .avatar.not-sign`, {
+globalStyle(`${accountButton} .avatar`, {
   width: '28px',
   height: '28px',
   borderRadius: '50%',
-  fontSize: '22px',
+  fontSize: '20px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  borderColor: 'var(--affine-icon-secondary)',
+  flexShrink: 0,
+});
+
+globalStyle(`${accountButton} .avatar.not-sign`, {
   color: 'var(--affine-icon-secondary)',
   background: 'var(--affine-white)',
+  paddingBottom: '2px',
+  border: '1px solid var(--affine-icon-secondary)',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

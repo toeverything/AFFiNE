@@ -37,6 +37,7 @@ export const AffineWorkspaceCard = () => {
       onClick={() => {}}
       onSettingClick={() => {}}
       currentWorkspaceId={null}
+      isOwner={true}
     />
   );
 };

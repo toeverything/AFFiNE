@@ -1,14 +1,17 @@
-import { Empty } from '@affine/component';
-import { toast } from '@affine/component';
+import { Empty, toast } from '@affine/component';
 import type { OperationCellProps } from '@affine/component/page-list';
-import { PageListTrashView } from '@affine/component/page-list';
-import { PageList } from '@affine/component/page-list';
-import { NewPageButton } from '@affine/component/page-list';
-import { OperationCell } from '@affine/component/page-list';
+import {
+  NewPageButton,
+  OperationCell,
+  PageList,
+  PageListTrashView,
+} from '@affine/component/page-list';
+import type { Collection } from '@affine/env/filter';
 import { PageIcon } from '@blocksuite/icons';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
+import { atom } from 'jotai';
 
 export default {
   title: 'AFFiNE/PageList',
@@ -23,7 +26,6 @@ export const AffineOperationCell: StoryFn<OperationCellProps> = ({
 }) => <OperationCell {...props} />;
 
 AffineOperationCell.args = {
-  title: 'Example Page',
   favorite: false,
   isPublic: true,
   onToggleFavoritePage: () => toast('Toggle favorite page'),
@@ -61,11 +63,18 @@ export const AffineAllPageList: StoryFn<typeof PageList> = ({ ...props }) => (
   <PageList {...props} />
 );
 
+const baseAtom = atom<Collection[]>([]);
 AffineAllPageList.args = {
   isPublicWorkspace: false,
   onCreateNewPage: () => toast('Create new page'),
   onCreateNewEdgeless: () => toast('Create new edgeless'),
   onImportFile: () => toast('Import file'),
+  collectionsAtom: atom(
+    get => get(baseAtom),
+    async (_, set, update) => {
+      set(baseAtom, update);
+    }
+  ),
   list: [
     {
       pageId: '1',

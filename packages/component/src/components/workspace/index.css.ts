@@ -7,7 +7,6 @@ export const appStyle = style({
   width: '100%',
   position: 'relative',
   height: '100vh',
-  transition: 'background-color .5s',
   display: 'flex',
   flexGrow: '1',
   flexDirection: 'row',
@@ -65,6 +64,7 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
 
 export const mainContainerStyle = style({
   position: 'relative',
+  zIndex: 0, // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
   flex: 1,
   maxWidth: '100%',

@@ -8,9 +8,9 @@ import {
   type ConfirmModalProps,
 } from '@toeverything/components/modal';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { StyledInputContent, StyledWorkspaceName } from './style';
+import * as styles from './style.css';
 
 interface WorkspaceDeleteProps extends ConfirmModalProps {
   workspace: AffineOfficialWorkspace;
@@ -20,12 +20,19 @@ export const WorkspaceDeleteModal = ({
   workspace,
   ...props
 }: WorkspaceDeleteProps) => {
+  const { onConfirm } = props;
   const [workspaceName] = useBlockSuiteWorkspaceName(
     workspace.blockSuiteWorkspace
   );
   const [deleteStr, setDeleteStr] = useState<string>('');
   const allowDelete = deleteStr === workspaceName;
   const t = useAFFiNEI18N();
+
+  const handleOnEnter = useCallback(() => {
+    if (allowDelete) {
+      return onConfirm?.();
+    }
+  }, [allowDelete, onConfirm]);
 
   return (
     <ConfirmModal
@@ -42,23 +49,23 @@ export const WorkspaceDeleteModal = ({
       {workspace.flavour === WorkspaceFlavour.LOCAL ? (
         <Trans i18nKey="com.affine.workspaceDelete.description">
           Deleting (
-          <StyledWorkspaceName>
+          <span className={styles.workspaceName}>
             {{ workspace: workspaceName } as any}
-          </StyledWorkspaceName>
+          </span>
           ) cannot be undone, please proceed with caution. All contents will be
           lost.
         </Trans>
       ) : (
         <Trans i18nKey="com.affine.workspaceDelete.description2">
           Deleting (
-          <StyledWorkspaceName>
+          <span className={styles.workspaceName}>
             {{ workspace: workspaceName } as any}
-          </StyledWorkspaceName>
+          </span>
           ) will delete both local and cloud data, this operation cannot be
           undone, please proceed with caution.
         </Trans>
       )}
-      <StyledInputContent>
+      <div className={styles.inputContent}>
         <Input
           ref={ref => {
             if (ref) {
@@ -67,11 +74,11 @@ export const WorkspaceDeleteModal = ({
           }}
           onChange={setDeleteStr}
           data-testid="delete-workspace-input"
+          onEnter={handleOnEnter}
           placeholder={t['com.affine.workspaceDelete.placeholder']()}
-          width={315}
-          height={42}
+          size="large"
         />
-      </StyledInputContent>
+      </div>
     </ConfirmModal>
   );
 };

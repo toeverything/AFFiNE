@@ -50,7 +50,12 @@ export class NextAuthController {
   }
 
   @UseGuards(AuthThrottlerGuard)
-  @Throttle(60, 60)
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60,
+    },
+  })
   @All('*')
   async auth(
     @Req() req: Request,

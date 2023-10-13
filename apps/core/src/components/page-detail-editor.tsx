@@ -4,7 +4,7 @@ import { PageNotFoundError } from '@affine/env/constant';
 import type { LayoutNode } from '@affine/sdk//entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { EditorContainer } from '@blocksuite/editor';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
@@ -31,8 +31,9 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions, useAppSetting } from '../atoms/settings';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
+import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
-import { pluginContainer } from './page-detail-editor.css';
+import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
 
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
@@ -41,7 +42,10 @@ export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
-  onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onInit: (
+    page: Page,
+    editor: Readonly<EditorContainer>
+  ) => Promise<void> | void;
   onLoad?: OnLoadEditor;
 }
 
@@ -98,13 +102,17 @@ const EditorWrapper = memo(function EditorWrapper({
         setBlockHub={setBlockHub}
         onLoad={useCallback(
           (page: Page, editor: EditorContainer) => {
-            page.workspace.setPageMeta(page.id, {
-              updatedDate: Date.now(),
-            });
+            const disposableGroup = new DisposableGroup();
+            disposableGroup.add(
+              page.slots.blockUpdated.once(() => {
+                page.workspace.setPageMeta(page.id, {
+                  updatedDate: Date.now(),
+                });
+              })
+            );
             localStorage.setItem('last_page_id', page.id);
-            let dispose = () => {};
             if (onLoad) {
-              dispose = onLoad(page, editor);
+              disposableGroup.add(onLoad(page, editor));
             }
             const rootStore = getCurrentStore();
             const editorItems = rootStore.get(pluginEditorAtom);
@@ -124,7 +132,7 @@ const EditorWrapper = memo(function EditorWrapper({
             });
 
             return () => {
-              dispose();
+              disposableGroup.dispose();
               clearTimeout(renderTimeout);
               window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());
@@ -135,6 +143,7 @@ const EditorWrapper = memo(function EditorWrapper({
         )}
       />
       {meta.trash && <TrashButtonGroup />}
+      <Bookmark page={page} />
     </>
   );
 });
@@ -188,23 +197,28 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
 interface LayoutPanelProps {
   node: LayoutNode;
   editorProps: PageDetailEditorProps;
+  depth: number;
 }
 
 const LayoutPanel = memo(function LayoutPanel(
   props: LayoutPanelProps
 ): ReactElement {
-  const node = props.node;
+  const { node, depth, editorProps } = props;
   const windowItems = useAtomValue(pluginWindowAtom);
   if (typeof node === 'string') {
     if (node === 'editor') {
-      return <EditorWrapper {...props.editorProps} />;
+      return <EditorWrapper {...editorProps} />;
     } else {
       const windowItem = windowItems[node];
       return <PluginContentAdapter pluginName={node} windowItem={windowItem} />;
     }
   } else {
     return (
-      <PanelGroup direction={node.direction}>
+      <PanelGroup
+        direction={node.direction}
+        style={depth === 0 ? { height: 'calc(100% - 52px)' } : undefined}
+        className={depth === 0 ? editorContainer : undefined}
+      >
         <Panel
           defaultSize={node.splitPercentage}
           style={{
@@ -212,7 +226,11 @@ const LayoutPanel = memo(function LayoutPanel(
           }}
         >
           <Suspense>
-            <LayoutPanel node={node.first} editorProps={props.editorProps} />
+            <LayoutPanel
+              node={node.first}
+              editorProps={editorProps}
+              depth={depth + 1}
+            />
           </Suspense>
         </Panel>
         <PanelResizeHandle />
@@ -224,7 +242,11 @@ const LayoutPanel = memo(function LayoutPanel(
           }}
         >
           <Suspense>
-            <LayoutPanel node={node.second} editorProps={props.editorProps} />
+            <LayoutPanel
+              node={node.second}
+              editorProps={editorProps}
+              depth={depth + 1}
+            />
           </Suspense>
         </Panel>
       </PanelGroup>
@@ -244,7 +266,11 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   if (layout === 'editor') {
     return (
       <Suspense>
-        <PanelGroup direction="horizontal">
+        <PanelGroup
+          style={{ height: 'calc(100% - 52px)' }}
+          direction="horizontal"
+          className={editorContainer}
+        >
           <Panel>
             <EditorWrapper {...props} />
           </Panel>
@@ -256,7 +282,7 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   return (
     <>
       <Suspense>
-        <LayoutPanel node={layout} editorProps={props} />
+        <LayoutPanel node={layout} editorProps={props} depth={0} />
       </Suspense>
     </>
   );

@@ -22,7 +22,6 @@ test('plugin should exist', async ({ page }) => {
     );
   });
   const plugins = [
-    '@affine/bookmark-plugin',
     '@affine/copilot-plugin',
     '@affine/hello-world-plugin',
     '@affine/image-preview-plugin',

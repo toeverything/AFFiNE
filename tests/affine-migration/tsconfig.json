@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "outDir": "lib"
+  },
+  "include": ["e2e"],
+  "references": [
+    {
+      "path": "../fixtures"
+    },
+    {
+      "path": "../kit"
+    }
+  ]
+}

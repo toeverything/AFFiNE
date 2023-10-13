@@ -3,6 +3,7 @@ import {
   addUserToWorkspace,
   createRandomUser,
   enableCloudWorkspace,
+  enableCloudWorkspaceFromShareButton,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
 import {
@@ -47,14 +48,14 @@ test.describe('collaboration', () => {
       },
       page
     );
-    await enableCloudWorkspace(page);
+    await enableCloudWorkspaceFromShareButton(page);
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('TEST TITLE', {
+    await title.pressSequentially('TEST TITLE', {
       delay: 50,
     });
     await page.keyboard.press('Enter', { delay: 50 });
     await page.keyboard.type('TEST CONTENT', { delay: 50 });
-    await page.getByTestId('share-menu-button').click();
+    await page.getByTestId('cloud-share-menu-button').click();
     await page.getByTestId('share-menu-create-link-button').click();
     await page.getByTestId('share-menu-copy-link-button').click();
 
@@ -102,7 +103,7 @@ test.describe('collaboration', () => {
     await page2.goto(currentUrl);
     {
       const title = getBlockSuiteEditorTitle(page);
-      await title.type('TEST TITLE', {
+      await title.pressSequentially('TEST TITLE', {
         delay: 50,
       });
     }
@@ -124,7 +125,7 @@ test.describe('collaboration', () => {
     await clickUserInfoCard(page);
     const input = page.getByTestId('user-name-input');
     await input.clear();
-    await input.type('TEST USER', {
+    await input.pressSequentially('TEST USER', {
       delay: 50,
     });
     await page.getByTestId('save-user-name').click({
@@ -167,7 +168,7 @@ test.describe('collaboration', () => {
       const page2 = await context.newPage();
       await loginUser(page2, user.email);
       await page2.goto(page.url());
-      waitForEditorLoad(page2);
+      await waitForEditorLoad(page2);
       const collections = page2.getByTestId('collections');
       await expect(collections.getByText('test collection')).toBeVisible();
     }
@@ -221,7 +222,7 @@ test.describe('collaboration members', () => {
     await openSettingModal(page);
     await openWorkspaceSettingPanel(page, 'test');
 
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(1000);
 
     const firstPageMemberItemCount = await page
       .locator('[data-testid="member-item"]')
@@ -235,7 +236,7 @@ test.describe('collaboration members', () => {
       .all();
 
     // make sure the first member is the owner
-    expect(page.getByTestId('member-item').first()).toContainText(
+    await expect(page.getByTestId('member-item').first()).toContainText(
       'Workspace Owner'
     );
 

@@ -10,7 +10,7 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { useCollectionManager } from '@affine/component/page-list';
+import { MoveToTrash, useCollectionManager } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -19,20 +19,15 @@ import {
 } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { Popover } from '@toeverything/components/popover';
-import { useAtom } from 'jotai';
+import { Menu } from '@toeverything/components/menu';
+import { useAtom, useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
-import {
-  forwardRef,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
+import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
+import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import type { AllWorkspace } from '../../shared';
 import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
@@ -107,12 +102,28 @@ export const RootAppSidebar = ({
   const { backToAll } = useCollectionManager(currentCollectionsAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
-  const [openUserWorkspaceList, setOpenUserWorkspaceList] = useState(false);
+  const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
+    openWorkspaceListModalAtom
+  );
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
     await page.waitForLoaded();
     openPage(page.id);
   }, [createPage, openPage]);
+
+  const { trashModal, setTrashModal, handleOnConfirm } =
+    useTrashModalHelper(blockSuiteWorkspace);
+  const deletePageTitle = trashModal.pageTitle;
+  const trashConfirmOpen = trashModal.open;
+  const onTrashConfirmOpenChange = useCallback(
+    (open: boolean) => {
+      setTrashModal({
+        ...trashModal,
+        open,
+      });
+    },
+    [trashModal, setTrashModal]
+  );
 
   // Listen to the "New Page" action from the menu
   useEffect(() => {
@@ -122,7 +133,7 @@ export const RootAppSidebar = ({
     return;
   }, [onClickNewPage]);
 
-  const [sidebarOpen, setSidebarOpen] = useAtom(appSidebarOpenAtom);
+  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop) {
       window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
@@ -130,17 +141,6 @@ export const RootAppSidebar = ({
       });
     }
   }, [sidebarOpen]);
-
-  useEffect(() => {
-    const keydown = (e: KeyboardEvent) => {
-      if ((e.key === '/' && e.metaKey) || (e.key === '/' && e.ctrlKey)) {
-        setSidebarOpen(!sidebarOpen);
-      }
-    };
-    document.addEventListener('keydown', keydown, { capture: true });
-    return () =>
-      document.removeEventListener('keydown', keydown, { capture: true });
-  }, [sidebarOpen, setSidebarOpen]);
 
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
@@ -160,7 +160,7 @@ export const RootAppSidebar = ({
   });
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
-  }, []);
+  }, [setOpenUserWorkspaceList]);
 
   return (
     <>
@@ -174,28 +174,37 @@ export const RootAppSidebar = ({
           )
         }
       >
+        <MoveToTrash.ConfirmModal
+          open={trashConfirmOpen}
+          onConfirm={handleOnConfirm}
+          onOpenChange={onTrashConfirmOpenChange}
+          title={deletePageTitle}
+        />
         <SidebarContainer>
-          <Popover
-            open={openUserWorkspaceList}
-            content={
-              <Suspense>
-                <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
-              </Suspense>
+          <Menu
+            rootOptions={{
+              open: openUserWorkspaceList,
+            }}
+            items={
+              <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
             }
             contentOptions={{
               // hide trigger
               sideOffset: -58,
               onInteractOutside: closeUserWorkspaceList,
               onEscapeKeyDown: closeUserWorkspaceList,
+              style: {
+                width: '300px',
+              },
             }}
           >
             <WorkspaceCard
               currentWorkspace={currentWorkspace}
               onClick={useCallback(() => {
                 setOpenUserWorkspaceList(true);
-              }, [])}
+              }, [setOpenUserWorkspaceList])}
             />
-          </Popover>
+          </Menu>
           <QuickSearchInput
             data-testid="slider-bar-quick-search-button"
             onClick={onOpenQuickSearchModal}

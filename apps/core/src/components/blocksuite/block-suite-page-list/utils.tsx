@@ -3,7 +3,7 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { pageSettingsAtom, setPageModeAtom } from '../../../atoms';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -19,14 +19,14 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   );
   const setPageMode = useSetAtom(setPageModeAtom);
   const createPageAndOpen = useCallback(
-    (id?: string, mode?: 'page' | 'edgeless'): string => {
+    (id?: string, mode?: 'page' | 'edgeless') => {
       const page = createPage(id);
       initEmptyPage(page).catch(error => {
         toast(`Failed to initialize Page: ${error.message}`);
       });
       setPageMode(page.id, mode || 'page');
       openPage(blockSuiteWorkspace.id, page.id);
-      return page.id;
+      return page;
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
   );
@@ -57,10 +57,17 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     };
     showImportModal({ workspace: blockSuiteWorkspace, onSuccess });
   }, [blockSuiteWorkspace, openPage, jumpToSubPath]);
-  return {
-    createPage: createPageAndOpen,
-    createEdgeless: createEdgelessAndOpen,
-    importFile: importFileAndOpen,
-    isPreferredEdgeless: isPreferredEdgeless,
-  };
+  return useMemo(() => {
+    return {
+      createPage: createPageAndOpen,
+      createEdgeless: createEdgelessAndOpen,
+      importFile: importFileAndOpen,
+      isPreferredEdgeless: isPreferredEdgeless,
+    };
+  }, [
+    createEdgelessAndOpen,
+    createPageAndOpen,
+    importFileAndOpen,
+    isPreferredEdgeless,
+  ]);
 };

@@ -17,7 +17,6 @@ import { FlexWrapper } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 
 export interface OperationCellProps {
-  title: string;
   favorite: boolean;
   isPublic: boolean;
   onOpenPageInNewTab: () => void;
@@ -27,7 +26,6 @@ export interface OperationCellProps {
 }
 
 export const OperationCell = ({
-  title,
   favorite,
   isPublic,
   onOpenPageInNewTab,
@@ -36,7 +34,6 @@ export const OperationCell = ({
   onDisablePublicSharing,
 }: OperationCellProps) => {
   const t = useAFFiNEI18N();
-  const [open, setOpen] = useState(false);
   const [openDisableShared, setOpenDisableShared] = useState(false);
 
   const OperationMenu = (
@@ -77,12 +74,7 @@ export const OperationCell = ({
           {t['com.affine.openPageOperation.newTab']()}
         </MenuItem>
       )}
-      <MoveToTrash
-        data-testid="move-to-trash"
-        onSelect={() => {
-          setOpen(true);
-        }}
-      />
+      <MoveToTrash data-testid="move-to-trash" onSelect={onRemoveToTrash} />
     </>
   );
   return (
@@ -99,15 +91,6 @@ export const OperationCell = ({
           </IconButton>
         </Menu>
       </FlexWrapper>
-      <MoveToTrash.ConfirmModal
-        open={open}
-        title={title}
-        onConfirm={() => {
-          onRemoveToTrash();
-          setOpen(false);
-        }}
-        onOpenChange={setOpen}
-      />
       <DisablePublicSharing.DisablePublicSharingModal
         onConfirm={onDisablePublicSharing}
         open={openDisableShared}

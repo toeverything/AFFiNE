@@ -1,6 +1,5 @@
 import { DebugLogger } from '@affine/debug';
 import {
-  DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX,
   DEFAULT_WORKSPACE_NAME,
   PageNotFoundError,
 } from '@affine/env/constant';
@@ -20,11 +19,11 @@ import {
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { nanoid } from '@blocksuite/store';
 import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { setPageModeAtom } from '../../atoms';
@@ -61,8 +60,9 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           logger.error('init page with preloading failed', err);
         });
       } else {
-        const page = blockSuiteWorkspace.createPage({
-          id: `${blockSuiteWorkspace.id}-${DEFAULT_HELLO_WORLD_PAGE_ID_SUFFIX}`,
+        const page = blockSuiteWorkspace.createPage();
+        blockSuiteWorkspace.setPageMeta(page.id, {
+          jumpOnce: true,
         });
         initEmptyPage(page).catch(error => {
           logger.error('init page with empty failed', error);

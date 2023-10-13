@@ -38,7 +38,6 @@ export const EnableAffineCloudModal = ({
 
   return (
     <ConfirmModal
-      width={480}
       title={t['Enable AFFiNE Cloud']()}
       description={t['Enable AFFiNE Cloud Description']()}
       cancelText={t['com.affine.enableAffineCloudModal.button.cancel']()}

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { StaticModuleRecord } from '@endo/static-module-record';
+import { plugx } from '@plugxjs/vite-plugin';
 import {
   packageJsonInputSchema,
   packageJsonOutputSchema,
@@ -64,9 +64,6 @@ const external = [
 
   // css
   /^@vanilla-extract/,
-
-  // remove this when bookmark plugin is ready
-  'link-preview-js',
 ];
 
 const allPluginDir = path.resolve(projectRoot, 'plugins');
@@ -103,15 +100,6 @@ const outDir = path.resolve(projectRoot, 'apps', 'core', 'public', 'plugins');
 
 const coreOutDir = path.resolve(outDir, plugin);
 
-const serverOutDir = path.resolve(
-  projectRoot,
-  'apps',
-  'electron',
-  'dist',
-  'plugins',
-  plugin
-);
-
 const coreEntry = path.resolve(pluginDir, json.affinePlugin.entry.core);
 
 const generatePackageJson: PluginOption = {
@@ -127,7 +115,6 @@ const generatePackageJson: PluginOption = {
           core: 'index.js',
         },
         assets: [...metadata.assets],
-        serverCommand: json.affinePlugin.serverCommand,
       },
     } satisfies z.infer<typeof packageJsonOutputSchema>;
     packageJsonOutputSchema.parse(packageJson);
@@ -185,60 +172,9 @@ await build({
     vanillaExtractPlugin(),
     vue(),
     react(),
-    {
-      name: 'parse-bundle',
-      renderChunk(code, chunk) {
-        if (chunk.fileName.endsWith('js')) {
-          const record = new StaticModuleRecord(code, chunk.fileName);
-          const reexports = record.__reexportMap__ as Record<
-            string,
-            [localName: string, exportedName: string][]
-          >;
-          const exports = Object.assign(
-            {},
-            record.__fixedExportMap__,
-            record.__liveExportMap__
-          );
-          this.emitFile({
-            type: 'asset',
-            fileName: `${chunk.fileName}.json`,
-            source: JSON.stringify(
-              {
-                exports: exports,
-                imports: record.imports,
-                reexports: reexports,
-              },
-              null,
-              2
-            ),
-          });
-          return record.__syncModuleProgram__;
-        }
-        return code;
-      },
-    },
+    plugx({
+      staticJsonSuffix: '.json',
+    }),
     generatePackageJson,
   ],
 });
-
-// step 2: generate server bundle
-if (json.affinePlugin.entry.server) {
-  const serverEntry = path.resolve(pluginDir, json.affinePlugin.entry.server);
-  await build({
-    build: {
-      watch: isWatch ? {} : undefined,
-      minify: false,
-      outDir: serverOutDir,
-      emptyOutDir: true,
-      lib: {
-        entry: serverEntry,
-        fileName: 'index',
-        formats: ['cjs'],
-      },
-      rollupOptions: {
-        external,
-      },
-    },
-    plugins: [generatePackageJson],
-  });
-}

@@ -9,7 +9,7 @@ import { describe, expect, test } from 'vitest';
 import {
   pageSettingFamily,
   pageSettingsAtom,
-  recentPageSettingsAtom,
+  recentPageIdsBaseAtom,
 } from '../index';
 
 describe('page mode atom', () => {
@@ -26,20 +26,12 @@ describe('page mode atom', () => {
       },
     });
 
-    expect(store.get(recentPageSettingsAtom)).toEqual([
-      {
-        id: 'page0',
-        mode: 'page',
-      },
-    ]);
+    expect(store.get(recentPageIdsBaseAtom)).toEqual(['page0']);
 
     const page1SettingAtom = pageSettingFamily('page1');
     store.set(page1SettingAtom, {
       mode: 'edgeless',
     });
-    expect(store.get(recentPageSettingsAtom)).toEqual([
-      { id: 'page1', mode: 'edgeless' },
-      { id: 'page0', mode: 'page' },
-    ]);
+    expect(store.get(recentPageIdsBaseAtom)).toEqual(['page1', 'page0']);
   });
 });

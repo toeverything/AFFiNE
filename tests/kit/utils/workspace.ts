@@ -19,9 +19,9 @@ export async function createLocalWorkspace(
   // open create workspace modal
   await page.getByTestId('new-workspace').click();
 
-  const isDesktop: boolean = await page.evaluate(() => {
-    return !!window.appInfo?.electron;
-  }, []);
+  // const isDesktop: boolean = await page.evaluate(() => {
+  //   return !!window.appInfo?.electron;
+  // }, []);
 
   // input workspace name
   await page.getByPlaceholder('Set a Workspace name').click();
@@ -32,7 +32,7 @@ export async function createLocalWorkspace(
     delay: 500,
   });
 
-  if (isDesktop) {
-    await page.getByTestId('create-workspace-continue-button').click();
-  }
+  // if (isDesktop) {
+  //   await page.getByTestId('create-workspace-continue-button').click();
+  // }
 }

@@ -21,6 +21,29 @@ export function getRequestResponseFromContext(context: ExecutionContext) {
         res: http.getResponse<Response>(),
       };
     }
+    case 'ws': {
+      const ws = context.switchToWs();
+      const req = ws.getClient().handshake;
+
+      const cookies = req?.headers?.cookie;
+      // patch cookies to match auth guard logic
+      if (typeof cookies === 'string') {
+        req.cookies = cookies
+          .split(';')
+          .map(v => v.split('='))
+          .reduce(
+            (acc, v) => {
+              acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(
+                v[1].trim()
+              );
+              return acc;
+            },
+            {} as Record<string, string>
+          );
+      }
+
+      return { req };
+    }
     default:
       throw new Error('Unknown context type for getting request and response');
   }

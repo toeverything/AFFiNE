@@ -8,8 +8,9 @@ import { setTimeout } from 'node:timers/promises';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { Schema, uuidv4, Workspace } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { openDB } from 'idb';
+import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
@@ -61,7 +62,7 @@ const schema = new Schema();
 schema.register(AffineSchemas).register(__unstableSchemas);
 
 beforeEach(() => {
-  id = uuidv4();
+  id = nanoid();
   workspace = new Workspace({
     id,
     isSSR: true,
@@ -119,7 +120,7 @@ describe('indexeddb provider', () => {
       data.updates.forEach(({ update }) => {
         Workspace.Y.applyUpdate(testWorkspace.doc, update);
       });
-      const subPage = testWorkspace.doc.spaces.get('space:page0');
+      const subPage = testWorkspace.doc.spaces.get('page0');
       {
         assertExists(subPage);
         await store.get(subPage.guid);

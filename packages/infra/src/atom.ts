@@ -1,9 +1,9 @@
 import type { ExpectedLayout } from '@affine/sdk/entry';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page, Workspace } from '@blocksuite/store';
+import type { Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
 
-import { getWorkspace, waitForWorkspace } from './__internal__/workspace.js';
+import { getActiveBlockSuiteWorkspaceAtom } from './__internal__/workspace';
 
 // global store
 let rootStore = createStore();
@@ -24,25 +24,10 @@ export const loadedPluginNameAtom = atom<string[]>([]);
 export const currentWorkspaceIdAtom = atom<string | null>(null);
 export const currentPageIdAtom = atom<string | null>(null);
 export const currentWorkspaceAtom = atom<Promise<Workspace>>(async get => {
-  const currentWorkspaceId = get(currentWorkspaceIdAtom);
-  assertExists(currentWorkspaceId, 'current workspace id');
-  const workspace = getWorkspace(currentWorkspaceId);
-  await waitForWorkspace(workspace);
-  return workspace;
-});
-export const currentPageAtom = atom<Promise<Page>>(async get => {
-  const currentWorkspaceId = get(currentWorkspaceIdAtom);
-  assertExists(currentWorkspaceId, 'current workspace id');
-  const currentPageId = get(currentPageIdAtom);
-  assertExists(currentPageId, 'current page id');
-  const workspace = getWorkspace(currentWorkspaceId);
-  await waitForWorkspace(workspace);
-  const page = workspace.getPage(currentPageId);
-  assertExists(page);
-  if (!page.loaded) {
-    await page.waitForLoaded();
-  }
-  return page;
+  const workspaceId = get(currentWorkspaceIdAtom);
+  assertExists(workspaceId);
+  const currentWorkspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);
+  return get(currentWorkspaceAtom);
 });
 
 const contentLayoutBaseAtom = atom<ExpectedLayout>('editor');

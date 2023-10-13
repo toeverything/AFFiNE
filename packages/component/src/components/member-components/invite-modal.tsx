@@ -48,7 +48,6 @@ export const InviteModal = ({
     <ConfirmModal
       open={open}
       onOpenChange={setOpen}
-      width={480}
       title={t['Invite Members']()}
       description={t['Invite Members Message']()}
       cancelText={t['com.affine.inviteModal.button.cancel']()}

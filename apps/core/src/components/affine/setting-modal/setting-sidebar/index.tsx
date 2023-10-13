@@ -49,14 +49,7 @@ export const UserInfo = ({
       className={accountButton}
       onClick={onAccountSettingClick}
     >
-      <Avatar
-        size={28}
-        name={user.name}
-        url={user.image}
-        style={{
-          marginRight: '10px',
-        }}
-      />
+      <Avatar size={28} name={user.name} url={user.image} className="avatar" />
 
       <div className="content">
         <div className="name" title={user.name}>
