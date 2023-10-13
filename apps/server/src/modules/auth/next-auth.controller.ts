@@ -155,8 +155,7 @@ export class NextAuthController {
         const resource = await this.session.get(challenge);
 
         if (!resource) {
-          res.status(400);
-          res.json({ error: 'Invalid Challenge' });
+          this.rejectResponse(res, 'Invalid Challenge');
           return;
         }
 
@@ -170,8 +169,7 @@ export class NextAuthController {
         );
 
         if (!isChallengeVerified) {
-          res.status(400);
-          res.json({ error: 'Invalid Challenge Response' });
+          this.rejectResponse(res, 'Invalid Challenge Response');
           return;
         }
       } else {
@@ -181,8 +179,7 @@ export class NextAuthController {
         );
 
         if (!isTokenVerified) {
-          res.status(400);
-          res.json({ error: 'Invalid Captcha Response' });
+          this.rejectResponse(res, 'Invalid Captcha Response');
           return;
         }
       }
@@ -370,6 +367,18 @@ export class NextAuthController {
       }
     }
     throw new BadRequestException(`User not found`);
+  }
+
+  rejectResponse(res: Response, error: string, status = 400) {
+    res.status(status);
+    res.json({
+      url: `https://${this.config.baseUrl}/api/auth/error?${new URLSearchParams(
+        {
+          error,
+        }
+      ).toString()}`,
+      error,
+    });
   }
 }
 

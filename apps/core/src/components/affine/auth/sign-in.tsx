@@ -91,6 +91,8 @@ export const SignIn: FC<AuthPanelProps> = ({
         const res = await signUp(email, verifyToken, challenge);
         if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
           return setAuthState('noAccess');
+        } else if (!res || res.status >= 400 || res.error) {
+          return;
         }
         setAuthState('afterSignUpSendEmail');
       }
