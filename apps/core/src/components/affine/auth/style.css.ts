@@ -7,6 +7,7 @@ export const authModalContent = style({
 export const captchaWrapper = style({
   margin: 'auto',
   marginBottom: '4px',
+  textAlign: 'center',
 });
 
 export const authMessage = style({

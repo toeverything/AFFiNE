@@ -22,7 +22,7 @@ export const AfterSignInSendEmail = ({
 }: AuthPanelProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, Captcha] = useCaptcha();
+  const [verifyToken, Captcha, challenge] = useCaptcha();
 
   const { resendCountDown, allowSendEmail, signIn } = useAuth();
   if (loginStatus === 'authenticated') {
@@ -31,9 +31,9 @@ export const AfterSignInSendEmail = ({
 
   const onResendClick = useCallback(async () => {
     if (verifyToken) {
-      await signIn(email, verifyToken);
+      await signIn(email, verifyToken, challenge);
     }
-  }, [email, signIn, verifyToken]);
+  }, [challenge, email, signIn, verifyToken]);
 
   return (
     <>

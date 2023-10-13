@@ -21,7 +21,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, Captcha] = useCaptcha();
+  const [verifyToken, Captcha, challenge] = useCaptcha();
 
   const { resendCountDown, allowSendEmail, signUp } = useAuth();
 
@@ -31,9 +31,9 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
 
   const onResendClick = useCallback(async () => {
     if (verifyToken) {
-      await signUp(email, verifyToken);
+      await signUp(email, verifyToken, challenge);
     }
-  }, [email, signUp, verifyToken]);
+  }, [challenge, email, signUp, verifyToken]);
 
   return (
     <>

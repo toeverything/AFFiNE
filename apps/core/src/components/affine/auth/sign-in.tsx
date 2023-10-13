@@ -32,7 +32,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, Captcha] = useCaptcha();
+  const [verifyToken, Captcha, challenge] = useCaptcha();
 
   const {
     isMutating: isSigningIn,
@@ -82,13 +82,13 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     if (verifyToken) {
       if (user) {
-        const res = await signIn(email, verifyToken);
+        const res = await signIn(email, verifyToken, challenge);
         if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
           return setAuthState('noAccess');
         }
         setAuthState('afterSignInSendEmail');
       } else {
-        const res = await signUp(email, verifyToken);
+        const res = await signUp(email, verifyToken, challenge);
         if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
           return setAuthState('noAccess');
         }

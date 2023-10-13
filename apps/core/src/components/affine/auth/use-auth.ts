@@ -63,7 +63,7 @@ export const useAuth = () => {
   const startResendCountDown = useSetAtom(countDownAtom);
 
   const signIn = useCallback(
-    async (email: string, verifyToken: string) => {
+    async (email: string, verifyToken: string, challenge?: string) => {
       setAuthStore(prev => {
         return {
           ...prev,
@@ -78,7 +78,12 @@ export const useAuth = () => {
           callbackUrl: '/auth/signIn',
           redirect: false,
         },
-        { token: verifyToken }
+        challenge
+          ? {
+              challenge,
+              token: verifyToken,
+            }
+          : { token: verifyToken }
       ).catch(console.error);
 
       handleSendEmailError(res, pushNotification);
@@ -97,7 +102,7 @@ export const useAuth = () => {
   );
 
   const signUp = useCallback(
-    async (email: string, verifyToken: string) => {
+    async (email: string, verifyToken: string, challenge?: string) => {
       setAuthStore(prev => {
         return {
           ...prev,
@@ -112,7 +117,12 @@ export const useAuth = () => {
           callbackUrl: '/auth/signUp',
           redirect: false,
         },
-        { token: verifyToken }
+        challenge
+          ? {
+              challenge,
+              token: verifyToken,
+            }
+          : { token: verifyToken }
       ).catch(console.error);
 
       handleSendEmailError(res, pushNotification);
