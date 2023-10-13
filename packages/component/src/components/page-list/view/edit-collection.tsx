@@ -1,19 +1,18 @@
-import {
-  CreateCollectionModal,
-  createEmptyCollection,
-} from '@affine/component/page-list';
 import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilterIcon, SaveIcon } from '@blocksuite/icons';
+import { FilterIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Menu } from '@toeverything/components/menu';
 import { Modal } from '@toeverything/components/modal';
 import clsx from 'clsx';
-import { nanoid } from 'nanoid';
-import { useCallback, useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { RadioButton, RadioButtonGroup } from '../../..';
 import { FilterList } from '../filter';
+import { VariableSelect } from '../filter/vars';
 import * as styles from './edit-collection.css';
 
 export interface EditCollectionModalProps {
@@ -75,36 +74,6 @@ export const EditCollectionModal = ({
   );
 };
 
-// interface PageProps {
-//   id: string;
-//   getPageInfo: GetPageInfoById;
-//   onClick: (id: string) => void;
-// }
-
-// const Page = ({ id, onClick, getPageInfo }: PageProps) => {
-//   const page = getPageInfo(id);
-//   const handleClick = useCallback(() => onClick(id), [id, onClick]);
-//   return (
-//     <>
-//       {page ? (
-//         <div className={styles.pageContainer}>
-//           <div className={styles.pageIcon}>
-//             {page.isEdgeless ? (
-//               <EdgelessIcon style={{ width: 17.5, height: 17.5 }} />
-//             ) : (
-//               <PageIcon style={{ width: 17.5, height: 17.5 }} />
-//             )}
-//           </div>
-//           <div className={styles.pageTitle}>{page.title}</div>
-//           <div onClick={handleClick} className={styles.deleteIcon}>
-//             <RemoveIcon />
-//           </div>
-//         </div>
-//       ) : null}
-//     </>
-//   );
-// };
-
 export interface EditCollectionProps {
   title?: string;
   onConfirmText?: string;
@@ -124,7 +93,6 @@ export const EditCollection = ({
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
-  const [showPreview, setShowPreview] = useState(true);
   // const removeFromAllowList = useCallback(
   //   (id: string) => {
   //     onChange({
@@ -140,6 +108,32 @@ export const EditCollection = ({
       onConfirm(value);
     }
   }, [value, isNameEmpty, onConfirm]);
+  const reset = useCallback(() => {
+    onChange(init);
+  }, [init]);
+  const buttons = useMemo(
+    () => (
+      <>
+        <Button size="large" onClick={onCancel}>
+          {t['com.affine.editCollection.button.cancel']()}
+        </Button>
+        <Button
+          style={{
+            marginLeft: 20,
+          }}
+          size="large"
+          data-testid="save-collection"
+          type="primary"
+          disabled={isNameEmpty}
+          onClick={onSaveCollection}
+        >
+          {onConfirmText ?? t['com.affine.editCollection.button.create']()}
+        </Button>
+      </>
+    ),
+    [onCancel, t, isNameEmpty, onSaveCollection, onConfirmText]
+  );
+
   return (
     <div
       style={{
@@ -148,9 +142,55 @@ export const EditCollection = ({
         flexDirection: 'column',
       }}
     >
+      {value.mode === 'page' ? (
+        <PagesMode
+          propertiesMeta={propertiesMeta}
+          collection={value}
+          reset={reset}
+          updateCollection={onChange}
+          buttons={buttons}
+        ></PagesMode>
+      ) : (
+        <RulesMode
+          propertiesMeta={propertiesMeta}
+          collection={value}
+          reset={reset}
+          updateCollection={onChange}
+          buttons={buttons}
+        ></RulesMode>
+      )}
+    </div>
+  );
+};
+
+const RulesMode = ({
+  collection,
+  updateCollection,
+  reset,
+  propertiesMeta,
+  buttons,
+}: {
+  collection: Collection;
+  updateCollection: (collection: Collection) => void;
+  reset: () => void;
+  propertiesMeta: PropertiesMeta;
+  buttons: ReactNode;
+}) => {
+  const t = useAFFiNEI18N();
+  const [showPreview, setShowPreview] = useState(true);
+
+  return (
+    <>
       <div className={styles.rulesTitle}>
-        Pages that meet the rules will be added to the current collection{' '}
-        <span className={styles.rulesTitleHighlight}>automatically</span>.
+        <Trans
+          i18nKey="com.affine.editCollection.rules.tips"
+          values={{
+            highlight: t['com.affine.editCollection.rules.tips.highlight'](),
+          }}
+        >
+          Pages that meet the rules will be added to the current collection{' '}
+          <span className={styles.rulesTitleHighlight}>highlight</span>.
+        </Trans>
       </div>
       <div style={{ display: 'flex' }}>
         <div
@@ -172,13 +212,16 @@ export const EditCollection = ({
             <RadioButtonGroup
               width={158}
               style={{ height: 32 }}
-              value={value.mode}
-              onValueChange={useCallback((mode: 'page' | 'rule') => {
-                onChange({
-                  ...value,
-                  mode,
-                });
-              }, [])}
+              value={collection.mode}
+              onValueChange={useCallback(
+                (mode: 'page' | 'rule') => {
+                  updateCollection({
+                    ...collection,
+                    mode,
+                  });
+                },
+                [collection, updateCollection]
+              )}
             >
               <RadioButton
                 spanStyle={styles.tabButton}
@@ -195,17 +238,14 @@ export const EditCollection = ({
                 {t['com.affine.editCollection.rules']()}
               </RadioButton>
             </RadioButtonGroup>
-            <FilterIcon
-              className={clsx(styles.icon, styles.button)}
-              width={24}
-              height={24}
-            ></FilterIcon>
           </div>
           <div style={{ padding: '12px 16px 16px' }}>
             <FilterList
               propertiesMeta={propertiesMeta}
-              value={value.filterList}
-              onChange={filterList => onChange({ ...value, filterList })}
+              value={collection.filterList}
+              onChange={filterList =>
+                updateCollection({ ...collection, filterList })
+              }
             />
           </div>
         </div>
@@ -236,9 +276,7 @@ export const EditCollection = ({
           </div>
           <div
             className={clsx(styles.button, styles.bottomButton)}
-            onClick={() => {
-              onChange(init);
-            }}
+            onClick={reset}
           >
             Reset
           </div>
@@ -247,68 +285,158 @@ export const EditCollection = ({
             <span className={styles.previewCountTipsHighlight}>13</span> pages.
           </div>
         </div>
-        <div>
-          <Button size="large" onClick={onCancel}>
-            {t['com.affine.editCollection.button.cancel']()}
-          </Button>
-          <Button
-            style={{
-              marginLeft: 20,
-            }}
-            size="large"
-            data-testid="save-collection"
-            type="primary"
-            disabled={isNameEmpty}
-            onClick={onSaveCollection}
-          >
-            {onConfirmText ?? t['com.affine.editCollection.button.create']()}
-          </Button>
-        </div>
+        <div>{buttons}</div>
       </div>
-    </div>
+    </>
   );
 };
-
-interface EditCollectionButtonProps {
-  filterList: Filter[];
-  workspaceId: string;
-  onConfirm: (collection: Collection) => Promise<void>;
-}
-
-export const EditCollectionButton = ({
-  onConfirm,
-  filterList,
-  workspaceId,
-}: EditCollectionButtonProps) => {
-  const [show, changeShow] = useState(false);
-  const handleClick = useCallback(() => {
-    changeShow(true);
-  }, [changeShow, workspaceId, filterList]);
+const PagesMode = ({
+  collection,
+  updateCollection,
+  reset,
+  propertiesMeta,
+  buttons,
+}: {
+  collection: Collection;
+  updateCollection: (collection: Collection) => void;
+  reset: () => void;
+  propertiesMeta: PropertiesMeta;
+  buttons: ReactNode;
+}) => {
   const t = useAFFiNEI18N();
-  const createCollection = useCallback(
-    (title: string) => {
-      return onConfirm(createEmptyCollection(nanoid(), { name: title }));
+  const [filters, changeFilters] = useState<Filter[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const clickFilter = useCallback(
+    (e: MouseEvent) => {
+      if (showFilter || filters.length !== 0) {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowFilter(!showFilter);
+      }
     },
-    [onConfirm]
+    [filters.length, showFilter]
+  );
+  const onCreateFilter = useCallback(
+    (filter: Filter) => {
+      changeFilters([...filters, filter]);
+      setShowFilter(true);
+    },
+    [filters]
   );
   return (
     <>
-      <Button
-        onClick={handleClick}
-        data-testid="save-as-collection"
-        icon={<SaveIcon />}
-        size="large"
-        style={{ padding: '7px 8px' }}
+      <input
+        className={styles.rulesTitle}
+        placeholder={t['com.affine.editCollection.search.placeholder']()}
+      ></input>
+      <div style={{ display: 'flex' }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 8,
+              alignItems: 'center',
+              padding: '16px 16px 8px 16px',
+            }}
+          >
+            <RadioButtonGroup
+              width={158}
+              style={{ height: 32 }}
+              value={collection.mode}
+              onValueChange={useCallback(
+                (mode: 'page' | 'rule') => {
+                  updateCollection({
+                    ...collection,
+                    mode,
+                  });
+                },
+                [collection, updateCollection]
+              )}
+            >
+              <RadioButton
+                spanStyle={styles.tabButton}
+                value="page"
+                data-testid="edit-collection-pages-button"
+              >
+                {t['com.affine.editCollection.pages']()}
+              </RadioButton>
+              <RadioButton
+                spanStyle={styles.tabButton}
+                value="rule"
+                data-testid="edit-collection-rules-button"
+              >
+                {t['com.affine.editCollection.rules']()}
+              </RadioButton>
+            </RadioButtonGroup>
+            {!showFilter && filters.length === 0 ? (
+              <Menu
+                items={
+                  <VariableSelect
+                    propertiesMeta={propertiesMeta}
+                    selected={filters}
+                    onSelect={onCreateFilter}
+                  />
+                }
+              >
+                <div>
+                  <FilterIcon
+                    className={clsx(styles.icon, styles.button)}
+                    onClick={clickFilter}
+                    width={24}
+                    height={24}
+                  ></FilterIcon>
+                </div>
+              </Menu>
+            ) : (
+              <FilterIcon
+                className={clsx(styles.icon, styles.button)}
+                onClick={clickFilter}
+                width={24}
+                height={24}
+              ></FilterIcon>
+            )}
+          </div>
+          {showFilter ? (
+            <div style={{ padding: '12px 16px 16px' }}>
+              <FilterList
+                propertiesMeta={propertiesMeta}
+                value={filters}
+                onChange={changeFilters}
+              />
+            </div>
+          ) : null}
+          <div>List</div>
+        </div>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '20px 24px',
+          borderTop: '1px solid var(--affine-border-color)',
+        }}
       >
-        {t['com.affine.editCollection.saveCollection']()}
-      </Button>
-      <CreateCollectionModal
-        title={t['com.affine.editCollection.saveCollection']()}
-        init=""
-        onConfirm={createCollection}
-        open={show}
-        onOpenChange={changeShow}
-      />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className={styles.previewCountTips}>
+            Selected{' '}
+            <span className={styles.previewCountTipsHighlight}>13</span>
+          </div>
+          <div
+            className={clsx(styles.button, styles.bottomButton)}
+            onClick={reset}
+          >
+            {t['com.affine.editCollection.pages.clear']()}
+          </div>
+        </div>
+        <div>{buttons}</div>
+      </div>
     </>
   );
 };

@@ -66,7 +66,6 @@ test('useAllPageSetting', async () => {
   expect(nextCollection.filterList).toEqual([
     createDefaultFilter(vars[0], defaultMeta),
   ]);
-  settingHook.result.current.backToAll();
   await settingHook.result.current.createCollection({
     ...settingHook.result.current.currentCollection,
     id: '1',

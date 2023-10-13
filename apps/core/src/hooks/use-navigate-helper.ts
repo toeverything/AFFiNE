@@ -28,6 +28,18 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToCollection = useCallback(
+    (
+      workspaceId: string,
+      collectionId: string,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      return navigate(`/workspace/${workspaceId}/collection/${collectionId}`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToPublicWorkspacePage = useCallback(
     (
       workspaceId: string,
@@ -113,6 +125,7 @@ export function useNavigateHelper() {
       openPage,
       jumpToExpired,
       jumpToSignIn,
+      jumpToCollection,
     }),
     [
       jumpTo404,
@@ -123,6 +136,7 @@ export function useNavigateHelper() {
       jumpToSignIn,
       jumpToSubPath,
       openPage,
+      jumpToCollection,
     ]
   );
 }

@@ -10,7 +10,8 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { MoveToTrash, useCollectionManager } from '@affine/component/page-list';
+import { MoveToTrash } from '@affine/component/page-list';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteTemporarilyIcon,
@@ -25,10 +26,10 @@ import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
-import { collectionsCRUDAtom } from '../../atoms/collections';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
@@ -99,7 +100,6 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const [appSettings] = useAppSetting();
-  const { backToAll } = useCollectionManager(collectionsCRUDAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
@@ -125,6 +125,10 @@ export const RootAppSidebar = ({
     [trashModal, setTrashModal]
   );
 
+  const navigateHelper = useNavigateHelper();
+  const backToAll = useCallback(() => {
+    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+  }, []);
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {

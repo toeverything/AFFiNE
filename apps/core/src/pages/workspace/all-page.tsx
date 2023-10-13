@@ -1,6 +1,7 @@
 import { toast } from '@affine/component';
 import {
   CollectionBar,
+  currentCollectionAtom,
   OperationCell,
   PageList,
 } from '@affine/component/page-list';
@@ -14,6 +15,7 @@ import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
+import { NIL } from 'uuid';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { collectionsCRUDAtom } from '../../atoms/collections';
@@ -22,6 +24,7 @@ import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useGetPageInfoById } from '../../hooks/use-get-page-info';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import * as styles from './all-page.css';
 import { EmptyPageList } from './page-list-empty';
 import { useFilteredPageMetas } from './pages';
@@ -41,6 +44,7 @@ export const loader: LoaderFunction = async args => {
       return redirect(`/workspace/${workspace.id}/${page.id}`);
     }
   }
+  rootStore.set(currentCollectionAtom, NIL);
   return null;
 };
 
@@ -56,6 +60,10 @@ export const AllPage = () => {
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
+  const navigateHelper = useNavigateHelper();
+  const backToAll = useCallback(() => {
+    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+  }, [navigateHelper, currentWorkspace.id]);
 
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
 
@@ -120,6 +128,7 @@ export const AllPage = () => {
         }}
       />
       <CollectionBar
+        backToAll={backToAll}
         getPageInfo={getPageInfo}
         collectionsAtom={collectionsCRUDAtom}
         columnsCount={5}
