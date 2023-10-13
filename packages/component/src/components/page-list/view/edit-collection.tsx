@@ -2,7 +2,9 @@ import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilterIcon } from '@blocksuite/icons';
+import { CloseIcon, FilterIcon, PlusIcon, ToggleIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
+import { Checkbox } from '@mui/material';
 import { Button } from '@toeverything/components/button';
 import { Menu } from '@toeverything/components/menu';
 import { Modal } from '@toeverything/components/modal';
@@ -13,8 +15,8 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { RadioButton, RadioButtonGroup } from '../../..';
 import { FilterList } from '../filter';
 import { VariableSelect } from '../filter/vars';
+import { filterPageByRules } from '../use-collection-manager';
 import * as styles from './edit-collection.css';
-
 export interface EditCollectionModalProps {
   init?: Collection;
   title?: string;
@@ -23,6 +25,7 @@ export interface EditCollectionModalProps {
   propertiesMeta: PropertiesMeta;
   onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => Promise<void>;
+  allPages: PageMeta[];
 }
 
 export const EditCollectionModal = ({
@@ -33,6 +36,7 @@ export const EditCollectionModal = ({
   getPageInfo,
   propertiesMeta,
   title,
+  allPages,
 }: EditCollectionModalProps) => {
   const t = useAFFiNEI18N();
   const onConfirmOnCollection = useCallback(
@@ -68,6 +72,7 @@ export const EditCollectionModal = ({
           getPageInfo={getPageInfo}
           onCancel={onCancel}
           onConfirm={onConfirmOnCollection}
+          allPages={allPages}
         />
       ) : null}
     </Modal>
@@ -82,6 +87,7 @@ export interface EditCollectionProps {
   propertiesMeta: PropertiesMeta;
   onCancel: () => void;
   onConfirm: (collection: Collection) => void;
+  allPages: PageMeta[];
 }
 
 export const EditCollection = ({
@@ -90,6 +96,7 @@ export const EditCollection = ({
   onCancel,
   onConfirmText,
   propertiesMeta,
+  allPages,
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
@@ -109,8 +116,12 @@ export const EditCollection = ({
     }
   }, [value, isNameEmpty, onConfirm]);
   const reset = useCallback(() => {
-    onChange(init);
-  }, [init]);
+    onChange({
+      ...value,
+      filterList: init.filterList,
+      allowList: init.allowList,
+    });
+  }, [init.allowList, init.filterList, value]);
   const buttons = useMemo(
     () => (
       <>
@@ -146,9 +157,9 @@ export const EditCollection = ({
         <PagesMode
           propertiesMeta={propertiesMeta}
           collection={value}
-          reset={reset}
           updateCollection={onChange}
           buttons={buttons}
+          allPages={allPages}
         ></PagesMode>
       ) : (
         <RulesMode
@@ -157,6 +168,7 @@ export const EditCollection = ({
           reset={reset}
           updateCollection={onChange}
           buttons={buttons}
+          allPages={allPages}
         ></RulesMode>
       )}
     </div>
@@ -169,15 +181,33 @@ const RulesMode = ({
   reset,
   propertiesMeta,
   buttons,
+  allPages,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
   reset: () => void;
   propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
+  allPages: PageMeta[];
 }) => {
   const t = useAFFiNEI18N();
   const [showPreview, setShowPreview] = useState(true);
+  const allowListPages: PageMeta[] = [];
+  const rulesPages: PageMeta[] = [];
+  allPages.forEach(v => {
+    const result = filterPageByRules(
+      collection.filterList,
+      collection.allowList,
+      v
+    );
+    if (result) {
+      if (collection.allowList.includes(v.id)) {
+        allowListPages.push(v);
+      } else {
+        rulesPages.push(v);
+      }
+    }
+  });
 
   return (
     <>
@@ -239,7 +269,14 @@ const RulesMode = ({
               </RadioButton>
             </RadioButtonGroup>
           </div>
-          <div style={{ padding: '12px 16px 16px' }}>
+          <div
+            style={{
+              padding: '12px 16px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
             <FilterList
               propertiesMeta={propertiesMeta}
               value={collection.filterList}
@@ -247,10 +284,142 @@ const RulesMode = ({
                 updateCollection({ ...collection, filterList })
               }
             />
+            <div
+              style={{
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  fontSize: 14,
+                  lineHeight: '22px',
+                }}
+              >
+                <ToggleIcon
+                  width={24}
+                  height={24}
+                  style={{ transform: 'rotate(90deg)' }}
+                ></ToggleIcon>
+                <div style={{ color: 'var(--affine-text-secondary-color)' }}>
+                  include
+                </div>
+              </div>
+              {collection.allowList.map(id => {
+                const page = allPages.find(v => v.id === id);
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      width: 'max-content',
+                      backgroundColor: 'var(--affine-background-primary-color)',
+                      overflow: 'hidden',
+                      gap: 16,
+                      whiteSpace: 'nowrap',
+                      border: '1px solid var(--affine-border-color)',
+                      borderRadius: 8,
+                      padding: '4px 8px 4px',
+                    }}
+                    key={id}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 12,
+                        lineHeight: '20px',
+                      }}
+                    >
+                      <div>Page</div>
+                      <div
+                        style={{
+                          padding: '0 8px',
+                          color: 'var(--affine-text-secondary-color)',
+                        }}
+                      >
+                        is
+                      </div>
+                      <div style={{ overflow: 'hidden', fontWeight: 600 }}>
+                        {page?.title || 'Untitled'}
+                      </div>
+                    </div>
+                    <CloseIcon
+                      className={styles.button}
+                      onClick={() => {
+                        updateCollection({
+                          ...collection,
+                          allowList: collection.allowList.filter(v => v !== id),
+                        });
+                      }}
+                    ></CloseIcon>
+                  </div>
+                );
+              })}
+              <div
+                className={styles.button}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 8px',
+                  fontSize: 14,
+                  lineHeight: '22px',
+                }}
+              >
+                <PlusIcon></PlusIcon>
+                <div style={{ color: 'var(--affine-text-secondary-color)' }}>
+                  Add include page
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div style={{ flex: 2, display: showPreview ? 'flex' : 'none' }}>
-          list
+        <div
+          style={{
+            flex: 2,
+            display: showPreview ? 'flex' : 'none',
+            flexDirection: 'column',
+            borderLeft: '1px solid var(--affine-border-color)',
+          }}
+        >
+          {rulesPages.map(v => {
+            return (
+              <div key={v.id} style={{ padding: '10px 16px' }}>
+                {v.title || 'Untitled'}
+                {v.favorite ? '✅' : ''}
+              </div>
+            );
+          })}
+          {allowListPages.length > 0 ? (
+            <div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 14,
+                  lineHeight: '22px',
+                  color: 'var(--affine-text-secondary-color)',
+                  paddingLeft: 18,
+                }}
+              >
+                include
+              </div>
+              {allowListPages.map(v => {
+                return (
+                  <div key={v.id} style={{ padding: '10px 16px' }}>
+                    {v.title || 'Untitled'}
+                    {v.favorite ? '✅' : ''}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
       <div
@@ -282,7 +451,10 @@ const RulesMode = ({
           </div>
           <div className={styles.previewCountTips}>
             After searching, there are currently{' '}
-            <span className={styles.previewCountTipsHighlight}>13</span> pages.
+            <span className={styles.previewCountTipsHighlight}>
+              {allowListPages.length + rulesPages.length}
+            </span>{' '}
+            pages.
           </div>
         </div>
         <div>{buttons}</div>
@@ -293,15 +465,15 @@ const RulesMode = ({
 const PagesMode = ({
   collection,
   updateCollection,
-  reset,
   propertiesMeta,
   buttons,
+  allPages,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
-  reset: () => void;
   propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
+  allPages: PageMeta[];
 }) => {
   const t = useAFFiNEI18N();
   const [filters, changeFilters] = useState<Filter[]>([]);
@@ -323,6 +495,15 @@ const PagesMode = ({
     },
     [filters]
   );
+  const clearSelected = useCallback(() => {
+    updateCollection({
+      ...collection,
+      pages: [],
+    });
+  }, [collection, updateCollection]);
+  const filteredPages = allPages.filter(v => {
+    return filterPageByRules(filters, [], v);
+  });
   return (
     <>
       <input
@@ -412,7 +593,32 @@ const PagesMode = ({
               />
             </div>
           ) : null}
-          <div>List</div>
+          <div>
+            {filteredPages.map(v => {
+              const checked = collection.pages.includes(v.id);
+              return (
+                <div key={v.id}>
+                  <Checkbox
+                    checked={checked}
+                    onClick={() => {
+                      if (checked) {
+                        updateCollection({
+                          ...collection,
+                          pages: collection.pages.filter(id => id !== v.id),
+                        });
+                      } else {
+                        updateCollection({
+                          ...collection,
+                          pages: [...collection.pages, v.id],
+                        });
+                      }
+                    }}
+                  ></Checkbox>
+                  {v.title || 'Untitled'}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
       <div
@@ -426,11 +632,13 @@ const PagesMode = ({
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <div className={styles.previewCountTips}>
             Selected{' '}
-            <span className={styles.previewCountTipsHighlight}>13</span>
+            <span className={styles.previewCountTipsHighlight}>
+              {collection.pages.length}
+            </span>
           </div>
           <div
             className={clsx(styles.button, styles.bottomButton)}
-            onClick={reset}
+            onClick={clearSelected}
           >
             {t['com.affine.editCollection.pages.clear']()}
           </div>

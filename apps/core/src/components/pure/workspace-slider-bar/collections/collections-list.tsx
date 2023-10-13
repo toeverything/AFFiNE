@@ -1,6 +1,7 @@
 import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import {
   EditCollectionModal,
+  filterPage,
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
@@ -32,7 +33,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
-import { filterPage } from '../../../../utils/filter';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -133,12 +133,13 @@ const CollectionRenderer = ({
   workspace: Workspace;
   getPageInfo: GetPageInfoById;
 }) => {
+  const allPages = useBlockSuitePageMeta(workspace);
   const [collapsed, setCollapsed] = useState(true);
   const setting = useCollectionManager(collectionsCRUDAtom);
   const { jumpToCollection } = useNavigateHelper();
   const clickCollection = useCallback(() => {
     jumpToCollection(workspace.id, collection.id);
-  }, [jumpToCollection, workspace.id, setting, collection.id]);
+  }, [jumpToCollection, workspace.id, collection.id]);
   const { setNodeRef, isOver } = useDroppable({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {
@@ -180,6 +181,7 @@ const CollectionRenderer = ({
         onConfirm={setting.updateCollection}
         open={show}
         onOpenChange={showUpdateCollection}
+        allPages={allPages}
       />
       <CollectionItem
         data-testid="collection-item"

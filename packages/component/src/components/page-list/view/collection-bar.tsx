@@ -2,6 +2,7 @@ import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
@@ -21,6 +22,7 @@ interface CollectionBarProps {
   collectionsAtom: CollectionsCRUDAtom;
   columnsCount: number;
   backToAll: () => void;
+  allPages: PageMeta[];
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
@@ -46,6 +48,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
             onOpenChange={setOpen}
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             onConfirm={setting.updateCollection}
+            allPages={props.allPages}
           />
           <ViewLayersIcon
             style={{

@@ -21,6 +21,7 @@ export const icon = style({
   color: 'var(--affine-icon-color)',
 });
 export const button = style({
+  userSelect: 'none',
   borderRadius: 4,
   cursor: 'pointer',
   ':hover': {
@@ -37,6 +38,7 @@ export const previewActive = style({
 });
 export const rulesTitle = style({
   padding: '20px 24px',
+  userSelect: 'none',
   fontSize: 20,
   lineHeight: '24px',
   color: 'var(--affine-text-secondary-color)',

@@ -1,4 +1,5 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
+import type { PageMeta } from '@blocksuite/store';
 import { type Atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithReset } from 'jotai/utils';
 import type { WritableAtom } from 'jotai/vanilla';
@@ -114,3 +115,25 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
 };
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
   evalFilterList(filterList, varMap);
+
+export const filterPage = (collection: Collection, page: PageMeta) => {
+  if (collection.mode === 'page') {
+    return collection.pages.includes(page.id);
+  }
+  return filterPageByRules(collection.filterList, collection.allowList, page);
+};
+export const filterPageByRules = (
+  rules: Filter[],
+  allowList: string[],
+  page: PageMeta
+) => {
+  if (allowList?.includes(page.id)) {
+    return true;
+  }
+  return filterByFilterList(rules, {
+    'Is Favourited': !!page.favorite,
+    Created: page.createDate,
+    Updated: page.updatedDate ?? page.createDate,
+    Tags: page.tags,
+  });
+};

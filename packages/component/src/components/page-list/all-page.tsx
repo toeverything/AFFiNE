@@ -3,6 +3,7 @@ import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowDownBigIcon, ArrowUpBigIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
 import { useMediaQuery, useTheme } from '@mui/material';
 import type React from 'react';
 import { type CSSProperties, useMemo } from 'react';
@@ -39,6 +40,7 @@ interface AllPagesHeadProps {
   propertiesMeta: PropertiesMeta;
   collectionsAtom: CollectionsCRUDAtom;
   backToAll: () => void;
+  allPages: PageMeta[];
 }
 
 const AllPagesHead = ({
@@ -51,6 +53,7 @@ const AllPagesHead = ({
   propertiesMeta,
   collectionsAtom,
   backToAll,
+  allPages,
 }: AllPagesHeadProps) => {
   const t = useAFFiNEI18N();
   const titleList = useMemo(
@@ -155,6 +158,7 @@ const AllPagesHead = ({
         propertiesMeta={propertiesMeta}
         collectionsAtom={collectionsAtom}
         backToAll={backToAll}
+        allPages={allPages}
       />
     </TableHead>
   );
@@ -171,6 +175,7 @@ export const PageList = ({
   getPageInfo,
   propertiesMeta,
   backToAll,
+  allPages,
 }: PageListProps) => {
   const sorter = useSorter<ListData>({
     data: list,
@@ -217,6 +222,7 @@ export const PageList = ({
             importFile={onImportFile}
             getPageInfo={getPageInfo}
             backToAll={backToAll}
+            allPages={allPages}
           />
           <AllPagesBody
             isPublicWorkspace={isPublicWorkspace}

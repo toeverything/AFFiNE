@@ -4,6 +4,7 @@ import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
+import type { PageMeta } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
@@ -107,12 +108,14 @@ export const CollectionList = ({
   propertiesMeta,
   backToAll,
   jumpToCollection,
+  allPages,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   backToAll: () => void;
   jumpToCollection: (id: string) => void;
+  allPages: PageMeta[];
 }) => {
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
@@ -223,6 +226,7 @@ export const CollectionList = ({
         open={!!collection}
         onOpenChange={closeUpdateCollectionModal}
         onConfirm={onConfirm}
+        allPages={allPages}
       />
     </FlexWrapper>
   );

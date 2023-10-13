@@ -2,6 +2,7 @@ import type { CollectionsCRUDAtom } from '@affine/component/page-list/use-collec
 import type { Tag } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
+import type { PageMeta } from '@blocksuite/store';
 import type { ReactElement, ReactNode } from 'react';
 
 /**
@@ -56,6 +57,7 @@ export type PageListProps = {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   backToAll: () => void;
+  allPages: PageMeta[];
 };
 
 export type DraggableTitleCellData = {

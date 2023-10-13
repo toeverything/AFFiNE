@@ -1,5 +1,9 @@
 import { Empty } from '@affine/component';
-import type { ListData, TrashListData } from '@affine/component/page-list';
+import {
+  filterPage,
+  type ListData,
+  type TrashListData,
+} from '@affine/component/page-list';
 import { PageList, PageListTrashView } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
@@ -21,7 +25,6 @@ import { useGetPageInfoById } from '../../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { type BlockSuiteWorkspace, WorkspaceSubPath } from '../../../shared';
 import { toast } from '../../../utils';
-import { filterPage } from '../../../utils/filter';
 import { emptyDescButton, emptyDescKbd, pageListEmptyStyle } from './index.css';
 import { usePageHelper } from './utils';
 
@@ -297,6 +300,7 @@ export const BlockSuitePageList = ({
       isPublicWorkspace={isPublic}
       list={pageList}
       backToAll={backToAll}
+      allPages={pageMetas}
       fallback={<PageListEmpty createPage={createPage} listType={listType} />}
     />
   );

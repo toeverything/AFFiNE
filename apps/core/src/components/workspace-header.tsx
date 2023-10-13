@@ -11,6 +11,7 @@ import {
   type WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useSetAtom } from 'jotai/react';
 import { useCallback } from 'react';
 
@@ -73,6 +74,7 @@ export function WorkspaceHeader({
   const setAppHeader = useSetAtom(appHeaderAtom);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
+  const allPages = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const setting = useCollectionManager(collectionsCRUDAtom);
   const getPageInfoById = useGetPageInfoById(
     currentWorkspace.blockSuiteWorkspace
@@ -106,6 +108,7 @@ export function WorkspaceHeader({
               propertiesMeta={
                 currentWorkspace.blockSuiteWorkspace.meta.properties
               }
+              allPages={allPages}
             />
           }
           center={<WorkspaceModeFilterTab />}
