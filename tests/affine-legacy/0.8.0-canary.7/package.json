@@ -3,7 +3,7 @@
   "description": "AFFiNE 0.8.0-canary.7 static output",
   "scripts": {
     "unzip": "wget -O static.zip https://github.com/toeverything/AFFiNE/releases/download/v0.8.0-canary.7/web-static.zip && unzip static.zip",
-    "start": "yarn exec serve -s web-static -l 8082",
+    "start": "yarn exec serve -s web-static -l 8081",
     "e2e": "yarn playwright test"
   },
   "devDependencies": {

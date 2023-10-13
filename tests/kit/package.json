@@ -6,7 +6,8 @@
   "exports": {
     "./electron": "./electron.ts",
     "./playwright": "./playwright.ts",
-    "./utils/*": "./utils/*.ts"
+    "./utils/*": "./utils/*.ts",
+    "./e2e-enhance/*": "./e2e-enhance/*.ts"
   },
   "devDependencies": {
     "@node-rs/argon2": "^1.5.2",
