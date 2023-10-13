@@ -96,6 +96,7 @@ export const SignIn: FC<AuthPanelProps> = ({
       }
     }
   }, [
+    challenge,
     email,
     setAuthEmail,
     setAuthState,
