@@ -44,3 +44,8 @@ export const verifyChallengeResponse = async (
   // 20 bits challenge cost time is about 1-3s on m2 macbook air
   return storageModule.verifyChallengeResponse(response, 20, resource);
 };
+
+export const mintChallengeResponse = async (resource: string) => {
+  if (!resource) return null;
+  return storageModule.mintChallengeResponse(resource, 20);
+};
