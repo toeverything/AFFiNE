@@ -6,25 +6,25 @@ import { FeatureKind, Quota } from './types';
 
 const Quotas: Quota[] = [
   {
-    name: 'free_plan_v1',
+    feature: 'free_plan_v1',
     type: FeatureKind.Quota,
     version: 1,
     configs: {
       // single blob limit 10MB
-      blob_single_limit: 10 * 1024 * 1024,
+      blobLimit: 10 * 1024 * 1024,
       // total blob limit 10GB
-      blob_total_limit: 10 * 1024 * 1024 * 1024,
+      storageQuota: 10 * 1024 * 1024 * 1024,
     },
   },
   {
-    name: 'pro_plan_v1',
+    feature: 'pro_plan_v1',
     type: FeatureKind.Quota,
     version: 1,
     configs: {
       // single blob limit 10MB
-      blob_single_limit: 10 * 1024 * 1024,
-      // total blob limit 10GB
-      blob_total_limit: 10 * 1024 * 1024 * 1024,
+      blobLimit: 10 * 1024 * 1024,
+      // total blob limit 100GB
+      storageQuota: 100 * 1024 * 1024 * 1024,
     },
   },
 ];
@@ -43,9 +43,11 @@ export class QuotaService implements OnModuleInit {
   }
 
   async getQuotaByUser(userId: string) {
-    const userFeatures = await this.prisma.userFeatureGates.findUnique({
+    const userFeatures = await this.prisma.userFeatureGates.findFirst({
       where: {
-        id: userId,
+        user: {
+          id: userId,
+        },
         feature: {
           type: FeatureKind.Quota,
         },
@@ -64,7 +66,7 @@ export class QuotaService implements OnModuleInit {
       },
     });
     return userFeatures as typeof userFeatures & {
-      feature: Quota;
+      feature: Pick<Quota, 'feature' | 'configs'>;
     };
   }
 

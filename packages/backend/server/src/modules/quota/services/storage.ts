@@ -14,8 +14,8 @@ export class StorageQuotaService {
         reason: quota.reason,
         createAt: quota.createdAt,
         expiresAt: quota.expiresAt,
-        blobSingle: quota.feature.configs.blob_single_limit,
-        blobTotal: quota.feature.configs.blob_total_limit,
+        blobLimit: quota.feature.configs.blobLimit,
+        storageQuota: quota.feature.configs.storageQuota,
       };
     }
     return null;

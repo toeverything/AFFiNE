@@ -1,12 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma';
-import { Feature, FeatureKind } from './types';
+import { CommonFeature, Feature, FeatureKind } from './types';
 
 const Features: Feature[] = [
   {
-    name: 'early_access',
+    feature: 'early_access',
     type: FeatureKind.Feature,
     version: 1,
     configs: {
@@ -27,10 +26,10 @@ export class FeatureService implements OnModuleInit {
   }
 
   // upgrade features from lower version to higher version
-  async upsertFeature(feature: Feature): Promise<void> {
+  async upsertFeature(feature: CommonFeature): Promise<void> {
     await this.prisma.userFeatures.upsert({
       where: {
-        feature: feature.name,
+        feature: feature.feature,
         version: {
           lt: feature.version,
         },
@@ -40,7 +39,7 @@ export class FeatureService implements OnModuleInit {
         configs: feature.configs,
       },
       create: {
-        feature: feature.name,
+        feature: feature.feature,
         type: feature.type,
         version: feature.version,
         configs: feature.configs,
@@ -64,15 +63,12 @@ export class FeatureService implements OnModuleInit {
     );
   }
 
-  async getFeatureConfigs<R extends Prisma.JsonValue = Prisma.JsonValue>(
-    feature: string
-  ): Promise<R | undefined> {
-    const featureConfig = await this.prisma.userFeatures.findUnique({
+  async getFeature(feature: string) {
+    return this.prisma.userFeatures.findUnique({
       where: {
         feature,
       },
     });
-    return featureConfig?.configs as R;
   }
 
   async getFeaturesByUser(userId: string) {
@@ -85,6 +81,21 @@ export class FeatureService implements OnModuleInit {
       },
     });
     return userFeatures?.features;
+  }
+
+  async listFeatureUsers(feature: string) {
+    return this.prisma.userFeatureGates
+      .findMany({
+        where: {
+          feature: {
+            feature: feature,
+          },
+        },
+        select: {
+          user: true,
+        },
+      })
+      .then(users => users.map(user => user.user));
   }
 
   async hasFeature(userId: string, feature: string) {

@@ -5,17 +5,21 @@ export enum FeatureKind {
   Quota,
 }
 
-export type Feature = {
-  name: string;
+export type CommonFeature = {
+  feature: string;
   type: FeatureKind;
   version: number;
   configs: Prisma.InputJsonValue;
 };
 
-export type Quota = Feature & {
+export type Feature = CommonFeature & {
+  type: FeatureKind.Feature;
+};
+
+export type Quota = CommonFeature & {
   type: FeatureKind.Quota;
   configs: {
-    blob_single_limit: number;
-    blob_total_limit: number;
+    blobLimit: number;
+    storageQuota: number;
   };
 };
