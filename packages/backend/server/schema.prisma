@@ -115,7 +115,9 @@ model WorkspacePageUserPermission {
 }
 
 // feature gates is a way to enable/disable features for a user
-// for example, early access is a feature that allow some users to access the insider version
+// for example:
+// - early access is a feature that allow some users to access the insider version
+// - pro plan is a quota that allow some users access to more resources after they pay
 model UserFeatureGates {
   id        String @id @default(uuid()) @db.VarChar
   userId    String @map("user_id") @db.VarChar
@@ -135,41 +137,15 @@ model UserFeatures {
   id        String   @id @default(uuid()) @db.VarChar
   feature   String   @unique @db.VarChar
   version   Int      @default(0) @db.Integer
+  // 0: feature, 1: quota
+  type      Int      @db.Integer
+  // configs, define by feature conntroller
   configs   Json     @db.Json
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   UserFeatureGates UserFeatureGates[]
 
   @@map("user_features")
-}
-
-// quota gates is a way to enable/disable quotas for a user
-// for example, pro plan is a quota that allow some users access to more resources after they pay
-model UserQuotaGates {
-  id      String @id @default(uuid()) @db.VarChar
-  userId  String @map("user_id") @db.VarChar
-  quotaId String @db.VarChar
-
-  reason    String   @db.VarChar
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quota UserQuotas @relation(fields: [quotaId], references: [id])
-
-  @@map("user_quota_gates")
-}
-
-model UserQuotas {
-  id        String   @id @default(uuid()) @db.VarChar
-  quota     String   @unique @db.VarChar
-  version   Int      @default(0) @db.Integer
-  configs   Json     @db.Json
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  expiresAt DateTime @default("2099-12-31T23:59:59Z") @map("expires_at") @db.Timestamptz(6)
-
-  UserQuotaGates UserQuotaGates[]
-
-  @@map("user_quotas")
 }
 
 model Account {

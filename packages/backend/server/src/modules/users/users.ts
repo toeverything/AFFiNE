@@ -42,7 +42,7 @@ export class UsersService {
           },
         },
       })
-      .then(user => user?.features.map(f => f.feature) ?? []);
+      .then(user => user?.features.map(f => f.feature.feature) ?? []);
 
     return getStorageQuota(features) || this.config.objectStorage.quota;
   }

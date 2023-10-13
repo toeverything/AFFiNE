@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { FeatureService } from './feature';
-import { QuotaManagementService } from './management';
-import { QuotaUsageService } from './usage';
+import { QuotaService } from './quota';
 
 /**
  * Quota module provider pre-user quota management.
@@ -11,6 +10,6 @@ import { QuotaUsageService } from './usage';
  * - quota statistics
  */
 @Module({
-  imports: [FeatureService, QuotaUsageService, QuotaManagementService],
+  imports: [FeatureService, QuotaService],
 })
 export class QuotaModule {}
