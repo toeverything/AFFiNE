@@ -1,9 +1,7 @@
 {
-  "name": "@affine-legacy/0.8.4",
-  "description": "AFFiNE 0.8.4 static output",
+  "name": "@affine-test/affine-migration",
+  "description": "AFFiNE migration e2e tests",
   "scripts": {
-    "unzip": "wget -O static.zip https://github.com/toeverything/AFFiNE/releases/download/v0.8.4/web-static.zip && unzip static.zip",
-    "start": "yarn exec serve -s web-static -l 8081",
     "e2e": "yarn playwright test"
   },
   "devDependencies": {
@@ -13,10 +11,7 @@
     "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/global": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
-    "@playwright/test": "^1.38.1",
-    "express": "^4.18.2",
-    "http-proxy-middleware": "^3.0.0-beta.1",
-    "serve": "^14.2.1"
+    "@playwright/test": "^1.38.1"
   },
-  "version": "0.10.0-canary.0"
+  "version": "0.9.0-canary.13"
 }
