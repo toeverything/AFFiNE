@@ -1,15 +1,11 @@
+import { fetchWithTraceReport } from '@affine/graphql';
 import { Turnstile } from '@marsidev/react-turnstile';
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { useCallback, useState } from 'react';
+import useSWR from 'swr';
 
 import * as style from './style.css';
 
-export const useCaptcha = (): [string | null, () => JSX.Element] => {
+const useCloudflareCaptcha = (): [string | null, () => JSX.Element] => {
   const [verifyToken, setVerifyToken] = useState<string | null>(null);
 
   const Captcha = useCallback(() => {
@@ -25,24 +21,42 @@ export const useCaptcha = (): [string | null, () => JSX.Element] => {
   return [verifyToken, Captcha];
 };
 
-export const useChallenge = (): [
-  string | null,
-  Dispatch<SetStateAction<string | null>>,
-] => {
-  const [response, setResponse] = useState<string | null>(null);
-  const [challenge, setChallenge] = useState<string | null>(null);
+type Challenge = {
+  challenge: string;
+  resource: string;
+};
 
-  useEffect(() => {
-    const generateChallenge = async () => {
-      if (!challenge) return;
-      const response = await window.apis?.ui?.getChallengeResponse(challenge);
-      setResponse(response);
-    };
+const challengeFetcher = async (url: string) => {
+  if (!environment.isDesktop) {
+    return undefined;
+  }
 
-    if (environment.isDesktop) {
-      generateChallenge();
-    }
-  }, [challenge]);
+  const res = await fetchWithTraceReport(url);
+  if (!res.ok) {
+    throw new Error('Failed to fetch challenge');
+  }
+  const challenge = (await res.json()) as Challenge;
+  if (!challenge || !challenge.challenge || !challenge.resource) {
+    throw new Error('Invalid challenge');
+  }
 
-  return [response, setChallenge];
+  return window.apis?.ui?.getChallengeResponse(challenge.challenge);
+};
+
+const Challenge = () => {
+  return <div style={{ margin: 'auto' }}>Making Challenge...</div>;
+};
+
+export const useCaptcha = (): [string | null, () => JSX.Element] => {
+  const [verifyToken, Captcha] = useCloudflareCaptcha();
+  const { data: response } = useSWR('/api/auth/challenge', challengeFetcher);
+  console.log(environment, environment.isDesktop);
+
+  if (environment.isDesktop) {
+    console.log('challenge', response);
+    return [response || null, Challenge];
+  }
+
+  console.log('captcha', verifyToken);
+  return [verifyToken, Captcha];
 };
