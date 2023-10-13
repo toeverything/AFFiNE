@@ -19,8 +19,8 @@
   "license": "MIT",
   "devDependencies": {
     "@napi-rs/cli": "^2.16.3",
-    "@types/node": "^18.17.18",
-    "@types/uuid": "^9.0.4",
+    "@types/node": "^18.18.5",
+    "@types/uuid": "^9.0.5",
     "cross-env": "^7.0.3",
     "nx": "^16.10.0",
     "nx-cloud": "^16.5.1",

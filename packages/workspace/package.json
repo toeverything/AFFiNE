@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@testing-library/react": "^14.0.0",
-    "@types/ws": "^8.5.5",
+    "@types/ws": "^8.5.7",
     "fake-indexeddb": "^4.0.2",
     "vitest": "0.34.6",
     "ws": "^8.14.2"
