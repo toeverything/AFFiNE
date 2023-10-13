@@ -1,21 +1,27 @@
-import { Empty, toast } from '@affine/component';
-import type { OperationCellProps } from '@affine/component/page-list';
+import { toast } from '@affine/component';
 import {
   NewPageButton,
   OperationCell,
+  type OperationCellProps,
   PageList,
-  PageListTrashView,
+  PageListItem,
+  type PageListItemProps,
+  type PageListProps,
+  PageTags,
+  type PageTagsProps,
 } from '@affine/component/page-list';
+import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { PageIcon } from '@blocksuite/icons';
-import { expect } from '@storybook/jest';
+import { Schema, Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
-import { atom } from 'jotai';
+import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { withRouter } from 'storybook-addon-react-router-v6';
 
 export default {
   title: 'AFFiNE/PageList',
-  component: PageList,
   parameters: {
+    layout: 'fullscreen',
     chromatic: { disableSnapshot: true },
   },
 } satisfies Meta;
@@ -29,7 +35,6 @@ AffineOperationCell.args = {
   isPublic: true,
   onToggleFavoritePage: () => toast('Toggle favorite page'),
   onDisablePublicSharing: () => toast('Disable public sharing'),
-  onOpenPageInNewTab: () => toast('Open page in new tab'),
   onRemoveToTrash: () => toast('Remove to trash'),
 };
 AffineOperationCell.play = async ({ canvasElement }) => {
@@ -58,162 +63,170 @@ AffineNewPageButton.play = async ({ canvasElement }) => {
   await userEvent.click(dropdown);
 };
 
-export const AffineAllPageList: StoryFn<typeof PageList> = ({ ...props }) => (
-  <PageList {...props} />
+const testTags = [
+  {
+    color: 'red',
+    id: 'test-tag-id-0',
+    value: 'foo',
+  },
+  {
+    color: 'pink',
+    id: 'test-tag-id-1',
+    value: 'bar',
+  },
+  {
+    color: 'purple',
+    id: 'test-tag-id-2',
+    value: 'foobar',
+  },
+  {
+    color: 'black',
+    id: 'test-tag-id-3',
+    value: 'affine',
+  },
+  {
+    color: 'orange',
+    id: 'test-tag-id-4',
+    value: 'blocksuite',
+  },
+  {
+    color: 'yellow',
+    id: 'test-tag-id-5',
+    value: 'toeverything',
+  },
+  {
+    color: 'green',
+    id: 'test-tag-id-6',
+    value: 'toeverything',
+  },
+  {
+    color: 'blue',
+    id: 'test-tag-id-7',
+    value: 'toeverything',
+  },
+  {
+    color: 'indigo',
+    id: 'test-tag-id-8',
+    value: 'toeverything',
+  },
+  {
+    color: 'teal',
+    id: 'test-tag-id-9',
+    value: 'toeverything',
+  },
+  {
+    color: 'cyan',
+    id: 'test-tag-id-10',
+    value: 'toeverything',
+  },
+  {
+    color: 'gray',
+    id: 'test-tag-id-11',
+    value: 'toeverything',
+  },
+  {
+    color: 'red',
+    id: 'test-tag-id-12',
+    value: 'toeverything',
+  },
+];
+
+export const ListItem: StoryFn<PageListItemProps> = props => (
+  <PageListItem {...props}></PageListItem>
 );
 
-AffineAllPageList.args = {
-  isPublicWorkspace: false,
-  onCreateNewPage: () => toast('Create new page'),
-  onCreateNewEdgeless: () => toast('Create new edgeless'),
-  onImportFile: () => toast('Import file'),
-  collectionsAtom: atom({
-    addCollection: () => Promise.resolve(),
-    collections: [],
-    updateCollection: () => Promise.resolve(),
-    deleteCollection: () => Promise.resolve(),
-  }),
-  list: [
-    {
-      pageId: '1',
-      favorite: false,
-      icon: <PageIcon />,
-      isPublicPage: true,
-      title: 'Last Page',
-      tags: [],
-      preview: 'this is page preview',
-      createDate: new Date('2021-01-01'),
-      updatedDate: new Date('2023-08-15'),
-      bookmarkPage: () => toast('Bookmark page'),
-      onClickPage: () => toast('Click page'),
-      onDisablePublicSharing: () => toast('Disable public sharing'),
-      onOpenPageInNewTab: () => toast('Open page in new tab'),
-      removeToTrash: () => toast('Remove to trash'),
-    },
-    {
-      pageId: '3',
-      favorite: false,
-      icon: <PageIcon />,
-      isPublicPage: true,
-      title:
-        '1 Example Public Page with long title that will be truncated because it is too too long',
-      tags: [],
-      preview:
-        'this is page preview and it is very long and will be truncated because it is too long and it is very long and will be truncated because it is too long',
-      createDate: new Date('2021-01-01'),
-      updatedDate: new Date('2021-01-02'),
-      bookmarkPage: () => toast('Bookmark page'),
-      onClickPage: () => toast('Click page'),
-      onDisablePublicSharing: () => toast('Disable public sharing'),
-      onOpenPageInNewTab: () => toast('Open page in new tab'),
-      removeToTrash: () => toast('Remove to trash'),
-    },
-    {
-      pageId: '2',
-      favorite: true,
-      isPublicPage: false,
-      icon: <PageIcon />,
-      title: '2 Favorited Page 2021',
-      tags: [],
-      createDate: new Date('2021-01-02'),
-      updatedDate: new Date('2021-01-01'),
-      bookmarkPage: () => toast('Bookmark page'),
-      onClickPage: () => toast('Click page'),
-      onDisablePublicSharing: () => toast('Disable public sharing'),
-      onOpenPageInNewTab: () => toast('Open page in new tab'),
-      removeToTrash: () => toast('Remove to trash'),
-    },
-    {
-      pageId: '4',
-      favorite: false,
-      isPublicPage: false,
-      icon: <PageIcon />,
-      title: 'page created in 2023-04-01',
-      tags: [],
-      createDate: new Date('2023-04-01'),
-      updatedDate: new Date('2023-04-01'),
-      bookmarkPage: () => toast('Bookmark page'),
-      onClickPage: () => toast('Click page'),
-      onDisablePublicSharing: () => toast('Disable public sharing'),
-      onOpenPageInNewTab: () => toast('Open page in new tab'),
-      removeToTrash: () => toast('Remove to trash'),
-    },
-  ],
+ListItem.args = {
+  pageId: 'test-page-id',
+  title: 'Test Page Title',
+  preview:
+    'this is page preview and it is very long and will be truncated because it is too long and it is very long and will be truncated because it is too long',
+  icon: <PageIcon />,
+  to: '/hello',
+  selectable: true,
+  createDate: new Date('2021-01-01'),
+  updatedDate: new Date('2023-08-15'),
+  draggable: true,
+  tags: testTags,
+  favorite: true,
+  selected: true,
 };
 
-export const AffineEmptyAllPageList: StoryFn<typeof PageList> = ({
-  ...props
-}) => <PageList {...props} />;
+ListItem.decorators = [withRouter];
 
-AffineEmptyAllPageList.args = {
-  isPublicWorkspace: false,
-  onCreateNewPage: () => toast('Create new page'),
-  onCreateNewEdgeless: () => toast('Create new edgeless'),
-  onImportFile: () => toast('Import file'),
-  list: [],
-  fallback: (
-    <Empty
-      title="Empty"
-      description={
-        <div>
-          empty description, click{' '}
-          <button
-            onClick={() => {
-              toast('click');
-            }}
-          >
-            button
-          </button>
-        </div>
-      }
-    />
-  ),
+export const ListItemTags: StoryFn<PageTagsProps> = props => (
+  <PageTags {...props}></PageTags>
+);
+
+ListItemTags.args = {
+  tags: testTags,
 };
 
-export const AffinePublicPageList: StoryFn<typeof PageList> = ({
-  ...props
-}) => <PageList {...props} />;
-AffinePublicPageList.args = {
-  ...AffineAllPageList.args,
-  isPublicWorkspace: true,
+export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
+  return <PageList {...props} {...loaded}></PageList>;
 };
 
-export const AffineAllPageMobileList: StoryFn<typeof PageList> = ({
-  ...props
-}) => <PageList {...props} />;
+PageListStory.args = {
+  groupBy: 'createDate',
+  selectable: true,
+};
 
-AffineAllPageMobileList.args = AffineAllPageList.args;
-AffineAllPageMobileList.parameters = {
-  viewport: {
-    defaultViewport: 'mobile2',
+async function createAndInitPage(
+  workspace: Workspace,
+  title: string,
+  preview: string
+) {
+  const page = workspace.createPage();
+  await initEmptyPage(page, title);
+  page.getBlockByFlavour('affine:paragraph').at(0)?.text?.insert(preview, 0);
+  return page;
+}
+
+PageListStory.loaders = [
+  async () => {
+    const schema = new Schema();
+    schema.register(AffineSchemas).register(__unstableSchemas);
+    const workspace = new Workspace({
+      id: 'test-workspace-id',
+      schema,
+    });
+
+    workspace.meta.setProperties({
+      tags: {
+        options: structuredClone(testTags),
+      },
+    });
+
+    const page1 = await createAndInitPage(
+      workspace,
+      'This is page 1',
+      'Hello World from page 1'
+    );
+    const page2 = await createAndInitPage(
+      workspace,
+      'This is page 2',
+      'Hello World from page 2'
+    );
+    const page3 = await createAndInitPage(
+      workspace,
+      'This is page 3',
+      'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
+    );
+
+    await createAndInitPage(
+      workspace,
+      'This is page 4',
+      'Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3Hello World from page 3'
+    );
+
+    page1.meta.createDate = new Date('2021-01-01').getTime();
+    page2.meta.createDate = page2.meta.createDate - 3600 * 1000 * 24;
+    page3.meta.createDate = page3.meta.createDate - 3600 * 1000 * 24 * 7;
+
+    workspace.meta.pageMetas[2].tags = ['test-tag-id-0', 'test-tag-id-1'];
+
+    return {
+      blockSuiteWorkspace: workspace,
+      pages: workspace.meta.pages,
+    };
   },
-};
-
-export const AffineTrashPageList: StoryFn<typeof PageListTrashView> = ({
-  ...props
-}) => <PageListTrashView {...props} />;
-
-AffineTrashPageList.args = {
-  list: [
-    {
-      pageId: '1',
-      icon: <PageIcon />,
-      title: 'Example Page',
-      preview: 'this is trash page preview',
-      createDate: new Date('2021-01-01'),
-      trashDate: new Date('2021-01-01'),
-      onClickPage: () => toast('Click page'),
-      onPermanentlyDeletePage: () => toast('Permanently delete page'),
-      onRestorePage: () => toast('Restore page'),
-    },
-    {
-      pageId: '2',
-      icon: <PageIcon />,
-      title: 'Example Page with long title that will be truncated',
-      createDate: new Date('2021-01-01'),
-      onClickPage: () => toast('Click page'),
-      onPermanentlyDeletePage: () => toast('Permanently delete page'),
-      onRestorePage: () => toast('Restore page'),
-    },
-  ],
-};
+];

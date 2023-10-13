@@ -12,6 +12,7 @@ import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { ConfirmModal } from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { FlexWrapper } from '../../..';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
@@ -19,7 +20,7 @@ import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 export interface OperationCellProps {
   favorite: boolean;
   isPublic: boolean;
-  onOpenPageInNewTab: () => void;
+  link: string;
   onToggleFavoritePage: () => void;
   onRemoveToTrash: () => void;
   onDisablePublicSharing: () => void;
@@ -28,7 +29,7 @@ export interface OperationCellProps {
 export const OperationCell = ({
   favorite,
   isPublic,
-  onOpenPageInNewTab,
+  link,
   onToggleFavoritePage,
   onRemoveToTrash,
   onDisablePublicSharing,
@@ -63,16 +64,17 @@ export const OperationCell = ({
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {!environment.isDesktop && (
-        <MenuItem
-          onClick={onOpenPageInNewTab}
-          preFix={
-            <MenuIcon>
-              <OpenInNewIcon />
-            </MenuIcon>
-          }
-        >
-          {t['com.affine.openPageOperation.newTab']()}
-        </MenuItem>
+        <Link to={link}>
+          <MenuItem
+            preFix={
+              <MenuIcon>
+                <OpenInNewIcon />
+              </MenuIcon>
+            }
+          >
+            {t['com.affine.openPageOperation.newTab']()}
+          </MenuItem>
+        </Link>
       )}
       <MoveToTrash data-testid="move-to-trash" onSelect={onRemoveToTrash} />
     </>
@@ -103,7 +105,6 @@ export const OperationCell = ({
 export interface TrashOperationCellProps {
   onPermanentlyDeletePage: () => void;
   onRestorePage: () => void;
-  onOpenPage: () => void;
 }
 
 export const TrashOperationCell = ({
