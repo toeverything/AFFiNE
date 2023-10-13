@@ -123,9 +123,18 @@ model UserFeatureGates {
   userId    String @map("user_id") @db.VarChar
   featureId String @db.VarChar
 
+  // we will record the reason why the feature is enabled/disabled
+  // for example:
+  // - pro_plan_v1: "user buy the pro plan"
   reason    String   @db.VarChar
+  // record the quota enabled time
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  // record the quota expired time, pay plan is a subscription, so it will expired
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  // whether the feature is activated
+  // for example:
+  // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
+  activated Boolean  @default(false)
 
   user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   feature UserFeatures @relation(fields: [featureId], references: [id], onDelete: Cascade)

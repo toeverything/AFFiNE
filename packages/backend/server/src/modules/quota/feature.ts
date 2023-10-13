@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma';
@@ -16,10 +16,10 @@ const Features: Feature[] = [
 ];
 
 @Injectable()
-export class FeatureService {
+export class FeatureService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
-  async initFeatures() {
+  async onModuleInit() {
     // upgrade features from lower version to higher version
     for (const feature of Features) {
       await this.upsertFeature(feature);

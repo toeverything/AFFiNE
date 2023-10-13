@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
 import { FeatureService } from './feature';
@@ -30,14 +30,13 @@ const Quotas: Quota[] = [
 ];
 
 @Injectable()
-export class QuotaService {
+export class QuotaService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly features: FeatureService
   ) {}
 
-  async initQuota() {
-    await this.features.initFeatures();
+  async onModuleInit() {
     for (const quota of Quotas) {
       await this.features.upsertFeature(quota);
     }
@@ -50,9 +49,66 @@ export class QuotaService {
         feature: {
           type: FeatureKind.Quota,
         },
+        activated: true,
+      },
+      select: {
+        reason: true,
+        createdAt: true,
+        expiresAt: true,
+        feature: {
+          select: {
+            feature: true,
+            configs: true,
+          },
+        },
       },
     });
-    return userFeatures;
+    return userFeatures as typeof userFeatures & {
+      feature: Quota;
+    };
+  }
+
+  // switch quota by user
+  // each user can only have one quota
+  async switchQuotaByUser(
+    userId: string,
+    quota: string,
+    reason?: string,
+    expiresAt?: Date
+  ) {
+    await this.prisma.$transaction([
+      // we will deactivate all exists quota for this user
+      this.prisma.userFeatureGates.updateMany({
+        where: {
+          id: undefined,
+          userId,
+          feature: {
+            type: FeatureKind.Quota,
+          },
+        },
+        data: {
+          activated: false,
+        },
+      }),
+      this.prisma.userFeatureGates.create({
+        data: {
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          feature: {
+            connect: {
+              feature: quota,
+              type: FeatureKind.Quota,
+            },
+          },
+          reason: reason ?? 'switch quota',
+          activated: true,
+          expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
+        },
+      }),
+    ]);
   }
 
   async hasQuota(userId: string, quota: string) {
@@ -64,6 +120,7 @@ export class QuotaService {
             feature: quota,
             type: FeatureKind.Quota,
           },
+          activated: true,
         },
       })
       .then(count => count > 0);
