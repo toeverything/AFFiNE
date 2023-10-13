@@ -12,6 +12,7 @@ CREATE TABLE "user_subscriptions" (
     "id" SERIAL NOT NULL,
     "user_id" VARCHAR(36) NOT NULL,
     "plan" VARCHAR(20) NOT NULL,
+    "price_id" VARCHAR NOT NULL,
     "stripe_subscription_id" TEXT NOT NULL,
     "status" VARCHAR(20) NOT NULL,
     "start" TIMESTAMPTZ(6) NOT NULL,
@@ -32,11 +33,13 @@ CREATE TABLE "user_invoices" (
     "user_id" VARCHAR(36) NOT NULL,
     "stripe_invoice_id" TEXT NOT NULL,
     "currency" VARCHAR(3) NOT NULL,
-    "price" INTEGER NOT NULL,
+    "amount" INTEGER NOT NULL,
     "status" VARCHAR(20) NOT NULL,
-    "plan" VARCHAR NOT NULL,
+    "plan" VARCHAR(20) NOT NULL,
+    "recurring" VARCHAR(20) NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+    "reason" VARCHAR NOT NULL,
     "last_payment_error" TEXT,
 
     CONSTRAINT "user_invoices_pkey" PRIMARY KEY ("id")

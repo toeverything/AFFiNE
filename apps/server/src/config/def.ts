@@ -16,11 +16,6 @@ export enum ExternalAccount {
   firebase = 'firebase',
 }
 
-export enum SubscriptionPlan {
-  Monthly = 'monthly',
-  Yearly = 'yearly',
-}
-
 type EnvConfigType = 'string' | 'int' | 'float' | 'boolean';
 type ConfigPaths = LeafPaths<
   Omit<

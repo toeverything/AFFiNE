@@ -181,8 +181,9 @@ model UserStripeCustomer {
 model UserSubscription {
   id                   Int       @id @default(autoincrement()) @db.Integer
   userId               String    @unique @map("user_id") @db.VarChar(36)
-  // monthly or yearly
   plan                 String    @db.VarChar(20)
+  // yearly/monthly
+  recurring            String    @map("price_id") @db.VarChar
   // subscription.id
   stripeSubscriptionId String    @unique @map("stripe_subscription_id")
   // subscription.status, active/past_due/canceled/unpaid...
@@ -214,11 +215,14 @@ model UserInvoice {
   stripeInvoiceId  String   @unique @map("stripe_invoice_id")
   currency         String   @db.VarChar(3)
   // CNY 12.50 stored as 1250
-  price            Int      @db.Integer
+  amount           Int      @db.Integer
   status           String   @db.VarChar(20)
-  plan             String   @db.VarChar
+  plan             String   @db.VarChar(20)
+  recurring        String   @db.VarChar(20)
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  // billing reason
+  reason           String   @db.VarChar
   lastPaymentError String?  @map("last_payment_error") @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

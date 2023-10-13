@@ -32,6 +32,14 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export enum InvoiceStatus {
+  Draft = 'Draft',
+  Open = 'Open',
+  Paid = 'Paid',
+  Uncollectible = 'Uncollectible',
+  Void = 'Void',
+}
+
 export enum NewFeaturesKind {
   EarlyAccess = 'EarlyAccess',
 }

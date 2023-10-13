@@ -57,9 +57,25 @@ type TokenType {
   sessionToken: String
 }
 
+type SubscriptionPrice {
+  type: String!
+  plan: SubscriptionPlan!
+  currency: String!
+  amount: Int!
+  yearlyAmount: Int!
+}
+
+enum SubscriptionPlan {
+  Free
+  Pro
+  Team
+  Enterprise
+}
+
 type UserSubscription {
   id: String!
   plan: SubscriptionPlan!
+  recurring: SubscriptionRecurring!
   status: SubscriptionStatus!
   start: DateTime!
   end: DateTime!
@@ -71,7 +87,7 @@ type UserSubscription {
   updatedAt: DateTime!
 }
 
-enum SubscriptionPlan {
+enum SubscriptionRecurring {
   Monthly
   Yearly
 }
@@ -90,9 +106,11 @@ enum SubscriptionStatus {
 type UserInvoice {
   id: String!
   plan: SubscriptionPlan!
+  recurring: SubscriptionRecurring!
   currency: String!
-  price: Int!
+  amount: Int!
   status: InvoiceStatus!
+  reason: String!
   lastPaymentError: String
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -221,6 +239,7 @@ type Query {
 
   """Get user by email"""
   user(email: String!): UserType
+  prices: [SubscriptionPrice!]!
 }
 
 type Mutation {
@@ -258,10 +277,10 @@ type Mutation {
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
 
   """Create a subscription checkout link of stripe"""
-  checkout(plan: SubscriptionPlan!): String!
+  checkout(plan: SubscriptionRecurring!): String!
   cancelSubscription: UserSubscription!
   resumeSubscription: UserSubscription!
-  updateSubscriptionPlan(plan: SubscriptionPlan!): UserSubscription!
+  updateSubscriptionPlan(plan: SubscriptionRecurring!): UserSubscription!
 }
 
 """The `Upload` scalar type represents a file upload."""
