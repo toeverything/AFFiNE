@@ -60,7 +60,7 @@ export class StripeWebhook {
         this.config.stripe.keys.webhookKey
       );
 
-      this.logger.debug('Stripe Webhook received', event);
+      this.logger.debug('Stripe Webhook received', event.type, event.id);
 
       // handle duplicated events?
       // see https://stripe.com/docs/webhooks#handle-duplicate-events

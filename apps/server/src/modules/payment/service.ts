@@ -8,13 +8,26 @@ import type {
 } from '@prisma/client';
 import Stripe from 'stripe';
 
-import { Config, SubscriptionPlan } from '../../config';
+import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 
 const OnEvent = (
   event: Stripe.Event.Type,
   opts?: Parameters<typeof RawOnEvent>[1]
 ) => RawOnEvent(event, opts);
+
+// also used as lookup key for stripe prices
+export enum SubscriptionRecurring {
+  Monthly = 'monthly',
+  Yearly = 'yearly',
+}
+
+export enum SubscriptionPlan {
+  Free = 'free',
+  Pro = 'pro',
+  Team = 'team',
+  Enterprise = 'enterprise',
+}
 
 // see https://stripe.com/docs/api/subscriptions/object#subscription_object-status
 export enum SubscriptionStatus {
@@ -57,13 +70,19 @@ export class SubscriptionService {
     }
   }
 
+  async listPrices() {
+    return this.stripe.prices.list({
+      lookup_keys: Object.values(SubscriptionRecurring),
+    });
+  }
+
   async createCheckoutSession({
     user,
     plan,
     redirectUrl,
   }: {
     user: User;
-    plan: SubscriptionPlan;
+    plan: SubscriptionRecurring;
     redirectUrl: string;
   }) {
     const currentSubscription = await this.db.userSubscription.findUnique({
@@ -298,7 +317,10 @@ export class SubscriptionService {
 
     const update = {
       stripeSubscriptionId: subscription.id,
-      plan: price.lookup_key ?? price.id,
+      // TODO: adjust dynamically when other plan available
+      // could use stripe price metadata to store plan info
+      plan: SubscriptionPlan.Pro,
+      recurring: price.lookup_key ?? price.id,
       status: subscription.status,
       start: new Date(subscription.current_period_start * 1000),
       end: new Date(subscription.current_period_end * 1000),
@@ -423,7 +445,7 @@ export class SubscriptionService {
 
     const data: Partial<UserInvoice> = {
       currency: stripeInvoice.currency,
-      price: stripeInvoice.total,
+      amount: stripeInvoice.total,
       status: stripeInvoice.status ?? InvoiceStatus.Void,
     };
 
@@ -471,7 +493,9 @@ export class SubscriptionService {
         data: {
           userId: user.id,
           stripeInvoiceId: stripeInvoice.id,
-          plan: price.lookup_key ?? price.id,
+          plan: SubscriptionPlan.Pro,
+          recurring: price.lookup_key ?? price.id,
+          reason: stripeInvoice.billing_reason ?? 'contact support',
           ...(data as any),
         },
       });

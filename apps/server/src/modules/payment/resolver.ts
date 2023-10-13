@@ -1,4 +1,8 @@
-import { InternalServerErrorException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   Args,
   Field,
@@ -6,25 +10,47 @@ import {
   Mutation,
   ObjectType,
   Parent,
+  Query,
   registerEnumType,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 import type { User, UserInvoice, UserSubscription } from '@prisma/client';
 
-import { Config, SubscriptionPlan } from '../../config';
+import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
-import { Auth, CurrentUser } from '../auth';
+import { Auth, CurrentUser, Public } from '../auth';
 import { UserType } from '../users';
 import {
   InvoiceStatus,
+  SubscriptionPlan,
+  SubscriptionRecurring,
   SubscriptionService,
   SubscriptionStatus,
 } from './service';
 
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
+registerEnumType(SubscriptionRecurring, { name: 'SubscriptionRecurring' });
 registerEnumType(SubscriptionPlan, { name: 'SubscriptionPlan' });
 registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
+
+@ObjectType()
+class SubscriptionPrice {
+  @Field(() => String)
+  type!: 'fixed';
+
+  @Field(() => SubscriptionPlan)
+  plan!: SubscriptionPlan;
+
+  @Field()
+  currency!: string;
+
+  @Field()
+  amount!: number;
+
+  @Field()
+  yearlyAmount!: number;
+}
 
 @ObjectType('UserSubscription')
 class UserSubscriptionType implements Partial<UserSubscription> {
@@ -33,6 +59,9 @@ class UserSubscriptionType implements Partial<UserSubscription> {
 
   @Field(() => SubscriptionPlan)
   plan!: SubscriptionPlan;
+
+  @Field(() => SubscriptionRecurring)
+  recurring!: SubscriptionRecurring;
 
   @Field(() => SubscriptionStatus)
   status!: SubscriptionStatus;
@@ -70,14 +99,20 @@ class UserInvoiceType implements Partial<UserInvoice> {
   @Field(() => SubscriptionPlan)
   plan!: SubscriptionPlan;
 
+  @Field(() => SubscriptionRecurring)
+  recurring!: SubscriptionRecurring;
+
   @Field()
   currency!: string;
 
   @Field()
-  price!: number;
+  amount!: number;
 
   @Field(() => InvoiceStatus)
   status!: InvoiceStatus;
+
+  @Field()
+  reason!: string;
 
   @Field(() => String, { nullable: true })
   lastPaymentError?: string | null;
@@ -97,12 +132,40 @@ export class SubscriptionResolver {
     private readonly config: Config
   ) {}
 
+  @Public()
+  @Query(() => [SubscriptionPrice])
+  async prices(): Promise<SubscriptionPrice[]> {
+    const prices = await this.service.listPrices();
+
+    const yearly = prices.data.find(
+      price => price.lookup_key === SubscriptionRecurring.Yearly
+    );
+    const monthly = prices.data.find(
+      price => price.lookup_key === SubscriptionRecurring.Monthly
+    );
+
+    if (!yearly || !monthly) {
+      throw new BadGatewayException('The prices are not configured correctly');
+    }
+
+    return [
+      {
+        type: 'fixed',
+        plan: SubscriptionPlan.Pro,
+        currency: monthly.currency,
+        amount: monthly.unit_amount ?? 0,
+        yearlyAmount: yearly.unit_amount ?? 0,
+      },
+    ];
+  }
+
   @Mutation(() => String, {
     description: 'Create a subscription checkout link of stripe',
   })
   async checkout(
     @CurrentUser() user: User,
-    @Args({ name: 'plan', type: () => SubscriptionPlan }) plan: SubscriptionPlan
+    @Args({ name: 'plan', type: () => SubscriptionRecurring })
+    plan: SubscriptionRecurring
   ) {
     const session = await this.service.createCheckoutSession({
       user,
@@ -133,7 +196,8 @@ export class SubscriptionResolver {
   @Mutation(() => UserSubscriptionType)
   async updateSubscriptionPlan(
     @CurrentUser() user: User,
-    @Args({ name: 'plan', type: () => SubscriptionPlan }) plan: SubscriptionPlan
+    @Args({ name: 'plan', type: () => SubscriptionRecurring })
+    plan: SubscriptionRecurring
   ) {
     return this.service.updateSubscriptionPlan(user.id, plan);
   }
@@ -144,7 +208,11 @@ export class UserSubscriptionResolver {
   constructor(private readonly db: PrismaService) {}
 
   @ResolveField(() => UserSubscriptionType, { nullable: true })
-  async subscription(@Parent() user: User) {
+  async subscription(@CurrentUser() me: User, @Parent() user: User) {
+    if (me.id !== user.id) {
+      throw new ForbiddenException();
+    }
+
     return this.db.userSubscription.findUnique({
       where: {
         userId: user.id,
@@ -154,11 +222,16 @@ export class UserSubscriptionResolver {
 
   @ResolveField(() => [UserInvoiceType])
   async invoices(
+    @CurrentUser() me: User,
     @Parent() user: User,
     @Args('take', { type: () => Int, nullable: true, defaultValue: 8 })
     take: number,
     @Args('skip', { type: () => Int, nullable: true }) skip?: number
   ) {
+    if (me.id !== user.id) {
+      throw new ForbiddenException();
+    }
+
     return this.db.userInvoice.findMany({
       where: {
         userId: user.id,

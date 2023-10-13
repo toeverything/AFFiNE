@@ -73,4 +73,3 @@ export class ConfigModule {
 }
 
 export type { AFFiNEConfig } from './def';
-export { SubscriptionPlan } from './def';
