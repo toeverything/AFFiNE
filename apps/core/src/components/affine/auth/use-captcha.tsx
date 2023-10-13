@@ -1,7 +1,7 @@
 import { fetchWithTraceReport } from '@affine/graphql';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { useCallback, useState } from 'react';
-import useSWR from 'swr';
+import useSWRImmutable from 'swr/immutable';
 
 import * as style from './style.css';
 
@@ -44,17 +44,28 @@ const challengeFetcher = async (url: string) => {
 };
 
 const Challenge = () => {
-  return <div style={{ margin: 'auto' }}>Making Challenge...</div>;
+  return <div style={{ margin: 'auto 0.5em' }}>Making Challenge...</div>;
+};
+
+const Verified = () => {
+  return <div style={{ margin: 'auto 0.5em' }}>Verified Client</div>;
 };
 
 export const useCaptcha = (): [string | null, () => JSX.Element] => {
   const [verifyToken, Captcha] = useCloudflareCaptcha();
-  const { data: response } = useSWR('/api/auth/challenge', challengeFetcher);
-  console.log(environment, environment.isDesktop);
+  const {
+    data: response,
+    isLoading,
+    isValidating,
+  } = useSWRImmutable('/api/auth/challenge', challengeFetcher);
 
   if (environment.isDesktop) {
-    console.log('challenge', response);
-    return [response || null, Challenge];
+    console.log('challenge', response, isLoading, isValidating);
+    if (response) {
+      return [response, Verified];
+    } else {
+      return [null, Challenge];
+    }
   }
 
   console.log('captcha', verifyToken);
