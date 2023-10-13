@@ -130,7 +130,7 @@ impl fmt::Display for Stamp {
 }
 
 #[napi]
-pub fn verify_challenge_response(response: String, bits: u32, resource: String) -> bool {
+pub async fn verify_challenge_response(response: String, bits: u32, resource: String) -> bool {
   if let Ok(stamp) = Stamp::try_from(response.as_ref()) {
     stamp.check(bits, resource)
   } else {
@@ -139,7 +139,7 @@ pub fn verify_challenge_response(response: String, bits: u32, resource: String) 
 }
 
 #[napi]
-pub fn mint_challenge_response(resource: String, bits: Option<u32>) -> String {
+pub async fn mint_challenge_response(resource: String, bits: Option<u32>) -> String {
   Stamp::mint(resource, bits).to_string()
 }
 
@@ -153,10 +153,10 @@ mod tests {
     assert!(stamp.check(22, "test"));
   }
 
-  #[test]
-  fn test_public_mint() {
-    let response = mint_challenge_response("test".into(), Some(22));
-    assert!(verify_challenge_response(response, 22, "test".into()));
+  #[tokio::test]
+  async fn test_public_mint() {
+    let response = mint_challenge_response("test".into(), Some(22)).await;
+    assert!(verify_challenge_response(response, 22, "test".into()).await);
   }
 
   #[test]

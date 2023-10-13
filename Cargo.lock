@@ -67,6 +67,7 @@ dependencies = [
  "napi-derive",
  "rand",
  "sha3",
+ "tokio",
 ]
 
 [[package]]

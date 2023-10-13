@@ -35,9 +35,12 @@ export class StorageModule {
 
 export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;
 
-export const verifyChallengeResponse = (response: any, resource: string) => {
-  if (typeof response !== 'string' || !response) return false;
-  // 22 bits challenge is a balance between security and user experience
-  // 22 bits challenge cost time is about 2-6s on m2 macbook air
-  return storageModule.verifyChallengeResponse(response, 22, resource);
+export const verifyChallengeResponse = async (
+  response: any,
+  resource: string
+) => {
+  if (typeof response !== 'string' || !response || !resource) return false;
+  // 20 bits challenge is a balance between security and user experience
+  // 20 bits challenge cost time is about 1-3s on m2 macbook air
+  return storageModule.verifyChallengeResponse(response, 20, resource);
 };

@@ -19,5 +19,8 @@ napi-derive = { version = "2", features = ["type-def"] }
 rand = "0.8"
 sha3 = "0.10"
 
+[dev-dependencies]
+tokio = "1"
+
 [build-dependencies]
 napi-build = "2"

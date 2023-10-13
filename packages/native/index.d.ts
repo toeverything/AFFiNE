@@ -49,11 +49,11 @@ export function verifyChallengeResponse(
   response: string,
   bits: number,
   resource: string
-): boolean;
+): Promise<boolean>;
 export function mintChallengeResponse(
   resource: string,
   bits?: number | undefined | null
-): string;
+): Promise<string>;
 export class Subscription {
   toString(): string;
   unsubscribe(): void;
