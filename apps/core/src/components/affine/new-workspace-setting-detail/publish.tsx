@@ -100,7 +100,7 @@ const FakePublishPanelAffine = (_props: FakePublishPanelAffineProps) => {
     <Tooltip content={t['com.affine.settings.workspace.publish-tooltip']()}>
       <div className={style.fakeWrapper}>
         <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
-          <Switch checked={false} />
+          <Switch checked={false} onChange={() => {}} />
         </SettingRow>
       </div>
     </Tooltip>
