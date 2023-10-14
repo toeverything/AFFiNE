@@ -76,7 +76,7 @@
     "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "^18.2.13",
     "@vanilla-extract/css": "^1.13.0",
-    "fake-indexeddb": "^4.0.2",
+    "fake-indexeddb": "^5.0.0",
     "typescript": "^5.2.2",
     "vite": "^4.4.11",
     "vitest": "0.34.6",
