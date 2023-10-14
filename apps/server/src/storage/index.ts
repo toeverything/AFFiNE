@@ -37,15 +37,14 @@ export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;
 
 export const verifyChallengeResponse = async (
   response: any,
+  bits: number,
   resource: string
 ) => {
   if (typeof response !== 'string' || !response || !resource) return false;
-  // 20 bits challenge is a balance between security and user experience
-  // 20 bits challenge cost time is about 1-3s on m2 macbook air
-  return storageModule.verifyChallengeResponse(response, 20, resource);
+  return storageModule.verifyChallengeResponse(response, bits, resource);
 };
 
-export const mintChallengeResponse = async (resource: string) => {
+export const mintChallengeResponse = async (resource: string, bits: number) => {
   if (!resource) return null;
-  return storageModule.mintChallengeResponse(resource, 20);
+  return storageModule.mintChallengeResponse(resource, bits);
 };

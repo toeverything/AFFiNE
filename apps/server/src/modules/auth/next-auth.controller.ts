@@ -26,7 +26,6 @@ import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
 import { SessionService } from '../../session';
-import { verifyChallengeResponse } from '../../storage';
 import { AuthThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
@@ -150,39 +149,8 @@ export class NextAuthController {
     }
 
     if (req.method === 'POST' && action === 'signin') {
-      const challenge = req.query?.challenge;
-      if (typeof challenge === 'string' && challenge) {
-        const resource = await this.session.get(challenge);
-
-        if (!resource) {
-          this.rejectResponse(res, 'Invalid Challenge');
-          return;
-        }
-
-        const isChallengeVerified = await verifyChallengeResponse(
-          req.query?.token,
-          resource
-        );
-
-        this.logger.log(
-          `Challenge: ${challenge}, Resource: ${resource}, Response: ${req.query?.token}, isChallengeVerified: ${isChallengeVerified}`
-        );
-
-        if (!isChallengeVerified) {
-          this.rejectResponse(res, 'Invalid Challenge Response');
-          return;
-        }
-      } else {
-        const isTokenVerified = await this.authService.verifyCaptchaToken(
-          req.query?.token,
-          req.headers['CF-Connecting-IP'] as string
-        );
-
-        if (!isTokenVerified) {
-          this.rejectResponse(res, 'Invalid Captcha Response');
-          return;
-        }
-      }
+      const isVerified = await this.verifyChallenge(req, res);
+      if (!isVerified) return;
     }
 
     const { status, headers, body, redirect, cookies } = await AuthHandler({
@@ -325,6 +293,44 @@ export class NextAuthController {
         data: pick(newSession, 'name', 'email'),
       });
     }
+  }
+
+  private async verifyChallenge(req: Request, res: Response): Promise<boolean> {
+    const challenge = req.query?.challenge;
+    if (typeof challenge === 'string' && challenge) {
+      const resource = await this.session.get(challenge);
+
+      if (!resource) {
+        this.rejectResponse(res, 'Invalid Challenge');
+        return false;
+      }
+
+      const isChallengeVerified =
+        await this.authService.verifyChallengeResponse(
+          req.query?.token,
+          resource
+        );
+
+      this.logger.debug(
+        `Challenge: ${challenge}, Resource: ${resource}, Response: ${req.query?.token}, isChallengeVerified: ${isChallengeVerified}`
+      );
+
+      if (!isChallengeVerified) {
+        this.rejectResponse(res, 'Invalid Challenge Response');
+        return false;
+      }
+    } else {
+      const isTokenVerified = await this.authService.verifyCaptchaToken(
+        req.query?.token,
+        req.headers['CF-Connecting-IP'] as string
+      );
+
+      if (!isTokenVerified) {
+        this.rejectResponse(res, 'Invalid Captcha Response');
+        return false;
+      }
+    }
+    return true;
   }
 
   private async verifyUserFromRequest(req: Request): Promise<User> {

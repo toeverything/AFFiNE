@@ -180,7 +180,7 @@ test('should return valid sessionToken if request headers valid', async t => {
 
 test('verify challenge', async t => {
   const resource = 'xp8D3rcXV9bMhWrb6abxl';
-  const response = await mintChallengeResponse(resource);
-  const success = await verifyChallengeResponse(response, resource);
+  const response = await mintChallengeResponse(resource, 20);
+  const success = await verifyChallengeResponse(response, 20, resource);
   t.true(success);
 });

@@ -13,6 +13,7 @@ import { nanoid } from 'nanoid';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { verifyChallengeResponse } from '../../storage';
 import { MailService } from './mailer';
 
 export type UserClaim = Pick<
@@ -115,7 +116,7 @@ export class AuthService {
     if (typeof token !== 'string' || !token) return false;
 
     const formData = new FormData();
-    formData.append('secret', this.config.auth.captchaSecret);
+    formData.append('secret', this.config.auth.captcha.turnstile.secret);
     formData.append('response', token);
     formData.append('remoteip', ip);
     // prevent replay attack
@@ -132,6 +133,14 @@ export class AuthService {
       !!outcome.success &&
       // skip hostname check in dev mode
       (this.config.affineEnv === 'dev' || outcome.hostname === this.config.host)
+    );
+  }
+
+  async verifyChallengeResponse(response: any, resource: string) {
+    return verifyChallengeResponse(
+      response,
+      this.config.auth.captcha.challenge.bits,
+      resource
     );
   }
 
