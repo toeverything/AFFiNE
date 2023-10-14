@@ -61,6 +61,7 @@ const Verified = () => {
 export const useCaptcha = (): [string | null, () => JSX.Element, string?] => {
   const [verifyToken, Captcha] = useCloudflareCaptcha();
   const { data: challenge } = useSWR('/api/auth/challenge', challengeFetcher, {
+    suspense: false,
     revalidateOnFocus: false,
   });
   const [response, setResponse] = useState<string>();
@@ -68,6 +69,7 @@ export const useCaptcha = (): [string | null, () => JSX.Element, string?] => {
 
   useEffect(() => {
     if (
+      runtimeConfig.enableCaptcha &&
       environment.isDesktop &&
       challenge?.challenge &&
       prevChallenge.current !== challenge.challenge
@@ -80,6 +82,10 @@ export const useCaptcha = (): [string | null, () => JSX.Element, string?] => {
         });
     }
   }, [challenge]);
+
+  if (!runtimeConfig.enableCaptcha) {
+    return ['XXXX.DUMMY.TOKEN.XXXX', () => <></>];
+  }
 
   if (environment.isDesktop) {
     if (response) {
