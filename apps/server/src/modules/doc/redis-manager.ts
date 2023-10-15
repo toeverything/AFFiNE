@@ -23,6 +23,9 @@ const pushUpdateLua = `
     redis.call('rpush', KEYS[2], ARGV[2])
 `;
 
+/**
+ * @deprecated unstable
+ */
 @Injectable()
 export class RedisDocManager extends DocManager {
   private readonly redis: Redis;
@@ -44,41 +47,15 @@ export class RedisDocManager extends DocManager {
 
   override onModuleInit(): void {
     if (this.automation) {
-      this.logger.log('Use Redis');
       this.setup();
     }
   }
 
-  override async push(workspaceId: string, guid: string, update: Buffer) {
-    try {
-      const key = `${workspaceId}:${guid}`;
-
-      // @ts-expect-error custom command
-      this.redis.pushDocUpdate(pending, updates`${key}`, key, update);
-
-      this.logger.verbose(
-        `pushed update for workspace: ${workspaceId}, guid: ${guid}`
-      );
-    } catch (e) {
-      return await super.push(workspaceId, guid, update);
-    }
-  }
-
-  override async getUpdates(
-    workspaceId: string,
-    guid: string
-  ): Promise<Buffer[]> {
-    try {
-      return this.redis.lrangeBuffer(updates`${workspaceId}:${guid}`, 0, -1);
-    } catch (e) {
-      return super.getUpdates(workspaceId, guid);
-    }
-  }
-
-  override async apply(): Promise<void> {
+  override async autoSquash(): Promise<void> {
     // incase some update fallback to db
-    await super.apply();
+    await super.autoSquash();
 
+    // consume rest updates in redis queue
     const pendingDoc = await this.redis.spop(pending).catch(() => null); // safe
 
     if (!pendingDoc) {
@@ -127,13 +104,12 @@ export class RedisDocManager extends DocManager {
       const snapshot = await this.getSnapshot(workspaceId, id);
 
       // merge
-      const blob = snapshot
-        ? this.mergeUpdates(id, snapshot, ...updates)
-        : this.mergeUpdates(id, ...updates);
+      const doc = snapshot
+        ? this.applyUpdates(id, snapshot.blob, ...updates)
+        : this.applyUpdates(id, ...updates);
 
       // update snapshot
-
-      await this.upsert(workspaceId, id, blob);
+      await this.upsert(workspaceId, id, doc, snapshot?.seq);
 
       // delete merged updates
       await this.redis

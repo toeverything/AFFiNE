@@ -5,7 +5,7 @@ import { runCli } from '@magic-works/i18n-codegen';
 import { beforeAll } from 'vitest';
 
 beforeAll(async () => {
-  await runCli(
+  runCli(
     {
       watch: false,
       cwd: join(fileURLToPath(import.meta.url), '../../../.i18n-codegen.json'),

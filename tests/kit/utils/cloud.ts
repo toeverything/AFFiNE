@@ -176,3 +176,12 @@ export async function enableCloudWorkspace(page: Page) {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
 }
+export async function enableCloudWorkspaceFromShareButton(page: Page) {
+  await page.getByTestId('local-share-menu-button').click();
+  await page.getByTestId('share-menu-enable-affine-cloud-button').click();
+  await page.getByTestId('confirm-enable-affine-cloud-button').click();
+  // wait for upload and delete local workspace
+  await page.waitForTimeout(2000);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+}

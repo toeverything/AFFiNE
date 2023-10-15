@@ -1,6 +1,11 @@
 // components/switch.tsx
 import clsx from 'clsx';
-import { type HTMLAttributes, type ReactNode, useState } from 'react';
+import {
+  type HTMLAttributes,
+  type ReactNode,
+  useCallback,
+  useState,
+} from 'react';
 
 import * as styles from './index.css';
 
@@ -11,15 +16,24 @@ type SwitchProps = Omit<HTMLAttributes<HTMLLabelElement>, 'onChange'> & {
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
 };
 
-export const Switch = (props: SwitchProps) => {
-  const { checked, onChange, children, inputProps = {}, ...otherProps } = props;
-  const [isChecked, setIsChecked] = useState(checked);
+export const Switch = ({
+  checked: checkedProp = false,
+  onChange: onChangeProp,
+  children,
+  inputProps = {},
+  ...otherProps
+}: SwitchProps) => {
+  const [checkedState, setCheckedState] = useState(checkedProp);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newChecked = event.target.checked;
-    setIsChecked(newChecked);
-    onChange?.(newChecked);
-  };
+  const checked = onChangeProp ? checkedProp : checkedState;
+  const onChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newChecked = event.target.checked;
+      if (onChangeProp) onChangeProp(newChecked);
+      else setCheckedState(newChecked);
+    },
+    [onChangeProp]
+  );
 
   return (
     <label className={clsx(styles.labelStyle)} {...otherProps}>
@@ -28,13 +42,13 @@ export const Switch = (props: SwitchProps) => {
         {...inputProps}
         className={clsx(styles.inputStyle)}
         type="checkbox"
-        value={isChecked ? 'on' : 'off'}
-        checked={isChecked}
-        onChange={handleChange}
+        value={checked ? 'on' : 'off'}
+        checked={checked}
+        onChange={onChange}
       />
       <span
         className={clsx(styles.switchStyle, {
-          [styles.switchCheckedStyle]: isChecked,
+          [styles.switchCheckedStyle]: checked,
         })}
       />
     </label>

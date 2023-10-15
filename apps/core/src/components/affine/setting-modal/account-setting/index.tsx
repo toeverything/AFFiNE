@@ -88,12 +88,13 @@ export const AvatarAndName = () => {
   const user = useCurrentUser();
   const [input, setInput] = useState<string>(user.name);
 
-  const handleUpdateUserName = useCallback(
-    (newName: string) => {
-      user.update({ name: newName }).catch(console.error);
-    },
-    [user]
-  );
+  const allowUpdate = !!input && input !== user.name;
+  const handleUpdateUserName = useCallback(() => {
+    if (!allowUpdate) {
+      return;
+    }
+    user.update({ name: input }).catch(console.error);
+  }, [allowUpdate, input, user]);
 
   return (
     <>
@@ -119,20 +120,19 @@ export const AvatarAndName = () => {
                 width={280}
                 height={28}
                 onChange={setInput}
+                onEnter={handleUpdateUserName}
               />
-              {input && input === user.name ? null : (
+              {allowUpdate ? (
                 <Button
                   data-testid="save-user-name"
-                  onClick={() => {
-                    handleUpdateUserName(input);
-                  }}
+                  onClick={handleUpdateUserName}
                   style={{
                     marginLeft: '12px',
                   }}
                 >
                   {t['com.affine.editCollection.save']()}
                 </Button>
-              )}
+              ) : null}
             </FlexWrapper>
           </div>
         </FlexWrapper>

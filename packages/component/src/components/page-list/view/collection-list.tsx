@@ -1,4 +1,3 @@
-import { FlexWrapper } from '@affine/component';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -11,6 +10,7 @@ import clsx from 'clsx';
 import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
+import { FlexWrapper } from '../../../ui/layout';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';

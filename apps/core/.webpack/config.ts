@@ -23,6 +23,7 @@ import { WebpackS3Plugin, gitShortHash } from './s3-plugin.js';
 const IN_CI = !!process.env.CI;
 
 export const rootPath = fileURLToPath(new URL('..', import.meta.url));
+const workspaceRoot = join(rootPath, '..', '..');
 
 const require = createRequire(rootPath);
 
@@ -144,66 +145,70 @@ export const createConfiguration: (
           : {
               events: false,
             },
-      alias:
-        blocksuiteBaseDir === undefined
-          ? undefined
-          : {
-              yjs: require.resolve('yjs'),
-              '@blocksuite/block-std': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'block-std',
-                'src'
-              ),
-              '@blocksuite/blocks': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'blocks',
-                'src'
-              ),
-              '@blocksuite/editor': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'editor',
-                'src'
-              ),
-              '@blocksuite/global': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'global',
-                'src'
-              ),
-              '@blocksuite/lit': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'lit',
-                'src'
-              ),
-              '@blocksuite/phasor': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'phasor',
-                'src'
-              ),
-              '@blocksuite/store/providers/broadcast-channel': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'store',
-                'src/providers/broadcast-channel'
-              ),
-              '@blocksuite/store': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'store',
-                'src'
-              ),
-              '@blocksuite/virgo': resolve(
-                blocksuiteBaseDir,
-                'packages',
-                'virgo',
-                'src'
-              ),
-            },
+      alias: {
+        yjs: require.resolve('yjs'),
+        '@blocksuite/block-std': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'block-std', 'src')
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'block-std',
+              'dist'
+            ),
+        '@blocksuite/blocks': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'blocks', 'src')
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'blocks',
+              'dist'
+            ),
+        '@blocksuite/editor': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'editor', 'src')
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'editor',
+              'dist'
+            ),
+        '@blocksuite/global': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'global', 'src')
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'global',
+              'dist'
+            ),
+        '@blocksuite/lit': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'lit', 'src')
+          : join(workspaceRoot, 'node_modules', '@blocksuite', 'lit', 'dist'),
+        '@blocksuite/store/providers/broadcast-channel': blocksuiteBaseDir
+          ? join(
+              blocksuiteBaseDir,
+              'packages',
+              'store',
+              'src/providers/broadcast-channel'
+            )
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'store',
+              'dist',
+              'providers',
+              'broadcast-channel.js'
+            ),
+        '@blocksuite/store': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'store', 'src')
+          : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
+        '@blocksuite/virgo': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'virgo', 'src')
+          : join(workspaceRoot, 'node_modules', '@blocksuite', 'virgo', 'dist'),
+      },
     },
 
     module: {

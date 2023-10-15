@@ -52,17 +52,20 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+
+  const isPublicWorkspace = useMemo(() => {
+    return location.pathname.indexOf('/public-workspace') === 0;
+  }, [location.pathname]);
+
   const openPage = useCallback(
     (workspaceId: string, pageId: string) => {
-      const isPublicWorkspace =
-        location.pathname.indexOf('/public-workspace') === 0;
       if (isPublicWorkspace) {
         return jumpToPublicWorkspacePage(workspaceId, pageId);
       } else {
         return jumpToPage(workspaceId, pageId);
       }
     },
-    [jumpToPage, jumpToPublicWorkspacePage, location.pathname]
+    [jumpToPage, jumpToPublicWorkspacePage, isPublicWorkspace]
   );
 
   const jumpToIndex = useCallback(

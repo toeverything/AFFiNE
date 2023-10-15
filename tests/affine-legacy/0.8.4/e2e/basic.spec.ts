@@ -1,30 +1,20 @@
-import { join } from 'node:path';
+import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
+import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
+import { test } from '@playwright/test';
 
-import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
-import {
-  getBlockSuiteEditorTitle,
-  waitForEditorLoad,
-} from '@affine-test/kit/utils/page-logic';
-import {
-  check8080Available,
-  setupProxyServer,
-} from '@affine-test/kit/utils/proxy';
-import { expect, test } from '@playwright/test';
+test.beforeEach(async ({ page }) => {
+  await patchDataEnhancement(page);
+});
 
-const { switchToNext } = setupProxyServer(
-  test,
-  join(__dirname, '..', 'web-static')
-);
-
-test('surface migration', async ({ page, context }) => {
-  await check8080Available(context);
+test('record 0.8.4 surface legacy data', async ({ page }) => {
   await page.goto('http://localhost:8081/');
   await page.waitForSelector('v-line', {
     timeout: 10000,
   });
   await page.getByTestId('new-page-button').click();
   const title = getBlockSuiteEditorTitle(page);
-  await title.type('hello');
+  await title.pressSequentially('hello');
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.type('world', {
     delay: 50,
@@ -47,19 +37,18 @@ test('surface migration', async ({ page, context }) => {
     steps: 10,
   });
   await page.mouse.up();
-  const url = page.url();
 
-  await switchToNext();
-  await page.waitForTimeout(1000);
-  await page.goto(url);
-  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
-  await page.waitForTimeout(5000);
-  await page.reload();
-  //#endregion
-  await waitForEditorLoad(page);
+  const localStorageData = await page.evaluate(() =>
+    window.readAffineLocalStorage()
+  );
+  const { idbData, binaries } = await page.evaluate(() =>
+    window.readAffineDatabase()
+  );
 
-  // check edgeless mode is correct
-  await clickEdgelessModeButton(page);
-  await expect(page.locator('edgeless-toolbar')).toBeVisible();
-  await expect(page.locator('affine-edgeless-page')).toBeVisible();
+  const snapshotStorage = new SnapshotStorage('0.8.4');
+  await snapshotStorage.write({
+    idbData,
+    localStorageData,
+    binaries,
+  });
 });

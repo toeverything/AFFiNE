@@ -19,6 +19,32 @@ export const searchInput = style({
   '::placeholder': {
     color: 'var(--affine-text-secondary-color)',
   },
+  selectors: {
+    '&.inEditor': {
+      paddingTop: '12px',
+      paddingBottom: '18px',
+    },
+  },
+});
+
+export const pageTitleWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '18px 24px 0 24px',
+  width: '100%',
+});
+
+export const pageTitle = style({
+  padding: '2px 6px',
+  borderRadius: 4,
+  fontSize: 'var(--affine-font-xs)',
+  lineHeight: '20px',
+  color: 'var(--affine-text-secondary-color)',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  maxWidth: '100%',
+  backgroundColor: 'var(--affine-background-secondary-color)',
 });
 
 export const panelContainer = style({
@@ -41,6 +67,9 @@ export const itemLabel = style({
   lineHeight: '1.5',
   color: 'var(--affine-text-primary-color)',
   flex: 1,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 export const timestamp = style({

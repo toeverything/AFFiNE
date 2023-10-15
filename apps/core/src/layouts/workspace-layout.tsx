@@ -69,11 +69,16 @@ const CMDKQuickSearchModal = lazy(() =>
 );
 
 export const QuickSearch = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
   const [openQuickSearchModal, setOpenQuickSearchModalAtom] = useAtom(
     openQuickSearchModalAtom
   );
+
+  const [currentWorkspace] = useCurrentWorkspace();
+  const { pageId } = useParams();
   const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const pageMeta = useBlockSuitePageMeta(
+    currentWorkspace?.blockSuiteWorkspace
+  ).find(meta => meta.id === pageId);
 
   if (!blockSuiteWorkspace) {
     return null;
@@ -83,6 +88,7 @@ export const QuickSearch = () => {
     <CMDKQuickSearchModal
       open={openQuickSearchModal}
       onOpenChange={setOpenQuickSearchModalAtom}
+      pageMeta={pageMeta}
     />
   );
 };
