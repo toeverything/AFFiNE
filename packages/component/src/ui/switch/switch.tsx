@@ -8,10 +8,11 @@ type SwitchProps = Omit<HTMLAttributes<HTMLLabelElement>, 'onChange'> & {
   checked?: boolean;
   onChange?: (checked: boolean) => void;
   children?: ReactNode;
+  inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
 };
 
 export const Switch = (props: SwitchProps) => {
-  const { checked, onChange, children, ...otherProps } = props;
+  const { checked, onChange, children, inputProps = {}, ...otherProps } = props;
   const [isChecked, setIsChecked] = useState(checked);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +25,7 @@ export const Switch = (props: SwitchProps) => {
     <label className={clsx(styles.labelStyle)} {...otherProps}>
       {children}
       <input
+        {...inputProps}
         className={clsx(styles.inputStyle)}
         type="checkbox"
         value={isChecked ? 'on' : 'off'}
