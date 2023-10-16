@@ -567,7 +567,7 @@ __metadata:
     msw: ^1.3.2
     nanoid: ^5.0.1
     nx: ^16.10.0
-    nx-cloud: ^16.5.1
+    nx-cloud: ^16.5.2
     nyc: ^15.1.0
     prettier: ^3.0.3
     semver: ^7.5.4
@@ -594,7 +594,7 @@ __metadata:
     "@types/uuid": ^9.0.4
     cross-env: ^7.0.3
     nx: ^16.10.0
-    nx-cloud: ^16.5.1
+    nx-cloud: ^16.5.2
     rxjs: ^7.8.1
     ts-node: ^10.9.1
     typescript: ^5.2.2
@@ -747,7 +747,7 @@ __metadata:
     "@napi-rs/cli": ^2.16.3
     lib0: ^0.2.86
     nx: ^16.10.0
-    nx-cloud: ^16.5.1
+    nx-cloud: ^16.5.2
     yjs: ^13.6.8
   languageName: unknown
   linkType: soft
@@ -7959,12 +7959,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/nx-cloud@npm:16.5.1":
-  version: 16.5.1
-  resolution: "@nrwl/nx-cloud@npm:16.5.1"
+"@nrwl/nx-cloud@npm:16.5.2":
+  version: 16.5.2
+  resolution: "@nrwl/nx-cloud@npm:16.5.2"
   dependencies:
-    nx-cloud: 16.5.1
-  checksum: 38b9d024133f0931b0a7184c4e11dd3dd30965d7141f7c7ee336c10ac246673bfea71f56e114cfbe7dfbe317e071d506752858dc903aef2badc92b0f20724b28
+    nx-cloud: 16.5.2
+  checksum: 6bbd8f90dd5309e266617930660177fb1a22798f24bf657ee9948cd242abae6d93aaa9deb2dcae4d494d32376972c284813d714fc9ab7d84fab5b53214e32cfa
   languageName: node
   linkType: hard
 
@@ -27296,11 +27296,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx-cloud@npm:16.5.1, nx-cloud@npm:^16.5.1":
-  version: 16.5.1
-  resolution: "nx-cloud@npm:16.5.1"
+"nx-cloud@npm:16.5.2, nx-cloud@npm:^16.5.2":
+  version: 16.5.2
+  resolution: "nx-cloud@npm:16.5.2"
   dependencies:
-    "@nrwl/nx-cloud": 16.5.1
+    "@nrwl/nx-cloud": 16.5.2
     axios: 1.1.3
     chalk: ^4.1.0
     dotenv: ~10.0.0
@@ -27312,7 +27312,7 @@ __metadata:
     yargs-parser: ">=21.1.1"
   bin:
     nx-cloud: bin/nx-cloud.js
-  checksum: c484ff699c0d2f35d6b376006a82366ea94968318ceec68adcdd55f8dcddf99665d64f456535d8ec415e04aac431f636efa463c75040238e91740f1749403a0c
+  checksum: 0b5bcc86eef842b87ed74aafdf56733b8cbc9d75c28ff778ab4d87838e3597cd86baf5cbf76ce49e35e3601a2dca930854d52eb12e03a0f40a7d7d072057f42c
   languageName: node
   linkType: hard
 
