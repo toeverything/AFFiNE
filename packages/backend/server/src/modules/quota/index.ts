@@ -11,8 +11,9 @@ import { StorageQuotaService } from './services';
  * - quota statistics
  */
 @Module({
-  imports: [FeatureService, QuotaService, StorageQuotaService],
+  providers: [FeatureService, QuotaService, StorageQuotaService],
+  exports: [QuotaService, StorageQuotaService],
 })
 export class QuotaModule {}
 
-export { StorageQuotaService } from './services';
+export { QuotaService, StorageQuotaService };

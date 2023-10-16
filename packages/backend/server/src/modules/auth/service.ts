@@ -190,6 +190,18 @@ export class AuthService {
         name,
         email,
         password: hashedPassword,
+        features: {
+          create: {
+            reason: 'created by sign up',
+            expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+            activated: true,
+            feature: {
+              connect: {
+                feature: 'free_plan_v1',
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -209,6 +221,18 @@ export class AuthService {
       data: {
         name: 'Unnamed',
         email,
+        features: {
+          create: {
+            reason: 'created by sign up',
+            expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+            activated: true,
+            feature: {
+              connect: {
+                feature: 'free_plan_v1',
+              },
+            },
+          },
+        },
       },
     });
   }
