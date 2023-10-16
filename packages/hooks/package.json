@@ -23,7 +23,7 @@
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
     "@testing-library/react": "^14.0.0",
     "@types/lodash.debounce": "^4.0.7",
-    "fake-indexeddb": "^4.0.2",
+    "fake-indexeddb": "^5.0.0",
     "vitest": "0.34.6"
   },
   "peerDependencies": {

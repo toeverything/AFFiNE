@@ -28,10 +28,10 @@
   },
   "dependencies": {
     "i18next": "^23.5.1",
-    "react-i18next": "^13.2.2"
+    "react-i18next": "^13.3.0"
   },
   "devDependencies": {
-    "@types/node": "^18.17.18",
+    "@types/node": "^18.18.5",
     "@types/prettier": "^3.0.0",
     "prettier": "^3.0.3",
     "ts-node": "^10.9.1",

@@ -27,7 +27,7 @@
     "jotai": "^2.4.3",
     "js-base64": "^3.7.5",
     "ky": "^1.0.1",
-    "lib0": "^0.2.86",
+    "lib0": "^0.2.87",
     "nanoid": "^5.0.1",
     "next-auth": "^4.23.2",
     "react": "18.2.0",
@@ -41,8 +41,8 @@
   },
   "devDependencies": {
     "@testing-library/react": "^14.0.0",
-    "@types/ws": "^8.5.5",
-    "fake-indexeddb": "^4.0.2",
+    "@types/ws": "^8.5.7",
+    "fake-indexeddb": "^5.0.0",
     "vitest": "0.34.6",
     "ws": "^8.14.2"
   },
