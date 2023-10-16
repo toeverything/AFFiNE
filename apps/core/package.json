@@ -88,7 +88,7 @@
     "swc-loader": "^0.2.3",
     "swc-plugin-coverage-instrument": "^0.0.20",
     "thread-loader": "^4.0.2",
-    "webpack": "^5.88.2",
+    "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.9.0"
