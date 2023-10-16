@@ -185,6 +185,13 @@ export async function enableCloudWorkspace(page: Page) {
 export async function enableCloudWorkspaceFromShareButton(page: Page) {
   const shareMenuButton = page.getByTestId('local-share-menu-button');
   expect(await shareMenuButton.isVisible()).toBeTruthy();
+
+  // FIXME: this is a workaround for the flaky test
+  // For unknown reasons,
+  // the online ci test on GitHub is unable to detect the local-share-menu,
+  // although it works fine in local testing.
+  // To ensure the tests pass consistently, I’ve made the following temporary adjustments.
+  // {
   const maxAttempts = 5;
   let attempt = 0;
   let menuVisible = false;
@@ -199,6 +206,7 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
     }
   }
   expect(menuVisible).toBeTruthy();
+  // }
 
   await page.getByTestId('share-menu-enable-affine-cloud-button').click();
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
