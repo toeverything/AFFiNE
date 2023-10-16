@@ -22,7 +22,7 @@
     "@storybook/react-vite": "^7.4.6",
     "@storybook/test-runner": "^0.13.0",
     "@storybook/testing-library": "^0.2.2",
-    "@vitejs/plugin-react": "^4.0.4",
+    "@vitejs/plugin-react": "^4.1.0",
     "concurrently": "^8.2.1",
     "jest-mock": "^29.7.0",
     "serve": "^14.2.1",

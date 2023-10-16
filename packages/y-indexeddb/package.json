@@ -43,7 +43,7 @@
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
     "fake-indexeddb": "^4.0.2",
     "vite": "^4.4.11",
-    "vite-plugin-dts": "3.5.4",
+    "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",
     "y-indexeddb": "^9.0.11"
   },
