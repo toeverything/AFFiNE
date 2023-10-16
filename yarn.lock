@@ -430,7 +430,7 @@ __metadata:
     semver: ^7.5.4
     tinykeys: ^2.1.0
     ts-node: ^10.9.1
-    undici: ^5.25.2
+    undici: ^5.26.3
     uuid: ^9.0.1
     vitest: 0.34.6
     which: ^4.0.0
@@ -5354,6 +5354,13 @@ __metadata:
   version: 2.1.2
   resolution: "@fal-works/esbuild-plugin-global-externals@npm:2.1.2"
   checksum: c59715902b9062aa7ff38973f298b509499fd146dbf564dc338b3f9e896da5bffb4ca676c27587fde79b3586003e24d65960acb62f009bca43dca34c76f8cbf7
+  languageName: node
+  linkType: hard
+
+"@fastify/busboy@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@fastify/busboy@npm:2.0.0"
+  checksum: 41879937ce1dee6421ef9cd4da53239830617e1f0bb7a0e843940772cd72827205d05e518af6adabe6e1ea19301285fff432b9d11bad01a531e698bea95c781b
   languageName: node
   linkType: hard
 
@@ -33277,12 +33284,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^5.22.1, undici@npm:^5.25.2":
+"undici@npm:^5.22.1":
   version: 5.25.2
   resolution: "undici@npm:5.25.2"
   dependencies:
     busboy: ^1.6.0
   checksum: 1177a9c4fc9a1ddb765508d0f69ae61c166559badce8d797aaa92beef70ec5ac8fdc420b643f5d8d40b9a37891ba5536e2070d86a9c54a128aec67ad0c862d06
+  languageName: node
+  linkType: hard
+
+"undici@npm:^5.26.3":
+  version: 5.26.3
+  resolution: "undici@npm:5.26.3"
+  dependencies:
+    "@fastify/busboy": ^2.0.0
+  checksum: aaa9aadb712cf80e1a9cea2377e4842670105e00abbc184a21770ea5a8b77e4e2eadc200eac62442e74a1cd3b16a840c6f73b112b9e886bd3c1a125eb22e4f21
   languageName: node
   linkType: hard
 
