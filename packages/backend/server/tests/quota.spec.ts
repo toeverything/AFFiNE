@@ -8,13 +8,19 @@ import { ConfigModule } from '../src/config';
 import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
-import { QuotaModule, QuotaService } from '../src/modules/quota';
+import {
+  QuotaModule,
+  QuotaService,
+  StorageQuotaService,
+} from '../src/modules/quota';
+import { Quotas } from '../src/modules/quota/quota';
 import { PrismaModule } from '../src/prisma';
 import { RateLimiterModule } from '../src/throttler';
 
 const test = ava as TestFn<{
   auth: AuthService;
   quota: QuotaService;
+  storageQuota: StorageQuotaService;
   app: TestingModule;
 }>;
 
@@ -46,9 +52,11 @@ test.beforeEach(async t => {
     ],
   }).compile();
   const quota = module.get(QuotaService);
+  const storageQuota = module.get(StorageQuotaService);
   const auth = module.get(AuthService);
   t.context.app = module;
   t.context.quota = quota;
+  t.context.storageQuota = storageQuota;
   t.context.auth = auth;
 });
 
@@ -72,4 +80,18 @@ test('should be able to set quota', async t => {
 
   const fail = quota.switchQuotaByUser(u1.id, 'not_exists_plan_v1');
   await t.throwsAsync(fail, { instanceOf: Error }, 'should throw error');
+});
+
+test('should be able to check storage quota', async t => {
+  const { auth, quota, storageQuota } = t.context;
+  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+
+  const q1 = await storageQuota.getStorageQuotaByUser(u1.id);
+  t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
+
+  await quota.switchQuotaByUser(u1.id, 'pro_plan_v1');
+  const q2 = await storageQuota.getStorageQuotaByUser(u1.id);
+  t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
+  t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
 });

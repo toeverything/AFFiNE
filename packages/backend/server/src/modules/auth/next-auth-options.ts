@@ -12,7 +12,6 @@ import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
 import { NewFeaturesKind } from '../users/types';
-import { isStaff } from '../users/utils';
 import { MailService } from './mailer';
 import {
   decode,
@@ -223,7 +222,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         const email = profile?.email ?? user.email;
         if (email) {
-          if (isStaff(email)) {
+          if (email.endsWith('@toeverything.info')) {
             return true;
           }
           return prisma.newFeaturesWaitingList

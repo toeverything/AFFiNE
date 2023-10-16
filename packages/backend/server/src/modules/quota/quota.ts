@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma';
 import { FeatureService } from './feature';
 import { FeatureKind, Quota } from './types';
 
-const Quotas: Quota[] = [
+export const Quotas: Quota[] = [
   {
     feature: 'free_plan_v1',
     type: FeatureKind.Quota,
