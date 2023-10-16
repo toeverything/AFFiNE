@@ -128,6 +128,7 @@ export const AllPage = () => {
         }}
       />
       <CollectionBar
+        workspace={currentWorkspace.blockSuiteWorkspace}
         backToAll={backToAll}
         getPageInfo={getPageInfo}
         collectionsAtom={collectionsCRUDAtom}

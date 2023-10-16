@@ -2,7 +2,7 @@ import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
@@ -23,6 +23,7 @@ interface CollectionBarProps {
   columnsCount: number;
   backToAll: () => void;
   allPages: PageMeta[];
+  workspace: Workspace;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
@@ -41,6 +42,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
       <td>
         <div className={styles.view}>
           <EditCollectionModal
+            workspace={props.workspace}
             propertiesMeta={propertiesMeta}
             getPageInfo={getPageInfo}
             init={collection}

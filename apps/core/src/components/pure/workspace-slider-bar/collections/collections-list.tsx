@@ -175,6 +175,7 @@ const CollectionRenderer = ({
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModal
+        workspace={workspace}
         propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
         init={collection}

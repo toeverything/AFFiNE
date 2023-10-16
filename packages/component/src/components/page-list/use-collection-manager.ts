@@ -2,7 +2,6 @@ import type { Collection, Filter, VariableMap } from '@affine/env/filter';
 import type { PageMeta } from '@blocksuite/store';
 import { type Atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithReset } from 'jotai/utils';
-import type { WritableAtom } from 'jotai/vanilla';
 import { useCallback } from 'react';
 import { NIL } from 'uuid';
 
@@ -29,11 +28,6 @@ const defaultCollection: Collection = createEmptyCollection(NIL, {
 const defaultCollectionAtom = atomWithReset<Collection>(defaultCollection);
 export const currentCollectionAtom = atomWithReset<string>(NIL);
 
-export type CollectionsAtom = WritableAtom<
-  Collection[] | Promise<Collection[]>,
-  [Collection[] | ((collection: Collection[]) => Collection[])],
-  Promise<void>
->;
 export type Updater<T> = (value: T) => T;
 export type CollectionUpdater = Updater<Collection>;
 export type CollectionsCRUD = {
@@ -87,14 +81,17 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
         await updateCollection(collection.id, () => collection);
       }
     },
-    [updateCollection]
+    [updateDefaultCollection, updateCollection]
   );
-  const setTemporaryFilter = useCallback((filterList: Filter[]) => {
-    updateDefaultCollection({
-      ...defaultCollection,
-      filterList: filterList,
-    });
-  }, []);
+  const setTemporaryFilter = useCallback(
+    (filterList: Filter[]) => {
+      updateDefaultCollection({
+        ...defaultCollection,
+        filterList: filterList,
+      });
+    },
+    [updateDefaultCollection]
+  );
   const currentCollection =
     currentCollectionId === NIL
       ? defaultCollection

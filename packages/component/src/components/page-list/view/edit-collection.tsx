@@ -1,10 +1,10 @@
+import { PageList } from '@affine/component/page-list';
 import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, FilterIcon, PlusIcon, ToggleIcon } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
-import { Checkbox } from '@mui/material';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Menu } from '@toeverything/components/menu';
 import { Modal } from '@toeverything/components/modal';
@@ -17,6 +17,7 @@ import { FilterList } from '../filter';
 import { VariableSelect } from '../filter/vars';
 import { filterPageByRules } from '../use-collection-manager';
 import * as styles from './edit-collection.css';
+
 export interface EditCollectionModalProps {
   init?: Collection;
   title?: string;
@@ -26,6 +27,7 @@ export interface EditCollectionModalProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => Promise<void>;
   allPages: PageMeta[];
+  workspace: Workspace;
 }
 
 export const EditCollectionModal = ({
@@ -37,6 +39,7 @@ export const EditCollectionModal = ({
   propertiesMeta,
   title,
   allPages,
+  workspace,
 }: EditCollectionModalProps) => {
   const t = useAFFiNEI18N();
   const onConfirmOnCollection = useCallback(
@@ -73,6 +76,7 @@ export const EditCollectionModal = ({
           onCancel={onCancel}
           onConfirm={onConfirmOnCollection}
           allPages={allPages}
+          workspace={workspace}
         />
       ) : null}
     </Modal>
@@ -88,6 +92,7 @@ export interface EditCollectionProps {
   onCancel: () => void;
   onConfirm: (collection: Collection) => void;
   allPages: PageMeta[];
+  workspace: Workspace;
 }
 
 export const EditCollection = ({
@@ -97,6 +102,7 @@ export const EditCollection = ({
   onConfirmText,
   propertiesMeta,
   allPages,
+  workspace,
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
@@ -160,9 +166,11 @@ export const EditCollection = ({
           updateCollection={onChange}
           buttons={buttons}
           allPages={allPages}
+          workspace={workspace}
         ></PagesMode>
       ) : (
         <RulesMode
+          workspace={workspace}
           propertiesMeta={propertiesMeta}
           collection={value}
           reset={reset}
@@ -182,6 +190,7 @@ const RulesMode = ({
   propertiesMeta,
   buttons,
   allPages,
+  workspace,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
@@ -189,6 +198,7 @@ const RulesMode = ({
   propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
   allPages: PageMeta[];
+  workspace: Workspace;
 }) => {
   const t = useAFFiNEI18N();
   const [showPreview, setShowPreview] = useState(true);
@@ -389,14 +399,11 @@ const RulesMode = ({
             borderLeft: '1px solid var(--affine-border-color)',
           }}
         >
-          {rulesPages.map(v => {
-            return (
-              <div key={v.id} style={{ padding: '10px 16px' }}>
-                {v.title || 'Untitled'}
-                {v.favorite ? '✅' : ''}
-              </div>
-            );
-          })}
+          <PageList
+            pages={rulesPages}
+            blockSuiteWorkspace={workspace}
+            isPreferredEdgeless={() => true}
+          ></PageList>
           {allowListPages.length > 0 ? (
             <div>
               <div
@@ -410,14 +417,11 @@ const RulesMode = ({
               >
                 include
               </div>
-              {allowListPages.map(v => {
-                return (
-                  <div key={v.id} style={{ padding: '10px 16px' }}>
-                    {v.title || 'Untitled'}
-                    {v.favorite ? '✅' : ''}
-                  </div>
-                );
-              })}
+              <PageList
+                pages={allowListPages}
+                blockSuiteWorkspace={workspace}
+                isPreferredEdgeless={() => true}
+              ></PageList>
             </div>
           ) : null}
         </div>
@@ -468,12 +472,14 @@ const PagesMode = ({
   propertiesMeta,
   buttons,
   allPages,
+  workspace,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
   propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
   allPages: PageMeta[];
+  workspace: Workspace;
 }) => {
   const t = useAFFiNEI18N();
   const [filters, changeFilters] = useState<Filter[]>([]);
@@ -594,30 +600,19 @@ const PagesMode = ({
             </div>
           ) : null}
           <div>
-            {filteredPages.map(v => {
-              const checked = collection.pages.includes(v.id);
-              return (
-                <div key={v.id}>
-                  <Checkbox
-                    checked={checked}
-                    onClick={() => {
-                      if (checked) {
-                        updateCollection({
-                          ...collection,
-                          pages: collection.pages.filter(id => id !== v.id),
-                        });
-                      } else {
-                        updateCollection({
-                          ...collection,
-                          pages: [...collection.pages, v.id],
-                        });
-                      }
-                    }}
-                  ></Checkbox>
-                  {v.title || 'Untitled'}
-                </div>
-              );
-            })}
+            <PageList
+              pages={filteredPages}
+              blockSuiteWorkspace={workspace}
+              selectable
+              onSelectedPageIdsChange={ids => {
+                updateCollection({
+                  ...collection,
+                  pages: ids,
+                });
+              }}
+              selectedPageIds={collection.pages}
+              isPreferredEdgeless={() => true}
+            ></PageList>
           </div>
         </div>
       </div>

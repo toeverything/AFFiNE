@@ -4,7 +4,7 @@ import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { currentWorkspaceAtom } from '@toeverything/infra/atom';
 import { type DBSchema, openDB } from 'idb';
-import { atom } from 'jotai/index';
+import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { Observable } from 'rxjs';
 
@@ -88,49 +88,30 @@ const getCollections = async (
       return [];
     });
 };
-export const pageCollectionBaseAtom = atomWithObservable<Collection[]>(
-  get => {
-    const currentWorkspacePromise = get(currentWorkspaceAtom);
-    const session = get(sessionAtom);
-    const userId = session?.data?.user.id ?? null;
-    const migrateCollectionsFromIdbData = async (
-      workspace: Workspace
-    ): Promise<Collection[]> => {
-      const localCRUD = get(localCollectionCRUDAtom);
-      const collections = await getCollections(localCRUD);
-      const result = collections.filter(v => v.workspaceId === workspace.id);
-      Promise.all(
-        result.map(collection => {
-          return localCRUD.delete(collection.id);
-        })
-      ).catch(error => {
-        console.error('Failed to delete collections from indexeddb', error);
-      });
-      return result.map(v => {
-        return {
-          id: v.id,
-          name: v.name,
-          mode: 'rule',
-          filterList: v.filterList,
-          allowList: v.allowList ?? [],
-          pages: [],
-        };
-      });
-    };
-    const migrateCollectionsFromUserData = async (
-      workspace: Workspace
-    ): Promise<Collection[]> => {
-      if (userId == null) {
-        return [];
-      }
-      const userSetting = getUserSetting(workspace, userId);
-      await userSetting.loaded;
-      const view = userSetting.view;
-      if (view) {
-        const collections: DeprecatedCollection[] = [...view.values()];
-        //delete collections
-        view.clear();
-        return collections.map(v => {
+type BaseCollectionsDataType = {
+  loading: boolean;
+  collections: Collection[];
+};
+export const pageCollectionBaseAtom =
+  atomWithObservable<BaseCollectionsDataType>(
+    get => {
+      const currentWorkspacePromise = get(currentWorkspaceAtom);
+      const session = get(sessionAtom);
+      const userId = session?.data?.user.id ?? null;
+      const migrateCollectionsFromIdbData = async (
+        workspace: Workspace
+      ): Promise<Collection[]> => {
+        const localCRUD = get(localCollectionCRUDAtom);
+        const collections = await getCollections(localCRUD);
+        const result = collections.filter(v => v.workspaceId === workspace.id);
+        Promise.all(
+          result.map(collection => {
+            return localCRUD.delete(collection.id);
+          })
+        ).catch(error => {
+          console.error('Failed to delete collections from indexeddb', error);
+        });
+        return result.map(v => {
           return {
             id: v.id,
             name: v.name,
@@ -140,44 +121,74 @@ export const pageCollectionBaseAtom = atomWithObservable<Collection[]>(
             pages: [],
           };
         });
-      }
-      return [];
-    };
-
-    return new Observable<Collection[]>(subscriber => {
-      const group = new DisposableGroup();
-      currentWorkspacePromise.then(async currentWorkspace => {
-        const collectionsFromLocal =
-          await migrateCollectionsFromIdbData(currentWorkspace);
-        const collectionFromUserSetting =
-          await migrateCollectionsFromUserData(currentWorkspace);
-        const workspaceSetting = getWorkspaceSetting(currentWorkspace);
-        if (collectionsFromLocal.length || collectionFromUserSetting.length) {
-          // migrate collections
-          workspaceSetting.addCollection(
-            ...collectionFromUserSetting,
-            ...collectionsFromLocal
-          );
-        }
-        subscriber.next(workspaceSetting.collections);
-        if (group.disposed) {
-          return;
-        }
-        const fn = () => {
-          subscriber.next(workspaceSetting.collections);
-        };
-        workspaceSetting.collectionsYArray.observe(fn);
-        group.add(() => {
-          workspaceSetting.collectionsYArray.unobserve(fn);
-        });
-      });
-      return () => {
-        group.dispose();
       };
-    });
-  },
-  { initialValue: [] }
-);
+      const migrateCollectionsFromUserData = async (
+        workspace: Workspace
+      ): Promise<Collection[]> => {
+        if (userId == null) {
+          return [];
+        }
+        const userSetting = getUserSetting(workspace, userId);
+        await userSetting.loaded;
+        const view = userSetting.view;
+        if (view) {
+          const collections: DeprecatedCollection[] = [...view.values()];
+          //delete collections
+          view.clear();
+          return collections.map(v => {
+            return {
+              id: v.id,
+              name: v.name,
+              mode: 'rule',
+              filterList: v.filterList,
+              allowList: v.allowList ?? [],
+              pages: [],
+            };
+          });
+        }
+        return [];
+      };
+
+      return new Observable<BaseCollectionsDataType>(subscriber => {
+        const group = new DisposableGroup();
+        currentWorkspacePromise.then(async currentWorkspace => {
+          const collectionsFromLocal =
+            await migrateCollectionsFromIdbData(currentWorkspace);
+          const collectionFromUserSetting =
+            await migrateCollectionsFromUserData(currentWorkspace);
+          const workspaceSetting = getWorkspaceSetting(currentWorkspace);
+          if (collectionsFromLocal.length || collectionFromUserSetting.length) {
+            // migrate collections
+            workspaceSetting.addCollection(
+              ...collectionFromUserSetting,
+              ...collectionsFromLocal
+            );
+          }
+          subscriber.next({
+            loading: false,
+            collections: workspaceSetting.collections,
+          });
+          if (group.disposed) {
+            return;
+          }
+          const fn = () => {
+            subscriber.next({
+              loading: false,
+              collections: workspaceSetting.collections,
+            });
+          };
+          workspaceSetting.collectionsYArray.observe(fn);
+          group.add(() => {
+            workspaceSetting.collectionsYArray.unobserve(fn);
+          });
+        });
+        return () => {
+          group.dispose();
+        };
+      });
+    },
+    { initialValue: { loading: true, collections: [] } }
+  );
 export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(get => {
   const workspacePromise = get(currentWorkspaceAtom);
   return {
@@ -185,7 +196,7 @@ export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(get => {
       const workspace = await workspacePromise;
       getWorkspaceSetting(workspace).addCollection(...collections);
     },
-    collections: get(pageCollectionBaseAtom),
+    collections: get(pageCollectionBaseAtom).collections,
     updateCollection: async (id, updater) => {
       const workspace = await workspacePromise;
       getWorkspaceSetting(workspace).updateCollection(id, updater);

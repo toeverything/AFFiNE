@@ -36,7 +36,7 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
       await setting.createCollection(collection);
       navigateHelper.jumpToCollection(workspaceId, collection.id);
     },
-    [setting]
+    [workspaceId, navigateHelper, setting]
   );
   if (!setting.isDefault || !setting.currentCollection.filterList.length) {
     return null;
@@ -101,6 +101,7 @@ export function WorkspaceHeader({
           ref={setAppHeader}
           left={
             <CollectionList
+              workspace={currentWorkspace.blockSuiteWorkspace}
               jumpToCollection={jumpToCollection}
               backToAll={backToAll}
               setting={setting}
