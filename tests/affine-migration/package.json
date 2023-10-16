@@ -13,5 +13,5 @@
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
     "@playwright/test": "^1.39.0"
   },
-  "version": "0.9.0-canary.13"
+  "version": "0.10.0-canary.1"
 }
