@@ -1,9 +1,15 @@
+import { toast } from '@affine/component';
 import {
+  CollectionBar,
   currentCollectionAtom,
-  useCollectionManager,
+  OperationCell,
+  PageList,
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
+import type { PageMeta } from '@blocksuite/store';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback } from 'react';
@@ -13,8 +19,15 @@ import { NIL } from 'uuid';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { collectionsCRUDAtom } from '../../atoms/collections';
+import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
+import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
+import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
+import { useGetPageInfoById } from '../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import * as styles from './all-page.css';
+import { EmptyPageList } from './page-list-empty';
+import { useFilteredPageMetas } from './pages';
 
 export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();
@@ -36,35 +49,108 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const AllPage = () => {
-  const { jumpToPage } = useNavigateHelper();
   const [currentWorkspace] = useCurrentWorkspace();
-  const setting = useCollectionManager(collectionsCRUDAtom);
-  const onClickPage = useCallback(
-    (pageId: string, newTab?: boolean) => {
-      assertExists(currentWorkspace);
-      if (newTab) {
-        window.open(`/workspace/${currentWorkspace?.id}/${pageId}`, '_blank');
-      } else {
-        jumpToPage(currentWorkspace.id, pageId);
-      }
-    },
-    [currentWorkspace, jumpToPage]
+  const { Header } = getUIAdapter(currentWorkspace.flavour);
+  const { isPreferredEdgeless } = usePageHelper(
+    currentWorkspace.blockSuiteWorkspace
   );
-  const { PageList, Header } = getUIAdapter(currentWorkspace.flavour);
+  const { toggleFavorite } = useBlockSuiteMetaHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const { setTrashModal } = useTrashModalHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const navigateHelper = useNavigateHelper();
+  const backToAll = useCallback(() => {
+    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+  }, [navigateHelper, currentWorkspace.id]);
+
+  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+
+  const onToggleFavorite = useCallback(
+    (pageId: string) => {
+      toggleFavorite(pageId);
+    },
+    [toggleFavorite]
+  );
+
+  const t = useAFFiNEI18N();
+
+  const pageOperationsRenderer = useCallback(
+    (page: PageMeta) => {
+      const onDisablePublicSharing = () => {
+        toast('Successfully disabled', {
+          portal: document.body,
+        });
+      };
+      return (
+        <OperationCell
+          favorite={!!page.favorite}
+          isPublic={!!page.isPublic}
+          onDisablePublicSharing={onDisablePublicSharing}
+          link={`/workspace/${currentWorkspace.id}/${page.id}`}
+          onRemoveToTrash={() =>
+            setTrashModal({
+              open: true,
+              pageId: page.id,
+              pageTitle: page.title,
+            })
+          }
+          onToggleFavoritePage={() => {
+            const status = page.favorite;
+            toggleFavorite(page.id);
+            toast(
+              status
+                ? t['com.affine.toastMessage.removedFavorites']()
+                : t['com.affine.toastMessage.addedFavorites']()
+            );
+          }}
+        />
+      );
+    },
+    [currentWorkspace.id, setTrashModal, t, toggleFavorite]
+  );
+
+  const getPageInfo = useGetPageInfoById(currentWorkspace.blockSuiteWorkspace);
+
+  const filteredPageMetas = useFilteredPageMetas(
+    'all',
+    pageMetas,
+    currentWorkspace.blockSuiteWorkspace
+  );
+
   return (
-    <>
+    <div className={styles.root}>
       <Header
         currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           subPath: WorkspaceSubPath.ALL,
         }}
       />
-      <PageList
-        collection={setting.currentCollection}
-        onOpenPage={onClickPage}
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+      <CollectionBar
+        backToAll={backToAll}
+        getPageInfo={getPageInfo}
+        collectionsAtom={collectionsCRUDAtom}
+        columnsCount={5}
+        allPages={pageMetas}
+        // the following props is not reactive right?
+        propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
       />
-    </>
+      <PageList
+        pages={filteredPageMetas}
+        renderPageAsLink
+        fallback={
+          <EmptyPageList
+            type="all"
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        }
+        isPreferredEdgeless={isPreferredEdgeless}
+        onToggleFavorite={onToggleFavorite}
+        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        pageOperationsRenderer={pageOperationsRenderer}
+      />
+    </div>
   );
 };
 

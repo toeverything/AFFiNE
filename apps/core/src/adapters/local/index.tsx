@@ -29,7 +29,6 @@ import { useCallback } from 'react';
 
 import { setPageModeAtom } from '../../atoms';
 import {
-  BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   Provider,
@@ -101,16 +100,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
             workspace={workspace}
           />
         </>
-      );
-    },
-    PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
-      return (
-        <BlockSuitePageList
-          listType="all"
-          collection={collection}
-          onOpenPage={onOpenPage}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
       );
     },
     NewSettingsDetail: ({

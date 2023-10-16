@@ -4,8 +4,10 @@ import {
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
-import type { DraggableTitleCellData } from '@affine/component/page-list';
-import { StyledTitleLink } from '@affine/component/page-list';
+import {
+  type DraggableTitleCellData,
+  StyledTitleLink,
+} from '@affine/component/page-list';
 import {
   MainContainer,
   ToolContainer,
