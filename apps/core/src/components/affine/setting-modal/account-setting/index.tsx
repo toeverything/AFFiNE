@@ -23,10 +23,8 @@ import {
   useState,
 } from 'react';
 
-import { authAtom } from '../../../../atoms';
+import { authAtom, openSignOutModalAtom } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
-import { signOutCloud } from '../../../../utils/cloud-utils';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
@@ -88,12 +86,13 @@ export const AvatarAndName = () => {
   const user = useCurrentUser();
   const [input, setInput] = useState<string>(user.name);
 
-  const handleUpdateUserName = useCallback(
-    (newName: string) => {
-      user.update({ name: newName }).catch(console.error);
-    },
-    [user]
-  );
+  const allowUpdate = !!input && input !== user.name;
+  const handleUpdateUserName = useCallback(() => {
+    if (!allowUpdate) {
+      return;
+    }
+    user.update({ name: input }).catch(console.error);
+  }, [allowUpdate, input, user]);
 
   return (
     <>
@@ -119,20 +118,19 @@ export const AvatarAndName = () => {
                 width={280}
                 height={28}
                 onChange={setInput}
+                onEnter={handleUpdateUserName}
               />
-              {input && input === user.name ? null : (
+              {allowUpdate ? (
                 <Button
                   data-testid="save-user-name"
-                  onClick={() => {
-                    handleUpdateUserName(input);
-                  }}
+                  onClick={handleUpdateUserName}
                   style={{
                     marginLeft: '12px',
                   }}
                 >
                   {t['com.affine.editCollection.save']()}
                 </Button>
-              )}
+              ) : null}
             </FlexWrapper>
           </div>
         </FlexWrapper>
@@ -168,8 +166,8 @@ const StoragePanel = () => {
 export const AccountSetting: FC = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
-  const { jumpToIndex } = useNavigateHelper();
   const setAuthModal = useSetAtom(authAtom);
+  const setSignOutModal = useSetAtom(openSignOutModalAtom);
 
   const onChangeEmail = useCallback(() => {
     setAuthModal({
@@ -188,6 +186,10 @@ export const AccountSetting: FC = () => {
       emailType: user.hasPassword ? 'changePassword' : 'setPassword',
     });
   }, [setAuthModal, user.email, user.hasPassword]);
+
+  const onOpenSignOutModal = useCallback(() => {
+    setSignOutModal(true);
+  }, [setSignOutModal]);
 
   return (
     <>
@@ -220,13 +222,7 @@ export const AccountSetting: FC = () => {
         desc={t['com.affine.setting.sign.out.message']()}
         style={{ cursor: 'pointer' }}
         data-testid="sign-out-button"
-        onClick={useCallback(() => {
-          signOutCloud()
-            .then(() => {
-              jumpToIndex();
-            })
-            .catch(console.error);
-        }, [jumpToIndex])}
+        onClick={onOpenSignOutModal}
       >
         <ArrowRightSmallIcon />
       </SettingRow>

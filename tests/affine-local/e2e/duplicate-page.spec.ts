@@ -13,7 +13,7 @@ test('Duplicate page should work', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   const title = getBlockSuiteEditorTitle(page);
-  await title.type('test');
+  await title.pressSequentially('test');
   await clickPageMoreActions(page);
   const duplicateButton = page.getByTestId('editor-option-menu-duplicate');
   await duplicateButton.click({ delay: 100 });

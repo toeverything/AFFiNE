@@ -112,7 +112,7 @@ export function useAppHelper() {
           targetWorkspace
         );
         // delete workspace from jotai storage
-        await set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
+        set(workspaces => workspaces.filter(ws => ws.id !== workspaceId));
       },
       [jotaiWorkspaces, set]
     ),

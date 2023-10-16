@@ -3,7 +3,11 @@ import { DebugLogger } from '@affine/debug';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { HelpIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { Modal } from '@toeverything/components/modal';
+import {
+  ConfirmModal,
+  type ConfirmModalProps,
+  Modal,
+} from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
 import type {
   LoadDBFileResult,
@@ -34,14 +38,13 @@ interface ModalProps {
   onCreate: (id: string) => void;
 }
 
-interface NameWorkspaceContentProps {
-  onClose: () => void;
+interface NameWorkspaceContentProps extends ConfirmModalProps {
   onConfirmName: (name: string) => void;
 }
 
 const NameWorkspaceContent = ({
   onConfirmName,
-  onClose,
+  ...props
 }: NameWorkspaceContentProps) => {
   const [workspaceName, setWorkspaceName] = useState('');
 
@@ -59,11 +62,23 @@ const NameWorkspaceContent = ({
   );
   const t = useAFFiNEI18N();
   return (
-    <div className={style.content}>
-      <div className={style.contentTitle}>
-        {t['com.affine.nameWorkspace.title']()}
-      </div>
-      <p>{t['com.affine.nameWorkspace.description']()}</p>
+    <ConfirmModal
+      defaultOpen={true}
+      title={t['com.affine.nameWorkspace.title']()}
+      description={t['com.affine.nameWorkspace.description']()}
+      cancelText={t['com.affine.nameWorkspace.button.cancel']()}
+      confirmButtonOptions={{
+        type: 'primary',
+        disabled: !workspaceName,
+        ['data-testid' as string]: 'create-workspace-create-button',
+        children: t['com.affine.nameWorkspace.button.create'](),
+      }}
+      closeButtonOptions={{
+        ['data-testid' as string]: 'create-workspace-close-button',
+      }}
+      onConfirm={handleCreateWorkspace}
+      {...props}
+    >
       <Input
         ref={ref => {
           if (ref) {
@@ -76,24 +91,9 @@ const NameWorkspaceContent = ({
         maxLength={64}
         minLength={0}
         onChange={setWorkspaceName}
+        size="large"
       />
-      <div className={style.buttonGroup}>
-        <Button data-testid="create-workspace-close-button" onClick={onClose}>
-          {t['com.affine.nameWorkspace.button.cancel']()}
-        </Button>
-        <Button
-          data-testid="create-workspace-create-button"
-          disabled={!workspaceName}
-          style={{
-            opacity: !workspaceName ? 0.5 : 1,
-          }}
-          type="primary"
-          onClick={handleCreateWorkspace}
-        >
-          {t['com.affine.nameWorkspace.button.create']()}
-        </Button>
-      </div>
-    </div>
+    </ConfirmModal>
   );
 };
 
@@ -342,15 +342,6 @@ export const CreateWorkspaceModal = ({
     [createLocalWorkspace, onCreate]
   );
 
-  const nameWorkspaceNode =
-    step === 'name-workspace' ? (
-      <NameWorkspaceContent
-        // go to previous step instead?
-        onClose={onClose}
-        onConfirmName={onConfirmName}
-      />
-    ) : null;
-
   const setDBLocationNode =
     step === 'set-db-location' ? (
       <SetDBLocationContent
@@ -377,6 +368,15 @@ export const CreateWorkspaceModal = ({
     },
     [onClose]
   );
+  if (step === 'name-workspace') {
+    return (
+      <NameWorkspaceContent
+        open={mode !== false && !!step}
+        onOpenChange={onOpenChange}
+        onConfirmName={onConfirmName}
+      />
+    );
+  }
 
   return (
     <Modal
@@ -388,7 +388,6 @@ export const CreateWorkspaceModal = ({
       }}
     >
       <div className={style.header}></div>
-      {nameWorkspaceNode}
       {setDBLocationNode}
       {setSyncingModeNode}
     </Modal>

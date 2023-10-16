@@ -12,7 +12,6 @@ import { registerHandlers } from './handlers';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 import { restoreOrCreateWindow } from './main-window';
-import { registerPlugin } from './plugin';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
 
@@ -70,7 +69,6 @@ setupDeepLink(app);
 app
   .whenReady()
   .then(registerProtocol)
-  .then(registerPlugin)
   .then(registerHandlers)
   .then(registerEvents)
   .then(ensureHelperProcess)

@@ -9,7 +9,6 @@ export const PublicLinkDisableModal = (props: ConfirmModalProps) => {
 
   return (
     <ConfirmModal
-      width={480}
       title={t['com.affine.publicLinkDisableModal.title']()}
       description={t['com.affine.publicLinkDisableModal.description']()}
       cancelText={t['com.affine.publicLinkDisableModal.button.cancel']()}

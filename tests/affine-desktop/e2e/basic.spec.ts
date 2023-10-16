@@ -1,8 +1,19 @@
-import { platform } from 'node:os';
+// import { platform } from 'node:os';
 
 import { test } from '@affine-test/kit/electron';
-import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
-import { expect } from '@playwright/test';
+import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
+import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
+import {
+  clickSideBarCurrentWorkspaceBanner,
+  clickSideBarSettingButton,
+} from '@affine-test/kit/utils/sidebar';
+import { expect, type Page } from '@playwright/test';
+
+const historyShortcut = async (page: Page, command: 'goBack' | 'goForward') => {
+  await withCtrlOrMeta(page, () =>
+    page.keyboard.press(command === 'goBack' ? '[' : ']', { delay: 50 })
+  );
+};
 
 test('new page', async ({ page, workspace }) => {
   await page.getByTestId('new-page-button').click({
@@ -14,71 +25,85 @@ test('new page', async ({ page, workspace }) => {
 });
 
 // macOS only
-if (platform() === 'darwin') {
-  test('app sidebar router forward/back', async ({ page }) => {
-    await page.getByTestId('help-island').click();
-    await page.getByTestId('easy-guide').click();
-    await page.getByTestId('onboarding-modal-next-button').click();
-    await page.getByTestId('onboarding-modal-close-button').click();
-    {
-      // create pages
-      await page.waitForTimeout(500);
-      await page.getByTestId('new-page-button').click({
-        delay: 100,
-      });
-      await page.waitForSelector('v-line');
-      await page.focus('.affine-doc-page-block-title');
-      await page.type('.affine-doc-page-block-title', 'test1', {
-        delay: 100,
-      });
-      await page.waitForTimeout(500);
-      await page.getByTestId('new-page-button').click({
-        delay: 100,
-      });
-      await page.waitForSelector('v-line');
-      await page.focus('.affine-doc-page-block-title');
-      await page.type('.affine-doc-page-block-title', 'test2', {
-        delay: 100,
-      });
-      await page.waitForTimeout(500);
-      await page.getByTestId('new-page-button').click({
-        delay: 100,
-      });
-      await page.waitForSelector('v-line');
-      await page.focus('.affine-doc-page-block-title');
-      await page.type('.affine-doc-page-block-title', 'test3', {
-        delay: 100,
-      });
-    }
-    {
-      const title = (await page
-        .locator('.affine-doc-page-block-title')
-        .textContent()) as string;
-      expect(title.trim()).toBe('test3');
-    }
+// if (platform() === 'darwin') {
+test('app sidebar router forward/back', async ({ page }) => {
+  await page.getByTestId('help-island').click();
+  await page.getByTestId('easy-guide').click();
+  await page.getByTestId('onboarding-modal-next-button').click();
+  await page.getByTestId('onboarding-modal-close-button').click();
+  {
+    // create pages
+    await page.waitForTimeout(500);
+    await page.getByTestId('new-page-button').click({
+      delay: 100,
+    });
+    await page.waitForSelector('v-line');
+    const title = getBlockSuiteEditorTitle(page);
+    await title.focus();
+    await title.pressSequentially('test1', {
+      delay: 100,
+    });
+    await page.waitForTimeout(500);
+    await page.getByTestId('new-page-button').click({
+      delay: 100,
+    });
+    await page.waitForSelector('v-line');
 
-    await page.click('[data-testid="app-sidebar-arrow-button-back"]');
-    await page.waitForTimeout(1000);
-    await page.click('[data-testid="app-sidebar-arrow-button-back"]');
-    await page.waitForTimeout(1000);
-    {
-      const title = (await page
-        .locator('.affine-doc-page-block-title')
-        .textContent()) as string;
-      expect(title.trim()).toBe('test1');
-    }
-    await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
-    await page.waitForTimeout(1000);
-    await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
-    await page.waitForTimeout(1000);
-    {
-      const title = (await page
-        .locator('.affine-doc-page-block-title')
-        .textContent()) as string;
-      expect(title.trim()).toBe('test3');
-    }
-  });
-}
+    await title.focus();
+    await title.pressSequentially('test2', {
+      delay: 100,
+    });
+    await page.waitForTimeout(500);
+    await page.getByTestId('new-page-button').click({
+      delay: 100,
+    });
+    await page.waitForSelector('v-line');
+    await title.focus();
+    await title.pressSequentially('test3', {
+      delay: 100,
+    });
+  }
+  {
+    const title = (await page
+      .locator('.affine-doc-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test3');
+  }
+
+  await page.click('[data-testid="app-sidebar-arrow-button-back"]');
+  await page.click('[data-testid="app-sidebar-arrow-button-back"]');
+  {
+    const title = (await page
+      .locator('.affine-doc-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test1');
+  }
+  await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
+  await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
+  {
+    const title = (await page
+      .locator('.affine-doc-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test3');
+  }
+  await historyShortcut(page, 'goBack');
+  await historyShortcut(page, 'goBack');
+  {
+    const title = (await page
+      .locator('.affine-doc-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test1');
+  }
+  await historyShortcut(page, 'goForward');
+  await historyShortcut(page, 'goForward');
+  {
+    const title = (await page
+      .locator('.affine-doc-page-block-title')
+      .textContent()) as string;
+    expect(title.trim()).toBe('test3');
+  }
+});
+// }
 
 test('clientBorder value should disable by default on window', async ({
   page,
@@ -153,11 +178,13 @@ test('windows only check', async ({ page }) => {
 });
 
 test('delete workspace', async ({ page }) => {
-  await page.getByTestId('current-workspace').click();
+  await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
-  await page.getByTestId('create-workspace-input').type('Delete Me', {
-    delay: 100,
-  });
+  await page
+    .getByTestId('create-workspace-input')
+    .pressSequentially('Delete Me', {
+      delay: 100,
+    });
   await page.getByTestId('create-workspace-create-button').click({
     delay: 100,
   });
@@ -170,7 +197,7 @@ test('delete workspace', async ({ page }) => {
   expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
     'Delete Me'
   );
-  const contentElement = await page.getByTestId('setting-modal-content');
+  const contentElement = page.getByTestId('setting-modal-content');
   const boundingBox = await contentElement.boundingBox();
   if (!boundingBox) {
     throw new Error('boundingBox is null');
@@ -181,7 +208,9 @@ test('delete workspace', async ({ page }) => {
   );
   await page.mouse.wheel(0, 500);
   await page.getByTestId('delete-workspace-button').click();
-  await page.getByTestId('delete-workspace-input').type('Delete Me');
+  await page
+    .getByTestId('delete-workspace-input')
+    .pressSequentially('Delete Me');
   await page.getByTestId('delete-workspace-confirm-button').click();
   await page.waitForTimeout(1000);
   expect(await page.getByTestId('workspace-name').textContent()).toBe(

@@ -5,7 +5,9 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
+import { Snapshot, Update } from '@prisma/client';
+import { defer, retry } from 'rxjs';
+import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
@@ -29,6 +31,8 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   return compare(yBinary, yBinary2, true);
 }
 
+const MAX_SEQ_NUM = 0x3fffffff; // u31
+
 /**
  * Since we can't directly save all client updates into database, in which way the database will overload,
  * we need to buffer the updates and merge them to reduce db write.
@@ -36,13 +40,12 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
  * And also, if a new client join, it would be nice to see the latest doc asap,
  * so we need to at least store a snapshot of the doc and return quickly,
  * along side all the updates that have not been applies to that snapshot(timestamp).
- *
- * @see [RedisUpdateManager](./redis-manager.ts) - redis backed manager
  */
 @Injectable()
 export class DocManager implements OnModuleInit, OnModuleDestroy {
   protected logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
+  private seqMap = new Map<string, number>();
   private busy = false;
 
   constructor(
@@ -84,17 +87,14 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     return doc;
   }
 
-  protected yjsMergeUpdates(...updates: Buffer[]): Buffer {
+  protected applyUpdates(guid: string, ...updates: Buffer[]): Doc {
     const doc = this.recoverDoc(...updates);
-
-    return Buffer.from(encodeStateAsUpdate(doc));
-  }
-
-  protected mergeUpdates(guid: string, ...updates: Buffer[]): Buffer {
-    const yjsResult = this.yjsMergeUpdates(...updates);
     this.metrics.jwstCodecMerge(1, {});
-    let log = false;
+
+    // test jwst codec
     if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
+      const yjsResult = Buffer.from(encodeStateAsUpdate(doc));
+      let log = false;
       try {
         const jwstResult = jwstMergeUpdates(updates);
         if (!compare(yjsResult, jwstResult)) {
@@ -121,7 +121,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return yjsResult;
+    return doc;
   }
 
   /**
@@ -131,7 +131,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     this.job = setInterval(() => {
       if (!this.busy) {
         this.busy = true;
-        this.apply()
+        this.autoSquash()
           .catch(() => {
             /* we handle all errors in work itself */
           })
@@ -161,185 +161,146 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * add update to manager for later processing like fast merging.
+   * add update to manager for later processing.
    */
   async push(workspaceId: string, guid: string, update: Buffer) {
-    await this.db.update.create({
-      data: {
-        workspaceId,
-        id: guid,
-        blob: update,
-      },
+    await new Promise<void>((resolve, reject) => {
+      defer(async () => {
+        const seq = await this.getUpdateSeq(workspaceId, guid);
+        await this.db.update.create({
+          data: {
+            workspaceId,
+            id: guid,
+            seq,
+            blob: update,
+          },
+        });
+      })
+        .pipe(retry(MAX_SEQ_NUM)) // retry until seq num not conflict
+        .subscribe({
+          next: () => {
+            this.logger.verbose(
+              `pushed update for workspace: ${workspaceId}, guid: ${guid}`
+            );
+            resolve();
+          },
+          error: reject,
+        });
     });
+  }
 
-    this.logger.verbose(
-      `pushed update for workspace: ${workspaceId}, guid: ${guid}`
-    );
+  /**
+   * get the latest doc with all update applied.
+   */
+  async get(workspaceId: string, guid: string): Promise<Doc | null> {
+    const result = await this._get(workspaceId, guid);
+    if (result) {
+      if ('doc' in result) {
+        return result.doc;
+      } else if ('snapshot' in result) {
+        return this.recoverDoc(result.snapshot);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * get the latest doc binary with all update applied.
+   */
+  async getBinary(workspaceId: string, guid: string): Promise<Buffer | null> {
+    const result = await this._get(workspaceId, guid);
+    if (result) {
+      if ('doc' in result) {
+        return Buffer.from(encodeStateAsUpdate(result.doc));
+      } else if ('snapshot' in result) {
+        return result.snapshot;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * get the latest doc state vector with all update applied.
+   */
+  async getState(workspaceId: string, guid: string): Promise<Buffer | null> {
+    const snapshot = await this.getSnapshot(workspaceId, guid);
+    const updates = await this.getUpdates(workspaceId, guid);
+
+    if (updates.length) {
+      const doc = await this.squash(updates, snapshot);
+      return Buffer.from(encodeStateVector(doc));
+    }
+
+    return snapshot ? snapshot.state : null;
   }
 
   /**
    * get the snapshot of the doc we've seen.
    */
-  async getSnapshot(
-    workspaceId: string,
-    guid: string
-  ): Promise<Buffer | undefined> {
-    const snapshot = await this.db.snapshot.findFirst({
+  protected async getSnapshot(workspaceId: string, guid: string) {
+    return this.db.snapshot.findUnique({
       where: {
-        workspaceId,
-        id: guid,
+        id_workspaceId: {
+          workspaceId,
+          id: guid,
+        },
       },
     });
-
-    return snapshot?.blob;
   }
 
   /**
    * get pending updates
    */
-  async getUpdates(workspaceId: string, guid: string): Promise<Buffer[]> {
-    const updates = await this.db.update.findMany({
+  protected async getUpdates(workspaceId: string, guid: string) {
+    return this.db.update.findMany({
       where: {
         workspaceId,
         id: guid,
       },
+      orderBy: {
+        seq: 'asc',
+      },
     });
-
-    return updates.map(update => update.blob);
-  }
-
-  /**
-   * get the latest doc with all update applied.
-   *
-   * latest = snapshot + updates
-   */
-  async getLatest(workspaceId: string, guid: string): Promise<Doc | undefined> {
-    const snapshot = await this.getSnapshot(workspaceId, guid);
-    const updates = await this.getUpdates(workspaceId, guid);
-
-    if (updates.length) {
-      if (snapshot) {
-        return this.recoverDoc(snapshot, ...updates);
-      } else {
-        return this.recoverDoc(...updates);
-      }
-    }
-
-    if (snapshot) {
-      return this.recoverDoc(snapshot);
-    }
-
-    return undefined;
-  }
-
-  /**
-   * get the latest doc and convert it to update binary
-   */
-  async getLatestUpdate(
-    workspaceId: string,
-    guid: string
-  ): Promise<Buffer | undefined> {
-    const doc = await this.getLatest(workspaceId, guid);
-
-    return doc ? Buffer.from(encodeStateAsUpdate(doc)) : undefined;
   }
 
   /**
    * apply pending updates to snapshot
    */
-  async apply() {
-    const updates = await this.db
-      .$transaction(async db => {
-        // find the first update and batch process updates with same id
-        const first = await db.update.findFirst({
-          orderBy: {
-            createdAt: 'asc',
-          },
-        });
+  protected async autoSquash() {
+    // find the first update and batch process updates with same id
+    const first = await this.db.update.findFirst({
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
 
-        // no pending updates
-        if (!first) {
-          return;
-        }
-
-        const { id, workspaceId } = first;
-        const updates = await db.update.findMany({
-          where: {
-            id,
-            workspaceId,
-          },
-        });
-
-        // no pending updates
-        if (!updates.length) {
-          return;
-        }
-
-        // remove update that will be merged later
-        await db.update.deleteMany({
-          where: {
-            id,
-            workspaceId,
-          },
-        });
-
-        return updates;
-      })
-      .catch(
-        // transaction failed, it's safe to ignore
-        e => {
-          this.logger.error(`Failed to fetch updates: ${e}`);
-        }
-      );
-
-    // we put update merging logic outside transaction will make the processing more complex,
-    // but it's better to do so, since the merging may takes a lot of time,
-    // which may slow down the whole db.
-    if (!updates?.length) {
+    // no pending updates
+    if (!first) {
       return;
     }
 
-    const { id, workspaceId } = updates[0];
-
-    this.logger.verbose(
-      `applying ${updates.length} updates for workspace: ${workspaceId}, guid: ${id}`
-    );
+    const { id, workspaceId } = first;
 
     try {
-      const snapshot = await this.db.snapshot.findFirst({
-        where: {
-          workspaceId,
-          id,
-        },
-      });
-
-      // merge updates
-      const merged = snapshot
-        ? this.mergeUpdates(id, snapshot.blob, ...updates.map(u => u.blob))
-        : this.mergeUpdates(id, ...updates.map(u => u.blob));
-
-      // save snapshot
-      await this.upsert(workspaceId, id, merged);
+      await this._get(workspaceId, id);
     } catch (e) {
-      // failed to merge updates, put them back
-      this.logger.error(`Failed to merge updates: ${e}`);
-
-      await this.db.update
-        .createMany({
-          data: updates.map(u => ({
-            id: u.id,
-            workspaceId: u.workspaceId,
-            blob: u.blob,
-          })),
-        })
-        .catch(e => {
-          // failed to recover, fallback TBD
-          this.logger.error(`Fetal: failed to put updates back to db: ${e}`);
-        });
+      this.logger.error(
+        `Failed to apply updates for workspace: ${workspaceId}, guid: ${id}`
+      );
+      this.logger.error(e);
     }
   }
 
-  protected async upsert(workspaceId: string, guid: string, blob: Buffer) {
+  protected async upsert(
+    workspaceId: string,
+    guid: string,
+    doc: Doc,
+    seq?: number
+  ) {
+    const blob = Buffer.from(encodeStateAsUpdate(doc));
+    const state = Buffer.from(encodeStateVector(doc));
     return this.db.snapshot.upsert({
       where: {
         id_workspaceId: {
@@ -351,10 +312,103 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         id: guid,
         workspaceId,
         blob,
+        state,
+        seq,
       },
       update: {
         blob,
+        state,
       },
     });
+  }
+
+  protected async _get(
+    workspaceId: string,
+    guid: string
+  ): Promise<{ doc: Doc } | { snapshot: Buffer } | null> {
+    const snapshot = await this.getSnapshot(workspaceId, guid);
+    const updates = await this.getUpdates(workspaceId, guid);
+
+    if (updates.length) {
+      return {
+        doc: await this.squash(updates, snapshot),
+      };
+    }
+
+    return snapshot ? { snapshot: snapshot.blob } : null;
+  }
+
+  /**
+   * Squash updates into a single update and save it as snapshot,
+   * and delete the updates records at the same time.
+   */
+  protected async squash(updates: Update[], snapshot: Snapshot | null) {
+    if (!updates.length) {
+      throw new Error('No updates to squash');
+    }
+    const first = updates[0];
+    const last = updates[updates.length - 1];
+
+    const doc = this.applyUpdates(
+      first.id,
+      snapshot ? snapshot.blob : Buffer.from([0, 0]),
+      ...updates.map(u => u.blob)
+    );
+
+    const { id, workspaceId } = first;
+
+    await this.upsert(workspaceId, id, doc, last.seq);
+    await this.db.update.deleteMany({
+      where: {
+        id,
+        workspaceId,
+        seq: {
+          in: updates.map(u => u.seq),
+        },
+      },
+    });
+    return doc;
+  }
+
+  private async getUpdateSeq(workspaceId: string, guid: string) {
+    try {
+      const { seq } = await this.db.snapshot.update({
+        select: {
+          seq: true,
+        },
+        where: {
+          id_workspaceId: {
+            workspaceId,
+            id: guid,
+          },
+        },
+        data: {
+          seq: {
+            increment: 1,
+          },
+        },
+      });
+
+      // reset
+      if (seq === MAX_SEQ_NUM) {
+        await this.db.snapshot.update({
+          where: {
+            id_workspaceId: {
+              workspaceId,
+              id: guid,
+            },
+          },
+          data: {
+            seq: 0,
+          },
+        });
+      }
+
+      return seq;
+    } catch {
+      const last = this.seqMap.get(workspaceId + guid) ?? 0;
+      this.seqMap.set(workspaceId + guid, last + 1);
+      return last + 1;
+    }
   }
 }

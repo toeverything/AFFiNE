@@ -358,9 +358,7 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
             },
           }
         ),
-        navigator: {
-          userAgent: navigator.userAgent,
-        },
+        navigator: globalThis.navigator,
 
         MouseEvent: globalThis.MouseEvent,
         KeyboardEvent: globalThis.KeyboardEvent,

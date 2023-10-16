@@ -3,6 +3,7 @@ import {
   addUserToWorkspace,
   createRandomUser,
   enableCloudWorkspace,
+  enableCloudWorkspaceFromShareButton,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@affine-test/kit/utils/setting';
 import {
   clickSideBarAllPageButton,
+  clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
 } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
@@ -47,14 +49,14 @@ test.describe('collaboration', () => {
       },
       page
     );
-    await enableCloudWorkspace(page);
+    await enableCloudWorkspaceFromShareButton(page);
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('TEST TITLE', {
+    await title.pressSequentially('TEST TITLE', {
       delay: 50,
     });
     await page.keyboard.press('Enter', { delay: 50 });
     await page.keyboard.type('TEST CONTENT', { delay: 50 });
-    await page.getByTestId('share-menu-button').click();
+    await page.getByTestId('cloud-share-menu-button').click();
     await page.getByTestId('share-menu-create-link-button').click();
     await page.getByTestId('share-menu-copy-link-button').click();
 
@@ -102,7 +104,7 @@ test.describe('collaboration', () => {
     await page2.goto(currentUrl);
     {
       const title = getBlockSuiteEditorTitle(page);
-      await title.type('TEST TITLE', {
+      await title.pressSequentially('TEST TITLE', {
         delay: 50,
       });
     }
@@ -124,7 +126,7 @@ test.describe('collaboration', () => {
     await clickUserInfoCard(page);
     const input = page.getByTestId('user-name-input');
     await input.clear();
-    await input.type('TEST USER', {
+    await input.pressSequentially('TEST USER', {
       delay: 50,
     });
     await page.getByTestId('save-user-name').click({
@@ -167,7 +169,7 @@ test.describe('collaboration', () => {
       const page2 = await context.newPage();
       await loginUser(page2, user.email);
       await page2.goto(page.url());
-      waitForEditorLoad(page2);
+      await waitForEditorLoad(page2);
       const collections = page2.getByTestId('collections');
       await expect(collections.getByText('test collection')).toBeVisible();
     }
@@ -188,6 +190,7 @@ test.describe('collaboration', () => {
     await clickSideBarSettingButton(page);
     await clickUserInfoCard(page);
     await page.getByTestId('sign-out-button').click();
+    await page.getByTestId('confirm-sign-out-button').click();
     await page.waitForTimeout(5000);
     expect(page.url()).toBe(url);
   });
@@ -235,7 +238,7 @@ test.describe('collaboration members', () => {
       .all();
 
     // make sure the first member is the owner
-    expect(page.getByTestId('member-item').first()).toContainText(
+    await expect(page.getByTestId('member-item').first()).toContainText(
       'Workspace Owner'
     );
 
@@ -257,5 +260,28 @@ test.describe('collaboration members', () => {
     await navigationItems[3].click();
     await page.waitForTimeout(500);
     expect(await page.locator('[data-testid="member-item"]').count()).toBe(3);
+  });
+});
+
+test.describe('sign out', () => {
+  test('can sign out', async ({ page }) => {
+    await page.reload();
+    await waitForEditorLoad(page);
+    await createLocalWorkspace(
+      {
+        name: 'test',
+      },
+      page
+    );
+    await clickSideBarAllPageButton(page);
+    const currentUrl = page.url();
+    await clickSideBarCurrentWorkspaceBanner(page);
+    await page.getByTestId('workspace-modal-account-option').click();
+    await page.getByTestId('workspace-modal-sign-out-option').click();
+    await page.getByTestId('confirm-sign-out-button').click();
+    await clickSideBarCurrentWorkspaceBanner(page);
+    const signInButton = page.getByTestId('cloud-signin-button');
+    await expect(signInButton).toBeVisible();
+    expect(page.url()).toBe(currentUrl);
   });
 });
