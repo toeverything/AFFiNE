@@ -3,7 +3,12 @@ import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CloseIcon, FilterIcon, PlusIcon, ToggleIcon } from '@blocksuite/icons';
+import {
+  CloseIcon,
+  FilterIcon,
+  PlusIcon,
+  ToggleCollapseIcon,
+} from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Menu } from '@toeverything/components/menu';
@@ -311,11 +316,11 @@ const RulesMode = ({
                   lineHeight: '22px',
                 }}
               >
-                <ToggleIcon
+                <ToggleCollapseIcon
                   width={24}
                   height={24}
                   style={{ transform: 'rotate(90deg)' }}
-                ></ToggleIcon>
+                ></ToggleCollapseIcon>
                 <div style={{ color: 'var(--affine-text-secondary-color)' }}>
                   include
                 </div>

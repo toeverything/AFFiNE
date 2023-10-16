@@ -19,7 +19,7 @@ test('should create a page with a local first avatar and remove it', async ({
   await page.getByTestId('new-workspace').click({ delay: 50 });
   await page
     .getByTestId('create-workspace-input')
-    .type('Test Workspace 1', { delay: 50 });
+    .pressSequentially('Test Workspace 1', { delay: 50 });
   await page.getByTestId('create-workspace-create-button').click();
   await page.getByTestId('workspace-name').click({
     delay: 50,

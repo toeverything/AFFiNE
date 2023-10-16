@@ -10,7 +10,7 @@ import { expect, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
 };
 
 const keyboardDownAndSelect = async (page: Page, label: string) => {
@@ -151,6 +151,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
 });
+
 test('Navigate to the 404 page and try to open quick search', async ({
   page,
 }) => {
@@ -219,7 +220,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await clickNewPageButton(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('sgtokidoki', {
+    await title.pressSequentially('sgtokidoki', {
       delay: 50,
     });
   }
@@ -231,7 +232,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('theliquidhorse', {
+    await title.pressSequentially('theliquidhorse', {
       delay: 50,
     });
   }
@@ -242,14 +243,13 @@ test('assert the recent browse pages are on the recent list', async ({
   await addNewPage.click();
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('battlekot', {
+    await title.pressSequentially('battlekot', {
       delay: 50,
     });
   }
   await page.waitForTimeout(200);
 
   await openQuickSearchByShortcut(page);
-  await page.waitForTimeout(200);
   {
     // check does all 3 pages exists on recent page list
     const quickSearchItems = page.locator(
@@ -271,7 +271,7 @@ test('assert the recent browse pages are on the recent list', async ({
   await page.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.type('affine is the best', {
+    await title.pressSequentially('affine is the best', {
       delay: 50,
     });
   }

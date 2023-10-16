@@ -1,4 +1,3 @@
-import { Input } from '@affine/component';
 import { createEmptyCollection } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -6,8 +5,9 @@ import { SaveIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
 import { nanoid } from 'nanoid';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import Input from '../../../ui/input';
 import * as styles from './create-collection.css';
 
 export interface CreateCollectionModalProps {
@@ -72,6 +72,13 @@ export const CreateCollection = ({
 }: CreateCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState(init);
+  const isNameEmpty = useMemo(() => value.trim().length === 0, [value]);
+  const save = useCallback(() => {
+    if (isNameEmpty) {
+      return;
+    }
+    onConfirm(value);
+  }, [onConfirm, value, isNameEmpty]);
   return (
     <div>
       <div className={styles.content}>
@@ -81,6 +88,7 @@ export const CreateCollection = ({
           value={value}
           placeholder="New Collection"
           onChange={useCallback((value: string) => onChange(value), [onChange])}
+          onEnter={save}
         ></Input>
         <div className={styles.createTips}>
           Collection is a smart folder where you can manually add pages or
@@ -95,8 +103,8 @@ export const CreateCollection = ({
           size="large"
           data-testid="save-collection"
           type="primary"
-          disabled={value.trim().length === 0}
-          onClick={useCallback(() => onConfirm(value), [onConfirm, value])}
+          disabled={isNameEmpty}
+          onClick={save}
         >
           {onConfirmText ?? t['com.affine.editCollection.button.create']()}
         </Button>

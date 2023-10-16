@@ -9,7 +9,9 @@ test('goto not found page', async ({ page }) => {
   const currentUrl = page.url();
   const invalidUrl = currentUrl.replace('hello-world', 'invalid');
   await page.goto(invalidUrl);
-  await expect(page.getByTestId('not-found')).toBeVisible();
+  await expect(page.getByTestId('not-found')).toBeVisible({
+    timeout: 10000,
+  });
 });
 
 test('goto not found workspace', async ({ page }) => {

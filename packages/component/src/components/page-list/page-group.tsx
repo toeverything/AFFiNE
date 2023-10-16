@@ -1,7 +1,7 @@
 import type { Tag } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
-import { EdgelessIcon, PageIcon, ToggleIcon } from '@blocksuite/icons';
+import { EdgelessIcon, PageIcon, ToggleCollapseIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
@@ -120,7 +120,7 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
             data-testid="page-list-group-header-collapsed-button"
             className={styles.collapsedIconContainer}
           >
-            <ToggleIcon
+            <ToggleCollapseIcon
               className={styles.collapsedIcon}
               data-collapsed={collapsed !== false}
             />

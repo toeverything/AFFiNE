@@ -16,7 +16,7 @@ test('Open settings modal', async ({ page }) => {
   await waitForEditorLoad(page);
   await openSettingModal(page);
 
-  const modal = await page.getByTestId('setting-modal');
+  const modal = page.getByTestId('setting-modal');
   await expect(modal).toBeVisible();
 });
 
@@ -69,7 +69,7 @@ test('Change layout width', async ({ page }) => {
 
   await page.getByTestId('full-width-layout-trigger').click();
 
-  const editorWrapper = await page.locator('.editor-wrapper');
+  const editorWrapper = page.locator('.editor-wrapper');
   const className = await editorWrapper.getAttribute('class');
   expect(className).toContain('full-screen');
 });
@@ -79,7 +79,7 @@ test('Open shortcuts panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await openSettingModal(page);
   await openShortcutsPanel(page);
-  const title = await page.getByTestId('keyboard-shortcuts-title');
+  const title = page.getByTestId('keyboard-shortcuts-title');
   await expect(title).toBeVisible();
 });
 
@@ -88,7 +88,7 @@ test('Open plugins panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await openSettingModal(page);
   await openPluginsPanel(page);
-  const title = await page.getByTestId('plugins-title');
+  const title = page.getByTestId('plugins-title');
   await expect(title).toBeVisible();
 });
 
@@ -97,7 +97,7 @@ test('Open about panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await openSettingModal(page);
   await openAboutPanel(page);
-  const title = await page.getByTestId('about-title');
+  const title = page.getByTestId('about-title');
   await expect(title).toBeVisible();
 });
 

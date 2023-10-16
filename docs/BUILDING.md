@@ -102,7 +102,7 @@ yarn test
 ### E2E Test
 
 ```shell
-# there are `affine-local`, `affine-legacy/*`, `affine-local`, `affine-plugin`, `affine-prototype` e2e tests,
+# there are `affine-local`, `affine-migration`, `affine-local`, `affine-plugin`, `affine-prototype` e2e tests,
 #   which are run under different situations.
 cd tests/affine-local
 yarn e2e

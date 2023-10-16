@@ -80,9 +80,9 @@ test('allow creation of filters by favorite', async ({ page }) => {
     .locator('[data-testid="filter-arg"]', { hasText: 'true' })
     .locator('div')
     .click();
-  await expect(
-    await page.locator('[data-testid="filter-arg"]').textContent()
-  ).toBe('false');
+  expect(await page.locator('[data-testid="filter-arg"]').textContent()).toBe(
+    'false'
+  );
 });
 
 test('allow creation of filters by created time', async ({ page }) => {

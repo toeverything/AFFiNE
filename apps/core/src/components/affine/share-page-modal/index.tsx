@@ -4,7 +4,7 @@ import {
   WorkspaceFlavour,
 } from '@affine/env/workspace';
 import type { Page } from '@blocksuite/store';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useExportPage } from '../../../hooks/affine/use-export-page';
 import { useIsSharedPage } from '../../../hooks/affine/use-is-shared-page';
@@ -20,6 +20,17 @@ export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
   const onTransformWorkspace = useOnTransformWorkspace();
   const [open, setOpen] = useState(false);
   const exportHandler = useExportPage(page);
+  const handleConfirm = useCallback(() => {
+    if (workspace.flavour !== WorkspaceFlavour.LOCAL) {
+      return;
+    }
+    onTransformWorkspace(
+      WorkspaceFlavour.LOCAL,
+      WorkspaceFlavour.AFFINE_CLOUD,
+      workspace
+    );
+    setOpen(false);
+  }, [onTransformWorkspace, workspace]);
   return (
     <>
       <ShareMenu
@@ -34,14 +45,7 @@ export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
         <EnableAffineCloudModal
           open={open}
           onOpenChange={setOpen}
-          onConfirm={() => {
-            onTransformWorkspace(
-              WorkspaceFlavour.LOCAL,
-              WorkspaceFlavour.AFFINE_CLOUD,
-              workspace
-            );
-            setOpen(false);
-          }}
+          onConfirm={handleConfirm}
         />
       ) : null}
     </>
