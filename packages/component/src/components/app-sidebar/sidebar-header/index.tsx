@@ -3,6 +3,7 @@ import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useAtomValue } from 'jotai';
+import { useMemo } from 'react';
 
 import type { History } from '..';
 import {
@@ -19,14 +20,32 @@ export type SidebarHeaderProps = {
     forward: () => unknown;
     history: History;
   };
+  generalShortcutsInfo?: {
+    shortcuts: {
+      [title: string]: string[];
+    };
+  };
 };
 
 export const SidebarHeader = (props: SidebarHeaderProps) => {
   const open = useAtomValue(appSidebarOpenAtom);
   const t = useAFFiNEI18N();
-  const isMacos =
-    (environment.isBrowser && environment.isMacOs) ||
-    (environment.isDesktop && environment.isMacOs);
+
+  const shortcuts = props.generalShortcutsInfo?.shortcuts;
+  const shortcutsObject = useMemo(() => {
+    const goBack = t['com.affine.keyboardShortcuts.goBack']();
+    const goBackShortcut = shortcuts?.[goBack];
+
+    const goForward = t['com.affine.keyboardShortcuts.goForward']();
+    const goForwardShortcut = shortcuts?.[goForward];
+    return {
+      goBack,
+      goBackShortcut,
+      goForward,
+      goForwardShortcut,
+    };
+  }, [shortcuts, t]);
+
   return (
     <div
       className={navHeaderStyle}
@@ -36,9 +55,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
       <SidebarSwitch show={open} />
       <div className={navHeaderNavigationButtons}>
         <Tooltip
-          content={`${t['com.affine.keyboardShortcuts.goBack']()}
-            ${isMacos ? '⌘ + [' : 'Ctrl + ['}
-          `}
+          content={`${shortcutsObject.goBack} ${shortcutsObject.goBackShortcut}`}
           side="bottom"
         >
           <IconButton
@@ -53,9 +70,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
           </IconButton>
         </Tooltip>
         <Tooltip
-          content={`${t['com.affine.keyboardShortcuts.goForward']()}
-            ${isMacos ? '⌘ + ]' : 'Ctrl + ]'}
-          `}
+          content={`${shortcutsObject.goForward} ${shortcutsObject.goForwardShortcut}`}
           side="bottom"
         >
           <IconButton
