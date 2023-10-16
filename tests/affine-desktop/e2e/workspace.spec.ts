@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import { test } from '@affine-test/kit/electron';
+import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 import fs from 'fs-extra';
 
@@ -85,7 +86,7 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
   // add workspace
   // we are reusing the same db file so that we don't need to maintain one
   // in the codebase
-  await page.getByTestId('current-workspace').click();
+  await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('add-or-new-workspace').click();
 
   await page.evaluate(tmpPath => {

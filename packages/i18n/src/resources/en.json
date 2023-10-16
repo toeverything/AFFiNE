@@ -633,5 +633,9 @@
   "com.affine.share-menu.publish-to-web.description": "Let anyone with a link view a read-only version of this page.",
   "com.affine.share-menu.share-privately": "Share Privately",
   "com.affine.share-menu.share-privately.description": "Only members of this Workspace can open this link.",
-  "com.affine.share-menu.copy-private-link": "Copy Private Link"
+  "com.affine.share-menu.copy-private-link": "Copy Private Link",
+  "com.affine.auth.sign-out.confirm-modal.title": "Sign out?",
+  "com.affine.auth.sign-out.confirm-modal.description": "After signing out, the Cloud Workspaces associated with this account will be removed from the current device, and signing in again will add them back.",
+  "com.affine.auth.sign-out.confirm-modal.cancel": "Cancel",
+  "com.affine.auth.sign-out.confirm-modal.confirm": "Sign Out"
 }

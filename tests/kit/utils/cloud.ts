@@ -9,7 +9,12 @@ import {
 } from '@affine-test/kit/utils/sidebar';
 import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
-import type { BrowserContext, Cookie, Page } from '@playwright/test';
+import {
+  type BrowserContext,
+  type Cookie,
+  expect,
+  type Page,
+} from '@playwright/test';
 import { z } from 'zod';
 
 export async function getCurrentMailMessageCount() {
@@ -176,8 +181,33 @@ export async function enableCloudWorkspace(page: Page) {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
 }
+
 export async function enableCloudWorkspaceFromShareButton(page: Page) {
-  await page.getByTestId('local-share-menu-button').click();
+  const shareMenuButton = page.getByTestId('local-share-menu-button');
+  expect(await shareMenuButton.isVisible()).toBeTruthy();
+
+  // FIXME: this is a workaround for the flaky test
+  // For unknown reasons,
+  // the online ci test on GitHub is unable to detect the local-share-menu,
+  // although it works fine in local testing.
+  // To ensure the tests pass consistently, I’ve made the following temporary adjustments.
+  // {
+  const maxAttempts = 5;
+  let attempt = 0;
+  let menuVisible = false;
+
+  while (!menuVisible && attempt < maxAttempts) {
+    try {
+      await shareMenuButton.click();
+      menuVisible = await page.getByTestId('local-share-menu').isVisible();
+    } catch (e) {
+      console.error(`Attempt ${attempt + 1} failed: ${e}`);
+      attempt += 1;
+    }
+  }
+  expect(menuVisible).toBeTruthy();
+  // }
+
   await page.getByTestId('share-menu-enable-affine-cloud-button').click();
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
   // wait for upload and delete local workspace

@@ -10,15 +10,15 @@ import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { openSettingModalAtom } from '../../../../../atoms';
-import { signOutCloud } from '../../../../../utils/cloud-utils';
-import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
+import {
+  openSettingModalAtom,
+  openSignOutModalAtom,
+} from '../../../../../atoms';
 import * as styles from './index.css';
 
 const AccountMenu = ({ onEventEnd }: { onEventEnd?: () => void }) => {
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-
-  const { jumpToIndex } = useNavigateHelper();
+  const setOpenSignOutModalAtom = useSetAtom(openSignOutModalAtom);
 
   const onOpenAccountSetting = useCallback(() => {
     setSettingModalAtom(prev => ({
@@ -28,14 +28,10 @@ const AccountMenu = ({ onEventEnd }: { onEventEnd?: () => void }) => {
     }));
   }, [setSettingModalAtom]);
 
-  const onSignOut = useCallback(async () => {
-    signOutCloud()
-      .then(() => {
-        jumpToIndex();
-      })
-      .catch(console.error);
+  const onOpenSignOutModal = useCallback(() => {
     onEventEnd?.();
-  }, [onEventEnd, jumpToIndex]);
+    setOpenSignOutModalAtom(true);
+  }, [onEventEnd, setOpenSignOutModalAtom]);
 
   const t = useAFFiNEI18N();
 
@@ -47,7 +43,7 @@ const AccountMenu = ({ onEventEnd }: { onEventEnd?: () => void }) => {
             <AccountIcon />
           </MenuIcon>
         }
-        data-testid="editor-option-menu-import"
+        data-testid="workspace-modal-account-settings-option"
         onClick={onOpenAccountSetting}
       >
         {t['com.affine.workspace.cloud.account.settings']()}
@@ -59,8 +55,8 @@ const AccountMenu = ({ onEventEnd }: { onEventEnd?: () => void }) => {
             <SignOutIcon />
           </MenuIcon>
         }
-        data-testid="editor-option-menu-import"
-        onClick={onSignOut}
+        data-testid="workspace-modal-sign-out-option"
+        onClick={onOpenSignOutModal}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
@@ -86,7 +82,7 @@ export const UserAccountItem = ({
         }}
       >
         <IconButton
-          data-testid="more-button"
+          data-testid="workspace-modal-account-option"
           icon={<MoreHorizontalIcon />}
           type="plain"
         />
