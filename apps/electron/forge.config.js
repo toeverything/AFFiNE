@@ -12,6 +12,7 @@ const {
   buildType,
   icnsPath,
   icoPath,
+  iconPngPath,
   platform,
   productName,
   iconUrl,
@@ -77,8 +78,7 @@ const makers = [
     name: '@reforged/maker-appimage',
     config: {
       name: 'AFFiNE',
-      iconUrl: icoPath,
-      setupIcon: icoPath,
+      icon: iconPngPath,
       platforms: ['linux'],
       options: {
         bin: productName,
