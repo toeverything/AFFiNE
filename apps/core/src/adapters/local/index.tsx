@@ -19,10 +19,11 @@ import {
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
 import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
+import { useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
@@ -87,7 +88,8 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
     Header: WorkspaceHeader,
     Provider,
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
-      const workspace = useStaticBlockSuiteWorkspace(currentWorkspaceId);
+      const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentWorkspaceId);
+      const workspace = useAtomValue(workspaceAtom);
       const page = workspace.getPage(currentPageId);
       if (!page) {
         throw new PageNotFoundError(workspace, currentPageId);

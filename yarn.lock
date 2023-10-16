@@ -12424,6 +12424,7 @@ __metadata:
     async-call-rpc: ^6.3.1
     electron: "link:../../apps/electron/node_modules/electron"
     jotai: ^2.4.3
+    jotai-effect: ^0.1.0
     nanoid: ^5.0.1
     react: ^18.2.0
     rxjs: ^7.8.1
@@ -24019,6 +24020,15 @@ __metadata:
     "@emotion/react": ">=11.0.0"
     react: ">=17.0.0"
   checksum: 2b01743662a0ab92ac9c6ed8f94597a9514e37d492256f754e76c02c803af17869c24065060d03296a3d633f48207b64d0ad940eb93fa8fbe12f9346dd984fba
+  languageName: node
+  linkType: hard
+
+"jotai-effect@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "jotai-effect@npm:0.1.0"
+  peerDependencies:
+    jotai: ">=2.4.3"
+  checksum: fdf8794f9383c911978aa992a994fa5610e8bf2e7752ed995482dc480f87fc0cd7f68a9df5648a0f2fc7335a02b58bee507f3b1394c28fbbc226f81ca06dc694
   languageName: node
   linkType: hard
 
