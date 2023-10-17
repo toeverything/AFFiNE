@@ -1,6 +1,7 @@
-use std::{convert::TryFrom, fmt};
+use std::convert::TryFrom;
 
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use napi::{bindgen_prelude::AsyncTask, Env, JsBoolean, JsString, Result as NapiResult, Task};
 use napi_derive::napi;
 use rand::{
   distributions::{Alphanumeric, Distribution},
@@ -44,7 +45,7 @@ impl Stamp {
 
       // check challenge
       let mut hasher = Sha3_256::new();
-      hasher.update(&self.to_string().as_bytes());
+      hasher.update(&self.format().as_bytes());
       let result = format!("{:x}", hasher.finalize());
       result[..hex_digits] == String::from_utf8(vec![b'0'; hex_digits]).unwrap()
     } else {
@@ -123,40 +124,80 @@ impl TryFrom<&str> for Stamp {
   }
 }
 
-impl fmt::Display for Stamp {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{}", self.format())
+pub struct AsyncVerifyChallengeResponse {
+  response: String,
+  bits: u32,
+  resource: String,
+}
+
+#[napi]
+impl Task for AsyncVerifyChallengeResponse {
+  type Output = bool;
+  type JsValue = JsBoolean;
+
+  fn compute(&mut self) -> NapiResult<Self::Output> {
+    Ok(if let Ok(stamp) = Stamp::try_from(self.response.as_str()) {
+      stamp.check(self.bits, &self.resource)
+    } else {
+      false
+    })
+  }
+
+  fn resolve(&mut self, env: Env, output: bool) -> NapiResult<Self::JsValue> {
+    env.get_boolean(output)
   }
 }
 
 #[napi]
-pub async fn verify_challenge_response(response: String, bits: u32, resource: String) -> bool {
-  if let Ok(stamp) = Stamp::try_from(response.as_ref()) {
-    stamp.check(bits, resource)
-  } else {
-    false
+pub fn verify_challenge_response(
+  response: String,
+  bits: u32,
+  resource: String,
+) -> AsyncTask<AsyncVerifyChallengeResponse> {
+  AsyncTask::new(AsyncVerifyChallengeResponse {
+    response,
+    bits,
+    resource,
+  })
+}
+
+pub struct AsyncMintChallengeResponse {
+  bits: Option<u32>,
+  resource: String,
+}
+
+#[napi]
+impl Task for AsyncMintChallengeResponse {
+  type Output = String;
+  type JsValue = JsString;
+
+  fn compute(&mut self) -> NapiResult<Self::Output> {
+    Ok(Stamp::mint(self.resource.clone(), self.bits).format())
+  }
+
+  fn resolve(&mut self, env: Env, output: String) -> NapiResult<Self::JsValue> {
+    env.create_string(&output)
   }
 }
 
 #[napi]
-pub async fn mint_challenge_response(resource: String, bits: Option<u32>) -> String {
-  Stamp::mint(resource, bits).to_string()
+pub fn mint_challenge_response(
+  resource: String,
+  bits: Option<u32>,
+) -> AsyncTask<AsyncMintChallengeResponse> {
+  AsyncTask::new(AsyncMintChallengeResponse { bits, resource })
 }
 
 #[cfg(test)]
 mod tests {
-  use super::{mint_challenge_response, verify_challenge_response, Stamp};
+  use super::Stamp;
 
   #[test]
   fn test_mint() {
-    let stamp = Stamp::mint("test".into(), Some(22));
-    assert!(stamp.check(22, "test"));
-  }
-
-  #[tokio::test]
-  async fn test_public_mint() {
-    let response = mint_challenge_response("test".into(), Some(22)).await;
-    assert!(verify_challenge_response(response, 22, "test".into()).await);
+    let response = Stamp::mint("test".into(), Some(22)).format();
+    assert!(Stamp::try_from(response.as_str())
+      .unwrap()
+      .check(22, "test"));
   }
 
   #[test]
