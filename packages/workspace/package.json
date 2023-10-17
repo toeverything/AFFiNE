@@ -20,7 +20,6 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
-    "@affine/y-provider": "workspace:*",
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
@@ -36,6 +35,7 @@
     "swr": "2.2.0",
     "valtio": "^1.11.2",
     "y-protocols": "^1.0.6",
+    "y-provider": "workspace:*",
     "yjs": "^13.6.8",
     "zod": "^3.22.4"
   },

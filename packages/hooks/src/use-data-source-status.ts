@@ -1,5 +1,5 @@
-import type { DataSourceAdapter, Status } from '@affine/y-provider';
 import { useCallback, useSyncExternalStore } from 'react';
+import type { DataSourceAdapter, Status } from 'y-provider';
 
 type UIStatus =
   | Status

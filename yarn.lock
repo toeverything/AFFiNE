@@ -839,7 +839,6 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
-    "@affine/y-provider": "workspace:*"
     "@testing-library/react": ^14.0.0
     "@toeverything/hooks": "workspace:*"
     "@toeverything/y-indexeddb": "workspace:*"
@@ -860,21 +859,12 @@ __metadata:
     vitest: 0.34.6
     ws: ^8.14.2
     y-protocols: ^1.0.6
+    y-provider: "workspace:*"
     yjs: ^13.6.8
     zod: ^3.22.4
   peerDependencies:
     "@blocksuite/blocks": "*"
     "@blocksuite/store": "*"
-  languageName: unknown
-  linkType: soft
-
-"@affine/y-provider@workspace:*, @affine/y-provider@workspace:packages/y-provider":
-  version: 0.0.0-use.local
-  resolution: "@affine/y-provider@workspace:packages/y-provider"
-  dependencies:
-    "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
-  peerDependencies:
-    yjs: ^13.5.51
   languageName: unknown
   linkType: soft
 
@@ -12370,7 +12360,6 @@ __metadata:
   resolution: "@toeverything/hooks@workspace:packages/hooks"
   dependencies:
     "@affine/env": "workspace:*"
-    "@affine/y-provider": "workspace:*"
     "@blocksuite/block-std": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/editor": 0.0.0-20230926212737-6d4b1569-nightly
@@ -12386,18 +12375,17 @@ __metadata:
     react: 18.2.0
     swr: 2.2.0
     vitest: 0.34.6
+    y-provider: "workspace:*"
   peerDependencies:
-    "@affine/y-provider": "workspace:*"
     "@blocksuite/block-std": "*"
     "@blocksuite/blocks": "*"
     "@blocksuite/editor": "*"
     "@blocksuite/global": "*"
     "@blocksuite/lit": "*"
     "@blocksuite/store": "*"
+    y-provider: "workspace:*"
   peerDependenciesMeta:
     "@affine/env":
-      optional: true
-    "@affine/y-provider":
       optional: true
     "@blocksuite/block-std":
       optional: true
@@ -12410,6 +12398,8 @@ __metadata:
     "@blocksuite/lit":
       optional: true
     "@blocksuite/store":
+      optional: true
+    y-provider:
       optional: true
   languageName: unknown
   linkType: soft
@@ -12475,7 +12465,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/y-indexeddb"
   dependencies:
-    "@affine/y-provider": "workspace:*"
     "@blocksuite/blocks": 0.0.0-20230926212737-6d4b1569-nightly
     "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
     fake-indexeddb: ^5.0.0
@@ -12485,6 +12474,7 @@ __metadata:
     vite-plugin-dts: 3.6.0
     vitest: 0.34.6
     y-indexeddb: ^9.0.11
+    y-provider: "workspace:*"
   peerDependencies:
     yjs: ^13
   languageName: unknown
@@ -34486,6 +34476,19 @@ __metadata:
   checksum: 4b57c8811befcf2e45c3d47830005f8a33e626c734f78a42fe8a4fa3caad2233ba85a7c8bceefbd52ffc40130d3f3faee664fd0d1c324ff1fa8817a056ccdc1c
   languageName: node
   linkType: hard
+
+"y-provider@workspace:*, y-provider@workspace:packages/y-provider":
+  version: 0.0.0-use.local
+  resolution: "y-provider@workspace:packages/y-provider"
+  dependencies:
+    "@blocksuite/store": 0.0.0-20230926212737-6d4b1569-nightly
+    vite: ^4.4.11
+    vite-plugin-dts: 3.6.0
+    vitest: 0.34.6
+  peerDependencies:
+    yjs: ^13
+  languageName: unknown
+  linkType: soft
 
 "y18n@npm:^4.0.0":
   version: 4.0.3

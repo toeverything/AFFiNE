@@ -1,17 +1,35 @@
 {
-  "name": "@affine/y-provider",
+  "name": "y-provider",
   "type": "module",
-  "version": "0.10.0-canary.1",
-  "description": "Yjs provider utilities for AFFiNE",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
+  "version": "0.10.0-canary.0",
+  "description": "Yjs provider protocol for multi document support",
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.umd.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build"
+  },
   "devDependencies": {
-    "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly"
+    "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
+    "vite": "^4.4.11",
+    "vite-plugin-dts": "3.6.0",
+    "vitest": "0.34.6"
   },
   "peerDependencies": {
-    "yjs": "^13.5.51"
+    "yjs": "^13"
   }
 }
