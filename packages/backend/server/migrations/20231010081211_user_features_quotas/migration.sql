@@ -8,6 +8,7 @@
 */
 -- AlterTable
 ALTER TABLE "user_feature_gates" DROP COLUMN "feature",
+ADD COLUMN     "activated" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "expires_at" TIMESTAMPTZ(6) NOT NULL,
 ADD COLUMN     "featureId" VARCHAR NOT NULL;
 
@@ -24,7 +25,7 @@ CREATE TABLE "user_features" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_features_feature_key" ON "user_features"("feature");
+CREATE UNIQUE INDEX "user_features_feature_version_key" ON "user_features"("feature", "version");
 
 -- AddForeignKey
 ALTER TABLE "user_feature_gates" ADD CONSTRAINT "user_feature_gates_featureId_fkey" FOREIGN KEY ("featureId") REFERENCES "user_features"("id") ON DELETE CASCADE ON UPDATE CASCADE;

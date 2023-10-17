@@ -144,7 +144,7 @@ model UserFeatureGates {
 
 model UserFeatures {
   id        String   @id @default(uuid()) @db.VarChar
-  feature   String   @unique @db.VarChar
+  feature   String   @db.VarChar
   version   Int      @default(0) @db.Integer
   // 0: feature, 1: quota
   type      Int      @db.Integer
@@ -154,6 +154,7 @@ model UserFeatures {
 
   UserFeatureGates UserFeatureGates[]
 
+  @@unique([feature, version])
   @@map("user_features")
 }
 

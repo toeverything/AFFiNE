@@ -6,6 +6,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
+import { QuotaService } from '../src/modules/quota';
 import {
   checkBlobSize,
   collectAllBlobSizes,
@@ -17,6 +18,7 @@ import {
 } from './utils';
 
 let app: INestApplication;
+let quota: QuotaService;
 
 const client = new PrismaClient();
 
@@ -41,6 +43,7 @@ test.beforeEach(async () => {
       maxFiles: 5,
     })
   );
+  quota = module.get(QuotaService);
   await app.init();
 });
 
@@ -142,4 +145,40 @@ test('should calc all blobs size', async t => {
     10 * 1024 * 1024 * 1024 - 7
   );
   t.is(size2, -1, 'failed to check blob size');
+});
+
+test('should be able calc quota after switch plan', async t => {
+  const u1 = await signUp(app, 'darksky', 'darksky@affine.pro', '1');
+
+  const workspace1 = await createWorkspace(app, u1.token.token);
+
+  const buffer1 = Buffer.from([0, 0]);
+  await setBlob(app, u1.token.token, workspace1.id, buffer1);
+  const buffer2 = Buffer.from([0, 1]);
+  await setBlob(app, u1.token.token, workspace1.id, buffer2);
+
+  const workspace2 = await createWorkspace(app, u1.token.token);
+
+  const buffer3 = Buffer.from([0, 0]);
+  await setBlob(app, u1.token.token, workspace2.id, buffer3);
+  const buffer4 = Buffer.from([0, 1]);
+  await setBlob(app, u1.token.token, workspace2.id, buffer4);
+
+  const size1 = await checkBlobSize(
+    app,
+    u1.token.token,
+    workspace1.id,
+    10 * 1024 * 1024 * 1024 - 8
+  );
+  t.is(size1, 0, 'failed to check free plan blob size');
+
+  quota.switchQuotaByUser(u1.id, 'pro_plan_v1');
+
+  const size2 = await checkBlobSize(
+    app,
+    u1.token.token,
+    workspace1.id,
+    100 * 1024 * 1024 * 1024 - 8
+  );
+  t.is(size2, 0, 'failed to check pro plan blob size');
 });

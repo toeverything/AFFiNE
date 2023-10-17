@@ -78,9 +78,18 @@ export class QuotaService implements OnModuleInit {
     reason?: string,
     expiresAt?: Date
   ) {
-    await this.prisma.$transaction([
+    await this.prisma.$transaction(async tx => {
+      const latestFreePlan = await tx.userFeatures.aggregate({
+        where: {
+          feature: 'free_plan_v1',
+        },
+        _max: {
+          version: true,
+        },
+      });
+
       // we will deactivate all exists quota for this user
-      this.prisma.userFeatureGates.updateMany({
+      await tx.userFeatureGates.updateMany({
         where: {
           id: undefined,
           userId,
@@ -91,8 +100,9 @@ export class QuotaService implements OnModuleInit {
         data: {
           activated: false,
         },
-      }),
-      this.prisma.userFeatureGates.create({
+      });
+
+      await tx.userFeatureGates.create({
         data: {
           user: {
             connect: {
@@ -101,7 +111,10 @@ export class QuotaService implements OnModuleInit {
           },
           feature: {
             connect: {
-              feature: quota,
+              feature_version: {
+                feature: quota,
+                version: latestFreePlan._max.version || 1,
+              },
               type: FeatureKind.Quota,
             },
           },
@@ -109,8 +122,8 @@ export class QuotaService implements OnModuleInit {
           activated: true,
           expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
         },
-      }),
-    ]);
+      });
+    });
   }
 
   async hasQuota(userId: string, quota: string) {

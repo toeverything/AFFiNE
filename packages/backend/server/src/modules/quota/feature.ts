@@ -27,24 +27,26 @@ export class FeatureService implements OnModuleInit {
 
   // upgrade features from lower version to higher version
   async upsertFeature(feature: CommonFeature): Promise<void> {
-    await this.prisma.userFeatures.upsert({
-      where: {
-        feature: feature.feature,
-        version: {
-          lt: feature.version,
+    const hasEqualOrGreaterVersion =
+      (await this.prisma.userFeatures.count({
+        where: {
+          feature: feature.feature,
+          version: {
+            gte: feature.version,
+          },
         },
-      },
-      update: {
-        version: feature.version,
-        configs: feature.configs,
-      },
-      create: {
-        feature: feature.feature,
-        type: feature.type,
-        version: feature.version,
-        configs: feature.configs,
-      },
-    });
+      })) > 0;
+    // will not update exists version
+    if (!hasEqualOrGreaterVersion) {
+      await this.prisma.userFeatures.create({
+        data: {
+          feature: feature.feature,
+          type: feature.type,
+          version: feature.version,
+          configs: feature.configs,
+        },
+      });
+    }
   }
 
   async getFeaturesVersion() {
@@ -64,9 +66,12 @@ export class FeatureService implements OnModuleInit {
   }
 
   async getFeature(feature: string) {
-    return this.prisma.userFeatures.findUnique({
+    return this.prisma.userFeatures.findFirst({
       where: {
         feature,
+      },
+      orderBy: {
+        version: 'desc',
       },
     });
   }

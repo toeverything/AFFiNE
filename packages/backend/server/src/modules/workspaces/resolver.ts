@@ -708,7 +708,7 @@ export class WorkspaceResolver {
       if (user) {
         const quota = await this.users.getStorageQuotaById(user.id);
         if (!quota) {
-          throw new ForbiddenException('cannot find user quota');
+          throw new ForbiddenException('user not exists');
         }
         const { size: currentSize } = await this.collectAllBlobSizes(user);
 

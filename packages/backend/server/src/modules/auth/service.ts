@@ -185,6 +185,15 @@ export class AuthService {
 
     const hashedPassword = await hash(password);
 
+    const latestFreePlan = await this.prisma.userFeatures.aggregate({
+      where: {
+        feature: 'free_plan_v1',
+      },
+      _max: {
+        version: true,
+      },
+    });
+
     return this.prisma.user.create({
       data: {
         name,
@@ -197,7 +206,10 @@ export class AuthService {
             activated: true,
             feature: {
               connect: {
-                feature: 'free_plan_v1',
+                feature_version: {
+                  feature: 'free_plan_v1',
+                  version: latestFreePlan._max.version || 1,
+                },
               },
             },
           },
@@ -217,6 +229,15 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
+    const latestFreePlan = await this.prisma.userFeatures.aggregate({
+      where: {
+        feature: 'free_plan_v1',
+      },
+      _max: {
+        version: true,
+      },
+    });
+
     return this.prisma.user.create({
       data: {
         name: 'Unnamed',
@@ -228,7 +249,10 @@ export class AuthService {
             activated: true,
             feature: {
               connect: {
-                feature: 'free_plan_v1',
+                feature_version: {
+                  feature: 'free_plan_v1',
+                  version: latestFreePlan._max.version || 1,
+                },
               },
             },
           },
