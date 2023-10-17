@@ -153,7 +153,9 @@ ListItem.args = {
 ListItem.decorators = [withRouter];
 
 export const ListItemTags: StoryFn<PageTagsProps> = props => (
-  <PageTags {...props}></PageTags>
+  <div style={{ maxWidth: '100vw' }}>
+    <PageTags {...props}></PageTags>
+  </div>
 );
 
 ListItemTags.args = {

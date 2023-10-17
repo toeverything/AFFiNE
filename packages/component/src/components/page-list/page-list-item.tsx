@@ -76,7 +76,7 @@ export const PageTagsCell = ({ tags }: Pick<PageListItemProps, 'tags'>) => {
   return (
     <div data-testid="page-list-item-tags" className={styles.tagsCell}>
       {/* fixme: give dynamic width & maxWidth */}
-      <PageTags tags={tags} width={100} maxWidth={600} />
+      <PageTags tags={tags} />
     </div>
   );
 };
