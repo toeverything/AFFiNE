@@ -43,7 +43,8 @@
     "vite": "^4.4.11",
     "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",
-    "y-indexeddb": "^9.0.11"
+    "y-indexeddb": "^9.0.11",
+    "yjs": "^13.6.8"
   },
   "peerDependencies": {
     "yjs": "^13"

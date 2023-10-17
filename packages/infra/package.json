@@ -64,6 +64,7 @@
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
+    "@affine/templates": "workspace:*",
     "@blocksuite/editor": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/lit": "0.0.0-20230926212737-6d4b1569-nightly",
     "@testing-library/react": "^14.0.0",
