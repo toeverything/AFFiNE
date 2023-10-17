@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { ConfigModule } from './config';
 import { MetricsModule } from './metrics';
 import { BusinessModules } from './modules';
+import { AuthModule } from './modules/auth';
 import { PrismaModule } from './prisma';
 import { SessionModule } from './session';
 import { StorageModule } from './storage';
@@ -17,6 +18,7 @@ import { RateLimiterModule } from './throttler';
     MetricsModule,
     SessionModule,
     RateLimiterModule,
+    AuthModule,
     ...BusinessModules,
   ],
   controllers: [AppController],

@@ -1,46 +1,53 @@
-import { displayFlex, styled } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
+import { NotFoundPage } from '@affine/component/not-found-page';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { useSession } from 'next-auth/react';
 import type { ReactElement } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
-import { useNavigateHelper } from '../hooks/use-navigate-helper';
-
-export const StyledContainer = styled('div')(() => {
-  return {
-    ...displayFlex('center', 'center'),
-    flexDirection: 'column',
-    height: '100vh',
-
-    img: {
-      width: '360px',
-      height: '270px',
-    },
-    p: {
-      fontSize: '22px',
-      fontWeight: 600,
-      margin: '24px 0',
-    },
-  };
-});
-
-export const NotFoundPage = () => {
-  const t = useAFFiNEI18N();
-  const { jumpToIndex } = useNavigateHelper();
-  const handleBackButtonClick = useCallback(() => jumpToIndex(), [jumpToIndex]);
-
-  return (
-    <StyledContainer data-testid="notFound">
-      <img alt="404" src="/imgs/invite-error.svg" width={360} height={270} />
-
-      <p>{t['com.affine.notFoundPage.title']()}</p>
-      <Button onClick={handleBackButtonClick}>
-        {t['com.affine.notFoundPage.backButton']()}
-      </Button>
-    </StyledContainer>
-  );
-};
+import { SignOutModal } from '../components/affine/sign-out-modal';
+import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { signOutCloud } from '../utils/cloud-utils';
 
 export const Component = (): ReactElement => {
-  return <NotFoundPage />;
+  const { data: session } = useSession();
+  const { jumpToIndex } = useNavigateHelper();
+  const [open, setOpen] = useState(false);
+
+  const handleBackButtonClick = useCallback(
+    () => jumpToIndex(RouteLogic.REPLACE),
+    [jumpToIndex]
+  );
+
+  const handleOpenSignOutModal = useCallback(() => {
+    setOpen(true);
+  }, [setOpen]);
+
+  const onConfirmSignOut = useCallback(async () => {
+    setOpen(false);
+    await signOutCloud({
+      callbackUrl: '/signIn',
+    });
+  }, [setOpen]);
+  return (
+    <>
+      <NotFoundPage
+        user={
+          session?.user
+            ? {
+                name: session.user.name || '',
+                email: session.user.email || '',
+                avatar: session.user.image || '',
+              }
+            : null
+        }
+        onBack={handleBackButtonClick}
+        onSignOut={handleOpenSignOutModal}
+      />
+      <SignOutModal
+        open={open}
+        onOpenChange={setOpen}
+        onConfirm={onConfirmSignOut}
+      />
+    </>
+  );
 };

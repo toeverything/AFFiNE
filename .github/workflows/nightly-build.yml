@@ -2,6 +2,15 @@ name: Build Canary Desktop App on Staging Branch
 
 on:
   workflow_dispatch:
+    inputs:
+      channel_override:
+        description: 'channel type (canary, beta, or stable)'
+        type: choice
+        default: beta
+        options:
+          - canary
+          - beta
+          - stable
   push:
     branches:
       # 0.6.x-staging
@@ -27,7 +36,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # BUILD_TYPE => app icon, app name, etc
   BUILD_TYPE: internal
+  # BUILD_TYPE_OVERRIDE => channel type (canary, beta, or stable) - get the channel type (the api configs)
+  BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.channel_override || 'beta' }}
 
 jobs:
   set-build-version:
@@ -36,7 +48,7 @@ jobs:
     outputs:
       version: 0.0.0-internal.${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: toeverything/set-build-version@latest
       - id: version
         run: echo ::set-output name=version::${{ env.BUILD_VERSION }}
@@ -47,7 +59,7 @@ jobs:
     needs:
       - set-build-version
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
@@ -103,7 +115,7 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       SKIP_GENERATE_ASSETS: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -174,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v3
         with:

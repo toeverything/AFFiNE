@@ -24,7 +24,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
-import { useBlockSuiteMetaHelper } from '../../../../hooks/affine/use-block-suite-meta-helper';
+import { useTrashModalHelper } from '../../../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import { ReferencePage } from '../components/reference-page';
 import * as styles from './styles.css';
@@ -44,8 +44,15 @@ export const PageOperations = ({
   inExcludeList: boolean;
   addToExcludeList: (id: string) => void;
 }) => {
-  const { removeToTrash } = useBlockSuiteMetaHelper(workspace);
   const t = useAFFiNEI18N();
+  const { setTrashModal } = useTrashModalHelper(workspace);
+  const onClickDelete = useCallback(() => {
+    setTrashModal({
+      open: true,
+      pageId: page.id,
+      pageTitle: page.title,
+    });
+  }, [page.id, page.title, setTrashModal]);
   const actions = useMemo<
     Array<
       | {
@@ -97,9 +104,7 @@ export const PageOperations = ({
           </MenuIcon>
         ),
         name: t['com.affine.trashOperation.delete'](),
-        click: () => {
-          removeToTrash(page.id);
-        },
+        click: onClickDelete,
         type: 'danger',
       },
     ],
@@ -107,10 +112,10 @@ export const PageOperations = ({
       inAllowList,
       t,
       inExcludeList,
+      onClickDelete,
       removeFromAllowList,
       page.id,
       addToExcludeList,
-      removeToTrash,
     ]
   );
   return (
@@ -151,7 +156,6 @@ export const Page = ({
   workspace: Workspace;
   allPageMeta: Record<string, PageMeta>;
 }) => {
-  const ref = React.useRef(null);
   const [collapsed, setCollapsed] = React.useState(true);
   const params = useParams();
   const { jumpToPage } = useNavigateHelper();
@@ -176,7 +180,6 @@ export const Page = ({
         active={active}
         collapsed={referencesToRender.length > 0 ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
-        ref={ref}
         postfix={
           <Menu
             items={
@@ -189,9 +192,6 @@ export const Page = ({
                 workspace={workspace}
               />
             }
-            portalOptions={{
-              container: ref.current,
-            }}
           >
             <IconButton
               data-testid="collection-page-options"

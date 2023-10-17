@@ -5,6 +5,7 @@ import { currentWorkspaceAtom } from '@toeverything/infra/atom';
 import { type DBSchema, openDB } from 'idb';
 import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
+import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
@@ -93,14 +94,15 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
     // initial value
     subscriber.next([]);
     if (useLocalStorage) {
-      getCollections(localCRUD).then(collections => {
-        subscriber.next(collections);
-      });
       const fn = () => {
-        getCollections(localCRUD).then(collections => {
-          subscriber.next(collections);
+        getCollections(localCRUD).then(async collections => {
+          const workspaceId = (await currentWorkspacePromise).id;
+          subscriber.next(
+            collections.filter(c => c.workspaceId === workspaceId)
+          );
         });
       };
+      fn();
       callbackSet.add(fn);
       return () => {
         callbackSet.delete(fn);
@@ -115,7 +117,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
           settingMap.set(
             userId,
             new YDoc({
-              guid: `${rootDoc.guid}:settings:${userId}`,
+              guid: nanoid(),
             })
           );
         }
@@ -164,7 +166,7 @@ const pageCollectionBaseAtom = atomWithObservable<Collection[]>(get => {
 
 export const currentCollectionsAtom: CollectionsAtom = atom(
   get => get(pageCollectionBaseAtom),
-  async (get, set, apply) => {
+  async (get, _, apply) => {
     const collections = await get(pageCollectionBaseAtom);
     let newCollections: Collection[];
     if (typeof apply === 'function') {

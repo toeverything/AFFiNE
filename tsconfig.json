@@ -5,16 +5,16 @@
 
     // Type Checking
     "strict": true,
-    // exactOptionalPropertyTypes: false,
+    "exactOptionalPropertyTypes": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // noPropertyAccessFromIndexSignature: false,
-    // noUncheckedIndexedAccess: false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
     "useUnknownInCatchVariables": true,
 
     // Modules
@@ -97,6 +97,9 @@
       "path": "./apps/server"
     },
     {
+      "path": "./apps/server/tests"
+    },
+    {
       "path": "./apps/storybook"
     },
     {
@@ -115,9 +118,6 @@
     // Plugins
     {
       "path": "./packages/sdk"
-    },
-    {
-      "path": "./plugins/bookmark"
     },
     {
       "path": "./plugins/copilot"
@@ -156,6 +156,9 @@
     {
       "path": "./packages/y-indexeddb"
     },
+    {
+      "path": "./packages/cmdk"
+    },
     // Tests
     {
       "path": "./tests/kit"
@@ -170,19 +173,22 @@
       "path": "./tests/affine-plugin"
     },
     {
-      "path": "./tests/affine-prototype"
+      "path": "./tests/affine-migration"
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
     },
     {
-      "path": "./tests/affine-cloud"
-    },
-    {
       "path": "./tests/affine-legacy/0.8.0-canary.7"
     },
     {
-      "path": "./tests/affine-legacy/0.8.3"
+      "path": "./tests/affine-cloud"
+    },
+    {
+      "path": "./tests/affine-desktop"
+    },
+    {
+      "path": "./tests/affine-legacy/0.8.4"
     }
   ],
   "files": [],

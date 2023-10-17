@@ -3,7 +3,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type { DocState } from './types';
 
-export interface DatasourceDocAdapter {
+export interface DocDataSource {
   /**
    * request diff update from other clients
    */
@@ -31,7 +31,7 @@ export interface DatasourceDocAdapter {
 
 export async function syncDocFromDataSource(
   rootDoc: YDoc,
-  datasource: DatasourceDocAdapter
+  datasource: DocDataSource
 ) {
   const downloadDocStateRecursively = async (doc: YDoc) => {
     const docState = await datasource.queryDocState(doc.guid);
@@ -49,7 +49,7 @@ export async function syncDocFromDataSource(
 
 export async function syncDataSourceFromDoc(
   rootDoc: YDoc,
-  datasource: DatasourceDocAdapter
+  datasource: DocDataSource
 ) {
   const uploadDocStateRecursively = async (doc: YDoc) => {
     await datasource.sendDocUpdate(doc.guid, encodeStateAsUpdate(doc));
@@ -72,8 +72,8 @@ export async function syncDataSourceFromDoc(
  */
 export async function syncDataSource(
   listDocGuids: () => string[],
-  remoteDataSource: DatasourceDocAdapter,
-  localDataSource: DatasourceDocAdapter
+  remoteDataSource: DocDataSource,
+  localDataSource: DocDataSource
 ) {
   const guids = listDocGuids();
   await Promise.all(

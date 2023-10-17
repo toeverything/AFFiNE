@@ -34,6 +34,10 @@ type DeleteAccount {
   success: Boolean!
 }
 
+type RemoveAvatar {
+  success: Boolean!
+}
+
 type AddToNewFeaturesWaitingList {
   email: String!
 
@@ -169,6 +173,15 @@ type Query {
 }
 
 type Mutation {
+  signUp(name: String!, email: String!, password: String!): UserType!
+  signIn(email: String!, password: String!): UserType!
+  changePassword(token: String!, newPassword: String!): UserType!
+  changeEmail(token: String!): UserType!
+  sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
+  sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
+  sendChangeEmail(email: String!, callbackUrl: String!): Boolean!
+  sendVerifyChangeEmail(token: String!, email: String!, callbackUrl: String!): Boolean!
+
   """Create a new workspace"""
   createWorkspace(init: Upload!): WorkspaceType!
 
@@ -186,17 +199,12 @@ type Mutation {
   deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
   """Upload user avatar"""
-  uploadAvatar(id: String!, avatar: Upload!): UserType!
+  uploadAvatar(avatar: Upload!): UserType!
+
+  """Remove user avatar"""
+  removeAvatar: RemoveAvatar!
   deleteAccount: DeleteAccount!
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
-  signUp(name: String!, email: String!, password: String!): UserType!
-  signIn(email: String!, password: String!): UserType!
-  changePassword(token: String!, newPassword: String!): UserType!
-  changeEmail(token: String!): UserType!
-  sendChangePasswordEmail(email: String!, callbackUrl: String!): Boolean!
-  sendSetPasswordEmail(email: String!, callbackUrl: String!): Boolean!
-  sendChangeEmail(email: String!, callbackUrl: String!): Boolean!
-  sendVerifyChangeEmail(token: String!, email: String!, callbackUrl: String!): Boolean!
 }
 
 """The `Upload` scalar type represents a file upload."""

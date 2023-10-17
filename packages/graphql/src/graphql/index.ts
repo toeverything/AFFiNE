@@ -336,6 +336,19 @@ mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLea
 }`,
 };
 
+export const removeAvatarMutation = {
+  id: 'removeAvatarMutation' as const,
+  operationName: 'removeAvatar',
+  definitionName: 'removeAvatar',
+  containsFile: false,
+  query: `
+mutation removeAvatar {
+  removeAvatar {
+    success
+  }
+}`,
+};
+
 export const revokeMemberPermissionMutation = {
   id: 'revokeMemberPermissionMutation' as const,
   operationName: 'revokeMemberPermission',
@@ -402,28 +415,6 @@ mutation sendVerifyChangeEmail($token: String!, $email: String!, $callbackUrl: S
 }`,
 };
 
-export const setRevokePageMutation = {
-  id: 'setRevokePageMutation' as const,
-  operationName: 'setRevokePage',
-  definitionName: 'revokePage',
-  containsFile: false,
-  query: `
-mutation setRevokePage($workspaceId: String!, $pageId: String!) {
-  revokePage(workspaceId: $workspaceId, pageId: $pageId)
-}`,
-};
-
-export const setSharePageMutation = {
-  id: 'setSharePageMutation' as const,
-  operationName: 'setSharePage',
-  definitionName: 'sharePage',
-  containsFile: false,
-  query: `
-mutation setSharePage($workspaceId: String!, $pageId: String!) {
-  sharePage(workspaceId: $workspaceId, pageId: $pageId)
-}`,
-};
-
 export const setWorkspacePublicByIdMutation = {
   id: 'setWorkspacePublicByIdMutation' as const,
   operationName: 'setWorkspacePublicById',
@@ -484,8 +475,8 @@ export const uploadAvatarMutation = {
   definitionName: 'uploadAvatar',
   containsFile: true,
   query: `
-mutation uploadAvatar($id: String!, $avatar: Upload!) {
-  uploadAvatar(id: $id, avatar: $avatar) {
+mutation uploadAvatar($avatar: Upload!) {
+  uploadAvatar(avatar: $avatar) {
     id
     name
     avatarUrl

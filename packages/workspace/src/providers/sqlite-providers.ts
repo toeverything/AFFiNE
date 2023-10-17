@@ -2,13 +2,10 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import {
-  createLazyProvider,
-  type DatasourceDocAdapter,
-} from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { createLazyProvider, type DocDataSource } from 'y-provider';
 import type { Doc } from 'yjs';
 
 import { localProviderLogger as logger } from './logger';
@@ -17,7 +14,7 @@ const Y = BlockSuiteWorkspace.Y;
 
 const sqliteOrigin = 'sqlite-provider-origin';
 
-const createDatasource = (workspaceId: string): DatasourceDocAdapter => {
+const createDatasource = (workspaceId: string): DocDataSource => {
   if (!window.apis?.db) {
     throw new Error('sqlite datasource is not available');
   }

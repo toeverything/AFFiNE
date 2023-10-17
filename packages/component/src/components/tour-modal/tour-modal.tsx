@@ -1,9 +1,11 @@
+/// <reference types="../../type.d.ts" />
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Modal, type ModalProps } from '@toeverything/components/modal';
 import clsx from 'clsx';
 import { useState } from 'react';
 
+import editingVideo from './editingVideo.mp4';
 import {
   arrowStyle,
   buttonDisableStyle,
@@ -24,6 +26,7 @@ import {
   videoSlideStyle,
   videoStyle,
 } from './index.css';
+import switchVideo from './switchVideo.mp4';
 
 export const TourModal = (props: ModalProps) => {
   const t = useAFFiNEI18N();
@@ -92,8 +95,7 @@ export const TourModal = (props: ModalProps) => {
                   })}
                   data-testid="onboarding-modal-editing-video"
                 >
-                  <source src="/editingVideo.mp4" type="video/mp4" />
-                  <source src="/editingVideo.webm" type="video/webm" />
+                  <source src={editingVideo} type="video/mp4" />
                 </video>
               )}
               <video
@@ -106,8 +108,7 @@ export const TourModal = (props: ModalProps) => {
                 })}
                 data-testid="onboarding-modal-switch-video"
               >
-                <source src="/switchVideo.mp4" type="video/mp4" />
-                <source src="/switchVideo.webm" type="video/webm" />
+                <source src={switchVideo} type="video/mp4" />
               </video>
             </div>
           </div>

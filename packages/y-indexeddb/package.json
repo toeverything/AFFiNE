@@ -1,11 +1,11 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.9.0-canary.12",
+  "version": "0.10.0-canary.1",
   "description": "IndexedDB database adapter for Yjs",
   "repository": "toeverything/AFFiNE",
   "author": "toeverything",
-  "license": "MPL-2.0",
+  "license": "MIT",
   "keywords": [
     "indexeddb",
     "yjs",
@@ -22,27 +22,29 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "dist/index.umd.cjs",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js",
-        "require": "./dist/index.umd.cjs"
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.umd.cjs"
       }
     }
   },
   "dependencies": {
-    "idb": "^7.1.1"
+    "idb": "^7.1.1",
+    "nanoid": "^5.0.1",
+    "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@affine/y-provider": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@blocksuite/store": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "vite": "^4.4.9",
-    "vite-plugin-dts": "3.5.3",
-    "y-indexeddb": "^9.0.11"
+    "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
+    "fake-indexeddb": "^5.0.0",
+    "vite": "^4.4.11",
+    "vite-plugin-dts": "3.6.0",
+    "vitest": "0.34.6",
+    "y-indexeddb": "^9.0.11",
+    "yjs": "^13.6.8"
   },
   "peerDependencies": {
     "yjs": "^13"

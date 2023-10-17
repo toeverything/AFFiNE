@@ -1,4 +1,21 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
+
+export const headerStyle = style({
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: 'var(--affine-font-sm)',
+  fontWeight: 600,
+  lineHeight: '22px',
+  padding: '0 4px',
+  gap: '4px',
+});
+
+export const menuStyle = style({
+  width: '410px',
+  height: 'auto',
+  padding: '12px',
+  transform: 'translateX(-10px)',
+});
 
 export const menuItemStyle = style({
   padding: '4px',
@@ -12,6 +29,7 @@ export const descriptionStyle = style({
   lineHeight: '20px',
   color: 'var(--affine-text-secondary-color)',
   textAlign: 'left',
+  padding: '0 6px',
 });
 
 export const buttonStyle = style({
@@ -50,10 +68,11 @@ export const titleContainerStyle = style({
   alignItems: 'center',
   gap: '4px',
   fontSize: 'var(--affine-font-sm)',
-  fontWeight: 600,
+  fontWeight: 500,
   lineHeight: '22px',
   padding: '0 4px',
 });
+
 export const subTitleStyle = style({
   fontSize: 'var(--affine-font-sm)',
   fontWeight: 500,
@@ -64,9 +83,8 @@ export const columnContainerStyle = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
-  padding: '0 4px',
   width: '100%',
-  gap: '12px',
+  gap: '8px',
 });
 
 export const rowContainerStyle = style({
@@ -108,26 +126,37 @@ export const localSharePage = style({
   alignItems: 'center',
   borderRadius: '8px',
   backgroundColor: 'var(--affine-background-secondary-color)',
-  minHeight: '108px',
+  minHeight: '84px',
   position: 'relative',
 });
 
 export const cloudSvgContainer = style({
-  width: '100%',
-  height: '100%',
-  minWidth: '185px',
-});
-
-export const cloudSvgStyle = style({
-  width: '193px',
-  height: '108px',
+  width: '146px',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
   position: 'absolute',
   bottom: '0',
-  right: '8px',
+  right: '0',
 });
 export const shareIconStyle = style({
   fontSize: '16px',
   color: 'var(--affine-icon-color)',
   display: 'flex',
   alignItems: 'center',
+});
+
+export const shareLinkStyle = style({
+  padding: '4px',
+  fontSize: 'var(--affine-font-xs)',
+  fontWeight: 500,
+  lineHeight: '20px',
+  transform: 'translateX(-4px)',
+  gap: '4px',
+});
+globalStyle(`${shareLinkStyle} > span`, {
+  color: 'var(--affine-link-color)',
+});
+globalStyle(`${shareLinkStyle} > div > svg`, {
+  color: 'var(--affine-link-color)',
 });

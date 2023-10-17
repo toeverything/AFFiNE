@@ -1,10 +1,10 @@
-import { syncDataSource } from '@affine/y-provider';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import {
   createIndexedDBDatasource,
   DEFAULT_DB_NAME,
   downloadBinary,
 } from '@toeverything/y-indexeddb';
+import { syncDataSource } from 'y-provider';
 import type { Doc } from 'yjs';
 import { applyUpdate } from 'yjs';
 

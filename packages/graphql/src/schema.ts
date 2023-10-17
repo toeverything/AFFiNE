@@ -308,6 +308,13 @@ export type LeaveWorkspaceMutation = {
   leaveWorkspace: boolean;
 };
 
+export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
+
+export type RemoveAvatarMutation = {
+  __typename?: 'Mutation';
+  removeAvatar: { __typename?: 'RemoveAvatar'; success: boolean };
+};
+
 export type RevokeMemberPermissionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -369,26 +376,6 @@ export type SendVerifyChangeEmailMutation = {
   sendVerifyChangeEmail: boolean;
 };
 
-export type SetRevokePageMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  pageId: Scalars['String']['input'];
-}>;
-
-export type SetRevokePageMutation = {
-  __typename?: 'Mutation';
-  revokePage: boolean;
-};
-
-export type SetSharePageMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  pageId: Scalars['String']['input'];
-}>;
-
-export type SetSharePageMutation = {
-  __typename?: 'Mutation';
-  sharePage: boolean;
-};
-
 export type SetWorkspacePublicByIdMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   public: Scalars['Boolean']['input'];
@@ -434,7 +421,6 @@ export type SignUpMutation = {
 };
 
 export type UploadAvatarMutationVariables = Exact<{
-  id: Scalars['String']['input'];
   avatar: Scalars['Upload']['input'];
 }>;
 
@@ -597,6 +583,11 @@ export type Mutations =
       response: LeaveWorkspaceMutation;
     }
   | {
+      name: 'removeAvatarMutation';
+      variables: RemoveAvatarMutationVariables;
+      response: RemoveAvatarMutation;
+    }
+  | {
       name: 'revokeMemberPermissionMutation';
       variables: RevokeMemberPermissionMutationVariables;
       response: RevokeMemberPermissionMutation;
@@ -625,16 +616,6 @@ export type Mutations =
       name: 'sendVerifyChangeEmailMutation';
       variables: SendVerifyChangeEmailMutationVariables;
       response: SendVerifyChangeEmailMutation;
-    }
-  | {
-      name: 'setRevokePageMutation';
-      variables: SetRevokePageMutationVariables;
-      response: SetRevokePageMutation;
-    }
-  | {
-      name: 'setSharePageMutation';
-      variables: SetSharePageMutationVariables;
-      response: SetSharePageMutation;
     }
   | {
       name: 'setWorkspacePublicByIdMutation';

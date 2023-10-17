@@ -7,9 +7,16 @@ export const ReleaseTypeSchema = z.enum([
   'internal',
 ]);
 
-export const envBuildType = (process.env.BUILD_TYPE || 'canary')
+export const envBuildType = (
+  process.env.BUILD_TYPE_OVERRIDE ||
+  process.env.BUILD_TYPE ||
+  'canary'
+)
   .trim()
   .toLowerCase();
+
+export const overrideSession = process.env.BUILD_TYPE === 'internal';
+
 export const buildType = ReleaseTypeSchema.parse(envBuildType);
 
 export const mode = process.env.NODE_ENV;

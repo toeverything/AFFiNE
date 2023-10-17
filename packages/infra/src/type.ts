@@ -1,8 +1,11 @@
 import type { ExpectedLayout } from '@affine/sdk/entry';
+import type Buffer from 'buffer';
 import type { WritableAtom } from 'jotai';
 import { z } from 'zod';
 
 import type { TypedEventEmitter } from './core/event-emitter.js';
+
+type Buffer = Buffer.Buffer;
 
 export const packageJsonInputSchema = z.object({
   name: z.string(),
@@ -12,9 +15,7 @@ export const packageJsonInputSchema = z.object({
     release: z.union([z.boolean(), z.enum(['development'])]),
     entry: z.object({
       core: z.string(),
-      server: z.string().optional(),
     }),
-    serverCommand: z.array(z.string()).optional(),
   }),
 });
 
@@ -28,7 +29,6 @@ export const packageJsonOutputSchema = z.object({
       core: z.string(),
     }),
     assets: z.array(z.string()),
-    serverCommand: z.array(z.string()).optional(),
   }),
 });
 

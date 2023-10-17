@@ -1,4 +1,3 @@
-import { FlexWrapper } from '@affine/component';
 import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
@@ -9,8 +8,9 @@ import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import type { MouseEvent } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import { FlexWrapper } from '../../../ui/layout';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
@@ -110,7 +110,6 @@ export const CollectionList = ({
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
 }) => {
-  const ref = useRef(null);
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
@@ -140,12 +139,9 @@ export const CollectionList = ({
     [closeUpdateCollectionModal, setting]
   );
   return (
-    <FlexWrapper alignItems="center" ref={ref}>
+    <FlexWrapper alignItems="center">
       {setting.savedCollections.length > 0 && (
         <Menu
-          portalOptions={{
-            container: ref.current,
-          }}
           items={
             <div style={{ minWidth: 150 }}>
               <MenuItem
@@ -203,9 +199,6 @@ export const CollectionList = ({
             onChange={onChange}
           />
         }
-        portalOptions={{
-          container: ref.current,
-        }}
       >
         <Button
           className={styles.filterMenuTrigger}

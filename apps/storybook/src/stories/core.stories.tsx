@@ -1,7 +1,7 @@
 import { routes } from '@affine/core/router';
 import { assertExists } from '@blocksuite/global/utils';
 import type { StoryFn } from '@storybook/react';
-import { userEvent, waitFor, within } from '@storybook/testing-library';
+import { screen, userEvent, waitFor, within } from '@storybook/testing-library';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   reactRouterOutlets,
@@ -53,6 +53,10 @@ SettingPage.play = async ({ canvasElement, step }) => {
       document.body.querySelector('[data-testid="language-menu-button"]')
     );
   });
+
+  // Menu button may have "pointer-events: none" style, await 100ms to avoid this weird situation.
+  await new Promise(resolve => window.setTimeout(resolve, 100));
+
   await step('click language menu button', async () => {
     await userEvent.click(
       document.body.querySelector(
@@ -85,21 +89,21 @@ export const WorkspaceList: StoryFn = () => {
   return <FakeApp />;
 };
 WorkspaceList.play = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
   // click current-workspace
-  await waitFor(
+  const currentWorkspace = await waitFor(
     () => {
-      assertExists(
-        canvasElement.querySelector('[data-testid="current-workspace"]')
-      );
+      assertExists(canvas.getByTestId('current-workspace'));
+      return canvas.getByTestId('current-workspace');
     },
     {
       timeout: 5000,
     }
   );
-  const currentWorkspace = canvasElement.querySelector(
-    '[data-testid="current-workspace"]'
-  ) as Element;
-  await userEvent.click(currentWorkspace);
+
+  // todo: figure out why userEvent cannot click this element?
+  // await userEvent.click(currentWorkspace);
+  currentWorkspace.click();
 };
 WorkspaceList.decorators = [withRouter];
 WorkspaceList.parameters = {
@@ -125,6 +129,14 @@ SearchPage.play = async ({ canvasElement }) => {
     }
   );
   await userEvent.click(canvas.getByTestId('slider-bar-quick-search-button'));
+  await waitFor(
+    () => {
+      assertExists(screen.getByTestId('cmdk-quick-search'));
+    },
+    {
+      timeout: 3000,
+    }
+  );
 };
 SearchPage.decorators = [withRouter];
 SearchPage.parameters = {
@@ -157,10 +169,10 @@ ImportPage.play = async ({ canvasElement }) => {
   await userEvent.click(canvas.getByTestId('header-dropDownButton'));
   await waitFor(() => {
     assertExists(
-      canvasElement.querySelector('[data-testid="editor-option-menu-import"]')
+      document.body.querySelector('[data-testid="editor-option-menu-import"]')
     );
   });
-  await userEvent.click(canvas.getByTestId('editor-option-menu-import'));
+  await userEvent.click(screen.getByTestId('editor-option-menu-import'));
 };
 ImportPage.decorators = [withRouter];
 ImportPage.parameters = {

@@ -24,6 +24,7 @@ import type { Map as YMap } from 'yjs';
 import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
 import { currentModeAtom } from '../../atoms/mode';
+import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { currentCollectionsAtom } from '../../utils/user-setting';
@@ -38,7 +39,7 @@ const DetailPageImpl = (): ReactElement => {
   const collectionManager = useCollectionManager(currentCollectionsAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
-
+  useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       try {

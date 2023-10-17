@@ -44,7 +44,7 @@ jobs:
     outputs:
       RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
@@ -67,6 +67,7 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
+          SKIP_PLUGIN_BUILD: 'true'
 
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
@@ -101,10 +102,15 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       SKIP_GENERATE_ASSETS: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          build-plugins: false
+          nmHoistingLimits: workspaces
       - name: Setup Maker
         timeout-minutes: 10
         uses: ./.github/actions/setup-maker
@@ -119,9 +125,6 @@ jobs:
           name: core
           path: apps/electron/resources/web-static
 
-      - name: Build Plugins
-        run: yarn run build:plugins
-
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
 
@@ -134,6 +137,10 @@ jobs:
 
       - name: make
         run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+        env:
+          SKIP_PLUGIN_BUILD: 1
+          SKIP_WEB_BUILD: 1
+          HOIST_NODE_MODULES: 1
 
       - name: Save artifacts (mac)
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -172,10 +179,15 @@ jobs:
     env:
       SKIP_GENERATE_ASSETS: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          build-plugins: false
+          nmHoistingLimits: workspaces
       - name: Setup Maker
         timeout-minutes: 10
         uses: ./.github/actions/setup-maker
@@ -198,6 +210,10 @@ jobs:
 
       - name: package
         run: yarn workspace @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+        env:
+          SKIP_PLUGIN_BUILD: 1
+          SKIP_WEB_BUILD: 1
+          HOIST_NODE_MODULES: 1
 
       - name: get all files to be signed
         id: get_files_to_be_signed
@@ -240,7 +256,7 @@ jobs:
     outputs:
       FILES_TO_BE_SIGNED: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -318,7 +334,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: core
+          path: web-static
+      - name: Zip web-static
+        run: zip -r web-static.zip web-static
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v3
         with:

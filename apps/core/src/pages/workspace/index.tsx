@@ -1,6 +1,6 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,
@@ -31,7 +31,7 @@ export const loader: LoaderFunction = async args => {
     rootStore.set(currentPageIdAtom, null);
   }
   if (currentMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(currentMetadata.id);
+    const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentMetadata.id);
     const workspace = await rootStore.get(workspaceAtom);
     return (() => {
       const blockVersions = workspace.meta.blockVersions;

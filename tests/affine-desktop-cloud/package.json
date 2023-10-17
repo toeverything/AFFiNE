@@ -1,0 +1,15 @@
+{
+  "name": "@affine-test/affine-desktop-cloud",
+  "private": true,
+  "scripts": {
+    "e2e": "DEBUG=pw:browser yarn playwright test"
+  },
+  "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine-test/kit": "workspace:*",
+    "@playwright/test": "^1.39.0",
+    "@types/fs-extra": "^11.0.2",
+    "fs-extra": "^11.1.1"
+  },
+  "version": "0.10.0-canary.1"
+}

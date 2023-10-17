@@ -81,7 +81,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             sendVerificationRequest(config, logger, mailer, session, params),
         }),
       ],
-      // @ts-expect-error Third part library type mismatch
       adapter: prismaAdapter,
       debug: !config.node.prod,
       session: {
@@ -158,6 +157,9 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           clientSecret: config.auth.oauthProviders.google.clientSecret,
           checks: 'nonce',
           allowDangerousEmailAccountLinking: true,
+          authorization: {
+            params: { scope: 'openid email profile', prompt: 'select_account' },
+          },
         })
       );
     }

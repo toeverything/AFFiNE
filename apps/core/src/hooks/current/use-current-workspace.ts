@@ -7,7 +7,7 @@ import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import type { AllWorkspace } from '../../shared';
-import { useWorkspace } from '../use-workspace';
+import { useWorkspace, useWorkspaceEffect } from '../use-workspace';
 
 declare global {
   /**
@@ -27,6 +27,8 @@ export function useCurrentWorkspace(): [
   const [id, setId] = useAtom(currentWorkspaceIdAtom);
   assertExists(id);
   const currentWorkspace = useWorkspace(id);
+  // when you call current workspace, effect is always called
+  useWorkspaceEffect(currentWorkspace.id);
   useEffect(() => {
     globalThis.currentWorkspace = currentWorkspace;
     globalThis.dispatchEvent(

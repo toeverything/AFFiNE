@@ -9,6 +9,8 @@ import {
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -16,10 +18,13 @@ const createAndPinCollection = async (
   page: Page,
   options?: {
     collectionName?: string;
+    skipInitialPage?: boolean;
   }
 ) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
+  if (!options?.skipInitialPage) {
+    await openHomePage(page);
+    await waitForEditorLoad(page);
+  }
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
@@ -28,9 +33,15 @@ const createAndPinCollection = async (
     name: 'test page',
   });
   await expect(cell).toBeVisible();
-  await page.getByTestId('create-first-filter').click();
-  await page.getByTestId(`filler-tag-Created`).click();
-  await page.getByTestId('save-as-collection').click();
+  await page.getByTestId('create-first-filter').click({
+    delay: 200,
+  });
+  await page.getByTestId(`filler-tag-Created`).click({
+    delay: 200,
+  });
+  await page.getByTestId('save-as-collection').click({
+    delay: 200,
+  });
   const title = page.getByTestId('input-collection-title');
   await title.isVisible();
   await title.fill(options?.collectionName ?? 'test collection');
@@ -56,6 +67,7 @@ test('Show collections items in sidebar', async ({ page }) => {
     .getByTestId('collection-page-option')
     .getByText('Delete');
   await deletePage.click();
+  await page.getByTestId('confirm-delete-page').click();
   expect(await collections.getByTestId('collection-page').count()).toBe(0);
   await first.hover();
   await first.getByTestId('collection-options').click();
@@ -65,6 +77,20 @@ test('Show collections items in sidebar', async ({ page }) => {
   await deleteCollection.click();
   await page.waitForTimeout(50);
   expect(await items.count()).toBe(0);
+  await createAndPinCollection(page, {
+    skipInitialPage: true,
+  });
+  expect(await items.count()).toBe(1);
+  await createLocalWorkspace(
+    {
+      name: 'Test 1',
+    },
+    page
+  );
+  await waitForEditorLoad(page);
+  expect(await items.count()).toBe(0);
+  await clickSideBarCurrentWorkspaceBanner(page);
+  await page.getByTestId('workspace-card').nth(0).click();
 });
 
 test('pin and unpin collection', async ({ page }) => {

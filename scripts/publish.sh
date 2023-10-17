@@ -2,6 +2,7 @@
 
 packages=(
   "y-indexeddb"
+  "y-provider"
   "infra"
   "sdk"
 )

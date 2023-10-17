@@ -1,14 +1,17 @@
 {
   "name": "@affine-test/kit",
   "private": true,
-  "version": "0.9.0-canary.12",
+  "type": "module",
+  "version": "0.10.0-canary.1",
   "exports": {
+    "./electron": "./electron.ts",
     "./playwright": "./playwright.ts",
-    "./utils/*": "./utils/*.ts"
+    "./utils/*": "./utils/*.ts",
+    "./e2e-enhance/*": "./e2e-enhance/*.ts"
   },
   "devDependencies": {
     "@node-rs/argon2": "^1.5.2",
-    "@playwright/test": "^1.37.1",
+    "@playwright/test": "^1.39.0",
     "express": "^4.18.2",
     "http-proxy-middleware": "^3.0.0-beta.1"
   },

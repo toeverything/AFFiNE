@@ -47,6 +47,12 @@ const createPattern = packageName => [
     message: 'Do not use this API because it has a bug',
     importNames: ['mergeUpdates'],
   },
+  {
+    group: ['@affine/env/constant'],
+    message:
+      'Do not import from @affine/env/constant. Use `environment.isDesktop` instead',
+    importNames: ['isDesktop'],
+  },
 ];
 
 const allPackages = [
@@ -126,6 +132,7 @@ const config = {
     '@typescript-eslint/no-non-null-assertion': 'error',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
@@ -196,6 +203,7 @@ const config = {
         ignore: ['^\\[[a-zA-Z0-9-_]+\\]\\.tsx$'],
       },
     ],
+    'unicorn/no-unnecessary-await': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',
@@ -246,6 +254,7 @@ const config = {
           },
         ],
         '@typescript-eslint/no-misused-promises': ['error'],
+        'i/no-extraneous-dependencies': ['error'],
       },
     })),
     {
@@ -272,6 +281,7 @@ const config = {
         ],
         '@typescript-eslint/no-floating-promises': 0,
         '@typescript-eslint/no-misused-promises': 0,
+        '@typescript-eslint/no-restricted-imports': 0,
       },
     },
   ],

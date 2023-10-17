@@ -2,25 +2,19 @@ import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
 } from '@affine/component/setting-components';
-import { UserAvatar } from '@affine/component/user-avatar';
-import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
+import { Avatar } from '@toeverything/components/avatar';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
-import {
-  type ReactElement,
-  Suspense,
-  useCallback,
-  useMemo,
-  useRef,
-} from 'react';
+import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
@@ -55,12 +49,7 @@ export const UserInfo = ({
       className={accountButton}
       onClick={onAccountSettingClick}
     >
-      <UserAvatar
-        size={28}
-        name={user.name}
-        url={user.image}
-        className="avatar"
-      />
+      <Avatar size={28} name={user.name} url={user.image} className="avatar" />
 
       <div className="content">
         <div className="name" title={user.name}>
@@ -220,9 +209,10 @@ const WorkspaceListItem = ({
   isCurrent: boolean;
   isActive: boolean;
 }) => {
-  const workspace = useStaticBlockSuiteWorkspace(meta.id);
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(meta.id);
+  const workspace = useAtomValue(workspaceAtom);
+  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
-  const ref = useRef(null);
 
   return (
     <div
@@ -230,18 +220,19 @@ const WorkspaceListItem = ({
       title={workspaceName}
       onClick={onClick}
       data-testid="workspace-list-item"
-      ref={ref}
     >
-      <WorkspaceAvatar size={14} workspace={workspace} className="icon" />
+      <Avatar
+        size={14}
+        url={workspaceAvatar}
+        name={workspaceName}
+        colorfulFallback
+        style={{
+          marginRight: '10px',
+        }}
+      />
       <span className="setting-name">{workspaceName}</span>
       {isCurrent ? (
-        <Tooltip
-          content="Current"
-          side="top"
-          portalOptions={{
-            container: ref.current,
-          }}
-        >
+        <Tooltip content="Current" side="top">
           <div
             className={currentWorkspaceLabel}
             data-testid="current-workspace-label"

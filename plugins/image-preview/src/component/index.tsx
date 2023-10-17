@@ -190,7 +190,7 @@ const ImagePreviewModalImpl = (
       if (typeof blockId === 'string') {
         const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
-        const store = await block.page.blobs;
+        const store = block.page.blobs;
         const url = store?.get(block.sourceId);
         const img = await url;
         if (!img) {

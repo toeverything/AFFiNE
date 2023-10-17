@@ -1,24 +1,18 @@
-import { LOCALES } from '@affine/i18n';
-import { useI18N } from '@affine/i18n';
 import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
-import type { ReactElement } from 'react';
-import { useCallback, useMemo, useRef } from 'react';
+import { memo, type ReactElement } from 'react';
+
+import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
 
 // Fixme: keyboard focus should be supported by Menu component
-const LanguageMenuContent = ({
-  currentLanguage,
-  onSelect,
-}: {
-  currentLanguage?: string;
-  onSelect: (value: string) => void;
-}) => {
+const LanguageMenuContent = memo(function LanguageMenuContent() {
+  const { currentLanguage, languagesList, onSelect } = useLanguageHelper();
   return (
     <>
-      {LOCALES.map(option => {
+      {languagesList.map(option => {
         return (
           <MenuItem
             key={option.name}
-            selected={currentLanguage === option.originalName}
+            selected={currentLanguage?.originalName === option.originalName}
             title={option.name}
             onSelect={() => onSelect(option.tag)}
           >
@@ -28,34 +22,13 @@ const LanguageMenuContent = ({
       })}
     </>
   );
-};
+});
 
 export const LanguageMenu = () => {
-  const i18n = useI18N();
-  const ref = useRef(null);
-  const currentLanguage = useMemo(
-    () => LOCALES.find(item => item.tag === i18n.language),
-    [i18n.language]
-  );
-  const onSelect = useCallback(
-    (event: string) => {
-      return i18n.changeLanguage(event);
-    },
-    [i18n]
-  );
+  const { currentLanguage } = useLanguageHelper();
   return (
     <Menu
-      items={
-        (
-          <LanguageMenuContent
-            currentLanguage={currentLanguage?.originalName}
-            onSelect={onSelect}
-          />
-        ) as ReactElement
-      }
-      portalOptions={{
-        container: ref.current,
-      }}
+      items={(<LanguageMenuContent />) as ReactElement}
       contentOptions={{
         style: {
           background: 'var(--affine-white)',
@@ -64,7 +37,6 @@ export const LanguageMenu = () => {
       }}
     >
       <MenuTrigger
-        ref={ref}
         data-testid="language-menu-button"
         style={{ textTransform: 'capitalize', fontWeight: 600 }}
         block={true}

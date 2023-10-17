@@ -20,7 +20,7 @@ const baseAtom = atom<Collection[]>([]);
 
 const mockAtom: CollectionsAtom = atom(
   get => get(baseAtom),
-  async (get, set, update) => {
+  async (_, set, update) => {
     set(baseAtom, update);
   }
 );

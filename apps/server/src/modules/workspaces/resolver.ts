@@ -26,15 +26,14 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, Workspace } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
-import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
+import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
@@ -139,7 +138,6 @@ export class WorkspaceResolver {
 
   constructor(
     private readonly auth: AuthService,
-    private readonly config: Config,
     private readonly mailer: MailService,
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
@@ -177,6 +175,9 @@ export class WorkspaceResolver {
     return this.prisma.userWorkspacePermission.count({
       where: {
         workspaceId: workspace.id,
+        userId: {
+          not: null,
+        },
       },
     });
   }
@@ -217,12 +218,20 @@ export class WorkspaceResolver {
     const data = await this.prisma.userWorkspacePermission.findMany({
       where: {
         workspaceId: workspace.id,
+        userId: {
+          not: null,
+        },
       },
       skip,
       take: take || 8,
-      orderBy: {
-        type: 'desc',
-      },
+      orderBy: [
+        {
+          createdAt: 'asc',
+        },
+        {
+          type: 'desc',
+        },
+      ],
       include: {
         user: true,
       },
@@ -274,7 +283,12 @@ export class WorkspaceResolver {
     });
   }
 
-  @Throttle(10, 30)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 30,
+    },
+  })
   @Public()
   @Query(() => WorkspaceType, {
     description: 'Get public workspace by id',
@@ -507,7 +521,12 @@ export class WorkspaceResolver {
     }
   }
 
-  @Throttle(10, 30)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 30,
+    },
+  })
   @Public()
   @Query(() => InvitationType, {
     description: 'Update workspace',
@@ -644,9 +663,24 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Admin);
+    const docId = new DocID(pageId, workspaceId);
 
-    return this.permissions.grantPage(workspaceId, pageId);
+    if (docId.isWorkspace) {
+      throw new ForbiddenException('Expect page not to be workspace');
+    }
+
+    const userWorkspace = await this.prisma.userWorkspacePermission.findFirst({
+      where: {
+        userId: user.id,
+        workspaceId: docId.workspace,
+      },
+    });
+
+    if (!userWorkspace?.accepted) {
+      throw new ForbiddenException('Permission denied');
+    }
+
+    return this.permissions.grantPage(docId.workspace, docId.guid);
   }
 
   @Mutation(() => Boolean)
@@ -655,9 +689,15 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('pageId') pageId: string
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Admin);
+    const docId = new DocID(pageId, workspaceId);
 
-    return this.permissions.revokePage(workspaceId, pageId);
+    if (docId.isWorkspace) {
+      throw new ForbiddenException('Expect page not to be workspace');
+    }
+
+    await this.permissions.check(docId.workspace, user.id, Permission.Admin);
+
+    return this.permissions.revokePage(docId.workspace, docId.guid);
   }
 
   @Query(() => [String], {

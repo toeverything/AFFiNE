@@ -1,7 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
-  HttpException,
+  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -15,7 +15,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
-// @ts-expect-error graphql-upload is not typed
+import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import { PrismaService } from '../../prisma/service';
@@ -63,6 +63,11 @@ export class DeleteAccount {
   @Field()
   success!: boolean;
 }
+@ObjectType()
+export class RemoveAvatar {
+  @Field()
+  success!: boolean;
+}
 
 @ObjectType()
 export class AddToNewFeaturesWaitingList {
@@ -86,7 +91,12 @@ export class UserResolver {
     private readonly users: UsersService
   ) {}
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Query(() => UserType, {
     name: 'currentUser',
     description: 'Get current user',
@@ -107,7 +117,12 @@ export class UserResolver {
     };
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Query(() => UserType, {
     name: 'user',
     description: 'Get user by email',
@@ -116,9 +131,14 @@ export class UserResolver {
   @Public()
   async user(@Args('email') email: string) {
     if (!(await this.users.canEarlyAccess(email))) {
-      return new HttpException(
+      return new GraphQLError(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
-        401
+        {
+          extensions: {
+            status: HttpStatus[HttpStatus.PAYMENT_REQUIRED],
+            code: HttpStatus.PAYMENT_REQUIRED,
+          },
+        }
       );
     }
     // TODO: need to limit a user can only get another user witch is in the same workspace
@@ -130,35 +150,70 @@ export class UserResolver {
     return user;
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => UserType, {
     name: 'uploadAvatar',
     description: 'Upload user avatar',
   })
   async uploadAvatar(
-    @Args('id') id: string,
+    @CurrentUser() user: UserType,
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
-    const user = await this.users.findUserById(id);
     if (!user) {
-      throw new BadRequestException(`User ${id} not found`);
+      throw new BadRequestException(`User not found`);
     }
-    const url = await this.storage.uploadFile(`${id}-avatar`, avatar);
+    const url = await this.storage.uploadFile(`${user.id}-avatar`, avatar);
     return this.prisma.user.update({
-      where: { id },
+      where: { id: user.id },
       data: { avatarUrl: url },
     });
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
+  @Mutation(() => RemoveAvatar, {
+    name: 'removeAvatar',
+    description: 'Remove user avatar',
+  })
+  async removeAvatar(@CurrentUser() user: UserType) {
+    if (!user) {
+      throw new BadRequestException(`User not found`);
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { avatarUrl: null },
+    });
+    return { success: true };
+  }
+
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
     await this.users.deleteUser(user.id);
     return { success: true };
   }
 
-  @Throttle(10, 60)
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
   @Mutation(() => AddToNewFeaturesWaitingList)
   async addToNewFeaturesWaitingList(
     @CurrentUser() user: UserType,

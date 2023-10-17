@@ -7,33 +7,36 @@
   "private": true,
   "dependencies": {
     "foxact": "^0.2.20",
-    "lodash.debounce": "^4.0.8"
+    "jotai": "^2.4.3",
+    "lodash.debounce": "^4.0.8",
+    "react": "18.2.0",
+    "swr": "2.2.0"
   },
   "devDependencies": {
     "@affine/env": "workspace:*",
-    "@affine/y-provider": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@blocksuite/blocks": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@blocksuite/editor": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@blocksuite/global": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@blocksuite/lit": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@blocksuite/store": "0.0.0-20230911110410-f65fc3ab-nightly",
-    "@types/lodash.debounce": "^4.0.7"
+    "@blocksuite/block-std": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/editor": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/global": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/lit": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@testing-library/react": "^14.0.0",
+    "@types/lodash.debounce": "^4.0.7",
+    "fake-indexeddb": "^5.0.0",
+    "vitest": "0.34.6",
+    "y-provider": "workspace:*"
   },
   "peerDependencies": {
-    "@affine/y-provider": "workspace:*",
     "@blocksuite/block-std": "*",
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
     "@blocksuite/global": "*",
     "@blocksuite/lit": "*",
-    "@blocksuite/store": "*"
+    "@blocksuite/store": "*",
+    "y-provider": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@affine/env": {
-      "optional": true
-    },
-    "@affine/y-provider": {
       "optional": true
     },
     "@blocksuite/block-std": {
@@ -53,7 +56,10 @@
     },
     "@blocksuite/store": {
       "optional": true
+    },
+    "y-provider": {
+      "optional": true
     }
   },
-  "version": "0.9.0-canary.12"
+  "version": "0.10.0-canary.1"
 }

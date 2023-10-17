@@ -47,37 +47,34 @@ export class PermissionService {
 
   async isAccessible(ws: string, id: string, user?: string): Promise<boolean> {
     if (user) {
-      return await this.tryCheck(ws, user);
+      const hasPermission = await this.tryCheck(ws, user);
+      if (hasPermission) return true;
+    }
+
+    // check if this is a public workspace
+    const count = await this.prisma.workspace.count({
+      where: { id: ws, public: true },
+    });
+    if (count > 0) {
+      return true;
+    }
+
+    // check whether this is a public subpage
+    const workspace = await this.prisma.userWorkspacePermission.findMany({
+      where: {
+        workspaceId: ws,
+        userId: null,
+      },
+    });
+    const subpages = workspace
+      .map(ws => ws.subPageId)
+      .filter((v): v is string => !!v);
+    if (subpages.length > 0 && ws === id) {
+      // rootDoc is always accessible when there is a public subpage
+      return true;
     } else {
-      // check if this is a public workspace
-      const count = await this.prisma.workspace.count({
-        where: { id: ws, public: true },
-      });
-      if (count > 0) {
-        return true;
-      }
-
-      // check whether this is a public subpage
-      const workspace = await this.prisma.userWorkspacePermission.findMany({
-        where: {
-          workspaceId: ws,
-          userId: null,
-        },
-      });
-      const subpages = workspace
-        .map(ws => ws.subPageId)
-        .filter((v): v is string => !!v);
-      if (subpages.length > 0 && ws === id) {
-        // rootDoc is always accessible when there is a public subpage
-        return true;
-      } else {
-        // check if this is a public subpage
-
-        // why use `endsWith`?
-        // because there might have `${wsId}:space:${subpageId}`,
-        // but subpages only have `${subpageId}`
-        return subpages.some(subpage => id.endsWith(subpage));
-      }
+      // check if this is a public subpage
+      return subpages.some(subpage => id === subpage);
     }
   }
 

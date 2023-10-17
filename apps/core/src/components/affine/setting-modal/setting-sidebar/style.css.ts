@@ -61,7 +61,6 @@ export const sidebarSelectItem = style({
     },
   },
 });
-
 globalStyle(`${settingSlideBar} .icon`, {
   width: '16px',
   height: '16px',
@@ -101,6 +100,7 @@ export const accountButton = style({
   cursor: 'pointer',
   userSelect: 'none',
   display: 'flex',
+  columnGap: '10px',
   justifyContent: 'space-between',
   alignItems: 'center',
   ':hover': {
@@ -109,23 +109,21 @@ export const accountButton = style({
 });
 
 globalStyle(`${accountButton} .avatar`, {
-  border: '1px solid',
-  borderColor: 'var(--affine-white)',
-  marginRight: '10px',
+  width: '28px',
+  height: '28px',
+  borderRadius: '50%',
+  fontSize: '20px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
   flexShrink: 0,
 });
 
 globalStyle(`${accountButton} .avatar.not-sign`, {
-  width: '28px',
-  height: '28px',
-  borderRadius: '50%',
-  fontSize: '22px',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  borderColor: 'var(--affine-icon-secondary)',
   color: 'var(--affine-icon-secondary)',
   background: 'var(--affine-white)',
+  paddingBottom: '2px',
+  border: '1px solid var(--affine-icon-secondary)',
 });
 globalStyle(`${accountButton} .content`, {
   flexGrow: '1',

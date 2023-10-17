@@ -1,10 +1,10 @@
 import path from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
+import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
-import { removeWithRetry } from '../../../../tests/utils';
 import { copyToTemp, migrateToSubdocAndReplaceDatabase } from '../migration';
 
 const tmpDir = path.join(__dirname, 'tmp');
@@ -59,7 +59,7 @@ describe('migrateToSubdocAndReplaceDatabase', () => {
     expect(pageMeta.title).toBe('Welcome to AFFiNEd');
 
     // get the subdoc through id
-    const subDoc = rootDoc.getMap('spaces').get(`space:${pageMeta.id}`) as YDoc;
+    const subDoc = rootDoc.getMap('spaces').get(pageMeta.id) as YDoc;
     expect(subDoc).toEqual(rootDoc.subdocs.values().next().value);
 
     await db.close();

@@ -4,6 +4,7 @@ import Redis from 'ioredis';
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
+import { DocID } from '../../utils/doc';
 import { DocManager } from './manager';
 
 function makeKey(prefix: string) {
@@ -23,6 +24,9 @@ const pushUpdateLua = `
     redis.call('rpush', KEYS[2], ARGV[2])
 `;
 
+/**
+ * @deprecated unstable
+ */
 @Injectable()
 export class RedisDocManager extends DocManager {
   private readonly redis: Redis;
@@ -44,52 +48,24 @@ export class RedisDocManager extends DocManager {
 
   override onModuleInit(): void {
     if (this.automation) {
-      this.logger.log('Use Redis');
       this.setup();
     }
   }
 
-  override async push(workspaceId: string, guid: string, update: Buffer) {
-    try {
-      const key = `${workspaceId}:${guid}`;
-
-      // @ts-expect-error custom command
-      this.redis.pushDocUpdate(pending, updates`${key}`, key, update);
-
-      this.logger.verbose(
-        `pushed update for workspace: ${workspaceId}, guid: ${guid}`
-      );
-    } catch (e) {
-      return await super.push(workspaceId, guid, update);
-    }
-  }
-
-  override async getUpdates(
-    workspaceId: string,
-    guid: string
-  ): Promise<Buffer[]> {
-    try {
-      return this.redis.lrangeBuffer(updates`${workspaceId}:${guid}`, 0, -1);
-    } catch (e) {
-      return super.getUpdates(workspaceId, guid);
-    }
-  }
-
-  override async apply(): Promise<void> {
+  override async autoSquash(): Promise<void> {
     // incase some update fallback to db
-    await super.apply();
+    await super.autoSquash();
 
+    // consume rest updates in redis queue
     const pendingDoc = await this.redis.spop(pending).catch(() => null); // safe
 
     if (!pendingDoc) {
       return;
     }
 
+    const docId = new DocID(pendingDoc);
     const updateKey = updates`${pendingDoc}`;
     const lockKey = lock`${pendingDoc}`;
-    const splitAt = pendingDoc.indexOf(':');
-    const workspaceId = pendingDoc.substring(0, splitAt);
-    const id = pendingDoc.substring(splitAt + 1);
 
     // acquire the lock
     const lockResult = await this.redis
@@ -121,19 +97,18 @@ export class RedisDocManager extends DocManager {
       }
 
       this.logger.verbose(
-        `applying ${updates.length} updates for workspace: ${workspaceId}, guid: ${id}`
+        `applying ${updates.length} updates for workspace: ${docId}`
       );
 
-      const snapshot = await this.getSnapshot(workspaceId, id);
+      const snapshot = await this.getSnapshot(docId.workspace, docId.guid);
 
       // merge
-      const blob = snapshot
-        ? this.mergeUpdates(id, snapshot, ...updates)
-        : this.mergeUpdates(id, ...updates);
+      const doc = snapshot
+        ? this.applyUpdates(docId.full, snapshot.blob, ...updates)
+        : this.applyUpdates(docId.full, ...updates);
 
       // update snapshot
-
-      await this.upsert(workspaceId, id, blob);
+      await this.upsert(docId.workspace, docId.guid, doc, snapshot?.seq);
 
       // delete merged updates
       await this.redis
@@ -144,9 +119,9 @@ export class RedisDocManager extends DocManager {
         });
     } catch (e) {
       this.logger.error(
-        `Failed to merge updates with snapshot for ${pendingDoc}: ${e}`
+        `Failed to merge updates with snapshot for ${docId}: ${e}`
       );
-      await this.redis.sadd(pending, `${workspaceId}:${id}`).catch(() => null); // safe
+      await this.redis.sadd(pending, docId.toString()).catch(() => null); // safe
     } finally {
       await this.redis.del(lockKey);
     }
