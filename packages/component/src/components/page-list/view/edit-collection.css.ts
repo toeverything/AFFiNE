@@ -28,7 +28,11 @@ export const pagesTab = style({
   width: '100%',
 });
 
-export const pagesList = style({ display: 'flex', flex: 1, overflow: 'hidden' });
+export const pagesList = style({
+  display: 'flex',
+  flex: 1,
+  overflow: 'hidden',
+});
 
 export const bottomLeft = style({
   display: 'flex',
