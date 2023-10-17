@@ -1,4 +1,3 @@
-import type { DataSourceAdapter } from '@affine/y-provider';
 import type { EditorContainer } from '@blocksuite/editor';
 import type { Page } from '@blocksuite/store';
 import type {
@@ -7,6 +6,7 @@ import type {
   Workspace as BlockSuiteWorkspace,
 } from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
+import type { DataSourceAdapter } from 'y-provider';
 
 import type { Collection } from './filter.js';
 

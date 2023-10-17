@@ -33,10 +33,10 @@
   },
   "dependencies": {
     "idb": "^7.1.1",
-    "nanoid": "^5.0.1"
+    "nanoid": "^5.0.1",
+    "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@affine/y-provider": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
     "fake-indexeddb": "^5.0.0",

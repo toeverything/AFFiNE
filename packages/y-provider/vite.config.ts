@@ -14,17 +14,9 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       fileName: 'index',
       name: 'ToEverythingIndexedDBProvider',
-      formats: ['es', 'cjs', 'umd'],
     },
     rollupOptions: {
-      output: {
-        globals: {
-          idb: 'idb',
-          yjs: 'yjs',
-          'y-provider': 'yProvider',
-        },
-      },
-      external: ['idb', 'yjs', 'y-provider'],
+      external: ['idb', 'yjs'],
     },
   },
   plugins: [
