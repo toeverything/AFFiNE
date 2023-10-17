@@ -1,5 +1,13 @@
 import { style } from '@vanilla-extract/css';
 
+export const resultPages = style({
+  width: '100%',
+});
+
+export const pageList = style({
+  width: '100%',
+});
+
 export const previewCountTipsHighlight = style({
   color: 'var(--affine-primary-color)',
 });

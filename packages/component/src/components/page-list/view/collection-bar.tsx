@@ -2,7 +2,6 @@ import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
@@ -13,7 +12,7 @@ import {
   useCollectionManager,
 } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
-import { EditCollectionModal } from './edit-collection';
+import { type AllPageListConfig, EditCollectionModal } from './edit-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {
@@ -22,8 +21,7 @@ interface CollectionBarProps {
   collectionsAtom: CollectionsCRUDAtom;
   columnsCount: number;
   backToAll: () => void;
-  allPages: PageMeta[];
-  workspace: Workspace;
+  allPageListConfig: AllPageListConfig;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
@@ -42,7 +40,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
       <td>
         <div className={styles.view}>
           <EditCollectionModal
-            workspace={props.workspace}
+            allPageListConfig={props.allPageListConfig}
             propertiesMeta={propertiesMeta}
             getPageInfo={getPageInfo}
             init={collection}
@@ -50,7 +48,6 @@ export const CollectionBar = (props: CollectionBarProps) => {
             onOpenChange={setOpen}
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             onConfirm={setting.updateCollection}
-            allPages={props.allPages}
           />
           <ViewLayersIcon
             style={{

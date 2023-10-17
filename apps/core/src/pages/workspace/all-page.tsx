@@ -1,5 +1,6 @@
 import { toast } from '@affine/component';
 import {
+  type AllPageListConfig,
   CollectionBar,
   currentCollectionAtom,
   OperationCell,
@@ -12,7 +13,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -118,7 +119,14 @@ export const AllPage = () => {
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
   );
-
+  const config = useMemo<AllPageListConfig>(
+    () => ({
+      allPages: pageMetas,
+      isEdgeless: isPreferredEdgeless,
+      workspace: currentWorkspace.blockSuiteWorkspace,
+    }),
+    [currentWorkspace.blockSuiteWorkspace, isPreferredEdgeless, pageMetas]
+  );
   return (
     <div className={styles.root}>
       <Header
@@ -128,12 +136,11 @@ export const AllPage = () => {
         }}
       />
       <CollectionBar
-        workspace={currentWorkspace.blockSuiteWorkspace}
+        allPageListConfig={config}
         backToAll={backToAll}
         getPageInfo={getPageInfo}
         collectionsAtom={collectionsCRUDAtom}
         columnsCount={5}
-        allPages={pageMetas}
         // the following props is not reactive right?
         propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
       />

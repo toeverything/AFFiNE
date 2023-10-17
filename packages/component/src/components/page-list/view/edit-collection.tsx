@@ -31,8 +31,7 @@ export interface EditCollectionModalProps {
   propertiesMeta: PropertiesMeta;
   onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => Promise<void>;
-  allPages: PageMeta[];
-  workspace: Workspace;
+  allPageListConfig: AllPageListConfig;
 }
 
 export const EditCollectionModal = ({
@@ -43,8 +42,7 @@ export const EditCollectionModal = ({
   getPageInfo,
   propertiesMeta,
   title,
-  allPages,
-  workspace,
+  allPageListConfig,
 }: EditCollectionModalProps) => {
   const t = useAFFiNEI18N();
   const onConfirmOnCollection = useCallback(
@@ -69,6 +67,7 @@ export const EditCollectionModal = ({
       onOpenChange={onOpenChange}
       withoutCloseButton
       width={944}
+      height="80%"
       contentOptions={{ style: { padding: 0 } }}
     >
       {init ? (
@@ -80,8 +79,7 @@ export const EditCollectionModal = ({
           getPageInfo={getPageInfo}
           onCancel={onCancel}
           onConfirm={onConfirmOnCollection}
-          allPages={allPages}
-          workspace={workspace}
+          allPageListConfig={allPageListConfig}
         />
       ) : null}
     </Modal>
@@ -96,8 +94,7 @@ export interface EditCollectionProps {
   propertiesMeta: PropertiesMeta;
   onCancel: () => void;
   onConfirm: (collection: Collection) => void;
-  allPages: PageMeta[];
-  workspace: Workspace;
+  allPageListConfig: AllPageListConfig;
 }
 
 export const EditCollection = ({
@@ -106,8 +103,7 @@ export const EditCollection = ({
   onCancel,
   onConfirmText,
   propertiesMeta,
-  allPages,
-  workspace,
+  allPageListConfig,
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
@@ -159,9 +155,9 @@ export const EditCollection = ({
   return (
     <div
       style={{
-        maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
+        height: '100%',
       }}
     >
       {value.mode === 'page' ? (
@@ -170,46 +166,47 @@ export const EditCollection = ({
           collection={value}
           updateCollection={onChange}
           buttons={buttons}
-          allPages={allPages}
-          workspace={workspace}
+          allPageListConfig={allPageListConfig}
         ></PagesMode>
       ) : (
         <RulesMode
-          workspace={workspace}
+          allPageListConfig={allPageListConfig}
           propertiesMeta={propertiesMeta}
           collection={value}
           reset={reset}
           updateCollection={onChange}
           buttons={buttons}
-          allPages={allPages}
         ></RulesMode>
       )}
     </div>
   );
 };
 
+export type AllPageListConfig = {
+  allPages: PageMeta[];
+  workspace: Workspace;
+  isEdgeless: (id: string) => boolean;
+};
 const RulesMode = ({
   collection,
   updateCollection,
   reset,
   propertiesMeta,
   buttons,
-  allPages,
-  workspace,
+  allPageListConfig,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
   reset: () => void;
   propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
-  allPages: PageMeta[];
-  workspace: Workspace;
+  allPageListConfig: AllPageListConfig;
 }) => {
   const t = useAFFiNEI18N();
   const [showPreview, setShowPreview] = useState(true);
   const allowListPages: PageMeta[] = [];
   const rulesPages: PageMeta[] = [];
-  allPages.forEach(v => {
+  allPageListConfig.allPages.forEach(v => {
     const result = filterPageByRules(
       collection.filterList,
       collection.allowList,
@@ -237,7 +234,7 @@ const RulesMode = ({
           <span className={styles.rulesTitleHighlight}>highlight</span>.
         </Trans>
       </div>
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', overflow: 'hidden' }}>
         <div
           style={{
             flex: 1,
@@ -326,7 +323,7 @@ const RulesMode = ({
                 </div>
               </div>
               {collection.allowList.map(id => {
-                const page = allPages.find(v => v.id === id);
+                const page = allPageListConfig.allPages.find(v => v.id === id);
                 return (
                   <div
                     style={{
@@ -402,12 +399,15 @@ const RulesMode = ({
             display: showPreview ? 'flex' : 'none',
             flexDirection: 'column',
             borderLeft: '1px solid var(--affine-border-color)',
+            overflowX: 'hidden',
+            overflowY: 'auto',
           }}
         >
           <PageList
+            className={styles.resultPages}
             pages={rulesPages}
-            blockSuiteWorkspace={workspace}
-            isPreferredEdgeless={() => true}
+            blockSuiteWorkspace={allPageListConfig.workspace}
+            isPreferredEdgeless={allPageListConfig.isEdgeless}
           ></PageList>
           {allowListPages.length > 0 ? (
             <div>
@@ -423,9 +423,10 @@ const RulesMode = ({
                 include
               </div>
               <PageList
+                className={styles.resultPages}
                 pages={allowListPages}
-                blockSuiteWorkspace={workspace}
-                isPreferredEdgeless={() => true}
+                blockSuiteWorkspace={allPageListConfig.workspace}
+                isPreferredEdgeless={allPageListConfig.isEdgeless}
               ></PageList>
             </div>
           ) : null}
@@ -476,15 +477,13 @@ const PagesMode = ({
   updateCollection,
   propertiesMeta,
   buttons,
-  allPages,
-  workspace,
+  allPageListConfig,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
   propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
-  allPages: PageMeta[];
-  workspace: Workspace;
+  allPageListConfig: AllPageListConfig;
 }) => {
   const t = useAFFiNEI18N();
   const [filters, changeFilters] = useState<Filter[]>([]);
@@ -512,7 +511,7 @@ const PagesMode = ({
       pages: [],
     });
   }, [collection, updateCollection]);
-  const filteredPages = allPages.filter(v => {
+  const filteredPages = allPageListConfig.allPages.filter(v => {
     return filterPageByRules(filters, [], v);
   });
   return (
@@ -521,12 +520,13 @@ const PagesMode = ({
         className={styles.rulesTitle}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div
           style={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
+            width: '100%',
           }}
         >
           <div
@@ -604,10 +604,11 @@ const PagesMode = ({
               />
             </div>
           ) : null}
-          <div>
+          <div style={{ overflowY: 'auto' }}>
             <PageList
+              className={styles.pageList}
               pages={filteredPages}
-              blockSuiteWorkspace={workspace}
+              blockSuiteWorkspace={allPageListConfig.workspace}
               selectable
               onSelectedPageIdsChange={ids => {
                 updateCollection({
@@ -616,7 +617,7 @@ const PagesMode = ({
                 });
               }}
               selectedPageIds={collection.pages}
-              isPreferredEdgeless={() => true}
+              isPreferredEdgeless={allPageListConfig.isEdgeless}
             ></PageList>
           </div>
         </div>

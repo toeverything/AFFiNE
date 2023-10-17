@@ -1,4 +1,5 @@
 import {
+  type AllPageListConfig,
   CollectionList,
   FilterList,
   SaveAsCollectionButton,
@@ -13,7 +14,7 @@ import type {
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useSetAtom } from 'jotai/react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { collectionsCRUDAtom } from '../atoms/collections';
 import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
@@ -22,6 +23,7 @@ import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useWorkspace } from '../hooks/use-workspace';
 import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
+import { usePageHelper } from './blocksuite/block-suite-page-list/utils';
 import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
 import { PluginHeader } from './pure/plugin-header';
@@ -74,11 +76,10 @@ export function WorkspaceHeader({
   const setAppHeader = useSetAtom(appHeaderAtom);
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
-  const allPages = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const workspace = currentWorkspace.blockSuiteWorkspace;
+  const allPages = useBlockSuitePageMeta(workspace);
   const setting = useCollectionManager(collectionsCRUDAtom);
-  const getPageInfoById = useGetPageInfoById(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const getPageInfoById = useGetPageInfoById(workspace);
   const navigateHelper = useNavigateHelper();
   const backToAll = useCallback(() => {
     navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
@@ -88,6 +89,15 @@ export function WorkspaceHeader({
       navigateHelper.jumpToCollection(currentWorkspace.id, id);
     },
     [navigateHelper, currentWorkspace.id]
+  );
+  const { isPreferredEdgeless } = usePageHelper(workspace);
+  const config = useMemo<AllPageListConfig>(
+    () => ({
+      allPages,
+      isEdgeless: isPreferredEdgeless,
+      workspace: workspace,
+    }),
+    [allPages, isPreferredEdgeless, workspace]
   );
   // route in all page
   if (
@@ -101,15 +111,12 @@ export function WorkspaceHeader({
           ref={setAppHeader}
           left={
             <CollectionList
-              workspace={currentWorkspace.blockSuiteWorkspace}
+              allPageListConfig={config}
               jumpToCollection={jumpToCollection}
               backToAll={backToAll}
               setting={setting}
               getPageInfo={getPageInfoById}
-              propertiesMeta={
-                currentWorkspace.blockSuiteWorkspace.meta.properties
-              }
-              allPages={allPages}
+              propertiesMeta={workspace.meta.properties}
             />
           }
           center={<WorkspaceModeFilterTab />}
@@ -136,9 +143,7 @@ export function WorkspaceHeader({
 
   // route in edit page
   if ('pageId' in currentEntry) {
-    const currentPage = currentWorkspace.blockSuiteWorkspace.getPage(
-      currentEntry.pageId
-    );
+    const currentPage = workspace.getPage(currentEntry.pageId);
     const sharePageModal = currentPage ? (
       <SharePageModal workspace={currentWorkspace} page={currentPage} />
     ) : null;

@@ -3,7 +3,6 @@ import type { PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
 import { Button } from '@toeverything/components/button';
 import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { Tooltip } from '@toeverything/components/tooltip';
@@ -15,7 +14,7 @@ import { FlexWrapper } from '../../../ui/layout';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
-import { EditCollectionModal } from './edit-collection';
+import { type AllPageListConfig, EditCollectionModal } from './edit-collection';
 import { useActions } from './use-action';
 
 const CollectionOption = ({
@@ -108,16 +107,14 @@ export const CollectionList = ({
   propertiesMeta,
   backToAll,
   jumpToCollection,
-  allPages,
-  workspace,
+  allPageListConfig,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   backToAll: () => void;
   jumpToCollection: (id: string) => void;
-  allPages: PageMeta[];
-  workspace: Workspace;
+  allPageListConfig: AllPageListConfig;
 }) => {
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
@@ -222,14 +219,13 @@ export const CollectionList = ({
         </Menu>
       ) : null}
       <EditCollectionModal
-        workspace={workspace}
+        allPageListConfig={allPageListConfig}
         propertiesMeta={propertiesMeta}
         getPageInfo={getPageInfo}
         init={collection}
         open={!!collection}
         onOpenChange={closeUpdateCollectionModal}
         onConfirm={onConfirm}
-        allPages={allPages}
       />
     </FlexWrapper>
   );

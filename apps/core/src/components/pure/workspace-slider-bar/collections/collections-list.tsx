@@ -1,5 +1,6 @@
 import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import {
+  type AllPageListConfig,
   EditCollectionModal,
   filterPage,
   useCollectionManager,
@@ -33,6 +34,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
+import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -171,18 +173,25 @@ const CollectionRenderer = ({
   const pagesToRender = pages.filter(
     page => filterPage(collection, page) && !page.trash
   );
-
+  const { isPreferredEdgeless } = usePageHelper(workspace);
+  const config = useMemo<AllPageListConfig>(
+    () => ({
+      allPages,
+      isEdgeless: isPreferredEdgeless,
+      workspace,
+    }),
+    [allPages, isPreferredEdgeless, workspace]
+  );
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModal
-        workspace={workspace}
+        allPageListConfig={config}
         propertiesMeta={workspace.meta.properties}
         getPageInfo={getPageInfo}
         init={collection}
         onConfirm={setting.updateCollection}
         open={show}
         onOpenChange={showUpdateCollection}
-        allPages={allPages}
       />
       <CollectionItem
         data-testid="collection-item"
