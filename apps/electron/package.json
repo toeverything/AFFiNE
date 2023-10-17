@@ -17,7 +17,7 @@
     "build:dev": "NODE_ENV=development ts-node scripts/build-layers.ts",
     "generate-assets": "ts-node scripts/generate-assets.ts",
     "package": "electron-forge package",
-    "make": "electron-forge make",
+    "make": "NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge make",
     "make-squirrel": "yarn ts-node scripts/make-squirrel.ts"
   },
   "config": {

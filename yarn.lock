@@ -3995,7 +3995,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/core@npm:6.4.2, @electron-forge/core@npm:^6.4.2":
+"@electron-forge/core@npm:6.4.2":
   version: 6.4.2
   resolution: "@electron-forge/core@npm:6.4.2"
   dependencies:
@@ -4034,6 +4034,48 @@ __metadata:
     username: ^5.1.0
     yarn-or-npm: ^3.0.1
   checksum: 491ca4f5c12c782ca858ecf90124e932794afbc622c538891127a2722cf8f1beacb00d830d065e56accf24f408f47d4ac83e985d4c728fecb78d64587ef88989
+  languageName: node
+  linkType: hard
+
+"@electron-forge/core@patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 6.4.2
+  resolution: "@electron-forge/core@patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch::version=6.4.2&hash=792119&locator=%40affine%2Fmonorepo%40workspace%3A."
+  dependencies:
+    "@electron-forge/core-utils": 6.4.2
+    "@electron-forge/maker-base": 6.4.2
+    "@electron-forge/plugin-base": 6.4.2
+    "@electron-forge/publisher-base": 6.4.2
+    "@electron-forge/shared-types": 6.4.2
+    "@electron-forge/template-base": 6.4.2
+    "@electron-forge/template-vite": 6.4.2
+    "@electron-forge/template-vite-typescript": 6.4.2
+    "@electron-forge/template-webpack": 6.4.2
+    "@electron-forge/template-webpack-typescript": 6.4.2
+    "@electron/get": ^2.0.0
+    "@electron/rebuild": ^3.2.10
+    "@malept/cross-spawn-promise": ^2.0.0
+    chalk: ^4.0.0
+    debug: ^4.3.1
+    electron-packager: ^17.1.2
+    fast-glob: ^3.2.7
+    filenamify: ^4.1.0
+    find-up: ^5.0.0
+    fs-extra: ^10.0.0
+    got: ^11.8.5
+    interpret: ^3.1.1
+    listr2: ^5.0.3
+    lodash: ^4.17.20
+    log-symbols: ^4.0.0
+    node-fetch: ^2.6.7
+    progress: ^2.0.3
+    rechoir: ^0.8.0
+    resolve-package: ^1.0.1
+    semver: ^7.2.1
+    source-map-support: ^0.5.13
+    sudo-prompt: ^9.1.1
+    username: ^5.1.0
+    yarn-or-npm: ^3.0.1
+  checksum: 72a0a74b0f84b848e4aa1423757a8cc5234ce45963dd6aaed92878f29234894e8d97d8270bd21d6ceedba44447409c85394f7fb75d8e239a2abe704f9f0eb214
   languageName: node
   linkType: hard
 
