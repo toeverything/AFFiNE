@@ -12,6 +12,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { noop } from 'foxact/noop';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { toast } from '../../../utils';
@@ -100,7 +101,7 @@ const FakePublishPanelAffine = (_props: FakePublishPanelAffineProps) => {
     <Tooltip content={t['com.affine.settings.workspace.publish-tooltip']()}>
       <div className={style.fakeWrapper}>
         <SettingRow name={t['Publish']()} desc={t['Unpublished hint']()}>
-          <Switch checked={false} />
+          <Switch checked={false} onChange={noop} />
         </SettingRow>
       </div>
     </Tooltip>

@@ -12,7 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
-import { trimGuid } from '../../../utils/doc';
+import { DocID } from '../../../utils/doc';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { UserType } from '../../users';
@@ -85,7 +85,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('client-update')
   async handleClientUpdate(
     @MessageBody()
-    message: {
+    {
+      workspaceId,
+      guid,
+      update,
+    }: {
       workspaceId: string;
       guid: string;
       update: string;
@@ -94,51 +98,54 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     this.metric.socketIOEventCounter(1, { event: 'client-update' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
-    if (!client.rooms.has(message.workspaceId)) {
+
+    if (!client.rooms.has(workspaceId)) {
       this.logger.verbose(
-        `Client ${client.id} tried to push update to workspace ${message.workspaceId} without joining it first`
+        `Client ${client.id} tried to push update to workspace ${workspaceId} without joining it first`
       );
       endTimer();
       return;
     }
 
-    const update = Buffer.from(message.update, 'base64');
-    client.to(message.workspaceId).emit('server-update', message);
+    const docId = new DocID(guid, workspaceId);
+    client
+      .to(docId.workspace)
+      .emit('server-update', { workspaceId, guid, update });
 
-    const guid = trimGuid(message.workspaceId, message.guid);
-    await this.docManager.push(message.workspaceId, guid, update);
+    const buf = Buffer.from(update, 'base64');
 
+    await this.docManager.push(docId.workspace, docId.guid, buf);
     endTimer();
   }
 
   @Auth()
   @SubscribeMessage('doc-load')
   async loadDoc(
+    @ConnectedSocket() client: Socket,
     @CurrentUser() user: UserType,
     @MessageBody()
-    message: {
+    {
+      workspaceId,
+      guid,
+      stateVector,
+    }: {
       workspaceId: string;
       guid: string;
       stateVector?: string;
-      targetClientId?: number;
-    },
-    @ConnectedSocket() client: Socket
+    }
   ): Promise<{ missing: string; state?: string } | false> {
     this.metric.socketIOEventCounter(1, { event: 'doc-load' });
     const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
-    if (!client.rooms.has(message.workspaceId)) {
-      const canRead = await this.permissions.tryCheck(
-        message.workspaceId,
-        user.id
-      );
+    if (!client.rooms.has(workspaceId)) {
+      const canRead = await this.permissions.tryCheck(workspaceId, user.id);
       if (!canRead) {
         endTimer();
         return false;
       }
     }
 
-    const guid = trimGuid(message.workspaceId, message.guid);
-    const doc = await this.docManager.get(message.workspaceId, guid);
+    const docId = new DocID(guid, workspaceId);
+    const doc = await this.docManager.get(docId.workspace, docId.guid);
 
     if (!doc) {
       endTimer();
@@ -148,9 +155,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const missing = Buffer.from(
       encodeStateAsUpdate(
         doc,
-        message.stateVector
-          ? Buffer.from(message.stateVector, 'base64')
-          : undefined
+        stateVector ? Buffer.from(stateVector, 'base64') : undefined
       )
     ).toString('base64');
     const state = Buffer.from(encodeStateVector(doc)).toString('base64');

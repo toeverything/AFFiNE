@@ -27,7 +27,9 @@ import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
+import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
+import { useRegisterBlocksuiteEditorCommands } from '../../hooks/use-shortcut-commands';
 import type { AllWorkspace } from '../../shared';
 import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
@@ -105,6 +107,8 @@ export const RootAppSidebar = ({
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
     openWorkspaceListModalAtom
   );
+  const generalShortcutsInfo = useGeneralShortcuts();
+
   const onClickNewPage = useCallback(async () => {
     const page = createPage();
     await page.waitForLoaded();
@@ -161,7 +165,7 @@ export const RootAppSidebar = ({
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
-
+  useRegisterBlocksuiteEditorCommands(router.back, router.forward);
   return (
     <>
       <AppSidebar
@@ -173,6 +177,7 @@ export const RootAppSidebar = ({
             environment.isMacOs
           )
         }
+        generalShortcutsInfo={generalShortcutsInfo}
       >
         <MoveToTrash.ConfirmModal
           open={trashConfirmOpen}

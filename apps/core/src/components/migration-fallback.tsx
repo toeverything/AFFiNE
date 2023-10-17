@@ -3,14 +3,11 @@ import type {
   LocalIndexedDBBackgroundProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import {
-  syncDataSourceFromDoc,
-  syncDocFromDataSource,
-} from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import { Button } from '@toeverything/components/button';
 import { forceUpgradePages } from '@toeverything/infra/blocksuite';
 import { useCallback, useMemo, useState } from 'react';
+import { syncDataSourceFromDoc, syncDocFromDataSource } from 'y-provider';
 
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 

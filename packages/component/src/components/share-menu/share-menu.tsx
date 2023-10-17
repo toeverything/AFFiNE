@@ -58,6 +58,7 @@ const LocalShareMenu = (props: ShareMenuProps) => {
       items={<ShareMenuContent {...props} />}
       contentOptions={{
         className: styles.menuStyle,
+        ['data-testid' as string]: 'local-share-menu',
       }}
       rootOptions={{
         modal: false,
@@ -81,6 +82,7 @@ const CloudShareMenu = (props: ShareMenuProps) => {
       items={<ShareMenuContent {...props} />}
       contentOptions={{
         className: styles.menuStyle,
+        ['data-testid' as string]: 'cloud-share-menu',
       }}
       rootOptions={{
         modal: false,

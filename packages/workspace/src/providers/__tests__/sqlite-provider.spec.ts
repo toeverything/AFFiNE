@@ -2,7 +2,6 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import { getDoc } from '@affine/y-provider';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
 import { Schema, Workspace } from '@blocksuite/store';
@@ -14,6 +13,7 @@ import type {
 import { nanoid } from 'nanoid';
 import { setTimeout } from 'timers/promises';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { getDoc } from 'y-provider';
 
 import {
   createSQLiteDBDownloadProvider,

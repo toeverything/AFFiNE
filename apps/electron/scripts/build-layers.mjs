@@ -15,12 +15,21 @@ if (process.platform === 'win32') {
 
 async function buildLayers() {
   const common = config();
+
+  const define = {
+    'process.env.NODE_ENV': `"${NODE_ENV}"`,
+    'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'stable'}"`,
+  };
+
+  if (process.env.BUILD_TYPE_OVERRIDE) {
+    define[
+      'process.env.BUILD_TYPE_OVERRIDE'
+    ] = `"${process.env.BUILD_TYPE_OVERRIDE}"`;
+  }
+
   await esbuild.build({
     ...common.layers,
-    define: {
-      'process.env.NODE_ENV': `"${NODE_ENV}"`,
-      'process.env.BUILD_TYPE': `"${process.env.BUILD_TYPE || 'stable'}"`,
-    },
+    define: define,
   });
 }
 
