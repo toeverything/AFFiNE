@@ -17,10 +17,28 @@
     }
   },
   "license": "MIT",
+  "ava": {
+    "extensions": {
+      "mts": "module"
+    },
+    "nodeArguments": [
+      "--loader",
+      "ts-node/esm.mjs",
+      "--es-module-specifier-resolution",
+      "node"
+    ],
+    "files": [
+      "__tests__/*.spec.mts"
+    ],
+    "environmentVariables": {
+      "TS_NODE_PROJECT": "./tsconfig.json"
+    }
+  },
   "devDependencies": {
     "@napi-rs/cli": "^2.16.3",
     "@types/node": "^18.18.5",
     "@types/uuid": "^9.0.5",
+    "ava": "^5.3.1",
     "cross-env": "^7.0.3",
     "nx": "^16.10.0",
     "nx-cloud": "^16.5.2",
@@ -37,7 +55,7 @@
     "build": "napi build --platform --release --no-const-enum",
     "build:debug": "napi build --platform --no-const-enum",
     "universal": "napi universal",
-    "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 TS_NODE_PROJECT=./tsconfig.json node --test --loader ts-node/esm --experimental-specifier-resolution=node ./__tests__/**/*.mts",
+    "test": "ava",
     "version": "napi version"
   },
   "version": "0.10.0-canary.1"
