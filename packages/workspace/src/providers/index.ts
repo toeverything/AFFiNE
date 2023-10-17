@@ -152,11 +152,8 @@ export const createAffineProviders = (): DocProviderCreator[] => {
   return (
     [
       ...createLocalProviders(),
-      runtimeConfig.enableBroadcastChannelProvider &&
-        createBroadcastChannelProvider,
       runtimeConfig.enableCloud && createAffineSocketIOProvider,
       runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
-      createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));
 };
