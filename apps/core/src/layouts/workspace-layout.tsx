@@ -28,7 +28,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { usePassiveWorkspaceEffect } from '@toeverything/infra/__internal__/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -171,8 +170,6 @@ export const WorkspaceLayoutInner = ({
       );
     }
   }, [currentWorkspace.blockSuiteWorkspace.doc]);
-
-  usePassiveWorkspaceEffect(currentWorkspace.blockSuiteWorkspace);
 
   const handleCreatePage = useCallback(() => {
     const id = nanoid();

@@ -3,7 +3,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { atom, createStore } from 'jotai/vanilla';
 
-import { getActiveBlockSuiteWorkspaceAtom } from './__internal__/workspace';
+import { getBlockSuiteWorkspaceAtom } from './__internal__/workspace';
 
 // global store
 let rootStore = createStore();
@@ -26,7 +26,7 @@ export const currentPageIdAtom = atom<string | null>(null);
 export const currentWorkspaceAtom = atom<Promise<Workspace>>(async get => {
   const workspaceId = get(currentWorkspaceIdAtom);
   assertExists(workspaceId);
-  const currentWorkspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);
+  const [currentWorkspaceAtom] = getBlockSuiteWorkspaceAtom(workspaceId);
   return get(currentWorkspaceAtom);
 });
 
