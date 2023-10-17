@@ -3,6 +3,7 @@ import {
   type AllPageListConfig,
   CollectionBar,
   currentCollectionAtom,
+  FavoriteTag,
   OperationCell,
   PageList,
 } from '@affine/component/page-list';
@@ -67,14 +68,6 @@ export const AllPage = () => {
   }, [navigateHelper, currentWorkspace.id]);
 
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-
-  const onToggleFavorite = useCallback(
-    (pageId: string) => {
-      toggleFavorite(pageId);
-    },
-    [toggleFavorite]
-  );
-
   const t = useAFFiNEI18N();
 
   const pageOperationsRenderer = useCallback(
@@ -84,29 +77,41 @@ export const AllPage = () => {
           portal: document.body,
         });
       };
+      const onToggleFavorite = () => {
+        toggleFavorite(page.id);
+      };
       return (
-        <OperationCell
-          favorite={!!page.favorite}
-          isPublic={!!page.isPublic}
-          onDisablePublicSharing={onDisablePublicSharing}
-          link={`/workspace/${currentWorkspace.id}/${page.id}`}
-          onRemoveToTrash={() =>
-            setTrashModal({
-              open: true,
-              pageId: page.id,
-              pageTitle: page.title,
-            })
-          }
-          onToggleFavoritePage={() => {
-            const status = page.favorite;
-            toggleFavorite(page.id);
-            toast(
-              status
-                ? t['com.affine.toastMessage.removedFavorites']()
-                : t['com.affine.toastMessage.addedFavorites']()
-            );
-          }}
-        />
+        <>
+          <div
+            data-testid="page-list-item-favorite"
+            data-favorite={page.favorite ? true : undefined}
+            className={styles.favoriteCell}
+          >
+            <FavoriteTag onClick={onToggleFavorite} active={!!page.favorite} />
+          </div>
+          <OperationCell
+            favorite={!!page.favorite}
+            isPublic={!!page.isPublic}
+            onDisablePublicSharing={onDisablePublicSharing}
+            link={`/workspace/${currentWorkspace.id}/${page.id}`}
+            onRemoveToTrash={() =>
+              setTrashModal({
+                open: true,
+                pageId: page.id,
+                pageTitle: page.title,
+              })
+            }
+            onToggleFavoritePage={() => {
+              const status = page.favorite;
+              toggleFavorite(page.id);
+              toast(
+                status
+                  ? t['com.affine.toastMessage.removedFavorites']()
+                  : t['com.affine.toastMessage.addedFavorites']()
+              );
+            }}
+          />
+        </>
       );
     },
     [currentWorkspace.id, setTrashModal, t, toggleFavorite]
@@ -154,7 +159,6 @@ export const AllPage = () => {
           />
         }
         isPreferredEdgeless={isPreferredEdgeless}
-        onToggleFavorite={onToggleFavorite}
         blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         pageOperationsRenderer={pageOperationsRenderer}
       />

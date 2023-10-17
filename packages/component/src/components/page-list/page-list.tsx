@@ -4,7 +4,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { Checkbox, type CheckboxProps } from '@mui/material';
 import clsx from 'clsx';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useHydrateAtoms } from 'jotai/utils';
+import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 import {
   type MouseEventHandler,
   type ReactNode,
@@ -24,7 +24,7 @@ import {
   sorterAtom,
 } from './scoped-atoms';
 import type { PageListProps } from './types';
-import { FlexWrapper, type FlexWrapperProps } from './utils';
+import { ColWrapper, type ColWrapperProps } from './utils';
 
 /**
  * Given a list of pages, render a list of pages
@@ -68,7 +68,7 @@ const PageListInner = (props: PageListProps) => {
   );
 };
 
-type HeaderCellProps = FlexWrapperProps & {
+type HeaderCellProps = ColWrapperProps & {
   sortKey: keyof PageMeta;
   sortable?: boolean;
 };
@@ -86,7 +86,7 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
   const sorting = sorter.key === props.sortKey;
 
   return (
-    <FlexWrapper
+    <ColWrapper
       flex={props.flex}
       alignment={props.alignment}
       onClick={onClick}
@@ -101,15 +101,15 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
           {sorter.order === 'asc' ? <SortUpIcon /> : <SortDownIcon />}
         </div>
       ) : null}
-    </FlexWrapper>
+    </ColWrapper>
   );
 };
 
 type HeaderColDef = {
   key: string;
   content: ReactNode;
-  flex: number;
-  alignment?: FlexWrapperProps['alignment'];
+  flex: ColWrapperProps['flex'];
+  alignment?: ColWrapperProps['alignment'];
   sortable?: boolean;
 };
 
@@ -172,10 +172,16 @@ const PageListHeaderTitleCell = () => {
   );
 };
 
+const showOperationsAtom = selectAtom(
+  pageListPropsAtom,
+  props => !!props.pageOperationsRenderer
+);
+
 export const PageListHeader = () => {
   const t = useAFFiNEI18N();
+  const showOperations = useAtomValue(showOperationsAtom);
   const headerCols = useMemo(() => {
-    const cols: HeaderColDef[] = [
+    const cols: (HeaderColDef | boolean)[] = [
       {
         key: 'title',
         content: <PageListHeaderTitleCell />,
@@ -203,16 +209,15 @@ export const PageListHeader = () => {
         sortable: true,
         alignment: 'end',
       },
-      {
-        key: 'favorite',
-        sortable: true,
+      showOperations && {
+        key: 'actions',
         content: t['Actions'](),
         flex: 1,
         alignment: 'end',
       },
     ];
-    return cols;
-  }, [t]);
+    return cols.filter((def): def is HeaderColDef => !!def);
+  }, [t, showOperations]);
   return (
     <div className={styles.header}>
       {headerCols.map(col => {

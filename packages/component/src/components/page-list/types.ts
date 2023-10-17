@@ -11,7 +11,6 @@ export type PageListItemProps = {
   title: ReactNode; // using ReactNode to allow for rich content rendering
   preview?: ReactNode; // using ReactNode to allow for rich content rendering
   tags: Tag[];
-  favorite: boolean;
   createDate: Date;
   updatedDate?: Date;
   isPublicPage?: boolean;
@@ -24,7 +23,6 @@ export type PageListItemProps = {
   onSelectedChange?: (selected: boolean) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
-  onToggleFavorite?: () => void;
 };
 
 export interface PageListHeaderProps {}
@@ -47,7 +45,6 @@ export interface PageListProps {
   groupBy?: PagesGroupByType;
   fallback?: ReactNode; // fixme: shall we use loading rows number instead?
   isPreferredEdgeless: (pageId: string) => boolean;
-  onToggleFavorite?: (pageId: string) => void;
   renderPageAsLink?: boolean; // whether or not to render each page as a router Link
   selectable?: boolean; // show selection checkbox
   selectedPageIds?: string[]; // selected page ids

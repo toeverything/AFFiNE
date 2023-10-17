@@ -45,17 +45,11 @@ export const selectionStateAtom = atom(
 export const pageListHandlersAtom = selectAtom(
   pageListPropsAtom,
   props => {
-    const {
-      onSelectedPageIdsChange,
-      onToggleFavorite,
-      onOpenPage,
-      onDragStart,
-      onDragEnd,
-    } = props;
+    const { onSelectedPageIdsChange, onOpenPage, onDragStart, onDragEnd } =
+      props;
 
     return {
       onSelectedPageIdsChange,
-      onToggleFavorite,
       onOpenPage,
       onDragStart,
       onDragEnd,
