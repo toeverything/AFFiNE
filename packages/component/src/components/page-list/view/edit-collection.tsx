@@ -107,15 +107,6 @@ export const EditCollection = ({
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
   const [value, onChange] = useState<Collection>(init);
-  // const removeFromAllowList = useCallback(
-  //   (id: string) => {
-  //     onChange({
-  //       ...value,
-  //       allowList: value.allowList?.filter(v => v !== id),
-  //     });
-  //   },
-  //   [value]
-  // );
   const isNameEmpty = useMemo(() => value.name.trim().length === 0, [value]);
   const onSaveCollection = useCallback(() => {
     if (!isNameEmpty) {
@@ -136,9 +127,7 @@ export const EditCollection = ({
           {t['com.affine.editCollection.button.cancel']()}
         </Button>
         <Button
-          style={{
-            marginLeft: 20,
-          }}
+          className={styles.confirmButton}
           size="large"
           data-testid="save-collection"
           type="primary"
@@ -153,13 +142,7 @@ export const EditCollection = ({
   );
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
-    >
+    <div className={styles.collectionEditContainer}>
       {value.mode === 'page' ? (
         <PagesMode
           propertiesMeta={propertiesMeta}
@@ -234,23 +217,9 @@ const RulesMode = ({
           <span className={styles.rulesTitleHighlight}>highlight</span>.
         </Trans>
       </div>
-      <div style={{ display: 'flex', overflow: 'hidden' }}>
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: 8,
-              alignItems: 'center',
-              padding: '16px 16px 8px 16px',
-            }}
-          >
+      <div className={styles.rulesContainer}>
+        <div className={styles.rulesContainerLeft}>
+          <div className={styles.rulesContainerLeftTab}>
             <RadioButtonGroup
               width={158}
               style={{ height: 32 }}
@@ -281,38 +250,17 @@ const RulesMode = ({
               </RadioButton>
             </RadioButtonGroup>
           </div>
-          <div
-            style={{
-              padding: '12px 16px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
+          <div className={styles.rulesContainerLeftContent}>
             <FilterList
               propertiesMeta={propertiesMeta}
               value={collection.filterList}
-              onChange={filterList =>
-                updateCollection({ ...collection, filterList })
-              }
+              onChange={useCallback(
+                filterList => updateCollection({ ...collection, filterList }),
+                [collection, updateCollection]
+              )}
             />
-            <div
-              style={{
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontSize: 14,
-                  lineHeight: '22px',
-                }}
-              >
+            <div className={styles.rulesContainerLeftContentInclude}>
+              <div className={styles.includeTitle}>
                 <ToggleCollapseIcon
                   width={24}
                   height={24}
@@ -325,40 +273,11 @@ const RulesMode = ({
               {collection.allowList.map(id => {
                 const page = allPageListConfig.allPages.find(v => v.id === id);
                 return (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      width: 'max-content',
-                      backgroundColor: 'var(--affine-background-primary-color)',
-                      overflow: 'hidden',
-                      gap: 16,
-                      whiteSpace: 'nowrap',
-                      border: '1px solid var(--affine-border-color)',
-                      borderRadius: 8,
-                      padding: '4px 8px 4px',
-                    }}
-                    key={id}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        fontSize: 12,
-                        lineHeight: '20px',
-                      }}
-                    >
+                  <div className={styles.includeItem} key={id}>
+                    <div className={styles.includeItemContent}>
                       <div>Page</div>
-                      <div
-                        style={{
-                          padding: '0 8px',
-                          color: 'var(--affine-text-secondary-color)',
-                        }}
-                      >
-                        is
-                      </div>
-                      <div style={{ overflow: 'hidden', fontWeight: 600 }}>
+                      <div className={styles.includeItemContentIs}>is</div>
+                      <div className={styles.includeItemTitle}>
                         {page?.title || 'Untitled'}
                       </div>
                     </div>
@@ -374,17 +293,7 @@ const RulesMode = ({
                   </div>
                 );
               })}
-              <div
-                className={styles.button}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 8px',
-                  fontSize: 14,
-                  lineHeight: '22px',
-                }}
-              >
+              <div className={clsx(styles.button, styles.includeAddButton)}>
                 <PlusIcon></PlusIcon>
                 <div style={{ color: 'var(--affine-text-secondary-color)' }}>
                   Add include page
@@ -394,13 +303,9 @@ const RulesMode = ({
           </div>
         </div>
         <div
+          className={styles.rulesContainerRight}
           style={{
-            flex: 2,
             display: showPreview ? 'flex' : 'none',
-            flexDirection: 'column',
-            borderLeft: '1px solid var(--affine-border-color)',
-            overflowX: 'hidden',
-            overflowY: 'auto',
           }}
         >
           <PageList
@@ -411,17 +316,7 @@ const RulesMode = ({
           ></PageList>
           {allowListPages.length > 0 ? (
             <div>
-              <div
-                style={{
-                  marginTop: 8,
-                  fontSize: 14,
-                  lineHeight: '22px',
-                  color: 'var(--affine-text-secondary-color)',
-                  paddingLeft: 18,
-                }}
-              >
-                include
-              </div>
+              <div className={styles.includeListTitle}>include</div>
               <PageList
                 className={styles.resultPages}
                 pages={allowListPages}
@@ -432,15 +327,8 @@ const RulesMode = ({
           ) : null}
         </div>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '20px 24px',
-          borderTop: '1px solid var(--affine-border-color)',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className={styles.rulesBottom}>
+        <div className={styles.bottomLeft}>
           <div
             className={clsx(
               styles.button,
@@ -520,24 +408,9 @@ const PagesMode = ({
         className={styles.rulesTitle}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            width: '100%',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: 8,
-              alignItems: 'center',
-              padding: '16px 16px 8px 16px',
-            }}
-          >
+      <div className={styles.pagesList}>
+        <div className={styles.pagesTab}>
+          <div className={styles.pagesTabContent}>
             <RadioButtonGroup
               width={158}
               style={{ height: 32 }}
@@ -622,15 +495,8 @@ const PagesMode = ({
           </div>
         </div>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '20px 24px',
-          borderTop: '1px solid var(--affine-border-color)',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className={styles.pagesBottom}>
+        <div className={styles.pagesBottomLeft}>
           <div className={styles.previewCountTips}>
             Selected{' '}
             <span className={styles.previewCountTipsHighlight}>
