@@ -186,7 +186,7 @@ describe('y-provider', () => {
 
     provider.disconnect();
     subdoc.getText('text').insert(0, 'test-subdoc-value');
-    setTimeout();
+    await setTimeout();
     expect(remoteSubdoc.getText('text').toJSON()).toBe('');
 
     expect(provider.connected).toBe(false);
