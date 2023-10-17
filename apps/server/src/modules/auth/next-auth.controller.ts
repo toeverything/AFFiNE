@@ -148,7 +148,11 @@ export class NextAuthController {
       options.callbacks!.session = this.callbackSession;
     }
 
-    if (req.method === 'POST' && action === 'signin') {
+    if (
+      this.config.auth.captcha.enable &&
+      req.method === 'POST' &&
+      action === 'signin'
+    ) {
       const isVerified = await this.verifyChallenge(req, res);
       if (!isVerified) return;
     }
