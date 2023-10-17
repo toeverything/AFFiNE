@@ -55,7 +55,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
       AFFINE_ENV: 'affineEnv',
-      AFFINE_FREE_USER_QUOTA: 'objectStorage.quota',
       DATABASE_URL: 'db.url',
       ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
       R2_OBJECT_STORAGE_ACCOUNT_ID: 'objectStorage.r2.accountId',
@@ -189,8 +188,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
-      // 10GB
-      quota: 10 * 1024 * 1024 * 1024,
     },
     rateLimiter: {
       ttl: 60,
