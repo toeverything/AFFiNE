@@ -18,6 +18,7 @@
     "@vitejs/plugin-vue": "^4.4.0",
     "rollup": "^3.29.4",
     "rollup-plugin-swc3": "^0.10.2",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "vue": "^3.3.4"
   }
 }
