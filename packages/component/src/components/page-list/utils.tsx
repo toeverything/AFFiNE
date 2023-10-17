@@ -74,14 +74,14 @@ export const formatDate = (date: Date): string => {
   return `${month}-${day} ${hours}:${minutes}`;
 };
 
-export type FlexWrapperProps = PropsWithChildren<{
-  flex: number;
+export type ColWrapperProps = PropsWithChildren<{
+  flex: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   alignment?: 'start' | 'center' | 'end';
   styles?: React.CSSProperties;
 }> &
   React.HTMLAttributes<Element>;
 
-export const FlexWrapper = (props: FlexWrapperProps) => {
+export const ColWrapper = (props: ColWrapperProps) => {
   return (
     <div
       {...props}

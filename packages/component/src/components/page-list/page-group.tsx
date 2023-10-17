@@ -143,7 +143,6 @@ const requiredPropNames = [
   'blockSuiteWorkspace',
   'renderPageAsLink',
   'onOpenPage',
-  'onToggleFavorite',
   'isPreferredEdgeless',
   'pageOperationsRenderer',
   'selectable',
@@ -210,10 +209,6 @@ function pageMetaToPageItemProp(
           props.onOpenPage?.(pageMeta.id, newTab);
         }
       : undefined,
-    favorite: !!pageMeta.favorite,
-    onToggleFavorite() {
-      props.onToggleFavorite?.(pageMeta.id);
-    },
     icon: props.isPreferredEdgeless?.(pageMeta.id) ? (
       <EdgelessIcon />
     ) : (

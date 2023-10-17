@@ -147,7 +147,6 @@ ListItem.args = {
   updatedDate: new Date('2023-08-15'),
   draggable: true,
   tags: testTags,
-  favorite: true,
   selected: true,
 };
 

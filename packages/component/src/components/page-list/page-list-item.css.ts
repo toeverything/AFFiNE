@@ -96,19 +96,6 @@ export const actionsCellWrapper = style({
   paddingRight: '16px',
 });
 
-export const favoriteCell = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  flexShrink: 0,
-  opacity: 0,
-  selectors: {
-    [`&[data-favorite], ${root}:hover &`]: {
-      opacity: 1,
-    },
-  },
-});
-
 export const operationsCell = style({
   display: 'flex',
   alignItems: 'center',
