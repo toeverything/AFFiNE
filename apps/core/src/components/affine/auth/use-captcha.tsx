@@ -1,25 +1,10 @@
 import { fetchWithTraceReport } from '@affine/graphql';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { atom, useAtom, useSetAtom } from 'jotai';
+import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 
 import * as style from './style.css';
-
-const useCloudflareCaptcha = (): [string | null, () => JSX.Element] => {
-  const [verifyToken, setVerifyToken] = useState<string | null>(null);
-
-  const Captcha = useCallback(() => {
-    return (
-      <Turnstile
-        className={style.captchaWrapper}
-        siteKey={process.env.CAPTCHA_SITE_KEY || '1x00000000000000000000AA'}
-        onSuccess={setVerifyToken}
-      />
-    );
-  }, []);
-
-  return [verifyToken, Captcha];
-};
 
 type Challenge = {
   challenge: string;
@@ -50,21 +35,42 @@ const generateChallengeResponse = async (challenge: string) => {
   return await window.apis?.ui?.getChallengeResponse(challenge);
 };
 
-const Challenge = () => {
-  return <div className={style.captchaWrapper}>Making Challenge</div>;
+const captchaAtom = atom<string | undefined>(undefined);
+const responseAtom = atom<string | undefined>(undefined);
+
+export const Captcha = () => {
+  const setCaptcha = useSetAtom(captchaAtom);
+  const [response] = useAtom(responseAtom);
+
+  if (!runtimeConfig.enableCaptcha) {
+    return <></>;
+  }
+
+  if (environment.isDesktop) {
+    if (response) {
+      return <div className={style.captchaWrapper}>Making Challenge</div>;
+    } else {
+      return <div className={style.captchaWrapper}>Verified Client</div>;
+    }
+  }
+
+  return (
+    <Turnstile
+      className={style.captchaWrapper}
+      siteKey={process.env.CAPTCHA_SITE_KEY || '1x00000000000000000000AA'}
+      onSuccess={setCaptcha}
+    />
+  );
 };
 
-const Verified = () => {
-  return <div className={style.captchaWrapper}>Verified Client</div>;
-};
+export const useCaptcha = (): [string | undefined, string?] => {
+  const [verifyToken] = useAtom(captchaAtom);
+  const [response, setResponse] = useAtom(responseAtom);
 
-export const useCaptcha = (): [string | null, () => JSX.Element, string?] => {
-  const [verifyToken, Captcha] = useCloudflareCaptcha();
   const { data: challenge } = useSWR('/api/auth/challenge', challengeFetcher, {
     suspense: false,
     revalidateOnFocus: false,
   });
-  const [response, setResponse] = useState<string>();
   const prevChallenge = useRef('');
 
   useEffect(() => {
@@ -81,19 +87,19 @@ export const useCaptcha = (): [string | null, () => JSX.Element, string?] => {
           console.error('Error getting challenge response:', err);
         });
     }
-  }, [challenge]);
+  }, [challenge, setResponse]);
 
   if (!runtimeConfig.enableCaptcha) {
-    return ['XXXX.DUMMY.TOKEN.XXXX', () => <></>];
+    return ['XXXX.DUMMY.TOKEN.XXXX'];
   }
 
   if (environment.isDesktop) {
     if (response) {
-      return [response, Verified, challenge?.challenge];
+      return [response, challenge?.challenge];
     } else {
-      return [null, Challenge, challenge?.challenge];
+      return [undefined, challenge?.challenge];
     }
   }
 
-  return [verifyToken, Captcha];
+  return [verifyToken];
 };

@@ -18,7 +18,7 @@ import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { INTERNAL_BETA_URL, useAuth } from './use-auth';
-import { useCaptcha } from './use-captcha';
+import { Captcha, useCaptcha } from './use-captcha';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -32,7 +32,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, Captcha, challenge] = useCaptcha();
+  const [verifyToken, challenge] = useCaptcha();
 
   const {
     isMutating: isSigningIn,

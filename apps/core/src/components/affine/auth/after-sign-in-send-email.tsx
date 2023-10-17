@@ -13,7 +13,7 @@ import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-s
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
-import { useCaptcha } from './use-captcha';
+import { Captcha, useCaptcha } from './use-captcha';
 
 export const AfterSignInSendEmail = ({
   setAuthState,
@@ -22,7 +22,7 @@ export const AfterSignInSendEmail = ({
 }: AuthPanelProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
-  const [verifyToken, Captcha, challenge] = useCaptcha();
+  const [verifyToken, challenge] = useCaptcha();
 
   const { resendCountDown, allowSendEmail, signIn } = useAuth();
   if (loginStatus === 'authenticated') {
