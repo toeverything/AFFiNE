@@ -213,8 +213,7 @@ jobs:
           node-version: 18
       - name: Generate Release yml
         run: |
-          cp ./apps/electron/scripts/generate-yml.js .
-          node generate-yml.js
+          node ./apps/electron/scripts/generate-yml.js
         env:
           RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
       - name: Create Release Draft

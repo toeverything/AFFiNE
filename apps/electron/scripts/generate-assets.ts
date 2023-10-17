@@ -1,10 +1,13 @@
-#!/usr/bin/env zx
-import 'zx/globals';
-
+import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import fs from 'fs-extra';
+import { glob } from 'glob';
 
 const require = createRequire(import.meta.url);
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const repoRootDir = path.join(__dirname, '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
@@ -32,24 +35,31 @@ if (releaseVersionEnv && electronPackageJson.version !== releaseVersionEnv) {
 }
 // copy web dist files to electron dist
 
-if (process.platform === 'win32') {
-  $.shell = 'powershell.exe';
-  $.prefix = '';
-}
+process.env.DISTRIBUTION = 'desktop';
 
-$.env.DISTRIBUTION = 'desktop';
-
-cd(repoRootDir);
+const cwd = repoRootDir;
 
 if (!process.env.SKIP_PLUGIN_BUILD) {
-  await $`yarn -T run build:plugins`;
+  spawnSync('yarn', ['build:plugins'], {
+    stdio: 'inherit',
+    env: process.env,
+    cwd,
+  });
 }
 
-// step 1: build web (nextjs) dist
+// step 1: build web dist
 if (!process.env.SKIP_WEB_BUILD) {
-  await $`yarn nx build @affine/core`;
+  spawnSync('yarn', ['nx', 'build', '@affine/core'], {
+    stdio: 'inherit',
+    env: process.env,
+    cwd,
+  });
 
-  await $`yarn workspace @affine/electron build`;
+  spawnSync('yarn', ['workspace', '@affine/electron', 'build'], {
+    stdio: 'inherit',
+    env: process.env,
+    cwd,
+  });
 
   // step 1.5: amend sourceMappingURL to allow debugging in devtools
   await glob('**/*.{js,css}', { cwd: affineCoreOutDir }).then(files => {
