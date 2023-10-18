@@ -42,8 +42,9 @@ export class QuotaService implements OnModuleInit {
     }
   }
 
+  // get activated quota by user
   async getQuotaByUser(userId: string) {
-    const userFeatures = await this.prisma.userFeatureGates.findFirst({
+    const quota = await this.prisma.userFeatureGates.findFirst({
       where: {
         user: {
           id: userId,
@@ -65,9 +66,39 @@ export class QuotaService implements OnModuleInit {
         },
       },
     });
-    return userFeatures as typeof userFeatures & {
+    return quota as typeof quota & {
       feature: Pick<Quota, 'feature' | 'configs'>;
     };
+  }
+
+  // get all quotas by user
+  async getQuotasByUser(userId: string) {
+    const quotas = await this.prisma.userFeatureGates.findMany({
+      where: {
+        user: {
+          id: userId,
+        },
+        feature: {
+          type: FeatureKind.Quota,
+        },
+      },
+      select: {
+        activated: true,
+        reason: true,
+        createdAt: true,
+        expiresAt: true,
+        feature: {
+          select: {
+            feature: true,
+            configs: true,
+          },
+        },
+      },
+    });
+    return quotas as typeof quotas &
+      {
+        feature: Pick<Quota, 'feature' | 'configs'>;
+      }[];
   }
 
   // switch quota by user

@@ -95,3 +95,30 @@ test('should be able to check storage quota', async t => {
   t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
   t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
 });
+
+test('should be able revert quota', async t => {
+  const { auth, quota, storageQuota } = t.context;
+  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+
+  const q1 = await storageQuota.getStorageQuotaByUser(u1.id);
+  t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
+  t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
+
+  await quota.switchQuotaByUser(u1.id, 'pro_plan_v1');
+  const q2 = await storageQuota.getStorageQuotaByUser(u1.id);
+  t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
+  t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
+
+  await quota.switchQuotaByUser(u1.id, 'free_plan_v1');
+  const q3 = await storageQuota.getStorageQuotaByUser(u1.id);
+  t.is(q3?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
+
+  const quotas = await quota.getQuotasByUser(u1.id);
+  t.is(quotas.length, 3, 'should have 3 quotas');
+  t.is(quotas[0].feature.feature, 'free_plan_v1', 'should be free plan');
+  t.is(quotas[1].feature.feature, 'pro_plan_v1', 'should be pro plan');
+  t.is(quotas[2].feature.feature, 'free_plan_v1', 'should be free plan');
+  t.is(quotas[0].activated, false, 'should be activated');
+  t.is(quotas[1].activated, false, 'should be activated');
+  t.is(quotas[2].activated, true, 'should be activated');
+});

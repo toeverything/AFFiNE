@@ -42,6 +42,11 @@ test.beforeEach(async t => {
           return [];
         },
       },
+      userFeatures: {
+        async count() {
+          return 1;
+        },
+      },
     })
     .overrideProvider(PermissionService)
     .useClass(FakePermission)
