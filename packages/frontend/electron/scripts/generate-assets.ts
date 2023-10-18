@@ -9,10 +9,10 @@ import { glob } from 'glob';
 const require = createRequire(import.meta.url);
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const repoRootDir = path.join(__dirname, '..', '..', '..');
+const repoRootDir = path.join(__dirname, '..', '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
-const affineCoreDir = path.join(repoRootDir, 'apps', 'core');
+const affineCoreDir = path.join(repoRootDir, 'packages', 'frontend', 'core');
 const affineCoreOutDir = path.join(affineCoreDir, 'dist');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
 const releaseVersionEnv = process.env.RELEASE_VERSION || '';
