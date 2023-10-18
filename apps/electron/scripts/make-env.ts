@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const { z } = require('zod');
-
-const path = require('node:path');
+import { z } from 'zod';
 
 const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -18,12 +19,15 @@ const icoPath = path.join(
     ? `./resources/icons/icon_${buildType}.ico`
     : './resources/icons/icon.ico'
 );
+
 const icnsPath = path.join(
   ROOT,
   !stableBuild
     ? `./resources/icons/icon_${buildType}.icns`
     : './resources/icons/icon.icns'
 );
+
+const iconPngPath = path.join(ROOT, './resources/icons/icon.png');
 
 const iconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
 const arch =
@@ -36,14 +40,15 @@ const platform =
     ? process.argv[process.argv.indexOf('--platform') + 1]
     : process.platform;
 
-module.exports = {
-  ROOT,
-  buildType,
-  productName,
-  icoPath,
-  icnsPath,
-  iconUrl,
+export {
   arch,
+  buildType,
+  icnsPath,
+  iconPngPath,
+  iconUrl,
+  icoPath,
   platform,
+  productName,
+  ROOT,
   stableBuild,
 };

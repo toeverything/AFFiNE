@@ -110,7 +110,10 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         data-enable-animation={enableAnimation && !isResizing}
       >
         <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
-          <SidebarHeader router={props.router} />
+          <SidebarHeader
+            router={props.router}
+            generalShortcutsInfo={props.generalShortcutsInfo}
+          />
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {props.children}
           </div>

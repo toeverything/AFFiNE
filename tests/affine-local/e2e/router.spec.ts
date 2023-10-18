@@ -7,7 +7,7 @@ test('goto not found page', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   const currentUrl = page.url();
-  const invalidUrl = currentUrl.replace('hello-world', 'invalid');
+  const invalidUrl = currentUrl.concat('invalid');
   await page.goto(invalidUrl);
   await expect(page.getByTestId('not-found')).toBeVisible({
     timeout: 10000,

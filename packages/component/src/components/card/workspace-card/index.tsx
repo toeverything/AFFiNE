@@ -8,7 +8,8 @@ import { Divider } from '@toeverything/components/divider';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
+import { useAtomValue } from 'jotai/react';
 import { useCallback } from 'react';
 
 import {
@@ -97,7 +98,8 @@ export const WorkspaceCard = ({
   meta,
   isOwner = true,
 }: WorkspaceCardProps) => {
-  const workspace = useStaticBlockSuiteWorkspace(meta.id);
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(meta.id);
+  const workspace = useAtomValue(workspaceAtom);
   const [name] = useBlockSuiteWorkspaceName(workspace);
   const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   return (

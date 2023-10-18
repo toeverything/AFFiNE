@@ -2,9 +2,9 @@ import type { ActiveDocProvider, Workspace } from '@blocksuite/store';
 import type { PassiveDocProvider } from '@blocksuite/store';
 import type { Atom } from 'jotai/vanilla';
 import { atom } from 'jotai/vanilla';
+import { atomEffect } from 'jotai-effect';
 
 /**
- * DO NOT ACCESS THIS MAP IN PRODUCTION, OR YOU WILL BE FIRED
  * Map: guid -> Workspace
  */
 export const INTERNAL_BLOCKSUITE_HASH_MAP = new Map<string, Workspace>([]);
@@ -14,49 +14,8 @@ const workspaceActiveAtomWeakMap = new WeakMap<
   Atom<Promise<Workspace>>
 >();
 
-// Whether the workspace is active to use
 const workspaceActiveWeakMap = new WeakMap<Workspace, boolean>();
-
-/**
- * Whether the workspace has been enabled the passive effect (background)
- *
- * @internal
- */
-export const workspacePassiveEffectWeakMap = new WeakMap<Workspace, number>();
-
-export function enablePassiveProviders(workspace: Workspace) {
-  const value = workspacePassiveEffectWeakMap.get(workspace);
-  if (value !== undefined && value !== 0) {
-    workspacePassiveEffectWeakMap.set(workspace, value + 1);
-    return;
-  }
-  const providers = workspace.providers.filter(
-    (provider): provider is PassiveDocProvider =>
-      'passive' in provider && provider.passive === true
-  );
-  providers.forEach(provider => {
-    provider.connect();
-  });
-  workspacePassiveEffectWeakMap.set(workspace, 1);
-}
-
-export function disablePassiveProviders(workspace: Workspace) {
-  const value = workspacePassiveEffectWeakMap.get(workspace);
-  if (value && value > 0) {
-    workspacePassiveEffectWeakMap.set(workspace, value - 1);
-    if (value - 1 === 0) {
-      const providers = workspace.providers.filter(
-        (provider): provider is PassiveDocProvider =>
-          'passive' in provider && provider.passive === true
-      );
-      providers.forEach(provider => {
-        provider.disconnect();
-      });
-      workspacePassiveEffectWeakMap.delete(workspace);
-    }
-    return;
-  }
-}
+const workspaceEffectAtomWeakMap = new WeakMap<Workspace, Atom<void>>();
 
 export async function waitForWorkspace(workspace: Workspace) {
   if (workspaceActiveWeakMap.get(workspace) !== true) {
@@ -69,6 +28,7 @@ export async function waitForWorkspace(workspace: Workspace) {
       // we will wait for the necessary providers to be ready
       await provider.whenReady;
     }
+    // timeout is INFINITE
     workspaceActiveWeakMap.set(workspace, true);
   }
 }
@@ -80,9 +40,9 @@ export function getWorkspace(id: string) {
   return INTERNAL_BLOCKSUITE_HASH_MAP.get(id) as Workspace;
 }
 
-export function getActiveBlockSuiteWorkspaceAtom(
+export function getBlockSuiteWorkspaceAtom(
   id: string
-): Atom<Promise<Workspace>> {
+): [workspaceAtom: Atom<Promise<Workspace>>, workspaceEffectAtom: Atom<void>] {
   if (!INTERNAL_BLOCKSUITE_HASH_MAP.has(id)) {
     throw new Error('Workspace not found');
   }
@@ -94,5 +54,26 @@ export function getActiveBlockSuiteWorkspaceAtom(
     });
     workspaceActiveAtomWeakMap.set(workspace, baseAtom);
   }
-  return workspaceActiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>;
+  if (!workspaceEffectAtomWeakMap.has(workspace)) {
+    const effectAtom = atomEffect(() => {
+      const providers = workspace.providers.filter(
+        (provider): provider is PassiveDocProvider =>
+          'passive' in provider && provider.passive === true
+      );
+      providers.forEach(provider => {
+        provider.connect();
+      });
+      return () => {
+        providers.forEach(provider => {
+          provider.disconnect();
+        });
+      };
+    });
+    workspaceEffectAtomWeakMap.set(workspace, effectAtom);
+  }
+
+  return [
+    workspaceActiveAtomWeakMap.get(workspace) as Atom<Promise<Workspace>>,
+    workspaceEffectAtomWeakMap.get(workspace) as Atom<void>,
+  ];
 }

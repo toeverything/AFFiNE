@@ -12,7 +12,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback, useMemo } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
@@ -35,7 +35,7 @@ export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();
   const workspaceId = args.params.workspaceId;
   assertExists(workspaceId);
-  const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(workspaceId);
   const workspace = await rootStore.get(workspaceAtom);
   for (const pageId of workspace.pages.keys()) {
     const page = workspace.getPage(pageId);

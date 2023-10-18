@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   Logger,
+  OnApplicationBootstrap,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
+import { DocID } from '../../utils/doc';
 
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   if (yBinary.equals(jwstBinary)) {
@@ -42,7 +44,9 @@ const MAX_SEQ_NUM = 0x3fffffff; // u31
  * along side all the updates that have not been applies to that snapshot(timestamp).
  */
 @Injectable()
-export class DocManager implements OnModuleInit, OnModuleDestroy {
+export class DocManager
+  implements OnModuleInit, OnModuleDestroy, OnApplicationBootstrap
+{
   protected logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
   private seqMap = new Map<string, number>();
@@ -55,6 +59,12 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     protected readonly config: Config,
     protected readonly metrics: Metrics
   ) {}
+
+  async onApplicationBootstrap() {
+    if (!this.config.node.test) {
+      await this.refreshDocGuid();
+    }
+  }
 
   onModuleInit() {
     if (this.automation) {
@@ -239,7 +249,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * get the snapshot of the doc we've seen.
    */
-  protected async getSnapshot(workspaceId: string, guid: string) {
+  async getSnapshot(workspaceId: string, guid: string) {
     return this.db.snapshot.findUnique({
       where: {
         id_workspaceId: {
@@ -253,7 +263,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * get pending updates
    */
-  protected async getUpdates(workspaceId: string, guid: string) {
+  async getUpdates(workspaceId: string, guid: string) {
     return this.db.update.findMany({
       where: {
         workspaceId,
@@ -409,6 +419,48 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       const last = this.seqMap.get(workspaceId + guid) ?? 0;
       this.seqMap.set(workspaceId + guid, last + 1);
       return last + 1;
+    }
+  }
+
+  /**
+   * deal with old records that has wrong guid format
+   * correct guid with `${non-wsId}:${variant}:${subId}` to `${subId}`
+   *
+   * @TODO delete in next release
+   * @deprecated
+   */
+  private async refreshDocGuid() {
+    let turn = 0;
+    let lastTurnCount = 100;
+    while (lastTurnCount === 100) {
+      const docs = await this.db.snapshot.findMany({
+        skip: turn * 100,
+        take: 100,
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      lastTurnCount = docs.length;
+      for (const doc of docs) {
+        const docId = new DocID(doc.id, doc.workspaceId);
+
+        if (docId && !docId.isWorkspace && docId.guid !== doc.id) {
+          await this.db.snapshot.update({
+            where: {
+              id_workspaceId: {
+                id: doc.id,
+                workspaceId: doc.workspaceId,
+              },
+            },
+            data: {
+              id: docId.guid,
+            },
+          });
+        }
+      }
+
+      turn++;
     }
   }
 }

@@ -1,5 +1,5 @@
-import type { DataSourceAdapter } from '@affine/y-provider';
 import type { DBSchema, IDBPDatabase } from 'idb';
+import type { DataSourceAdapter } from 'y-provider';
 
 export const dbVersion = 1;
 export const DEFAULT_DB_NAME = 'affine-local';

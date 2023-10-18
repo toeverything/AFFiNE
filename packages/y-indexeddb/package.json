@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.10.0-canary.0",
+  "version": "0.10.0-canary.1",
   "description": "IndexedDB database adapter for Yjs",
   "repository": "toeverything/AFFiNE",
   "author": "toeverything",
@@ -22,30 +22,29 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "dist/index.umd.cjs",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js",
-        "require": "./dist/index.umd.cjs"
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.umd.cjs"
       }
     }
   },
   "dependencies": {
     "idb": "^7.1.1",
-    "nanoid": "^5.0.1"
+    "nanoid": "^5.0.1",
+    "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@affine/y-provider": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
-    "fake-indexeddb": "^4.0.2",
+    "fake-indexeddb": "^5.0.0",
     "vite": "^4.4.11",
     "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",
-    "y-indexeddb": "^9.0.11"
+    "y-indexeddb": "^9.0.11",
+    "yjs": "^13.6.8"
   },
   "peerDependencies": {
     "yjs": "^13"

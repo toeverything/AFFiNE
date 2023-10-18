@@ -1,9 +1,6 @@
-// do not run in your local machine
-/* eslint-disable */
-const fs = require('node:fs');
-const path = require('node:path');
-const crypto = require('node:crypto');
-/* eslint-enable */
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const yml = {
   version: process.env.RELEASE_VERSION ?? '0.0.0',
@@ -12,9 +9,9 @@ const yml = {
 
 const generateYml = platform => {
   const regex = new RegExp(`^affine-.*-${platform}-.*.(exe|zip|dmg|AppImage)$`);
-  const files = fs.readdirSync(__dirname).filter(file => regex.test(file));
+  const files = fs.readdirSync(process.cwd()).filter(file => regex.test(file));
   files.forEach(fileName => {
-    const filePath = path.join(__dirname, './', fileName);
+    const filePath = path.join(process.cwd(), './', fileName);
     try {
       const fileData = fs.readFileSync(filePath);
       const hash = crypto
@@ -54,5 +51,6 @@ const generateYml = platform => {
 
   fs.writeFileSync(fileName, ymlStr);
 };
+
 generateYml('windows');
 generateYml('macos');

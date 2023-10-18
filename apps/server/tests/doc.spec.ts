@@ -183,7 +183,6 @@ test('should have sequential update number', async t => {
   await Promise.all(updates.map(update => manager.push('2', '2', update)));
 
   // [1,2,3]
-  // @ts-expect-error private method
   let records = await manager.getUpdates('2', '2');
 
   t.deepEqual(
@@ -208,21 +207,18 @@ test('should have sequential update number', async t => {
 
   await Promise.all(updates.map(update => manager.push('2', '2', update)));
 
-  // @ts-expect-error private method
   records = await manager.getUpdates('2', '2');
 
   // push a new update with new seq num
   await manager.push('2', '2', updates[0]);
 
   // let the manager ignore update with the new seq num
-  // @ts-expect-error private method
   const stub = Sinon.stub(manager, 'getUpdates').resolves(records);
 
   // @ts-expect-error private method
   await manager.autoSquash();
   stub.restore();
 
-  // @ts-expect-error private method
   records = await manager.getUpdates('2', '2');
 
   // should not merge in one run

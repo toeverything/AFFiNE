@@ -10,9 +10,11 @@ import {
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
+  openSignOutModalAtom,
 } from '../atoms';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { signOutCloud } from '../utils/cloud-utils';
 
 const SettingModal = lazy(() =>
   import('../components/affine/setting-modal').then(module => ({
@@ -42,6 +44,12 @@ const TmpDisableAffineCloudModal = lazy(() =>
 const OnboardingModal = lazy(() =>
   import('../components/affine/onboarding-modal').then(module => ({
     default: module.OnboardingModal,
+  }))
+);
+
+const SignOutModal = lazy(() =>
+  import('../components/affine/sign-out-modal').then(module => ({
+    default: module.SignOutModal,
   }))
 );
 
@@ -141,6 +149,24 @@ export function CurrentWorkspaceModals() {
   );
 }
 
+export const SignOutConfirmModal = () => {
+  const { jumpToIndex } = useNavigateHelper();
+  const [open, setOpen] = useAtom(openSignOutModalAtom);
+
+  const onConfirm = useCallback(async () => {
+    setOpen(false);
+    signOutCloud()
+      .then(() => {
+        jumpToIndex();
+      })
+      .catch(console.error);
+  }, [jumpToIndex, setOpen]);
+
+  return (
+    <SignOutModal open={open} onOpenChange={setOpen} onConfirm={onConfirm} />
+  );
+};
+
 export const AllWorkspaceModals = (): ReactElement => {
   const [isOpenCreateWorkspaceModal, setOpenCreateWorkspaceModal] = useAtom(
     openCreateWorkspaceModalAtom
@@ -171,6 +197,9 @@ export const AllWorkspaceModals = (): ReactElement => {
       </Suspense>
       <Suspense>
         <AuthModal />
+      </Suspense>
+      <Suspense>
+        <SignOutConfirmModal />
       </Suspense>
     </>
   );

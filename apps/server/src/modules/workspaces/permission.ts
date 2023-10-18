@@ -74,11 +74,7 @@ export class PermissionService {
       return true;
     } else {
       // check if this is a public subpage
-
-      // why use `endsWith`?
-      // because there might have `${wsId}:space:${subpageId}`,
-      // but subpages only have `${subpageId}`
-      return subpages.some(subpage => id.endsWith(subpage));
+      return subpages.some(subpage => id === subpage);
     }
   }
 

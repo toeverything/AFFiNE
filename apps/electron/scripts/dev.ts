@@ -1,10 +1,11 @@
 /* eslint-disable no-async-promise-executor */
 import { spawn } from 'node:child_process';
 
+import type { ChildProcessWithoutNullStreams } from 'child_process';
 import electronPath from 'electron';
 import * as esbuild from 'esbuild';
 
-import { config } from './common.mjs';
+import { config } from './common';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -17,8 +18,7 @@ const stderrFilterPatterns = [
   /ExtensionLoadWarning/,
 ];
 
-/** @type {ChildProcessWithoutNullStreams | null} */
-let spawnProcess = null;
+let spawnProcess: ChildProcessWithoutNullStreams | null = null;
 
 function spawnOrReloadElectron() {
   if (watchMode) {
@@ -33,7 +33,7 @@ function spawnOrReloadElectron() {
   spawnProcess = spawn(String(electronPath), ['.']);
 
   spawnProcess.stdout.on('data', d => {
-    let str = d.toString().trim();
+    const str = d.toString().trim();
     if (str) {
       console.log(str);
     }
@@ -53,13 +53,13 @@ function spawnOrReloadElectron() {
 const common = config();
 
 async function watchLayers() {
-  return new Promise(async resolve => {
+  return new Promise<void>(async resolve => {
     let initialBuild = false;
 
     const buildContext = await esbuild.context({
-      ...common.layers,
+      ...common,
       plugins: [
-        ...(common.layers.plugins ?? []),
+        ...(common.plugins ?? []),
         {
           name: 'electron-dev:reload-app-on-layers-change',
           setup(build) {

@@ -2,10 +2,10 @@ import type {
   SQLiteDBDownloadProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import { createLazyProvider, type DocDataSource } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { createLazyProvider, type DocDataSource } from 'y-provider';
 import type { Doc } from 'yjs';
 
 import { localProviderLogger as logger } from './logger';
