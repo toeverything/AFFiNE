@@ -235,7 +235,7 @@ type Query {
   checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 
   """Get current user"""
-  currentUser: UserType!
+  currentUser: UserType
 
   """Get user by email"""
   user(email: String!): UserType
@@ -277,10 +277,10 @@ type Mutation {
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
 
   """Create a subscription checkout link of stripe"""
-  checkout(plan: SubscriptionRecurring!): String!
+  checkout(recurring: SubscriptionRecurring!): String!
   cancelSubscription: UserSubscription!
   resumeSubscription: UserSubscription!
-  updateSubscriptionPlan(plan: SubscriptionRecurring!): UserSubscription!
+  updateSubscriptionRecurring(recurring: SubscriptionRecurring!): UserSubscription!
 }
 
 """The `Upload` scalar type represents a file upload."""

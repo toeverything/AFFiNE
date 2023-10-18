@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent as RawOnEvent } from '@nestjs/event-emitter';
 import type {
+  Prisma,
   User,
   UserInvoice,
   UserStripeCustomer,
@@ -78,11 +79,11 @@ export class SubscriptionService {
 
   async createCheckoutSession({
     user,
-    plan,
+    recurring,
     redirectUrl,
   }: {
     user: User;
-    plan: SubscriptionRecurring;
+    recurring: SubscriptionRecurring;
     redirectUrl: string;
   }) {
     const currentSubscription = await this.db.userSubscription.findUnique({
@@ -96,11 +97,11 @@ export class SubscriptionService {
     }
 
     const prices = await this.stripe.prices.list({
-      lookup_keys: [plan],
+      lookup_keys: [recurring],
     });
 
     if (!prices.data.length) {
-      throw new Error(`Unknown subscription plan: ${plan}`);
+      throw new Error(`Unknown subscription recurring: ${recurring}`);
     }
 
     const customer = await this.getOrCreateCustomer(user);
@@ -141,6 +142,13 @@ export class SubscriptionService {
 
     if (user.subscription.canceledAt) {
       throw new Error('User subscription has already been canceled ');
+    }
+
+    // should release the schedule first
+    if (user.subscription.stripeScheduleId) {
+      await this.stripe.subscriptionSchedules.release(
+        user.subscription.stripeScheduleId
+      );
     }
 
     // let customer contact support if they want to cancel immediately
@@ -189,9 +197,9 @@ export class SubscriptionService {
     return await this.saveSubscription(user, subscription);
   }
 
-  async updateSubscriptionPlan(
+  async updateSubscriptionRecurring(
     userId: string,
-    plan: string
+    recurring: string
   ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
@@ -206,42 +214,86 @@ export class SubscriptionService {
       throw new Error('User has no subscription');
     }
 
-    if (user.subscription.plan === plan) {
+    if (user.subscription.recurring === recurring) {
       throw new Error('User has already subscribed to this plan');
     }
 
     const prices = await this.stripe.prices.list({
-      lookup_keys: [plan],
+      lookup_keys: [recurring],
     });
 
     if (!prices.data.length) {
-      throw new Error(`Unknown subscription plan: ${plan}`);
+      throw new Error(`Unknown subscription recurring: ${recurring}`);
     }
 
-    const subscriptionItem = await this.stripe.subscriptionItems.list({
-      subscription: user.subscription.stripeSubscriptionId,
-    });
+    const newPrice = prices.data[0];
 
-    const newSubscription = await this.stripe.subscriptions.update(
-      user.subscription.stripeSubscriptionId,
-      {
-        items: [
+    // a schedule existing
+    if (user.subscription.stripeScheduleId) {
+      const schedule = await this.stripe.subscriptionSchedules.retrieve(
+        user.subscription.stripeScheduleId
+      );
+
+      // a scheduled subscription's old price equals the change
+      if (
+        schedule.phases[0] &&
+        (schedule.phases[0].items[0].price as string) === newPrice.id
+      ) {
+        await this.stripe.subscriptionSchedules.release(
+          user.subscription.stripeScheduleId
+        );
+
+        return await this.db.userSubscription.update({
+          where: {
+            id: user.subscription.id,
+          },
+          data: {
+            recurring,
+          },
+        });
+      } else {
+        throw new Error(
+          'Unexpected subscription scheduled, please contact the supporters'
+        );
+      }
+    } else {
+      const schedule = await this.stripe.subscriptionSchedules.create({
+        from_subscription: user.subscription.stripeSubscriptionId,
+      });
+
+      await this.stripe.subscriptionSchedules.update(schedule.id, {
+        phases: [
           {
-            // delete the old subscription item
-            id: subscriptionItem.data[0].id,
-            deleted: true,
+            items: [
+              {
+                price: schedule.phases[0].items[0].price as string,
+                quantity: 1,
+              },
+            ],
+            start_date: schedule.phases[0].start_date,
+            end_date: schedule.phases[0].end_date,
           },
           {
-            // add new one
-            price: prices.data[0].id,
-            quantity: 1,
+            items: [
+              {
+                price: newPrice.id,
+                quantity: 1,
+              },
+            ],
           },
         ],
-        off_session: true,
-      }
-    );
+      });
 
-    return this.saveSubscription(user, newSubscription);
+      return await this.db.userSubscription.update({
+        where: {
+          id: user.subscription.id,
+        },
+        data: {
+          recurring,
+          stripeScheduleId: schedule.id,
+        },
+      });
+    }
   }
 
   @OnEvent('customer.subscription.created')
@@ -315,13 +367,7 @@ export class SubscriptionService {
 
     const price = subscription.items.data[0].price;
 
-    const update = {
-      stripeSubscriptionId: subscription.id,
-      // TODO: adjust dynamically when other plan available
-      // could use stripe price metadata to store plan info
-      plan: SubscriptionPlan.Pro,
-      recurring: price.lookup_key ?? price.id,
-      status: subscription.status,
+    const commonData = {
       start: new Date(subscription.current_period_start * 1000),
       end: new Date(subscription.current_period_end * 1000),
       trialStart: subscription.trial_start
@@ -334,18 +380,44 @@ export class SubscriptionService {
       canceledAt: subscription.canceled_at
         ? new Date(subscription.canceled_at * 1000)
         : null,
+      stripeSubscriptionId: subscription.id,
+      recurring: price.lookup_key ?? price.id,
+      // TODO: dynamic plans
+      plan: SubscriptionPlan.Pro,
+      status: subscription.status,
+      stripeScheduleId: subscription.schedule as string | null,
     };
 
-    return await this.db.userSubscription.upsert({
+    const currentSubscription = await this.db.userSubscription.findUnique({
       where: {
         userId: user.id,
       },
-      update,
-      create: {
-        userId: user.id,
-        ...update,
-      },
     });
+
+    if (currentSubscription) {
+      const update: Prisma.UserSubscriptionUpdateInput = {
+        ...commonData,
+      };
+
+      // a schedule exists, update the recurring to scheduled one
+      if (update.stripeScheduleId) {
+        delete update.recurring;
+      }
+
+      return await this.db.userSubscription.update({
+        where: {
+          id: currentSubscription.id,
+        },
+        data: update,
+      });
+    } else {
+      return await this.db.userSubscription.create({
+        data: {
+          userId: user.id,
+          ...commonData,
+        },
+      });
+    }
   }
 
   private async getOrCreateCustomer(user: User): Promise<UserStripeCustomer> {

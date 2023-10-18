@@ -12,7 +12,7 @@ CREATE TABLE "user_subscriptions" (
     "id" SERIAL NOT NULL,
     "user_id" VARCHAR(36) NOT NULL,
     "plan" VARCHAR(20) NOT NULL,
-    "price_id" VARCHAR NOT NULL,
+    "recurring" VARCHAR(20) NOT NULL,
     "stripe_subscription_id" TEXT NOT NULL,
     "status" VARCHAR(20) NOT NULL,
     "start" TIMESTAMPTZ(6) NOT NULL,
@@ -21,6 +21,7 @@ CREATE TABLE "user_subscriptions" (
     "canceled_at" TIMESTAMPTZ(6),
     "trial_start" TIMESTAMPTZ(6),
     "trial_end" TIMESTAMPTZ(6),
+    "stripe_schedule_id" VARCHAR,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 

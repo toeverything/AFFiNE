@@ -164,12 +164,12 @@ export class SubscriptionResolver {
   })
   async checkout(
     @CurrentUser() user: User,
-    @Args({ name: 'plan', type: () => SubscriptionRecurring })
-    plan: SubscriptionRecurring
+    @Args({ name: 'recurring', type: () => SubscriptionRecurring })
+    recurring: SubscriptionRecurring
   ) {
     const session = await this.service.createCheckoutSession({
       user,
-      plan,
+      recurring,
       // TODO: replace with frontend url
       redirectUrl: `${this.config.baseUrl}/api/stripe/success`,
     });
@@ -194,12 +194,12 @@ export class SubscriptionResolver {
   }
 
   @Mutation(() => UserSubscriptionType)
-  async updateSubscriptionPlan(
+  async updateSubscriptionRecurring(
     @CurrentUser() user: User,
-    @Args({ name: 'plan', type: () => SubscriptionRecurring })
-    plan: SubscriptionRecurring
+    @Args({ name: 'recurring', type: () => SubscriptionRecurring })
+    recurring: SubscriptionRecurring
   ) {
-    return this.service.updateSubscriptionPlan(user.id, plan);
+    return this.service.updateSubscriptionRecurring(user.id, recurring);
   }
 }
 
