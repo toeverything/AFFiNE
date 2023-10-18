@@ -1,11 +1,23 @@
 import { style } from '@vanilla-extract/css';
 
 export const root = style({
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+});
+
+export const innerContainer = style({
   display: 'flex',
+  alignItems: 'center',
   columnGap: '8px',
   overflow: 'auto',
-  position: 'relative',
+  position: 'absolute',
+  height: '100%',
   maxWidth: '100%',
+  transition: 'max-width 0.2s 0.2s ease-in-out',
+  ':hover': {
+    maxWidth: 'var(--hover-max-width)',
+  },
 });
 
 const range = (start: number, end: number) => {
@@ -17,6 +29,7 @@ const range = (start: number, end: number) => {
 };
 
 export const tag = style({
+  height: '20px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -27,12 +40,10 @@ export const tag = style({
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-background-primary-color)',
   position: 'sticky',
+  left: 0,
   selectors: range(0, 20).reduce((selectors, i) => {
     return {
       ...selectors,
-      [`&:nth-child(${i + 1})`]: {
-        left: `${i * 32}px`,
-      },
       [`&:nth-last-child(${i + 1})`]: {
         right: `${i * 32}px`,
       },

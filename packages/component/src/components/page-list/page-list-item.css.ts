@@ -75,7 +75,6 @@ export const tagsCell = style({
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
   padding: '0 8px',
-  overflow: 'hidden',
 });
 
 export const dateCell = style({

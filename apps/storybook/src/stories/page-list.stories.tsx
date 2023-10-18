@@ -153,13 +153,17 @@ ListItem.args = {
 ListItem.decorators = [withRouter];
 
 export const ListItemTags: StoryFn<PageTagsProps> = props => (
-  <div style={{ maxWidth: '100vw' }}>
-    <PageTags {...props}></PageTags>
+  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <div style={{ width: '300px' }}>
+      <PageTags {...props}></PageTags>
+    </div>
   </div>
 );
 
 ListItemTags.args = {
   tags: testTags,
+  hoverExpandDirection: 'left',
+  widthOnHover: 600,
 };
 
 export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {

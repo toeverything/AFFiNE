@@ -76,7 +76,7 @@ export const PageTagsCell = ({ tags }: Pick<PageListItemProps, 'tags'>) => {
   return (
     <div data-testid="page-list-item-tags" className={styles.tagsCell}>
       {/* fixme: give dynamic width & maxWidth */}
-      <PageTags tags={tags} />
+      <PageTags tags={tags} hoverExpandDirection="left" widthOnHover="300%" />
     </div>
   );
 };
@@ -124,7 +124,7 @@ export const PageListItem = (props: PageListItemProps) => {
           <PageListIconCell icon={props.icon} />
           <PageListTitleCell title={props.title} preview={props.preview} />
         </ColWrapper>
-        <ColWrapper flex={4} alignment="end">
+        <ColWrapper flex={4} alignment="end" style={{ overflow: 'visible' }}>
           <PageTagsCell tags={props.tags} />
         </ColWrapper>
       </ColWrapper>
