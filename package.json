@@ -180,6 +180,8 @@
     "unbox-primitive": "npm:@nolyfill/unbox-primitive@latest",
     "which-boxed-primitive": "npm:@nolyfill/which-boxed-primitive@latest",
     "which-typed-array": "npm:@nolyfill/which-typed-array@latest",
-    "next-auth@^4.23.2": "patch:next-auth@npm%3A4.23.2#./.yarn/patches/next-auth-npm-4.23.2-5f0e551bc7.patch"
+    "next-auth@^4.23.2": "patch:next-auth@npm%3A4.23.2#./.yarn/patches/next-auth-npm-4.23.2-5f0e551bc7.patch",
+    "@electron-forge/core@^6.4.2": "patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch",
+    "@electron-forge/core@6.4.2": "patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch"
   }
 }

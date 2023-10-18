@@ -132,7 +132,7 @@ export const RootAppSidebar = ({
   const navigateHelper = useNavigateHelper();
   const backToAll = useCallback(() => {
     navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-  }, []);
+  }, [currentWorkspace.id, navigateHelper]);
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
