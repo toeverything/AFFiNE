@@ -1,6 +1,5 @@
 import { PageList } from '@affine/component/page-list';
-import type { Collection, Filter, PropertiesMeta } from '@affine/env/filter';
-import type { GetPageInfoById } from '@affine/env/page-info';
+import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -27,8 +26,6 @@ export interface EditCollectionModalProps {
   init?: Collection;
   title?: string;
   open: boolean;
-  getPageInfo: GetPageInfoById;
-  propertiesMeta: PropertiesMeta;
   onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => Promise<void>;
   allPageListConfig: AllPageListConfig;
@@ -39,8 +36,6 @@ export const EditCollectionModal = ({
   onConfirm,
   open,
   onOpenChange,
-  getPageInfo,
-  propertiesMeta,
   title,
   allPageListConfig,
 }: EditCollectionModalProps) => {
@@ -72,11 +67,9 @@ export const EditCollectionModal = ({
     >
       {init ? (
         <EditCollection
-          propertiesMeta={propertiesMeta}
           title={title}
           onConfirmText={t['com.affine.editCollection.save']()}
           init={init}
-          getPageInfo={getPageInfo}
           onCancel={onCancel}
           onConfirm={onConfirmOnCollection}
           allPageListConfig={allPageListConfig}
@@ -90,8 +83,6 @@ export interface EditCollectionProps {
   title?: string;
   onConfirmText?: string;
   init: Collection;
-  getPageInfo: GetPageInfoById;
-  propertiesMeta: PropertiesMeta;
   onCancel: () => void;
   onConfirm: (collection: Collection) => void;
   allPageListConfig: AllPageListConfig;
@@ -102,7 +93,6 @@ export const EditCollection = ({
   onConfirm,
   onCancel,
   onConfirmText,
-  propertiesMeta,
   allPageListConfig,
 }: EditCollectionProps) => {
   const t = useAFFiNEI18N();
@@ -145,7 +135,6 @@ export const EditCollection = ({
     <div className={styles.collectionEditContainer}>
       {value.mode === 'page' ? (
         <PagesMode
-          propertiesMeta={propertiesMeta}
           collection={value}
           updateCollection={onChange}
           buttons={buttons}
@@ -154,7 +143,6 @@ export const EditCollection = ({
       ) : (
         <RulesMode
           allPageListConfig={allPageListConfig}
-          propertiesMeta={propertiesMeta}
           collection={value}
           reset={reset}
           updateCollection={onChange}
@@ -169,19 +157,18 @@ export type AllPageListConfig = {
   allPages: PageMeta[];
   workspace: Workspace;
   isEdgeless: (id: string) => boolean;
+  getPage: (id: string) => PageMeta | undefined;
 };
 const RulesMode = ({
   collection,
   updateCollection,
   reset,
-  propertiesMeta,
   buttons,
   allPageListConfig,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
   reset: () => void;
-  propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
   allPageListConfig: AllPageListConfig;
 }) => {
@@ -252,7 +239,7 @@ const RulesMode = ({
           </div>
           <div className={styles.rulesContainerLeftContent}>
             <FilterList
-              propertiesMeta={propertiesMeta}
+              propertiesMeta={allPageListConfig.workspace.meta.properties}
               value={collection.filterList}
               onChange={useCallback(
                 filterList => updateCollection({ ...collection, filterList }),
@@ -363,13 +350,11 @@ const RulesMode = ({
 const PagesMode = ({
   collection,
   updateCollection,
-  propertiesMeta,
   buttons,
   allPageListConfig,
 }: {
   collection: Collection;
   updateCollection: (collection: Collection) => void;
-  propertiesMeta: PropertiesMeta;
   buttons: ReactNode;
   allPageListConfig: AllPageListConfig;
 }) => {
@@ -444,7 +429,7 @@ const PagesMode = ({
               <Menu
                 items={
                   <VariableSelect
-                    propertiesMeta={propertiesMeta}
+                    propertiesMeta={allPageListConfig.workspace.meta.properties}
                     selected={filters}
                     onSelect={onCreateFilter}
                   />
@@ -471,7 +456,7 @@ const PagesMode = ({
           {showFilter ? (
             <div style={{ padding: '12px 16px 16px' }}>
               <FilterList
-                propertiesMeta={propertiesMeta}
+                propertiesMeta={allPageListConfig.workspace.meta.properties}
                 value={filters}
                 onChange={changeFilters}
               />

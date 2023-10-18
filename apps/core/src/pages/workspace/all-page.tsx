@@ -1,6 +1,5 @@
 import { toast } from '@affine/component';
 import {
-  type AllPageListConfig,
   CollectionBar,
   currentCollectionAtom,
   FavoriteTag,
@@ -14,7 +13,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -22,6 +21,7 @@ import { NIL } from 'uuid';
 import { getUIAdapter } from '../../adapters/workspace';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
+import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
@@ -124,14 +124,7 @@ export const AllPage = () => {
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
   );
-  const config = useMemo<AllPageListConfig>(
-    () => ({
-      allPages: pageMetas,
-      isEdgeless: isPreferredEdgeless,
-      workspace: currentWorkspace.blockSuiteWorkspace,
-    }),
-    [currentWorkspace.blockSuiteWorkspace, isPreferredEdgeless, pageMetas]
-  );
+  const config = useAllPageListConfig();
   return (
     <div className={styles.root}>
       <Header

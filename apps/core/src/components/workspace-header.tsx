@@ -1,5 +1,4 @@
 import {
-  type AllPageListConfig,
   CollectionList,
   FilterList,
   SaveAsCollectionButton,
@@ -12,18 +11,16 @@ import type {
   WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useSetAtom } from 'jotai/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import { collectionsCRUDAtom } from '../atoms/collections';
 import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
-import { useGetPageInfoById } from '../hooks/use-get-page-info';
+import { useAllPageListConfig } from '../hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useWorkspace } from '../hooks/use-workspace';
 import { SharePageModal } from './affine/share-page-modal';
 import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
-import { usePageHelper } from './blocksuite/block-suite-page-list/utils';
 import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
 import { PluginHeader } from './pure/plugin-header';
@@ -77,9 +74,7 @@ export function WorkspaceHeader({
 
   const currentWorkspace = useWorkspace(currentWorkspaceId);
   const workspace = currentWorkspace.blockSuiteWorkspace;
-  const allPages = useBlockSuitePageMeta(workspace);
   const setting = useCollectionManager(collectionsCRUDAtom);
-  const getPageInfoById = useGetPageInfoById(workspace);
   const navigateHelper = useNavigateHelper();
   const backToAll = useCallback(() => {
     navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
@@ -90,15 +85,7 @@ export function WorkspaceHeader({
     },
     [navigateHelper, currentWorkspace.id]
   );
-  const { isPreferredEdgeless } = usePageHelper(workspace);
-  const config = useMemo<AllPageListConfig>(
-    () => ({
-      allPages,
-      isEdgeless: isPreferredEdgeless,
-      workspace: workspace,
-    }),
-    [allPages, isPreferredEdgeless, workspace]
-  );
+  const config = useAllPageListConfig();
   // route in all page
   if (
     'subPath' in currentEntry &&
@@ -115,7 +102,6 @@ export function WorkspaceHeader({
               jumpToCollection={jumpToCollection}
               backToAll={backToAll}
               setting={setting}
-              getPageInfo={getPageInfoById}
               propertiesMeta={workspace.meta.properties}
             />
           }

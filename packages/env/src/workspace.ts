@@ -10,6 +10,7 @@ import type { DataSourceAdapter } from 'y-provider';
 
 export enum WorkspaceSubPath {
   ALL = 'all',
+  Collection = 'collection',
   SETTING = 'setting',
   TRASH = 'trash',
   SHARED = 'shared',

@@ -25,7 +25,7 @@ interface CollectionBarProps {
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
-  const { getPageInfo, propertiesMeta, columnsCount, collectionsAtom } = props;
+  const { columnsCount, collectionsAtom } = props;
   const t = useAFFiNEI18N();
   const setting = useCollectionManager(collectionsAtom);
   const collection = setting.currentCollection;
@@ -41,8 +41,6 @@ export const CollectionBar = (props: CollectionBarProps) => {
         <div className={styles.view}>
           <EditCollectionModal
             allPageListConfig={props.allPageListConfig}
-            propertiesMeta={propertiesMeta}
-            getPageInfo={getPageInfo}
             init={collection}
             open={open}
             onOpenChange={setOpen}

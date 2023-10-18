@@ -1,13 +1,11 @@
 import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
 import {
-  type AllPageListConfig,
   EditCollectionModal,
   filterPage,
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
@@ -32,9 +30,8 @@ import type { ReactElement } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
-import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
+import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
-import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -128,14 +125,11 @@ const CollectionRenderer = ({
   collection,
   pages,
   workspace,
-  getPageInfo,
 }: {
   collection: Collection;
   pages: PageMeta[];
   workspace: Workspace;
-  getPageInfo: GetPageInfoById;
 }) => {
-  const allPages = useBlockSuitePageMeta(workspace);
   const [collapsed, setCollapsed] = useState(true);
   const setting = useCollectionManager(collectionsCRUDAtom);
   const { jumpToCollection } = useNavigateHelper();
@@ -173,21 +167,11 @@ const CollectionRenderer = ({
   const pagesToRender = pages.filter(
     page => filterPage(collection, page) && !page.trash
   );
-  const { isPreferredEdgeless } = usePageHelper(workspace);
-  const config = useMemo<AllPageListConfig>(
-    () => ({
-      allPages,
-      isEdgeless: isPreferredEdgeless,
-      workspace,
-    }),
-    [allPages, isPreferredEdgeless, workspace]
-  );
+  const config = useAllPageListConfig();
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModal
         allPageListConfig={config}
-        propertiesMeta={workspace.meta.properties}
-        getPageInfo={getPageInfo}
         init={collection}
         onConfirm={setting.updateCollection}
         open={show}
@@ -254,7 +238,6 @@ const CollectionRenderer = ({
 export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
   const { collections } = useSavedCollections(collectionsCRUDAtom);
-  const getPageInfo = useGetPageInfoById(workspace);
   const t = useAFFiNEI18N();
   if (collections.length === 0) {
     return (
@@ -272,7 +255,6 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
       {collections.map(view => {
         return (
           <CollectionRenderer
-            getPageInfo={getPageInfo}
             key={view.id}
             collection={view}
             pages={metas}

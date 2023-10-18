@@ -1,6 +1,5 @@
 import type { Collection, Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
-import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
@@ -103,14 +102,12 @@ const CollectionOption = ({
 };
 export const CollectionList = ({
   setting,
-  getPageInfo,
   propertiesMeta,
   backToAll,
   jumpToCollection,
   allPageListConfig,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
-  getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   backToAll: () => void;
   jumpToCollection: (id: string) => void;
@@ -220,8 +217,6 @@ export const CollectionList = ({
       ) : null}
       <EditCollectionModal
         allPageListConfig={allPageListConfig}
-        propertiesMeta={propertiesMeta}
-        getPageInfo={getPageInfo}
         init={collection}
         open={!!collection}
         onOpenChange={closeUpdateCollectionModal}
