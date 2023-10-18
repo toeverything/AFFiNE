@@ -1,7 +1,7 @@
 import { useCollectionManager } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
-import { getActiveBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
@@ -16,7 +16,7 @@ export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();
   const workspaceId = args.params.workspaceId;
   assertExists(workspaceId);
-  const workspaceAtom = getActiveBlockSuiteWorkspaceAtom(workspaceId);
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(workspaceId);
   const workspace = await rootStore.get(workspaceAtom);
   for (const pageId of workspace.pages.keys()) {
     const page = workspace.getPage(pageId);

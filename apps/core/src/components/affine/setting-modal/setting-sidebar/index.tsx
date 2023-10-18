@@ -11,7 +11,7 @@ import { Avatar } from '@toeverything/components/avatar';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useStaticBlockSuiteWorkspace } from '@toeverything/infra/__internal__/react';
+import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
 import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
@@ -209,7 +209,8 @@ const WorkspaceListItem = ({
   isCurrent: boolean;
   isActive: boolean;
 }) => {
-  const workspace = useStaticBlockSuiteWorkspace(meta.id);
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(meta.id);
+  const workspace = useAtomValue(workspaceAtom);
   const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
   const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
 

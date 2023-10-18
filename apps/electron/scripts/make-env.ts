@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const { z } = require('zod');
-
-const path = require('node:path');
+import { z } from 'zod';
 
 const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -39,15 +40,15 @@ const platform =
     ? process.argv[process.argv.indexOf('--platform') + 1]
     : process.platform;
 
-module.exports = {
-  ROOT,
+export {
+  arch,
   buildType,
-  productName,
-  icoPath,
   icnsPath,
   iconPngPath,
   iconUrl,
-  arch,
+  icoPath,
   platform,
+  productName,
+  ROOT,
   stableBuild,
 };

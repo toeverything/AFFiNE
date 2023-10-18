@@ -264,20 +264,12 @@ if (!nativeBinding) {
 }
 
 const {
-  WatcherKind,
-  Subscription,
-  FsWatcher,
-  moveFile,
   SqliteConnection,
   ValidationResult,
   verifyChallengeResponse,
   mintChallengeResponse,
 } = nativeBinding;
 
-module.exports.WatcherKind = WatcherKind;
-module.exports.Subscription = Subscription;
-module.exports.FsWatcher = FsWatcher;
-module.exports.moveFile = moveFile;
 module.exports.SqliteConnection = SqliteConnection;
 module.exports.ValidationResult = ValidationResult;
 module.exports.verifyChallengeResponse = verifyChallengeResponse;
