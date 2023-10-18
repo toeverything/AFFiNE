@@ -62,6 +62,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       R2_OBJECT_STORAGE_ACCESS_KEY_ID: 'objectStorage.r2.accessKeyId',
       R2_OBJECT_STORAGE_SECRET_ACCESS_KEY: 'objectStorage.r2.secretAccessKey',
       R2_OBJECT_STORAGE_BUCKET: 'objectStorage.r2.bucket',
+      ENABLE_CAPTCHA: ['auth.captcha.enable', 'boolean'],
+      CAPTCHA_TURNSTILE_SECRET: ['auth.captcha.turnstile.secret', 'string'],
       OAUTH_GOOGLE_ENABLED: ['auth.oauthProviders.google.enabled', 'boolean'],
       OAUTH_GOOGLE_CLIENT_ID: 'auth.oauthProviders.google.clientId',
       OAUTH_GOOGLE_CLIENT_SECRET: 'auth.oauthProviders.google.clientSecret',
@@ -147,6 +149,15 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       refreshTokenExpiresIn: parse('7d')! / 1000,
       leeway: 60,
+      captcha: {
+        enable: false,
+        turnstile: {
+          secret: '1x0000000000000000000000000000000AA',
+        },
+        challenge: {
+          bits: 20,
+        },
+      },
       privateKey: jwtKeyPair.privateKey,
       publicKey: jwtKeyPair.publicKey,
       enableSignup: true,

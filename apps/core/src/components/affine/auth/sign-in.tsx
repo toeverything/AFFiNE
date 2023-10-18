@@ -18,6 +18,7 @@ import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { INTERNAL_BETA_URL, useAuth } from './use-auth';
+import { Captcha, useCaptcha } from './use-captcha';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
@@ -31,6 +32,7 @@ export const SignIn: FC<AuthPanelProps> = ({
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
+  const [verifyToken, challenge] = useCaptcha();
 
   const {
     isMutating: isSigningIn,
@@ -78,20 +80,33 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
     setAuthEmail(email);
 
-    if (user) {
-      const res = await signIn(email);
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        return setAuthState('noAccess');
+    if (verifyToken) {
+      if (user) {
+        const res = await signIn(email, verifyToken, challenge);
+        if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+          return setAuthState('noAccess');
+        }
+        setAuthState('afterSignInSendEmail');
+      } else {
+        const res = await signUp(email, verifyToken, challenge);
+        if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+          return setAuthState('noAccess');
+        } else if (!res || res.status >= 400 || res.error) {
+          return;
+        }
+        setAuthState('afterSignUpSendEmail');
       }
-      setAuthState('afterSignInSendEmail');
-    } else {
-      const res = await signUp(email);
-      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-        return setAuthState('noAccess');
-      }
-      setAuthState('afterSignUpSendEmail');
     }
-  }, [email, setAuthEmail, setAuthState, signIn, signUp, verifyUser]);
+  }, [
+    challenge,
+    email,
+    setAuthEmail,
+    setAuthState,
+    signIn,
+    signUp,
+    verifyToken,
+    verifyUser,
+  ]);
 
   return (
     <>
@@ -133,41 +148,45 @@ export const SignIn: FC<AuthPanelProps> = ({
           onEnter={onContinue}
         />
 
-        <Button
-          size="extraLarge"
-          data-testid="continue-login-button"
-          block
-          loading={isMutating || isSigningIn}
-          disabled={!allowSendEmail}
-          icon={
-            allowSendEmail || isMutating ? (
-              <ArrowDownBigIcon
-                width={20}
-                height={20}
-                style={{
-                  transform: 'rotate(-90deg)',
-                  color: 'var(--affine-blue)',
-                }}
-              />
-            ) : (
-              <CountDownRender
-                className={style.resendCountdownInButton}
-                timeLeft={resendCountDown}
-              />
-            )
-          }
-          iconPosition="end"
-          onClick={onContinue}
-        >
-          {t['com.affine.auth.sign.email.continue']()}
-        </Button>
+        {verifyToken ? null : <Captcha />}
+
+        {verifyToken ? (
+          <Button
+            size="extraLarge"
+            data-testid="continue-login-button"
+            block
+            loading={isMutating || isSigningIn}
+            disabled={!allowSendEmail}
+            icon={
+              allowSendEmail || isMutating ? (
+                <ArrowDownBigIcon
+                  width={20}
+                  height={20}
+                  style={{
+                    transform: 'rotate(-90deg)',
+                    color: 'var(--affine-blue)',
+                  }}
+                />
+              ) : (
+                <CountDownRender
+                  className={style.resendCountdownInButton}
+                  timeLeft={resendCountDown}
+                />
+              )
+            }
+            iconPosition="end"
+            onClick={onContinue}
+          >
+            {t['com.affine.auth.sign.email.continue']()}
+          </Button>
+        ) : null}
 
         <div className={style.authMessage}>
           {/*prettier-ignore*/}
           <Trans i18nKey="com.affine.auth.sign.message">
               By clicking &quot;Continue with Google/Email&quot; above, you acknowledge that
               you agree to AFFiNE&apos;s <a href="https://affine.pro/terms" target="_blank" rel="noreferrer">Terms of Conditions</a> and <a href="https://affine.pro/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
-            </Trans>
+          </Trans>
         </div>
       </div>
     </>

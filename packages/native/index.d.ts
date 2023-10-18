@@ -25,6 +25,15 @@ export enum ValidationResult {
   GeneralError = 3,
   Valid = 4,
 }
+export function verifyChallengeResponse(
+  response: string,
+  bits: number,
+  resource: string
+): Promise<boolean>;
+export function mintChallengeResponse(
+  resource: string,
+  bits?: number | undefined | null
+): Promise<string>;
 export class SqliteConnection {
   constructor(path: string);
   connect(): Promise<void>;

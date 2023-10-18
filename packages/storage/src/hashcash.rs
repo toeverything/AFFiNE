@@ -1,0 +1,1 @@
+../../native/src/hashcash.rs

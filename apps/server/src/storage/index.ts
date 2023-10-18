@@ -34,3 +34,17 @@ export class StorageModule {
 }
 
 export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;
+
+export const verifyChallengeResponse = async (
+  response: any,
+  bits: number,
+  resource: string
+) => {
+  if (typeof response !== 'string' || !response || !resource) return false;
+  return storageModule.verifyChallengeResponse(response, bits, resource);
+};
+
+export const mintChallengeResponse = async (resource: string, bits: number) => {
+  if (!resource) return null;
+  return storageModule.mintChallengeResponse(resource, bits);
+};

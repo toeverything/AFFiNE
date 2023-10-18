@@ -32,7 +32,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "socket.io-client": "^4.7.2",
-    "swr": "2.2.0",
+    "swr": "2.2.4",
     "valtio": "^1.11.2",
     "y-protocols": "^1.0.6",
     "y-provider": "workspace:*",

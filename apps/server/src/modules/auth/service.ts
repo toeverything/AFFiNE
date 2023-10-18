@@ -9,9 +9,11 @@ import {
 import { hash, verify } from '@node-rs/argon2';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import type { User } from '@prisma/client';
+import { nanoid } from 'nanoid';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { verifyChallengeResponse } from '../../storage';
 import { MailService } from './mailer';
 
 export type UserClaim = Pick<
@@ -108,6 +110,38 @@ export class AuthService {
     } catch (e) {
       throw new UnauthorizedException('Invalid token');
     }
+  }
+
+  async verifyCaptchaToken(token: any, ip: string) {
+    if (typeof token !== 'string' || !token) return false;
+
+    const formData = new FormData();
+    formData.append('secret', this.config.auth.captcha.turnstile.secret);
+    formData.append('response', token);
+    formData.append('remoteip', ip);
+    // prevent replay attack
+    formData.append('idempotency_key', nanoid());
+
+    const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+    const result = await fetch(url, {
+      body: formData,
+      method: 'POST',
+    });
+    const outcome = await result.json();
+
+    return (
+      !!outcome.success &&
+      // skip hostname check in dev mode
+      (this.config.affineEnv === 'dev' || outcome.hostname === this.config.host)
+    );
+  }
+
+  async verifyChallengeResponse(response: any, resource: string) {
+    return verifyChallengeResponse(
+      response,
+      this.config.auth.captcha.challenge.bits,
+      resource
+    );
   }
 
   async signIn(email: string, password: string): Promise<User> {

@@ -10,6 +10,7 @@ import { AuthModule } from '../src/modules/auth';
 import { AuthResolver } from '../src/modules/auth/resolver';
 import { AuthService } from '../src/modules/auth/service';
 import { PrismaModule } from '../src/prisma';
+import { mintChallengeResponse, verifyChallengeResponse } from '../src/storage';
 import { RateLimiterModule } from '../src/throttler';
 
 let authService: AuthService;
@@ -175,4 +176,11 @@ test('should return valid sessionToken if request headers valid', async t => {
     user
   );
   t.is(result.sessionToken, '123456');
+});
+
+test('verify challenge', async t => {
+  const resource = 'xp8D3rcXV9bMhWrb6abxl';
+  const response = await mintChallengeResponse(resource, 20);
+  const success = await verifyChallengeResponse(response, 20, resource);
+  t.true(success);
 });

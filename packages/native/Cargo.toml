@@ -21,8 +21,10 @@ napi-derive = "2"
 notify = { version = "6", features = ["serde"] }
 once_cell = "1"
 parking_lot = "0.12"
+rand = "0.8"
 serde = "1"
 serde_json = "1"
+sha3 = "0.10"
 sqlx = { version = "0.7.1", default-features = false, features = [
   "sqlite",
   "migrate",

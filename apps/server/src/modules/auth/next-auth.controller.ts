@@ -4,6 +4,7 @@ import {
   All,
   BadRequestException,
   Controller,
+  Get,
   Inject,
   Logger,
   Next,
@@ -17,12 +18,14 @@ import { hash, verify } from '@node-rs/argon2';
 import type { User } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { pick } from 'lodash-es';
+import { nanoid } from 'nanoid';
 import type { AuthAction, CookieOption, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma/service';
+import { SessionService } from '../../session';
 import { AuthThrottlerGuard, Throttle } from '../../throttler';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
@@ -43,10 +46,26 @@ export class NextAuthController {
     private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,
-    private readonly metrics: Metrics
+    private readonly metrics: Metrics,
+    private readonly session: SessionService
   ) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.callbackSession = nextAuthOptions.callbacks!.session;
+  }
+
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60,
+    },
+  })
+  @Get('/challenge')
+  async getChallenge(@Res() res: Response) {
+    const challenge = nanoid();
+    const resource = nanoid();
+    await this.session.set(challenge, resource, 5 * 60 * 1000);
+    res.json({ challenge, resource });
   }
 
   @UseGuards(AuthThrottlerGuard)
@@ -128,6 +147,16 @@ export class NextAuthController {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       options.callbacks!.session = this.callbackSession;
     }
+
+    if (
+      this.config.auth.captcha.enable &&
+      req.method === 'POST' &&
+      action === 'signin'
+    ) {
+      const isVerified = await this.verifyChallenge(req, res);
+      if (!isVerified) return;
+    }
+
     const { status, headers, body, redirect, cookies } = await AuthHandler({
       req: {
         body: req.body,
@@ -270,6 +299,44 @@ export class NextAuthController {
     }
   }
 
+  private async verifyChallenge(req: Request, res: Response): Promise<boolean> {
+    const challenge = req.query?.challenge;
+    if (typeof challenge === 'string' && challenge) {
+      const resource = await this.session.get(challenge);
+
+      if (!resource) {
+        this.rejectResponse(res, 'Invalid Challenge');
+        return false;
+      }
+
+      const isChallengeVerified =
+        await this.authService.verifyChallengeResponse(
+          req.query?.token,
+          resource
+        );
+
+      this.logger.debug(
+        `Challenge: ${challenge}, Resource: ${resource}, Response: ${req.query?.token}, isChallengeVerified: ${isChallengeVerified}`
+      );
+
+      if (!isChallengeVerified) {
+        this.rejectResponse(res, 'Invalid Challenge Response');
+        return false;
+      }
+    } else {
+      const isTokenVerified = await this.authService.verifyCaptchaToken(
+        req.query?.token,
+        req.headers['CF-Connecting-IP'] as string
+      );
+
+      if (!isTokenVerified) {
+        this.rejectResponse(res, 'Invalid Captcha Response');
+        return false;
+      }
+    }
+    return true;
+  }
+
   private async verifyUserFromRequest(req: Request): Promise<User> {
     const token = req.headers.authorization;
     if (!token) {
@@ -310,6 +377,18 @@ export class NextAuthController {
       }
     }
     throw new BadRequestException(`User not found`);
+  }
+
+  rejectResponse(res: Response, error: string, status = 400) {
+    res.status(status);
+    res.json({
+      url: `https://${this.config.baseUrl}/api/auth/error?${new URLSearchParams(
+        {
+          error,
+        }
+      ).toString()}`,
+      error,
+    });
   }
 }
 

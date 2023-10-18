@@ -263,7 +263,14 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`);
 }
 
-const { SqliteConnection, ValidationResult } = nativeBinding;
+const {
+  SqliteConnection,
+  ValidationResult,
+  verifyChallengeResponse,
+  mintChallengeResponse,
+} = nativeBinding;
 
 module.exports.SqliteConnection = SqliteConnection;
 module.exports.ValidationResult = ValidationResult;
+module.exports.verifyChallengeResponse = verifyChallengeResponse;
+module.exports.mintChallengeResponse = mintChallengeResponse;

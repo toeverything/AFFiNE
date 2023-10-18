@@ -13,6 +13,7 @@ import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-s
 import type { AuthPanelProps } from './index';
 import * as style from './style.css';
 import { useAuth } from './use-auth';
+import { Captcha, useCaptcha } from './use-captcha';
 
 export const AfterSignInSendEmail = ({
   setAuthState,
@@ -21,6 +22,7 @@ export const AfterSignInSendEmail = ({
 }: AuthPanelProps) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
+  const [verifyToken, challenge] = useCaptcha();
 
   const { resendCountDown, allowSendEmail, signIn } = useAuth();
   if (loginStatus === 'authenticated') {
@@ -28,8 +30,10 @@ export const AfterSignInSendEmail = ({
   }
 
   const onResendClick = useCallback(async () => {
-    await signIn(email);
-  }, [email, signIn]);
+    if (verifyToken) {
+      await signIn(email, verifyToken, challenge);
+    }
+  }, [challenge, email, signIn, verifyToken]);
 
   return (
     <>
@@ -37,7 +41,7 @@ export const AfterSignInSendEmail = ({
         title={t['com.affine.auth.sign.in']()}
         subTitle={t['com.affine.auth.sign.in.sent.email.subtitle']()}
       />
-      <AuthContent style={{ height: 162 }}>
+      <AuthContent style={{ height: 100 }}>
         {t['com.affine.auth.sign.sent.email.message.start']()}
         <a href={`mailto:${email}`}>{email}</a>
         {t['com.affine.auth.sign.sent.email.message.end']()}
@@ -45,9 +49,18 @@ export const AfterSignInSendEmail = ({
 
       <div className={style.resendWrapper}>
         {allowSendEmail ? (
-          <Button type="plain" size="large" onClick={onResendClick}>
-            {t['com.affine.auth.sign.auth.code.resend.hint']()}
-          </Button>
+          <>
+            <Captcha />
+            <Button
+              style={!verifyToken ? { cursor: 'not-allowed' } : {}}
+              disabled={!verifyToken}
+              type="plain"
+              size="large"
+              onClick={onResendClick}
+            >
+              {t['com.affine.auth.sign.auth.code.resend.hint']()}
+            </Button>
+          </>
         ) : (
           <>
             <span className="resend-code-hint">

@@ -4,6 +4,12 @@ export const authModalContent = style({
   marginTop: '30px',
 });
 
+export const captchaWrapper = style({
+  margin: 'auto',
+  marginBottom: '4px',
+  textAlign: 'center',
+});
+
 export const authMessage = style({
   marginTop: '30px',
   color: 'var(--affine-text-secondary-color)',
@@ -28,8 +34,9 @@ export const forgetPasswordButton = style({
 });
 
 export const resendWrapper = style({
-  height: 32,
+  height: 77,
   display: 'flex',
+  flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
   marginTop: 30,

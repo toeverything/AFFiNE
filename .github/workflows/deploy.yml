@@ -57,6 +57,7 @@ jobs:
           BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: true
           TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
+          CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:
@@ -197,6 +198,8 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          ENABLE_CAPTCHA: true
+          CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
           OAUTH_EMAIL_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
           OAUTH_EMAIL_LOGIN: ${{ secrets.OAUTH_EMAIL_LOGIN }}
           OAUTH_EMAIL_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
