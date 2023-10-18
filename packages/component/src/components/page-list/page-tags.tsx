@@ -1,4 +1,6 @@
 import type { Tag } from '@affine/env/filter';
+import { MoreHorizontalIcon } from '@blocksuite/icons';
+import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -11,9 +13,19 @@ export interface PageTagsProps {
   hoverExpandDirection?: 'left' | 'right'; // expansion direction on hover
 }
 
-const TagItem = ({ tag, idx }: { tag: Tag; idx: number }) => {
+interface TagItemProps {
+  tag: Tag;
+  idx: number;
+  sticky?: boolean;
+}
+
+const TagItem = ({ tag, idx, sticky }: TagItemProps) => {
   return (
-    <div data-testid="page-tag" className={styles.tag} data-idx={idx}>
+    <div
+      data-testid="page-tag"
+      className={sticky ? styles.tagSticky : styles.tag}
+      data-idx={idx}
+    >
       <div
         className={styles.tagIndicator}
         style={{
@@ -57,11 +69,23 @@ export const PageTags = ({
     return;
   }, [hoverExpandDirection]);
 
-  const firstNTags = useMemo(() => {
-    if (!maxItems) return tags;
-    return tags.slice(0, maxItems);
+  const tagsInPopover = useMemo(() => {
+    const lastTags = tags.slice(maxItems);
+    return (
+      <div className={styles.tagsWrapContainer}>
+        {lastTags.map((tag, idx) => (
+          <TagItem key={tag.id} tag={tag} idx={idx} />
+        ))}
+      </div>
+    );
   }, [maxItems, tags]);
 
+  const tagsNormal = useMemo(() => {
+    const nTags = maxItems ? tags.slice(0, maxItems) : tags;
+    return nTags.map((tag, idx) => (
+      <TagItem key={tag.id} tag={tag} idx={idx} sticky />
+    ));
+  }, [maxItems, tags]);
   return (
     <div
       data-testid="page-tags"
@@ -80,10 +104,15 @@ export const PageTags = ({
       >
         <div className={styles.innerBackdrop} />
         <div className={styles.tagsScrollContainer} ref={tagsContainerRef}>
-          {firstNTags.map((tag, idx) => (
-            <TagItem key={tag.id} tag={tag} idx={idx} />
-          ))}
+          {tagsNormal}
         </div>
+        {maxItems && tags.length > maxItems ? (
+          <Tooltip content={tagsInPopover}>
+            <div className={styles.showMoreTag}>
+              <MoreHorizontalIcon />
+            </div>
+          </Tooltip>
+        ) : null}
       </div>
     </div>
   );

@@ -7,16 +7,31 @@ export const root = style({
   minHeight: '32px',
 });
 
-export const tagsScrollContainer = style({
-  overflow: 'auto',
+export const tagsContainer = style({
   display: 'flex',
   alignItems: 'center',
-  columnGap: '8px',
-  height: '100%',
-  width: '100%',
+  gap: '8px',
 });
 
+export const tagsScrollContainer = style([
+  tagsContainer,
+  {
+    overflow: 'auto',
+    height: '100%',
+  },
+]);
+
+export const tagsWrapContainer = style([
+  tagsContainer,
+  {
+    flexWrap: 'wrap',
+  },
+]);
+
 export const innerContainer = style({
+  display: 'flex',
+  columnGap: '8px',
+  alignItems: 'center',
   position: 'absolute',
   height: '100%',
   maxWidth: '100%',
@@ -66,16 +81,30 @@ export const tag = style({
   border: '1px solid var(--affine-border-color)',
   fontSize: 'var(--affine-font-xs)',
   background: 'var(--affine-background-primary-color)',
+  color: 'var(--affine-text-primary-color)',
+});
+
+export const tagSticky = style([
+  tag,
+  {
+    position: 'sticky',
+    left: 0,
+    selectors: range(0, 20).reduce((selectors, i) => {
+      return {
+        ...selectors,
+        [`&:nth-last-child(${i + 1})`]: {
+          right: `${i * 48}px`,
+        },
+      };
+    }, {}),
+  },
+]);
+
+export const showMoreTag = style({
+  fontSize: 'var(--affine-font-h-5)',
+  right: 0,
   position: 'sticky',
-  left: 0,
-  selectors: range(0, 20).reduce((selectors, i) => {
-    return {
-      ...selectors,
-      [`&:nth-last-child(${i + 1})`]: {
-        right: `${i * 32}px`,
-      },
-    };
-  }, {}),
+  display: 'inline-flex',
 });
 
 export const tagIndicator = style({
