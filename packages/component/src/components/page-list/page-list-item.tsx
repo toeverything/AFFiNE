@@ -75,8 +75,12 @@ const PageSelectionCell = ({
 export const PageTagsCell = ({ tags }: Pick<PageListItemProps, 'tags'>) => {
   return (
     <div data-testid="page-list-item-tags" className={styles.tagsCell}>
-      {/* fixme: give dynamic width & maxWidth */}
-      <PageTags tags={tags} hoverExpandDirection="left" widthOnHover="300%" />
+      <PageTags
+        tags={tags}
+        hoverExpandDirection="left"
+        widthOnHover="300%"
+        maxItems={5}
+      />
     </div>
   );
 };

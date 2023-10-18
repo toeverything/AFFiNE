@@ -7,21 +7,42 @@ export const root = style({
   minHeight: '32px',
 });
 
-export const innerContainer = style({
+export const tagsScrollContainer = style({
+  overflow: 'auto',
   display: 'flex',
   alignItems: 'center',
   columnGap: '8px',
-  overflow: 'auto',
+  height: '100%',
+  width: '100%',
+});
+
+export const innerContainer = style({
   position: 'absolute',
   height: '100%',
   maxWidth: '100%',
-  transition: 'max-width 0.3s 0.2s ease-in-out',
+  transition: 'all 0.2s 0.3s ease-in-out',
   padding: '0 16px',
   selectors: {
-    '&:hover': {
+    [`${root}:hover &`]: {
       maxWidth: 'var(--hover-max-width)',
-      background:
-        'linear-gradient(90deg, transparent 0%, var(--affine-hover-color-filled) 60%)',
+    },
+  },
+});
+
+// background with linear gradient hack
+export const innerBackdrop = style({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: '100%',
+  opacity: 0,
+  transition: 'all 0.2s',
+  background:
+    'linear-gradient(90deg, transparent 0%, var(--affine-hover-color-filled) 40%)',
+  selectors: {
+    [`${root}:hover &`]: {
+      opacity: 1,
     },
   },
 });

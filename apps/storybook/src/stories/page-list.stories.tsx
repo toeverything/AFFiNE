@@ -164,6 +164,7 @@ ListItemTags.args = {
   tags: testTags,
   hoverExpandDirection: 'left',
   widthOnHover: 600,
+  maxItems: 5,
 };
 
 export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {

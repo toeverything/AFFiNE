@@ -1,11 +1,12 @@
 import type { Tag } from '@affine/env/filter';
 import clsx from 'clsx';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import * as styles from './page-tags.css';
 
 export interface PageTagsProps {
   tags: Tag[];
+  maxItems?: number; // max number to show. if not specified, show all. if specified, show the first n items and add a "..." tag
   widthOnHover?: number | string; // max width on hover
   hoverExpandDirection?: 'left' | 'right'; // expansion direction on hover
 }
@@ -27,6 +28,7 @@ const TagItem = ({ tag, idx }: { tag: Tag; idx: number }) => {
 export const PageTags = ({
   tags,
   widthOnHover,
+  maxItems,
   hoverExpandDirection,
 }: PageTagsProps) => {
   const sanitizedWidthOnHover = widthOnHover
@@ -34,42 +36,54 @@ export const PageTags = ({
       ? widthOnHover
       : `${widthOnHover}px`
     : 'auto';
-  const innerContainerRef = useRef<HTMLDivElement>(null);
+  const tagsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (innerContainerRef.current) {
-      const innerContainer = innerContainerRef.current;
+    if (tagsContainerRef.current) {
+      const tagsContainer = tagsContainerRef.current;
       const listener = () => {
         // on mouseleave, reset scroll position to the hoverExpandDirection
-        innerContainer.scrollTo({
+        tagsContainer.scrollTo({
           left: hoverExpandDirection === 'left' ? Number.MAX_SAFE_INTEGER : 0,
           behavior: 'smooth',
         });
       };
       listener();
-      innerContainerRef.current.addEventListener('mouseleave', listener);
+      tagsContainerRef.current.addEventListener('mouseleave', listener);
       return () => {
-        innerContainer.removeEventListener('mouseleave', listener);
+        tagsContainer.removeEventListener('mouseleave', listener);
       };
     }
     return;
   }, [hoverExpandDirection]);
 
+  const firstNTags = useMemo(() => {
+    if (!maxItems) return tags;
+    return tags.slice(0, maxItems);
+  }, [maxItems, tags]);
+
   return (
-    <div data-testid="page-tags" className={styles.root}>
+    <div
+      data-testid="page-tags"
+      className={styles.root}
+      style={{
+        // @ts-expect-error it's fine
+        '--hover-max-width': sanitizedWidthOnHover,
+      }}
+    >
       <div
-        ref={innerContainerRef}
         style={{
           right: hoverExpandDirection === 'left' ? 0 : 'auto',
           left: hoverExpandDirection === 'right' ? 0 : 'auto',
-          // @ts-expect-error it's fine
-          '--hover-max-width': sanitizedWidthOnHover,
         }}
         className={clsx(styles.innerContainer)}
       >
-        {tags.map((tag, idx) => (
-          <TagItem key={tag.id} tag={tag} idx={idx} />
-        ))}
+        <div className={styles.innerBackdrop} />
+        <div className={styles.tagsScrollContainer} ref={tagsContainerRef}>
+          {firstNTags.map((tag, idx) => (
+            <TagItem key={tag.id} tag={tag} idx={idx} />
+          ))}
+        </div>
       </div>
     </div>
   );
