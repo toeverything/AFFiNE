@@ -2,23 +2,23 @@
   "name": "@affine/electron",
   "private": true,
   "version": "0.10.0-canary.1",
-  "author": "affine",
+  "author": "toeverything",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
     "type": "git"
   },
-  "description": "AFFiNE App",
+  "description": "AFFiNE Desktop App",
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
     "start": "electron .",
-    "dev": "yarn cross-env DEV_SERVER_URL=http://localhost:8080 node scripts/dev.mjs",
-    "dev:prod": "yarn node scripts/dev.mjs",
-    "build": "NODE_ENV=production zx scripts/build-layers.mjs",
-    "build:dev": "NODE_ENV=development zx scripts/build-layers.mjs",
-    "generate-assets": "zx scripts/generate-assets.mjs",
+    "dev": "DEV_SERVER_URL=http://localhost:8080 yarn ts-node ./scripts/dev.ts",
+    "dev:prod": "yarn ts-node scripts/dev.ts",
+    "build": "NODE_ENV=production ts-node scripts/build-layers.ts",
+    "build:dev": "NODE_ENV=development ts-node scripts/build-layers.ts",
+    "generate-assets": "ts-node scripts/generate-assets.ts",
     "package": "electron-forge package",
-    "make": "electron-forge make",
-    "make-squirrel": "yarn ts-node-esm -T scripts/make-squirrel.mts"
+    "make": "NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge make",
+    "make-squirrel": "yarn ts-node scripts/make-squirrel.ts"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -51,7 +51,6 @@
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.5",
     "builder-util-runtime": "^9.2.1",
-    "cross-env": "7.0.3",
     "electron": "^27.0.0",
     "electron-log": "^5.0.0-rc.1",
     "electron-squirrel-startup": "1.0.0",
@@ -69,8 +68,7 @@
     "uuid": "^9.0.1",
     "vitest": "0.34.6",
     "which": "^4.0.0",
-    "zod": "^3.22.4",
-    "zx": "^7.2.3"
+    "zod": "^3.22.4"
   },
   "dependencies": {
     "async-call-rpc": "^6.3.1",
@@ -89,7 +87,6 @@
       }
     ]
   },
-  "stableVersion": "0.5.3",
   "peerDependencies": {
     "ts-node": "*"
   }

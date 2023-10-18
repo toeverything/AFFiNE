@@ -1,23 +1,24 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+import cp from 'node:child_process';
+import { rm, symlink } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const path = require('node:path');
-const { rm, symlink } = require('node:fs/promises');
+import { utils } from '@electron-forge/core';
 
-const {
-  utils: { fromBuildIdentifier },
-} = require('@electron-forge/core');
-
-const {
+import {
   arch,
   buildType,
   icnsPath,
-  icoPath,
   iconPngPath,
+  iconUrl,
+  icoPath,
   platform,
   productName,
-  iconUrl,
-} = require('./scripts/make-env');
+} from './scripts/make-env.js';
 
+const fromBuildIdentifier = utils.fromBuildIdentifier;
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const makers = [
   !process.env.SKIP_BUNDLE &&
     platform === 'darwin' && {
@@ -90,7 +91,7 @@ const makers = [
 /**
  * @type {import('@electron-forge/shared-types').ForgeConfig}
  */
-module.exports = {
+export default {
   buildIdentifier: buildType,
   packagerConfig: {
     name: productName,
@@ -147,8 +148,6 @@ module.exports = {
         return;
       }
 
-      const { $ } = await import('zx');
-
       // TODO: right now we do not need the following
       // it is for octobase-node, but we dont use it for now.
       if (platform === 'darwin' && arch === 'arm64') {
@@ -157,13 +156,17 @@ module.exports = {
         process.env.TARGET = 'aarch64-apple-darwin';
       }
 
-      if (platform === 'win32') {
-        $.shell = 'powershell.exe';
-        $.prefix = '';
-      }
-
-      // run yarn generate-assets
-      await $`yarn generate-assets`;
+      cp.spawnSync('yarn', ['generate-assets'], {
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '').replace(
+            '--loader ts-node/esm',
+            ''
+          ),
+        },
+        cwd: __dirname,
+      });
     },
   },
 };
