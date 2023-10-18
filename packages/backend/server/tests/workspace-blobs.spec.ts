@@ -10,8 +10,8 @@ import { QuotaService } from '../src/modules/quota';
 import {
   checkBlobSize,
   collectAllBlobSizes,
-  collectBlobSizes,
   createWorkspace,
+  getWorkspaceBlobsSize,
   listBlobs,
   setBlob,
   signUp,
@@ -106,7 +106,7 @@ test('should calc blobs size', async t => {
   const buffer2 = Buffer.from([0, 1]);
   await setBlob(app, u1.token.token, workspace.id, buffer2);
 
-  const size = await collectBlobSizes(app, u1.token.token, workspace.id);
+  const size = await getWorkspaceBlobsSize(app, u1.token.token, workspace.id);
   t.is(size, 4, 'failed to collect blob sizes');
 });
 

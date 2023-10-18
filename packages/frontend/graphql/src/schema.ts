@@ -127,7 +127,7 @@ export type BlobSizesQueryVariables = Exact<{
 
 export type BlobSizesQuery = {
   __typename?: 'Query';
-  collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+  workspace: { __typename?: 'WorkspaceType'; blobsSize: number };
 };
 
 export type AllBlobSizesQueryVariables = Exact<{ [key: string]: never }>;

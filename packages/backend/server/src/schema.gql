@@ -187,6 +187,9 @@ type WorkspaceType {
   """Members of workspace"""
   members(skip: Int, take: Int): [InviteUserType!]!
 
+  """Blobs size of workspace"""
+  blobsSize: Int!
+
   """Permission of current signed in user in workspace"""
   permission: Permission!
 
@@ -269,7 +272,6 @@ type Query {
 
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]!
-  collectBlobSizes(workspaceId: String!): WorkspaceBlobSizes!
   collectAllBlobSizes: WorkspaceBlobSizes!
   checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 

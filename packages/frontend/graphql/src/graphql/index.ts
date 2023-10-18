@@ -56,12 +56,12 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 export const blobSizesQuery = {
   id: 'blobSizesQuery' as const,
   operationName: 'blobSizes',
-  definitionName: 'collectBlobSizes',
+  definitionName: 'workspace',
   containsFile: false,
   query: `
 query blobSizes($workspaceId: String!) {
-  collectBlobSizes(workspaceId: $workspaceId) {
-    size
+  workspace(id: $workspaceId) {
+    blobsSize
   }
 }`,
 };

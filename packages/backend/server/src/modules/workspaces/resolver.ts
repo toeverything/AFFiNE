@@ -86,6 +86,9 @@ export class WorkspaceType implements Partial<Workspace> {
     description: 'Members of workspace',
   })
   members!: InviteUserType[];
+
+  @Field({ description: 'Blobs size of workspace' })
+  blobsSize!: number;
 }
 
 @ObjectType()
@@ -229,6 +232,14 @@ export class WorkspaceResolver {
         inviteId: id,
         accepted,
       }));
+  }
+
+  @ResolveField(() => Int, {
+    description: 'Blobs size of workspace',
+    complexity: 2,
+  })
+  async blobsSize(@Parent() workspace: WorkspaceType) {
+    return this.storage.blobsSize([workspace.id]);
   }
 
   @Query(() => Boolean, {
@@ -657,16 +668,6 @@ export class WorkspaceResolver {
     await this.permissions.checkWorkspace(workspaceId, user.id);
 
     return this.storage.listBlobs(workspaceId);
-  }
-
-  @Query(() => WorkspaceBlobSizes)
-  async collectBlobSizes(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    await this.permissions.checkWorkspace(workspaceId, user.id);
-
-    return this.storage.blobsSize([workspaceId]).then(size => ({ size }));
   }
 
   @Query(() => WorkspaceBlobSizes)
