@@ -52,14 +52,14 @@ postgres=# \du
 ```
 DATABASE_URL="postgresql://affine:affine@localhost:5432/affine"
 NEXTAUTH_URL="http://localhost:8080/"
-OAUTH_EMAIL_LOGIN="production@toeverything.info"
-OAUTH_EMAIL_SENDER="noreply@toeverything.info"
-OAUTH_EMAIL_PASSWORD="corajqdetrpsjdev"
 ```
 
-You may need additional env for Google oauth login. You may want to put your own one if you are not part of the AFFiNE team
+You may need additional env for auth login. You may want to put your own one if you are not part of the AFFiNE team
 
 ```
+OAUTH_EMAIL_LOGIN=
+OAUTH_EMAIL_SENDER=
+OAUTH_EMAIL_PASSWORD=
 OAUTH_GOOGLE_ENABLED="true"
 OAUTH_GOOGLE_CLIENT_ID=
 OAUTH_GOOGLE_CLIENT_SECRET=
