@@ -1,5 +1,6 @@
 import type { Tag } from '@affine/env/filter';
 import clsx from 'clsx';
+import { useEffect, useRef } from 'react';
 
 import * as styles from './page-tags.css';
 
@@ -33,9 +34,31 @@ export const PageTags = ({
       ? widthOnHover
       : `${widthOnHover}px`
     : 'auto';
+  const innerContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (innerContainerRef.current) {
+      const innerContainer = innerContainerRef.current;
+      const listener = () => {
+        // on mouseleave, reset scroll position to the hoverExpandDirection
+        innerContainer.scrollTo({
+          left: hoverExpandDirection === 'left' ? Number.MAX_SAFE_INTEGER : 0,
+          behavior: 'smooth',
+        });
+      };
+      listener();
+      innerContainerRef.current.addEventListener('mouseleave', listener);
+      return () => {
+        innerContainer.removeEventListener('mouseleave', listener);
+      };
+    }
+    return;
+  }, [hoverExpandDirection]);
+
   return (
     <div data-testid="page-tags" className={styles.root}>
       <div
+        ref={innerContainerRef}
         style={{
           right: hoverExpandDirection === 'left' ? 0 : 'auto',
           left: hoverExpandDirection === 'right' ? 0 : 'auto',
