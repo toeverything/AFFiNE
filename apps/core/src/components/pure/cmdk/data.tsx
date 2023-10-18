@@ -199,13 +199,15 @@ export const usePageCommands = () => {
       });
     } else {
       // queried pages that has matched contents
-      const pageIds = Array.from(
+      const searchResults = Array.from(
         workspace.blockSuiteWorkspace.search({ query }).values()
-      ).map(id => {
-        if (id.startsWith('space:')) {
-          return id.slice(6);
+      ) as unknown as { space: string; content: string }[];
+
+      const pageIds = searchResults.map(id => {
+        if (id.space.startsWith('space:')) {
+          return id.space.slice(6);
         } else {
-          return id;
+          return id.space;
         }
       });
 
