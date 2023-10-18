@@ -14,7 +14,6 @@
   },
   "devDependencies": {
     "@affine/env": "workspace:*",
-    "@affine/y-provider": "workspace:*",
     "@blocksuite/block-std": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
     "@blocksuite/editor": "0.0.0-20230926212737-6d4b1569-nightly",
@@ -23,23 +22,21 @@
     "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
     "@testing-library/react": "^14.0.0",
     "@types/lodash.debounce": "^4.0.7",
-    "fake-indexeddb": "^4.0.2",
-    "vitest": "0.34.6"
+    "fake-indexeddb": "^5.0.0",
+    "vitest": "0.34.6",
+    "y-provider": "workspace:*"
   },
   "peerDependencies": {
-    "@affine/y-provider": "workspace:*",
     "@blocksuite/block-std": "*",
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
     "@blocksuite/global": "*",
     "@blocksuite/lit": "*",
-    "@blocksuite/store": "*"
+    "@blocksuite/store": "*",
+    "y-provider": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@affine/env": {
-      "optional": true
-    },
-    "@affine/y-provider": {
       "optional": true
     },
     "@blocksuite/block-std": {
@@ -59,7 +56,10 @@
     },
     "@blocksuite/store": {
       "optional": true
+    },
+    "y-provider": {
+      "optional": true
     }
   },
-  "version": "0.10.0-canary.0"
+  "version": "0.10.0-canary.1"
 }

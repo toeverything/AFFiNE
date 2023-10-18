@@ -12,6 +12,7 @@ const {
   buildType,
   icnsPath,
   icoPath,
+  iconPngPath,
   platform,
   productName,
   iconUrl,
@@ -77,8 +78,7 @@ const makers = [
     name: '@reforged/maker-appimage',
     config: {
       name: 'AFFiNE',
-      iconUrl: icoPath,
-      setupIcon: icoPath,
+      icon: iconPngPath,
       platforms: ['linux'],
       options: {
         bin: productName,
@@ -130,15 +130,17 @@ module.exports = {
       packageJson.productName = productName;
     },
     prePackage: async () => {
-      await rm(path.join(__dirname, 'node_modules'), {
-        recursive: true,
-        force: true,
-      });
+      if (!process.env.HOIST_NODE_MODULES) {
+        await rm(path.join(__dirname, 'node_modules'), {
+          recursive: true,
+          force: true,
+        });
 
-      await symlink(
-        path.join(__dirname, '..', '..', 'node_modules'),
-        path.join(__dirname, 'node_modules')
-      );
+        await symlink(
+          path.join(__dirname, '..', '..', 'node_modules'),
+          path.join(__dirname, 'node_modules')
+        );
+      }
     },
     generateAssets: async (_, platform, arch) => {
       if (process.env.SKIP_GENERATE_ASSETS) {

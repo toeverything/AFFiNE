@@ -4,11 +4,11 @@ import type {
   LocalIndexedDBBackgroundProvider,
   SQLiteProvider,
 } from '@affine/env/workspace';
-import { type Status, syncDataSource } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import { startTransition, useCallback, useMemo, useState } from 'react';
+import { type Status, syncDataSource } from 'y-provider';
 
 export function useDatasourceSync(workspace: Workspace) {
   const [status, setStatus] = useState<Status>({

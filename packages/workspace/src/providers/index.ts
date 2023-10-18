@@ -4,7 +4,6 @@ import type {
   LocalIndexedDBBackgroundProvider,
   LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
-import { createLazyProvider } from '@affine/y-provider';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
 import { Workspace } from '@blocksuite/store';
@@ -13,6 +12,7 @@ import {
   createIndexedDBDatasource,
   createIndexedDBProvider as create,
 } from '@toeverything/y-indexeddb';
+import { createLazyProvider } from 'y-provider';
 import { encodeStateVector } from 'yjs';
 
 import { createAffineDataSource } from '../affine';
@@ -152,11 +152,8 @@ export const createAffineProviders = (): DocProviderCreator[] => {
   return (
     [
       ...createLocalProviders(),
-      runtimeConfig.enableBroadcastChannelProvider &&
-        createBroadcastChannelProvider,
       runtimeConfig.enableCloud && createAffineSocketIOProvider,
       runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
-      createIndexedDBDownloadProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));
 };

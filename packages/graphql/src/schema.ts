@@ -376,26 +376,6 @@ export type SendVerifyChangeEmailMutation = {
   sendVerifyChangeEmail: boolean;
 };
 
-export type SetRevokePageMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  pageId: Scalars['String']['input'];
-}>;
-
-export type SetRevokePageMutation = {
-  __typename?: 'Mutation';
-  revokePage: boolean;
-};
-
-export type SetSharePageMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  pageId: Scalars['String']['input'];
-}>;
-
-export type SetSharePageMutation = {
-  __typename?: 'Mutation';
-  sharePage: boolean;
-};
-
 export type SetWorkspacePublicByIdMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   public: Scalars['Boolean']['input'];
@@ -636,16 +616,6 @@ export type Mutations =
       name: 'sendVerifyChangeEmailMutation';
       variables: SendVerifyChangeEmailMutationVariables;
       response: SendVerifyChangeEmailMutation;
-    }
-  | {
-      name: 'setRevokePageMutation';
-      variables: SetRevokePageMutationVariables;
-      response: SetRevokePageMutation;
-    }
-  | {
-      name: 'setSharePageMutation';
-      variables: SetSharePageMutationVariables;
-      response: SetSharePageMutation;
     }
   | {
       name: 'setWorkspacePublicByIdMutation';

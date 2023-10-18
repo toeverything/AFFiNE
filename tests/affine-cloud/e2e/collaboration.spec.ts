@@ -18,6 +18,7 @@ import {
 } from '@affine-test/kit/utils/setting';
 import {
   clickSideBarAllPageButton,
+  clickSideBarCurrentWorkspaceBanner,
   clickSideBarSettingButton,
 } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
@@ -189,6 +190,7 @@ test.describe('collaboration', () => {
     await clickSideBarSettingButton(page);
     await clickUserInfoCard(page);
     await page.getByTestId('sign-out-button').click();
+    await page.getByTestId('confirm-sign-out-button').click();
     await page.waitForTimeout(5000);
     expect(page.url()).toBe(url);
   });
@@ -258,5 +260,28 @@ test.describe('collaboration members', () => {
     await navigationItems[3].click();
     await page.waitForTimeout(500);
     expect(await page.locator('[data-testid="member-item"]').count()).toBe(3);
+  });
+});
+
+test.describe('sign out', () => {
+  test('can sign out', async ({ page }) => {
+    await page.reload();
+    await waitForEditorLoad(page);
+    await createLocalWorkspace(
+      {
+        name: 'test',
+      },
+      page
+    );
+    await clickSideBarAllPageButton(page);
+    const currentUrl = page.url();
+    await clickSideBarCurrentWorkspaceBanner(page);
+    await page.getByTestId('workspace-modal-account-option').click();
+    await page.getByTestId('workspace-modal-sign-out-option').click();
+    await page.getByTestId('confirm-sign-out-button').click();
+    await clickSideBarCurrentWorkspaceBanner(page);
+    const signInButton = page.getByTestId('cloud-signin-button');
+    await expect(signInButton).toBeVisible();
+    expect(page.url()).toBe(currentUrl);
   });
 });

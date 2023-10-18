@@ -1,11 +1,11 @@
+import { assertExists } from '@blocksuite/global/utils';
+import type { IDBPDatabase } from 'idb';
+import { openDB } from 'idb';
 import {
   createLazyProvider,
   type DocDataSource,
   writeOperation,
-} from '@affine/y-provider';
-import { assertExists } from '@blocksuite/global/utils';
-import type { IDBPDatabase } from 'idb';
-import { openDB } from 'idb';
+} from 'y-provider';
 import type { Doc } from 'yjs';
 import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 

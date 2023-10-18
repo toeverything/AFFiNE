@@ -18,12 +18,15 @@ const icoPath = path.join(
     ? `./resources/icons/icon_${buildType}.ico`
     : './resources/icons/icon.ico'
 );
+
 const icnsPath = path.join(
   ROOT,
   !stableBuild
     ? `./resources/icons/icon_${buildType}.icns`
     : './resources/icons/icon.icns'
 );
+
+const iconPngPath = path.join(ROOT, './resources/icons/icon.png');
 
 const iconUrl = `https://cdn.affine.pro/app-icons/icon_${buildType}.ico`;
 const arch =
@@ -42,6 +45,7 @@ module.exports = {
   productName,
   icoPath,
   icnsPath,
+  iconPngPath,
   iconUrl,
   arch,
   platform,

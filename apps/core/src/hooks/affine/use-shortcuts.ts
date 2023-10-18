@@ -81,9 +81,8 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       // not implement yet
       // [t('appendDailyNote')]: 'Ctrl + Alt + A',
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
-      // not implement yet
-      // [t('goBack')]: 'Ctrl + [',
-      // [t('goForward')]: 'Ctrl + ]',
+      [t('goBack')]: ['Ctrl + ['],
+      [t('goForward')]: ['Ctrl + ]'],
     }),
     [t]
   );
@@ -98,9 +97,8 @@ export const useMacGeneralKeyboardShortcuts = (): ShortcutMap => {
       // not implement yet
       // [t('appendDailyNote')]: '⌘ + ⌥ + A',
       [t('expandOrCollapseSidebar')]: ['⌘', '/'],
-      // not implement yet
-      // [t('goBack')]: '⌘ + [',
-      // [t('goForward')]: '⌘ + ]',
+      [t('goBack')]: ['⌘ + ['],
+      [t('goForward')]: ['⌘ + ]'],
     }),
     [t]
   );
