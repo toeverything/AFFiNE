@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "lib"
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../../packages/common/infra"
+    }
+  ]
+}

@@ -6,20 +6,13 @@
   "license": "MIT",
   "workspaces": [
     ".",
-    "apps/*",
-    "plugins/*",
-    "packages/*",
-    "packages/@types/*",
-    "tests/fixtures",
-    "tests/kit",
-    "tests/affine-legacy/*",
-    "tests/affine-local",
-    "tests/affine-migration",
-    "tests/affine-desktop",
-    "tests/affine-desktop-cloud",
-    "tests/affine-plugin",
-    "tests/affine-prototype",
-    "tests/affine-cloud"
+    "packages/*/*",
+    "tools/*",
+    "!tools/@types",
+    "tools/@types/*",
+    "tests/*",
+    "!tests/affine-legacy",
+    "tests/affine-legacy/*"
   ],
   "engines": {
     "node": ">=18.16.1 <19.0.0"
@@ -34,7 +27,7 @@
     "build:plugins": "yarn nx run-many -t build --projects=tag:plugin",
     "build:storybook": "yarn nx build @affine/storybook",
     "start:web-static": "yarn workspace @affine/core static-server",
-    "start:storybook": "yarn exec serve apps/storybook/storybook-static -l 6006",
+    "start:storybook": "yarn exec serve tests/storybook/storybook-static -l 6006",
     "serve:test-static": "yarn exec serve tests/fixtures --cors -p 8081",
     "lint:eslint": "eslint . --ext .js,mjs,.ts,.tsx --cache",
     "lint:eslint:fix": "yarn lint:eslint --fix",
@@ -46,7 +39,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "notify": "node scripts/notify.mjs",
-    "circular": "madge --circular --ts-config ./tsconfig.json ./apps/core/src/pages/**/*.tsx ./apps/core/src/index.tsx ./apps/electron/src/*/index.ts",
+    "circular": "madge --circular --ts-config ./tsconfig.json ./packages/frontend/core/src/pages/**/*.tsx ./packages/frontend/core/src/index.tsx ./packages/frontend/electron/src/*/index.ts",
     "typecheck": "tsc -b tsconfig.json --diagnostics",
     "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install"
   },

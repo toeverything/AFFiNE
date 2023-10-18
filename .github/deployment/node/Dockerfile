@@ -1,6 +1,6 @@
 FROM node:18-bookworm-slim
 
-COPY ./apps/server /app
+COPY ./packages/backend/server /app
 WORKDIR /app
 
 RUN apt-get update && \

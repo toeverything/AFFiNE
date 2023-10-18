@@ -47,7 +47,7 @@ postgres=# \du
  postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
 ```
 
-### Set the following config to `apps/server/.env`
+### Set the following config to `packages/backend/server/.env`
 
 ```
 DATABASE_URL="postgresql://affine:affine@localhost:5432/affine"

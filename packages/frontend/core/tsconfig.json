@@ -1,0 +1,42 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "typeRoots": ["../../../node_modules", "../../../node_modules/@types"],
+    "types": ["webpack-env", "ses", "affine__env"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "../../frontend/component"
+    },
+    {
+      "path": "../../frontend/graphql"
+    },
+    {
+      "path": "../../frontend/hooks"
+    },
+    {
+      "path": "../../frontend/i18n"
+    },
+    {
+      "path": "../../frontend/workspace"
+    },
+    {
+      "path": "../../common/debug"
+    },
+    {
+      "path": "../../common/env"
+    },
+    {
+      "path": "../../plugins/copilot"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.server.json"
+    }
+  ]
+}

@@ -54,117 +54,117 @@
     // Completeness
     "skipLibCheck": true, // skip all type checks for .d.ts files
     "paths": {
-      "@affine/core/*": ["./packages/core/src/*"],
-      "@affine/cli/*": ["./packages/cli/src/*"],
-      "@affine/server/*": ["./apps/server/src/*"],
-      "@affine/component": ["./packages/component/src/index"],
+      "@affine/core/*": ["./packages/frontend/core/src/*"],
+      "@affine/cli/*": ["./tools/cli/src/*"],
+      "@affine/server/*": ["./packages/backend/server/src/*"],
+      "@affine/component": ["./packages/frontend/component/src/index"],
       "@affine/component/*": [
-        "./packages/component/src/components/*/index",
-        "./packages/component/src/components/*"
+        "./packages/frontend/component/src/components/*/index",
+        "./packages/frontend/component/src/components/*"
       ],
-      "@affine/i18n": ["./packages/i18n/src"],
-      "@affine/i18n/hooks": ["./packages/i18n/src/i18n-generated"],
-      "@affine/debug": ["./packages/debug"],
-      "@affine/env": ["./packages/env/src"],
-      "@affine/env/*": ["./packages/env/src/*"],
-      "@affine/utils": ["./packages/utils"],
-      "@affine/workspace/*": ["./packages/workspace/src/*"],
-      "@affine/graphql": ["./packages/graphql/src"],
-      "@affine/copilot": ["./plugins/copilot/src"],
-      "@affine/copilot/*": ["./plugins/copilot/src/*"],
-      "@affine/electron/scripts/*": ["./apps/electron/scripts/*"],
+      "@affine/i18n": ["./packages/frontend/i18n/src"],
+      "@affine/i18n/hooks": ["./packages/frontend/i18n/src/i18n-generated"],
+      "@affine/debug": ["./packages/common/debug"],
+      "@affine/env": ["./packages/common/env/src"],
+      "@affine/env/*": ["./packages/common/env/src/*"],
+      "@affine/workspace/*": ["./packages/frontend/workspace/src/*"],
+      "@affine/graphql": ["./packages/frontend/graphql/src"],
+      "@affine/copilot": ["./packages/plugins/copilot/src"],
+      "@affine/copilot/*": ["./packages/plugins/copilot/src/*"],
+      "@affine/electron/scripts/*": ["./packages/frontend/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
-      "@toeverything/y-indexeddb": ["./packages/y-indexeddb/src"],
-      "@toeverything/hooks/*": ["./packages/hooks/src/*"],
-      "@toeverything/infra/*": ["./packages/infra/src/*"],
-      "@affine/sdk/*": ["./packages/sdk/src/*"],
-      "@affine/native": ["./packages/native/index.d.ts"],
-      "@affine/native/*": ["./packages/native/*"],
-      "@affine/storage": ["./packages/storage/index.d.ts"],
+      "@toeverything/y-indexeddb": ["./packages/common/y-indexeddb/src"],
+      "@toeverything/hooks/*": ["./packages/frontend/hooks/src/*"],
+      "@toeverything/infra/*": ["./packages/common/infra/src/*"],
+      "@affine/sdk/*": ["./packages/common/sdk/src/*"],
+      "@affine/native": ["./packages/frontend/native/index.d.ts"],
+      "@affine/native/*": ["./packages/frontend/native/*"],
+      "@affine/storage": ["./packages/backend/storage/index.d.ts"],
 
       // Development only
-      "@affine/electron/*": ["./apps/electron/src/*"]
+      "@affine/electron/*": ["./packages/frontend/electron/src/*"]
     }
   },
   "include": [],
   "references": [
-    // Apps
+    // Backend
     {
-      "path": "./apps/electron"
+      "path": "./packages/backend/server"
     },
     {
-      "path": "./apps/server"
+      "path": "./packages/backend/server/tests"
+    },
+    // Frontend
+    {
+      "path": "./packages/frontend/component"
     },
     {
-      "path": "./apps/server/tests"
+      "path": "./packages/frontend/core"
     },
     {
-      "path": "./apps/storybook"
+      "path": "./packages/frontend/electron"
     },
     {
-      "path": "./apps/core"
-    },
-    // Top level packages
-    {
-      "path": "./packages/infra"
+      "path": "./packages/frontend/graphql"
     },
     {
-      "path": "./packages/graphql"
+      "path": "./packages/frontend/hooks"
     },
     {
-      "path": "./packages/debug"
+      "path": "./packages/frontend/i18n"
+    },
+    {
+      "path": "./packages/frontend/workspace"
+    },
+    // Common
+    {
+      "path": "./packages/common/cmdk"
+    },
+    {
+      "path": "./packages/common/debug"
+    },
+    {
+      "path": "./packages/common/env"
+    },
+    {
+      "path": "./packages/common/infra"
+    },
+    {
+      "path": "./packages/common/infra"
+    },
+    {
+      "path": "./packages/common/sdk"
+    },
+    {
+      "path": "./packages/common/y-indexeddb"
     },
     // Plugins
     {
-      "path": "./packages/sdk"
+      "path": "./packages/plugins/copilot"
     },
     {
-      "path": "./plugins/copilot"
+      "path": "./packages/plugins/hello-world"
     },
     {
-      "path": "./plugins/hello-world"
+      "path": "./packages/plugins/image-preview"
     },
     {
-      "path": "./plugins/image-preview"
+      "path": "./packages/plugins/vue-hello-world"
+    },
+    // Tools
+    {
+      "path": "./tools/cli"
     },
     {
-      "path": "./plugins/vue-hello-world"
-    },
-    // Packages
-    {
-      "path": "./packages/cli"
-    },
-    {
-      "path": "./packages/plugin-cli"
-    },
-    {
-      "path": "./packages/component"
-    },
-    {
-      "path": "./packages/hooks"
-    },
-    {
-      "path": "./packages/i18n"
-    },
-    {
-      "path": "./packages/env"
-    },
-    {
-      "path": "./packages/workspace"
-    },
-    {
-      "path": "./packages/y-indexeddb"
-    },
-    {
-      "path": "./packages/cmdk"
+      "path": "./tools/plugin-cli"
     },
     // Tests
     {
       "path": "./tests/kit"
     },
     {
-      "path": "./tsconfig.node.json"
+      "path": "./tests/storybook"
     },
     {
       "path": "./tests/affine-local"
@@ -189,6 +189,10 @@
     },
     {
       "path": "./tests/affine-legacy/0.8.4"
+    },
+    // Others
+    {
+      "path": "./tsconfig.node.json"
     }
   ],
   "files": [],

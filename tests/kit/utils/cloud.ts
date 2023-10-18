@@ -48,14 +48,14 @@ export const runPrisma = async <T>(
   cb: (
     prisma: InstanceType<
       // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-      typeof import('../../../apps/server/node_modules/@prisma/client').PrismaClient
+      typeof import('../../../packages/backend/server/node_modules/@prisma/client').PrismaClient
     >
   ) => Promise<T>
 ): Promise<T> => {
   const {
     PrismaClient,
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-  } = require('../../../apps/server/node_modules/@prisma/client');
+  } = require('../../../packages/backend/server/node_modules/@prisma/client');
   const client = new PrismaClient();
   await client.$connect();
   try {

@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
+    "noEmit": false,
+    "outDir": "./lib/scripts",
+    "types": ["node"],
+    "allowJs": true
+  },
+  "include": [
+    "./scripts",
+    "esbuild.main.config.ts",
+    "esbuild.plugin.config.ts"
+  ],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
+}

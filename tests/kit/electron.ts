@@ -15,7 +15,7 @@ import {
 import { removeWithRetry } from './utils/utils';
 
 const projectRoot = join(__dirname, '..', '..');
-const electronRoot = join(projectRoot, 'apps', 'electron');
+const electronRoot = join(projectRoot, 'packages/frontend/electron');
 
 function generateUUID() {
   return crypto.randomUUID();

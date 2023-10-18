@@ -1,7 +1,7 @@
 docs:
   - 'docs/**/*'
   - '**/README.md'
-  - 'packages/templates/**/*'
+  - 'packages/frontend/templates/**/*'
 
 test:
   - 'tests/**/*'
@@ -10,40 +10,37 @@ test:
 
 mod:dev:
   - 'scripts/**/*'
-  - 'packages/cli/**/*'
-  - 'packages/debug/**/*'
+  - 'tools/cli/**/*'
+  - 'packages/common/debug/**/*'
 
 mod:plugin:
-  - 'plugins/**/*'
-
-plugin:bookmark-block:
-  - 'plugins/bookmark-block/**/*'
+  - 'packages/plugins/**/*'
 
 plugin:copilot:
-  - 'plugins/copilot/**/*'
+  - 'packages/plugins/copilot/**/*'
 
 mod:infra:
-  - 'packages/infra/**/*'
+  - 'packages/common/infra/**/*'
 
 mod:sdk:
-  - 'packages/sdk/**/*'
+  - 'packages/common/sdk/**/*'
 
 mod:plugin-cli:
-  - 'packages/plugin-cli/**/*'
+  - 'tools/plugin-cli/**/*'
 
-mod:workspace: 'packages/workspace/**/*'
+mod:workspace: 'packages/frontend/workspace/**/*'
 
-mod:i18n: 'packages/i18n/**/*'
+mod:i18n: 'packages/frontend/i18n/**/*'
 
-mod:env: 'packages/env/**/*'
+mod:env: 'packages/common/env/**/*'
 
-mod:hooks: 'packages/hooks/**/*'
+mod:hooks: 'packages/frontend/hooks/**/*'
 
-mod:component: 'packages/component/**/*'
+mod:component: 'packages/frontend/component/**/*'
 
-mod:storage: 'packages/storage/**/*'
+mod:storage: 'packages/backend/storage/**/*'
 
-mod:native: 'packages/native/**/*'
+mod:native: 'packages/frontend/native/**/*'
 
 mod:store:
   - '**/atoms/**/*'
@@ -56,12 +53,10 @@ rust:
   - '**/rust-toolchain.toml'
   - '**/rustfmt.toml'
 
-package:y-indexeddb: 'packages/y-indexeddb/**/*'
+package:y-indexeddb: 'packages/common/y-indexeddb/**/*'
 
-app:core: 'apps/core/**/*'
+app:core: 'packages/frontend/core/**/*'
 
-app:electron: 'apps/electron/**/*'
+app:electron: 'packages/frontend/electron/**/*'
 
-app:server: 'apps/server/**/*'
-
-app:docs: 'apps/docs/**/*'
+app:server: 'packages/backend/server/**/*'

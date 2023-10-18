@@ -1,5 +1,5 @@
 const semver = await import('semver').catch(() =>
-  import('../apps/server/node_modules/semver/index.js')
+  import('../packages/backend/server/node_modules/semver/index.js')
 );
 
 import packageJson from '../package.json' assert { type: 'json' };
