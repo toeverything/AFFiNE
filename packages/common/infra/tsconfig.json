@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "moduleResolution": "bundler",
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "../sdk"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

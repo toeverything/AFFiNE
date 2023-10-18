@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: core
-          path: ./apps/core/dist
+          path: ./packages/frontend/core/dist
           if-no-files-found: error
 
   build-native:
@@ -72,7 +72,7 @@ jobs:
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Run tests
         run: yarn test
-        working-directory: ./packages/native
+        working-directory: ./packages/frontend/native
 
   desktop-test:
     name: Desktop Test
@@ -137,7 +137,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: core
-          path: apps/electron/resources/web-static
+          path: packages/frontend/electron/resources/web-static
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build

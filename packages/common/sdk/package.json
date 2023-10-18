@@ -1,0 +1,37 @@
+{
+  "name": "@affine/sdk",
+  "version": "0.10.0-canary.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "exports": {
+    "./entry": {
+      "types": "./dist/src/entry.d.ts",
+      "import": "./dist/entry.js",
+      "require": "./dist/entry.cjs"
+    },
+    "./server": {
+      "types": "./dist/src/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@blocksuite/block-std": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/blocks": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/editor": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/global": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/store": "0.0.0-20231018100009-361737d3-nightly",
+    "jotai": "^2.4.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "vite": "^4.4.11",
+    "vite-plugin-dts": "3.6.0"
+  }
+}

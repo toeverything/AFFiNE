@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: core
-          path: ./apps/core/dist
+          path: ./packages/frontend/core/dist
           if-no-files-found: error
 
   build-server:
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: server-dist
-          path: ./apps/server/dist
+          path: ./packages/backend/server/dist
           if-no-files-found: error
 
   build-storage:
@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: storage.node
-          path: ./packages/storage/storage.node
+          path: ./packages/backend/storage/storage.node
           if-no-files-found: error
 
   build-docker:
@@ -102,17 +102,17 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: core
-          path: ./apps/core/dist
+          path: ./packages/frontend/core/dist
       - name: Download server dist
         uses: actions/download-artifact@v3
         with:
           name: server-dist
-          path: ./apps/server/dist
+          path: ./packages/backend/server/dist
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
           name: storage.node
-          path: ./apps/server
+          path: ./packages/backend/server
       - name: Setup Git short hash
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"

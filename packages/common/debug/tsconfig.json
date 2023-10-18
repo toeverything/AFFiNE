@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+    "sourceMap": true,
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "include": ["./src"],
+  "exclude": ["node_modules"]
+}

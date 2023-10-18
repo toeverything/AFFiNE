@@ -14,9 +14,8 @@ on:
     paths-ignore:
       - README.md
       - .github/**
-      - apps/server
-      - apps/docs
-      - apps/electron
+      - packages/backend/server
+      - packages/frontend/electron
       - '!.github/workflows/publish-storybook.yml'
 
 jobs:
@@ -38,7 +37,7 @@ jobs:
         run: yarn run build:plugins
       - uses: chromaui/action-next@v1
         with:
-          workingDir: apps/storybook
+          workingDir: tests/storybook
           buildScriptName: build
           exitOnceUploaded: true
           onlyChanged: false

@@ -1,0 +1,93 @@
+{
+  "name": "@affine/electron",
+  "private": true,
+  "version": "0.10.0-canary.1",
+  "author": "toeverything",
+  "repository": {
+    "url": "https://github.com/toeverything/AFFiNE",
+    "type": "git"
+  },
+  "description": "AFFiNE Desktop App",
+  "homepage": "https://github.com/toeverything/AFFiNE",
+  "scripts": {
+    "start": "electron .",
+    "dev": "DEV_SERVER_URL=http://localhost:8080 yarn ts-node ./scripts/dev.ts",
+    "dev:prod": "yarn ts-node scripts/dev.ts",
+    "build": "NODE_ENV=production ts-node scripts/build-layers.ts",
+    "build:dev": "NODE_ENV=development ts-node scripts/build-layers.ts",
+    "generate-assets": "ts-node scripts/generate-assets.ts",
+    "package": "electron-forge package",
+    "make": "NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge make",
+    "make-squirrel": "yarn ts-node scripts/make-squirrel.ts"
+  },
+  "config": {
+    "forge": "./forge.config.js"
+  },
+  "main": "./dist/main.js",
+  "devDependencies": {
+    "@affine-test/kit": "workspace:*",
+    "@affine/copilot-plugin": "workspace:*",
+    "@affine/env": "workspace:*",
+    "@affine/hello-world-plugin": "workspace:*",
+    "@affine/image-preview-plugin": "workspace:*",
+    "@affine/native": "workspace:*",
+    "@affine/outline-plugin": "workspace:*",
+    "@affine/sdk": "workspace:*",
+    "@affine/templates": "workspace:*",
+    "@affine/vue-hello-world-plugin": "workspace:*",
+    "@blocksuite/blocks": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/editor": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/lit": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/store": "0.0.0-20231018100009-361737d3-nightly",
+    "@electron-forge/cli": "^6.4.2",
+    "@electron-forge/core": "^6.4.2",
+    "@electron-forge/core-utils": "^6.4.2",
+    "@electron-forge/maker-deb": "^6.4.2",
+    "@electron-forge/maker-squirrel": "^6.4.2",
+    "@electron-forge/maker-zip": "^6.4.2",
+    "@electron-forge/shared-types": "^6.4.2",
+    "@electron/remote": "2.0.12",
+    "@reforged/maker-appimage": "^3.3.1",
+    "@toeverything/infra": "workspace:*",
+    "@types/uuid": "^9.0.5",
+    "builder-util-runtime": "^9.2.1",
+    "electron": "^27.0.0",
+    "electron-log": "^5.0.0-rc.1",
+    "electron-squirrel-startup": "1.0.0",
+    "electron-window-state": "^5.0.3",
+    "esbuild": "^0.19.4",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.3.10",
+    "jotai": "^2.4.3",
+    "lodash-es": "^4.17.21",
+    "rxjs": "^7.8.1",
+    "semver": "^7.5.4",
+    "tinykeys": "^2.1.0",
+    "ts-node": "^10.9.1",
+    "undici": "^5.26.3",
+    "uuid": "^9.0.1",
+    "vitest": "0.34.6",
+    "which": "^4.0.0",
+    "zod": "^3.22.4"
+  },
+  "dependencies": {
+    "async-call-rpc": "^6.3.1",
+    "electron-updater": "^6.1.5",
+    "link-preview-js": "^3.0.5",
+    "nanoid": "^5.0.1",
+    "yjs": "^13.6.8"
+  },
+  "build": {
+    "protocols": [
+      {
+        "name": "affine",
+        "schemes": [
+          "affine"
+        ]
+      }
+    ]
+  },
+  "peerDependencies": {
+    "ts-node": "*"
+  }
+}

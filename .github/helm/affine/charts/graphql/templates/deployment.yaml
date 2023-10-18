@@ -73,6 +73,8 @@ spec:
             value: "{{ .Values.app.host }}"
           - name: ENABLE_R2_OBJECT_STORAGE
             value: "{{ .Values.app.objectStorage.r2.enabled }}"
+          - name: ENABLE_CAPTCHA
+            value: "{{ .Values.app.captcha.enabled }}"
           - name: OAUTH_EMAIL_SENDER
             valueFrom:
               secretKeyRef:
@@ -125,6 +127,13 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.app.objectStorage.r2.secretName }}"
                 key: bucket
+          {{ end }}
+          {{ if .Values.app.captcha.enabled }}
+          - name: CAPTCHA_TURNSTILE_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.captcha.secretName }}"
+                key: turnstileSecret
           {{ end }}
           {{ if .Values.app.oauth.google.enabled }}
           - name: OAUTH_GOOGLE_CLIENT_ID

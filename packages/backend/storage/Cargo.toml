@@ -1,0 +1,26 @@
+[package]
+name = "affine_storage"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+chrono = "0.4"
+jwst-codec = { git = "https://github.com/toeverything/OctoBase.git", rev = "ad51b2c" }
+jwst-core = { git = "https://github.com/toeverything/OctoBase.git", rev = "ad51b2c" }
+jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", rev = "ad51b2c" }
+napi = { version = "2", default-features = false, features = [
+  "napi5",
+  "async",
+] }
+napi-derive = { version = "2", features = ["type-def"] }
+rand = "0.8"
+sha3 = "0.10"
+
+[dev-dependencies]
+tokio = "1"
+
+[build-dependencies]
+napi-build = "2"

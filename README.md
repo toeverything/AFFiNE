@@ -110,9 +110,9 @@ If you have questions, you are welcome to contact us. One of the best places to 
 | Name                                                                                            |                                         |                                                                                                                                                     |
 | ----------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [@toeverything/component](https://github.com/toeverything/design/tree/main/packages/components) | Toeverything Shared Component Resources |                                                                                                                                                     |
-| [@affine/component](packages/component)                                                         | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
-| [@toeverything/y-indexeddb](packages/y-indexeddb)                                               | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
-| [@toeverything/theme](packages/theme)                                                           | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
+| [@affine/component](packages/frontend/component)                                                | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
+| [@toeverything/y-indexeddb](packages/common/y-indexeddb)                                        | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
+| [@toeverything/theme](packages/common/theme)                                                    | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
 
 ## Plugins
 
@@ -120,8 +120,8 @@ If you have questions, you are welcome to contact us. One of the best places to 
 >
 > (Currently, the plugin system is under heavy development. You will see the plugin system in the canary release.)
 
-- [@affine/sdk](./packages/sdk) - SDK for developing plugins
-- [@affine/plugin-cli](./packages/plugin-cli) - CLI for developing plugins
+- [@affine/sdk](./packages/common/sdk) - SDK for developing plugins
+- [@affine/plugin-cli](./tools/plugin-cli) - CLI for developing plugins
 
 | Official Plugin                                       | Description                               | Status |
 | ----------------------------------------------------- | ----------------------------------------- | ------ |

@@ -22,6 +22,11 @@ app:
     secretName: jwt-private-key
     # base64 encoded ecdsa private key
     privateKey: ''
+  captcha:
+    enable: false
+    secretName: captcha
+    turnstile:
+      secret: ''
   objectStorage:
     r2:
       enabled: false

@@ -1,0 +1,27 @@
+{
+  "extends": "../../../tsconfig.json",
+  "exclude": ["lib"],
+  "include": ["./src/**/*", "./src/**/*.json", "./src/type.d.ts"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "../../frontend/i18n"
+    },
+    {
+      "path": "../../frontend/hooks"
+    },
+    { "path": "../../frontend/workspace" },
+    {
+      "path": "../../common/debug"
+    },
+    {
+      "path": "../../common/infra"
+    },
+
+    { "path": "../../../tests/fixtures" }
+  ]
+}

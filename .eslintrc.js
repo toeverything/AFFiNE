@@ -56,26 +56,25 @@ const createPattern = packageName => [
 ];
 
 const allPackages = [
-  'packages/cli',
-  'packages/component',
-  'packages/debug',
-  'packages/env',
-  'packages/graphql',
-  'packages/hooks',
-  'packages/i18n',
-  'packages/native',
-  'packages/infra',
-  'packages/sdk',
-  'packages/templates',
-  'packages/theme',
-  'packages/workspace',
-  'packages/y-indexeddb',
-  'apps/web',
-  'apps/server',
-  'apps/electron',
-  'apps/storybook',
-  'plugins/copilot',
-  'plugins/bookmark-block',
+  'packages/backend/server',
+  'packages/frontend/component',
+  'packages/frontend/web',
+  'packages/frontend/electron',
+  'packages/frontend/graphql',
+  'packages/frontend/hooks',
+  'packages/frontend/i18n',
+  'packages/frontend/native',
+  'packages/frontend/templates',
+  'packages/frontend/workspace',
+  'packages/common/debug',
+  'packages/common/env',
+  'packages/common/infra',
+  'packages/common/sdk',
+  'packages/common/theme',
+  'packages/common/y-indexeddb',
+  'packages/plugins/copilot',
+  'tools/cli',
+  'tests/storybook',
 ];
 
 /**
@@ -88,7 +87,7 @@ const config = {
       version: 'detect',
     },
     next: {
-      rootDir: 'apps/web',
+      rootDir: 'packages/frontend/core',
     },
   },
   extends: [
@@ -223,7 +222,7 @@ const config = {
   },
   overrides: [
     {
-      files: 'apps/server/**/*.ts',
+      files: 'packages/backend/server/**/*.ts',
       rules: {
         '@typescript-eslint/consistent-type-imports': 0,
       },

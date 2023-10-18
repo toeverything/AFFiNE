@@ -1,0 +1,19 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "../../frontend/component"
+    },
+    {
+      "path": "../../common/sdk"
+    },
+    {
+      "path": "../../common/env"
+    }
+  ]
+}
