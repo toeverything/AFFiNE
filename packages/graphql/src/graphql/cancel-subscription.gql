@@ -1,0 +1,8 @@
+mutation cancelSubscription {
+  cancelSubscription {
+    id
+    status
+    nextBillAt
+    canceledAt
+  }
+}

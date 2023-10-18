@@ -1,0 +1,8 @@
+mutation updateSubscription($recurring: SubscriptionRecurring!) {
+  updateSubscriptionRecurring(recurring: $recurring) {
+    id
+    plan
+    recurring
+    nextBillAt
+  }
+}
