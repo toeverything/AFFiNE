@@ -26,6 +26,25 @@ export class PermissionService {
     return data?.type as Permission;
   }
 
+  async getOwnedWorkspaces(userId: string) {
+    return this.prisma.userWorkspacePermission
+      .findMany({
+        where: {
+          userId,
+          accepted: true,
+          type: Permission.Owner,
+        },
+        select: {
+          workspace: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      })
+      .then(data => data.map(({ workspace }) => workspace.id));
+  }
+
   async getWorkspaceOwner(workspaceId: string) {
     return this.prisma.workspaceUserPermission.findFirstOrThrow({
       where: {

@@ -672,23 +672,7 @@ export class WorkspaceResolver {
 
   @Query(() => WorkspaceBlobSizes)
   async collectAllBlobSizes(@CurrentUser() user: UserType) {
-    const workspaces = await this.prisma.workspaceUserPermission
-      .findMany({
-        where: {
-          userId: user.id,
-          accepted: true,
-          type: Permission.Owner,
-        },
-        select: {
-          workspace: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      })
-      .then(data => data.map(({ workspace }) => workspace.id));
-
+    const workspaces = await this.permissions.getOwnedWorkspaces(user.id);
     const size = await this.storage.blobsSize(workspaces);
     return { size };
   }
