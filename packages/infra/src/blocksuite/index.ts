@@ -261,6 +261,25 @@ export async function buildShowcaseWorkspace(
         .catch(error => {
           console.error('error importing page', id, error);
         });
+      const page = workspace.getPage(newId);
+      assertExists(page);
+      await page.waitForLoaded();
+      workspace.schema.upgradePage(
+        0,
+        {
+          'affine:note': 1,
+          'affine:bookmark': 1,
+          'affine:database': 2,
+          'affine:divider': 1,
+          'affine:image': 1,
+          'affine:list': 1,
+          'affine:code': 1,
+          'affine:page': 2,
+          'affine:paragraph': 1,
+          'affine:surface': 3,
+        },
+        page.spaceDoc
+      );
     })
   );
   Object.entries(pageMetas).forEach(([oldId, meta]) => {
@@ -273,6 +292,7 @@ import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 const migrationOrigin = 'affine-migration';
 
+import { assertExists } from '@blocksuite/global/utils';
 import type { Schema } from '@blocksuite/store';
 import { nanoid } from 'nanoid';
 
@@ -584,7 +604,7 @@ export async function forceUpgradePages(
   const oldVersions = versions.toJSON();
   spaces.forEach((space: Doc) => {
     try {
-      schema.upgradePage(oldVersions, space);
+      schema.upgradePage(0, oldVersions, space);
     } catch (e) {
       console.error(`page ${space.guid} upgrade failed`, e);
     }
@@ -605,6 +625,7 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
   const schema = options.getSchema();
   spaces.forEach((space: Doc) => {
     schema.upgradePage(
+      0,
       {
         'affine:note': 1,
         'affine:bookmark': 1,

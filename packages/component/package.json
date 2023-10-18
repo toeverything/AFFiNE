@@ -62,12 +62,12 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20230926212737-6d4b1569-nightly",
-    "@blocksuite/editor": "0.0.0-20230926212737-6d4b1569-nightly",
-    "@blocksuite/global": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/blocks": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/editor": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/global": "0.0.0-20231018100009-361737d3-nightly",
     "@blocksuite/icons": "2.1.34",
-    "@blocksuite/lit": "0.0.0-20230926212737-6d4b1569-nightly",
-    "@blocksuite/store": "0.0.0-20230926212737-6d4b1569-nightly",
+    "@blocksuite/lit": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/store": "0.0.0-20231018100009-361737d3-nightly",
     "@storybook/jest": "^0.2.3",
     "@storybook/testing-library": "^0.2.2",
     "@testing-library/react": "^14.0.0",

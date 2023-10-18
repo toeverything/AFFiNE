@@ -52,6 +52,7 @@ const DetailPageImpl = (): ReactElement => {
           ) !== '$blocksuite:internal:native$'
         ) {
           globalBlockSuiteSchema.upgradePage(
+            0,
             {
               'affine:surface': 3,
             },
