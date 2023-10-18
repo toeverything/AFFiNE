@@ -226,5 +226,5 @@ See [LICENSE] for details.
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
-[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
-[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite
+[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=packages%2Ffrontend%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
+[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=packages%2Ffrontend%2Fcore%2Fpackage.json&label=blocksuite
