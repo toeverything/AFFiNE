@@ -42,22 +42,6 @@ export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
 
 export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;
 
-export const platformSchema = z.enum([
-  'aix',
-  'android',
-  'darwin',
-  'freebsd',
-  'haiku',
-  'linux',
-  'openbsd',
-  'sunos',
-  'win32',
-  'cygwin',
-  'netbsd',
-]);
-
-export type Platform = z.infer<typeof platformSchema>;
-
 type BrowserBase = {
   /**
    * @example https://app.affine.pro
@@ -110,7 +94,7 @@ interface Desktop extends ChromeBrowser {
 export type Environment = Browser | Server | Desktop;
 
 export function setupGlobal() {
-  if (globalThis.$AFFINE_SETUP) {
+  if (window.$AFFINE_SETUP) {
     return;
   }
   runtimeFlagsSchema.parse(runtimeConfig);
@@ -157,5 +141,5 @@ export function setupGlobal() {
   }
   globalThis.environment = environment;
 
-  globalThis.$AFFINE_SETUP = true;
+  window.$AFFINE_SETUP = true;
 }
