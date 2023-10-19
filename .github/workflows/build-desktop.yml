@@ -128,10 +128,12 @@ jobs:
           target: ${{ matrix.spec.target }}
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn workspace @affine/electron vitest
+        run: yarn vitest
+        working-directory: packages/frontend/electron
 
       - name: Download core artifact
         uses: actions/download-artifact@v3
