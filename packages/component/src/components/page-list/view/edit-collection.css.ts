@@ -70,6 +70,7 @@ export const includeAddButton = style({
   padding: '4px 8px',
   fontSize: 14,
   lineHeight: '22px',
+  width: 'max-content',
 });
 
 export const includeItemTitle = style({ overflow: 'hidden', fontWeight: 600 });
@@ -136,7 +137,11 @@ export const rulesContainerLeft = style({
   flexDirection: 'column',
 });
 
-export const rulesContainer = style({ display: 'flex', overflow: 'hidden' });
+export const rulesContainer = style({
+  display: 'flex',
+  overflow: 'hidden',
+  flex: 1,
+});
 
 export const collectionEditContainer = style({
   display: 'flex',

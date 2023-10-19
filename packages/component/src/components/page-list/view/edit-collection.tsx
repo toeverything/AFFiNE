@@ -500,3 +500,45 @@ const PagesMode = ({
     </>
   );
 };
+// const SelectPage = (
+//   {
+//     allPageListConfig,
+//     init,
+//     onConfirm,
+//     onCancel,
+//   }: {
+//     allPageListConfig: AllPageListConfig;
+//     init: string[]
+//     onConfirm: (pageIds: string[]) => void;
+//     onCancel:()=>void;
+//   }) => {
+//   const t = useAFFiNEI18N()
+//   const [value, onChange] = useState(init);
+//   const confirm = useCallback(()=>{
+//     onConfirm(value)
+//   },[value,onConfirm])
+//   return <div>
+//     <PageList
+//       pages={allPageListConfig.allPages}
+//       blockSuiteWorkspace={allPageListConfig.workspace}
+//       isPreferredEdgeless={allPageListConfig.isEdgeless}
+//       selectable
+//       selectedPageIds={value}
+//       onSelectedPageIdsChange={onChange}
+//     />
+//     <div>
+//       <Button size='large' onClick={onCancel}>
+//         {t['com.affine.editCollection.button.cancel']()}
+//       </Button>
+//       <Button
+//         className={styles.confirmButton}
+//         size='large'
+//         data-testid='save-collection'
+//         type='primary'
+//         onClick={confirm}
+//       >
+//         {t['com.affine.editCollection.button.create']()}
+//       </Button>
+//     </div>
+//   </div>;
+// };
