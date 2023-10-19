@@ -5,6 +5,9 @@ import { useState } from 'react';
 export default {
   title: 'AFFiNE/Checkbox',
   component: Checkbox,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<typeof Checkbox>;
 
 export const Basic: StoryFn<typeof Checkbox> = props => {

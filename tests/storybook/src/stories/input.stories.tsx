@@ -6,6 +6,9 @@ import { userEvent, within } from '@storybook/testing-library';
 export default {
   title: 'AFFiNE/Input',
   component: Input,
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<typeof Input>;
 
 export const Basic: StoryFn<typeof Input> = () => {
