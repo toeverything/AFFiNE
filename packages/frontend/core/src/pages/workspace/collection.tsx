@@ -94,12 +94,13 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
       >
         <div
           style={{
-            width: 432,
+            maxWidth: 432,
             marginTop: 118,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: 18,
+            margin: '118px 12px 0',
           }}
         >
           {affineShape}
@@ -123,7 +124,15 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             Collection is a smart folder where you can manually add pages or
             automatically add pages through rules.
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px 32px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
+          >
             <div onClick={openPageEdit} className={styles.placeholderButton}>
               <PageIcon
                 style={{
@@ -148,13 +157,14 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
         </div>
         <div
           style={{
-            width: 452,
+            maxWidth: 452,
             borderRadius: 8,
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: 'var(--affine-background-overlay-panel-color)',
             padding: 10,
             gap: 14,
+            margin: '0 12px',
           }}
         >
           <div
