@@ -80,7 +80,10 @@
       "@affine/sdk/*": ["./packages/common/sdk/src/*"],
       "@affine/native": ["./packages/frontend/native/index.d.ts"],
       "@affine/native/*": ["./packages/frontend/native/*"],
-      "@affine/storage": ["./packages/backend/storage/index.d.ts"]
+      "@affine/storage": ["./packages/backend/storage/index.d.ts"],
+
+      // Development only
+      "@affine/electron/*": ["./packages/frontend/electron/src/*"]
     }
   },
   "include": [],
@@ -100,7 +103,7 @@
       "path": "./packages/frontend/core"
     },
     {
-      "path": "./packages/frontend/electron"
+      "path": "./packages/frontend/electron/tsconfig.test.json"
     },
     {
       "path": "./packages/frontend/graphql"
