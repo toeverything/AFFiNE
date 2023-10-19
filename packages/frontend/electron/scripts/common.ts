@@ -15,9 +15,7 @@ export const mode = (process.env.NODE_ENV =
 export const config = (): BuildOptions => {
   const define: Record<string, string> = {};
 
-  if (process.env.BUILD_TYPE) {
-    define['REPLACE_ME_BUILD_ENV'] = `"${process.env.BUILD_TYPE}"`;
-  }
+  define['REPLACE_ME_BUILD_ENV'] = `"${process.env.BUILD_TYPE ?? 'stable'}"`;
 
   return {
     entryPoints: [
