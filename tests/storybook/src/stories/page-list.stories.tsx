@@ -228,7 +228,8 @@ PageListStory.loaders = [
     page2.meta.createDate = page2.meta.createDate - 3600 * 1000 * 24;
     page3.meta.createDate = page3.meta.createDate - 3600 * 1000 * 24 * 7;
 
-    workspace.meta.pageMetas[2].tags = ['test-tag-id-0', 'test-tag-id-1'];
+    workspace.meta.pageMetas[3].tags = testTags.slice(0, 3).map(t => t.id);
+    workspace.meta.pageMetas[2].tags = testTags.slice(0, 12).map(t => t.id);
 
     return {
       blockSuiteWorkspace: workspace,

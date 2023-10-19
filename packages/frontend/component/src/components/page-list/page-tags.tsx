@@ -1,10 +1,11 @@
 import type { Tag } from '@affine/env/filter';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
-import { Tooltip } from '@toeverything/components/tooltip';
+import { Menu } from '@toeverything/components/menu';
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef } from 'react';
 
 import * as styles from './page-tags.css';
+import { stopPropagation } from './utils';
 
 export interface PageTagsProps {
   tags: Tag[];
@@ -16,15 +17,16 @@ export interface PageTagsProps {
 interface TagItemProps {
   tag: Tag;
   idx: number;
-  sticky?: boolean;
+  mode: 'sticky' | 'list-item';
 }
 
-const TagItem = ({ tag, idx, sticky }: TagItemProps) => {
+const TagItem = ({ tag, idx, mode }: TagItemProps) => {
   return (
     <div
       data-testid="page-tag"
-      className={sticky ? styles.tagSticky : styles.tag}
+      className={mode === 'sticky' ? styles.tagSticky : styles.tagListItem}
       data-idx={idx}
+      title={tag.value}
     >
       <div
         className={styles.tagIndicator}
@@ -72,9 +74,9 @@ export const PageTags = ({
   const tagsInPopover = useMemo(() => {
     const lastTags = tags.slice(maxItems);
     return (
-      <div className={styles.tagsWrapContainer}>
+      <div className={styles.tagsListContainer}>
         {lastTags.map((tag, idx) => (
-          <TagItem key={tag.id} tag={tag} idx={idx} />
+          <TagItem key={tag.id} tag={tag} idx={idx} mode="list-item" />
         ))}
       </div>
     );
@@ -83,7 +85,7 @@ export const PageTags = ({
   const tagsNormal = useMemo(() => {
     const nTags = maxItems ? tags.slice(0, maxItems) : tags;
     return nTags.map((tag, idx) => (
-      <TagItem key={tag.id} tag={tag} idx={idx} sticky />
+      <TagItem key={tag.id} tag={tag} idx={idx} mode="sticky" />
     ));
   }, [maxItems, tags]);
   return (
@@ -94,6 +96,7 @@ export const PageTags = ({
         // @ts-expect-error it's fine
         '--hover-max-width': sanitizedWidthOnHover,
       }}
+      onClick={stopPropagation}
     >
       <div
         style={{
@@ -107,11 +110,11 @@ export const PageTags = ({
           {tagsNormal}
         </div>
         {maxItems && tags.length > maxItems ? (
-          <Tooltip content={tagsInPopover}>
+          <Menu items={tagsInPopover}>
             <div className={styles.showMoreTag}>
               <MoreHorizontalIcon />
             </div>
-          </Tooltip>
+          </Menu>
         ) : null}
       </div>
     </div>

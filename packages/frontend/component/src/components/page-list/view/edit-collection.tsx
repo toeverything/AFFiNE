@@ -314,6 +314,7 @@ const RulesMode = ({
           <PageList
             className={styles.resultPages}
             pages={rulesPages}
+            groupBy={false}
             blockSuiteWorkspace={allPageListConfig.workspace}
             isPreferredEdgeless={allPageListConfig.isEdgeless}
           ></PageList>
@@ -323,6 +324,7 @@ const RulesMode = ({
               <PageList
                 className={styles.resultPages}
                 pages={allowListPages}
+                groupBy={false}
                 blockSuiteWorkspace={allPageListConfig.workspace}
                 isPreferredEdgeless={allPageListConfig.isEdgeless}
               ></PageList>
@@ -483,6 +485,7 @@ const PagesMode = ({
             <PageList
               className={styles.pageList}
               pages={filteredPages}
+              groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
               selectable
               onSelectedPageIdsChange={ids => {

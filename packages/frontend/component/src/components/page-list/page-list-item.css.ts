@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const root = style({
   display: 'flex',
@@ -19,8 +19,12 @@ export const root = style({
   },
 });
 
+// todo: remove global style
+globalStyle(`${root} > :last-child`, {
+  paddingRight: '8px',
+});
+
 export const selectionCell = style({
-  paddingLeft: '4px',
   display: 'flex',
   alignItems: 'center',
   flexShrink: 0,
@@ -95,13 +99,12 @@ export const actionsCellWrapper = style({
   alignItems: 'center',
   justifyContent: 'flex-end',
   flexShrink: 0,
-  columnGap: '6px',
-  paddingRight: '16px',
 });
 
 export const operationsCell = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end',
+  columnGap: '6px',
   flexShrink: 0,
 });

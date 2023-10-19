@@ -10,7 +10,6 @@ export const root = style({
 export const tagsContainer = style({
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
 });
 
 export const tagsScrollContainer = style([
@@ -18,13 +17,17 @@ export const tagsScrollContainer = style([
   {
     overflow: 'auto',
     height: '100%',
+    gap: '8px',
   },
 ]);
 
-export const tagsWrapContainer = style([
+export const tagsListContainer = style([
   tagsContainer,
   {
     flexWrap: 'wrap',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '4px',
   },
 ]);
 
@@ -36,7 +39,6 @@ export const innerContainer = style({
   height: '100%',
   maxWidth: '100%',
   transition: 'all 0.2s 0.3s ease-in-out',
-  padding: '0 16px',
   selectors: {
     [`${root}:hover &`]: {
       maxWidth: 'var(--hover-max-width)',
@@ -76,18 +78,21 @@ export const tag = style({
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '0 8px',
-  columnGap: '4px',
-  borderRadius: '10px',
-  border: '1px solid var(--affine-border-color)',
-  fontSize: 'var(--affine-font-xs)',
-  background: 'var(--affine-background-primary-color)',
   color: 'var(--affine-text-primary-color)',
 });
 
 export const tagSticky = style([
   tag,
   {
+    fontSize: 'var(--affine-font-xs)',
+    borderRadius: '10px',
+    columnGap: '4px',
+    border: '1px solid var(--affine-border-color)',
+    background: 'var(--affine-background-primary-color)',
+    maxWidth: '128px',
     position: 'sticky',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
     left: 0,
     selectors: range(0, 20).reduce((selectors, i) => {
       return {
@@ -97,6 +102,18 @@ export const tagSticky = style([
         },
       };
     }, {}),
+  },
+]);
+
+export const tagListItem = style([
+  tag,
+  {
+    fontSize: 'var(--affine-font-sm)',
+    padding: '4px 12px',
+    columnGap: '8px',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    height: '30px',
   },
 ]);
 
@@ -111,6 +128,7 @@ export const tagIndicator = style({
   width: '8px',
   height: '8px',
   borderRadius: '50%',
+  flexShrink: 0,
 });
 
 export const tagLabel = style({

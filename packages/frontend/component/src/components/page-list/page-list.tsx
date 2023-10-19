@@ -24,7 +24,7 @@ import {
   sorterAtom,
 } from './scoped-atoms';
 import type { PageListProps } from './types';
-import { ColWrapper, type ColWrapperProps } from './utils';
+import { ColWrapper, type ColWrapperProps, stopPropagation } from './utils';
 
 /**
  * Given a list of pages, render a list of pages
@@ -94,6 +94,7 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
       data-sortable={props.sortable ? true : undefined}
       data-sorting={sorting ? true : undefined}
       style={props.style}
+      hideInSmallContainer={props.hideInSmallContainer}
     >
       {props.children}
       {sorting ? (
@@ -111,6 +112,7 @@ type HeaderColDef = {
   flex: ColWrapperProps['flex'];
   alignment?: ColWrapperProps['alignment'];
   sortable?: boolean;
+  hideInSmallContainer?: boolean;
 };
 
 // the checkbox on the header has three states:
@@ -121,19 +123,24 @@ const PageListHeaderCheckbox = () => {
   const selectionState = useAtomValue(selectionStateAtom);
   const setSelectionActive = useSetAtom(selectionStateAtom);
   const pages = useAtomValue(pagesAtom);
-  const onActivateSelection = useCallback(() => {
-    setSelectionActive(true);
-  }, [setSelectionActive]);
+  const onActivateSelection: MouseEventHandler = useCallback(
+    e => {
+      stopPropagation(e);
+      setSelectionActive(true);
+    },
+    [setSelectionActive]
+  );
   const handlers = useAtomValue(pageListHandlersAtom);
   const onChange: NonNullable<CheckboxProps['onChange']> = useCallback(
-    (_, checked) => {
+    (e, checked) => {
+      stopPropagation(e);
       handlers.onSelectedPageIdsChange?.(checked ? pages.map(p => p.id) : []);
     },
     [handlers, pages]
   );
 
   if (!selectionState.selectable) {
-    return <div style={{ width: '40px' }}></div>;
+    return <div style={{ width: '20px' }}></div>;
   }
 
   if (selectionState.selectionActive) {
@@ -201,6 +208,7 @@ export const PageListHeader = () => {
         flex: 1,
         sortable: true,
         alignment: 'end',
+        hideInSmallContainer: true,
       },
       {
         key: 'updatedDate',
@@ -208,6 +216,7 @@ export const PageListHeader = () => {
         flex: 1,
         sortable: true,
         alignment: 'end',
+        hideInSmallContainer: true,
       },
       showOperations && {
         key: 'actions',
@@ -229,6 +238,7 @@ export const PageListHeader = () => {
             sortKey={col.key as keyof PageMeta}
             sortable={col.sortable}
             style={{ overflow: 'visible' }}
+            hideInSmallContainer={col.hideInSmallContainer}
           >
             {col.content}
           </PageListHeaderCell>
