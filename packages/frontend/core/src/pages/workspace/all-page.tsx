@@ -127,7 +127,6 @@ export const AllPage = () => {
         backToAll={backToAll}
         getPageInfo={getPageInfo}
         collectionsAtom={collectionsCRUDAtom}
-        columnsCount={5}
         // the following props is not reactive right?
         propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
       />

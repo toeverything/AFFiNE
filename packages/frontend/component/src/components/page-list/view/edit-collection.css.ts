@@ -1,5 +1,11 @@
 import { style } from '@vanilla-extract/css';
 
+export const ellipsis = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+
 export const pagesBottomLeft = style({
   display: 'flex',
   gap: 8,
@@ -11,6 +17,8 @@ export const pagesBottom = style({
   justifyContent: 'space-between',
   padding: '20px 24px',
   borderTop: '1px solid var(--affine-border-color)',
+  flexWrap: 'wrap',
+  gap: '12px',
 });
 
 export const pagesTabContent = style({
@@ -46,6 +54,8 @@ export const rulesBottom = style({
   justifyContent: 'space-between',
   padding: '20px 24px',
   borderTop: '1px solid var(--affine-border-color)',
+  flexWrap: 'wrap',
+  gap: '12px',
 });
 
 export const includeListTitle = style({

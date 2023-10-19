@@ -61,9 +61,9 @@ export const EditCollectionModal = ({
       open={open}
       onOpenChange={onOpenChange}
       withoutCloseButton
-      width={944}
+      width="calc(100% - 64px)"
       height="80%"
-      contentOptions={{ style: { padding: 0 } }}
+      contentOptions={{ style: { padding: 0, maxWidth: 944 } }}
     >
       {init ? (
         <EditCollection
@@ -206,7 +206,7 @@ const RulesMode = ({
   }, [open, updateCollection, collection]);
   return (
     <>
-      <div className={styles.rulesTitle}>
+      <div className={clsx(styles.rulesTitle, styles.ellipsis)}>
         <Trans
           i18nKey="com.affine.editCollection.rules.tips"
           values={{
@@ -360,7 +360,7 @@ const RulesMode = ({
             pages.
           </div>
         </div>
-        <div>{buttons}</div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>{buttons}</div>
       </div>
       {selectPageNode}
     </>
@@ -678,11 +678,15 @@ const useSelectPage = ({
         open={!!value}
         onOpenChange={close}
         withoutCloseButton
-        width={976}
+        width="calc(100% - 32px)"
         height="80%"
         overlayOptions={{ style: { backgroundColor: 'transparent' } }}
         contentOptions={{
-          style: { padding: 0, transform: 'translate(-50%,calc(-50% + 16px))' },
+          style: {
+            padding: 0,
+            transform: 'translate(-50%,calc(-50% + 16px))',
+            maxWidth: 976,
+          },
         }}
       >
         {value ? (

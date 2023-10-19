@@ -7,7 +7,6 @@ export const view = style({
   fontSize: 14,
   fontWeight: 600,
   height: '100%',
-  paddingLeft: 16,
 });
 
 export const option = style({

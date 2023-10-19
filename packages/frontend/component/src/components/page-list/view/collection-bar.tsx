@@ -19,13 +19,12 @@ interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
   collectionsAtom: CollectionsCRUDAtom;
-  columnsCount: number;
   backToAll: () => void;
   allPageListConfig: AllPageListConfig;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
-  const { columnsCount, collectionsAtom } = props;
+  const { collectionsAtom } = props;
   const t = useAFFiNEI18N();
   const setting = useCollectionManager(collectionsAtom);
   const collection = setting.currentCollection;
@@ -36,8 +35,16 @@ export const CollectionBar = (props: CollectionBarProps) => {
     openEdit: () => setOpen(true),
   });
   return !setting.isDefault ? (
-    <tr style={{ userSelect: 'none' }}>
-      <td>
+    <div
+      style={{
+        userSelect: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 20px',
+      }}
+    >
+      <div>
         <div className={styles.view}>
           <EditCollectionModal
             allPageListConfig={props.allPageListConfig}
@@ -84,11 +91,8 @@ export const CollectionBar = (props: CollectionBarProps) => {
             );
           })}
         </div>
-      </td>
-      {Array.from({ length: columnsCount - 2 }).map((_, i) => (
-        <td key={i}></td>
-      ))}
-      <td
+      </div>
+      <div
         style={{
           display: 'flex',
           justifyContent: 'end',
@@ -100,7 +104,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
         >
           {t['com.affine.collectionBar.backToAll']()}
         </Button>
-      </td>
-    </tr>
+      </div>
+    </div>
   ) : null;
 };
