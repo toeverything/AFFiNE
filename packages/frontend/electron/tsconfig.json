@@ -28,12 +28,12 @@
     {
       "path": "../../common/env"
     },
-
-    // Tests
     {
       "path": "./tsconfig.node.json"
     },
-    { "path": "../../../tests/kit" }
+    {
+      "path": "../../../tests/kit"
+    }
   ],
   "ts-node": {
     "esm": true,

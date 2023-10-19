@@ -1,11 +1,10 @@
-/* eslint-disable no-async-promise-executor */
 import { spawn } from 'node:child_process';
 
 import type { ChildProcessWithoutNullStreams } from 'child_process';
-import electronPath from 'electron';
+import type { BuildContext } from 'esbuild';
 import * as esbuild from 'esbuild';
 
-import { config } from './common';
+import { config, electronDir } from './common';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -30,7 +29,10 @@ function spawnOrReloadElectron() {
     spawnProcess = null;
   }
 
-  spawnProcess = spawn(String(electronPath), ['.']);
+  spawnProcess = spawn('electron', ['.'], {
+    cwd: electronDir,
+    env: process.env,
+  });
 
   spawnProcess.stdout.on('data', d => {
     const str = d.toString().trim();
@@ -38,6 +40,7 @@ function spawnOrReloadElectron() {
       console.log(str);
     }
   });
+
   spawnProcess.stderr.on('data', d => {
     const data = d.toString().trim();
     if (!data) return;
@@ -47,16 +50,20 @@ function spawnOrReloadElectron() {
   });
 
   // Stops the watch script when the application has quit
-  spawnProcess.on('exit', process.exit);
+  spawnProcess.on('exit', code => {
+    if (code && code !== 0) {
+      console.log(`Electron exited with code ${code}`);
+    }
+    process.exit(code ?? 0);
+  });
 }
 
 const common = config();
 
 async function watchLayers() {
-  return new Promise<void>(async resolve => {
-    let initialBuild = false;
-
-    const buildContext = await esbuild.context({
+  let initialBuild = false;
+  return new Promise<BuildContext>(resolve => {
+    const buildContextPromise = esbuild.context({
       ...common,
       plugins: [
         ...(common.plugins ?? []),
@@ -68,7 +75,7 @@ async function watchLayers() {
                 console.log(`[layers] has changed, [re]launching electron...`);
                 spawnOrReloadElectron();
               } else {
-                resolve();
+                buildContextPromise.then(resolve);
                 initialBuild = true;
               }
             });
@@ -76,19 +83,18 @@ async function watchLayers() {
         },
       ],
     });
-    await buildContext.watch();
+    buildContextPromise.then(async buildContext => {
+      await buildContext.watch();
+    });
   });
 }
 
-async function main() {
-  await watchLayers();
+await watchLayers();
 
-  if (watchMode) {
-    console.log(`Watching for changes...`);
-  } else {
-    spawnOrReloadElectron();
-    console.log(`Electron is started, watching for changes...`);
-  }
+if (watchMode) {
+  console.log(`Watching for changes...`);
+} else {
+  console.log('Starting electron...');
+  spawnOrReloadElectron();
+  console.log(`Electron is started, watching for changes...`);
 }
-
-main();

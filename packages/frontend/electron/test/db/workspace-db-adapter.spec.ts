@@ -1,17 +1,16 @@
 import path from 'node:path';
 
+import { dbSubjects } from '@affine/electron/helper/db/subjects';
 import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
-import { dbSubjects } from '../subjects';
-
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
 
-vi.doMock('../../main-rpc', () => ({
+vi.doMock('@affine/electron/helper/main-rpc', () => ({
   mainRPC: {
     getPath: async () => appDataPath,
   },
@@ -47,7 +46,9 @@ function getTestSubDocUpdates() {
 }
 
 test('can create new db file if not exists', async () => {
-  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const { openWorkspaceDatabase } = await import(
+    '@affine/electron/helper/db/workspace-db-adapter'
+  );
   const workspaceId = v4();
   const db = await openWorkspaceDatabase(workspaceId);
   const dbPath = path.join(
@@ -60,7 +61,9 @@ test('can create new db file if not exists', async () => {
 });
 
 test('on applyUpdate (from self), will not trigger update', async () => {
-  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const { openWorkspaceDatabase } = await import(
+    '@affine/electron/helper/db/workspace-db-adapter'
+  );
   const workspaceId = v4();
   const onUpdate = vi.fn();
 
@@ -72,7 +75,9 @@ test('on applyUpdate (from self), will not trigger update', async () => {
 });
 
 test('on applyUpdate (from renderer), will trigger update', async () => {
-  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const { openWorkspaceDatabase } = await import(
+    '@affine/electron/helper/db/workspace-db-adapter'
+  );
   const workspaceId = v4();
   const onUpdate = vi.fn();
   const onExternalUpdate = vi.fn();
@@ -87,7 +92,9 @@ test('on applyUpdate (from renderer), will trigger update', async () => {
 });
 
 test('on applyUpdate (from renderer, subdoc), will trigger update', async () => {
-  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const { openWorkspaceDatabase } = await import(
+    '@affine/electron/helper/db/workspace-db-adapter'
+  );
   const workspaceId = v4();
   const onUpdate = vi.fn();
   const insertUpdates = vi.fn();
@@ -112,7 +119,9 @@ test('on applyUpdate (from renderer, subdoc), will trigger update', async () => 
 });
 
 test('on applyUpdate (from external), will trigger update & send external update event', async () => {
-  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const { openWorkspaceDatabase } = await import(
+    '@affine/electron/helper/db/workspace-db-adapter'
+  );
   const workspaceId = v4();
   const onUpdate = vi.fn();
   const onExternalUpdate = vi.fn();
@@ -128,7 +137,9 @@ test('on applyUpdate (from external), will trigger update & send external update
 });
 
 test('on destroy, check if resources have been released', async () => {
-  const { openWorkspaceDatabase } = await import('../workspace-db-adapter');
+  const { openWorkspaceDatabase } = await import(
+    '@affine/electron/helper/db/workspace-db-adapter'
+  );
   const workspaceId = v4();
   const db = await openWorkspaceDatabase(workspaceId);
   const updateSub = {

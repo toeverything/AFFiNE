@@ -7,11 +7,12 @@ export const ReleaseTypeSchema = z.enum([
   'internal',
 ]);
 
-export const envBuildType = (
-  process.env.BUILD_TYPE_OVERRIDE ||
-  process.env.BUILD_TYPE ||
-  'canary'
-)
+declare global {
+  // THIS variable should be replaced during the build process
+  const REPLACE_ME_BUILD_ENV: string;
+}
+
+export const envBuildType = (process.env.BUILD_TYPE || REPLACE_ME_BUILD_ENV)
   .trim()
   .toLowerCase();
 

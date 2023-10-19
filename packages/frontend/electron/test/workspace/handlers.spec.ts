@@ -8,13 +8,13 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
 
-vi.doMock('../../db/ensure-db', () => ({
+vi.doMock('@affine/electron/helper/db/ensure-db', () => ({
   ensureSQLiteDB: async () => ({
     destroy: () => {},
   }),
 }));
 
-vi.doMock('../../main-rpc', () => ({
+vi.doMock('@affine/electron/helper/main-rpc', () => ({
   mainRPC: {
     getPath: async () => appDataPath,
   },
@@ -26,7 +26,9 @@ afterEach(async () => {
 
 describe('list workspaces', () => {
   test('listWorkspaces (valid)', async () => {
-    const { listWorkspaces } = await import('../handlers');
+    const { listWorkspaces } = await import(
+      '@affine/electron/helper/workspace/handlers'
+    );
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     const meta = {
@@ -39,7 +41,9 @@ describe('list workspaces', () => {
   });
 
   test('listWorkspaces (without meta json file)', async () => {
-    const { listWorkspaces } = await import('../handlers');
+    const { listWorkspaces } = await import(
+      '@affine/electron/helper/workspace/handlers'
+    );
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);
@@ -56,7 +60,9 @@ describe('list workspaces', () => {
 
 describe('delete workspace', () => {
   test('deleteWorkspace', async () => {
-    const { deleteWorkspace } = await import('../handlers');
+    const { deleteWorkspace } = await import(
+      '@affine/electron/helper/workspace/handlers'
+    );
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);
@@ -73,7 +79,9 @@ describe('delete workspace', () => {
 
 describe('getWorkspaceMeta', () => {
   test('can get meta', async () => {
-    const { getWorkspaceMeta } = await import('../meta');
+    const { getWorkspaceMeta } = await import(
+      '@affine/electron/helper/workspace/meta'
+    );
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     const meta = {
@@ -85,7 +93,9 @@ describe('getWorkspaceMeta', () => {
   });
 
   test('can create meta if not exists', async () => {
-    const { getWorkspaceMeta } = await import('../meta');
+    const { getWorkspaceMeta } = await import(
+      '@affine/electron/helper/workspace/meta'
+    );
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);
@@ -99,7 +109,9 @@ describe('getWorkspaceMeta', () => {
   });
 
   test('can migrate meta if db file is a link', async () => {
-    const { getWorkspaceMeta } = await import('../meta');
+    const { getWorkspaceMeta } = await import(
+      '@affine/electron/helper/workspace/meta'
+    );
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);
@@ -121,7 +133,9 @@ describe('getWorkspaceMeta', () => {
 });
 
 test('storeWorkspaceMeta', async () => {
-  const { storeWorkspaceMeta } = await import('../handlers');
+  const { storeWorkspaceMeta } = await import(
+    '@affine/electron/helper/workspace/handlers'
+  );
   const workspaceId = v4();
   const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
   await fs.ensureDir(workspacePath);

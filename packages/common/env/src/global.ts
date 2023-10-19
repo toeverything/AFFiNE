@@ -42,22 +42,6 @@ export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;
 
 export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;
 
-export const platformSchema = z.enum([
-  'aix',
-  'android',
-  'darwin',
-  'freebsd',
-  'haiku',
-  'linux',
-  'openbsd',
-  'sunos',
-  'win32',
-  'cygwin',
-  'netbsd',
-]);
-
-export type Platform = z.infer<typeof platformSchema>;
-
 type BrowserBase = {
   /**
    * @example https://app.affine.pro

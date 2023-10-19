@@ -35,8 +35,8 @@
         "{projectRoot}/storybook-static"
       ],
       "inputs": [
-        "{workspaceRoot}/infra/**/*",
-        "{workspaceRoot}/sdk/**/*",
+        "{workspaceRoot}/packages/frontend/infra/**/*",
+        "{workspaceRoot}/packages/frontend/sdk/**/*",
         {
           "runtime": "node -v"
         },
@@ -81,9 +81,6 @@
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
-          "env": "NATIVE_TEST"
-        },
-        {
           "env": "ENABLE_PRELOADING"
         },
         {
@@ -95,9 +92,6 @@
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
-          "env": "NATIVE_TEST"
-        },
-        {
           "env": "ENABLE_PRELOADING"
         },
         {
@@ -108,9 +102,6 @@
     "test:coverage": {
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
-        {
-          "env": "NATIVE_TEST"
-        },
         {
           "env": "ENABLE_PRELOADING"
         }
