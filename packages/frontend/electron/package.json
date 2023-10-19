@@ -16,12 +16,9 @@
     "build": "NODE_ENV=production ts-node scripts/build-layers.ts",
     "build:dev": "NODE_ENV=development ts-node scripts/build-layers.ts",
     "generate-assets": "ts-node scripts/generate-assets.ts",
-    "package": "electron-forge package",
-    "make": "NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge make",
+    "package": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge package",
+    "make": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge make",
     "make-squirrel": "yarn ts-node scripts/make-squirrel.ts"
-  },
-  "config": {
-    "forge": "./forge.config.js"
   },
   "main": "./dist/main.js",
   "devDependencies": {
@@ -51,6 +48,7 @@
     "@toeverything/infra": "workspace:*",
     "@types/uuid": "^9.0.5",
     "builder-util-runtime": "^9.2.1",
+    "cross-env": "^7.0.3",
     "electron": "^27.0.0",
     "electron-log": "^5.0.0-rc.1",
     "electron-squirrel-startup": "1.0.0",
