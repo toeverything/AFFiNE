@@ -12706,6 +12706,7 @@ __metadata:
     lodash.debounce: ^4.0.8
     react: 18.2.0
     swr: 2.2.4
+    uuid: ^9.0.1
     vitest: 0.34.6
     y-provider: "workspace:*"
   peerDependencies:
