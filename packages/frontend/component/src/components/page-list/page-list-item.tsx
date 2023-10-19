@@ -127,10 +127,10 @@ export const PageListItem = (props: PageListItemProps) => {
           <PageTagsCell tags={props.tags} />
         </ColWrapper>
       </ColWrapper>
-      <ColWrapper flex={1} alignment="end">
+      <ColWrapper flex={1} alignment="end" hideInSmallContainer>
         <PageCreateDateCell createDate={props.createDate} />
       </ColWrapper>
-      <ColWrapper flex={1} alignment="end">
+      <ColWrapper flex={1} alignment="end" hideInSmallContainer>
         <PageUpdatedDateCell updatedDate={props.updatedDate} />
       </ColWrapper>
       {props.operations ? (

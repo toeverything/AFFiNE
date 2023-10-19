@@ -1,6 +1,15 @@
-import { style } from '@vanilla-extract/css';
+import { createContainer, style } from '@vanilla-extract/css';
 
-export const root = style({});
+import * as itemStyles from './page-list-item.css';
+
+export const listRootContainer = createContainer('list-root-container');
+
+export const root = style({
+  width: '100%',
+  maxWidth: '100%',
+  containerName: listRootContainer,
+  containerType: 'inline-size',
+});
 
 export const groupsContainer = style({
   display: 'flex',
@@ -13,6 +22,8 @@ export const header = style({
   alignItems: 'center',
   padding: '16px 0 8px 0',
   position: 'sticky',
+  overflow: 'hidden',
+  zIndex: 1,
   top: 0,
   left: 0,
   background: 'var(--affine-background-primary-color)',
@@ -53,9 +64,30 @@ export const headerCellSortIcon = style({
   height: '14px',
 });
 
-export const flexWrapper = style({
+export const colWrapper = style({
   display: 'flex',
   alignItems: 'center',
   flexShrink: 0,
   overflow: 'hidden',
+});
+
+export const hideInSmallContainer = style({
+  '@container': {
+    [`${listRootContainer} (max-width: 760px)`]: {
+      display: 'none',
+    },
+  },
+});
+
+export const favoriteCell = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  flexShrink: 0,
+  opacity: 0,
+  selectors: {
+    [`&[data-favorite], &${itemStyles.root}:hover &`]: {
+      opacity: 1,
+    },
+  },
 });

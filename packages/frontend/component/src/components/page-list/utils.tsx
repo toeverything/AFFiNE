@@ -75,9 +75,10 @@ export const formatDate = (date: Date): string => {
 };
 
 export type ColWrapperProps = PropsWithChildren<{
-  flex: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  flex?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   alignment?: 'start' | 'center' | 'end';
   styles?: React.CSSProperties;
+  hideInSmallContainer?: boolean;
 }> &
   React.HTMLAttributes<Element>;
 
@@ -89,10 +90,14 @@ export const ColWrapper = (props: ColWrapperProps) => {
       style={{
         ...props.style,
         flexGrow: props.flex,
-        flexBasis: `${(props.flex / 12) * 100}%`,
+        flexBasis: props.flex ? `${(props.flex / 12) * 100}%` : 'auto',
         justifyContent: props.alignment,
       }}
-      className={clsx(props.className, styles.flexWrapper)}
+      className={clsx(
+        props.className,
+        styles.colWrapper,
+        props.hideInSmallContainer ? styles.hideInSmallContainer : null
+      )}
     >
       {props.children}
     </div>

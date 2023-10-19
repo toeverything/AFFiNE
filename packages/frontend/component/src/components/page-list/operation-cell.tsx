@@ -14,8 +14,10 @@ import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { FlexWrapper } from '../../..';
+import { FavoriteTag } from './components/favorite-tag';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
+import * as styles from './page-list.css';
+import { ColWrapper } from './utils';
 
 export interface OperationCellProps {
   favorite: boolean;
@@ -81,7 +83,15 @@ export const OperationCell = ({
   );
   return (
     <>
-      <FlexWrapper alignItems="center" justifyContent="center">
+      <ColWrapper
+        hideInSmallContainer
+        data-testid="page-list-item-favorite"
+        data-favorite={favorite ? true : undefined}
+        className={styles.favoriteCell}
+      >
+        <FavoriteTag onClick={onToggleFavoritePage} active={favorite} />
+      </ColWrapper>
+      <ColWrapper alignment="start">
         <Menu
           items={OperationMenu}
           contentOptions={{
@@ -92,7 +102,7 @@ export const OperationCell = ({
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
-      </FlexWrapper>
+      </ColWrapper>
       <DisablePublicSharing.DisablePublicSharingModal
         onConfirm={onDisablePublicSharing}
         open={openDisableShared}
@@ -114,7 +124,7 @@ export const TrashOperationCell = ({
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
-    <FlexWrapper>
+    <ColWrapper flex={1}>
       <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
         <IconButton
           style={{ marginRight: '12px' }}
@@ -153,6 +163,6 @@ export const TrashOperationCell = ({
           setOpen(false);
         }}
       />
-    </FlexWrapper>
+    </ColWrapper>
   );
 };

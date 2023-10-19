@@ -2,7 +2,6 @@ import { toast } from '@affine/component';
 import {
   CollectionBar,
   currentCollectionAtom,
-  FavoriteTag,
   OperationCell,
   PageList,
 } from '@affine/component/page-list';
@@ -77,18 +76,8 @@ export const AllPage = () => {
           portal: document.body,
         });
       };
-      const onToggleFavorite = () => {
-        toggleFavorite(page.id);
-      };
       return (
         <>
-          <div
-            data-testid="page-list-item-favorite"
-            data-favorite={page.favorite ? true : undefined}
-            className={styles.favoriteCell}
-          >
-            <FavoriteTag onClick={onToggleFavorite} active={!!page.favorite} />
-          </div>
           <OperationCell
             favorite={!!page.favorite}
             isPublic={!!page.isPublic}

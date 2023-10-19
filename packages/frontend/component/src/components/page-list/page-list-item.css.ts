@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const root = style({
   display: 'flex',
@@ -17,6 +17,11 @@ export const root = style({
       cursor: 'pointer',
     },
   },
+});
+
+// todo: remove global style
+globalStyle(`${root} > :last-child`, {
+  paddingRight: '8px',
 });
 
 export const selectionCell = style({

@@ -94,6 +94,7 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
       data-sortable={props.sortable ? true : undefined}
       data-sorting={sorting ? true : undefined}
       style={props.style}
+      hideInSmallContainer={props.hideInSmallContainer}
     >
       {props.children}
       {sorting ? (
@@ -111,6 +112,7 @@ type HeaderColDef = {
   flex: ColWrapperProps['flex'];
   alignment?: ColWrapperProps['alignment'];
   sortable?: boolean;
+  hideInSmallContainer?: boolean;
 };
 
 // the checkbox on the header has three states:
@@ -206,6 +208,7 @@ export const PageListHeader = () => {
         flex: 1,
         sortable: true,
         alignment: 'end',
+        hideInSmallContainer: true,
       },
       {
         key: 'updatedDate',
@@ -213,6 +216,7 @@ export const PageListHeader = () => {
         flex: 1,
         sortable: true,
         alignment: 'end',
+        hideInSmallContainer: true,
       },
       showOperations && {
         key: 'actions',
@@ -234,6 +238,7 @@ export const PageListHeader = () => {
             sortKey={col.key as keyof PageMeta}
             sortable={col.sortable}
             style={{ overflow: 'visible' }}
+            hideInSmallContainer={col.hideInSmallContainer}
           >
             {col.content}
           </PageListHeaderCell>

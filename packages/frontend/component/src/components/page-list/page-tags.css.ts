@@ -39,7 +39,6 @@ export const innerContainer = style({
   height: '100%',
   maxWidth: '100%',
   transition: 'all 0.2s 0.3s ease-in-out',
-  padding: '0 16px',
   selectors: {
     [`${root}:hover &`]: {
       maxWidth: 'var(--hover-max-width)',
@@ -114,6 +113,7 @@ export const tagListItem = style([
     columnGap: '8px',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    height: '30px',
   },
 ]);
 
