@@ -1,8 +1,7 @@
+import { Input } from '@affine/component';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent, within } from '@storybook/testing-library';
-
-import { Input } from '.';
 
 export default {
   title: 'AFFiNE/Input',
