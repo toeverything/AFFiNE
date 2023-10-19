@@ -130,6 +130,21 @@ export type AllBlobSizesQuery = {
   collectAllBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
 };
 
+export type CancelSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type CancelSubscriptionMutation = {
+  __typename?: 'Mutation';
+  cancelSubscription: {
+    __typename?: 'UserSubscription';
+    id: string;
+    status: SubscriptionStatus;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+  };
+};
+
 export type ChangeEmailMutationVariables = Exact<{
   token: Scalars['String']['input'];
 }>;
@@ -160,6 +175,12 @@ export type ChangePasswordMutation = {
     email: string;
   };
 };
+
+export type CheckoutMutationVariables = Exact<{
+  recurring: SubscriptionRecurring;
+}>;
+
+export type CheckoutMutation = { __typename?: 'Mutation'; checkout: string };
 
 export type CreateWorkspaceMutationVariables = Exact<{
   init: Scalars['Upload']['input'];
@@ -328,6 +349,30 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type InvoicesQueryVariables = Exact<{
+  take: Scalars['Int']['input'];
+  skip: Scalars['Int']['input'];
+}>;
+
+export type InvoicesQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    invoices: Array<{
+      __typename?: 'UserInvoice';
+      id: string;
+      status: InvoiceStatus;
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+      currency: string;
+      amount: number;
+      reason: string;
+      lastPaymentError: string | null;
+      createdAt: string;
+    }>;
+  } | null;
+};
+
 export type LeaveWorkspaceMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   workspaceName: Scalars['String']['input'];
@@ -337,6 +382,20 @@ export type LeaveWorkspaceMutationVariables = Exact<{
 export type LeaveWorkspaceMutation = {
   __typename?: 'Mutation';
   leaveWorkspace: boolean;
+};
+
+export type PricesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type PricesQuery = {
+  __typename?: 'Query';
+  prices: Array<{
+    __typename?: 'SubscriptionPrice';
+    type: string;
+    plan: SubscriptionPlan;
+    currency: string;
+    amount: number;
+    yearlyAmount: number;
+  }>;
 };
 
 export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
@@ -448,6 +507,41 @@ export type SignUpMutation = {
   signUp: {
     __typename?: 'UserType';
     token: { __typename?: 'TokenType'; token: string };
+  };
+};
+
+export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
+
+export type SubscriptionQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    subscription: {
+      __typename?: 'UserSubscription';
+      id: string;
+      status: SubscriptionStatus;
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+      start: string;
+      end: string;
+      nextBillAt: string | null;
+      canceledAt: string | null;
+    } | null;
+  } | null;
+};
+
+export type UpdateSubscriptionMutationVariables = Exact<{
+  recurring: SubscriptionRecurring;
+}>;
+
+export type UpdateSubscriptionMutation = {
+  __typename?: 'Mutation';
+  updateSubscriptionRecurring: {
+    __typename?: 'UserSubscription';
+    id: string;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    nextBillAt: string | null;
   };
 };
 
@@ -570,6 +664,21 @@ export type Queries =
       name: 'getWorkspacesQuery';
       variables: GetWorkspacesQueryVariables;
       response: GetWorkspacesQuery;
+    }
+  | {
+      name: 'invoicesQuery';
+      variables: InvoicesQueryVariables;
+      response: InvoicesQuery;
+    }
+  | {
+      name: 'pricesQuery';
+      variables: PricesQueryVariables;
+      response: PricesQuery;
+    }
+  | {
+      name: 'subscriptionQuery';
+      variables: SubscriptionQueryVariables;
+      response: SubscriptionQuery;
     };
 
 export type Mutations =
@@ -584,6 +693,11 @@ export type Mutations =
       response: SetBlobMutation;
     }
   | {
+      name: 'cancelSubscriptionMutation';
+      variables: CancelSubscriptionMutationVariables;
+      response: CancelSubscriptionMutation;
+    }
+  | {
       name: 'changeEmailMutation';
       variables: ChangeEmailMutationVariables;
       response: ChangeEmailMutation;
@@ -592,6 +706,11 @@ export type Mutations =
       name: 'changePasswordMutation';
       variables: ChangePasswordMutationVariables;
       response: ChangePasswordMutation;
+    }
+  | {
+      name: 'checkoutMutation';
+      variables: CheckoutMutationVariables;
+      response: CheckoutMutation;
     }
   | {
       name: 'createWorkspaceMutation';
@@ -667,6 +786,11 @@ export type Mutations =
       name: 'signUpMutation';
       variables: SignUpMutationVariables;
       response: SignUpMutation;
+    }
+  | {
+      name: 'updateSubscriptionMutation';
+      variables: UpdateSubscriptionMutationVariables;
+      response: UpdateSubscriptionMutation;
     }
   | {
       name: 'uploadAvatarMutation';
