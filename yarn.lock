@@ -670,6 +670,7 @@ __metadata:
     "@nestjs/apollo": ^12.0.9
     "@nestjs/common": ^10.2.7
     "@nestjs/core": ^10.2.7
+    "@nestjs/event-emitter": ^2.0.2
     "@nestjs/graphql": ^12.0.9
     "@nestjs/platform-express": ^10.2.7
     "@nestjs/platform-socket.io": ^10.2.7
@@ -734,6 +735,7 @@ __metadata:
     semver: ^7.5.4
     sinon: ^16.1.0
     socket.io: ^4.7.2
+    stripe: ^13.6.0
     supertest: ^6.3.3
     ts-node: ^10.9.1
     typescript: ^5.2.2
@@ -7519,6 +7521,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@nestjs/event-emitter@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@nestjs/event-emitter@npm:2.0.2"
+  dependencies:
+    eventemitter2: 6.4.9
+  peerDependencies:
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
+    "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
+    reflect-metadata: ^0.1.12
+  checksum: 8efe9ca9e8b791281f331960916ca59b347ba0d0d7d4d56b3d686728b0531d79e25d50fd1f8ba2cf139bdbf077c3dafe443a87afa61d3be0a3c80c74579411bb
+  languageName: node
+  linkType: hard
+
 "@nestjs/graphql@npm:^12.0.9":
   version: 12.0.9
   resolution: "@nestjs/graphql@npm:12.0.9"
@@ -13570,6 +13585,13 @@ __metadata:
   version: 20.5.1
   resolution: "@types/node@npm:20.5.1"
   checksum: 3dbe611cd67afa987102c8558ee70f848949c5dcfee5f60abc073e55c0d7b048e391bf06bb1e0dc052cb7210ca97136ac496cbaf6e89123c989de6bd125fde82
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:>=8.1.0":
+  version: 20.6.2
+  resolution: "@types/node@npm:20.6.2"
+  checksum: 96fe5303872640a173f3fd43e289a451776ed5b8f0090094447c6790b43f23fb607eea8268af0829cef4d132e5afa0bfa4cd871aa7412e9042a414a698e9e971
   languageName: node
   linkType: hard
 
@@ -20275,6 +20297,13 @@ __metadata:
   version: 5.0.1
   resolution: "event-target-shim@npm:5.0.1"
   checksum: 1ffe3bb22a6d51bdeb6bf6f7cf97d2ff4a74b017ad12284cc9e6a279e727dc30a5de6bb613e5596ff4dc3e517841339ad09a7eec44266eccb1aa201a30448166
+  languageName: node
+  linkType: hard
+
+"eventemitter2@npm:6.4.9":
+  version: 6.4.9
+  resolution: "eventemitter2@npm:6.4.9"
+  checksum: be59577c1e1c35509c7ba0e2624335c35bbcfd9485b8a977384c6cc6759341ea1a98d3cb9dbaa5cea4fff9b687e504504e3f9c2cc1674cf3bd8a43a7c74ea3eb
   languageName: node
   linkType: hard
 
@@ -32079,6 +32108,16 @@ __metadata:
   dependencies:
     escape-string-regexp: ^1.0.2
   checksum: f8d65d33ca2b49aabc66bb41d689dda7b8b9959d320e3a40a2ef4d7079ff2f67ffb72db43f179f48dbf9495c2e33742863feab7a584d180fa62505439162c191
+  languageName: node
+  linkType: hard
+
+"stripe@npm:^13.6.0":
+  version: 13.6.0
+  resolution: "stripe@npm:13.6.0"
+  dependencies:
+    "@types/node": ">=8.1.0"
+    qs: ^6.11.0
+  checksum: 5313fd88aecdae701967ee7cd3c41be4a31b3aefc45a07f164895f5f7870217e8f2d9ba18973dc760e2a46ed51e5733b6e7f517a5b0a247c1dbdf4b822d6c2d6
   languageName: node
   linkType: hard
 
