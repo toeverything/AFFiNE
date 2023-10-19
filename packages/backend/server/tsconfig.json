@@ -1,0 +1,33 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": false,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "outDir": "dist",
+    "noEmit": false,
+    "verbatimModuleSyntax": false,
+    "rootDir": "./src"
+  },
+  "include": ["./src"],
+  "exclude": ["dist", "lib", "tests"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../storage/tsconfig.json"
+    }
+  ],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
+}

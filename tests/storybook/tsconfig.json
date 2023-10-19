@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    // Workaround for storybook build
+    "baseUrl": "../..",
+    "composite": true,
+    "noEmit": false,
+    "outDir": "lib"
+  },
+  "references": [
+    {
+      "path": "../../packages/frontend/core"
+    },
+    {
+      "path": "../../packages/frontend/component"
+    },
+    {
+      "path": "../../packages/common/env"
+    },
+    {
+      "path": "../../packages/frontend/workspace"
+    },
+    {
+      "path": "../../packages/plugins/image-preview"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

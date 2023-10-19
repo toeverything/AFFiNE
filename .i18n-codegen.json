@@ -3,8 +3,8 @@
   "version": 1,
   "list": [
     {
-      "input": "./packages/i18n/src/resources/en.json",
-      "output": "./packages/i18n/src/i18n-generated",
+      "input": "./packages/frontend/i18n/src/resources/en.json",
+      "output": "./packages/frontend/i18n/src/i18n-generated",
       "parser": {
         "type": "i18next",
         "contextSeparator": "$",

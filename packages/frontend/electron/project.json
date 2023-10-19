@@ -1,0 +1,24 @@
+{
+  "name": "@affine/electron",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "root": "packages/frontend/electron",
+  "sourceRoot": "packages/frontend/electron/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": [
+        {
+          "projects": ["tag:plugin"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
+      "options": {
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    }
+  }
+}

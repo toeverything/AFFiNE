@@ -1,0 +1,66 @@
+{
+  "name": "@toeverything/hooks",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "private": true,
+  "dependencies": {
+    "foxact": "^0.2.20",
+    "jotai": "^2.4.3",
+    "lodash.debounce": "^4.0.8",
+    "react": "18.2.0",
+    "swr": "2.2.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@affine/env": "workspace:*",
+    "@blocksuite/block-std": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/blocks": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/editor": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/global": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/lit": "0.0.0-20231018100009-361737d3-nightly",
+    "@blocksuite/store": "0.0.0-20231018100009-361737d3-nightly",
+    "@testing-library/react": "^14.0.0",
+    "@types/lodash.debounce": "^4.0.7",
+    "fake-indexeddb": "^5.0.0",
+    "vitest": "0.34.6",
+    "y-provider": "workspace:*"
+  },
+  "peerDependencies": {
+    "@blocksuite/block-std": "*",
+    "@blocksuite/blocks": "*",
+    "@blocksuite/editor": "*",
+    "@blocksuite/global": "*",
+    "@blocksuite/lit": "*",
+    "@blocksuite/store": "*",
+    "y-provider": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@affine/env": {
+      "optional": true
+    },
+    "@blocksuite/block-std": {
+      "optional": true
+    },
+    "@blocksuite/blocks": {
+      "optional": true
+    },
+    "@blocksuite/editor": {
+      "optional": true
+    },
+    "@blocksuite/global": {
+      "optional": true
+    },
+    "@blocksuite/lit": {
+      "optional": true
+    },
+    "@blocksuite/store": {
+      "optional": true
+    },
+    "y-provider": {
+      "optional": true
+    }
+  },
+  "version": "0.10.0-canary.1"
+}

@@ -9,7 +9,7 @@ packages=(
 
 for package in "${packages[@]}"; do
   yarn nx build $package
-  cd "packages/$package"
+  cd "packages/common/$package"
 
   if [ "$NIGHTLY" = "true" ]; then
     yarn npm publish --no-git-checks --tag nightly

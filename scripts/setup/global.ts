@@ -1,6 +1,6 @@
 import { setupGlobal } from '@affine/env/global';
 
-import { getRuntimeConfig } from '../../apps/core/.webpack/runtime-config';
+import { getRuntimeConfig } from '../../packages/frontend/core/.webpack/runtime-config';
 
 globalThis.runtimeConfig = getRuntimeConfig({
   distribution: 'browser',

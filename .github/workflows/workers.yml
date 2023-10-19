@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - packages/workers/**
+      - tools/workers/**
 
 jobs:
   deploy:
@@ -19,4 +19,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: 'packages/workers'
+          workingDirectory: 'tools/workers'

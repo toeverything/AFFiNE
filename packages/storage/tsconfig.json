@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "noEmit": false,
-    "outDir": "lib",
-    "composite": true
-  },
-  "include": ["index.d.ts"]
-}

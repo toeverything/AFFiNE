@@ -14,21 +14,13 @@ For the debugging purpose, you might need use local OctoBase on port 3000.
 
 The codebase is organized as follows:
 
-- `apps/` contains the source code for the different entry points of the project.
-  - `web/` contains the source code for the web app.
-  - `electron/` contains the source code for the Electron app.
-  - `server/` backend side for AFFiNE, see <https://github.com/toeverything/OctoBase> instead.
-- `packages/` contains the source code for all the packages in the repo.
-  - `cli` contains the source code for the CLI. Development only.
-  - `component` contains the source code for the UI component library.
-  - `debug` contains the source code for the debug helper.
-  - `env` contains the source code for the environment setup.
-  - `hooks` contains the source code for the custom React hooks.
-  - `i18n` contains the source code for the internationalization.
-  - `jotai` contains the source code for the Jotai store atoms.
-  - `octobase-node` contains the source code for the OctoBase Node.js binding using Rust.
-  - `templates` contains the source code for the templates.
-  - `workspace` contains the source code for the workspace related code.
+- `packages/` contains all code running in production.
+  - `backend/` contains backend code, more information from <https://github.com/toeverything/OctoBase>.
+  - `frontend/` contains frontend code, including the web app, the electron app and business libraries.
+  - `plugins/` contains all build-in plugins.
+  - `common` contains the isomorphic code or basic libraries without business.
+- `tools/` contains tools to help developing or CI, not used in production.
+- `tests/` contains testings across different libraries, including e2e testings and integration testings.
 
 ### `@affine/env`
 
@@ -50,7 +42,7 @@ Current we have two workspace plugin:
 - Each workspace plugin has its state and is isolated from other workspace plugins.
 - The workspace plugin is responsible for its own state management, data persistence, synchronization, data backup and recovery.
 
-For the workspace API, see [types.ts](../../packages/workspace/src/type.ts).
+For the workspace API, see [types.ts](../../packages/frontend/workspace/src/type.ts).
 
 ### `@affine/component`
 

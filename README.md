@@ -110,9 +110,9 @@ If you have questions, you are welcome to contact us. One of the best places to 
 | Name                                                                                            |                                         |                                                                                                                                                     |
 | ----------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [@toeverything/component](https://github.com/toeverything/design/tree/main/packages/components) | Toeverything Shared Component Resources |                                                                                                                                                     |
-| [@affine/component](packages/component)                                                         | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
-| [@toeverything/y-indexeddb](packages/y-indexeddb)                                               | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
-| [@toeverything/theme](packages/theme)                                                           | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
+| [@affine/component](packages/frontend/component)                                                | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
+| [@toeverything/y-indexeddb](packages/common/y-indexeddb)                                        | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
+| [@toeverything/theme](packages/common/theme)                                                    | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
 
 ## Plugins
 
@@ -120,8 +120,8 @@ If you have questions, you are welcome to contact us. One of the best places to 
 >
 > (Currently, the plugin system is under heavy development. You will see the plugin system in the canary release.)
 
-- [@affine/sdk](./packages/sdk) - SDK for developing plugins
-- [@affine/plugin-cli](./packages/plugin-cli) - CLI for developing plugins
+- [@affine/sdk](./packages/common/sdk) - SDK for developing plugins
+- [@affine/plugin-cli](./tools/plugin-cli) - CLI for developing plugins
 
 | Official Plugin                                       | Description                               | Status |
 | ----------------------------------------------------- | ----------------------------------------- | ------ |
@@ -226,5 +226,5 @@ See [LICENSE] for details.
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
-[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=apps%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
-[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=apps%2Fcore%2Fpackage.json&label=blocksuite
+[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=packages%2Ffrontend%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
+[blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=packages%2Ffrontend%2Fcore%2Fpackage.json&label=blocksuite

@@ -1,0 +1,42 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": ["node"],
+    "outDir": "lib",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "noImplicitOverride": true
+  },
+  "include": ["./src"],
+  "exclude": ["node_modules", "lib", "dist", "**/__tests__/**/*"],
+  "references": [
+    {
+      "path": "../../frontend/native"
+    },
+    {
+      "path": "../../common/infra"
+    },
+    {
+      "path": "../../common/sdk"
+    },
+    {
+      "path": "../../common/env"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "../../../tests/kit"
+    }
+  ],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
+}

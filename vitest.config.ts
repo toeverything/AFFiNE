@@ -19,19 +19,22 @@ export default defineConfig({
   test: {
     setupFiles: [
       resolve(rootDir, './scripts/setup/lit.ts'),
-      resolve(rootDir, './scripts/setup/i18n.ts'),
       resolve(rootDir, './scripts/setup/lottie-web.ts'),
       resolve(rootDir, './scripts/setup/global.ts'),
     ],
     include: [
-      resolve(rootDir, 'packages/**/*.spec.ts'),
-      resolve(rootDir, 'packages/**/*.spec.tsx'),
-      resolve(rootDir, 'apps/core/**/*.spec.ts'),
-      resolve(rootDir, 'apps/core/**/*.spec.tsx'),
-      resolve(rootDir, 'tests/unit/**/*.spec.ts'),
-      resolve(rootDir, 'tests/unit/**/*.spec.tsx'),
+      resolve(rootDir, 'packages/common/**/*.spec.ts'),
+      resolve(rootDir, 'packages/common/**/*.spec.tsx'),
+      resolve(rootDir, 'packages/frontend/**/*.spec.ts'),
+      resolve(rootDir, 'packages/frontend/**/*.spec.tsx'),
     ],
-    exclude: ['**/node_modules', '**/dist', '**/build', '**/out'],
+    exclude: [
+      '**/node_modules',
+      '**/dist',
+      '**/build',
+      '**/out,',
+      '**/frontend/electron',
+    ],
     testTimeout: 5000,
     coverage: {
       provider: 'istanbul', // or 'c8'
