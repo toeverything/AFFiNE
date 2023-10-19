@@ -11,7 +11,10 @@ try {
   storageModule = await import('@affine/storage');
 } catch {
   const require = createRequire(import.meta.url);
-  storageModule = require('../../storage.node');
+  storageModule =
+    process.arch === 'arm64'
+      ? require('../../storage.arm64.node')
+      : require('../../storage.node');
 }
 
 export class StorageModule {
