@@ -434,6 +434,10 @@ export class DocManager
     let lastTurnCount = 100;
     while (lastTurnCount === 100) {
       const docs = await this.db.snapshot.findMany({
+        select: {
+          workspaceId: true,
+          id: true,
+        },
         skip: turn * 100,
         take: 100,
         orderBy: {
@@ -446,6 +450,12 @@ export class DocManager
         const docId = new DocID(doc.id, doc.workspaceId);
 
         if (docId && !docId.isWorkspace && docId.guid !== doc.id) {
+          await this.db.snapshot.deleteMany({
+            where: {
+              id: docId.guid,
+              workspaceId: doc.workspaceId,
+            },
+          });
           await this.db.snapshot.update({
             where: {
               id_workspaceId: {
