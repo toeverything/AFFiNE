@@ -190,7 +190,20 @@ const RulesMode = ({
       }
     }
   });
-
+  const { node: selectPageNode, open } = useSelectPage({ allPageListConfig });
+  const openSelectPage = useCallback(() => {
+    open(collection.allowList).then(
+      ids => {
+        updateCollection({
+          ...collection,
+          allowList: ids,
+        });
+      },
+      () => {
+        //do nothing
+      }
+    );
+  }, [open, updateCollection, collection]);
   return (
     <>
       <div className={styles.rulesTitle}>
@@ -280,7 +293,10 @@ const RulesMode = ({
                   </div>
                 );
               })}
-              <div className={clsx(styles.button, styles.includeAddButton)}>
+              <div
+                onClick={openSelectPage}
+                className={clsx(styles.button, styles.includeAddButton)}
+              >
                 <PlusIcon></PlusIcon>
                 <div style={{ color: 'var(--affine-text-secondary-color)' }}>
                   Add include page
@@ -346,6 +362,7 @@ const RulesMode = ({
         </div>
         <div>{buttons}</div>
       </div>
+      {selectPageNode}
     </>
   );
 };
@@ -485,14 +502,18 @@ const PagesMode = ({
       </div>
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>
-          <div className={styles.previewCountTips}>
-            Selected{' '}
-            <span className={styles.previewCountTipsHighlight}>
+          <div className={styles.selectedCountTips}>
+            Selected
+            <span
+              style={{ marginLeft: 7 }}
+              className={styles.previewCountTipsHighlight}
+            >
               {collection.pages.length}
             </span>
           </div>
           <div
             className={clsx(styles.button, styles.bottomButton)}
+            style={{ fontSize: 12, lineHeight: '20px' }}
             onClick={clearSelected}
           >
             {t['com.affine.editCollection.pages.clear']()}
@@ -502,4 +523,184 @@ const PagesMode = ({
       </div>
     </>
   );
+};
+const SelectPage = ({
+  allPageListConfig,
+  init,
+  onConfirm,
+  onCancel,
+}: {
+  allPageListConfig: AllPageListConfig;
+  init: string[];
+  onConfirm: (pageIds: string[]) => void;
+  onCancel: () => void;
+}) => {
+  const t = useAFFiNEI18N();
+  const [value, onChange] = useState(init);
+  const confirm = useCallback(() => {
+    onConfirm(value);
+  }, [value, onConfirm]);
+  const clearSelected = useCallback(() => {
+    onChange([]);
+  }, []);
+  const [filters, changeFilters] = useState<Filter[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const clickFilter = useCallback(
+    (e: MouseEvent) => {
+      if (showFilter || filters.length !== 0) {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowFilter(!showFilter);
+      }
+    },
+    [filters.length, showFilter]
+  );
+  const onCreateFilter = useCallback(
+    (filter: Filter) => {
+      changeFilters([...filters, filter]);
+      setShowFilter(true);
+    },
+    [filters]
+  );
+  const filteredPages = allPageListConfig.allPages.filter(v => {
+    return filterPageByRules(filters, [], v);
+  });
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <input
+        className={styles.rulesTitle}
+        placeholder={t['com.affine.editCollection.search.placeholder']()}
+      ></input>
+      <div className={styles.pagesTab}>
+        <div className={styles.pagesTabContent}>
+          <div></div>
+          {!showFilter && filters.length === 0 ? (
+            <Menu
+              items={
+                <VariableSelect
+                  propertiesMeta={allPageListConfig.workspace.meta.properties}
+                  selected={filters}
+                  onSelect={onCreateFilter}
+                />
+              }
+            >
+              <div>
+                <FilterIcon
+                  className={clsx(styles.icon, styles.button)}
+                  onClick={clickFilter}
+                  width={24}
+                  height={24}
+                ></FilterIcon>
+              </div>
+            </Menu>
+          ) : (
+            <FilterIcon
+              className={clsx(styles.icon, styles.button)}
+              onClick={clickFilter}
+              width={24}
+              height={24}
+            ></FilterIcon>
+          )}
+        </div>
+        {showFilter ? (
+          <div style={{ padding: '12px 16px 16px' }}>
+            <FilterList
+              propertiesMeta={allPageListConfig.workspace.meta.properties}
+              value={filters}
+              onChange={changeFilters}
+            />
+          </div>
+        ) : null}
+        <div style={{ overflowY: 'auto' }}>
+          <PageList
+            className={styles.pageList}
+            pages={filteredPages}
+            blockSuiteWorkspace={allPageListConfig.workspace}
+            selectable
+            onSelectedPageIdsChange={onChange}
+            selectedPageIds={value}
+            isPreferredEdgeless={allPageListConfig.isEdgeless}
+          ></PageList>
+        </div>
+      </div>
+      <div className={styles.pagesBottom}>
+        <div className={styles.pagesBottomLeft}>
+          <div className={styles.selectedCountTips}>
+            Selected
+            <span
+              style={{ marginLeft: 7 }}
+              className={styles.previewCountTipsHighlight}
+            >
+              {value.length}
+            </span>
+          </div>
+          <div
+            className={clsx(styles.button, styles.bottomButton)}
+            style={{ fontSize: 12, lineHeight: '20px' }}
+            onClick={clearSelected}
+          >
+            {t['com.affine.editCollection.pages.clear']()}
+          </div>
+        </div>
+        <div>
+          <Button size="large" onClick={onCancel}>
+            {t['com.affine.editCollection.button.cancel']()}
+          </Button>
+          <Button
+            className={styles.confirmButton}
+            size="large"
+            data-testid="save-collection"
+            type="primary"
+            onClick={confirm}
+          >
+            Confirm
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const useSelectPage = ({
+  allPageListConfig,
+}: {
+  allPageListConfig: AllPageListConfig;
+}) => {
+  const [value, onChange] = useState<{
+    init: string[];
+    onConfirm: (ids: string[]) => void;
+  }>();
+  const close = useCallback(() => {
+    onChange(undefined);
+  }, []);
+  return {
+    node: (
+      <Modal
+        open={!!value}
+        onOpenChange={close}
+        withoutCloseButton
+        width={976}
+        height="80%"
+        overlayOptions={{ style: { backgroundColor: 'transparent' } }}
+        contentOptions={{
+          style: { padding: 0, transform: 'translate(-50%,calc(-50% + 16px))' },
+        }}
+      >
+        {value ? (
+          <SelectPage
+            allPageListConfig={allPageListConfig}
+            init={value.init}
+            onConfirm={value.onConfirm}
+            onCancel={close}
+          />
+        ) : null}
+      </Modal>
+    ),
+    open: (init: string[]): Promise<string[]> =>
+      new Promise<string[]>(res => {
+        onChange({
+          init,
+          onConfirm: res,
+        });
+      }),
+  };
 };

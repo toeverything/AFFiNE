@@ -26,6 +26,7 @@ export const pagesTab = style({
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
+  overflow: 'hidden',
 });
 
 export const pagesList = style({
@@ -70,6 +71,7 @@ export const includeAddButton = style({
   padding: '4px 8px',
   fontSize: 14,
   lineHeight: '22px',
+  width: 'max-content',
 });
 
 export const includeItemTitle = style({ overflow: 'hidden', fontWeight: 600 });
@@ -136,7 +138,11 @@ export const rulesContainerLeft = style({
   flexDirection: 'column',
 });
 
-export const rulesContainer = style({ display: 'flex', overflow: 'hidden' });
+export const rulesContainer = style({
+  display: 'flex',
+  overflow: 'hidden',
+  flex: 1,
+});
 
 export const collectionEditContainer = style({
   display: 'flex',
@@ -164,6 +170,11 @@ export const previewCountTips = style({
   fontSize: 12,
   lineHeight: '20px',
   color: 'var(--affine-text-secondary-color)',
+});
+export const selectedCountTips = style({
+  fontSize: 12,
+  lineHeight: '20px',
+  color: 'var(--affine-text-primary-color)',
 });
 
 export const rulesTitleHighlight = style({
