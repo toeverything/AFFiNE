@@ -42,7 +42,7 @@ Current we have two workspace plugin:
 - Each workspace plugin has its state and is isolated from other workspace plugins.
 - The workspace plugin is responsible for its own state management, data persistence, synchronization, data backup and recovery.
 
-For the workspace API, see [types.ts](../../packages/frontend/workspace/src/type.ts).
+For the workspace API, see [workspace.ts](../../packages/common/env/src/workspace.ts).
 
 ### `@affine/component`
 
