@@ -42,7 +42,7 @@ export interface PageListProps {
   className?: string;
   pages: PageMeta[];
   blockSuiteWorkspace: Workspace;
-  groupBy?: PagesGroupByType;
+  groupBy?: PagesGroupByType | false;
   fallback?: ReactNode; // fixme: shall we use loading rows number instead?
   isPreferredEdgeless: (pageId: string) => boolean;
   renderPageAsLink?: boolean; // whether or not to render each page as a router Link

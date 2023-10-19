@@ -166,13 +166,17 @@ export const sorterAtom = atom(
 export const pageGroupsAtom = atom(get => {
   let groupBy = get(selectAtom(pageListPropsAtom, props => props.groupBy));
   const sorter = get(sorterAtom);
-  groupBy =
-    groupBy ||
-    (sorter.key === 'createDate' || sorter.key === 'updatedDate'
-      ? sorter.key
-      : // default sort
-      !sorter.key
-      ? DEFAULT_SORT_KEY
-      : undefined);
+
+  if (groupBy === false) {
+    groupBy = undefined;
+  } else if (groupBy === undefined) {
+    groupBy =
+      sorter.key === 'createDate' || sorter.key === 'updatedDate'
+        ? sorter.key
+        : // default sort
+        !sorter.key
+        ? DEFAULT_SORT_KEY
+        : undefined;
+  }
   return pagesToPageGroups(sorter.pages, groupBy);
 });
