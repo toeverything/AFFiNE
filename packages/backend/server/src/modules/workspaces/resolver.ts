@@ -41,6 +41,7 @@ import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
+import { StorageQuotaService } from '../quota';
 import { UsersService } from '../users';
 import { UserType } from '../users/resolver';
 import { PermissionService, PublicPageMode } from './permission';
@@ -149,6 +150,7 @@ export class WorkspaceResolver {
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
     private readonly users: UsersService,
+    private readonly quota: StorageQuotaService,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
@@ -672,8 +674,7 @@ export class WorkspaceResolver {
 
   @Query(() => WorkspaceBlobSizes)
   async collectAllBlobSizes(@CurrentUser() user: UserType) {
-    const workspaces = await this.permissions.getOwnedWorkspaces(user.id);
-    const size = await this.storage.blobsSize(workspaces);
+    const size = await this.quota.getWorkspacesSize(user.id);
     return { size };
   }
 
@@ -681,7 +682,7 @@ export class WorkspaceResolver {
   async checkBlobSize(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
-    @Args('size', { type: () => Float }) size: number
+    @Args('size', { type: () => Float }) blobSize: number
   ) {
     const canWrite = await this.permissions.tryCheckWorkspace(
       workspaceId,
@@ -689,16 +690,8 @@ export class WorkspaceResolver {
       Permission.Write
     );
     if (canWrite) {
-      const { user } = await this.permissions.getWorkspaceOwner(workspaceId);
-      if (user) {
-        const quota = await this.users.getStorageQuotaById(user.id);
-        if (!quota) {
-          throw new ForbiddenException('user not exists');
-        }
-        const { size: currentSize } = await this.collectAllBlobSizes(user);
-
-        return { size: quota - (size + currentSize) };
-      }
+      const size = await this.quota.checkBlobQuota(workspaceId, blobSize);
+      return { size };
     }
     return false;
   }
@@ -716,20 +709,16 @@ export class WorkspaceResolver {
       Permission.Write
     );
 
-    // quota was apply to owner's account
-    const { user: owner } =
-      await this.permissions.getWorkspaceOwner(workspaceId);
-    if (!owner) return new NotFoundException('Workspace owner not found');
-    const quota = await this.users.getStorageQuotaById(owner.id);
-    const { size } = await this.collectAllBlobSizes(owner);
+    const { totalQuota, totalSize } =
+      await this.quota.getWorkspaceQuota(workspaceId);
 
     const checkExceeded = (recvSize: number) => {
-      if (!quota) {
+      if (!totalQuota) {
         throw new ForbiddenException('cannot find user quota');
       }
-      if (size + recvSize > quota) {
+      if (totalSize + recvSize > totalQuota) {
         this.logger.log(
-          `storage size limit exceeded: ${size + recvSize} > ${quota}`
+          `storage size limit exceeded: ${totalSize + recvSize} > ${totalQuota}`
         );
         return true;
       } else {

@@ -2,14 +2,12 @@ import { Injectable } from '@nestjs/common';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
-import { StorageQuotaService } from '../quota';
 import { NewFeaturesKind } from './types';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storageQuota: StorageQuotaService,
     private readonly config: Config
   ) {}
 
@@ -27,11 +25,6 @@ export class UsersService {
     } else {
       return true;
     }
-  }
-
-  async getStorageQuotaById(userId: string) {
-    const quota = await this.storageQuota.getStorageQuotaByUser(userId);
-    return quota?.storageQuota;
   }
 
   async findUserByEmail(email: string) {
