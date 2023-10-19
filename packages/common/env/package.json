@@ -2,8 +2,6 @@
   "name": "@affine/env",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
   "devDependencies": {
     "@blocksuite/global": "0.0.0-20231018100009-361737d3-nightly",
     "@blocksuite/store": "0.0.0-20231018100009-361737d3-nightly",

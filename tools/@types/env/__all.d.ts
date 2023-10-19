@@ -1,4 +1,4 @@
-import type { Environment, Platform, RuntimeConfig } from '@affine/env/global';
+import type { Environment, RuntimeConfig } from '@affine/env/global';
 import type {
   DBHandlerManager,
   DebugHandlerManager,
@@ -26,6 +26,25 @@ declare global {
       workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
     };
     events: EventMap;
+    affine: {
+      ipcRenderer: {
+        send(channel: string, ...args: any[]): void;
+        invoke(channel: string, ...args: any[]): Promise<any>;
+        on(
+          channel: string,
+          listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
+        ): this;
+        once(
+          channel: string,
+          listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
+        ): this;
+        removeListener(
+          channel: string,
+          listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
+        ): this;
+      };
+    };
+    $migrationDone: boolean | undefined;
   }
 
   interface WindowEventMap {
@@ -37,21 +56,11 @@ declare global {
     env: Record<string, string>;
   };
   // eslint-disable-next-line no-var
-  var $migrationDone: boolean;
-  // eslint-disable-next-line no-var
-  var platform: Platform | undefined;
-  // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
   var runtimeConfig: RuntimeConfig;
   // eslint-disable-next-line no-var
   var $AFFINE_SETUP: boolean | undefined;
-  // eslint-disable-next-line no-var
-  var editorVersion: string | undefined;
-  // eslint-disable-next-line no-var
-  var prefixUrl: string;
-  // eslint-disable-next-line no-var
-  var websocketPrefixUrl: string;
 }
 
 declare module '@blocksuite/store' {

@@ -112,7 +112,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
     // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
     if (
       maybeMetadata.some(meta => !('version' in meta)) &&
-      !globalThis.$migrationDone
+      !window.$migrationDone
     ) {
       await new Promise<void>((resolve, reject) => {
         signal.addEventListener('abort', () => reject(), { once: true });

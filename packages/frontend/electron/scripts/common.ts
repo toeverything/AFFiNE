@@ -9,22 +9,13 @@ export const rootDir = resolve(electronDir, '..', '..', '..');
 
 export const NODE_MAJOR_VERSION = 18;
 
-// hard-coded for now:
-// fixme(xp): report error if app is not running on DEV_SERVER_URL
-const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
-
 export const mode = (process.env.NODE_ENV =
   process.env.NODE_ENV || 'development');
 
 export const config = (): BuildOptions => {
-  const define = Object.fromEntries([
-    ['process.env.NODE_ENV', `"${mode}"`],
-    ['process.env.USE_WORKER', '"true"'],
-  ]);
+  const define: Record<string, string> = {};
 
-  if (DEV_SERVER_URL) {
-    define['process.env.DEV_SERVER_URL'] = `"${DEV_SERVER_URL}"`;
-  }
+  define['REPLACE_ME_BUILD_ENV'] = `"${process.env.BUILD_TYPE ?? 'stable'}"`;
 
   return {
     entryPoints: [
@@ -45,11 +36,11 @@ export const config = (): BuildOptions => {
       'semver',
       'tinykeys',
     ],
-    define: define,
     format: 'cjs',
     loader: {
       '.node': 'copy',
     },
+    define,
     assetNames: '[name]',
     treeShaking: true,
     sourcemap: 'linked',

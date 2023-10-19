@@ -103,7 +103,7 @@
       "path": "./packages/frontend/core"
     },
     {
-      "path": "./packages/frontend/electron"
+      "path": "./packages/frontend/electron/tsconfig.test.json"
     },
     {
       "path": "./packages/frontend/graphql"

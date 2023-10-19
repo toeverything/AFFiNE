@@ -8,7 +8,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
 
-vi.doMock('../../main-rpc', () => ({
+vi.doMock('@affine/electron/helper/main-rpc', () => ({
   mainRPC: {
     getPath: async () => appDataPath,
   },
@@ -22,7 +22,7 @@ function existProcess() {
   process.emit('beforeExit', 0);
 }
 
-vi.doMock('../secondary-db', () => {
+vi.doMock('@affine/electron/helper/db/secondary-db', () => {
   return {
     SecondaryWorkspaceSQLiteDB: class {
       constructor(...args: any[]) {
@@ -49,7 +49,9 @@ afterEach(async () => {
 });
 
 test('can get a valid WorkspaceSQLiteDB', async () => {
-  const { ensureSQLiteDB } = await import('../ensure-db');
+  const { ensureSQLiteDB } = await import(
+    '@affine/electron/helper/db/ensure-db'
+  );
   const workspaceId = v4();
   const db0 = await ensureSQLiteDB(workspaceId);
   expect(db0).toBeDefined();
@@ -64,7 +66,9 @@ test('can get a valid WorkspaceSQLiteDB', async () => {
 });
 
 test('db should be destroyed when app quits', async () => {
-  const { ensureSQLiteDB } = await import('../ensure-db');
+  const { ensureSQLiteDB } = await import(
+    '@affine/electron/helper/db/ensure-db'
+  );
   const workspaceId = v4();
   const db0 = await ensureSQLiteDB(workspaceId);
   const db1 = await ensureSQLiteDB(v4());
@@ -82,7 +86,9 @@ test('db should be destroyed when app quits', async () => {
 });
 
 test('db should be removed in db$Map after destroyed', async () => {
-  const { ensureSQLiteDB, db$Map } = await import('../ensure-db');
+  const { ensureSQLiteDB, db$Map } = await import(
+    '@affine/electron/helper/db/ensure-db'
+  );
   const workspaceId = v4();
   const db = await ensureSQLiteDB(workspaceId);
   await db.destroy();
@@ -92,8 +98,12 @@ test('db should be removed in db$Map after destroyed', async () => {
 
 // we have removed secondary db feature
 test.skip('if db has a secondary db path, we should also poll that', async () => {
-  const { ensureSQLiteDB } = await import('../ensure-db');
-  const { storeWorkspaceMeta } = await import('../../workspace');
+  const { ensureSQLiteDB } = await import(
+    '@affine/electron/helper/db/ensure-db'
+  );
+  const { storeWorkspaceMeta } = await import(
+    '@affine/electron/helper/workspace'
+  );
   const workspaceId = v4();
   await storeWorkspaceMeta(workspaceId, {
     secondaryDBPath: path.join(tmpDir, 'secondary.db'),

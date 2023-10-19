@@ -2,7 +2,6 @@ import { shell } from 'electron';
 import log from 'electron-log';
 
 export const logger = log.scope('main');
-export const pluginLogger = log.scope('plugin');
 log.initialize();
 
 export function getLogFilePath() {

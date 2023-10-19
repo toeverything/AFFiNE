@@ -1,5 +1,3 @@
-// import { platform } from 'node:os';
-
 import { test } from '@affine-test/kit/electron';
 import { withCtrlOrMeta } from '@affine-test/kit/utils/keyboard';
 import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
