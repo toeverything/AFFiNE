@@ -32,6 +32,14 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export enum InvoiceStatus {
+  Draft = 'Draft',
+  Open = 'Open',
+  Paid = 'Paid',
+  Uncollectible = 'Uncollectible',
+  Void = 'Void',
+}
+
 export enum NewFeaturesKind {
   EarlyAccess = 'EarlyAccess',
 }
@@ -42,6 +50,29 @@ export enum Permission {
   Owner = 'Owner',
   Read = 'Read',
   Write = 'Write',
+}
+
+export enum SubscriptionPlan {
+  Enterprise = 'Enterprise',
+  Free = 'Free',
+  Pro = 'Pro',
+  Team = 'Team',
+}
+
+export enum SubscriptionRecurring {
+  Monthly = 'Monthly',
+  Yearly = 'Yearly',
+}
+
+export enum SubscriptionStatus {
+  Active = 'Active',
+  Canceled = 'Canceled',
+  Incomplete = 'Incomplete',
+  IncompleteExpired = 'IncompleteExpired',
+  PastDue = 'PastDue',
+  Paused = 'Paused',
+  Trialing = 'Trialing',
+  Unpaid = 'Unpaid',
 }
 
 export interface UpdateWorkspaceInput {
@@ -173,7 +204,7 @@ export type GetCurrentUserQuery = {
     avatarUrl: string | null;
     createdAt: string | null;
     token: { __typename?: 'TokenType'; sessionToken: string | null };
-  };
+  } | null;
 };
 
 export type GetInviteInfoQueryVariables = Exact<{
