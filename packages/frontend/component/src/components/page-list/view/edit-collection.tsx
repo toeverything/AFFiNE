@@ -190,7 +190,20 @@ const RulesMode = ({
       }
     }
   });
-
+  const { node: selectPageNode, open } = useSelectPage({ allPageListConfig });
+  const openSelectPage = useCallback(() => {
+    open(collection.allowList).then(
+      ids => {
+        updateCollection({
+          ...collection,
+          allowList: ids,
+        });
+      },
+      () => {
+        //do nothing
+      }
+    );
+  }, [open, updateCollection, collection]);
   return (
     <>
       <div className={styles.rulesTitle}>
@@ -280,7 +293,10 @@ const RulesMode = ({
                   </div>
                 );
               })}
-              <div className={clsx(styles.button, styles.includeAddButton)}>
+              <div
+                onClick={openSelectPage}
+                className={clsx(styles.button, styles.includeAddButton)}
+              >
                 <PlusIcon></PlusIcon>
                 <div style={{ color: 'var(--affine-text-secondary-color)' }}>
                   Add include page
@@ -344,6 +360,7 @@ const RulesMode = ({
         </div>
         <div>{buttons}</div>
       </div>
+      {selectPageNode}
     </>
   );
 };
@@ -500,45 +517,94 @@ const PagesMode = ({
     </>
   );
 };
-// const SelectPage = (
-//   {
-//     allPageListConfig,
-//     init,
-//     onConfirm,
-//     onCancel,
-//   }: {
-//     allPageListConfig: AllPageListConfig;
-//     init: string[]
-//     onConfirm: (pageIds: string[]) => void;
-//     onCancel:()=>void;
-//   }) => {
-//   const t = useAFFiNEI18N()
-//   const [value, onChange] = useState(init);
-//   const confirm = useCallback(()=>{
-//     onConfirm(value)
-//   },[value,onConfirm])
-//   return <div>
-//     <PageList
-//       pages={allPageListConfig.allPages}
-//       blockSuiteWorkspace={allPageListConfig.workspace}
-//       isPreferredEdgeless={allPageListConfig.isEdgeless}
-//       selectable
-//       selectedPageIds={value}
-//       onSelectedPageIdsChange={onChange}
-//     />
-//     <div>
-//       <Button size='large' onClick={onCancel}>
-//         {t['com.affine.editCollection.button.cancel']()}
-//       </Button>
-//       <Button
-//         className={styles.confirmButton}
-//         size='large'
-//         data-testid='save-collection'
-//         type='primary'
-//         onClick={confirm}
-//       >
-//         {t['com.affine.editCollection.button.create']()}
-//       </Button>
-//     </div>
-//   </div>;
-// };
+const SelectPage = ({
+  allPageListConfig,
+  init,
+  onConfirm,
+  onCancel,
+}: {
+  allPageListConfig: AllPageListConfig;
+  init: string[];
+  onConfirm: (pageIds: string[]) => void;
+  onCancel: () => void;
+}) => {
+  const t = useAFFiNEI18N();
+  const [value, onChange] = useState(init);
+  const confirm = useCallback(() => {
+    onConfirm(value);
+  }, [value, onConfirm]);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <input
+        className={styles.rulesTitle}
+        placeholder={t['com.affine.editCollection.search.placeholder']()}
+      ></input>
+      <PageList
+        pages={allPageListConfig.allPages}
+        blockSuiteWorkspace={allPageListConfig.workspace}
+        isPreferredEdgeless={allPageListConfig.isEdgeless}
+        selectable
+        selectedPageIds={value}
+        onSelectedPageIdsChange={onChange}
+      />
+      <div>
+        <Button size="large" onClick={onCancel}>
+          {t['com.affine.editCollection.button.cancel']()}
+        </Button>
+        <Button
+          className={styles.confirmButton}
+          size="large"
+          data-testid="save-collection"
+          type="primary"
+          onClick={confirm}
+        >
+          {t['com.affine.editCollection.button.create']()}
+        </Button>
+      </div>
+    </div>
+  );
+};
+const useSelectPage = ({
+  allPageListConfig,
+}: {
+  allPageListConfig: AllPageListConfig;
+}) => {
+  const [value, onChange] = useState<{
+    init: string[];
+    onConfirm: (ids: string[]) => void;
+  }>();
+  const close = useCallback(() => {
+    onChange(undefined);
+  }, []);
+  return {
+    node: (
+      <Modal
+        open={!!value}
+        onOpenChange={close}
+        withoutCloseButton
+        width={976}
+        height="80%"
+        overlayOptions={{ style: { backgroundColor: 'transparent' } }}
+        contentOptions={{
+          style: { padding: 0, transform: 'translate(-50%,calc(-50% + 16px))' },
+        }}
+      >
+        {value ? (
+          <SelectPage
+            allPageListConfig={allPageListConfig}
+            init={value.init}
+            onConfirm={value.onConfirm}
+            onCancel={close}
+          />
+        ) : null}
+      </Modal>
+    ),
+    open: (init: string[]): Promise<string[]> =>
+      new Promise<string[]>(res => {
+        onChange({
+          init,
+          onConfirm: res,
+        });
+      }),
+  };
+};
