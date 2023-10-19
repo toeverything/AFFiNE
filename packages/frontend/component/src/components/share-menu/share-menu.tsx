@@ -88,11 +88,7 @@ const CloudShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button
-        data-testid="cloud-share-menu-button"
-        type="plain"
-        onClick={() => console.log('gg')}
-      >
+      <Button data-testid="cloud-share-menu-button" type="plain">
         <div
           style={{
             color: isSharedPage

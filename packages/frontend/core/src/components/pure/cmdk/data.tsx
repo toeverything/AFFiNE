@@ -1,7 +1,6 @@
 import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
@@ -26,7 +25,7 @@ import {
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
 import groupBy from 'lodash/groupBy';
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import {
   openQuickSearchModalAtom,
@@ -38,6 +37,8 @@ import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
 import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
+import { HighlightLabel } from './highlight';
+import { transContainer } from './highlight.css';
 import type { CMDKCommand, CommandContext } from './types';
 
 export const cmdkQueryAtom = atom('');
@@ -150,19 +151,22 @@ export const pageToCommand = (
   page: PageMeta,
   store: ReturnType<typeof getCurrentStore>,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
-  t: ReturnType<typeof useAFFiNEI18N>
+  t: ReturnType<typeof useAFFiNEI18N>,
+  label?: ReactNode
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
-  const label = page.title || t['Untitled']();
+  const value = page.title || t['Untitled']();
+  const commandLabel = label || value;
+
   return {
     id: page.id,
-    label: label,
+    label: commandLabel,
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
     value:
-      label + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
-    originalValue: label,
+      value + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+    originalValue: value,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
@@ -203,11 +207,11 @@ export const usePageCommands = () => {
         workspace.blockSuiteWorkspace.search({ query }).values()
       ) as unknown as { space: string; content: string }[];
 
-      const pageIds = searchResults.map(id => {
-        if (id.space.startsWith('space:')) {
-          return id.space.slice(6);
+      const pageIds = searchResults.map(result => {
+        if (result.space.startsWith('space:')) {
+          return result.space.slice(6);
         } else {
-          return id.space;
+          return result.space;
         }
       });
 
@@ -215,18 +219,36 @@ export const usePageCommands = () => {
         const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
         const category =
           pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
+
+        const label = {
+          title: page.title,
+          content:
+            searchResults.find(result => result.space === page.id)?.content ||
+            '',
+        };
+        const highlightLabel = <HighlightLabel label={label} keyword={query} />;
+        if (pageIds.includes(page.id)) {
+          // hack to make the page always showing in the search result
+
+          const command = pageToCommand(
+            category,
+            page,
+            store,
+            navigationHelper,
+            t,
+            highlightLabel
+          );
+          command.value += contentMatchedMagicString;
+          return command;
+        }
         const command = pageToCommand(
           category,
           page,
           store,
           navigationHelper,
-          t
+          t,
+          highlightLabel
         );
-
-        if (pageIds.includes(page.id)) {
-          // hack to make the page always showing in the search result
-          command.value += contentMatchedMagicString;
-        }
 
         return command;
       });
@@ -236,12 +258,10 @@ export const usePageCommands = () => {
         results.push({
           id: 'affine:pages:create-page',
           label: (
-            <Trans
-              i18nKey="com.affine.cmdk.affine.create-new-page-as"
-              values={{ query }}
-            >
-              Create New Page as: <strong>query</strong>
-            </Trans>
+            <div className={transContainer}>
+              {t['com.affine.cmdk.affine.create-new-page-as']()}
+              <strong>{query}</strong>
+            </div>
           ),
           value: 'affine::create-page' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
@@ -256,12 +276,10 @@ export const usePageCommands = () => {
         results.push({
           id: 'affine:pages:create-edgeless',
           label: (
-            <Trans
-              values={{ query }}
-              i18nKey="com.affine.cmdk.affine.create-new-edgeless-as"
-            >
-              Create New Edgeless as: <strong>query</strong>
-            </Trans>
+            <div className={transContainer}>
+              {t['com.affine.cmdk.affine.create-new-edgeless-as']()}
+              <strong>{query}</strong>
+            </div>
           ),
           value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',

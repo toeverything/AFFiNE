@@ -41,7 +41,7 @@ export interface AffineCommandOptions {
   // main text on the left..
   // make text a function so that we can do i18n and interpolation when we need to
   label?: string | (() => string) | ReactNode | (() => ReactNode);
-  icon: React.ReactNode; // todo: need a mapping from string -> React element/SVG
+  icon: ReactNode; // todo: need a mapping from string -> React element/SVG
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
   // for both mac and windows
@@ -54,7 +54,7 @@ export interface AffineCommand {
   readonly id: string;
   readonly preconditionStrategy: PreconditionStrategy | (() => boolean);
   readonly label?: ReactNode | string;
-  readonly icon?: React.ReactNode; // icon name
+  readonly icon?: ReactNode; // icon name
   readonly category: CommandCategory;
   readonly keyBinding?: KeybindingOptions;
   run(): void | Promise<void>;

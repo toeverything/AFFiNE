@@ -1,5 +1,4 @@
-import { Trans } from '@affine/i18n';
-import type { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import {
   PreconditionStrategy,
@@ -11,63 +10,78 @@ import type { useTheme } from 'next-themes';
 import { openQuickSearchModalAtom } from '../atoms';
 import { appSettingAtom } from '../atoms/settings';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
+import { transLabelContainer } from './index.css';
 
 // todo - find a better way to abstract the following translations components
 const ClientBorderStyleLabel = () => {
   const { clientBorder } = useAtomValue(appSettingAtom);
+  const t = useAFFiNEI18N();
   return (
-    <Trans
-      i18nKey="com.affine.cmdk.affine.client-border-style.to"
-      values={{
-        state: clientBorder ? 'OFF' : 'ON',
-      }}
+    <div
+      key={'affine:change-client-border-style'}
+      className={transLabelContainer}
     >
-      Change Client Border Style to
-      <strong>state</strong>
-    </Trans>
+      {t['com.affine.cmdk.affine.client-border-style.to']()}
+      <strong>
+        {clientBorder
+          ? t['com.affine.cmdk.affine.switch-state.off']()
+          : t['com.affine.cmdk.affine.switch-state.on']()}
+      </strong>
+    </div>
   );
 };
 
 const FullWidthLayoutLabel = () => {
   const { fullWidthLayout } = useAtomValue(appSettingAtom);
+  const t = useAFFiNEI18N();
   return (
-    <Trans
-      i18nKey="com.affine.cmdk.affine.full-width-layout.to"
-      values={{
-        state: fullWidthLayout ? 'OFF' : 'ON',
-      }}
+    <div
+      key={'affine:change-full-width-layout'}
+      className={transLabelContainer}
     >
-      Change Full Width Layout to
-      <strong>state</strong>
-    </Trans>
+      {t['com.affine.cmdk.affine.full-width-layout.to']()}
+      <strong>
+        {fullWidthLayout
+          ? t['com.affine.cmdk.affine.switch-state.off']()
+          : t['com.affine.cmdk.affine.switch-state.on']()}
+      </strong>
+    </div>
   );
 };
 
 const NoisyBackgroundLabel = () => {
   const { enableNoisyBackground } = useAtomValue(appSettingAtom);
+  const t = useAFFiNEI18N();
   return (
-    <Trans
-      i18nKey="com.affine.cmdk.affine.noise-background-on-the-sidebar.to"
-      values={{
-        state: enableNoisyBackground ? 'OFF' : 'ON',
-      }}
+    <div
+      key={'affine:noise-background-on-the-sidebar'}
+      className={transLabelContainer}
     >
-      Change Noise Background On The Sidebar to <strong>state</strong>
-    </Trans>
+      {t['com.affine.cmdk.affine.noise-background-on-the-sidebar.to']()}
+      <strong>
+        {enableNoisyBackground
+          ? t['com.affine.cmdk.affine.switch-state.off']()
+          : t['com.affine.cmdk.affine.switch-state.on']()}
+      </strong>
+    </div>
   );
 };
 
 const BlurBackgroundLabel = () => {
   const { enableBlurBackground } = useAtomValue(appSettingAtom);
+  const t = useAFFiNEI18N();
   return (
-    <Trans
-      i18nKey="com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to"
-      values={{
-        state: enableBlurBackground ? 'OFF' : 'ON',
-      }}
+    <div
+      key={'affine:translucent-ui-on-the-sidebar'}
+      className={transLabelContainer}
     >
-      Change Translucent UI On The Sidebar to <strong>state</strong>
-    </Trans>
+      {t['com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to']()}
+      <strong>
+        {enableBlurBackground
+          ? t['com.affine.cmdk.affine.switch-state.off']()
+          : t['com.affine.cmdk.affine.switch-state.on']()}
+      </strong>
+    </div>
   );
 };
 
@@ -105,12 +119,10 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-auto',
       label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.color-scheme.to"
-          values={{ colour: 'Auto' }}
-        >
-          Change Colour Scheme to <strong>colour</strong>
-        </Trans>
+        <div key={1} className={transLabelContainer}>
+          {t['com.affine.cmdk.affine.color-scheme.to']()}
+          <strong>{t['com.affine.themeSettings.system']()}</strong>
+        </div>
       ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
@@ -124,12 +136,10 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-dark',
       label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.color-scheme.to"
-          values={{ colour: 'Dark' }}
-        >
-          Change Colour Scheme to <strong>colour</strong>
-        </Trans>
+        <div key={2} className={transLabelContainer}>
+          {t['com.affine.cmdk.affine.color-scheme.to']()}
+          <strong>{t['com.affine.themeSettings.dark']()}</strong>
+        </div>
       ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
@@ -144,12 +154,10 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-light',
       label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.color-scheme.to"
-          values={{ colour: 'Light' }}
-        >
-          Change Colour Scheme to <strong>colour</strong>
-        </Trans>
+        <div key={3} className={transLabelContainer}>
+          {t['com.affine.cmdk.affine.color-scheme.to']()}
+          <strong>{t['com.affine.themeSettings.light']()}</strong>
+        </div>
       ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
@@ -165,14 +173,10 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-font-style-to-sans',
       label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.font-style.to"
-          values={{
-            fontFamily: t['com.affine.appearanceSettings.fontStyle.sans'](),
-          }}
-        >
-          Change Font Style to <strong>fontFamily</strong>
-        </Trans>
+        <div key={4} className={transLabelContainer}>
+          {t['com.affine.cmdk.affine.font-style.to']()}
+          <strong>{t['com.affine.appearanceSettings.fontStyle.sans']()}</strong>
+        </div>
       ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
@@ -191,17 +195,12 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-font-style-to-serif',
       label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.font-style.to"
-          values={{
-            fontFamily: t['com.affine.appearanceSettings.fontStyle.serif'](),
-          }}
-        >
-          Change Font Style to
-          <strong style={{ fontFamily: 'var(--affine-font-serif-family)' }}>
-            fontFamily
+        <div key={5} className={transLabelContainer}>
+          {t['com.affine.cmdk.affine.font-style.to']()}
+          <strong>
+            {t['com.affine.appearanceSettings.fontStyle.serif']()}
           </strong>
-        </Trans>
+        </div>
       ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
@@ -220,17 +219,10 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-font-style-to-mono',
       label: (
-        <Trans
-          i18nKey="com.affine.cmdk.affine.font-style.to"
-          values={{
-            fontFamily: t['com.affine.appearanceSettings.fontStyle.mono'](),
-          }}
-        >
-          Change Font Style to
-          <strong style={{ fontFamily: 'var(--affine-font-mono-family)' }}>
-            fontFamily
-          </strong>
-        </Trans>
+        <div key={6} className={transLabelContainer}>
+          {t['com.affine.cmdk.affine.font-style.to']()}
+          <strong>{t['com.affine.appearanceSettings.fontStyle.mono']()}</strong>
+        </div>
       ),
       category: 'affine:settings',
       icon: <SettingsIcon />,
@@ -251,15 +243,10 @@ export function registerAffineSettingsCommands({
       registerAffineCommand({
         id: `affine:change-display-language-to-${language.name}`,
         label: (
-          <Trans
-            i18nKey="com.affine.cmdk.affine.display-language.to"
-            values={{
-              language: language.originalName,
-            }}
-          >
-            Change Display Language to
-            <strong>language</strong>
-          </Trans>
+          <div key={7} className={transLabelContainer}>
+            {t['com.affine.cmdk.affine.display-language.to']()}
+            <strong>{language.originalName}</strong>
+          </div>
         ),
         category: 'affine:settings',
         icon: <SettingsIcon />,
@@ -275,7 +262,7 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-client-border-style`,
-      label: <ClientBorderStyleLabel />,
+      label: () => ClientBorderStyleLabel(),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
@@ -291,7 +278,7 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-full-width-layout`,
-      label: <FullWidthLayoutLabel />,
+      label: () => FullWidthLayoutLabel(),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       run() {
@@ -306,7 +293,7 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-noise-background-on-the-sidebar`,
-      label: <NoisyBackgroundLabel />,
+      label: () => NoisyBackgroundLabel(),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
@@ -322,7 +309,7 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-translucent-ui-on-the-sidebar`,
-      label: <BlurBackgroundLabel />,
+      label: () => BlurBackgroundLabel(),
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
