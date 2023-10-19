@@ -499,14 +499,18 @@ const PagesMode = ({
       </div>
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>
-          <div className={styles.previewCountTips}>
-            Selected{' '}
-            <span className={styles.previewCountTipsHighlight}>
+          <div className={styles.selectedCountTips}>
+            Selected
+            <span
+              style={{ marginLeft: 7 }}
+              className={styles.previewCountTipsHighlight}
+            >
               {collection.pages.length}
             </span>
           </div>
           <div
             className={clsx(styles.button, styles.bottomButton)}
+            style={{ fontSize: 12, lineHeight: '20px' }}
             onClick={clearSelected}
           >
             {t['com.affine.editCollection.pages.clear']()}
@@ -533,33 +537,122 @@ const SelectPage = ({
   const confirm = useCallback(() => {
     onConfirm(value);
   }, [value, onConfirm]);
+  const clearSelected = useCallback(() => {
+    onChange([]);
+  }, []);
+  const [filters, changeFilters] = useState<Filter[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const clickFilter = useCallback(
+    (e: MouseEvent) => {
+      if (showFilter || filters.length !== 0) {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowFilter(!showFilter);
+      }
+    },
+    [filters.length, showFilter]
+  );
+  const onCreateFilter = useCallback(
+    (filter: Filter) => {
+      changeFilters([...filters, filter]);
+      setShowFilter(true);
+    },
+    [filters]
+  );
+  const filteredPages = allPageListConfig.allPages.filter(v => {
+    return filterPageByRules(filters, [], v);
+  });
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <input
         className={styles.rulesTitle}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
-      <PageList
-        pages={allPageListConfig.allPages}
-        blockSuiteWorkspace={allPageListConfig.workspace}
-        isPreferredEdgeless={allPageListConfig.isEdgeless}
-        selectable
-        selectedPageIds={value}
-        onSelectedPageIdsChange={onChange}
-      />
-      <div>
-        <Button size="large" onClick={onCancel}>
-          {t['com.affine.editCollection.button.cancel']()}
-        </Button>
-        <Button
-          className={styles.confirmButton}
-          size="large"
-          data-testid="save-collection"
-          type="primary"
-          onClick={confirm}
-        >
-          {t['com.affine.editCollection.button.create']()}
-        </Button>
+      <div className={styles.pagesTab}>
+        <div className={styles.pagesTabContent}>
+          <div></div>
+          {!showFilter && filters.length === 0 ? (
+            <Menu
+              items={
+                <VariableSelect
+                  propertiesMeta={allPageListConfig.workspace.meta.properties}
+                  selected={filters}
+                  onSelect={onCreateFilter}
+                />
+              }
+            >
+              <div>
+                <FilterIcon
+                  className={clsx(styles.icon, styles.button)}
+                  onClick={clickFilter}
+                  width={24}
+                  height={24}
+                ></FilterIcon>
+              </div>
+            </Menu>
+          ) : (
+            <FilterIcon
+              className={clsx(styles.icon, styles.button)}
+              onClick={clickFilter}
+              width={24}
+              height={24}
+            ></FilterIcon>
+          )}
+        </div>
+        {showFilter ? (
+          <div style={{ padding: '12px 16px 16px' }}>
+            <FilterList
+              propertiesMeta={allPageListConfig.workspace.meta.properties}
+              value={filters}
+              onChange={changeFilters}
+            />
+          </div>
+        ) : null}
+        <div style={{ overflowY: 'auto' }}>
+          <PageList
+            className={styles.pageList}
+            pages={filteredPages}
+            blockSuiteWorkspace={allPageListConfig.workspace}
+            selectable
+            onSelectedPageIdsChange={onChange}
+            selectedPageIds={value}
+            isPreferredEdgeless={allPageListConfig.isEdgeless}
+          ></PageList>
+        </div>
+      </div>
+      <div className={styles.pagesBottom}>
+        <div className={styles.pagesBottomLeft}>
+          <div className={styles.selectedCountTips}>
+            Selected
+            <span
+              style={{ marginLeft: 7 }}
+              className={styles.previewCountTipsHighlight}
+            >
+              {value.length}
+            </span>
+          </div>
+          <div
+            className={clsx(styles.button, styles.bottomButton)}
+            style={{ fontSize: 12, lineHeight: '20px' }}
+            onClick={clearSelected}
+          >
+            {t['com.affine.editCollection.pages.clear']()}
+          </div>
+        </div>
+        <div>
+          <Button size="large" onClick={onCancel}>
+            {t['com.affine.editCollection.button.cancel']()}
+          </Button>
+          <Button
+            className={styles.confirmButton}
+            size="large"
+            data-testid="save-collection"
+            type="primary"
+            onClick={confirm}
+          >
+            Confirm
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ export const pagesTab = style({
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
+  overflow: 'hidden',
 });
 
 export const pagesList = style({
@@ -169,6 +170,11 @@ export const previewCountTips = style({
   fontSize: 12,
   lineHeight: '20px',
   color: 'var(--affine-text-secondary-color)',
+});
+export const selectedCountTips = style({
+  fontSize: 12,
+  lineHeight: '20px',
+  color: 'var(--affine-text-primary-color)',
 });
 
 export const rulesTitleHighlight = style({
