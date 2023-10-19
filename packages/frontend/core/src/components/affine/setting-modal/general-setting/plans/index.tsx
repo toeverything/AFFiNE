@@ -129,12 +129,11 @@ const Settings = () => {
   const subscription = data.currentUser?.subscription;
 
   const [recurring, setRecurring] = useState<string>(
-    subscription?.recurring ?? SubscriptionRecurring.Monthly
+    subscription?.recurring ?? SubscriptionRecurring.Yearly
   );
 
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
-  const currentRecurring =
-    subscription?.recurring ?? SubscriptionRecurring.Monthly;
+  const currentRecurring = subscription?.recurring;
 
   const refresh = useCallback(() => {
     mutate();
@@ -178,8 +177,6 @@ const Settings = () => {
         {/* TODO: may scroll current plan into view when first loading? */}
         <div className={styles.planCardsWrapper}>
           {Array.from(planDetail.values()).map(detail => {
-            const isCurrent =
-              currentPlan === detail.plan && currentRecurring === recurring;
             return (
               <div
                 key={detail.plan}
@@ -192,11 +189,12 @@ const Settings = () => {
                 <div className={styles.planTitle}>
                   <p>
                     {detail.plan}{' '}
-                    {'discount' in detail && (
-                      <span className={styles.discountLabel}>
-                        {detail.discount}% off
-                      </span>
-                    )}
+                    {'discount' in detail &&
+                      recurring === SubscriptionRecurring.Yearly && (
+                        <span className={styles.discountLabel}>
+                          {detail.discount}% off
+                        </span>
+                      )}
                   </p>
                   <p>
                     <span className={styles.planPrice}>
@@ -224,18 +222,26 @@ const Settings = () => {
                     detail.type === 'dynamic' ? (
                       <ContactSales />
                     ) : loggedIn ? (
-                      isCurrent ? (
+                      detail.plan === currentPlan &&
+                      (currentRecurring === recurring ||
+                        (!currentRecurring &&
+                          detail.plan === SubscriptionPlan.Free)) ? (
                         <CurrentPlan />
                       ) : detail.plan === SubscriptionPlan.Free ? (
                         <Downgrade onActionDone={refresh} />
-                      ) : currentRecurring !== recurring ? (
+                      ) : currentRecurring !== recurring &&
+                        currentPlan === detail.plan ? (
                         <ChangeRecurring
+                          // @ts-expect-error must exist
                           from={currentRecurring}
                           to={recurring as SubscriptionRecurring}
                           onActionDone={refresh}
                         />
                       ) : (
-                        <Upgrade recurring={recurring} onActionDone={refresh} />
+                        <Upgrade
+                          recurring={recurring as SubscriptionRecurring}
+                          onActionDone={refresh}
+                        />
                       )
                     ) : (
                       <SignupAction>

@@ -296,6 +296,29 @@ export class SubscriptionService {
     }
   }
 
+  async createCustomerPortal(id: string) {
+    const user = await this.db.userStripeCustomer.findUnique({
+      where: {
+        userId: id,
+      },
+    });
+
+    if (!user) {
+      throw new Error('Unknown user');
+    }
+
+    try {
+      const portal = await this.stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+      });
+
+      return portal.url;
+    } catch (e) {
+      this.logger.error('Failed to create customer portal.', e);
+      throw new Error('Failed to create customer portal');
+    }
+  }
+
   @OnEvent('customer.subscription.created')
   @OnEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
@@ -519,6 +542,7 @@ export class SubscriptionService {
       currency: stripeInvoice.currency,
       amount: stripeInvoice.total,
       status: stripeInvoice.status ?? InvoiceStatus.Void,
+      link: stripeInvoice.hosted_invoice_url,
     };
 
     // handle payment error

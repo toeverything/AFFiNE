@@ -117,6 +117,9 @@ class UserInvoiceType implements Partial<UserInvoice> {
   @Field(() => String, { nullable: true })
   lastPaymentError?: string | null;
 
+  @Field(() => String, { nullable: true })
+  link?: string | null;
+
   @Field(() => Date)
   createdAt!: Date;
 
@@ -181,6 +184,13 @@ export class SubscriptionResolver {
     }
 
     return session.url;
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a stripe customer portal to manage payment methods',
+  })
+  async createCustomerPortal(@CurrentUser() user: User) {
+    return this.service.createCustomerPortal(user.id);
   }
 
   @Mutation(() => UserSubscriptionType)

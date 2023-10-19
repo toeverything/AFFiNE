@@ -11,6 +11,7 @@ export type SettingRowProps = PropsWithChildren<{
   spreadCol?: boolean;
   'data-testid'?: string;
   disabled?: boolean;
+  className?: string;
 }>;
 
 export const SettingRow = ({
@@ -21,14 +22,19 @@ export const SettingRow = ({
   style,
   spreadCol = true,
   disabled = false,
+  className,
   ...props
 }: PropsWithChildren<SettingRowProps>) => {
   return (
     <div
-      className={clsx(settingRow, {
-        'two-col': spreadCol,
-        disabled,
-      })}
+      className={clsx(
+        settingRow,
+        {
+          'two-col': spreadCol,
+          disabled,
+        },
+        className
+      )}
       style={style}
       onClick={onClick}
       data-testid={props['data-testid']}
