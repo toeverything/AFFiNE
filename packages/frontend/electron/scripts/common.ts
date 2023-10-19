@@ -13,6 +13,12 @@ export const mode = (process.env.NODE_ENV =
   process.env.NODE_ENV || 'development');
 
 export const config = (): BuildOptions => {
+  const define: Record<string, string> = {};
+
+  if (process.env.BUILD_TYPE) {
+    define['REPLACE_ME_BUILD_ENV'] = `"${process.env.BUILD_TYPE}"`;
+  }
+
   return {
     entryPoints: [
       resolve(electronDir, './src/main/index.ts'),
@@ -36,6 +42,7 @@ export const config = (): BuildOptions => {
     loader: {
       '.node': 'copy',
     },
+    define,
     assetNames: '[name]',
     treeShaking: true,
     sourcemap: 'linked',
