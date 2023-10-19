@@ -79,6 +79,22 @@ query allBlobSizes {
 }`,
 };
 
+export const cancelSubscriptionMutation = {
+  id: 'cancelSubscriptionMutation' as const,
+  operationName: 'cancelSubscription',
+  definitionName: 'cancelSubscription',
+  containsFile: false,
+  query: `
+mutation cancelSubscription {
+  cancelSubscription {
+    id
+    status
+    nextBillAt
+    canceledAt
+  }
+}`,
+};
+
 export const changeEmailMutation = {
   id: 'changeEmailMutation' as const,
   operationName: 'changeEmail',
@@ -108,6 +124,17 @@ mutation changePassword($token: String!, $newPassword: String!) {
     avatarUrl
     email
   }
+}`,
+};
+
+export const checkoutMutation = {
+  id: 'checkoutMutation' as const,
+  operationName: 'checkout',
+  definitionName: 'checkout',
+  containsFile: false,
+  query: `
+mutation checkout($recurring: SubscriptionRecurring!) {
+  checkout(recurring: $recurring)
 }`,
 };
 
@@ -321,6 +348,29 @@ query getWorkspaces {
 }`,
 };
 
+export const invoicesQuery = {
+  id: 'invoicesQuery' as const,
+  operationName: 'invoices',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query invoices($take: Int!, $skip: Int!) {
+  currentUser {
+    invoices(take: $take, skip: $skip) {
+      id
+      status
+      plan
+      recurring
+      currency
+      amount
+      reason
+      lastPaymentError
+      createdAt
+    }
+  }
+}`,
+};
+
 export const leaveWorkspaceMutation = {
   id: 'leaveWorkspaceMutation' as const,
   operationName: 'leaveWorkspace',
@@ -333,6 +383,23 @@ mutation leaveWorkspace($workspaceId: String!, $workspaceName: String!, $sendLea
     workspaceName: $workspaceName
     sendLeaveMail: $sendLeaveMail
   )
+}`,
+};
+
+export const pricesQuery = {
+  id: 'pricesQuery' as const,
+  operationName: 'prices',
+  definitionName: 'prices',
+  containsFile: false,
+  query: `
+query prices {
+  prices {
+    type
+    plan
+    currency
+    amount
+    yearlyAmount
+  }
 }`,
 };
 
@@ -465,6 +532,44 @@ mutation signUp($name: String!, $email: String!, $password: String!) {
     token {
       token
     }
+  }
+}`,
+};
+
+export const subscriptionQuery = {
+  id: 'subscriptionQuery' as const,
+  operationName: 'subscription',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query subscription {
+  currentUser {
+    subscription {
+      id
+      status
+      plan
+      recurring
+      start
+      end
+      nextBillAt
+      canceledAt
+    }
+  }
+}`,
+};
+
+export const updateSubscriptionMutation = {
+  id: 'updateSubscriptionMutation' as const,
+  operationName: 'updateSubscription',
+  definitionName: 'updateSubscriptionRecurring',
+  containsFile: false,
+  query: `
+mutation updateSubscription($recurring: SubscriptionRecurring!) {
+  updateSubscriptionRecurring(recurring: $recurring) {
+    id
+    plan
+    recurring
+    nextBillAt
   }
 }`,
 };

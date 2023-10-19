@@ -9,6 +9,7 @@ import type { ReactElement, SVGProps } from 'react';
 
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
+import { AFFiNECloudPlans } from './plans';
 import { Plugins } from './plugins';
 import { Shortcuts } from './shortcuts';
 
@@ -16,7 +17,9 @@ export type GeneralSettingKeys =
   | 'shortcuts'
   | 'appearance'
   | 'plugins'
-  | 'about';
+  | 'about'
+  | 'plans'
+  | 'billing';
 
 interface GeneralSettingListItem {
   key: GeneralSettingKeys;
@@ -42,6 +45,22 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       title: t['com.affine.keyboardShortcuts.title'](),
       icon: KeyboardIcon,
       testId: 'shortcuts-panel-trigger',
+    },
+    {
+      key: 'plans',
+      // TODO: i18n
+      title: 'AFFiNE Cloud Plans',
+      // TODO: icon
+      icon: KeyboardIcon,
+      testId: 'plans-panel-trigger',
+    },
+    {
+      key: 'billing',
+      // TODO: i18n
+      title: 'Billing',
+      // TODO: icon
+      icon: KeyboardIcon,
+      testId: 'billing-panel-trigger',
     },
     {
       key: 'plugins',
@@ -72,6 +91,8 @@ export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
       return <Plugins />;
     case 'about':
       return <AboutAffine />;
+    case 'plans':
+      return <AFFiNECloudPlans />;
     default:
       return null;
   }
