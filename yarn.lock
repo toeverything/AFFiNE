@@ -414,6 +414,7 @@ __metadata:
     "@types/uuid": ^9.0.5
     async-call-rpc: ^6.3.1
     builder-util-runtime: ^9.2.1
+    cross-env: ^7.0.3
     electron: ^27.0.0
     electron-log: ^5.0.0-rc.1
     electron-squirrel-startup: 1.0.0
@@ -4317,7 +4318,7 @@ __metadata:
 
 "@electron-forge/core@patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 6.4.2
-  resolution: "@electron-forge/core@patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch::version=6.4.2&hash=792119&locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@electron-forge/core@patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch::version=6.4.2&hash=fab642&locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@electron-forge/core-utils": 6.4.2
     "@electron-forge/maker-base": 6.4.2
@@ -4353,7 +4354,7 @@ __metadata:
     sudo-prompt: ^9.1.1
     username: ^5.1.0
     yarn-or-npm: ^3.0.1
-  checksum: 72a0a74b0f84b848e4aa1423757a8cc5234ce45963dd6aaed92878f29234894e8d97d8270bd21d6ceedba44447409c85394f7fb75d8e239a2abe704f9f0eb214
+  checksum: b7784623340ae8080da890f49ebc3d37f84d7b40c55aed0ed608e25cd77c8ba73e4a42b1784dd6c3f2b4431a3406c1242819166b195b44fbd4f2ee3e7e012ff8
   languageName: node
   linkType: hard
 
