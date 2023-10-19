@@ -45,7 +45,6 @@ declare global {
       };
     };
     $migrationDone: boolean | undefined;
-    $AFFINE_SETUP: boolean | undefined;
   }
 
   interface WindowEventMap {
@@ -61,6 +60,7 @@ declare global {
   // eslint-disable-next-line no-var
   var runtimeConfig: RuntimeConfig;
   // eslint-disable-next-line no-var
+  var $AFFINE_SETUP: boolean | undefined;
 }
 
 declare module '@blocksuite/store' {

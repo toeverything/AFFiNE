@@ -94,7 +94,7 @@ interface Desktop extends ChromeBrowser {
 export type Environment = Browser | Server | Desktop;
 
 export function setupGlobal() {
-  if (window.$AFFINE_SETUP) {
+  if (globalThis.$AFFINE_SETUP) {
     return;
   }
   runtimeFlagsSchema.parse(runtimeConfig);
@@ -141,5 +141,5 @@ export function setupGlobal() {
   }
   globalThis.environment = environment;
 
-  window.$AFFINE_SETUP = true;
+  globalThis.$AFFINE_SETUP = true;
 }
