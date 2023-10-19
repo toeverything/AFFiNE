@@ -50,9 +50,6 @@ export const EnableAffineCloudModal = ({
             ? t['Enable']()
             : t['Sign in and Enable'](),
       }}
-      contentOptions={{
-        ['data-testid' as string]: 'enable-cloud-modal',
-      }}
       {...props}
     />
   );
