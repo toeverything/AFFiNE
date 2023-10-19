@@ -24,7 +24,7 @@ import {
   sorterAtom,
 } from './scoped-atoms';
 import type { PageListProps } from './types';
-import { ColWrapper, type ColWrapperProps } from './utils';
+import { ColWrapper, type ColWrapperProps, stopPropagation } from './utils';
 
 /**
  * Given a list of pages, render a list of pages
@@ -121,19 +121,24 @@ const PageListHeaderCheckbox = () => {
   const selectionState = useAtomValue(selectionStateAtom);
   const setSelectionActive = useSetAtom(selectionStateAtom);
   const pages = useAtomValue(pagesAtom);
-  const onActivateSelection = useCallback(() => {
-    setSelectionActive(true);
-  }, [setSelectionActive]);
+  const onActivateSelection: MouseEventHandler = useCallback(
+    e => {
+      stopPropagation(e);
+      setSelectionActive(true);
+    },
+    [setSelectionActive]
+  );
   const handlers = useAtomValue(pageListHandlersAtom);
   const onChange: NonNullable<CheckboxProps['onChange']> = useCallback(
-    (_, checked) => {
+    (e, checked) => {
+      stopPropagation(e);
       handlers.onSelectedPageIdsChange?.(checked ? pages.map(p => p.id) : []);
     },
     [handlers, pages]
   );
 
   if (!selectionState.selectable) {
-    return <div style={{ width: '40px' }}></div>;
+    return <div style={{ width: '20px' }}></div>;
   }
 
   if (selectionState.selectionActive) {

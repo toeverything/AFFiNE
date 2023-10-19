@@ -1,6 +1,6 @@
 import { useMediaQuery, useTheme } from '@mui/material';
 import clsx from 'clsx';
-import type { PropsWithChildren } from 'react';
+import type { BaseSyntheticEvent, PropsWithChildren } from 'react';
 
 import * as styles from './page-list.css';
 
@@ -114,3 +114,8 @@ export const betweenDaysAgo = (
 ): boolean => {
   return !withinDaysAgo(date, days0) && withinDaysAgo(date, days1);
 };
+
+export function stopPropagation(event: BaseSyntheticEvent) {
+  event.stopPropagation();
+  event.preventDefault();
+}

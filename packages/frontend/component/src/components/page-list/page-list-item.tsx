@@ -6,12 +6,7 @@ import { Link } from 'react-router-dom';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 import type { PageListItemProps } from './types';
-import { ColWrapper, formatDate } from './utils';
-
-function stopPropagation(event: React.MouseEvent) {
-  event.stopPropagation();
-  event.preventDefault();
-}
+import { ColWrapper, formatDate, stopPropagation } from './utils';
 
 const PageListTitleCell = ({
   title,

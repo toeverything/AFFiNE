@@ -30,12 +30,6 @@ export const headerCell = style({
     '&[data-sortable]': {
       cursor: 'pointer',
     },
-    '&:first-of-type': {
-      paddingLeft: '16px',
-    },
-    '&:last-of-type': {
-      paddingRight: '24px',
-    },
   },
   display: 'flex',
   alignItems: 'center',

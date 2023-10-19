@@ -20,7 +20,6 @@ export const root = style({
 });
 
 export const selectionCell = style({
-  paddingLeft: '4px',
   display: 'flex',
   alignItems: 'center',
   flexShrink: 0,
@@ -95,13 +94,12 @@ export const actionsCellWrapper = style({
   alignItems: 'center',
   justifyContent: 'flex-end',
   flexShrink: 0,
-  columnGap: '6px',
-  paddingRight: '16px',
 });
 
 export const operationsCell = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end',
+  columnGap: '6px',
   flexShrink: 0,
 });
