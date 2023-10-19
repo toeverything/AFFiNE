@@ -674,7 +674,7 @@ export class WorkspaceResolver {
 
   @Query(() => WorkspaceBlobSizes)
   async collectAllBlobSizes(@CurrentUser() user: UserType) {
-    const size = await this.quota.getWorkspacesSize(user.id);
+    const size = await this.quota.getUserUsage(user.id);
     return { size };
   }
 
@@ -709,16 +709,15 @@ export class WorkspaceResolver {
       Permission.Write
     );
 
-    const { totalQuota, totalSize } =
-      await this.quota.getWorkspaceQuota(workspaceId);
+    const { quota, size } = await this.quota.getWorkspaceUsage(workspaceId);
 
     const checkExceeded = (recvSize: number) => {
-      if (!totalQuota) {
+      if (!quota) {
         throw new ForbiddenException('cannot find user quota');
       }
-      if (totalSize + recvSize > totalQuota) {
+      if (size + recvSize > quota) {
         this.logger.log(
-          `storage size limit exceeded: ${totalSize + recvSize} > ${totalQuota}`
+          `storage size limit exceeded: ${size + recvSize} > ${quota}`
         );
         return true;
       } else {

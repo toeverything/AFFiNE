@@ -88,12 +88,12 @@ test('should be able to check storage quota', async t => {
   const { auth, quota, storageQuota } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
-  const q1 = await storageQuota.getQuotaByUser(u1.id);
+  const q1 = await storageQuota.getUserQuota(u1.id);
   t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
   t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
 
   await quota.switchQuotaByUser(u1.id, 'pro_plan_v1');
-  const q2 = await storageQuota.getQuotaByUser(u1.id);
+  const q2 = await storageQuota.getUserQuota(u1.id);
   t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
   t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
 });
@@ -102,17 +102,17 @@ test('should be able revert quota', async t => {
   const { auth, quota, storageQuota } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
-  const q1 = await storageQuota.getQuotaByUser(u1.id);
+  const q1 = await storageQuota.getUserQuota(u1.id);
   t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
   t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
 
   await quota.switchQuotaByUser(u1.id, 'pro_plan_v1');
-  const q2 = await storageQuota.getQuotaByUser(u1.id);
+  const q2 = await storageQuota.getUserQuota(u1.id);
   t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
   t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
 
   await quota.switchQuotaByUser(u1.id, 'free_plan_v1');
-  const q3 = await storageQuota.getQuotaByUser(u1.id);
+  const q3 = await storageQuota.getUserQuota(u1.id);
   t.is(q3?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
 
   const quotas = await quota.getQuotasByUser(u1.id);

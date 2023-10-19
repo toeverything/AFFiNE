@@ -18,7 +18,7 @@ export class StorageQuotaService {
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
-  async getQuotaByUser(userId: string) {
+  async getUserQuota(userId: string) {
     const quota = await this.quota.getQuotaByUser(userId);
     if (quota) {
       return {
@@ -34,31 +34,31 @@ export class StorageQuotaService {
   }
 
   // TODO: lazy calc, need to be optimized with cache
-  async getWorkspacesSize(userId: string) {
+  async getUserUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
     return this.storage.blobsSize(workspaces);
   }
 
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
-  async getWorkspaceQuota(workspaceId: string) {
+  async getWorkspaceUsage(workspaceId: string) {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
     if (!owner) throw new NotFoundException('Workspace owner not found');
-    const { storageQuota: totalQuota } =
-      (await this.getQuotaByUser(owner.id)) || {};
+    const { storageQuota } = (await this.getUserQuota(owner.id)) || {};
     // get all workspaces size of owner used
-    const totalSize = await this.getWorkspacesSize(owner.id);
+    const usageSize = await this.getUserUsage(owner.id);
 
-    return { totalQuota, totalSize };
+    return { quota: storageQuota, size: usageSize };
   }
 
   async checkBlobQuota(workspaceId: string, size: number) {
-    const { totalQuota, totalSize } = await this.getWorkspaceQuota(workspaceId);
-    if (typeof totalQuota !== 'number') {
+    const { quota, size: usageSize } =
+      await this.getWorkspaceUsage(workspaceId);
+    if (typeof quota !== 'number') {
       throw new ForbiddenException(`user's quota not exists`);
     }
 
-    return totalQuota - (size + totalSize);
+    return quota - (size + usageSize);
   }
 }
