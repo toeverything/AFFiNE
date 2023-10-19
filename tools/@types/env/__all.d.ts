@@ -1,4 +1,4 @@
-import type { Environment, Platform, RuntimeConfig } from '@affine/env/global';
+import type { Environment, RuntimeConfig } from '@affine/env/global';
 import type {
   DBHandlerManager,
   DebugHandlerManager,
@@ -44,7 +44,8 @@ declare global {
         ): this;
       };
     };
-    $migrationDone: boolean;
+    $migrationDone: boolean | undefined;
+    $AFFINE_SETUP: boolean | undefined;
   }
 
   interface WindowEventMap {
@@ -56,19 +57,10 @@ declare global {
     env: Record<string, string>;
   };
   // eslint-disable-next-line no-var
-  var platform: Platform | undefined;
-  // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
   var runtimeConfig: RuntimeConfig;
   // eslint-disable-next-line no-var
-  var $AFFINE_SETUP: boolean | undefined;
-  // eslint-disable-next-line no-var
-  var editorVersion: string | undefined;
-  // eslint-disable-next-line no-var
-  var prefixUrl: string;
-  // eslint-disable-next-line no-var
-  var websocketPrefixUrl: string;
 }
 
 declare module '@blocksuite/store' {
