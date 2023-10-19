@@ -187,6 +187,13 @@ jobs:
       - name: Unit Test
         run: yarn nx test:coverage @affine/monorepo
 
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+          package: '@affine/native'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
       - name: Upload unit test coverage results
         uses: codecov/codecov-action@v3
         with:
