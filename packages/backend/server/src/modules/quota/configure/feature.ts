@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { PrismaService } from '../../../prisma';
+import { migrateNewFeatureTable } from './migration';
 import { CommonFeature, Feature, FeatureKind } from './types';
 
 const Features: Feature[] = [
@@ -22,6 +23,7 @@ export class FeatureService implements OnModuleInit {
     // upgrade features from lower version to higher version
     for (const feature of Features) {
       await this.upsertFeature(feature);
+      await migrateNewFeatureTable(this, this.prisma);
     }
   }
 
@@ -76,7 +78,50 @@ export class FeatureService implements OnModuleInit {
     });
   }
 
-  async getFeaturesByUser(userId: string) {
+  async addUserFeature(
+    userId: string,
+    feature: string,
+    version: number,
+    reason: string,
+    expiresAt?: Date | string
+  ) {
+    return this.prisma.userFeatureGates
+      .create({
+        data: {
+          reason,
+          expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          feature: {
+            connect: {
+              feature_version: {
+                feature,
+                version,
+              },
+            },
+          },
+        },
+      })
+      .then(r => r.id);
+  }
+
+  async removeUserFeature(userId: string, feature: string) {
+    return this.prisma.userFeatureGates
+      .deleteMany({
+        where: {
+          userId,
+          feature: {
+            feature,
+          },
+        },
+      })
+      .then(r => r.count);
+  }
+
+  async getUserFeatures(userId: string) {
     const userFeatures = await this.prisma.user.findUnique({
       where: {
         id: userId,
