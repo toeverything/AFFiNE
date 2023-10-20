@@ -12,7 +12,6 @@ import {
   pricesQuery,
   resumeSubscriptionMutation,
   SubscriptionPlan,
-  subscriptionQuery,
   SubscriptionRecurring,
   SubscriptionStatus,
 } from '@affine/graphql';
@@ -20,10 +19,14 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback, useEffect } from 'react';
+import { Suspense, useCallback } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
+import {
+  type SubscriptionMutator,
+  useUserSubscription,
+} from '../../../../../hooks/use-subscription';
 import * as styles from './style.css';
 
 export const BillingSettings = () => {
@@ -56,14 +59,11 @@ export const BillingSettings = () => {
 };
 
 const SubscriptionSettings = () => {
-  const { data: subscriptionQueryResult } = useQuery({
-    query: subscriptionQuery,
-  });
+  const [subscription, mutateSubscription] = useUserSubscription();
   const { data: pricesQueryResult } = useQuery({
     query: pricesQuery,
   });
 
-  const subscription = subscriptionQueryResult.currentUser?.subscription;
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
   const recurring = subscription?.recurring ?? SubscriptionRecurring.Monthly;
 
@@ -123,7 +123,7 @@ const SubscriptionSettings = () => {
                 subscription.end
               ).toLocaleDateString()}`}
             >
-              <ResumeSubscription />
+              <ResumeSubscription onSubscriptionUpdate={mutateSubscription} />
             </SettingRow>
           ) : (
             <SettingRow
@@ -133,7 +133,7 @@ const SubscriptionSettings = () => {
                 subscription.end
               ).toLocaleDateString()}`}
             >
-              <CancelSubscription />
+              <CancelSubscription onSubscriptionUpdate={mutateSubscription} />
             </SettingRow>
           )}
         </>
@@ -166,19 +166,17 @@ const PlanAction = ({ plan }: { plan: string }) => {
 
 const PaymentMethodUpdater = () => {
   // TODO: open stripe customer portal
-  const { isMutating, trigger, data } = useMutation({
+  const { isMutating, trigger } = useMutation({
     mutation: createCustomerPortalMutation,
   });
 
   const update = useCallback(() => {
-    trigger();
+    trigger(null, {
+      onSuccess: data => {
+        window.open(data.createCustomerPortal, '_blank', 'noopener noreferrer');
+      },
+    });
   }, [trigger]);
-
-  useEffect(() => {
-    if (data?.createCustomerPortal) {
-      window.open(data.createCustomerPortal, '_blank', 'noopener noreferrer');
-    }
-  }, [data]);
 
   return (
     <Button onClick={update} loading={isMutating} disabled={isMutating}>
@@ -187,14 +185,22 @@ const PaymentMethodUpdater = () => {
   );
 };
 
-const ResumeSubscription = () => {
+const ResumeSubscription = ({
+  onSubscriptionUpdate,
+}: {
+  onSubscriptionUpdate: SubscriptionMutator;
+}) => {
   const { isMutating, trigger } = useMutation({
     mutation: resumeSubscriptionMutation,
   });
 
   const resume = useCallback(() => {
-    trigger();
-  }, [trigger]);
+    trigger(null, {
+      onSuccess: data => {
+        onSubscriptionUpdate(data.resumeSubscription);
+      },
+    });
+  }, [trigger, onSubscriptionUpdate]);
 
   return (
     <Button onClick={resume} loading={isMutating} disabled={isMutating}>
@@ -203,14 +209,22 @@ const ResumeSubscription = () => {
   );
 };
 
-const CancelSubscription = () => {
+const CancelSubscription = ({
+  onSubscriptionUpdate,
+}: {
+  onSubscriptionUpdate: SubscriptionMutator;
+}) => {
   const { isMutating, trigger } = useMutation({
     mutation: cancelSubscriptionMutation,
   });
 
   const cancel = useCallback(() => {
-    trigger();
-  }, [trigger]);
+    trigger(null, {
+      onSuccess: data => {
+        onSubscriptionUpdate(data.cancelSubscription);
+      },
+    });
+  }, [trigger, onSubscriptionUpdate]);
 
   return (
     <IconButton
