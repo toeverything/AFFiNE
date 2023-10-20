@@ -16,6 +16,7 @@ import {
 import { HighlightNodes } from './highlight';
 import * as styles from './main.css';
 import { CMDKModal, type CMDKModalProps } from './modal';
+import { NotFoundGroup } from './not-found';
 import type { CMDKCommand } from './types';
 
 type NoParametersKeys<T> = {
@@ -180,6 +181,7 @@ export const CMDKContainer = ({
         })}
       />
       <Command.List>{children}</Command.List>
+      <NotFoundGroup />
     </Command>
   );
 };
