@@ -2,10 +2,12 @@ import { toast } from '@affine/component';
 import {
   CollectionBar,
   currentCollectionAtom,
+  NewPageButton,
   OperationCell,
   PageList,
+  PageListScrollContainer,
 } from '@affine/component/page-list';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { PageMeta } from '@blocksuite/store';
@@ -17,9 +19,9 @@ import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
 
-import { getUIAdapter } from '../../adapters/workspace';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
+import { WorkspaceHeader } from '../../components/workspace-header';
 import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
@@ -51,10 +53,8 @@ export const loader: LoaderFunction = async args => {
 
 export const AllPage = () => {
   const [currentWorkspace] = useCurrentWorkspace();
-  const { Header } = getUIAdapter(currentWorkspace.flavour);
-  const { isPreferredEdgeless } = usePageHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const { isPreferredEdgeless, importFile, createEdgeless, createPage } =
+    usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const { toggleFavorite } = useBlockSuiteMetaHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -116,33 +116,47 @@ export const AllPage = () => {
   const config = useAllPageListConfig();
   return (
     <div className={styles.root}>
-      <Header
-        currentWorkspaceId={currentWorkspace.id}
-        currentEntry={{
-          subPath: WorkspaceSubPath.ALL,
-        }}
-      />
-      <CollectionBar
-        allPageListConfig={config}
-        backToAll={backToAll}
-        getPageInfo={getPageInfo}
-        collectionsAtom={collectionsCRUDAtom}
-        // the following props is not reactive right?
-        propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
-      />
-      <PageList
-        pages={filteredPageMetas}
-        renderPageAsLink
-        fallback={
-          <EmptyPageList
-            type="all"
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+      {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
+        <WorkspaceHeader
+          currentWorkspaceId={currentWorkspace.id}
+          currentEntry={{
+            subPath: WorkspaceSubPath.ALL,
+          }}
+        />
+      ) : null}
+      <PageListScrollContainer className={styles.scrollContainer}>
+        <div className={styles.allPagesHeader}>
+          <div className={styles.allPagesHeaderTitle}>
+            {t['com.affine.all-pages.header']()}
+          </div>
+          <NewPageButton
+            importFile={importFile}
+            createNewEdgeless={createEdgeless}
+            createNewPage={createPage}
           />
-        }
-        isPreferredEdgeless={isPreferredEdgeless}
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        pageOperationsRenderer={pageOperationsRenderer}
-      />
+        </div>
+        <CollectionBar
+          allPageListConfig={config}
+          backToAll={backToAll}
+          getPageInfo={getPageInfo}
+          collectionsAtom={collectionsCRUDAtom}
+          // the following props is not reactive right?
+          propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
+        />
+        <PageList
+          pages={filteredPageMetas}
+          renderPageAsLink
+          fallback={
+            <EmptyPageList
+              type="all"
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            />
+          }
+          isPreferredEdgeless={isPreferredEdgeless}
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          pageOperationsRenderer={pageOperationsRenderer}
+        />
+      </PageListScrollContainer>
     </div>
   );
 };

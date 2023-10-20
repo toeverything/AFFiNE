@@ -14,7 +14,6 @@ import {
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   Provider,
-  WorkspaceHeader,
 } from '../shared';
 
 const LoginCard = lazy(() =>
@@ -26,7 +25,6 @@ const LoginCard = lazy(() =>
 export const UI = {
   Provider,
   LoginCard,
-  Header: WorkspaceHeader,
   PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
     const workspace = useWorkspace(currentWorkspaceId);
     const page = workspace.blockSuiteWorkspace.getPage(currentPageId);

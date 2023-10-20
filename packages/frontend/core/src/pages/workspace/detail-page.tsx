@@ -25,6 +25,7 @@ import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
+import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
@@ -85,10 +86,10 @@ const DetailPageImpl = (): ReactElement => {
     ]
   );
 
-  const { PageDetail, Header } = getUIAdapter(currentWorkspace.flavour);
+  const { PageDetail } = getUIAdapter(currentWorkspace.flavour);
   return (
     <>
-      <Header
+      <WorkspaceHeader
         currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           pageId: currentPageId,

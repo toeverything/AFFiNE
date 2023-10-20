@@ -8,7 +8,6 @@ export const header = style({
   padding: '0 16px',
   minHeight: '52px',
   background: 'var(--affine-background-primary-color)',
-  borderBottom: '1px solid var(--affine-border-color)',
   zIndex: 2,
   selectors: {
     '&[data-sidebar-floating="false"]': {

@@ -1,4 +1,4 @@
-import { PageList } from '@affine/component/page-list';
+import { PageList, PageListScrollContainer } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -305,7 +305,7 @@ const RulesMode = ({
             </div>
           </div>
         </div>
-        <div
+        <PageListScrollContainer
           className={styles.rulesContainerRight}
           style={{
             display: showPreview ? 'flex' : 'none',
@@ -332,7 +332,7 @@ const RulesMode = ({
               ></PageList>
             </div>
           ) : null}
-        </div>
+        </PageListScrollContainer>
       </div>
       <div className={styles.rulesBottom}>
         <div className={styles.bottomLeft}>
@@ -473,7 +473,7 @@ const PagesMode = ({
               />
             </div>
           ) : null}
-          <div style={{ overflowY: 'auto' }}>
+          <PageListScrollContainer>
             <PageList
               compact
               className={styles.pageList}
@@ -490,7 +490,7 @@ const PagesMode = ({
               selectedPageIds={collection.pages}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
             ></PageList>
-          </div>
+          </PageListScrollContainer>
         </div>
       </div>
       <div className={styles.pagesBottom}>
@@ -594,7 +594,7 @@ const SelectPage = ({
             />
           </div>
         ) : null}
-        <div style={{ overflowY: 'auto' }}>
+        <PageListScrollContainer>
           <PageList
             compact
             className={styles.pageList}
@@ -605,7 +605,7 @@ const SelectPage = ({
             selectedPageIds={value}
             isPreferredEdgeless={allPageListConfig.isEdgeless}
           ></PageList>
-        </div>
+        </PageListScrollContainer>
       </div>
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>

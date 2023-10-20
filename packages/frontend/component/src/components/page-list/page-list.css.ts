@@ -1,14 +1,33 @@
-import { createContainer, style } from '@vanilla-extract/css';
+import { createContainer, keyframes, style } from '@vanilla-extract/css';
 
 import * as itemStyles from './page-list-item.css';
 
 export const listRootContainer = createContainer('list-root-container');
+
+const bottomBorderAnimation = keyframes({
+  '0%': {
+    borderBottom: '1px solid transparent',
+  },
+  '1%': {
+    borderBottom: '1px solid var(--affine-border-color)',
+  },
+  '100%': {
+    borderBottom: '1px solid var(--affine-border-color)',
+  },
+});
+
+export const pageListScrollContainer = style({
+  overflowY: 'auto',
+  width: '100%',
+  scrollTimeline: '--list-scroll-root y',
+});
 
 export const root = style({
   width: '100%',
   maxWidth: '100%',
   containerName: listRootContainer,
   containerType: 'inline-size',
+  background: 'var(--affine-background-primary-color)',
 });
 
 export const groupsContainer = style({
@@ -27,6 +46,11 @@ export const header = style({
   top: 0,
   left: 0,
   background: 'var(--affine-background-primary-color)',
+  animationName: `${bottomBorderAnimation}`,
+  // todo: find a better way to share scroll-timeline
+  animationTimeline: '--list-scroll-root',
+  animationDuration: '0.5s',
+  transform: 'translateY(-0.5px)', // fix sticky look through issue
 });
 
 export const compact = style([

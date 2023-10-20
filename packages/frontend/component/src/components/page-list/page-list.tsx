@@ -240,3 +240,22 @@ export const PageListHeader = () => {
     </div>
   );
 };
+
+export const PageListScrollContainer = ({
+  className,
+  children,
+  style,
+}: {
+  className?: string;
+  children: ReactNode;
+  style?: React.CSSProperties;
+}) => {
+  return (
+    <div
+      style={style}
+      className={clsx(styles.pageListScrollContainer, className)}
+    >
+      {children}
+    </div>
+  );
+};
