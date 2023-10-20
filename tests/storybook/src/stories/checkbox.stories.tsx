@@ -59,6 +59,6 @@ export const Basic: StoryFn<typeof Checkbox> = props => {
 Basic.args = {
   checked: true,
   disabled: false,
-  intermediate: false,
+  indeterminate: false,
   onChange: console.log,
 };

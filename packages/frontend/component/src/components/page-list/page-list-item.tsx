@@ -1,8 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Checkbox } from '@mui/material';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
+import { Checkbox } from '../../ui/checkbox';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 import type { PageListItemProps } from './types';
@@ -52,17 +52,16 @@ const PageSelectionCell = ({
     },
     [onSelectedChange]
   );
+  if (!selectable) {
+    return null;
+  }
   return (
     <div className={styles.selectionCell}>
-      {selectable ? (
-        <Checkbox
-          onClick={stopPropagation}
-          checked={selected}
-          value={selected}
-          onChange={onSelectionChange}
-          size="small"
-        />
-      ) : null}
+      <Checkbox
+        onClick={stopPropagation}
+        checked={!!selected}
+        onChange={onSelectionChange}
+      />
     </div>
   );
 };
@@ -115,12 +114,14 @@ export const PageListItem = (props: PageListItemProps) => {
     <PageListItemWrapper to={props.to} pageId={props.pageId}>
       <ColWrapper flex={9}>
         <ColWrapper flex={8}>
-          <PageSelectionCell
-            onSelectedChange={props.onSelectedChange}
-            selectable={props.selectable}
-            selected={props.selected}
-          />
-          <PageListIconCell icon={props.icon} />
+          <div className={styles.titleIconsWrapper}>
+            <PageSelectionCell
+              onSelectedChange={props.onSelectedChange}
+              selectable={props.selectable}
+              selected={props.selected}
+            />
+            <PageListIconCell icon={props.icon} />
+          </div>
           <PageListTitleCell title={props.title} preview={props.preview} />
         </ColWrapper>
         <ColWrapper flex={4} alignment="end" style={{ overflow: 'visible' }}>

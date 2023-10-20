@@ -173,7 +173,13 @@ export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
 
 PageListStory.args = {
   groupBy: 'createDate',
-  selectable: true,
+};
+
+PageListStory.argTypes = {
+  selectable: {
+    control: 'radio',
+    options: [true, 'toggle', false],
+  },
 };
 
 async function createAndInitPage(

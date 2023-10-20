@@ -145,7 +145,6 @@ const requiredPropNames = [
   'onOpenPage',
   'isPreferredEdgeless',
   'pageOperationsRenderer',
-  'selectable',
   'selectedPageIds',
   'onSelectedPageIdsChange',
   'draggable',
@@ -153,7 +152,9 @@ const requiredPropNames = [
   'onDragEnd',
 ] as const;
 
-type RequiredProps = Pick<PageListProps, (typeof requiredPropNames)[number]>;
+type RequiredProps = Pick<PageListProps, (typeof requiredPropNames)[number]> & {
+  selectable: boolean;
+};
 
 const listPropsAtom = selectAtom(
   pageListPropsAtom,
@@ -172,7 +173,7 @@ const PageMetaListItemRenderer = (pageMeta: PageMeta) => {
     <PageListItem
       {...pageMetaToPageItemProp(pageMeta, {
         ...props,
-        selectable: selectionActive,
+        selectable: !!selectionActive,
       })}
     />
   );

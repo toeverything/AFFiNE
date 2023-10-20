@@ -46,7 +46,7 @@ export interface PageListProps {
   fallback?: ReactNode; // fixme: shall we use loading rows number instead?
   isPreferredEdgeless: (pageId: string) => boolean;
   renderPageAsLink?: boolean; // whether or not to render each page as a router Link
-  selectable?: boolean; // show selection checkbox
+  selectable?: 'toggle' | boolean; // show selection checkbox. toggle means showing a toggle selection in header on click; boolean == true means showing a selection checkbox for each item
   selectedPageIds?: string[]; // selected page ids
   onSelectedPageIdsChange?: (selected: string[]) => void;
   onOpenPage?: (pageId: string, newTab?: boolean) => void;

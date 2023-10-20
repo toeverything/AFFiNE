@@ -30,7 +30,10 @@ export const selectionStateAtom = atom(
       isEqual
     );
     const baseState = get(baseAtom);
-    const selectionActive = get(selectionActiveAtom);
+    const selectionActive =
+      baseState.selectable === 'toggle'
+        ? get(selectionActiveAtom)
+        : baseState.selectable;
     return {
       ...baseState,
       selectionActive,

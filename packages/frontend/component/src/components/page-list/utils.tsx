@@ -82,24 +82,32 @@ export type ColWrapperProps = PropsWithChildren<{
 }> &
   React.HTMLAttributes<Element>;
 
-export const ColWrapper = (props: ColWrapperProps) => {
+export const ColWrapper = ({
+  flex,
+  alignment,
+  hideInSmallContainer,
+  className,
+  style,
+  children,
+  ...rest
+}: ColWrapperProps) => {
   return (
     <div
-      {...props}
+      {...rest}
       data-testid="page-list-flex-wrapper"
       style={{
-        ...props.style,
-        flexGrow: props.flex,
-        flexBasis: props.flex ? `${(props.flex / 12) * 100}%` : 'auto',
-        justifyContent: props.alignment,
+        ...style,
+        flexGrow: flex,
+        flexBasis: flex ? `${(flex / 12) * 100}%` : 'auto',
+        justifyContent: alignment,
       }}
       className={clsx(
-        props.className,
+        className,
         styles.colWrapper,
-        props.hideInSmallContainer ? styles.hideInSmallContainer : null
+        hideInSmallContainer ? styles.hideInSmallContainer : null
       )}
     >
-      {props.children}
+      {children}
     </div>
   );
 };

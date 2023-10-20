@@ -1,7 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MultiSelectIcon, SortDownIcon, SortUpIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { Checkbox, type CheckboxProps } from '@mui/material';
 import clsx from 'clsx';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
@@ -13,6 +12,7 @@ import {
   useMemo,
 } from 'react';
 
+import { Checkbox, type CheckboxProps } from '../../ui/checkbox';
 import { PageGroup } from './page-group';
 import * as styles from './page-list.css';
 import {
@@ -120,15 +120,14 @@ type HeaderColDef = {
 // when internal selection state is not enabled, it is a clickable <ListIcon /> that enables the selection state
 // when internal selection state is enabled, it is a checkbox that reflects the selection state
 const PageListHeaderCheckbox = () => {
-  const selectionState = useAtomValue(selectionStateAtom);
-  const setSelectionActive = useSetAtom(selectionStateAtom);
+  const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
   const pages = useAtomValue(pagesAtom);
   const onActivateSelection: MouseEventHandler = useCallback(
     e => {
       stopPropagation(e);
-      setSelectionActive(true);
+      setSelectionState(true);
     },
-    [setSelectionActive]
+    [setSelectionState]
   );
   const handlers = useAtomValue(pageListHandlersAtom);
   const onChange: NonNullable<CheckboxProps['onChange']> = useCallback(
@@ -140,33 +139,30 @@ const PageListHeaderCheckbox = () => {
   );
 
   if (!selectionState.selectable) {
-    return <div style={{ width: '20px' }}></div>;
+    return <div style={{ width: '6px' }}></div>;
   }
 
-  if (selectionState.selectionActive) {
-    return (
-      <Checkbox
-        checked={selectionState.selectedPageIds?.length === pages.length}
-        indeterminate={
-          selectionState.selectedPageIds &&
-          selectionState.selectedPageIds.length > 0 &&
-          selectionState.selectedPageIds.length < pages.length
-        }
-        onChange={onChange}
-        size="small"
-      />
-    );
-  } else {
-    return (
-      <div
-        style={{ width: '56px' }}
-        className={styles.headerTitleSelectionIconWrapper}
-        onClick={onActivateSelection}
-      >
+  return (
+    <div
+      style={{ width: '34px' }}
+      className={styles.headerTitleSelectionIconWrapper}
+      onClick={onActivateSelection}
+    >
+      {!selectionState.selectionActive ? (
         <MultiSelectIcon />
-      </div>
-    );
-  }
+      ) : (
+        <Checkbox
+          checked={selectionState.selectedPageIds?.length === pages.length}
+          indeterminate={
+            selectionState.selectedPageIds &&
+            selectionState.selectedPageIds.length > 0 &&
+            selectionState.selectedPageIds.length < pages.length
+          }
+          onChange={onChange}
+        />
+      )}
+    </div>
+  );
 };
 
 const PageListHeaderTitleCell = () => {

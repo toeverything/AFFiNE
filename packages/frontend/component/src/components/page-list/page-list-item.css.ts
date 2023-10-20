@@ -20,15 +20,26 @@ export const root = style({
 });
 
 // todo: remove global style
+globalStyle(`${root} > :first-child`, {
+  paddingLeft: '16px',
+});
+
 globalStyle(`${root} > :last-child`, {
   paddingRight: '8px',
+});
+
+export const titleIconsWrapper = style({
+  padding: '0 5px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
 });
 
 export const selectionCell = style({
   display: 'flex',
   alignItems: 'center',
   flexShrink: 0,
-  minWidth: '16px',
+  fontSize: 'var(--affine-font-h-3)',
 });
 
 export const titleCell = style({

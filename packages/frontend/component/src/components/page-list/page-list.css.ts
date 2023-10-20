@@ -20,7 +20,7 @@ export const groupsContainer = style({
 export const header = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '16px 0 8px 0',
+  padding: '16px 0 8px 16px',
   position: 'sticky',
   overflow: 'hidden',
   zIndex: 1,
@@ -46,6 +46,7 @@ export const headerCell = style({
   alignItems: 'center',
   columnGap: '4px',
   position: 'relative',
+  whiteSpace: 'nowrap',
 });
 
 export const headerTitleCell = style({
@@ -57,6 +58,7 @@ export const headerTitleSelectionIconWrapper = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  fontSize: '16px',
 });
 
 export const headerCellSortIcon = style({
