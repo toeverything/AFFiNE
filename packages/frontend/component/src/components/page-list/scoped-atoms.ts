@@ -63,6 +63,16 @@ export const pageListHandlersAtom = selectAtom(
 
 export const pagesAtom = selectAtom(pageListPropsAtom, props => props.pages);
 
+export const pageListCompactAtom = selectAtom(
+  pageListPropsAtom,
+  props => props.compact
+);
+
+export const showOperationsAtom = selectAtom(
+  pageListPropsAtom,
+  props => !!props.pageOperationsRenderer
+);
+
 type SortingContext<T extends string | number | symbol> = {
   key: T;
   order: 'asc' | 'desc';

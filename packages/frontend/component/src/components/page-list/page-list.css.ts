@@ -20,7 +20,7 @@ export const groupsContainer = style({
 export const header = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '16px 0 8px 16px',
+  padding: '12px 0 8px 16px',
   position: 'sticky',
   overflow: 'hidden',
   zIndex: 1,
@@ -29,8 +29,16 @@ export const header = style({
   background: 'var(--affine-background-primary-color)',
 });
 
+export const compact = style([
+  header,
+  {
+    padding: '0 0 0 16px',
+    height: '20px',
+  },
+]);
+
 export const headerCell = style({
-  paddingRight: '8px',
+  padding: '0 8px',
   userSelect: 'none',
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
@@ -40,6 +48,9 @@ export const headerCell = style({
     },
     '&[data-sortable]': {
       cursor: 'pointer',
+    },
+    '&:not(:last-child)': {
+      borderRight: '1px solid var(--affine-hover-color-filled)',
     },
   },
   display: 'flex',
@@ -52,6 +63,7 @@ export const headerCell = style({
 export const headerTitleCell = style({
   display: 'flex',
   alignItems: 'center',
+  gap: '8px',
 });
 
 export const headerTitleSelectionIconWrapper = style({
@@ -75,7 +87,7 @@ export const colWrapper = style({
 
 export const hideInSmallContainer = style({
   '@container': {
-    [`${listRootContainer} (max-width: 760px)`]: {
+    [`${listRootContainer} (max-width: 800px)`]: {
       display: 'none',
     },
   },

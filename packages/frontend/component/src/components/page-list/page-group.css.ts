@@ -3,8 +3,15 @@ import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  rowGap: '8px',
+  gap: 8,
 });
+
+export const compact = style([
+  root,
+  {
+    gap: 0,
+  },
+]);
 
 export const header = style({
   display: 'flex',

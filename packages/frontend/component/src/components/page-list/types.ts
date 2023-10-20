@@ -40,6 +40,7 @@ export type DateKey = 'createDate' | 'updatedDate';
 
 export interface PageListProps {
   className?: string;
+  compact?: boolean;
   pages: PageMeta[];
   blockSuiteWorkspace: Workspace;
   groupBy?: PagesGroupByType | false;

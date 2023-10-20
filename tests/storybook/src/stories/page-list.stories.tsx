@@ -180,6 +180,9 @@ PageListStory.argTypes = {
     control: 'radio',
     options: [true, 'toggle', false],
   },
+  compact: {
+    type: 'boolean',
+  },
 };
 
 async function createAndInitPage(
