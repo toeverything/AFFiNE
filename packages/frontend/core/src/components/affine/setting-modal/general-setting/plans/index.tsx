@@ -5,7 +5,6 @@ import {
   checkoutMutation,
   pricesQuery,
   SubscriptionPlan,
-  subscriptionQuery,
   SubscriptionRecurring,
   updateSubscriptionMutation,
 } from '@affine/graphql';
@@ -20,6 +19,11 @@ import {
   useState,
 } from 'react';
 
+import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
+import {
+  type SubscriptionMutator,
+  useUserSubscription,
+} from '../../../../../hooks/use-subscription';
 import * as styles from './style.css';
 
 interface FixedPrice {
@@ -102,9 +106,8 @@ const planDetail = new Map<SubscriptionPlan, FixedPrice | DynamicPrice>([
 ]);
 
 const Settings = () => {
-  const { data, mutate } = useQuery({
-    query: subscriptionQuery,
-  });
+  const [subscription, mutateSubscription] = useUserSubscription();
+  const loggedIn = useCurrentLoginStatus() === 'authenticated';
 
   const {
     data: { prices },
@@ -125,19 +128,12 @@ const Settings = () => {
     }
   });
 
-  const loggedIn = !!data.currentUser;
-  const subscription = data.currentUser?.subscription;
-
   const [recurring, setRecurring] = useState<string>(
     subscription?.recurring ?? SubscriptionRecurring.Yearly
   );
 
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = subscription?.recurring;
-
-  const refresh = useCallback(() => {
-    mutate();
-  }, [mutate]);
 
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
@@ -228,19 +224,19 @@ const Settings = () => {
                           detail.plan === SubscriptionPlan.Free)) ? (
                         <CurrentPlan />
                       ) : detail.plan === SubscriptionPlan.Free ? (
-                        <Downgrade onActionDone={refresh} />
+                        <Downgrade onSubscriptionUpdate={mutateSubscription} />
                       ) : currentRecurring !== recurring &&
                         currentPlan === detail.plan ? (
                         <ChangeRecurring
                           // @ts-expect-error must exist
                           from={currentRecurring}
                           to={recurring as SubscriptionRecurring}
-                          onActionDone={refresh}
+                          onSubscriptionUpdate={mutateSubscription}
                         />
                       ) : (
                         <Upgrade
                           recurring={recurring as SubscriptionRecurring}
-                          onActionDone={refresh}
+                          onSubscriptionUpdate={mutateSubscription}
                         />
                       )
                     ) : (
@@ -280,14 +276,22 @@ const Settings = () => {
   );
 };
 
-const Downgrade = ({ onActionDone }: { onActionDone: () => void }) => {
+const Downgrade = ({
+  onSubscriptionUpdate,
+}: {
+  onSubscriptionUpdate: SubscriptionMutator;
+}) => {
   const { isMutating, trigger } = useMutation({
     mutation: cancelSubscriptionMutation,
   });
 
   const downgrade = useCallback(() => {
-    trigger(null, { onSuccess: onActionDone });
-  }, [trigger, onActionDone]);
+    trigger(null, {
+      onSuccess: data => {
+        onSubscriptionUpdate(data.cancelSubscription);
+      },
+    });
+  }, [trigger, onSubscriptionUpdate]);
 
   return (
     <Button
@@ -304,48 +308,57 @@ const Downgrade = ({ onActionDone }: { onActionDone: () => void }) => {
 
 const Upgrade = ({
   recurring,
-  onActionDone,
+  onSubscriptionUpdate,
 }: {
   recurring: SubscriptionRecurring;
-  onActionDone: () => void;
+  onSubscriptionUpdate: SubscriptionMutator;
 }) => {
-  const { isMutating, trigger, data } = useMutation({
+  const { isMutating, trigger } = useMutation({
     mutation: checkoutMutation,
   });
 
-  const upgrade = useCallback(() => {
-    trigger({ recurring });
-  }, [trigger, recurring]);
-
   const newTabRef = useRef<Window | null>(null);
 
-  useEffect(() => {
-    if (data?.checkout) {
-      if (newTabRef.current) {
-        newTabRef.current.focus();
-      } else {
-        // FIXME: safari prevents from opening new tab by window api
-        // TODO(@xp): what if electron?
-        const newTab = window.open(
-          data.checkout,
-          '_blank',
-          'noopener noreferrer'
-        );
+  const onClose = useCallback(() => {
+    newTabRef.current = null;
+    onSubscriptionUpdate();
+  }, [onSubscriptionUpdate]);
 
-        if (newTab) {
-          newTabRef.current = newTab;
-          const update = () => {
-            onActionDone();
-          };
-          newTab.addEventListener('close', update);
+  const upgrade = useCallback(() => {
+    if (newTabRef.current) {
+      newTabRef.current.focus();
+    } else {
+      trigger(
+        { recurring },
+        {
+          onSuccess: data => {
+            // FIXME: safari prevents from opening new tab by window api
+            // TODO(@xp): what if electron?
+            const newTab = window.open(
+              data.checkout,
+              '_blank',
+              'noopener noreferrer'
+            );
 
-          return () => newTab.removeEventListener('close', update);
+            if (newTab) {
+              newTabRef.current = newTab;
+
+              newTab.addEventListener('close', onClose);
+            }
+          },
         }
-      }
+      );
     }
+  }, [trigger, recurring, onClose]);
 
-    return;
-  }, [data?.checkout, onActionDone]);
+  useEffect(() => {
+    return () => {
+      if (newTabRef.current) {
+        newTabRef.current.removeEventListener('close', onClose);
+        newTabRef.current = null;
+      }
+    };
+  }, [onClose]);
 
   return (
     <Button
@@ -363,19 +376,26 @@ const Upgrade = ({
 const ChangeRecurring = ({
   from: _from /* TODO: from can be useful when showing confirmation modal  */,
   to,
-  onActionDone,
+  onSubscriptionUpdate,
 }: {
   from: SubscriptionRecurring;
   to: SubscriptionRecurring;
-  onActionDone: () => void;
+  onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const { isMutating, trigger } = useMutation({
     mutation: updateSubscriptionMutation,
   });
 
   const change = useCallback(() => {
-    trigger({ recurring: to }, { onSuccess: onActionDone });
-  }, [trigger, onActionDone, to]);
+    trigger(
+      { recurring: to },
+      {
+        onSuccess: data => {
+          onSubscriptionUpdate(data.updateSubscriptionRecurring);
+        },
+      }
+    );
+  }, [trigger, onSubscriptionUpdate, to]);
 
   return (
     <Button
