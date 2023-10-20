@@ -61,6 +61,7 @@ export const rulesBottom = style({
 export const includeListTitle = style({
   marginTop: 8,
   fontSize: 14,
+  fontWeight: 400,
   lineHeight: '22px',
   color: 'var(--affine-text-secondary-color)',
   paddingLeft: 18,
@@ -97,6 +98,7 @@ export const includeItemContent = style({
   gap: 4,
   fontSize: 12,
   lineHeight: '20px',
+  overflow: 'hidden',
 });
 
 export const includeItem = style({
@@ -125,6 +127,7 @@ export const rulesContainerLeftContentInclude = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
+  flexShrink: 0,
 });
 
 export const rulesContainerLeftContent = style({
@@ -132,6 +135,7 @@ export const rulesContainerLeftContent = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
+  overflowY: 'auto',
 });
 
 export const rulesContainerLeftTab = style({
@@ -146,6 +150,7 @@ export const rulesContainerLeft = style({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
+  overflow: 'hidden',
 });
 
 export const rulesContainer = style({

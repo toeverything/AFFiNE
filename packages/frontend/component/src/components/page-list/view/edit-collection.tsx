@@ -4,7 +4,9 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   CloseIcon,
+  EdgelessIcon,
   FilterIcon,
+  PageIcon,
   PlusIcon,
   ToggleCollapseIcon,
 } from '@blocksuite/icons';
@@ -63,7 +65,13 @@ export const EditCollectionModal = ({
       withoutCloseButton
       width="calc(100% - 64px)"
       height="80%"
-      contentOptions={{ style: { padding: 0, maxWidth: 944 } }}
+      contentOptions={{
+        style: {
+          padding: 0,
+          maxWidth: 944,
+          backgroundColor: 'var(--affine-white)',
+        },
+      }}
     >
       {init ? (
         <EditCollection
@@ -204,6 +212,7 @@ const RulesMode = ({
       }
     );
   }, [open, updateCollection, collection]);
+  const [expandInclude, setExpandInclude] = useState(false);
   return (
     <>
       <div className={clsx(styles.rulesTitle, styles.ellipsis)}>
@@ -262,44 +271,78 @@ const RulesMode = ({
             <div className={styles.rulesContainerLeftContentInclude}>
               <div className={styles.includeTitle}>
                 <ToggleCollapseIcon
+                  onClick={() => setExpandInclude(!expandInclude)}
+                  className={styles.button}
                   width={24}
                   height={24}
-                  style={{ transform: 'rotate(90deg)' }}
+                  style={{
+                    transform: expandInclude ? 'rotate(90deg)' : undefined,
+                  }}
                 ></ToggleCollapseIcon>
                 <div style={{ color: 'var(--affine-text-secondary-color)' }}>
                   include
                 </div>
               </div>
-              {collection.allowList.map(id => {
-                const page = allPageListConfig.allPages.find(v => v.id === id);
-                return (
-                  <div className={styles.includeItem} key={id}>
-                    <div className={styles.includeItemContent}>
-                      <div>Page</div>
-                      <div className={styles.includeItemContentIs}>is</div>
-                      <div className={styles.includeItemTitle}>
-                        {page?.title || 'Untitled'}
-                      </div>
-                    </div>
-                    <CloseIcon
-                      className={styles.button}
-                      onClick={() => {
-                        updateCollection({
-                          ...collection,
-                          allowList: collection.allowList.filter(v => v !== id),
-                        });
-                      }}
-                    ></CloseIcon>
-                  </div>
-                );
-              })}
               <div
-                onClick={openSelectPage}
-                className={clsx(styles.button, styles.includeAddButton)}
+                style={{
+                  display: expandInclude ? 'flex' : 'none',
+                  flexWrap: 'wrap',
+                  gap: '8px 16px',
+                }}
               >
-                <PlusIcon></PlusIcon>
-                <div style={{ color: 'var(--affine-text-secondary-color)' }}>
-                  Add include page
+                {collection.allowList.map(id => {
+                  const page = allPageListConfig.allPages.find(
+                    v => v.id === id
+                  );
+                  return (
+                    <div className={styles.includeItem} key={id}>
+                      <div className={styles.includeItemContent}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 6,
+                            alignItems: 'center',
+                          }}
+                        >
+                          {allPageListConfig.isEdgeless(id) ? (
+                            <EdgelessIcon style={{ width: 16, height: 16 }} />
+                          ) : (
+                            <PageIcon style={{ width: 16, height: 16 }} />
+                          )}
+                          Page
+                        </div>
+                        <div className={styles.includeItemContentIs}>is</div>
+                        <div
+                          className={clsx(
+                            styles.includeItemTitle,
+                            styles.ellipsis
+                          )}
+                        >
+                          {page?.title || 'Untitled'}
+                        </div>
+                      </div>
+                      <CloseIcon
+                        className={styles.button}
+                        onClick={() => {
+                          updateCollection({
+                            ...collection,
+                            allowList: collection.allowList.filter(
+                              v => v !== id
+                            ),
+                          });
+                        }}
+                      ></CloseIcon>
+                    </div>
+                  );
+                })}
+                <div
+                  onClick={openSelectPage}
+                  className={clsx(styles.button, styles.includeAddButton)}
+                >
+                  <PlusIcon></PlusIcon>
+                  <div style={{ color: 'var(--affine-text-secondary-color)' }}>
+                    Add include page
+                  </div>
                 </div>
               </div>
             </div>
@@ -311,13 +354,15 @@ const RulesMode = ({
             display: showPreview ? 'flex' : 'none',
           }}
         >
-          <PageList
-            className={styles.resultPages}
-            pages={rulesPages}
-            groupBy={false}
-            blockSuiteWorkspace={allPageListConfig.workspace}
-            isPreferredEdgeless={allPageListConfig.isEdgeless}
-          ></PageList>
+          {rulesPages.length > 0 ? (
+            <PageList
+              className={styles.resultPages}
+              pages={rulesPages}
+              groupBy={false}
+              blockSuiteWorkspace={allPageListConfig.workspace}
+              isPreferredEdgeless={allPageListConfig.isEdgeless}
+            ></PageList>
+          ) : null}
           {allowListPages.length > 0 ? (
             <div>
               <div className={styles.includeListTitle}>include</div>
@@ -666,6 +711,7 @@ const useSelectPage = ({
             padding: 0,
             transform: 'translate(-50%,calc(-50% + 16px))',
             maxWidth: 976,
+            backgroundColor: 'var(--affine-white)',
           },
         }}
       >
@@ -683,7 +729,10 @@ const useSelectPage = ({
       new Promise<string[]>(res => {
         onChange({
           init,
-          onConfirm: res,
+          onConfirm: list => {
+            close();
+            res(list);
+          },
         });
       }),
   };
