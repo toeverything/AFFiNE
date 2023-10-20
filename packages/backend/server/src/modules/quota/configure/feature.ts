@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
-import { PrismaService } from '../../prisma';
+import { PrismaService } from '../../../prisma';
 import { CommonFeature, Feature, FeatureKind } from './types';
 
 const Features: Feature[] = [

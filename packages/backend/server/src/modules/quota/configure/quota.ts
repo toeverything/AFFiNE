@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
-import { PrismaService } from '../../prisma';
 import { FeatureService } from './feature';
+import { PrismaService } from './index';
 import { FeatureKind, Quota } from './types';
 
 export const Quotas: Quota[] = [
@@ -42,8 +42,8 @@ export class QuotaService implements OnModuleInit {
     }
   }
 
-  // get activated quota by user
-  async getQuotaByUser(userId: string) {
+  // get activated user quota
+  async getUserQuota(userId: string) {
     const quota = await this.prisma.userFeatureGates.findFirst({
       where: {
         user: {
@@ -71,8 +71,8 @@ export class QuotaService implements OnModuleInit {
     };
   }
 
-  // get all quotas by user
-  async getQuotasByUser(userId: string) {
+  // get all user quota records
+  async getUserQuotas(userId: string) {
     const quotas = await this.prisma.userFeatureGates.findMany({
       where: {
         user: {
@@ -101,9 +101,9 @@ export class QuotaService implements OnModuleInit {
       }[];
   }
 
-  // switch quota by user
-  // each user can only have one quota
-  async switchQuotaByUser(
+  // switch user to a new quota
+  // currently each user can only have one quota
+  async switchUserQuota(
     userId: string,
     quota: string,
     reason?: string,

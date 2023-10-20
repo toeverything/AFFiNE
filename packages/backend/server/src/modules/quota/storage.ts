@@ -6,9 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { StorageProvide } from '../../../storage';
-import { PermissionService } from '../../workspaces/permission';
-import { QuotaService } from '../quota';
+import { StorageProvide } from '../../storage';
+import { PermissionService } from '../workspaces/permission';
+import { QuotaService } from './configure';
 
 @Injectable()
 export class StorageQuotaService {
@@ -19,7 +19,7 @@ export class StorageQuotaService {
   ) {}
 
   async getUserQuota(userId: string) {
-    const quota = await this.quota.getQuotaByUser(userId);
+    const quota = await this.quota.getUserQuota(userId);
     if (quota) {
       return {
         name: quota.feature.feature,
