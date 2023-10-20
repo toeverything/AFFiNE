@@ -92,6 +92,7 @@ export const HighlightNodes = memo(function HighlightNodes({
   }
   if (Array.isArray(element)) {
     return element.map((item, index) => {
+      const key = item.key || index;
       if (item.type === 'strong') {
         const children = HighlightNodes({
           element: item.props.children,
@@ -101,13 +102,14 @@ export const HighlightNodes = memo(function HighlightNodes({
         if (children !== item.props.children) {
           return cloneElement(item as ReactElement, {
             children: children,
+            key: key,
           });
         }
 
         return item;
       }
 
-      return <Highlight key={index} text={item} highlight={highlight} />;
+      return <Highlight key={key} text={item} highlight={highlight} />;
     });
   }
   if (isValidElement(element)) {
