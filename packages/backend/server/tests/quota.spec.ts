@@ -9,9 +9,9 @@ import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
 import {
+  QuotaManagementService,
   QuotaModule,
   QuotaService,
-  StorageQuotaService,
 } from '../src/modules/quota';
 import { Quotas } from '../src/modules/quota/configure/quota';
 import { PrismaModule } from '../src/prisma';
@@ -21,7 +21,7 @@ import { RateLimiterModule } from '../src/throttler';
 const test = ava as TestFn<{
   auth: AuthService;
   quota: QuotaService;
-  storageQuota: StorageQuotaService;
+  storageQuota: QuotaManagementService;
   app: TestingModule;
 }>;
 
@@ -54,7 +54,7 @@ test.beforeEach(async t => {
     ],
   }).compile();
   const quota = module.get(QuotaService);
-  const storageQuota = module.get(StorageQuotaService);
+  const storageQuota = module.get(QuotaManagementService);
   const auth = module.get(AuthService);
   t.context.app = module;
   t.context.quota = quota;

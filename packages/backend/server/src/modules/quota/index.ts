@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { PermissionService } from '../workspaces/permission';
 import { FeatureService, QuotaService } from './configure';
-import { StorageQuotaService } from './storage';
+import { FeatureManagementService } from './feature';
+import { QuotaManagementService } from './storage';
 
 /**
  * Quota module provider pre-user quota management.
@@ -15,10 +16,21 @@ import { StorageQuotaService } from './storage';
     FeatureService,
     QuotaService,
     PermissionService,
-    StorageQuotaService,
+    FeatureManagementService,
+    QuotaManagementService,
   ],
-  exports: [QuotaService, StorageQuotaService],
+  exports: [
+    FeatureService,
+    FeatureManagementService,
+    QuotaService,
+    QuotaManagementService,
+  ],
 })
 export class QuotaModule {}
 
-export { QuotaService, StorageQuotaService };
+export {
+  FeatureManagementService,
+  FeatureService,
+  QuotaManagementService,
+  QuotaService,
+};

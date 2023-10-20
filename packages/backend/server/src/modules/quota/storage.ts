@@ -11,7 +11,7 @@ import { PermissionService } from '../workspaces/permission';
 import { QuotaService } from './configure';
 
 @Injectable()
-export class StorageQuotaService {
+export class QuotaManagementService {
   constructor(
     private readonly quota: QuotaService,
     private readonly permissions: PermissionService,

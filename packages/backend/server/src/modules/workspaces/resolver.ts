@@ -41,7 +41,7 @@ import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
-import { StorageQuotaService } from '../quota';
+import { QuotaManagementService } from '../quota';
 import { UsersService } from '../users';
 import { UserType } from '../users/resolver';
 import { PermissionService, PublicPageMode } from './permission';
@@ -150,7 +150,7 @@ export class WorkspaceResolver {
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
     private readonly users: UsersService,
-    private readonly quota: StorageQuotaService,
+    private readonly quota: QuotaManagementService,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
