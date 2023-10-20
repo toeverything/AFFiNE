@@ -378,37 +378,27 @@ const PagesMode = ({
   allPageListConfig: AllPageListConfig;
 }) => {
   const t = useAFFiNEI18N();
-  const [filters, changeFilters] = useState<Filter[]>([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const clickFilter = useCallback(
-    (e: MouseEvent) => {
-      if (showFilter || filters.length !== 0) {
-        e.stopPropagation();
-        e.preventDefault();
-        setShowFilter(!showFilter);
-      }
-    },
-    [filters.length, showFilter]
-  );
-  const onCreateFilter = useCallback(
-    (filter: Filter) => {
-      changeFilters([...filters, filter]);
-      setShowFilter(true);
-    },
-    [filters]
-  );
+  const {
+    showFilter,
+    filters,
+    updateFilters,
+    clickFilter,
+    createFilter,
+    filteredList,
+  } = useFilter(allPageListConfig.allPages);
+  const { searchText, updateSearchText, searchedList } =
+    useSearch(filteredList);
   const clearSelected = useCallback(() => {
     updateCollection({
       ...collection,
       pages: [],
     });
   }, [collection, updateCollection]);
-  const filteredPages = allPageListConfig.allPages.filter(v => {
-    return filterPageByRules(filters, [], v);
-  });
   return (
     <>
       <input
+        value={searchText}
+        onChange={e => updateSearchText(e.target.value)}
         className={styles.rulesTitle}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
@@ -450,7 +440,7 @@ const PagesMode = ({
                   <VariableSelect
                     propertiesMeta={allPageListConfig.workspace.meta.properties}
                     selected={filters}
-                    onSelect={onCreateFilter}
+                    onSelect={createFilter}
                   />
                 }
               >
@@ -477,14 +467,14 @@ const PagesMode = ({
               <FilterList
                 propertiesMeta={allPageListConfig.workspace.meta.properties}
                 value={filters}
-                onChange={changeFilters}
+                onChange={updateFilters}
               />
             </div>
           ) : null}
           <div style={{ overflowY: 'auto' }}>
             <PageList
               className={styles.pageList}
-              pages={filteredPages}
+              pages={searchedList}
               groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
               selectable
@@ -543,32 +533,22 @@ const SelectPage = ({
   const clearSelected = useCallback(() => {
     onChange([]);
   }, []);
-  const [filters, changeFilters] = useState<Filter[]>([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const clickFilter = useCallback(
-    (e: MouseEvent) => {
-      if (showFilter || filters.length !== 0) {
-        e.stopPropagation();
-        e.preventDefault();
-        setShowFilter(!showFilter);
-      }
-    },
-    [filters.length, showFilter]
-  );
-  const onCreateFilter = useCallback(
-    (filter: Filter) => {
-      changeFilters([...filters, filter]);
-      setShowFilter(true);
-    },
-    [filters]
-  );
-  const filteredPages = allPageListConfig.allPages.filter(v => {
-    return filterPageByRules(filters, [], v);
-  });
+  const {
+    clickFilter,
+    createFilter,
+    filters,
+    showFilter,
+    updateFilters,
+    filteredList,
+  } = useFilter(allPageListConfig.allPages);
+  const { searchText, updateSearchText, searchedList } =
+    useSearch(filteredList);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <input
         className={styles.rulesTitle}
+        value={searchText}
+        onChange={e => updateSearchText(e.target.value)}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
       <div className={styles.pagesTab}>
@@ -580,7 +560,7 @@ const SelectPage = ({
                 <VariableSelect
                   propertiesMeta={allPageListConfig.workspace.meta.properties}
                   selected={filters}
-                  onSelect={onCreateFilter}
+                  onSelect={createFilter}
                 />
               }
             >
@@ -607,14 +587,14 @@ const SelectPage = ({
             <FilterList
               propertiesMeta={allPageListConfig.workspace.meta.properties}
               value={filters}
-              onChange={changeFilters}
+              onChange={updateFilters}
             />
           </div>
         ) : null}
         <div style={{ overflowY: 'auto' }}>
           <PageList
             className={styles.pageList}
-            pages={filteredPages}
+            pages={searchedList}
             blockSuiteWorkspace={allPageListConfig.workspace}
             selectable
             onSelectedPageIdsChange={onChange}
@@ -706,5 +686,46 @@ const useSelectPage = ({
           onConfirm: res,
         });
       }),
+  };
+};
+const useFilter = (list: PageMeta[]) => {
+  const [filters, changeFilters] = useState<Filter[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const clickFilter = useCallback(
+    (e: MouseEvent) => {
+      if (showFilter || filters.length !== 0) {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowFilter(!showFilter);
+      }
+    },
+    [filters.length, showFilter]
+  );
+  const onCreateFilter = useCallback(
+    (filter: Filter) => {
+      changeFilters([...filters, filter]);
+      setShowFilter(true);
+    },
+    [filters]
+  );
+  return {
+    showFilter,
+    filters,
+    updateFilters: changeFilters,
+    clickFilter,
+    createFilter: onCreateFilter,
+    filteredList: list.filter(v => {
+      return filterPageByRules(filters, [], v);
+    }),
+  };
+};
+const useSearch = (list: PageMeta[]) => {
+  const [value, onChange] = useState('');
+  return {
+    searchText: value,
+    updateSearchText: onChange,
+    searchedList: value
+      ? list.filter(v => v.title.toLowerCase().includes(value.toLowerCase()))
+      : list,
   };
 };
