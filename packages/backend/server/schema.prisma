@@ -224,6 +224,8 @@ model UserInvoice {
   // billing reason
   reason           String   @db.VarChar
   lastPaymentError String?  @map("last_payment_error") @db.Text
+  // stripe hosted invoice link
+  link             String?  @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

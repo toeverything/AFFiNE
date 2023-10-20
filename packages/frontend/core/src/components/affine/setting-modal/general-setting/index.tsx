@@ -7,8 +7,10 @@ import {
 } from '@blocksuite/icons';
 import type { ReactElement, SVGProps } from 'react';
 
+import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
+import { BillingSettings } from './billing';
 import { AFFiNECloudPlans } from './plans';
 import { Plugins } from './plugins';
 import { Shortcuts } from './shortcuts';
@@ -32,8 +34,9 @@ export type GeneralSettingList = GeneralSettingListItem[];
 
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useAFFiNEI18N();
+  const status = useCurrentLoginStatus();
 
-  return [
+  const settings: GeneralSettingListItem[] = [
     {
       key: 'appearance',
       title: t['com.affine.settings.appearance'](),
@@ -54,14 +57,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       icon: KeyboardIcon,
       testId: 'plans-panel-trigger',
     },
-    {
-      key: 'billing',
-      // TODO: i18n
-      title: 'Billing',
-      // TODO: icon
-      icon: KeyboardIcon,
-      testId: 'billing-panel-trigger',
-    },
+
     {
       key: 'plugins',
       title: 'Plugins',
@@ -75,6 +71,19 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'about-panel-trigger',
     },
   ];
+
+  if (status === 'authenticated') {
+    settings.splice(3, 0, {
+      key: 'billing',
+      // TODO: i18n
+      title: 'Billing',
+      // TODO: icon
+      icon: KeyboardIcon,
+      testId: 'billing-panel-trigger',
+    });
+  }
+
+  return settings;
 };
 
 interface GeneralSettingProps {
@@ -93,6 +102,8 @@ export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
       return <AboutAffine />;
     case 'plans':
       return <AFFiNECloudPlans />;
+    case 'billing':
+      return <BillingSettings />;
     default:
       return null;
   }

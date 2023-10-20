@@ -138,6 +138,17 @@ mutation checkout($recurring: SubscriptionRecurring!) {
 }`,
 };
 
+export const createCustomerPortalMutation = {
+  id: 'createCustomerPortalMutation' as const,
+  operationName: 'createCustomerPortal',
+  definitionName: 'createCustomerPortal',
+  containsFile: false,
+  query: `
+mutation createCustomerPortal {
+  createCustomerPortal
+}`,
+};
+
 export const createWorkspaceMutation = {
   id: 'createWorkspaceMutation' as const,
   operationName: 'createWorkspace',
@@ -365,6 +376,7 @@ query invoices($take: Int!, $skip: Int!) {
       amount
       reason
       lastPaymentError
+      link
       createdAt
     }
   }
@@ -412,6 +424,23 @@ export const removeAvatarMutation = {
 mutation removeAvatar {
   removeAvatar {
     success
+  }
+}`,
+};
+
+export const resumeSubscriptionMutation = {
+  id: 'resumeSubscriptionMutation' as const,
+  operationName: 'resumeSubscription',
+  definitionName: 'resumeSubscription',
+  containsFile: false,
+  query: `
+mutation resumeSubscription {
+  resumeSubscription {
+    id
+    status
+    nextBillAt
+    start
+    end
   }
 }`,
 };
