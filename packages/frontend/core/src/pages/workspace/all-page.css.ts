@@ -40,4 +40,6 @@ export const allPagesHeaderTitle = style({
   fontSize: 'var(--affine-font-h-3)',
   fontWeight: 500,
   color: 'var(--affine-text-secondary-color)',
+  display: 'flex',
+  alignItems: 'center',
 });

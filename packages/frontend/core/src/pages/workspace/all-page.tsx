@@ -6,6 +6,7 @@ import {
   OperationCell,
   PageList,
   PageListScrollContainer,
+  useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -114,6 +115,7 @@ export const AllPage = () => {
     currentWorkspace.blockSuiteWorkspace
   );
   const config = useAllPageListConfig();
+  const setting = useCollectionManager(collectionsCRUDAtom);
   return (
     <div className={styles.root}>
       {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
@@ -127,7 +129,19 @@ export const AllPage = () => {
       <PageListScrollContainer className={styles.scrollContainer}>
         <div className={styles.allPagesHeader}>
           <div className={styles.allPagesHeaderTitle}>
-            {t['com.affine.all-pages.header']()}
+            {setting.isDefault
+              ? t['com.affine.all-pages.header']()
+              : t['com.affine.collections.header']()}
+            <CollectionBar
+              allPageListConfig={config}
+              backToAll={backToAll}
+              getPageInfo={getPageInfo}
+              collectionsAtom={collectionsCRUDAtom}
+              // the following props is not reactive right?
+              propertiesMeta={
+                currentWorkspace.blockSuiteWorkspace.meta.properties
+              }
+            />
           </div>
           <NewPageButton
             importFile={importFile}
@@ -135,14 +149,6 @@ export const AllPage = () => {
             createNewPage={createPage}
           />
         </div>
-        <CollectionBar
-          allPageListConfig={config}
-          backToAll={backToAll}
-          getPageInfo={getPageInfo}
-          collectionsAtom={collectionsCRUDAtom}
-          // the following props is not reactive right?
-          propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
-        />
         <PageList
           pages={filteredPageMetas}
           renderPageAsLink
