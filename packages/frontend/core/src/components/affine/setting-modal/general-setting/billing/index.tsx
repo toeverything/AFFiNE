@@ -44,7 +44,7 @@ export const BillingSettings = () => {
       />
       {/* TODO: loading fallback */}
       <Suspense>
-        <SettingWrapper title="information">
+        <SettingWrapper title="Information">
           <SubscriptionSettings />
         </SettingWrapper>
       </Suspense>

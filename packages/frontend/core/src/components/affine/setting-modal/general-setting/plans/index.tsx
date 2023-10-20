@@ -144,12 +144,18 @@ const Settings = () => {
       <SettingHeader
         title="Plans"
         subtitle={
-          // TODO: different subtitle for un-logged user
-          <p>
-            You are current on the {currentPlan} plan. If you have any
-            questions, please contact our{' '}
-            <span>{/*TODO: add action*/}customer support</span>.
-          </p>
+          loggedIn ? (
+            <p>
+              You are current on the {currentPlan} plan. If you have any
+              questions, please contact our{' '}
+              <span>{/*TODO: add action*/}customer support</span>.
+            </p>
+          ) : (
+            <p>
+              This is the Pricing plans of AFFiNE Cloud. You can sign up or sign
+              in to your account first.
+            </p>
+          )
         }
       />
       <div className={styles.wrapper}>
@@ -193,15 +199,21 @@ const Settings = () => {
                       )}
                   </p>
                   <p>
-                    <span className={styles.planPrice}>
-                      $
-                      {detail.type === 'dynamic'
-                        ? '?'
-                        : recurring === SubscriptionRecurring.Monthly
-                        ? detail.price
-                        : detail.yearlyPrice}
-                    </span>
-                    <span className={styles.planPriceDesc}>per month</span>
+                    {detail.type === 'dynamic' ? (
+                      <span className={styles.planPriceDesc}>
+                        Coming soon...
+                      </span>
+                    ) : (
+                      <>
+                        <span className={styles.planPrice}>
+                          $
+                          {recurring === SubscriptionRecurring.Monthly
+                            ? detail.price
+                            : detail.yearlyPrice}
+                        </span>
+                        <span className={styles.planPriceDesc}>per month</span>
+                      </>
+                    )}
                   </p>
                   {
                     // branches:
