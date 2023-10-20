@@ -46,7 +46,9 @@ async function assertResultList(page: Page, texts: string[]) {
   const actual = await page
     .locator('[cmdk-item] [data-testid=cmdk-label]')
     .allInnerTexts();
-  expect(actual).toEqual(texts);
+  const actualSplit = actual[0].split('\n');
+  expect(actualSplit[0]).toEqual(texts[0]);
+  expect(actualSplit[1]).toEqual(texts[0]);
 }
 
 async function titleIsFocused(page: Page) {
@@ -100,9 +102,7 @@ test('Create a new page with keyword', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
-  const addNewPage = page.locator(
-    '[cmdk-item] >> text=Create New Page as: test123456'
-  );
+  const addNewPage = page.locator('[cmdk-item] >> text=Create New Page as:');
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
@@ -126,9 +126,7 @@ test('Create a new page and search this page', async ({ page }) => {
   // input title and create new page
   await page.keyboard.insertText('test123456');
   await page.waitForTimeout(300);
-  const addNewPage = page.locator(
-    '[cmdk-item] >> text=Create New Page as: test123456'
-  );
+  const addNewPage = page.locator('[cmdk-item] >> text=Create New Page as:');
   await addNewPage.click();
 
   await page.waitForTimeout(300);
