@@ -182,6 +182,15 @@ export type CheckoutMutationVariables = Exact<{
 
 export type CheckoutMutation = { __typename?: 'Mutation'; checkout: string };
 
+export type CreateCustomerPortalMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type CreateCustomerPortalMutation = {
+  __typename?: 'Mutation';
+  createCustomerPortal: string;
+};
+
 export type CreateWorkspaceMutationVariables = Exact<{
   init: Scalars['Upload']['input'];
 }>;
@@ -368,6 +377,7 @@ export type InvoicesQuery = {
       amount: number;
       reason: string;
       lastPaymentError: string | null;
+      link: string | null;
       createdAt: string;
     }>;
   } | null;
@@ -403,6 +413,22 @@ export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
 export type RemoveAvatarMutation = {
   __typename?: 'Mutation';
   removeAvatar: { __typename?: 'RemoveAvatar'; success: boolean };
+};
+
+export type ResumeSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ResumeSubscriptionMutation = {
+  __typename?: 'Mutation';
+  resumeSubscription: {
+    __typename?: 'UserSubscription';
+    id: string;
+    status: SubscriptionStatus;
+    nextBillAt: string | null;
+    start: string;
+    end: string;
+  };
 };
 
 export type RevokeMemberPermissionMutationVariables = Exact<{
@@ -713,6 +739,11 @@ export type Mutations =
       response: CheckoutMutation;
     }
   | {
+      name: 'createCustomerPortalMutation';
+      variables: CreateCustomerPortalMutationVariables;
+      response: CreateCustomerPortalMutation;
+    }
+  | {
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
@@ -736,6 +767,11 @@ export type Mutations =
       name: 'removeAvatarMutation';
       variables: RemoveAvatarMutationVariables;
       response: RemoveAvatarMutation;
+    }
+  | {
+      name: 'resumeSubscriptionMutation';
+      variables: ResumeSubscriptionMutationVariables;
+      response: ResumeSubscriptionMutation;
     }
   | {
       name: 'revokeMemberPermissionMutation';

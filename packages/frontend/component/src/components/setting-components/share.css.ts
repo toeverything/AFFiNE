@@ -86,7 +86,6 @@ globalStyle(`${settingRow} .desc`, {
   color: 'var(--affine-text-secondary-color)',
 });
 globalStyle(`${settingRow} .right-col`, {
-  width: '250px',
   display: 'flex',
   justifyContent: 'flex-end',
   paddingLeft: '15px',

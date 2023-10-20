@@ -9,6 +9,7 @@ query invoices($take: Int!, $skip: Int!) {
       amount
       reason
       lastPaymentError
+      link
       createdAt
     }
   }
