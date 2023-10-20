@@ -2,6 +2,7 @@ export * from './components/list-skeleton';
 export * from './styles';
 export * from './ui/breadcrumbs';
 export * from './ui/button';
+export * from './ui/checkbox';
 export * from './ui/empty';
 export * from './ui/input';
 export * from './ui/layout';

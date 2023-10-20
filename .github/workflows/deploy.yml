@@ -87,6 +87,28 @@ jobs:
           path: ./packages/backend/storage/storage.node
           if-no-files-found: error
 
+  build-storage-arm64:
+    name: Build Storage arm64
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Setup Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: 'aarch64-unknown-linux-gnu'
+          package: '@affine/storage'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.arm64.node
+          path: ./packages/backend/storage/storage.node
+          if-no-files-found: error
+
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
@@ -95,6 +117,7 @@ jobs:
       - build-server
       - build-core
       - build-storage
+      - build-storage-arm64
     steps:
       - uses: actions/checkout@v4
       - name: Download core artifact
@@ -112,6 +135,13 @@ jobs:
         with:
           name: storage.node
           path: ./packages/backend/server
+      - name: Download storage.node arm64
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.arm64.node
+          path: ./packages/backend/storage
+      - name: move storage.arm64.node
+        run: mv ./packages/backend/storage/storage.node ./packages/backend/server/storage.arm64.node
       - name: Setup env
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
@@ -154,7 +184,9 @@ jobs:
           scope: '@toeverything'
 
       - name: Install Node.js dependencies
-        run: yarn workspaces focus @affine/server --production
+        run: |
+          yarn config set --json supportedArchitectures.cpu '["x64", "arm64"]'
+          yarn workspaces focus @affine/server --production
 
       - name: Generate Prisma client
         run: yarn workspace @affine/server prisma generate
@@ -168,7 +200,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
+          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}
 
   deploy:
     name: Deploy to cluster

@@ -1,5 +1,5 @@
 diff --git a/dist/util/forge-config.js b/dist/util/forge-config.js
-index 3466ac1a340c8dfe5ea8997178961e8328457d68..cb83d7e9ee8b67896adda10dbdc0c7dae3a4004b 100644
+index 3466ac1a340c8dfe5ea8997178961e8328457d68..ceb33770db48df80e4355e6bac12e8c99162d7bc 100644
 --- a/dist/util/forge-config.js
 +++ b/dist/util/forge-config.js
 @@ -130,7 +130,7 @@ exports.default = async (dir) => {
@@ -7,7 +7,7 @@ index 3466ac1a340c8dfe5ea8997178961e8328457d68..cb83d7e9ee8b67896adda10dbdc0c7da
              // The loaded "config" could potentially be a static forge config, ESM module or async function
              // eslint-disable-next-line @typescript-eslint/no-var-requires
 -            const loaded = require(path_1.default.resolve(dir, forgeConfig));
-+            const loaded = await import(path_1.default.resolve(dir, forgeConfig));
++            const loaded = await import(require('node:url').pathToFileURL(path_1.default.join(dir, forgeConfig)))
              const maybeForgeConfig = 'default' in loaded ? loaded.default : loaded;
              forgeConfig = typeof maybeForgeConfig === 'function' ? await maybeForgeConfig() : maybeForgeConfig;
          }
