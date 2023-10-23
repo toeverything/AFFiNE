@@ -413,7 +413,7 @@ __metadata:
     "@toeverything/infra": "workspace:*"
     "@types/uuid": "npm:^9.0.5"
     async-call-rpc: "npm:^6.3.1"
-    builder-util-runtime: "npm:^9.2.1"
+    builder-util-runtime: "npm:^9.2.2"
     cross-env: "npm:^7.0.3"
     electron: "npm:^27.0.0"
     electron-log: "npm:^5.0.0-rc.1"
@@ -16380,13 +16380,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"builder-util-runtime@npm:9.2.1, builder-util-runtime@npm:^9.2.1":
+"builder-util-runtime@npm:9.2.1":
   version: 9.2.1
   resolution: "builder-util-runtime@npm:9.2.1"
   dependencies:
     debug: "npm:^4.3.4"
     sax: "npm:^1.2.4"
   checksum: 23a4cc0e65d1547d022c9ec9b84958c811b3ef064baff58a103b985f902fd4bce043547126eb834227445fa7da915169069837ffed38631a59cd64385e45fe43
+  languageName: node
+  linkType: hard
+
+"builder-util-runtime@npm:^9.2.2":
+  version: 9.2.2
+  resolution: "builder-util-runtime@npm:9.2.2"
+  dependencies:
+    debug: "npm:^4.3.4"
+    sax: "npm:^1.2.4"
+  checksum: 09f667b802e9660015f4426fa99b5f0942845818e94caf6ac959b2c0a726e2aa79a505781862cf1b69e02ba9c3fd0bbe8f6fd865f4721ca7e5cbbe0e28ba417d
   languageName: node
   linkType: hard
 
