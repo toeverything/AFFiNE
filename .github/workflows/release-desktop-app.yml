@@ -371,8 +371,6 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           name: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
