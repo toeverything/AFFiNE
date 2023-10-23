@@ -55,6 +55,21 @@ function useRegisterCommands() {
           ],
           currentLanguage: undefined,
         },
+        appSettingHelper: {
+          updateSettings: () => {},
+          appSettings: {
+            clientBorder: environment.isDesktop && !environment.isWindows,
+            fullWidthLayout: false,
+            windowFrameStyle: 'frameless',
+            fontStyle: 'Sans',
+            dateFormat: 'MM/dd/YYYY',
+            startWeekOnMonday: false,
+            enableBlurBackground: true,
+            enableNoisyBackground: true,
+            autoCheckUpdate: true,
+            autoDownloadUpdate: true,
+          },
+        },
       }),
       registerAffineCreationCommands({
         t,
@@ -66,7 +81,13 @@ function useRegisterCommands() {
           isPreferredEdgeless: () => false,
         },
       }),
-      registerAffineLayoutCommands({ t, store }),
+      registerAffineLayoutCommands({
+        t,
+        sidebarStatus: {
+          isOpened: false,
+          onOpenChange: () => {},
+        },
+      }),
     ];
 
     return () => {

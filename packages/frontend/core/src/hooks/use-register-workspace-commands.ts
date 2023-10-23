@@ -13,7 +13,9 @@ import {
   registerAffineUpdatesCommands,
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
+import { useAppSettingHelper } from './affine/use-app-setting-helper';
 import { useLanguageHelper } from './affine/use-language-helper';
+import { useSidebarStatus } from './affine/use-sidebar-status';
 import { useCurrentWorkspace } from './current/use-current-workspace';
 import { useNavigateHelper } from './use-navigate-helper';
 
@@ -26,6 +28,8 @@ export function useRegisterWorkspaceCommands() {
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
   const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
+  const sidebarStatus = useSidebarStatus();
+  const appSettingHelper = useAppSettingHelper();
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     unsubs.push(
@@ -50,9 +54,10 @@ export function useRegisterWorkspaceCommands() {
         t,
         theme,
         languageHelper,
+        appSettingHelper,
       })
     );
-    unsubs.push(registerAffineLayoutCommands({ store, t }));
+    unsubs.push(registerAffineLayoutCommands({ t, sidebarStatus }));
     unsubs.push(
       registerAffineCreationCommands({
         store,
@@ -80,5 +85,7 @@ export function useRegisterWorkspaceCommands() {
     pageListMode,
     setPageListMode,
     languageHelper,
+    sidebarStatus,
+    appSettingHelper,
   ]);
 }

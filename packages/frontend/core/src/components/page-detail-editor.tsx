@@ -29,7 +29,8 @@ import {
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { pageSettingFamily } from '../atoms';
-import { fontStyleOptions, useAppSetting } from '../atoms/settings';
+import { fontStyleOptions } from '../atoms/settings';
+import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
@@ -68,7 +69,7 @@ const EditorWrapper = memo(function EditorWrapper({
   const currentMode = pageSetting?.mode ?? 'page';
 
   const setBlockHub = useSetAtom(rootBlockHubAtom);
-  const [appSettings] = useAppSetting();
+  const { appSettings } = useAppSettingHelper();
 
   assertExists(meta);
   const value = useMemo(() => {

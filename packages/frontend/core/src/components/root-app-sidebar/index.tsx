@@ -26,7 +26,7 @@ import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
-import { useAppSetting } from '../../atoms/settings';
+import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/use-shortcut-commands';
@@ -100,7 +100,7 @@ export const RootAppSidebar = ({
   onOpenSettingModal,
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
-  const [appSettings] = useAppSetting();
+  const { appSettings } = useAppSettingHelper();
   const { backToAll } = useCollectionManager(currentCollectionsAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
