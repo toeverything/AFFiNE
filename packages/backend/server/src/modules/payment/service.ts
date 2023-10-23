@@ -93,7 +93,7 @@ export class SubscriptionService {
     });
 
     if (currentSubscription && currentSubscription.end < new Date()) {
-      throw new Error('User already has a subscription');
+      throw new Error('You already have a subscription');
     }
 
     const prices = await this.stripe.prices.list({
@@ -137,11 +137,11 @@ export class SubscriptionService {
     });
 
     if (!user?.subscription) {
-      throw new Error('User has no subscription');
+      throw new Error('You do not have any subscription');
     }
 
     if (user.subscription.canceledAt) {
-      throw new Error('User subscription has already been canceled ');
+      throw new Error('Your subscription has already been canceled ');
     }
 
     // should release the schedule first
@@ -174,17 +174,15 @@ export class SubscriptionService {
     });
 
     if (!user?.subscription) {
-      throw new Error('User has no subscription');
+      throw new Error('You do not have any subscription');
     }
 
     if (!user.subscription.canceledAt) {
-      throw new Error('User subscription is not canceled');
+      throw new Error('Your subscription has not been canceled');
     }
 
     if (user.subscription.end < new Date()) {
-      throw new Error(
-        'User subscription has already expired, please checkout again.'
-      );
+      throw new Error('Your subscription is expired, please checkout again.');
     }
 
     const subscription = await this.stripe.subscriptions.update(
@@ -211,11 +209,15 @@ export class SubscriptionService {
     });
 
     if (!user?.subscription) {
-      throw new Error('User has no subscription');
+      throw new Error('You do not have any subscription');
+    }
+
+    if (user.subscription.canceledAt) {
+      throw new Error('Your subscription has already been canceled ');
     }
 
     if (user.subscription.recurring === recurring) {
-      throw new Error('User has already subscribed to this plan');
+      throw new Error('You have already subscribed to this plan');
     }
 
     const prices = await this.stripe.prices.list({
