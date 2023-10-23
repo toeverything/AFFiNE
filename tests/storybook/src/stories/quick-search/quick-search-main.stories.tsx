@@ -4,6 +4,7 @@ import {
   registerAffineSettingsCommands,
 } from '@affine/core/commands';
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
+import { HighlightNodes } from '@affine/core/components/pure/cmdk/highlight';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
@@ -12,7 +13,7 @@ import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useStore } from 'jotai';
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';
 
 export default {
@@ -98,3 +99,17 @@ export const CMDKStoryWithCommands: StoryFn = () => {
 };
 
 CMDKStoryWithCommands.decorators = [withRouter];
+
+function Foo() {
+  return <div>foobar</div>;
+}
+
+export const HighlightStory: StoryFn = () => {
+  const [query, setQuery] = useState('');
+  return (
+    <>
+      <input value={query} onChange={e => setQuery(e.target.value)} />
+      <HighlightNodes element={<Foo />} highlight={query} />
+    </>
+  );
+};

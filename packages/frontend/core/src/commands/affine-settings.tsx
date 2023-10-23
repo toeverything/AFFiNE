@@ -119,7 +119,7 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-auto',
       label: (
-        <div key={1} className={transLabelContainer}>
+        <div className={transLabelContainer}>
           {t['com.affine.cmdk.affine.color-scheme.to']()}
           <strong>{t['com.affine.themeSettings.system']()}</strong>
         </div>
@@ -136,7 +136,7 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-dark',
       label: (
-        <div key={2} className={transLabelContainer}>
+        <div className={transLabelContainer}>
           {t['com.affine.cmdk.affine.color-scheme.to']()}
           <strong>{t['com.affine.themeSettings.dark']()}</strong>
         </div>
@@ -154,7 +154,7 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-light',
       label: (
-        <div key={3} className={transLabelContainer}>
+        <div className={transLabelContainer}>
           {t['com.affine.cmdk.affine.color-scheme.to']()}
           <strong>{t['com.affine.themeSettings.light']()}</strong>
         </div>
@@ -173,7 +173,7 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-font-style-to-sans',
       label: (
-        <div key={4} className={transLabelContainer}>
+        <div className={transLabelContainer}>
           {t['com.affine.cmdk.affine.font-style.to']()}
           <strong>{t['com.affine.appearanceSettings.fontStyle.sans']()}</strong>
         </div>
@@ -195,7 +195,7 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-font-style-to-serif',
       label: (
-        <div key={5} className={transLabelContainer}>
+        <div className={transLabelContainer}>
           {t['com.affine.cmdk.affine.font-style.to']()}
           <strong>
             {t['com.affine.appearanceSettings.fontStyle.serif']()}
@@ -219,7 +219,7 @@ export function registerAffineSettingsCommands({
     registerAffineCommand({
       id: 'affine:change-font-style-to-mono',
       label: (
-        <div key={6} className={transLabelContainer}>
+        <div className={transLabelContainer}>
           {t['com.affine.cmdk.affine.font-style.to']()}
           <strong>{t['com.affine.appearanceSettings.fontStyle.mono']()}</strong>
         </div>
@@ -243,7 +243,7 @@ export function registerAffineSettingsCommands({
       registerAffineCommand({
         id: `affine:change-display-language-to-${language.name}`,
         label: (
-          <div key={7} className={transLabelContainer}>
+          <div className={transLabelContainer}>
             {t['com.affine.cmdk.affine.display-language.to']()}
             <strong>{language.originalName}</strong>
           </div>
@@ -278,7 +278,7 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-full-width-layout`,
-      label: () => FullWidthLayoutLabel(),
+      label: () => <FullWidthLayoutLabel />,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       run() {

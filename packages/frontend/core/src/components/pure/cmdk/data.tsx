@@ -183,8 +183,6 @@ export const pageToCommand = (
 const contentMatchedMagicString = '__$$content_matched$$__';
 
 export const usePageCommands = () => {
-  // todo: considering collections for searching pages
-  // const { savedCollections } = useCollectionManager(currentCollectionsAtom);
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
   const store = getCurrentStore();
