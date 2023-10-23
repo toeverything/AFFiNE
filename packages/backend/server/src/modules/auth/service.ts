@@ -185,36 +185,38 @@ export class AuthService {
 
     const hashedPassword = await hash(password);
 
-    const latestFreePlan = await this.prisma.userFeatures.aggregate({
-      where: {
-        feature: 'free_plan_v1',
-      },
-      _max: {
-        version: true,
-      },
-    });
+    return this.prisma.$transaction(async tx => {
+      const latestFreePlan = await tx.userFeatures.aggregate({
+        where: {
+          feature: 'free_plan_v1',
+        },
+        _max: {
+          version: true,
+        },
+      });
 
-    return this.prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        features: {
-          create: {
-            reason: 'created by sign up',
-            expiresAt: new Date('2021-12-31T23:59:59.000Z'),
-            activated: true,
-            feature: {
-              connect: {
-                feature_version: {
-                  feature: 'free_plan_v1',
-                  version: latestFreePlan._max.version || 1,
+      return tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          features: {
+            create: {
+              reason: 'created by api sign up',
+              expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+              activated: true,
+              feature: {
+                connect: {
+                  feature_version: {
+                    feature: 'free_plan_v1',
+                    version: latestFreePlan._max.version || 1,
+                  },
                 },
               },
             },
           },
         },
-      },
+      });
     });
   }
 
@@ -229,35 +231,37 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
-    const latestFreePlan = await this.prisma.userFeatures.aggregate({
-      where: {
-        feature: 'free_plan_v1',
-      },
-      _max: {
-        version: true,
-      },
-    });
+    return this.prisma.$transaction(async tx => {
+      const latestFreePlan = await tx.userFeatures.aggregate({
+        where: {
+          feature: 'free_plan_v1',
+        },
+        _max: {
+          version: true,
+        },
+      });
 
-    return this.prisma.user.create({
-      data: {
-        name: 'Unnamed',
-        email,
-        features: {
-          create: {
-            reason: 'created by sign up',
-            expiresAt: new Date('2021-12-31T23:59:59.000Z'),
-            activated: true,
-            feature: {
-              connect: {
-                feature_version: {
-                  feature: 'free_plan_v1',
-                  version: latestFreePlan._max.version || 1,
+      return tx.user.create({
+        data: {
+          name: 'Unnamed',
+          email,
+          features: {
+            create: {
+              reason: 'created by invite sign up',
+              expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+              activated: true,
+              feature: {
+                connect: {
+                  feature_version: {
+                    feature: 'free_plan_v1',
+                    version: latestFreePlan._max.version || 1,
+                  },
                 },
               },
             },
           },
         },
-      },
+      });
     });
   }
 
@@ -306,6 +310,7 @@ export class AuthService {
       },
     });
   }
+
   async changeEmail(id: string, newEmail: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: {

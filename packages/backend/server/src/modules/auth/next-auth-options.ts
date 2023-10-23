@@ -38,11 +38,35 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const createUser = prismaAdapter.createUser!.bind(prismaAdapter);
     prismaAdapter.createUser = async data => {
+      const latestFreePlan = await prisma.userFeatures.aggregate({
+        where: {
+          feature: 'free_plan_v1',
+        },
+        _max: {
+          version: true,
+        },
+      });
+
       const userData = {
         name: data.name,
         email: data.email,
         avatarUrl: '',
         emailVerified: data.emailVerified,
+        features: {
+          create: {
+            reason: 'created by email sign up',
+            expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+            activated: true,
+            feature: {
+              connect: {
+                feature_version: {
+                  feature: 'free_plan_v1',
+                  version: latestFreePlan._max.version || 1,
+                },
+              },
+            },
+          },
+        },
       };
       if (data.email && !data.name) {
         userData.name = data.email.split('@')[0];
