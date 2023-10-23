@@ -128,7 +128,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build front Dockerfile
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
@@ -154,7 +154,7 @@ jobs:
         run: yarn workspace @affine/server prisma generate
 
       - name: Build graphql Dockerfile
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
