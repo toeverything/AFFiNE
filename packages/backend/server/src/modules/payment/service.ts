@@ -50,6 +50,11 @@ export enum InvoiceStatus {
   Uncollectible = 'uncollectible',
 }
 
+export enum Coupon {
+  EarlyAccess = 'earlyaccess',
+  EarlyAccessRenew = 'earlyaccessrenew',
+}
+
 @Injectable()
 export class SubscriptionService {
   private readonly paymentConfig: Config['payment'];
@@ -141,29 +146,32 @@ export class SubscriptionService {
     }
 
     if (user.subscription.canceledAt) {
-      throw new Error('Your subscription has already been canceled ');
+      throw new Error('Your subscription has already been canceled');
     }
 
     // should release the schedule first
     if (user.subscription.stripeScheduleId) {
-      await this.stripe.subscriptionSchedules.release(
-        user.subscription.stripeScheduleId
+      await this.cancelSubscriptionSchedule(user.subscription.stripeScheduleId);
+      return this.saveSubscription(
+        user,
+        await this.stripe.subscriptions.retrieve(
+          user.subscription.stripeSubscriptionId
+        )
       );
+    } else {
+      // let customer contact support if they want to cancel immediately
+      // see https://stripe.com/docs/billing/subscriptions/cancel
+      const subscription = await this.stripe.subscriptions.update(
+        user.subscription.stripeSubscriptionId,
+        {
+          cancel_at_period_end: true,
+        }
+      );
+      return await this.saveSubscription(user, subscription);
     }
-
-    // let customer contact support if they want to cancel immediately
-    // see https://stripe.com/docs/billing/subscriptions/cancel
-    const subscription = await this.stripe.subscriptions.update(
-      user.subscription.stripeSubscriptionId,
-      {
-        cancel_at_period_end: true,
-      }
-    );
-
-    return await this.saveSubscription(user, subscription);
   }
 
-  async resumeCanceledSubscriptin(userId: string): Promise<UserSubscription> {
+  async resumeCanceledSubscription(userId: string): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
         id: userId,
@@ -185,14 +193,24 @@ export class SubscriptionService {
       throw new Error('Your subscription is expired, please checkout again.');
     }
 
-    const subscription = await this.stripe.subscriptions.update(
-      user.subscription.stripeSubscriptionId,
-      {
-        cancel_at_period_end: false,
-      }
-    );
+    if (user.subscription.stripeScheduleId) {
+      await this.resumeSubscriptionSchedule(user.subscription.stripeScheduleId);
+      return this.saveSubscription(
+        user,
+        await this.stripe.subscriptions.retrieve(
+          user.subscription.stripeSubscriptionId
+        )
+      );
+    } else {
+      const subscription = await this.stripe.subscriptions.update(
+        user.subscription.stripeSubscriptionId,
+        {
+          cancel_at_period_end: false,
+        }
+      );
 
-    return await this.saveSubscription(user, subscription);
+      return await this.saveSubscription(user, subscription);
+    }
   }
 
   async updateSubscriptionRecurring(
@@ -230,72 +248,30 @@ export class SubscriptionService {
 
     const newPrice = prices.data[0];
 
+    let scheduleId: string | null;
     // a schedule existing
     if (user.subscription.stripeScheduleId) {
-      const schedule = await this.stripe.subscriptionSchedules.retrieve(
-        user.subscription.stripeScheduleId
+      scheduleId = await this.scheduleNewPrice(
+        user.subscription.stripeScheduleId,
+        newPrice.id
       );
-
-      // a scheduled subscription's old price equals the change
-      if (
-        schedule.phases[0] &&
-        (schedule.phases[0].items[0].price as string) === newPrice.id
-      ) {
-        await this.stripe.subscriptionSchedules.release(
-          user.subscription.stripeScheduleId
-        );
-
-        return await this.db.userSubscription.update({
-          where: {
-            id: user.subscription.id,
-          },
-          data: {
-            recurring,
-          },
-        });
-      } else {
-        throw new Error(
-          'Unexpected subscription scheduled, please contact the supporters'
-        );
-      }
     } else {
       const schedule = await this.stripe.subscriptionSchedules.create({
         from_subscription: user.subscription.stripeSubscriptionId,
       });
-
-      await this.stripe.subscriptionSchedules.update(schedule.id, {
-        phases: [
-          {
-            items: [
-              {
-                price: schedule.phases[0].items[0].price as string,
-                quantity: 1,
-              },
-            ],
-            start_date: schedule.phases[0].start_date,
-            end_date: schedule.phases[0].end_date,
-          },
-          {
-            items: [
-              {
-                price: newPrice.id,
-                quantity: 1,
-              },
-            ],
-          },
-        ],
-      });
-
-      return await this.db.userSubscription.update({
-        where: {
-          id: user.subscription.id,
-        },
-        data: {
-          recurring,
-          stripeScheduleId: schedule.id,
-        },
-      });
+      await this.scheduleNewPrice(schedule.id, newPrice.id);
+      scheduleId = schedule.id;
     }
+
+    return await this.db.userSubscription.update({
+      where: {
+        id: user.subscription.id,
+      },
+      data: {
+        stripeScheduleId: scheduleId,
+        recurring,
+      },
+    });
   }
 
   async createCustomerPortal(id: string) {
@@ -582,5 +558,167 @@ export class SubscriptionService {
     });
 
     return user;
+  }
+
+  /**
+   * If a subscription is managed by a schedule, it has a different way to cancel.
+   */
+  private async cancelSubscriptionSchedule(scheduleId: string) {
+    const schedule =
+      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
+
+    const currentPhase = schedule.phases.find(
+      phase =>
+        phase.start_date * 1000 < Date.now() &&
+        phase.end_date * 1000 > Date.now()
+    );
+
+    if (
+      schedule.status !== 'active' ||
+      schedule.phases.length > 2 ||
+      !currentPhase
+    ) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    if (schedule.status !== 'active') {
+      throw new Error('unexpected subscription schedule status');
+    }
+
+    const nextPhase = schedule.phases.find(
+      phase => phase.start_date * 1000 > Date.now()
+    );
+
+    if (!currentPhase) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    const update: Stripe.SubscriptionScheduleUpdateParams.Phase = {
+      items: [
+        {
+          price: currentPhase.items[0].price as string,
+          quantity: 1,
+        },
+      ],
+      coupon: (currentPhase.coupon as string | null) ?? undefined,
+      start_date: currentPhase.start_date,
+      end_date: currentPhase.end_date,
+    };
+
+    if (nextPhase) {
+      // cancel a subscription with a schedule exiting will delete the upcoming phase,
+      // it's hard to recover the subscription to the original state if user wan't to resume before due.
+      // so we manually save the next phase's key information to metadata for later easy resuming.
+      update.metadata = {
+        next_coupon: (nextPhase.coupon as string | null) || null, // avoid empty string
+        next_price: nextPhase.items[0].price as string,
+      };
+    }
+
+    await this.stripe.subscriptionSchedules.update(schedule.id, {
+      phases: [update],
+      end_behavior: 'cancel',
+    });
+  }
+
+  private async resumeSubscriptionSchedule(scheduleId: string) {
+    const schedule =
+      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
+
+    const currentPhase = schedule.phases.find(
+      phase =>
+        phase.start_date * 1000 < Date.now() &&
+        phase.end_date * 1000 > Date.now()
+    );
+
+    if (schedule.status !== 'active' || !currentPhase) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    const update: Stripe.SubscriptionScheduleUpdateParams.Phase[] = [
+      {
+        items: [
+          {
+            price: currentPhase.items[0].price as string,
+            quantity: 1,
+          },
+        ],
+        coupon: (currentPhase.coupon as string | null) ?? undefined,
+        start_date: currentPhase.start_date,
+        end_date: currentPhase.end_date,
+        metadata: {
+          next_coupon: null,
+          next_price: null,
+        },
+      },
+    ];
+
+    if (currentPhase.metadata && currentPhase.metadata.next_price) {
+      update.push({
+        items: [
+          {
+            price: currentPhase.metadata.next_price,
+            quantity: 1,
+          },
+        ],
+        coupon: currentPhase.metadata.next_coupon || undefined,
+      });
+    }
+
+    await this.stripe.subscriptionSchedules.update(schedule.id, {
+      phases: update,
+      end_behavior: 'release',
+    });
+  }
+
+  /**
+   * we only schedule a new price when user change the recurring plan and there is now upcoming phases.
+   */
+  async scheduleNewPrice(
+    scheduleId: string,
+    priceId: string
+  ): Promise<string | null> {
+    const schedule =
+      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
+
+    const currentPhase = schedule.phases.find(
+      phase =>
+        phase.start_date * 1000 < Date.now() &&
+        phase.end_date * 1000 > Date.now()
+    );
+
+    if (schedule.status !== 'active' || !currentPhase) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    // if current phase's plan matches target, just release the schedule
+    if (currentPhase.items[0].price === priceId) {
+      await this.stripe.subscriptionSchedules.release(scheduleId);
+      return null;
+    } else {
+      await this.stripe.subscriptionSchedules.update(schedule.id, {
+        phases: [
+          {
+            items: [
+              {
+                price: currentPhase.items[0].price as string,
+              },
+            ],
+            start_date: schedule.phases[0].start_date,
+            end_date: schedule.phases[0].end_date,
+          },
+          {
+            items: [
+              {
+                price: priceId,
+                quantity: 1,
+              },
+            ],
+          },
+        ],
+      });
+
+      return scheduleId;
+    }
   }
 }

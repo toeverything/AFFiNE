@@ -200,7 +200,7 @@ export class SubscriptionResolver {
 
   @Mutation(() => UserSubscriptionType)
   async resumeSubscription(@CurrentUser() user: User) {
-    return this.service.resumeCanceledSubscriptin(user.id);
+    return this.service.resumeCanceledSubscription(user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
