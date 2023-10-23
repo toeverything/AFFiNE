@@ -216,36 +216,34 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create first page
   await clickNewPageButton(page);
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('sgtokidoki', {
-      delay: 50,
-    });
+    await title.pressSequentially('sgtokidoki');
+    expect(await title.innerText()).toBe('sgtokidoki');
   }
-  await page.waitForTimeout(200);
 
   // create second page
   await openQuickSearchByShortcut(page);
   const addNewPage = page.locator('[cmdk-item] >> text=New Page');
   await addNewPage.click();
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('theliquidhorse', {
-      delay: 50,
-    });
+    await title.pressSequentially('theliquidhorse');
+    expect(await title.innerText()).toBe('theliquidhorse');
   }
   await page.waitForTimeout(200);
 
   // create thrid page
   await openQuickSearchByShortcut(page);
   await addNewPage.click();
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('battlekot', {
-      delay: 50,
-    });
+    await title.pressSequentially('battlekot');
+    expect(await title.innerText()).toBe('battlekot');
   }
-  await page.waitForTimeout(200);
 
   await openQuickSearchByShortcut(page);
   {
@@ -266,12 +264,11 @@ test('assert the recent browse pages are on the recent list', async ({
     const addNewPage = page.locator('[cmdk-item] >> text=New Page');
     await addNewPage.click();
   }
-  await page.waitForTimeout(200);
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('affine is the best', {
-      delay: 50,
-    });
+    await title.pressSequentially('affine is the best');
+    expect(await title.innerText()).toBe('affine is the best');
   }
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
