@@ -15,8 +15,6 @@ import vue from '@vitejs/plugin-vue';
 import { build, type PluginOption } from 'vite';
 import type { z } from 'zod';
 
-const projectRoot = fileURLToPath(new URL('../../..', import.meta.url));
-
 const args = process.argv.splice(2);
 
 const result = parseArgs({
@@ -66,10 +64,8 @@ const external = [
   /^@vanilla-extract/,
 ];
 
-const allPluginDir = path.resolve(projectRoot, 'packages/plugins');
+const pluginDir = process.cwd();
 
-const getPluginDir = (plugin: string) => path.resolve(allPluginDir, plugin);
-const pluginDir = getPluginDir(plugin);
 const packageJsonFile = path.resolve(pluginDir, 'package.json');
 
 const json: z.infer<typeof packageJsonInputSchema> = await readFile(
@@ -96,6 +92,7 @@ const metadata: Metadata = {
   assets: new Set(),
 };
 
+const projectRoot = fileURLToPath(new URL('../../..', import.meta.url));
 const outDir = path.resolve(
   projectRoot,
   'packages/frontend/core/public/plugins'
