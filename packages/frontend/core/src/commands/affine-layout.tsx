@@ -12,13 +12,13 @@ export function registerAffineLayoutCommands({
   store: ReturnType<typeof createStore>;
 }) {
   const unsubs: Array<() => void> = [];
-  const open = store.get(appSidebarOpenAtom);
+  const isOpened = store.get(appSidebarOpenAtom);
   unsubs.push(
     registerAffineCommand({
       id: 'affine:toggle-left-sidebar',
       category: 'affine:layout',
       icon: <SidebarIcon />,
-      label: open
+      label: isOpened
         ? t['com.affine.cmdk.affine.left-sidebar.collapse']()
         : t['com.affine.cmdk.affine.left-sidebar.expand'](),
 

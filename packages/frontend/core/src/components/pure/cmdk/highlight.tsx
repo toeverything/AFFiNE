@@ -45,15 +45,15 @@ export const Highlight = memo(function Highlight({
       {parts.map((part, i) => {
         if (regex.test(part)) {
           return (
-            <div key={i} className={highlightKeyword}>
+            <span key={i} className={highlightKeyword}>
               {part}
-            </div>
+            </span>
           );
         } else {
           return (
-            <div key={i} className={highlightText}>
+            <span key={i} className={highlightText}>
               {part}
-            </div>
+            </span>
           );
         }
       })}
