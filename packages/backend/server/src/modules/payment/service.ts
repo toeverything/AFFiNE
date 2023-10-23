@@ -93,7 +93,7 @@ export class SubscriptionService {
     });
 
     if (currentSubscription && currentSubscription.end < new Date()) {
-      throw new Error('User already has a subscription');
+      throw new Error('You already have a subscription');
     }
 
     const prices = await this.stripe.prices.list({
@@ -137,11 +137,11 @@ export class SubscriptionService {
     });
 
     if (!user?.subscription) {
-      throw new Error('User has no subscription');
+      throw new Error('You do not have any subscription');
     }
 
     if (user.subscription.canceledAt) {
-      throw new Error('User subscription has already been canceled ');
+      throw new Error('Your subscription has already been canceled ');
     }
 
     // should release the schedule first
@@ -174,17 +174,15 @@ export class SubscriptionService {
     });
 
     if (!user?.subscription) {
-      throw new Error('User has no subscription');
+      throw new Error('You do not have any subscription');
     }
 
     if (!user.subscription.canceledAt) {
-      throw new Error('User subscription is not canceled');
+      throw new Error('Your subscription has not been canceled');
     }
 
     if (user.subscription.end < new Date()) {
-      throw new Error(
-        'User subscription has already expired, please checkout again.'
-      );
+      throw new Error('Your subscription is expired, please checkout again.');
     }
 
     const subscription = await this.stripe.subscriptions.update(
@@ -211,11 +209,15 @@ export class SubscriptionService {
     });
 
     if (!user?.subscription) {
-      throw new Error('User has no subscription');
+      throw new Error('You do not have any subscription');
+    }
+
+    if (user.subscription.canceledAt) {
+      throw new Error('Your subscription has already been canceled ');
     }
 
     if (user.subscription.recurring === recurring) {
-      throw new Error('User has already subscribed to this plan');
+      throw new Error('You have already subscribed to this plan');
     }
 
     const prices = await this.stripe.prices.list({
@@ -344,29 +346,98 @@ export class SubscriptionService {
   }
 
   @OnEvent('invoice.created')
-  async onInvoiceCreated(invoice: Stripe.Invoice) {
-    await this.saveInvoice(invoice);
-  }
-
   @OnEvent('invoice.paid')
-  async onInvoicePaid(invoice: Stripe.Invoice) {
-    await this.saveInvoice(invoice);
-  }
-
   @OnEvent('invoice.finalization_failed')
-  async onInvoiceFinalizeFailed(invoice: Stripe.Invoice) {
-    await this.saveInvoice(invoice);
-  }
-
   @OnEvent('invoice.payment_failed')
-  async onInvoicePaymentFailed(invoice: Stripe.Invoice) {
-    await this.saveInvoice(invoice);
+  async saveInvoice(stripeInvoice: Stripe.Invoice) {
+    if (!stripeInvoice.customer) {
+      throw new Error('Unexpected invoice with no customer');
+    }
+
+    const user = await this.retrieveUserFromCustomer(
+      typeof stripeInvoice.customer === 'string'
+        ? stripeInvoice.customer
+        : stripeInvoice.customer.id
+    );
+
+    const invoice = await this.db.userInvoice.findUnique({
+      where: {
+        stripeInvoiceId: stripeInvoice.id,
+      },
+    });
+
+    const data: Partial<UserInvoice> = {
+      currency: stripeInvoice.currency,
+      amount: stripeInvoice.total,
+      status: stripeInvoice.status ?? InvoiceStatus.Void,
+      link: stripeInvoice.hosted_invoice_url,
+    };
+
+    // handle payment error
+    if (stripeInvoice.attempt_count > 1) {
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(
+        stripeInvoice.payment_intent as string
+      );
+
+      if (paymentIntent.last_payment_error) {
+        if (paymentIntent.last_payment_error.type === 'card_error') {
+          data.lastPaymentError =
+            paymentIntent.last_payment_error.message ?? 'Failed to pay';
+        } else {
+          data.lastPaymentError = 'Internal Payment error';
+        }
+      }
+    } else if (stripeInvoice.last_finalization_error) {
+      if (stripeInvoice.last_finalization_error.type === 'card_error') {
+        data.lastPaymentError =
+          stripeInvoice.last_finalization_error.message ??
+          'Failed to finalize invoice';
+      } else {
+        data.lastPaymentError = 'Internal Payment error';
+      }
+    }
+
+    // update invoice
+    if (invoice) {
+      await this.db.userInvoice.update({
+        where: {
+          stripeInvoiceId: stripeInvoice.id,
+        },
+        data,
+      });
+    } else {
+      // create invoice
+      const price = stripeInvoice.lines.data[0].price;
+
+      if (!price || price.type !== 'recurring') {
+        throw new Error('Unexpected invoice with no recurring price');
+      }
+
+      await this.db.userInvoice.create({
+        data: {
+          userId: user.id,
+          stripeInvoiceId: stripeInvoice.id,
+          plan: SubscriptionPlan.Pro,
+          recurring: price.lookup_key ?? price.id,
+          reason: stripeInvoice.billing_reason ?? 'contact support',
+          ...(data as any),
+        },
+      });
+    }
   }
 
   private async saveSubscription(
     user: User,
-    subscription: Stripe.Subscription
+    subscription: Stripe.Subscription,
+    fromWebhook = true
   ): Promise<UserSubscription> {
+    // webhook events may not in sequential order
+    // always fetch the latest subscription and save
+    // see https://stripe.com/docs/webhooks#behaviors
+    if (fromWebhook) {
+      subscription = await this.stripe.subscriptions.retrieve(subscription.id);
+    }
+
     // get next bill date from upcoming invoice
     // see https://stripe.com/docs/api/invoices/upcoming
     let nextBillAt: Date | null = null;
@@ -375,17 +446,7 @@ export class SubscriptionService {
         subscription.status === SubscriptionStatus.Trialing) &&
       !subscription.canceled_at
     ) {
-      try {
-        const nextInvoice = await this.stripe.invoices.retrieveUpcoming({
-          customer: subscription.customer as string,
-          subscription: subscription.id,
-        });
-
-        nextBillAt = new Date(nextInvoice.created * 1000);
-      } catch (e) {
-        // no upcoming invoice
-        // safe to ignore
-      }
+      nextBillAt = new Date(subscription.current_period_end * 1000);
     }
 
     const price = subscription.items.data[0].price;
@@ -521,80 +582,5 @@ export class SubscriptionService {
     });
 
     return user;
-  }
-
-  private async saveInvoice(stripeInvoice: Stripe.Invoice) {
-    if (!stripeInvoice.customer) {
-      throw new Error('Unexpected invoice with no customer');
-    }
-
-    const user = await this.retrieveUserFromCustomer(
-      stripeInvoice.customer as string
-    );
-
-    const invoice = await this.db.userInvoice.findUnique({
-      where: {
-        stripeInvoiceId: stripeInvoice.id,
-      },
-    });
-
-    const data: Partial<UserInvoice> = {
-      currency: stripeInvoice.currency,
-      amount: stripeInvoice.total,
-      status: stripeInvoice.status ?? InvoiceStatus.Void,
-      link: stripeInvoice.hosted_invoice_url,
-    };
-
-    // handle payment error
-    if (stripeInvoice.attempt_count > 1) {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(
-        stripeInvoice.payment_intent as string
-      );
-
-      if (paymentIntent.last_payment_error) {
-        if (paymentIntent.last_payment_error.type === 'card_error') {
-          data.lastPaymentError =
-            paymentIntent.last_payment_error.message ?? 'Failed to pay';
-        } else {
-          data.lastPaymentError = 'Internal Payment error';
-        }
-      }
-    } else if (stripeInvoice.last_finalization_error) {
-      if (stripeInvoice.last_finalization_error.type === 'card_error') {
-        data.lastPaymentError =
-          stripeInvoice.last_finalization_error.message ??
-          'Failed to finalize invoice';
-      } else {
-        data.lastPaymentError = 'Internal Payment error';
-      }
-    }
-
-    // update invoice
-    if (invoice) {
-      await this.db.userInvoice.update({
-        where: {
-          stripeInvoiceId: stripeInvoice.id,
-        },
-        data,
-      });
-    } else {
-      // create invoice
-      const price = stripeInvoice.lines.data[0].price;
-
-      if (!price || price.type !== 'recurring') {
-        throw new Error('Unexpected invoice with no recurring price');
-      }
-
-      await this.db.userInvoice.create({
-        data: {
-          userId: user.id,
-          stripeInvoiceId: stripeInvoice.id,
-          plan: SubscriptionPlan.Pro,
-          recurring: price.lookup_key ?? price.id,
-          reason: stripeInvoice.billing_reason ?? 'contact support',
-          ...(data as any),
-        },
-      });
-    }
   }
 }
