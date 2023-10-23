@@ -1,32 +1,34 @@
-import { appSidebarOpenAtom } from '@affine/component/app-sidebar';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SidebarIcon } from '@blocksuite/icons';
 import { registerAffineCommand } from '@toeverything/infra/command';
-import type { createStore } from 'jotai';
+
+import type { useSidebarStatus } from '../hooks/affine/use-sidebar-status';
 
 export function registerAffineLayoutCommands({
   t,
-  store,
+  sidebarStatus,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
-  store: ReturnType<typeof createStore>;
+  sidebarStatus: ReturnType<typeof useSidebarStatus>;
 }) {
   const unsubs: Array<() => void> = [];
-  const isOpened = store.get(appSidebarOpenAtom);
+  const { isOpened, onOpenChange } = sidebarStatus;
   unsubs.push(
     registerAffineCommand({
-      id: 'affine:toggle-left-sidebar',
+      id: 'affine:toggle-left-sidebar-collapse',
       category: 'affine:layout',
       icon: <SidebarIcon />,
-      label: isOpened
-        ? t['com.affine.cmdk.affine.left-sidebar.collapse']()
-        : t['com.affine.cmdk.affine.left-sidebar.expand'](),
-
+      label:
+        t[
+          isOpened
+            ? 'com.affine.cmdk.affine.left-sidebar.collapse'
+            : 'com.affine.cmdk.affine.left-sidebar.expand'
+        ](),
       keyBinding: {
         binding: '$mod+/',
       },
       run() {
-        store.set(appSidebarOpenAtom, v => !v);
+        onOpenChange();
       },
     })
   );
