@@ -166,7 +166,7 @@ jobs:
       - name: Output check
         if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
         run: |
-          yarn workspace @affine/electron ts-node-esm ./scripts/macos-arm64-output-check.mts
+          yarn workspace @affine/electron ts-node ./scripts/macos-arm64-output-check.ts
 
       - name: Collect code coverage report
         if: ${{ matrix.spec.test }}
