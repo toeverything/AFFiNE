@@ -356,7 +356,8 @@ const RulesMode = ({
         >
           {rulesPages.length > 0 ? (
             <PageList
-              compactclassName={styles.resultPages}
+              compact
+              className={styles.resultPages}
               pages={rulesPages}
               groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
