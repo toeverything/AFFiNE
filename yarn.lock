@@ -209,7 +209,7 @@ __metadata:
     "@emotion/server": "npm:^11.11.0"
     "@emotion/styled": "npm:^11.11.0"
     "@mui/base": "npm:5.0.0-beta.19"
-    "@mui/icons-material": "npm:^5.14.13"
+    "@mui/icons-material": "npm:^5.14.14"
     "@mui/material": "npm:^5.14.13"
     "@popperjs/core": "npm:^2.11.8"
     "@radix-ui/react-avatar": "npm:^1.0.4"
@@ -6748,9 +6748,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/icons-material@npm:^5.14.13":
-  version: 5.14.13
-  resolution: "@mui/icons-material@npm:5.14.13"
+"@mui/icons-material@npm:^5.14.14":
+  version: 5.14.14
+  resolution: "@mui/icons-material@npm:5.14.14"
   dependencies:
     "@babel/runtime": "npm:^7.23.1"
   peerDependencies:
@@ -6760,7 +6760,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 01cd58ae4afc941e0f0b94de374cb186bbf457e896f36b2c7126f8c3813309fbf8871e9dfc512e86d68c2fc6b4c9503e0d18a752d93bf62a5857893a12254f98
+  checksum: a5ea6d8942f25f1389ac8921e9f960fd38e793b9851e8d5bf535a8b342be4c9f081f62390891636570495a0d6f4bd69fc6fea80a0b76efee7ee4b29627af16a4
   languageName: node
   linkType: hard
 
