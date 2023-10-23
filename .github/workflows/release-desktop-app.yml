@@ -111,9 +111,6 @@ jobs:
           hard-link-nm: false
           build-plugins: false
           nmHoistingLimits: workspaces
-      - name: Setup Maker
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-maker
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
@@ -188,9 +185,6 @@ jobs:
           hard-link-nm: false
           build-plugins: false
           nmHoistingLimits: workspaces
-      - name: Setup Maker
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-maker
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
