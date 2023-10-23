@@ -601,7 +601,9 @@ const SelectPage = ({
       ></input>
       <div className={styles.pagesTab}>
         <div className={styles.pagesTabContent}>
-          <div></div>
+          <div style={{ fontSize: 12, lineHeight: '20px', fontWeight: 600 }}>
+            Add include page
+          </div>
           {!showFilter && filters.length === 0 ? (
             <Menu
               items={

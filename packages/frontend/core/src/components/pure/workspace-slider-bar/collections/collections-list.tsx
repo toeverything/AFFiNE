@@ -5,6 +5,7 @@ import {
 import {
   EditCollectionModal,
   filterPage,
+  stopPropagation,
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
@@ -188,23 +189,25 @@ const CollectionRenderer = ({
         icon={<ViewLayersIcon />}
         to={path}
         postfix={
-          <Menu
-            items={
-              <CollectionOperations
-                view={collection}
-                showUpdateCollection={() => showUpdateCollection(true)}
-                setting={setting}
-              />
-            }
-          >
-            <IconButton
-              data-testid="collection-options"
-              type="plain"
-              withoutHoverStyle
+          <div onClick={stopPropagation}>
+            <Menu
+              items={
+                <CollectionOperations
+                  view={collection}
+                  showUpdateCollection={() => showUpdateCollection(true)}
+                  setting={setting}
+                />
+              }
             >
-              <MoreHorizontalIcon />
-            </IconButton>
-          </Menu>
+              <IconButton
+                data-testid="collection-options"
+                type="plain"
+                withoutHoverStyle
+              >
+                <MoreHorizontalIcon />
+              </IconButton>
+            </Menu>
+          </div>
         }
         collapsed={pagesToRender.length > 0 ? collapsed : undefined}
       >

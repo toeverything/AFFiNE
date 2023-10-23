@@ -74,11 +74,13 @@ export const PageOperations = ({
               name: t['Remove special filter'](),
               click: () => removeFromAllowList(page.id),
             },
+            {
+              element: (
+                <div key="divider" className={styles.menuDividerStyle}></div>
+              ),
+            },
           ]
         : []),
-      {
-        element: <div key="divider" className={styles.menuDividerStyle}></div>,
-      },
       {
         icon: (
           <MenuIcon>
