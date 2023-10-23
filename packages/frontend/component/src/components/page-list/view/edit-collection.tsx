@@ -1,4 +1,4 @@
-import { PageList } from '@affine/component/page-list';
+import { PageList, PageListScrollContainer } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -348,7 +348,7 @@ const RulesMode = ({
             </div>
           </div>
         </div>
-        <div
+        <PageListScrollContainer
           className={styles.rulesContainerRight}
           style={{
             display: showPreview ? 'flex' : 'none',
@@ -356,7 +356,7 @@ const RulesMode = ({
         >
           {rulesPages.length > 0 ? (
             <PageList
-              className={styles.resultPages}
+              compactclassName={styles.resultPages}
               pages={rulesPages}
               groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
@@ -367,6 +367,7 @@ const RulesMode = ({
             <div>
               <div className={styles.includeListTitle}>include</div>
               <PageList
+                compact
                 className={styles.resultPages}
                 pages={allowListPages}
                 groupBy={false}
@@ -375,7 +376,7 @@ const RulesMode = ({
               ></PageList>
             </div>
           ) : null}
-        </div>
+        </PageListScrollContainer>
       </div>
       <div className={styles.rulesBottom}>
         <div className={styles.bottomLeft}>
@@ -516,8 +517,9 @@ const PagesMode = ({
               />
             </div>
           ) : null}
-          <div style={{ overflowY: 'auto' }}>
+          <PageListScrollContainer>
             <PageList
+              compact
               className={styles.pageList}
               pages={searchedList}
               groupBy={false}
@@ -532,7 +534,7 @@ const PagesMode = ({
               selectedPageIds={collection.pages}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
             ></PageList>
-          </div>
+          </PageListScrollContainer>
         </div>
       </div>
       <div className={styles.pagesBottom}>
@@ -636,8 +638,9 @@ const SelectPage = ({
             />
           </div>
         ) : null}
-        <div style={{ overflowY: 'auto' }}>
+        <PageListScrollContainer>
           <PageList
+            compact
             className={styles.pageList}
             pages={searchedList}
             blockSuiteWorkspace={allPageListConfig.workspace}
@@ -646,7 +649,7 @@ const SelectPage = ({
             selectedPageIds={value}
             isPreferredEdgeless={allPageListConfig.isEdgeless}
           ></PageList>
-        </div>
+        </PageListScrollContainer>
       </div>
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>

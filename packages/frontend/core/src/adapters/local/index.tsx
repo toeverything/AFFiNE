@@ -32,7 +32,6 @@ import {
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   Provider,
-  WorkspaceHeader,
 } from '../shared';
 
 const logger = new DebugLogger('use-create-first-workspace');
@@ -84,7 +83,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
-    Header: WorkspaceHeader,
     Provider,
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
       const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentWorkspaceId);

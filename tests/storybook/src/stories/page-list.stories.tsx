@@ -168,7 +168,17 @@ ListItemTags.args = {
 };
 
 export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
-  return <PageList {...props} {...loaded}></PageList>;
+  return (
+    <div
+      style={{
+        height: '100vh',
+        overflow: 'auto',
+        scrollTimeline: '--list-scroll-root y',
+      }}
+    >
+      <PageList {...props} {...loaded}></PageList>
+    </div>
+  );
 };
 
 PageListStory.args = {
@@ -179,6 +189,9 @@ PageListStory.argTypes = {
   selectable: {
     control: 'radio',
     options: [true, 'toggle', false],
+  },
+  compact: {
+    type: 'boolean',
   },
 };
 

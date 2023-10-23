@@ -12,6 +12,7 @@ export enum RouteLogic {
   PUSH = 'push',
 }
 
+// todo: add a name -> path helper in the results
 export function useNavigateHelper() {
   const location = useLocation();
   const navigate = useNavigate();

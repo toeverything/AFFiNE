@@ -19,9 +19,3 @@ export const PageDetailEditor = lazy(() =>
     default: PageDetailEditor,
   }))
 );
-
-export const WorkspaceHeader = lazy(() =>
-  import('../components/workspace-header').then(({ WorkspaceHeader }) => ({
-    default: WorkspaceHeader,
-  }))
-);

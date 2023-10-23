@@ -3,7 +3,7 @@ import { MultiSelectIcon, SortDownIcon, SortUpIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { selectAtom, useHydrateAtoms } from 'jotai/utils';
+import { useHydrateAtoms } from 'jotai/utils';
 import {
   type MouseEventHandler,
   type ReactNode,
@@ -17,10 +17,12 @@ import { PageGroup } from './page-group';
 import * as styles from './page-list.css';
 import {
   pageGroupsAtom,
+  pageListCompactAtom,
   pageListHandlersAtom,
   pageListPropsAtom,
   pagesAtom,
   selectionStateAtom,
+  showOperationsAtom,
   sorterAtom,
 } from './scoped-atoms';
 import type { PageListProps } from './types';
@@ -139,12 +141,11 @@ const PageListHeaderCheckbox = () => {
   );
 
   if (!selectionState.selectable) {
-    return <div style={{ width: '6px' }}></div>;
+    return null;
   }
 
   return (
     <div
-      style={{ width: '34px' }}
       className={styles.headerTitleSelectionIconWrapper}
       onClick={onActivateSelection}
     >
@@ -175,14 +176,10 @@ const PageListHeaderTitleCell = () => {
   );
 };
 
-const showOperationsAtom = selectAtom(
-  pageListPropsAtom,
-  props => !!props.pageOperationsRenderer
-);
-
 export const PageListHeader = () => {
   const t = useAFFiNEI18N();
   const showOperations = useAtomValue(showOperationsAtom);
+  const compact = useAtomValue(pageListCompactAtom);
   const headerCols = useMemo(() => {
     const cols: (HeaderColDef | boolean)[] = [
       {
@@ -224,7 +221,7 @@ export const PageListHeader = () => {
     return cols.filter((def): def is HeaderColDef => !!def);
   }, [t, showOperations]);
   return (
-    <div className={styles.header}>
+    <div className={clsx(styles.header, compact && styles.compact)}>
       {headerCols.map(col => {
         return (
           <PageListHeaderCell
@@ -240,6 +237,25 @@ export const PageListHeader = () => {
           </PageListHeaderCell>
         );
       })}
+    </div>
+  );
+};
+
+export const PageListScrollContainer = ({
+  className,
+  children,
+  style,
+}: {
+  className?: string;
+  children: ReactNode;
+  style?: React.CSSProperties;
+}) => {
+  return (
+    <div
+      style={style}
+      className={clsx(styles.pageListScrollContainer, className)}
+    >
+      {children}
     </div>
   );
 };

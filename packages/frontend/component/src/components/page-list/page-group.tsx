@@ -3,6 +3,7 @@ import { Trans } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon, ToggleCollapseIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
+import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { isEqual } from 'lodash-es';
@@ -11,7 +12,11 @@ import { type MouseEventHandler, useCallback, useState } from 'react';
 import { PagePreview } from './page-content-preview';
 import * as styles from './page-group.css';
 import { PageListItem } from './page-list-item';
-import { pageListPropsAtom, selectionStateAtom } from './scoped-atoms';
+import {
+  pageListCompactAtom,
+  pageListPropsAtom,
+  selectionStateAtom,
+} from './scoped-atoms';
 import type {
   PageGroupDefinition,
   PageGroupProps,
@@ -106,11 +111,12 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
     e.preventDefault();
     setCollapsed(v => !v);
   }, []);
+  const compact = useAtomValue(pageListCompactAtom);
   return (
     <div
       data-testid="page-list-group"
       data-group-id={id}
-      className={styles.root}
+      className={clsx(styles.root, compact && styles.compact)}
     >
       {label ? (
         <div data-testid="page-list-group-header" className={styles.header}>

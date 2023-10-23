@@ -1,6 +1,9 @@
 import { globalStyle, keyframes, style } from '@vanilla-extract/css';
 
 export const wrapper = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
   userSelect: 'none',
   // marginLeft:8,
 });

@@ -9,9 +9,6 @@ import { PageDetailEditor, Provider } from '../shared';
 
 export const UI = {
   Provider,
-  Header: () => {
-    return null;
-  },
   PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
     const workspace = useWorkspace(currentWorkspaceId);
     const page = workspace.blockSuiteWorkspace.getPage(currentPageId);

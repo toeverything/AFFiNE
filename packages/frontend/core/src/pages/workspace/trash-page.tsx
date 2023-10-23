@@ -1,5 +1,9 @@
 import { toast } from '@affine/component';
-import { PageList, TrashOperationCell } from '@affine/component/page-list';
+import {
+  PageList,
+  PageListScrollContainer,
+  TrashOperationCell,
+} from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -7,10 +11,11 @@ import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback } from 'react';
 
-import { getUIAdapter } from '../../adapters/workspace';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
+import { WorkspaceHeader } from '../../components/workspace-header';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
+import * as styles from './all-page.css';
 import { EmptyPageList } from './page-list-empty';
 import { useFilteredPageMetas } from './pages';
 
@@ -19,7 +24,6 @@ export const TrashPage = () => {
   // todo(himself65): refactor to plugin
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
-  const { Header } = getUIAdapter(currentWorkspace.flavour);
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const filteredPageMetas = useFilteredPageMetas(
     'trash',
@@ -56,27 +60,29 @@ export const TrashPage = () => {
     [permanentlyDeletePage, restoreFromTrash, t]
   );
   return (
-    <>
-      <Header
+    <div className={styles.root}>
+      <WorkspaceHeader
         currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           subPath: WorkspaceSubPath.TRASH,
         }}
       />
-      <PageList
-        pages={filteredPageMetas}
-        renderPageAsLink
-        fallback={
-          <EmptyPageList
-            type="trash"
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          />
-        }
-        isPreferredEdgeless={isPreferredEdgeless}
-        blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-        pageOperationsRenderer={pageOperationsRenderer}
-      />
-    </>
+      <PageListScrollContainer className={styles.scrollContainer}>
+        <PageList
+          pages={filteredPageMetas}
+          renderPageAsLink
+          fallback={
+            <EmptyPageList
+              type="trash"
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            />
+          }
+          isPreferredEdgeless={isPreferredEdgeless}
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          pageOperationsRenderer={pageOperationsRenderer}
+        />
+      </PageListScrollContainer>
+    </div>
   );
 };
 

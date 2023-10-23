@@ -1,4 +1,7 @@
-import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
+import {
+  MenuItem as SidebarMenuItem,
+  MenuLinkItem as SidebarMenuLinkItem,
+} from '@affine/component/app-sidebar';
 import {
   EditCollectionModal,
   filterPage,
@@ -28,10 +31,10 @@ import {
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import type { ReactElement } from 'react';
 import { useCallback, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
-import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
@@ -132,10 +135,6 @@ const CollectionRenderer = ({
 }) => {
   const [collapsed, setCollapsed] = useState(true);
   const setting = useCollectionManager(collectionsCRUDAtom);
-  const { jumpToCollection } = useNavigateHelper();
-  const clickCollection = useCallback(() => {
-    jumpToCollection(workspace.id, collection.id);
-  }, [jumpToCollection, workspace.id, collection.id]);
   const { setNodeRef, isOver } = useDroppable({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {
@@ -168,6 +167,9 @@ const CollectionRenderer = ({
     page => filterPage(collection, page) && !page.trash
   );
   const config = useAllPageListConfig();
+  const location = useLocation();
+  const currentPath = location.pathname.split('?')[0];
+  const path = `/workspace/${workspace.id}/collection/${collection.id}`;
   return (
     <Collapsible.Root open={!collapsed}>
       <EditCollectionModal
@@ -177,13 +179,14 @@ const CollectionRenderer = ({
         open={show}
         onOpenChange={showUpdateCollection}
       />
-      <CollectionItem
+      <SidebarMenuLinkItem
         data-testid="collection-item"
         data-type="collection-list-item"
         ref={setNodeRef}
         onCollapsedChange={setCollapsed}
-        active={isOver}
+        active={isOver || currentPath === path}
         icon={<ViewLayersIcon />}
+        to={path}
         postfix={
           <Menu
             items={
@@ -204,7 +207,6 @@ const CollectionRenderer = ({
           </Menu>
         }
         collapsed={pagesToRender.length > 0 ? collapsed : undefined}
-        onClick={clickCollection}
       >
         <div
           style={{
@@ -215,7 +217,7 @@ const CollectionRenderer = ({
         >
           <div>{collection.name}</div>
         </div>
-      </CollectionItem>
+      </SidebarMenuLinkItem>
       <Collapsible.Content className={styles.collapsibleContent}>
         <div style={{ marginLeft: 20, marginTop: -4 }}>
           {pagesToRender.map(page => {
@@ -241,13 +243,13 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
   const t = useAFFiNEI18N();
   if (collections.length === 0) {
     return (
-      <CollectionItem
+      <SidebarMenuItem
         data-testid="slider-bar-collection-null-description"
         icon={<InformationIcon />}
         disabled
       >
         <span>{t['Create a collection']()}</span>
-      </CollectionItem>
+      </SidebarMenuItem>
     );
   }
   return (

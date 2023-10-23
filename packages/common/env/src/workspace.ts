@@ -171,7 +171,6 @@ interface FC<P> {
 }
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
-  Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
