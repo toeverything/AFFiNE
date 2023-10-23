@@ -2,6 +2,7 @@ import { style } from '@vanilla-extract/css';
 
 export const highlightContainer = style({
   display: 'flex',
+  flexWrap: 'nowrap',
 });
 
 export const highlightText = style({
@@ -13,8 +14,7 @@ export const highlightText = style({
 export const highlightKeyword = style({
   color: 'var(--affine-primary-color)',
   whiteSpace: 'pre',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
+  overflow: 'visible',
   flexShrink: 0,
 });
 
@@ -30,9 +30,4 @@ export const labelContent = style({
   lineHeight: '20px',
   fontWeight: 400,
   textAlign: 'justify',
-});
-
-export const transContainer = style({
-  display: 'flex',
-  gap: '4px',
 });

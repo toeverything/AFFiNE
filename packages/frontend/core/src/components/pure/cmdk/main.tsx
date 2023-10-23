@@ -13,7 +13,7 @@ import {
   customCommandFilter,
   useCMDKCommandGroups,
 } from './data';
-import { HighlightNodes } from './highlight';
+import { HighlightLabel } from './highlight';
 import * as styles from './main.css';
 import { CMDKModal, type CMDKModalProps } from './modal';
 import { NotFoundGroup } from './not-found';
@@ -58,6 +58,12 @@ const QuickSearchGroup = ({
   return (
     <Command.Group key={category} heading={t[i18nkey]()}>
       {commands.map(command => {
+        const label =
+          typeof command.label === 'string'
+            ? {
+                title: command.label,
+              }
+            : command.label;
         return (
           <Command.Item
             key={command.id}
@@ -80,11 +86,7 @@ const QuickSearchGroup = ({
                 command.originalValue ? command.originalValue : undefined
               }
             >
-              {query ? (
-                <HighlightNodes element={command.label} highlight={query} />
-              ) : (
-                command.label
-              )}
+              <HighlightLabel highlight={query} label={label} />
             </div>
             {command.timestamp ? (
               <div className={styles.timestamp}>

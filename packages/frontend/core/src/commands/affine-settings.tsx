@@ -1,89 +1,15 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
 import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra/command';
-import { type createStore, useAtomValue } from 'jotai';
+import { type createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
 import { appSettingAtom } from '../atoms/settings';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
-import { transLabelContainer } from './index.css';
-
-// todo - find a better way to abstract the following translations components
-const ClientBorderStyleLabel = () => {
-  const { clientBorder } = useAtomValue(appSettingAtom);
-  const t = useAFFiNEI18N();
-  return (
-    <div
-      key={'affine:change-client-border-style'}
-      className={transLabelContainer}
-    >
-      {t['com.affine.cmdk.affine.client-border-style.to']()}
-      <strong>
-        {clientBorder
-          ? t['com.affine.cmdk.affine.switch-state.off']()
-          : t['com.affine.cmdk.affine.switch-state.on']()}
-      </strong>
-    </div>
-  );
-};
-
-const FullWidthLayoutLabel = () => {
-  const { fullWidthLayout } = useAtomValue(appSettingAtom);
-  const t = useAFFiNEI18N();
-  return (
-    <div
-      key={'affine:change-full-width-layout'}
-      className={transLabelContainer}
-    >
-      {t['com.affine.cmdk.affine.full-width-layout.to']()}
-      <strong>
-        {fullWidthLayout
-          ? t['com.affine.cmdk.affine.switch-state.off']()
-          : t['com.affine.cmdk.affine.switch-state.on']()}
-      </strong>
-    </div>
-  );
-};
-
-const NoisyBackgroundLabel = () => {
-  const { enableNoisyBackground } = useAtomValue(appSettingAtom);
-  const t = useAFFiNEI18N();
-  return (
-    <div
-      key={'affine:noise-background-on-the-sidebar'}
-      className={transLabelContainer}
-    >
-      {t['com.affine.cmdk.affine.noise-background-on-the-sidebar.to']()}
-      <strong>
-        {enableNoisyBackground
-          ? t['com.affine.cmdk.affine.switch-state.off']()
-          : t['com.affine.cmdk.affine.switch-state.on']()}
-      </strong>
-    </div>
-  );
-};
-
-const BlurBackgroundLabel = () => {
-  const { enableBlurBackground } = useAtomValue(appSettingAtom);
-  const t = useAFFiNEI18N();
-  return (
-    <div
-      key={'affine:translucent-ui-on-the-sidebar'}
-      className={transLabelContainer}
-    >
-      {t['com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to']()}
-      <strong>
-        {enableBlurBackground
-          ? t['com.affine.cmdk.affine.switch-state.off']()
-          : t['com.affine.cmdk.affine.switch-state.on']()}
-      </strong>
-    </div>
-  );
-};
 
 export function registerAffineSettingsCommands({
   t,
@@ -98,6 +24,12 @@ export function registerAffineSettingsCommands({
 }) {
   const unsubs: Array<() => void> = [];
   const { onSelect, languagesList, currentLanguage } = languageHelper;
+  const {
+    fullWidthLayout,
+    enableBlurBackground,
+    enableNoisyBackground,
+    clientBorder,
+  } = store.get(appSettingAtom);
   unsubs.push(
     registerAffineCommand({
       id: 'affine:show-quick-search',
@@ -106,6 +38,7 @@ export function registerAffineSettingsCommands({
       keyBinding: {
         binding: '$mod+K',
       },
+      label: '',
       icon: <SettingsIcon />,
       run() {
         const quickSearchModalState = store.get(openQuickSearchModalAtom);
@@ -118,12 +51,9 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-auto',
-      label: (
-        <div className={transLabelContainer}>
-          {t['com.affine.cmdk.affine.color-scheme.to']()}
-          <strong>{t['com.affine.themeSettings.system']()}</strong>
-        </div>
-      ),
+      label: `${t['com.affine.cmdk.affine.color-scheme.to']()} ${t[
+        'com.affine.themeSettings.system'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'system',
@@ -135,12 +65,9 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-dark',
-      label: (
-        <div className={transLabelContainer}>
-          {t['com.affine.cmdk.affine.color-scheme.to']()}
-          <strong>{t['com.affine.themeSettings.dark']()}</strong>
-        </div>
-      ),
+      label: `${t['com.affine.cmdk.affine.color-scheme.to']()} ${t[
+        'com.affine.themeSettings.dark'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'dark',
@@ -153,12 +80,9 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-color-scheme-to-light',
-      label: (
-        <div className={transLabelContainer}>
-          {t['com.affine.cmdk.affine.color-scheme.to']()}
-          <strong>{t['com.affine.themeSettings.light']()}</strong>
-        </div>
-      ),
+      label: `${t['com.affine.cmdk.affine.color-scheme.to']()} ${t[
+        'com.affine.themeSettings.light'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => theme.theme !== 'light',
@@ -172,12 +96,9 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-font-style-to-sans',
-      label: (
-        <div className={transLabelContainer}>
-          {t['com.affine.cmdk.affine.font-style.to']()}
-          <strong>{t['com.affine.appearanceSettings.fontStyle.sans']()}</strong>
-        </div>
-      ),
+      label: `${t['com.affine.cmdk.affine.font-style.to']()} ${t[
+        'com.affine.appearanceSettings.fontStyle.sans'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () =>
@@ -194,14 +115,9 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-font-style-to-serif',
-      label: (
-        <div className={transLabelContainer}>
-          {t['com.affine.cmdk.affine.font-style.to']()}
-          <strong>
-            {t['com.affine.appearanceSettings.fontStyle.serif']()}
-          </strong>
-        </div>
-      ),
+      label: `${t['com.affine.cmdk.affine.font-style.to']()} ${t[
+        'com.affine.appearanceSettings.fontStyle.serif'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () =>
@@ -218,12 +134,9 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-font-style-to-mono',
-      label: (
-        <div className={transLabelContainer}>
-          {t['com.affine.cmdk.affine.font-style.to']()}
-          <strong>{t['com.affine.appearanceSettings.fontStyle.mono']()}</strong>
-        </div>
-      ),
+      label: `${t['com.affine.cmdk.affine.font-style.to']()} ${t[
+        'com.affine.appearanceSettings.fontStyle.mono'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () =>
@@ -242,12 +155,9 @@ export function registerAffineSettingsCommands({
     unsubs.push(
       registerAffineCommand({
         id: `affine:change-display-language-to-${language.name}`,
-        label: (
-          <div className={transLabelContainer}>
-            {t['com.affine.cmdk.affine.display-language.to']()}
-            <strong>{language.originalName}</strong>
-          </div>
-        ),
+        label: `${t['com.affine.cmdk.affine.display-language.to']()} ${
+          language.originalName
+        }`,
         category: 'affine:settings',
         icon: <SettingsIcon />,
         preconditionStrategy: () => currentLanguage?.tag !== language.tag,
@@ -262,7 +172,12 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-client-border-style`,
-      label: () => ClientBorderStyleLabel(),
+      label: `${t['com.affine.cmdk.affine.client-border-style.to']()} ${t[
+        clientBorder
+          ? 'com.affine.cmdk.affine.switch-state.off'
+          : 'com.affine.cmdk.affine.switch-state.on'
+      ]()}
+        `,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
@@ -278,7 +193,11 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-full-width-layout`,
-      label: () => <FullWidthLayoutLabel />,
+      label: `${t['com.affine.cmdk.affine.full-width-layout.to']()} ${t[
+        fullWidthLayout
+          ? 'com.affine.cmdk.affine.switch-state.off'
+          : 'com.affine.cmdk.affine.switch-state.on'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       run() {
@@ -293,7 +212,13 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-noise-background-on-the-sidebar`,
-      label: () => NoisyBackgroundLabel(),
+      label: `${t[
+        'com.affine.cmdk.affine.noise-background-on-the-sidebar.to'
+      ]()} ${t[
+        enableNoisyBackground
+          ? 'com.affine.cmdk.affine.switch-state.off'
+          : 'com.affine.cmdk.affine.switch-state.on'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
@@ -309,7 +234,13 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-translucent-ui-on-the-sidebar`,
-      label: () => BlurBackgroundLabel(),
+      label: `${t[
+        'com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to'
+      ]()} ${t[
+        enableBlurBackground
+          ? 'com.affine.cmdk.affine.switch-state.off'
+          : 'com.affine.cmdk.affine.switch-state.on'
+      ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,

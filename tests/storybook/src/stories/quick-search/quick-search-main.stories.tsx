@@ -4,7 +4,7 @@ import {
   registerAffineSettingsCommands,
 } from '@affine/core/commands';
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
-import { HighlightNodes } from '@affine/core/components/pure/cmdk/highlight';
+import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
@@ -100,16 +100,15 @@ export const CMDKStoryWithCommands: StoryFn = () => {
 
 CMDKStoryWithCommands.decorators = [withRouter];
 
-function Foo() {
-  return <div>foobar</div>;
-}
-
 export const HighlightStory: StoryFn = () => {
   const [query, setQuery] = useState('');
+  const label = {
+    title: 'title',
+  };
   return (
     <>
       <input value={query} onChange={e => setQuery(e.target.value)} />
-      <HighlightNodes element={<Foo />} highlight={query} />
+      <HighlightLabel label={label} highlight={query} />
     </>
   );
 };

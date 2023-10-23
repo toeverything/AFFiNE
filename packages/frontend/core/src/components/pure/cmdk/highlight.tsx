@@ -1,10 +1,4 @@
-import {
-  cloneElement,
-  isValidElement,
-  memo,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import { memo } from 'react';
 
 import {
   highlightContainer,
@@ -16,7 +10,7 @@ import {
 
 type SearchResultLabel = {
   title: string;
-  content: string;
+  subTitle?: string;
 };
 
 type HighlightProps = {
@@ -26,7 +20,7 @@ type HighlightProps = {
 
 type HighlightLabelProps = {
   label: SearchResultLabel;
-  keyword: string;
+  highlight: string;
 };
 
 function escapeRegExp(string: string) {
@@ -38,96 +32,49 @@ export const Highlight = memo(function Highlight({
   highlight = '',
 }: HighlightProps) {
   const regex = highlight.trim()
-    ? new RegExp(`(\\s*${escapeRegExp(highlight)}\\s*)`, 'gi')
+    ? new RegExp(`(${escapeRegExp(highlight)})`, 'ig')
     : null;
 
   if (!regex) {
     return <span>{text}</span>;
   }
-
   const parts = text.split(regex);
 
   return (
     <div className={highlightContainer}>
-      {parts.map((part, i) =>
-        regex.test(part) ? (
-          <div key={i} className={highlightKeyword}>
-            {part}
-          </div>
-        ) : (
-          <div key={i} className={highlightText}>
-            {part}
-          </div>
-        )
-      )}
+      {parts.map((part, i) => {
+        if (regex.test(part)) {
+          return (
+            <div key={i} className={highlightKeyword}>
+              {part}
+            </div>
+          );
+        } else {
+          return (
+            <div key={i} className={highlightText}>
+              {part}
+            </div>
+          );
+        }
+      })}
     </div>
   );
 });
 
 export const HighlightLabel = memo(function HighlightLabel({
   label,
-  keyword,
+  highlight,
 }: HighlightLabelProps) {
   return (
     <div>
       <div className={labelTitle}>
-        <Highlight text={label.title} highlight={keyword} />
+        <Highlight text={label.title} highlight={highlight} />
       </div>
-      <div className={labelContent}>
-        <Highlight text={label.content} highlight={keyword} />
-      </div>
+      {label.subTitle ? (
+        <div className={labelContent}>
+          <Highlight text={label.subTitle} highlight={highlight} />
+        </div>
+      ) : null}
     </div>
   );
-});
-
-export const HighlightNodes = memo(function HighlightNodes({
-  element,
-  highlight,
-}: {
-  element: ReactNode;
-  highlight: string;
-}): ReactNode {
-  if (!highlight || !element) {
-    return element;
-  }
-  if (Array.isArray(element)) {
-    return element.map((item, index) => {
-      const key = item.key || index;
-      if (item.type === 'strong') {
-        const children = HighlightNodes({
-          element: item.props.children,
-          highlight,
-        });
-
-        if (children !== item.props.children) {
-          return cloneElement(item as ReactElement, {
-            children: children,
-            key: key,
-          });
-        }
-
-        return item;
-      }
-
-      return <Highlight key={key} text={item} highlight={highlight} />;
-    });
-  }
-  if (isValidElement(element)) {
-    const children = HighlightNodes({
-      element: element.props.children,
-      highlight,
-    });
-
-    if (children !== element.props.children) {
-      return cloneElement(element as ReactElement, {
-        children: children,
-      });
-    }
-
-    return element;
-  }
-  if (typeof element === 'string') {
-    return <Highlight text={element} highlight={highlight} />;
-  }
-  return element;
 });
