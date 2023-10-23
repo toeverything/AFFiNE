@@ -56,10 +56,10 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
   const openPageEdit = useCallback(() => {
     open({ ...collection, mode: 'page' }).then(updateCollection);
-  }, []);
+  }, [open, collection, updateCollection]);
   const openRuleEdit = useCallback(() => {
     open({ ...collection, mode: 'rule' }).then(updateCollection);
-  }, [collection, open]);
+  }, [collection, open, updateCollection]);
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {
     setShowTips(!localStorage.getItem('hide-empty-collection-help-info'));

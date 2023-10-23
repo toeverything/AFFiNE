@@ -90,7 +90,7 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
         filterList: filterList,
       });
     },
-    [updateDefaultCollection]
+    [updateDefaultCollection, defaultCollection]
   );
   const currentCollection =
     currentCollectionId === NIL

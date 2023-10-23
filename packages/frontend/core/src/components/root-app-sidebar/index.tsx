@@ -247,7 +247,7 @@ export const RootAppSidebar = ({
           </CategoryDivider>
           <FavoriteList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
-            <AddCollectionButton workspace={blockSuiteWorkspace} />
+            <AddCollectionButton />
           </CategoryDivider>
           <CollectionsList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
