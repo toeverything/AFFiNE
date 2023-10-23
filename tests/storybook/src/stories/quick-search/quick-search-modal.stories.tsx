@@ -30,7 +30,7 @@ export const CMDKPanelStory: StoryFn = () => {
   return (
     <>
       <CMDKModal open>
-        <CMDKContainer query={query} onQueryChange={setQuery} />
+        <CMDKContainer open query={query} onQueryChange={setQuery} />
       </CMDKModal>
     </>
   );
