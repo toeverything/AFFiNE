@@ -16,7 +16,10 @@ export const NotFoundGroup = () => {
   }
   return (
     <div className={styles.notFoundContainer}>
-      <div className={styles.notFoundTitle}>{`Search for "${query}"`}</div>
+      <div
+        className={styles.notFoundTitle}
+        data-testid="cmdk-search-not-found"
+      >{`Search for "${query}"`}</div>
       <div className={styles.notFoundItem}>
         <div className={styles.notFoundIcon}>
           <SearchIcon />

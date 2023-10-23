@@ -327,3 +327,15 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await keyboardDownAndSelect(page, 'Restore from Trash');
   await expect(restoreButton).not.toBeVisible();
 });
+
+test('show not found item', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await openQuickSearchByShortcut(page);
+  // input title and create new page
+  await page.keyboard.insertText('test123456');
+  const notFoundItem = page.getByTestId('cmdk-search-not-found');
+  await expect(notFoundItem).toBeVisible();
+  await expect(notFoundItem).toHaveText('Search for "test123456"');
+});
