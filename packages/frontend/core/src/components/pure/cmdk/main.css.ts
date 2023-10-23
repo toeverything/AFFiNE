@@ -124,11 +124,13 @@ globalStyle(`${root} [cmdk-list]`, {
   minHeight: 120,
   overflow: 'auto',
   overscrollBehavior: 'contain',
-  transition: '.1s ease',
-  transitionProperty: 'height',
   height: 'min(330px, calc(var(--cmdk-list-height) + 8px))',
   padding: '0 0 8px 6px',
   scrollbarGutter: 'stable',
+});
+
+globalStyle(`${root} [cmdk-list]:not([data-opening])`, {
+  transition: 'height .1s ease',
 });
 
 globalStyle(`${root} [cmdk-list]::-webkit-scrollbar`, {

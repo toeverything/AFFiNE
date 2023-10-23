@@ -28,7 +28,7 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@mui/base": "5.0.0-beta.19",
-    "@mui/icons-material": "^5.14.13",
+    "@mui/icons-material": "^5.14.14",
     "@mui/material": "^5.14.13",
     "@popperjs/core": "^2.11.8",
     "@radix-ui/react-avatar": "^1.0.4",

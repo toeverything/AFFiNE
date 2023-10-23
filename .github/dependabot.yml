@@ -2,8 +2,30 @@ version: 2
 updates:
   - package-ecosystem: 'npm'
     directory: '/'
+    groups:
+      all-npm-dependencies:
+        patterns:
+          - '*'
     schedule:
       interval: 'weekly'
     versioning-strategy: increase
     commit-message:
       prefix: 'chore'
+  - package-ecosystem: 'cargo'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    versioning-strategy: auto
+    commit-message:
+      prefix: 'chore'
+    groups:
+      all-cargo-dependencies:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'daily'
+    commit-message:
+      prefix: 'ci'

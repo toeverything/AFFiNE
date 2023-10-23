@@ -151,7 +151,9 @@ export class NextAuthController {
     if (
       this.config.auth.captcha.enable &&
       req.method === 'POST' &&
-      action === 'signin'
+      action === 'signin' &&
+      // TODO: add credentials support in frontend
+      ['email'].includes(providerId)
     ) {
       const isVerified = await this.verifyChallenge(req, res);
       if (!isVerified) return;
@@ -382,11 +384,9 @@ export class NextAuthController {
   rejectResponse(res: Response, error: string, status = 400) {
     res.status(status);
     res.json({
-      url: `https://${this.config.baseUrl}/api/auth/error?${new URLSearchParams(
-        {
-          error,
-        }
-      ).toString()}`,
+      url: `${this.config.baseUrl}/api/auth/error?${new URLSearchParams({
+        error,
+      }).toString()}`,
       error,
     });
   }

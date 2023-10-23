@@ -198,6 +198,7 @@
   "files": [],
   "exclude": ["node_modules", "target", "lib", "test-results"],
   "ts-node": {
+    "esm": true,
     "compilerOptions": {
       "module": "ESNext",
       "moduleResolution": "Node"
