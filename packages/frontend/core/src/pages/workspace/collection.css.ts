@@ -15,3 +15,11 @@ export const placeholderButton = style({
     backgroundColor: 'var(--affine-hover-color)',
   },
 });
+export const button = style({
+  userSelect: 'none',
+  borderRadius: 4,
+  cursor: 'pointer',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
+});

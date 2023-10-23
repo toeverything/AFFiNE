@@ -134,8 +134,8 @@ export const rulesContainerLeftContent = style({
   padding: '12px 16px 16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
-  overflowY: 'auto',
+  flex: 1,
+  overflow: 'hidden',
 });
 
 export const rulesContainerLeftTab = style({

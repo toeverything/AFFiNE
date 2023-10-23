@@ -15,7 +15,7 @@ import { Button } from '@toeverything/components/button';
 import { Menu } from '@toeverything/components/menu';
 import { Modal } from '@toeverything/components/modal';
 import clsx from 'clsx';
-import type { MouseEvent } from 'react';
+import { type MouseEvent, useEffect } from 'react';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { RadioButton, RadioButtonGroup } from '../../..';
@@ -184,6 +184,14 @@ const RulesMode = ({
   const [showPreview, setShowPreview] = useState(true);
   const allowListPages: PageMeta[] = [];
   const rulesPages: PageMeta[] = [];
+  const [showTips, setShowTips] = useState(false);
+  useEffect(() => {
+    setShowTips(!localStorage.getItem('hide-rules-mode-include-page-tips'));
+  }, []);
+  const hideTips = useCallback(() => {
+    setShowTips(false);
+    localStorage.setItem('hide-rules-mode-include-page-tips', 'true');
+  }, []);
   allPageListConfig.allPages.forEach(v => {
     const result = filterPageByRules(
       collection.filterList,
@@ -260,92 +268,143 @@ const RulesMode = ({
             </RadioButtonGroup>
           </div>
           <div className={styles.rulesContainerLeftContent}>
-            <FilterList
-              propertiesMeta={allPageListConfig.workspace.meta.properties}
-              value={collection.filterList}
-              onChange={useCallback(
-                filterList => updateCollection({ ...collection, filterList }),
-                [collection, updateCollection]
-              )}
-            />
-            <div className={styles.rulesContainerLeftContentInclude}>
-              <div className={styles.includeTitle}>
-                <ToggleCollapseIcon
-                  onClick={() => setExpandInclude(!expandInclude)}
-                  className={styles.button}
-                  width={24}
-                  height={24}
-                  style={{
-                    transform: expandInclude ? 'rotate(90deg)' : undefined,
-                  }}
-                ></ToggleCollapseIcon>
-                <div style={{ color: 'var(--affine-text-secondary-color)' }}>
-                  include
-                </div>
-              </div>
-              <div
-                style={{
-                  display: expandInclude ? 'flex' : 'none',
-                  flexWrap: 'wrap',
-                  gap: '8px 16px',
-                }}
-              >
-                {collection.allowList.map(id => {
-                  const page = allPageListConfig.allPages.find(
-                    v => v.id === id
-                  );
-                  return (
-                    <div className={styles.includeItem} key={id}>
-                      <div className={styles.includeItemContent}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 6,
-                            alignItems: 'center',
-                          }}
-                        >
-                          {allPageListConfig.isEdgeless(id) ? (
-                            <EdgelessIcon style={{ width: 16, height: 16 }} />
-                          ) : (
-                            <PageIcon style={{ width: 16, height: 16 }} />
-                          )}
-                          Page
-                        </div>
-                        <div className={styles.includeItemContentIs}>is</div>
-                        <div
-                          className={clsx(
-                            styles.includeItemTitle,
-                            styles.ellipsis
-                          )}
-                        >
-                          {page?.title || 'Untitled'}
-                        </div>
-                      </div>
-                      <CloseIcon
-                        className={styles.button}
-                        onClick={() => {
-                          updateCollection({
-                            ...collection,
-                            allowList: collection.allowList.filter(
-                              v => v !== id
-                            ),
-                          });
-                        }}
-                      ></CloseIcon>
-                    </div>
-                  );
-                })}
-                <div
-                  onClick={openSelectPage}
-                  className={clsx(styles.button, styles.includeAddButton)}
-                >
-                  <PlusIcon></PlusIcon>
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                overflowY: 'auto',
+              }}
+            >
+              <FilterList
+                propertiesMeta={allPageListConfig.workspace.meta.properties}
+                value={collection.filterList}
+                onChange={useCallback(
+                  filterList => updateCollection({ ...collection, filterList }),
+                  [collection, updateCollection]
+                )}
+              />
+              <div className={styles.rulesContainerLeftContentInclude}>
+                <div className={styles.includeTitle}>
+                  <ToggleCollapseIcon
+                    onClick={() => setExpandInclude(!expandInclude)}
+                    className={styles.button}
+                    width={24}
+                    height={24}
+                    style={{
+                      transform: expandInclude ? 'rotate(90deg)' : undefined,
+                    }}
+                  ></ToggleCollapseIcon>
                   <div style={{ color: 'var(--affine-text-secondary-color)' }}>
-                    Add include page
+                    include
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: expandInclude ? 'flex' : 'none',
+                    flexWrap: 'wrap',
+                    gap: '8px 16px',
+                  }}
+                >
+                  {collection.allowList.map(id => {
+                    const page = allPageListConfig.allPages.find(
+                      v => v.id === id
+                    );
+                    return (
+                      <div className={styles.includeItem} key={id}>
+                        <div className={styles.includeItemContent}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: 6,
+                              alignItems: 'center',
+                            }}
+                          >
+                            {allPageListConfig.isEdgeless(id) ? (
+                              <EdgelessIcon style={{ width: 16, height: 16 }} />
+                            ) : (
+                              <PageIcon style={{ width: 16, height: 16 }} />
+                            )}
+                            Page
+                          </div>
+                          <div className={styles.includeItemContentIs}>is</div>
+                          <div
+                            className={clsx(
+                              styles.includeItemTitle,
+                              styles.ellipsis
+                            )}
+                          >
+                            {page?.title || 'Untitled'}
+                          </div>
+                        </div>
+                        <CloseIcon
+                          className={styles.button}
+                          onClick={() => {
+                            updateCollection({
+                              ...collection,
+                              allowList: collection.allowList.filter(
+                                v => v !== id
+                              ),
+                            });
+                          }}
+                        ></CloseIcon>
+                      </div>
+                    );
+                  })}
+                  <div
+                    onClick={openSelectPage}
+                    className={clsx(styles.button, styles.includeAddButton)}
+                  >
+                    <PlusIcon></PlusIcon>
+                    <div
+                      style={{ color: 'var(--affine-text-secondary-color)' }}
+                    >
+                      Add include page
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            {showTips ? (
+              <div
+                style={{
+                  marginTop: 16,
+                  border: '1px solid var(--affine-border-color)',
+                  borderRadius: 8,
+                  padding: 10,
+                  fontSize: 12,
+                  lineHeight: '20px',
+                }}
+              >
+                <div
+                  style={{
+                    marginBottom: 14,
+                    fontWeight: 600,
+                    color: 'var(--affine-text-secondary-color)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>HELP INFO</div>
+                  <CloseIcon
+                    onClick={hideTips}
+                    className={styles.button}
+                    style={{ width: 16, height: 16 }}
+                  />
+                </div>
+                <div style={{ marginBottom: 10, fontWeight: 600 }}>
+                  What is &quot;Include&quot;？
+                </div>
+                <div>
+                  &quot;Include&quot; refers to manually adding pages rather
+                  than automatically adding them through rule matching. You can
+                  manually add pages through the &quot;Add pages&quot; option or
+                  by dragging and dropping (coming soon).
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
         <PageListScrollContainer

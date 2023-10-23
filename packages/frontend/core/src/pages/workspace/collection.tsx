@@ -3,10 +3,15 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import { FilterIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
+import {
+  CloseIcon,
+  FilterIcon,
+  PageIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
 import {
@@ -54,6 +59,14 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   }, []);
   const openRuleEdit = useCallback(() => {
     open({ ...collection, mode: 'rule' }).then(updateCollection);
+  }, [collection, open]);
+  const [showTips, setShowTips] = useState(false);
+  useEffect(() => {
+    setShowTips(!localStorage.getItem('hide-empty-collection-help-info'));
+  }, []);
+  const hideTips = useCallback(() => {
+    setShowTips(false);
+    localStorage.setItem('hide-empty-collection-help-info', 'true');
   }, []);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -155,49 +168,59 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             </div>
           </div>
         </div>
-        <div
-          style={{
-            maxWidth: 452,
-            borderRadius: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'var(--affine-background-overlay-panel-color)',
-            padding: 10,
-            gap: 14,
-            margin: '0 12px',
-          }}
-        >
+        {showTips ? (
           <div
             style={{
-              fontWeight: 600,
-              fontSize: 12,
-              lineHeight: '20px',
-              color: 'var(--affine-text-secondary-color)',
-            }}
-          >
-            HELP INFO
-          </div>
-          <div
-            style={{
+              maxWidth: 452,
+              borderRadius: 8,
               display: 'flex',
               flexDirection: 'column',
-              gap: 10,
-              fontSize: 12,
-              lineHeight: '20px',
+              backgroundColor: 'var(--affine-background-overlay-panel-color)',
+              padding: 10,
+              gap: 14,
+              margin: '0 12px',
             }}
           >
-            <div>
-              <span style={{ fontWeight: 600 }}>Add pages:</span> You can freely
-              select pages and add them to the collection.
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 12,
+                lineHeight: '20px',
+                color: 'var(--affine-text-secondary-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>HELP INFO</div>
+              <CloseIcon
+                className={styles.button}
+                style={{ width: 16, height: 16 }}
+                onClick={hideTips}
+              />
             </div>
-            <div>
-              <span style={{ fontWeight: 600 }}>Add rules:</span> Rules are
-              based on filtering. After adding rules, pages that meet the
-              requirements will be automatically added to the current
-              collection.
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                fontSize: 12,
+                lineHeight: '20px',
+              }}
+            >
+              <div>
+                <span style={{ fontWeight: 600 }}>Add pages:</span> You can
+                freely select pages and add them to the collection.
+              </div>
+              <div>
+                <span style={{ fontWeight: 600 }}>Add rules:</span> Rules are
+                based on filtering. After adding rules, pages that meet the
+                requirements will be automatically added to the current
+                collection.
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
       </div>
       {node}
     </div>
