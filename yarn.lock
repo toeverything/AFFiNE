@@ -494,7 +494,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/i18n@workspace:packages/frontend/i18n"
   dependencies:
-    "@types/node": "npm:^18.18.5"
+    "@types/node": "npm:^20.8.7"
     "@types/prettier": "npm:^3.0.0"
     i18next: "npm:^23.5.1"
     prettier: "npm:^3.0.3"
@@ -541,7 +541,7 @@ __metadata:
     "@toeverything/infra": "workspace:*"
     "@types/affine__env": "workspace:*"
     "@types/eslint": "npm:^8.44.4"
-    "@types/node": "npm:^18.18.5"
+    "@types/node": "npm:^20.8.7"
     "@typescript-eslint/eslint-plugin": "npm:^6.7.5"
     "@typescript-eslint/parser": "npm:^6.7.5"
     "@vanilla-extract/vite-plugin": "npm:^3.9.0"
@@ -592,7 +592,7 @@ __metadata:
   resolution: "@affine/native@workspace:packages/frontend/native"
   dependencies:
     "@napi-rs/cli": "npm:^2.16.3"
-    "@types/node": "npm:^18.18.5"
+    "@types/node": "npm:^20.8.7"
     "@types/uuid": "npm:^9.0.5"
     ava: "npm:^5.3.1"
     cross-env: "npm:^7.0.3"
@@ -700,7 +700,7 @@ __metadata:
     "@types/graphql-upload": "npm:^16.0.3"
     "@types/keyv": "npm:^4.2.0"
     "@types/lodash-es": "npm:^4.17.9"
-    "@types/node": "npm:^18.18.5"
+    "@types/node": "npm:^20.8.7"
     "@types/nodemailer": "npm:^6.4.11"
     "@types/on-headers": "npm:^1.0.1"
     "@types/pretty-time": "npm:^1.1.3"
@@ -13582,10 +13582,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.11.18, @types/node@npm:^18.18.5":
+"@types/node@npm:^18.11.18":
   version: 18.18.5
   resolution: "@types/node@npm:18.18.5"
   checksum: a7363aab9f402290799d3e2696fbc70c76a8a65e2354f72b8f399c38edc346f600066f8ac59dde985cfc64160cfeb63ed7fc917aecdfe7ec469345d3ce029bda
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^20.8.7":
+  version: 20.8.7
+  resolution: "@types/node@npm:20.8.7"
+  dependencies:
+    undici-types: "npm:~5.25.1"
+  checksum: a347ac7e6a9748ffff018ca01142ba625e774cb0b53785abb58b16a5a8468cc9b7656686dbe4c39c2f3fc477439994ee8aeae9b80ced86f320598bafaf83f802
   languageName: node
   linkType: hard
 

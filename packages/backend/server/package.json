@@ -85,7 +85,7 @@
     "@types/graphql-upload": "^16.0.3",
     "@types/keyv": "^4.2.0",
     "@types/lodash-es": "^4.17.9",
-    "@types/node": "^18.18.5",
+    "@types/node": "^20.8.7",
     "@types/nodemailer": "^6.4.11",
     "@types/on-headers": "^1.0.1",
     "@types/pretty-time": "^1.1.3",

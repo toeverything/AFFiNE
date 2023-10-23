@@ -71,7 +71,7 @@
     "@toeverything/infra": "workspace:*",
     "@types/affine__env": "workspace:*",
     "@types/eslint": "^8.44.4",
-    "@types/node": "^18.18.5",
+    "@types/node": "^20.8.7",
     "@typescript-eslint/eslint-plugin": "^6.7.5",
     "@typescript-eslint/parser": "^6.7.5",
     "@vanilla-extract/vite-plugin": "^3.9.0",
