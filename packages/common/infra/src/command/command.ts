@@ -40,8 +40,18 @@ export interface AffineCommandOptions {
   preconditionStrategy?: PreconditionStrategy | (() => boolean);
   // main text on the left..
   // make text a function so that we can do i18n and interpolation when we need to
-  label?: string | (() => string) | ReactNode | (() => ReactNode);
-  icon: React.ReactNode; // todo: need a mapping from string -> React element/SVG
+  label:
+    | string
+    | (() => string)
+    | {
+        title: string;
+        subTitle?: string;
+      }
+    | (() => {
+        title: string;
+        subTitle?: string;
+      });
+  icon: ReactNode; // todo: need a mapping from string -> React element/SVG
   category?: CommandCategory;
   // we use https://github.com/jamiebuilds/tinykeys so that we can use the same keybinding definition
   // for both mac and windows
@@ -53,8 +63,11 @@ export interface AffineCommandOptions {
 export interface AffineCommand {
   readonly id: string;
   readonly preconditionStrategy: PreconditionStrategy | (() => boolean);
-  readonly label?: ReactNode | string;
-  readonly icon?: React.ReactNode; // icon name
+  readonly label: {
+    title: string;
+    subTitle?: string;
+  };
+  readonly icon?: ReactNode; // icon name
   readonly category: CommandCategory;
   readonly keyBinding?: KeybindingOptions;
   run(): void | Promise<void>;
@@ -71,8 +84,15 @@ export function createAffineCommand(
       options.preconditionStrategy ?? PreconditionStrategy.Always,
     category: options.category ?? 'affine:general',
     get label() {
-      const label = options.label;
-      return typeof label === 'function' ? label?.() : label;
+      let label = options.label;
+      label = typeof label === 'function' ? label?.() : label;
+      label =
+        typeof label === 'string'
+          ? {
+              title: label,
+            }
+          : label;
+      return label;
     },
     keyBinding:
       typeof options.keyBinding === 'string'

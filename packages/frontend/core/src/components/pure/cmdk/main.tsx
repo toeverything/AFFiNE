@@ -4,7 +4,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import { Suspense, useLayoutEffect, useMemo, useState } from 'react';
 
 import {
@@ -13,8 +13,10 @@ import {
   customCommandFilter,
   useCMDKCommandGroups,
 } from './data';
+import { HighlightLabel } from './highlight';
 import * as styles from './main.css';
 import { CMDKModal, type CMDKModalProps } from './modal';
+import { NotFoundGroup } from './not-found';
 import type { CMDKCommand } from './types';
 
 type NoParametersKeys<T> = {
@@ -52,10 +54,16 @@ const QuickSearchGroup = ({
 }) => {
   const t = useAFFiNEI18N();
   const i18nkey = categoryToI18nKey[category];
-  const setQuery = useSetAtom(cmdkQueryAtom);
+  const [query, setQuery] = useAtom(cmdkQueryAtom);
   return (
     <Command.Group key={category} heading={t[i18nkey]()}>
       {commands.map(command => {
+        const label =
+          typeof command.label === 'string'
+            ? {
+                title: command.label,
+              }
+            : command.label;
         return (
           <Command.Item
             key={command.id}
@@ -78,7 +86,7 @@ const QuickSearchGroup = ({
                 command.originalValue ? command.originalValue : undefined
               }
             >
-              {command.label}
+              <HighlightLabel highlight={query} label={label} />
             </div>
             {command.timestamp ? (
               <div className={styles.timestamp}>
@@ -197,6 +205,7 @@ export const CMDKContainer = ({
       <Command.List data-opening={opening ? true : undefined}>
         {children}
       </Command.List>
+      <NotFoundGroup />
     </Command>
   );
 };

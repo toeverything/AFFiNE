@@ -66,12 +66,7 @@ const PublishPanelAffine = (props: PublishPanelAffineProps) => {
           marginBottom: isPublic ? '12px' : '25px',
         }}
       >
-        <Switch
-          checked={isPublic}
-          // onChange={useCallback(value => {
-          //   console.log('onChange', value);
-          // }, [])}
-        />
+        <Switch checked={isPublic} />
       </SettingRow>
       {isPublic ? (
         <FlexWrapper justifyContent="space-between" marginBottom={25}>

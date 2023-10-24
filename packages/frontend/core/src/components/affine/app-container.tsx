@@ -3,10 +3,10 @@ import {
   type WorkspaceRootProps,
 } from '@affine/component/workspace';
 
-import { useAppSetting } from '../../atoms/settings';
+import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 
 export const AppContainer = (props: WorkspaceRootProps) => {
-  const [appSettings] = useAppSetting();
+  const { appSettings } = useAppSettingHelper();
 
   return (
     <AppContainerWithoutSettings

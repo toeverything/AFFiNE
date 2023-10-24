@@ -11,7 +11,12 @@ export interface CommandContext {
 // we can use a single render function to render all different commands
 export interface CMDKCommand {
   id: string;
-  label: string | React.ReactNode;
+  label:
+    | string
+    | {
+        title: string;
+        subTitle?: string;
+      };
   icon?: React.ReactNode;
   category: CommandCategory;
   keyBinding?: string | { binding: string };

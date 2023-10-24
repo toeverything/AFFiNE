@@ -38,7 +38,6 @@ import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
-import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -50,6 +49,7 @@ import {
   DROPPABLE_SIDEBAR_TRASH,
   RootAppSidebar,
 } from '../components/root-app-sidebar';
+import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -230,7 +230,7 @@ export const WorkspaceLayoutInner = ({
     [moveToTrash, t]
   );
 
-  const [appSetting] = useAppSetting();
+  const { appSettings } = useAppSettingHelper();
   const location = useLocation();
   const { pageId } = useParams();
   const pageMeta = useBlockSuitePageMeta(
@@ -269,7 +269,7 @@ export const WorkspaceLayoutInner = ({
           <Suspense fallback={<MainContainer ref={setMainContainer} />}>
             <MainContainer
               ref={setMainContainer}
-              padding={appSetting.clientBorder}
+              padding={appSettings.clientBorder}
               inTrashPage={inTrashPage}
             >
               {incompatible ? <MigrationFallback /> : children}
