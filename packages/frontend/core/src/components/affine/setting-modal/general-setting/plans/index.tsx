@@ -9,6 +9,7 @@ import {
   updateSubscriptionMutation,
 } from '@affine/graphql';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
+import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import {
   type PropsWithChildren,
@@ -24,6 +25,7 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
+import { BulledListIcon } from './icons/bulled-list';
 import * as styles from './style.css';
 
 interface FixedPrice {
@@ -226,23 +228,27 @@ const Settings = () => {
                         </span>
                       )}
                   </p>
-                  <p>
-                    {detail.type === 'dynamic' ? (
-                      <span className={styles.planPriceDesc}>
-                        Coming soon...
-                      </span>
-                    ) : (
-                      <>
-                        <span className={styles.planPrice}>
-                          $
-                          {recurring === SubscriptionRecurring.Monthly
-                            ? detail.price
-                            : detail.yearlyPrice}
+                  <div className={styles.planPriceWrapper}>
+                    <p>
+                      {detail.type === 'dynamic' ? (
+                        <span className={styles.planPriceDesc}>
+                          Coming soon...
                         </span>
-                        <span className={styles.planPriceDesc}>per month</span>
-                      </>
-                    )}
-                  </p>
+                      ) : (
+                        <>
+                          <span className={styles.planPrice}>
+                            $
+                            {recurring === SubscriptionRecurring.Monthly
+                              ? detail.price
+                              : detail.yearlyPrice}
+                          </span>
+                          <span className={styles.planPriceDesc}>
+                            per month
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
                   {
                     // branches:
                     //  if contact                                => 'Contact Sales'
@@ -292,8 +298,11 @@ const Settings = () => {
                   {detail.benefits.map((content, i) => (
                     <div key={i} className={styles.planBenefit}>
                       <div className={styles.planBenefitIcon}>
-                        {/* TODO: icons */}
-                        {detail.type == 'dynamic' ? '·' : '✅'}
+                        {detail.type == 'dynamic' ? (
+                          <BulledListIcon color="var(--affine-primary-color)" />
+                        ) : (
+                          <DoneIcon color="var(--affine-primary-color)" />
+                        )}
                       </div>
                       {content}
                     </div>
