@@ -75,16 +75,6 @@ export function WorkspaceHeader({
   const currentWorkspace = useWorkspace(currentWorkspaceId);
   const workspace = currentWorkspace.blockSuiteWorkspace;
   const setting = useCollectionManager(collectionsCRUDAtom);
-  const navigateHelper = useNavigateHelper();
-  const backToAll = useCallback(() => {
-    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-  }, [navigateHelper, currentWorkspace.id]);
-  const jumpToCollection = useCallback(
-    (id: string) => {
-      navigateHelper.jumpToCollection(currentWorkspace.id, id);
-    },
-    [navigateHelper, currentWorkspace.id]
-  );
   const config = useAllPageListConfig();
   // route in all page
   if (
@@ -99,8 +89,6 @@ export function WorkspaceHeader({
           left={
             <CollectionList
               allPageListConfig={config}
-              jumpToCollection={jumpToCollection}
-              backToAll={backToAll}
               setting={setting}
               propertiesMeta={workspace.meta.properties}
             />

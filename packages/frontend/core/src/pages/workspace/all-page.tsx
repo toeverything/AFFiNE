@@ -150,6 +150,7 @@ export const AllPage = () => {
           />
         </div>
         <PageList
+          selectable="toggle"
           pages={filteredPageMetas}
           renderPageAsLink
           fallback={

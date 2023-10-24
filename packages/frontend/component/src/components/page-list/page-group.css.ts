@@ -1,22 +1,47 @@
-import { style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
+  gap: 2,
 });
 
-export const compact = style([
-  root,
-  {
-    gap: 0,
+const slideDown = keyframes({
+  '0%': {
+    height: '0px',
   },
-]);
+  '100%': {
+    height: 'var(--radix-collapsible-content-height)',
+  },
+});
+
+const slideUp = keyframes({
+  '0%': {
+    height: 'var(--radix-collapsible-content-height)',
+  },
+  '100%': {
+    height: '0px',
+  },
+});
+
+export const collapsibleContent = style({
+  overflow: 'hidden',
+  marginTop: '4px',
+  selectors: {
+    '&[data-state="open"]': {
+      animation: `${slideDown} 0.2s ease-in-out`,
+    },
+    '&[data-state="closed"]': {
+      animation: `${slideUp} 0.2s ease-in-out`,
+    },
+  },
+});
 
 export const header = style({
   display: 'flex',
   alignItems: 'center',
   padding: '0px 16px 0px 6px',
+  gap: 4,
   height: '28px',
   ':hover': {
     background: 'var(--affine-hover-color)',
@@ -40,17 +65,17 @@ export const headerLabel = style({
 export const headerCount = style({
   fontSize: 'var(--affine-font-sm)',
   color: 'var(--affine-text-disable-color)',
-  marginLeft: '8px',
 });
 
 export const collapsedIcon = style({
-  display: 'none',
+  opacity: 0,
+  transition: 'transform 0.2s ease-in-out',
   selectors: {
     '&[data-collapsed="false"]': {
       transform: 'rotate(90deg)',
     },
-    [`${header}:hover &`]: {
-      display: 'block',
+    [`${header}:hover &, &[data-collapsed="true"]`]: {
+      opacity: 1,
     },
   },
 });

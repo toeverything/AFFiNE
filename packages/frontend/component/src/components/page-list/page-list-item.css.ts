@@ -3,7 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   color: 'var(--affine-text-primary-color)',
-  height: '62px',
+  height: '54px', // 42 + 12
   width: '100%',
   alignItems: 'stretch',
   transition: 'background-color 0.2s',

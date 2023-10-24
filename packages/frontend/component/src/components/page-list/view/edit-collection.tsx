@@ -415,7 +415,7 @@ const RulesMode = ({
         >
           {rulesPages.length > 0 ? (
             <PageList
-              compact
+              hideHeader
               className={styles.resultPages}
               pages={rulesPages}
               groupBy={false}
@@ -427,7 +427,6 @@ const RulesMode = ({
             <div>
               <div className={styles.includeListTitle}>include</div>
               <PageList
-                compact
                 className={styles.resultPages}
                 pages={allowListPages}
                 groupBy={false}
@@ -579,7 +578,6 @@ const PagesMode = ({
           ) : null}
           <PageListScrollContainer>
             <PageList
-              compact
               className={styles.pageList}
               pages={searchedList}
               groupBy={false}
@@ -702,7 +700,6 @@ const SelectPage = ({
         ) : null}
         <PageListScrollContainer>
           <PageList
-            compact
             className={styles.pageList}
             pages={searchedList}
             blockSuiteWorkspace={allPageListConfig.workspace}
