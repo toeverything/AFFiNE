@@ -1,3 +1,4 @@
+import { escapeRegExp } from 'lodash-es';
 import { memo } from 'react';
 
 import {
@@ -22,10 +23,6 @@ type HighlightLabelProps = {
   label: SearchResultLabel;
   highlight: string;
 };
-
-function escapeRegExp(string: string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 export const Highlight = memo(function Highlight({
   text = '',
