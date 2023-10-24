@@ -11,7 +11,6 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
-import { FeatureManagementService } from '../quota';
 import { MailService } from './mailer';
 import {
   decode,
@@ -30,8 +29,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     config: Config,
     prisma: PrismaService,
     mailer: MailService,
-    session: SessionService,
-    feature: FeatureManagementService
+    session: SessionService
   ) {
     const logger = new Logger('NextAuth');
     const prismaAdapter = PrismaAdapter(prisma);
@@ -247,8 +245,22 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         const email = profile?.email ?? user.email;
         if (email) {
-          if (feature.isStaff(email)) return true;
-          return feature.canEarlyAccess(email);
+          // FIXME: cannot inject FeatureManagementService here
+          // it will cause prisma.account to be undefined
+          // then prismaAdapter.getUserByAccount will throw error
+          if (email.endsWith('@toeverything.info')) return true;
+          return prisma.userFeatureGates
+            .count({
+              where: {
+                user: {
+                  email,
+                },
+                feature: {
+                  feature: 'early_access',
+                },
+              },
+            })
+            .then(count => count > 0);
         }
         return false;
       },

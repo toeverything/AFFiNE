@@ -13,9 +13,9 @@ import { QuotaManagementService } from './storage';
  */
 @Module({
   providers: [
+    PermissionService,
     FeatureService,
     QuotaService,
-    PermissionService,
     FeatureManagementService,
     QuotaManagementService,
   ],

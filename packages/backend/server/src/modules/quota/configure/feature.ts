@@ -85,27 +85,46 @@ export class FeatureService implements OnModuleInit {
     reason: string,
     expiresAt?: Date | string
   ) {
-    return this.prisma.userFeatureGates
-      .create({
-        data: {
-          reason,
-          expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+    return this.prisma.$transaction(async tx => {
+      const latestFlag = await tx.userFeatureGates.findFirst({
+        where: {
+          userId,
           feature: {
-            connect: {
-              feature_version: {
-                feature,
-                version,
+            feature,
+          },
+          activated: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+      if (latestFlag) {
+        return latestFlag.id;
+      } else {
+        return tx.userFeatureGates
+          .create({
+            data: {
+              reason,
+              expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
+              activated: true,
+              user: {
+                connect: {
+                  id: userId,
+                },
+              },
+              feature: {
+                connect: {
+                  feature_version: {
+                    feature,
+                    version,
+                  },
+                },
               },
             },
-          },
-        },
-      })
-      .then(r => r.id);
+          })
+          .then(r => r.id);
+      }
+    });
   }
 
   async removeUserFeature(userId: string, feature: string) {
