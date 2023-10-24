@@ -8,7 +8,7 @@ import { type createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
-import type { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
+import { appSettingAtom } from '../atoms/settings';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
 
 export function registerAffineSettingsCommands({
@@ -16,24 +16,14 @@ export function registerAffineSettingsCommands({
   store,
   theme,
   languageHelper,
-  appSettingHelper,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;
-  appSettingHelper: ReturnType<typeof useAppSettingHelper>;
 }) {
   const unsubs: Array<() => void> = [];
   const { onSelect, languagesList, currentLanguage } = languageHelper;
-  const { appSettings, updateSettings } = appSettingHelper;
-  const {
-    clientBorder,
-    enableBlurBackground,
-    enableNoisyBackground,
-    fullWidthLayout,
-    fontStyle,
-  } = appSettings;
   unsubs.push(
     registerAffineCommand({
       id: 'affine:show-quick-search',
@@ -105,9 +95,13 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => fontStyle !== 'Sans',
+      preconditionStrategy: () =>
+        store.get(appSettingAtom).fontStyle !== 'Sans',
       run() {
-        updateSettings('fontStyle', 'Sans');
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          fontStyle: 'Sans',
+        }));
       },
     })
   );
@@ -120,9 +114,13 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => fontStyle !== 'Serif',
+      preconditionStrategy: () =>
+        store.get(appSettingAtom).fontStyle !== 'Serif',
       run() {
-        updateSettings('fontStyle', 'Serif');
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          fontStyle: 'Serif',
+        }));
       },
     })
   );
@@ -135,9 +133,13 @@ export function registerAffineSettingsCommands({
       ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => fontStyle !== 'Mono',
+      preconditionStrategy: () =>
+        store.get(appSettingAtom).fontStyle !== 'Mono',
       run() {
-        updateSettings('fontStyle', 'Mono');
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          fontStyle: 'Mono',
+        }));
       },
     })
   );
@@ -164,8 +166,8 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-client-border-style`,
-      label: `${t['com.affine.cmdk.affine.client-border-style.to']()} ${t[
-        clientBorder
+      label: () => `${t['com.affine.cmdk.affine.client-border-style.to']()} ${t[
+        store.get(appSettingAtom).clientBorder
           ? 'com.affine.cmdk.affine.switch-state.off'
           : 'com.affine.cmdk.affine.switch-state.on'
       ]()}
@@ -174,7 +176,10 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
       run() {
-        updateSettings('clientBorder', !clientBorder);
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          clientBorder: !prev.clientBorder,
+        }));
       },
     })
   );
@@ -182,15 +187,19 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-full-width-layout`,
-      label: `${t['com.affine.cmdk.affine.full-width-layout.to']()} ${t[
-        fullWidthLayout
-          ? 'com.affine.cmdk.affine.switch-state.off'
-          : 'com.affine.cmdk.affine.switch-state.on'
-      ]()}`,
+      label: () =>
+        `${t['com.affine.cmdk.affine.full-width-layout.to']()} ${t[
+          store.get(appSettingAtom).fullWidthLayout
+            ? 'com.affine.cmdk.affine.switch-state.off'
+            : 'com.affine.cmdk.affine.switch-state.on'
+        ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       run() {
-        updateSettings('fullWidthLayout', !fullWidthLayout);
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          fullWidthLayout: !prev.fullWidthLayout,
+        }));
       },
     })
   );
@@ -198,18 +207,22 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-noise-background-on-the-sidebar`,
-      label: `${t[
-        'com.affine.cmdk.affine.noise-background-on-the-sidebar.to'
-      ]()} ${t[
-        enableNoisyBackground
-          ? 'com.affine.cmdk.affine.switch-state.off'
-          : 'com.affine.cmdk.affine.switch-state.on'
-      ]()}`,
+      label: () =>
+        `${t[
+          'com.affine.cmdk.affine.noise-background-on-the-sidebar.to'
+        ]()} ${t[
+          store.get(appSettingAtom).enableNoisyBackground
+            ? 'com.affine.cmdk.affine.switch-state.off'
+            : 'com.affine.cmdk.affine.switch-state.on'
+        ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
       run() {
-        updateSettings('enableNoisyBackground', !enableNoisyBackground);
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          enableNoisyBackground: !prev.enableNoisyBackground,
+        }));
       },
     })
   );
@@ -217,18 +230,20 @@ export function registerAffineSettingsCommands({
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-translucent-ui-on-the-sidebar`,
-      label: `${t[
-        'com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to'
-      ]()} ${t[
-        enableBlurBackground
-          ? 'com.affine.cmdk.affine.switch-state.off'
-          : 'com.affine.cmdk.affine.switch-state.on'
-      ]()}`,
+      label: () =>
+        `${t['com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to']()} ${t[
+          store.get(appSettingAtom).enableBlurBackground
+            ? 'com.affine.cmdk.affine.switch-state.off'
+            : 'com.affine.cmdk.affine.switch-state.on'
+        ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
       preconditionStrategy: () => environment.isDesktop,
       run() {
-        updateSettings('enableBlurBackground', !enableBlurBackground);
+        store.set(appSettingAtom, prev => ({
+          ...prev,
+          enableBlurBackground: !prev.enableBlurBackground,
+        }));
       },
     })
   );
