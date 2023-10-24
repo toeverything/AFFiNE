@@ -2,7 +2,8 @@ import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import { Modal, type ModalProps } from '@toeverything/components/modal';
-import { Suspense, useCallback } from 'react';
+import { debounce } from 'lodash-es';
+import { Suspense, useCallback, useEffect, useRef } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
@@ -36,6 +37,39 @@ export const SettingModal = ({
   const loginStatus = useCurrentLoginStatus();
 
   const generalSettingList = useGeneralSettingList();
+
+  const modalContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!modalProps.open) return;
+    let animationFrameId: number;
+    const onResize = debounce(() => {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(() => {
+        if (!modalContentRef.current) return;
+
+        const contentWidth = modalContentRef.current.offsetWidth;
+        const computedStyle = window.getComputedStyle(modalContentRef.current);
+        const marginX = parseInt(computedStyle.marginLeft, 10);
+        const paddingX = parseInt(computedStyle.paddingLeft, 10);
+        modalContentRef.current?.style.setProperty(
+          '--setting-modal-width',
+          `${contentWidth + marginX * 2 + paddingX * 2}px`
+        );
+        modalContentRef.current?.style.setProperty(
+          '--setting-modal-gap-x',
+          `${marginX + paddingX}px`
+        );
+      });
+    }, 200);
+    window.addEventListener('resize', onResize);
+    onResize();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [modalProps.open]);
 
   const onGeneralSettingClick = useCallback(
     (key: GeneralSettingKeys) => {
@@ -84,7 +118,11 @@ export const SettingModal = ({
         onAccountSettingClick={onAccountSettingClick}
       />
 
-      <div data-testid="setting-modal-content" className={style.wrapper}>
+      <div
+        data-testid="setting-modal-content"
+        className={style.wrapper}
+        ref={modalContentRef}
+      >
         <div className={style.content}>
           {activeTab === 'workspace' && workspaceId ? (
             <Suspense fallback={<WorkspaceDetailSkeleton />}>

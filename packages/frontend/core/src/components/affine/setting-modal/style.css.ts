@@ -6,7 +6,6 @@ export const wrapper = style({
   maxWidth: '560px',
   margin: '0 auto',
   padding: '40px 15px 20px 15px',
-  overflow: 'hidden auto',
 
   // children
   display: 'flex',
