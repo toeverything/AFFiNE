@@ -17,7 +17,6 @@ import { PageGroup } from './page-group';
 import * as styles from './page-list.css';
 import {
   pageGroupsAtom,
-  pageListCompactAtom,
   pageListHandlersAtom,
   pageListPropsAtom,
   pagesAtom,
@@ -54,18 +53,15 @@ const PageListInner = (props: PageListProps) => {
   }, [props, setPageListPropsAtom]);
 
   const groups = useAtomValue(pageGroupsAtom);
+  const hideHeader = props.hideHeader;
   return (
     <div className={clsx(props.className, styles.root)}>
-      <PageListHeader />
-      {groups.length === 0 && props.fallback ? (
-        props.fallback
-      ) : (
-        <div className={styles.groupsContainer}>
-          {groups.map(group => (
-            <PageGroup key={group.id} {...group} />
-          ))}
-        </div>
-      )}
+      {!hideHeader ? <PageListHeader /> : null}
+      <div className={styles.groupsContainer}>
+        {groups.map(group => (
+          <PageGroup key={group.id} {...group} />
+        ))}
+      </div>
     </div>
   );
 };
@@ -179,7 +175,6 @@ const PageListHeaderTitleCell = () => {
 export const PageListHeader = () => {
   const t = useAFFiNEI18N();
   const showOperations = useAtomValue(showOperationsAtom);
-  const compact = useAtomValue(pageListCompactAtom);
   const headerCols = useMemo(() => {
     const cols: (HeaderColDef | boolean)[] = [
       {
@@ -221,7 +216,7 @@ export const PageListHeader = () => {
     return cols.filter((def): def is HeaderColDef => !!def);
   }, [t, showOperations]);
   return (
-    <div className={clsx(styles.header, compact && styles.compact)}>
+    <div className={clsx(styles.header)}>
       {headerCols.map(col => {
         return (
           <PageListHeaderCell

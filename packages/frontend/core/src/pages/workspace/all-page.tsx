@@ -152,19 +152,21 @@ export const AllPage = () => {
             createNewPage={createPage}
           />
         </div>
-        <PageList
-          pages={filteredPageMetas}
-          renderPageAsLink
-          fallback={
-            <EmptyPageList
-              type="all"
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            />
-          }
-          isPreferredEdgeless={isPreferredEdgeless}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          pageOperationsRenderer={pageOperationsRenderer}
-        />
+        {filteredPageMetas.length > 0 ? (
+          <PageList
+            selectable="toggle"
+            pages={filteredPageMetas}
+            clickMode="link"
+            isPreferredEdgeless={isPreferredEdgeless}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            pageOperationsRenderer={pageOperationsRenderer}
+          />
+        ) : (
+          <EmptyPageList
+            type="all"
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        )}
       </PageListScrollContainer>
     </div>
   );

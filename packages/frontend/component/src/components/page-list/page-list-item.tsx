@@ -47,8 +47,8 @@ const PageSelectionCell = ({
   selected,
 }: Pick<PageListItemProps, 'selectable' | 'onSelectedChange' | 'selected'>) => {
   const onSelectionChange = useCallback(
-    (_event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-      return onSelectedChange?.(checked);
+    (_event: React.ChangeEvent<HTMLInputElement>) => {
+      return onSelectedChange?.();
     },
     [onSelectedChange]
   );
@@ -111,7 +111,11 @@ const PageListOperationsCell = ({
 
 export const PageListItem = (props: PageListItemProps) => {
   return (
-    <PageListItemWrapper to={props.to} pageId={props.pageId}>
+    <PageListItemWrapper
+      onClick={props.onClick}
+      to={props.to}
+      pageId={props.pageId}
+    >
       <ColWrapper flex={9}>
         <ColWrapper flex={8}>
           <div className={styles.titleIconsWrapper}>
@@ -150,16 +154,30 @@ export const PageListItem = (props: PageListItemProps) => {
 const PageListItemWrapper = ({
   to,
   pageId,
+  onClick,
   children,
-}: Pick<PageListItemProps, 'to' | 'pageId'> & PropsWithChildren) => {
+}: Pick<PageListItemProps, 'to' | 'pageId' | 'onClick'> &
+  PropsWithChildren) => {
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (onClick) {
+        stopPropagation(e);
+        onClick();
+      }
+    },
+    [onClick]
+  );
   const commonProps = useMemo(
     () => ({
       'data-testid': 'page-list-item',
       'data-page-id': pageId,
       className: styles.root,
+      'data-clickable': !!onClick || !!to,
+      onClick: handleClick,
     }),
-    [pageId]
+    [pageId, onClick, to, handleClick]
   );
+
   if (to) {
     return (
       <Link {...commonProps} to={to}>

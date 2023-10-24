@@ -19,8 +19,8 @@ export type PageListItemProps = {
   selectable?: boolean; // show selection checkbox
   selected?: boolean;
   operations?: ReactNode; // operations to show on the right side of the item
-  onClickPage?: (newTab?: boolean) => void;
-  onSelectedChange?: (selected: boolean) => void;
+  onClick?: () => void;
+  onSelectedChange?: () => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
 };
@@ -39,18 +39,18 @@ export interface SortBy {
 export type DateKey = 'createDate' | 'updatedDate';
 
 export interface PageListProps {
-  className?: string;
-  compact?: boolean;
+  // required data:
   pages: PageMeta[];
   blockSuiteWorkspace: Workspace;
+
+  className?: string;
+  hideHeader?: boolean; // whether or not to hide the header. default is false (showing header)
   groupBy?: PagesGroupByType | false;
-  fallback?: ReactNode; // fixme: shall we use loading rows number instead?
   isPreferredEdgeless: (pageId: string) => boolean;
-  renderPageAsLink?: boolean; // whether or not to render each page as a router Link
+  clickMode?: 'select' | 'link'; // select => click to select; link => click to navigate
   selectable?: 'toggle' | boolean; // show selection checkbox. toggle means showing a toggle selection in header on click; boolean == true means showing a selection checkbox for each item
   selectedPageIds?: string[]; // selected page ids
   onSelectedPageIdsChange?: (selected: string[]) => void;
-  onOpenPage?: (pageId: string, newTab?: boolean) => void;
   draggable?: boolean; // whether or not to allow dragging this page item
   onDragStart?: (pageId: string) => void;
   onDragEnd?: (pageId: string) => void;

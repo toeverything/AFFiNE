@@ -190,7 +190,7 @@ PageListStory.argTypes = {
     control: 'radio',
     options: [true, 'toggle', false],
   },
-  compact: {
+  hideHeader: {
     type: 'boolean',
   },
 };

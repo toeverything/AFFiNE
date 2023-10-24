@@ -68,19 +68,20 @@ export const TrashPage = () => {
         }}
       />
       <PageListScrollContainer className={styles.scrollContainer}>
-        <PageList
-          pages={filteredPageMetas}
-          renderPageAsLink
-          fallback={
-            <EmptyPageList
-              type="trash"
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            />
-          }
-          isPreferredEdgeless={isPreferredEdgeless}
-          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          pageOperationsRenderer={pageOperationsRenderer}
-        />
+        {filteredPageMetas.length > 0 ? (
+          <PageList
+            pages={filteredPageMetas}
+            clickMode="link"
+            isPreferredEdgeless={isPreferredEdgeless}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            pageOperationsRenderer={pageOperationsRenderer}
+          />
+        ) : (
+          <EmptyPageList
+            type="trash"
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        )}
       </PageListScrollContainer>
     </div>
   );

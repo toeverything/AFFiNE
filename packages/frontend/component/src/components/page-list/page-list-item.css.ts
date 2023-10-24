@@ -3,7 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   color: 'var(--affine-text-primary-color)',
-  height: '62px',
+  height: '54px', // 42 + 12
   width: '100%',
   alignItems: 'stretch',
   transition: 'background-color 0.2s',
@@ -13,7 +13,7 @@ export const root = style({
   overflow: 'hidden',
   cursor: 'default',
   selectors: {
-    'a&': {
+    '&[data-clickable=true]': {
       cursor: 'pointer',
     },
   },
@@ -70,11 +70,6 @@ export const titleCellPreview = style({
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   alignSelf: 'stretch',
-  selectors: {
-    '&:not(:empty)': {
-      marginTop: '4px',
-    },
-  },
 });
 
 export const iconCell = style({

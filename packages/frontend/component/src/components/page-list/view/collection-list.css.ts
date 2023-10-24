@@ -35,5 +35,7 @@ export const viewOption = style({
 });
 export const filterMenuTrigger = style({
   padding: '6px 8px',
-  background: 'var(--affine-hover-color)',
+  ':hover': {
+    backgroundColor: 'var(--affine-hover-color)',
+  },
 });

@@ -39,7 +39,7 @@ export const groupsContainer = style({
 export const header = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '12px 0 8px 16px',
+  padding: '10px 6px 10px 16px',
   position: 'sticky',
   overflow: 'hidden',
   zIndex: 1,
@@ -52,14 +52,6 @@ export const header = style({
   animationDuration: '0.5s',
   transform: 'translateY(-0.5px)', // fix sticky look through issue
 });
-
-export const compact = style([
-  header,
-  {
-    padding: '0 0 0 16px',
-    height: '20px',
-  },
-]);
 
 export const headerCell = style({
   padding: '0 8px',
