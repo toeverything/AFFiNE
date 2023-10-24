@@ -70,11 +70,6 @@ export const titleCellPreview = style({
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   alignSelf: 'stretch',
-  selectors: {
-    '&:not(:empty)': {
-      marginTop: '4px',
-    },
-  },
 });
 
 export const iconCell = style({
