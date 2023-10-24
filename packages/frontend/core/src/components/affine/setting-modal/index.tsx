@@ -2,6 +2,7 @@ import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import { Modal, type ModalProps } from '@toeverything/components/modal';
+import { debounce } from 'lodash-es';
 import { Suspense, useCallback, useEffect, useRef } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
@@ -42,7 +43,7 @@ export const SettingModal = ({
   useEffect(() => {
     if (!modalProps.open) return;
     let animationFrameId: number;
-    const onResize = () => {
+    const onResize = debounce(() => {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = requestAnimationFrame(() => {
         if (!modalContentRef.current) return;
@@ -60,7 +61,7 @@ export const SettingModal = ({
           `${marginX + paddingX}px`
         );
       });
-    };
+    }, 200);
     window.addEventListener('resize', onResize);
     onResize();
 
