@@ -47,7 +47,7 @@ export const Component = function CollectionPage() {
   const collection = collections.find(v => v.id === params.collectionId);
   const pushNotification = useSetAtom(pushNotificationAtom);
   useEffect(() => {
-    if (!collection) {
+    if (!loading && !collection) {
       navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
       const collection = getWorkspaceSetting(
         workspace.blockSuiteWorkspace
