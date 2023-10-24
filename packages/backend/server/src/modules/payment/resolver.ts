@@ -16,12 +16,14 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, UserInvoice, UserSubscription } from '@prisma/client';
+import { groupBy } from 'lodash-es';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { Auth, CurrentUser, Public } from '../auth';
 import { UserType } from '../users';
 import {
+  decodeLookupKey,
   InvoiceStatus,
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -140,26 +142,45 @@ export class SubscriptionResolver {
   async prices(): Promise<SubscriptionPrice[]> {
     const prices = await this.service.listPrices();
 
-    const yearly = prices.data.find(
-      price => price.lookup_key === SubscriptionRecurring.Yearly
-    );
-    const monthly = prices.data.find(
-      price => price.lookup_key === SubscriptionRecurring.Monthly
+    const group = groupBy(
+      prices.data.filter(price => !!price.lookup_key),
+      price => {
+        // @ts-expect-error empty lookup key is filtered out
+        const [plan] = decodeLookupKey(price.lookup_key);
+        return plan;
+      }
     );
 
-    if (!yearly || !monthly) {
-      throw new BadGatewayException('The prices are not configured correctly');
-    }
+    return Object.entries(group).map(([plan, prices]) => {
+      const yearly = prices.find(
+        price =>
+          decodeLookupKey(
+            // @ts-expect-error empty lookup key is filtered out
+            price.lookup_key
+          )[1] === SubscriptionRecurring.Yearly
+      );
+      const monthly = prices.find(
+        price =>
+          decodeLookupKey(
+            // @ts-expect-error empty lookup key is filtered out
+            price.lookup_key
+          )[1] === SubscriptionRecurring.Monthly
+      );
 
-    return [
-      {
+      if (!yearly || !monthly) {
+        throw new BadGatewayException(
+          'The prices are not configured correctly'
+        );
+      }
+
+      return {
         type: 'fixed',
-        plan: SubscriptionPlan.Pro,
+        plan: plan as SubscriptionPlan,
         currency: monthly.currency,
         amount: monthly.unit_amount ?? 0,
         yearlyAmount: yearly.unit_amount ?? 0,
-      },
-    ];
+      };
+    });
   }
 
   @Mutation(() => String, {

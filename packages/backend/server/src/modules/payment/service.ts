@@ -17,7 +17,7 @@ const OnEvent = (
   opts?: Parameters<typeof RawOnEvent>[1]
 ) => RawOnEvent(event, opts);
 
-// also used as lookup key for stripe prices
+// Plan x Recurring make a stripe price lookup key
 export enum SubscriptionRecurring {
   Monthly = 'monthly',
   Yearly = 'yearly',
@@ -28,6 +28,21 @@ export enum SubscriptionPlan {
   Pro = 'pro',
   Team = 'team',
   Enterprise = 'enterprise',
+}
+
+export function encodeLookupKey(
+  plan: SubscriptionPlan,
+  recurring: SubscriptionRecurring
+): string {
+  return plan + '_' + recurring;
+}
+
+export function decodeLookupKey(
+  key: string
+): [SubscriptionPlan, SubscriptionRecurring] {
+  const [plan, recurring] = key.split('_');
+
+  return [plan as SubscriptionPlan, recurring as SubscriptionRecurring];
 }
 
 // see https://stripe.com/docs/api/subscriptions/object#subscription_object-status
@@ -77,17 +92,17 @@ export class SubscriptionService {
   }
 
   async listPrices() {
-    return this.stripe.prices.list({
-      lookup_keys: Object.values(SubscriptionRecurring),
-    });
+    return this.stripe.prices.list();
   }
 
   async createCheckoutSession({
     user,
     recurring,
     redirectUrl,
+    plan = SubscriptionPlan.Pro,
   }: {
     user: User;
+    plan?: SubscriptionPlan;
     recurring: SubscriptionRecurring;
     redirectUrl: string;
   }) {
@@ -101,19 +116,13 @@ export class SubscriptionService {
       throw new Error('You already have a subscription');
     }
 
-    const prices = await this.stripe.prices.list({
-      lookup_keys: [recurring],
-    });
-
-    if (!prices.data.length) {
-      throw new Error(`Unknown subscription recurring: ${recurring}`);
-    }
+    const price = await this.getPrice(plan, recurring);
 
     const customer = await this.getOrCreateCustomer(user);
     return await this.stripe.checkout.sessions.create({
       line_items: [
         {
-          price: prices.data[0].id,
+          price,
           quantity: 1,
         },
       ],
@@ -215,7 +224,7 @@ export class SubscriptionService {
 
   async updateSubscriptionRecurring(
     userId: string,
-    recurring: string
+    recurring: SubscriptionRecurring
   ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
@@ -238,28 +247,23 @@ export class SubscriptionService {
       throw new Error('You have already subscribed to this plan');
     }
 
-    const prices = await this.stripe.prices.list({
-      lookup_keys: [recurring],
-    });
-
-    if (!prices.data.length) {
-      throw new Error(`Unknown subscription recurring: ${recurring}`);
-    }
-
-    const newPrice = prices.data[0];
+    const price = await this.getPrice(
+      user.subscription.plan as SubscriptionPlan,
+      recurring
+    );
 
     let scheduleId: string | null;
     // a schedule existing
     if (user.subscription.stripeScheduleId) {
       scheduleId = await this.scheduleNewPrice(
         user.subscription.stripeScheduleId,
-        newPrice.id
+        price
       );
     } else {
       const schedule = await this.stripe.subscriptionSchedules.create({
         from_subscription: user.subscription.stripeSubscriptionId,
       });
-      await this.scheduleNewPrice(schedule.id, newPrice.id);
+      await this.scheduleNewPrice(schedule.id, price);
       scheduleId = schedule.id;
     }
 
@@ -426,6 +430,11 @@ export class SubscriptionService {
     }
 
     const price = subscription.items.data[0].price;
+    if (!price.lookup_key) {
+      throw new Error('Unexpected subscription with no key');
+    }
+
+    const [plan, recurring] = decodeLookupKey(price.lookup_key);
 
     const commonData = {
       start: new Date(subscription.current_period_start * 1000),
@@ -441,9 +450,8 @@ export class SubscriptionService {
         ? new Date(subscription.canceled_at * 1000)
         : null,
       stripeSubscriptionId: subscription.id,
-      recurring: price.lookup_key ?? price.id,
-      // TODO: dynamic plans
-      plan: SubscriptionPlan.Pro,
+      plan,
+      recurring,
       status: subscription.status,
       stripeScheduleId: subscription.schedule as string | null,
     };
@@ -560,6 +568,23 @@ export class SubscriptionService {
     return user;
   }
 
+  private async getPrice(
+    plan: SubscriptionPlan,
+    recurring: SubscriptionRecurring
+  ): Promise<string> {
+    const prices = await this.stripe.prices.list({
+      lookup_keys: [encodeLookupKey(plan, recurring)],
+    });
+
+    if (!prices.data.length) {
+      throw new Error(
+        `Unknown subscription plan ${plan} with recurring ${recurring}`
+      );
+    }
+
+    return prices.data[0].id;
+  }
+
   /**
    * If a subscription is managed by a schedule, it has a different way to cancel.
    */
@@ -674,7 +699,7 @@ export class SubscriptionService {
   /**
    * we only schedule a new price when user change the recurring plan and there is now upcoming phases.
    */
-  async scheduleNewPrice(
+  private async scheduleNewPrice(
     scheduleId: string,
     priceId: string
   ): Promise<string | null> {
