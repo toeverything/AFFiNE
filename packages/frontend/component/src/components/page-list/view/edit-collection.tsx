@@ -1,4 +1,8 @@
-import { PageList, PageListScrollContainer } from '@affine/component/page-list';
+import {
+  AffineShapeIcon,
+  PageList,
+  PageListScrollContainer,
+} from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -370,8 +374,9 @@ const RulesMode = ({
               <div
                 style={{
                   marginTop: 16,
-                  border: '1px solid var(--affine-border-color)',
                   borderRadius: 8,
+                  backgroundColor:
+                    'var(--affine-background-overlay-panel-color)',
                   padding: 10,
                   fontSize: 12,
                   lineHeight: '20px',
@@ -389,6 +394,7 @@ const RulesMode = ({
                 >
                   <div>HELP INFO</div>
                   <CloseIcon
+                    color="var(--affine-icon-color)"
                     onClick={hideTips}
                     className={styles.button}
                     style={{ width: 16, height: 16 }}
@@ -577,24 +583,28 @@ const PagesMode = ({
               />
             </div>
           ) : null}
-          <PageListScrollContainer>
-            <PageList
-              compact
-              className={styles.pageList}
-              pages={searchedList}
-              groupBy={false}
-              blockSuiteWorkspace={allPageListConfig.workspace}
-              selectable
-              onSelectedPageIdsChange={ids => {
-                updateCollection({
-                  ...collection,
-                  pages: ids,
-                });
-              }}
-              selectedPageIds={collection.pages}
-              isPreferredEdgeless={allPageListConfig.isEdgeless}
-            ></PageList>
-          </PageListScrollContainer>
+          {searchedList.length ? (
+            <PageListScrollContainer>
+              <PageList
+                compact
+                className={styles.pageList}
+                pages={searchedList}
+                groupBy={false}
+                blockSuiteWorkspace={allPageListConfig.workspace}
+                selectable
+                onSelectedPageIdsChange={ids => {
+                  updateCollection({
+                    ...collection,
+                    pages: ids,
+                  });
+                }}
+                selectedPageIds={collection.pages}
+                isPreferredEdgeless={allPageListConfig.isEdgeless}
+              ></PageList>
+            </PageListScrollContainer>
+          ) : (
+            <EmptyList search={searchText} />
+          )}
         </div>
       </div>
       <div className={styles.pagesBottom}>
@@ -700,18 +710,22 @@ const SelectPage = ({
             />
           </div>
         ) : null}
-        <PageListScrollContainer>
-          <PageList
-            compact
-            className={styles.pageList}
-            pages={searchedList}
-            blockSuiteWorkspace={allPageListConfig.workspace}
-            selectable
-            onSelectedPageIdsChange={onChange}
-            selectedPageIds={value}
-            isPreferredEdgeless={allPageListConfig.isEdgeless}
-          ></PageList>
-        </PageListScrollContainer>
+        {searchedList.length ? (
+          <PageListScrollContainer>
+            <PageList
+              compact
+              className={styles.pageList}
+              pages={searchedList}
+              blockSuiteWorkspace={allPageListConfig.workspace}
+              selectable
+              onSelectedPageIdsChange={onChange}
+              selectedPageIds={value}
+              isPreferredEdgeless={allPageListConfig.isEdgeless}
+            ></PageList>
+          </PageListScrollContainer>
+        ) : (
+          <EmptyList search={searchText} />
+        )}
       </div>
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>
@@ -842,4 +856,42 @@ const useSearch = (list: PageMeta[]) => {
       ? list.filter(v => v.title.toLowerCase().includes(value.toLowerCase()))
       : list,
   };
+};
+const EmptyList = ({ search }: { search?: string }) => {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        flex: 1,
+      }}
+    >
+      <AffineShapeIcon />
+      <div
+        style={{
+          margin: '18px 0',
+          fontSize: 20,
+          lineHeight: '28px',
+          fontWeight: 600,
+        }}
+      >
+        Empty
+      </div>
+      {search ? (
+        <div
+          className={styles.ellipsis}
+          style={{ maxWidth: 300, fontSize: 15, lineHeight: '24px' }}
+        >
+          No page titles contain{' '}
+          <span
+            style={{ fontWeight: 600, color: 'var(--affine-primary-color)' }}
+          >
+            {search}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
 };

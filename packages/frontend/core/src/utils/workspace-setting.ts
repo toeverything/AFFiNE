@@ -1,10 +1,15 @@
-import type { Collection } from '@affine/env/filter';
+import type {
+  Collection,
+  DeleteCollectionInfo,
+  DeletedCollection,
+} from '@affine/env/filter';
 import type { Workspace } from '@blocksuite/store';
 import { Array as YArray } from 'yjs';
 
 import { updateFirstOfYArray } from './yjs-utils';
 
 const COLLECTIONS_KEY = 'collections';
+const COLLECTIONS_TRASH_KEY = 'collections_trash';
 const SETTING_KEY = 'setting';
 
 export class WorkspaceSetting {
@@ -25,8 +30,19 @@ export class WorkspaceSetting {
     return this.setting.get(COLLECTIONS_KEY) as YArray<Collection>;
   }
 
+  get collectionsTrashYArray() {
+    if (!this.setting.has(COLLECTIONS_TRASH_KEY)) {
+      this.setting.set(COLLECTIONS_TRASH_KEY, new YArray());
+    }
+    return this.setting.get(COLLECTIONS_TRASH_KEY) as YArray<DeletedCollection>;
+  }
+
   get collections(): Collection[] {
     return this.collectionsYArray.toArray() ?? [];
+  }
+
+  get collectionsTrash(): DeletedCollection[] {
+    return this.collectionsTrashYArray.toArray() ?? [];
   }
 
   updateCollection(id: string, updater: (value: Collection) => Collection) {
@@ -45,19 +61,36 @@ export class WorkspaceSetting {
     });
   }
 
-  deleteCollection(...ids: string[]) {
+  deleteCollection(info: DeleteCollectionInfo, ...ids: string[]) {
+    console.log(info, ids);
     const set = new Set(ids);
     this.workspace.doc.transact(() => {
       const indexList: number[] = [];
+      const list: Collection[] = [];
       this.collectionsYArray.forEach((collection, i) => {
         if (set.has(collection.id)) {
           set.delete(collection.id);
           indexList.unshift(i);
+          list.push(JSON.parse(JSON.stringify(collection)));
         }
       });
       indexList.forEach(i => {
         this.collectionsYArray.delete(i);
       });
+      this.collectionsTrashYArray.insert(
+        0,
+        list.map(collection => ({
+          userId: info?.userId,
+          userName: info ? info.userName : 'Local User',
+          collection,
+        }))
+      );
+      if (this.collectionsTrashYArray.length > 10) {
+        this.collectionsTrashYArray.delete(
+          10,
+          this.collectionsTrashYArray.length - 10
+        );
+      }
     });
   }
 }

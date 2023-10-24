@@ -3,16 +3,20 @@ import {
   MenuLinkItem as SidebarMenuLinkItem,
 } from '@affine/component/app-sidebar';
 import {
-  EditCollectionModal,
   filterPage,
   stopPropagation,
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
-import type { Collection } from '@affine/env/filter';
+import {
+  useEditCollection,
+  useEditCollectionName,
+} from '@affine/component/page-list';
+import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
+  EditIcon,
   FilterIcon,
   InformationIcon,
   MoreHorizontalIcon,
@@ -55,10 +59,14 @@ export const processCollectionsDrag = (e: DragEndEvent) => {
 const CollectionOperations = ({
   view,
   showUpdateCollection,
+  showUpdateCollectionName,
   setting,
+  info,
 }: {
+  info: DeleteCollectionInfo;
   view: Collection;
   showUpdateCollection: () => void;
+  showUpdateCollectionName: () => void;
   setting: ReturnType<typeof useCollectionManager>;
 }) => {
   const t = useAFFiNEI18N();
@@ -80,10 +88,19 @@ const CollectionOperations = ({
       {
         icon: (
           <MenuIcon>
+            <EditIcon />
+          </MenuIcon>
+        ),
+        name: t['com.affine.collection.menu.rename'](),
+        click: showUpdateCollectionName,
+      },
+      {
+        icon: (
+          <MenuIcon>
             <FilterIcon />
           </MenuIcon>
         ),
-        name: t['Edit Filter'](),
+        name: t['com.affine.collection.menu.edit'](),
         click: showUpdateCollection,
       },
       {
@@ -97,12 +114,12 @@ const CollectionOperations = ({
         ),
         name: t['Delete'](),
         click: () => {
-          return setting.deleteCollection(view.id);
+          return setting.deleteCollection(info, view.id);
         },
         type: 'danger',
       },
     ],
-    [setting, showUpdateCollection, t, view]
+    [setting, info, showUpdateCollection, t, view]
   );
   return (
     <div style={{ minWidth: 150 }}>
@@ -129,10 +146,12 @@ const CollectionRenderer = ({
   collection,
   pages,
   workspace,
+  info,
 }: {
   collection: Collection;
   pages: PageMeta[];
   workspace: Workspace;
+  info: DeleteCollectionInfo;
 }) => {
   const [collapsed, setCollapsed] = useState(true);
   const setting = useCollectionManager(collectionsCRUDAtom);
@@ -146,11 +165,36 @@ const CollectionRenderer = ({
       },
     },
   });
+  const config = useAllPageListConfig();
   const allPagesMeta = useMemo(
     () => Object.fromEntries(pages.map(v => [v.id, v])),
     [pages]
   );
-  const [show, showUpdateCollection] = useState(false);
+  const t = useAFFiNEI18N();
+  const { open: openEditCollectionNameModal, node: editCollectionNameNode } =
+    useEditCollectionName({
+      title: t['com.affine.editCollection.renameCollection'](),
+    });
+  const showEditName = useCallback(() => {
+    openEditCollectionNameModal(collection.name)
+      .then(name => {
+        return setting.updateCollection({ ...collection, name });
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [setting.updateCollection, collection, openEditCollectionNameModal]);
+  const { open: openEditCollectionModal, node: editCollectionNode } =
+    useEditCollection(config);
+  const showEdit = useCallback(() => {
+    openEditCollectionModal(collection)
+      .then(collection => {
+        return setting.updateCollection(collection);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [setting, collection, openEditCollectionModal]);
   const allowList = useMemo(
     () => new Set(collection.allowList),
     [collection.allowList]
@@ -167,19 +211,13 @@ const CollectionRenderer = ({
   const pagesToRender = pages.filter(
     page => filterPage(collection, page) && !page.trash
   );
-  const config = useAllPageListConfig();
   const location = useLocation();
   const currentPath = location.pathname.split('?')[0];
   const path = `/workspace/${workspace.id}/collection/${collection.id}`;
   return (
     <Collapsible.Root open={!collapsed}>
-      <EditCollectionModal
-        allPageListConfig={config}
-        init={collection}
-        onConfirm={setting.updateCollection}
-        open={show}
-        onOpenChange={showUpdateCollection}
-      />
+      {editCollectionNameNode}
+      {editCollectionNode}
       <SidebarMenuLinkItem
         data-testid="collection-item"
         data-type="collection-list-item"
@@ -193,8 +231,10 @@ const CollectionRenderer = ({
             <Menu
               items={
                 <CollectionOperations
+                  info={info}
                   view={collection}
-                  showUpdateCollection={() => showUpdateCollection(true)}
+                  showUpdateCollection={showEdit}
+                  showUpdateCollectionName={showEditName}
                   setting={setting}
                 />
               }
@@ -240,7 +280,7 @@ const CollectionRenderer = ({
     </Collapsible.Root>
   );
 };
-export const CollectionsList = ({ workspace }: CollectionsListProps) => {
+export const CollectionsList = ({ workspace, info }: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
   const { collections } = useSavedCollections(collectionsCRUDAtom);
   const t = useAFFiNEI18N();
@@ -260,6 +300,7 @@ export const CollectionsList = ({ workspace }: CollectionsListProps) => {
       {collections.map(view => {
         return (
           <CollectionRenderer
+            info={info}
             key={view.id}
             collection={view}
             pages={metas}

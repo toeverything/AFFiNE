@@ -57,6 +57,11 @@ export const collectionSchema = z.object({
   // page id list
   pages: z.array(z.string()),
 });
+export const deletedCollectionSchema = z.object({
+  userId: z.string().optional(),
+  userName: z.string(),
+  collection: collectionSchema,
+});
 export type DeprecatedCollection = {
   id: string;
   name: string;
@@ -65,6 +70,11 @@ export type DeprecatedCollection = {
   allowList?: string[];
 };
 export type Collection = z.input<typeof collectionSchema>;
+export type DeleteCollectionInfo = {
+  userId: string;
+  userName: string;
+} | null;
+export type DeletedCollection = z.input<typeof deletedCollectionSchema>;
 
 export const tagSchema = z.object({
   id: z.string(),

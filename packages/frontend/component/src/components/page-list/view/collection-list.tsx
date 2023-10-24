@@ -1,4 +1,8 @@
-import type { Collection, Filter } from '@affine/env/filter';
+import type {
+  Collection,
+  DeleteCollectionInfo,
+  Filter,
+} from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
@@ -21,8 +25,10 @@ const CollectionOption = ({
   setting,
   updateCollection,
   jumpToCollection,
+  info,
 }: {
   collection: Collection;
+  info: DeleteCollectionInfo;
   setting: ReturnType<typeof useCollectionManager>;
   updateCollection: (view: Collection) => void;
   jumpToCollection: (id: string) => void;
@@ -30,6 +36,7 @@ const CollectionOption = ({
   const actions = useActions({
     collection,
     setting,
+    info,
     openEdit: updateCollection,
   });
   const jump = useCallback(() => {
@@ -106,12 +113,14 @@ export const CollectionList = ({
   backToAll,
   jumpToCollection,
   allPageListConfig,
+  info,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
   propertiesMeta: PropertiesMeta;
   backToAll: () => void;
   jumpToCollection: (id: string) => void;
   allPageListConfig: AllPageListConfig;
+  info: DeleteCollectionInfo;
 }) => {
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
@@ -170,6 +179,7 @@ export const CollectionList = ({
               <div className={styles.menuDividerStyle}></div>
               {setting.savedCollections.map(view => (
                 <CollectionOption
+                  info={info}
                   key={view.id}
                   collection={view}
                   setting={setting}

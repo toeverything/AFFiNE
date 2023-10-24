@@ -25,6 +25,7 @@ import { usePageHelper } from '../../components/blocksuite/block-suite-page-list
 import { WorkspaceHeader } from '../../components/workspace-header';
 import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
+import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useGetPageInfoById } from '../../hooks/use-get-page-info';
@@ -115,6 +116,7 @@ export const AllPage = () => {
     currentWorkspace.blockSuiteWorkspace
   );
   const config = useAllPageListConfig();
+  const userInfo = useDeleteCollectionInfo();
   const setting = useCollectionManager(collectionsCRUDAtom);
   return (
     <div className={styles.root}>
@@ -133,6 +135,7 @@ export const AllPage = () => {
               ? t['com.affine.all-pages.header']()
               : t['com.affine.collections.header']()}
             <CollectionBar
+              info={userInfo}
               allPageListConfig={config}
               backToAll={backToAll}
               getPageInfo={getPageInfo}

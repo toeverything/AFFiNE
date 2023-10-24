@@ -1,4 +1,9 @@
-import type { Collection, Filter, VariableMap } from '@affine/env/filter';
+import type {
+  Collection,
+  DeleteCollectionInfo,
+  Filter,
+  VariableMap,
+} from '@affine/env/filter';
 import type { PageMeta } from '@blocksuite/store';
 import { type Atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithReset } from 'jotai/utils';
@@ -34,7 +39,10 @@ export type CollectionsCRUD = {
   addCollection: (...collections: Collection[]) => Promise<void>;
   collections: Collection[];
   updateCollection: (id: string, updater: CollectionUpdater) => Promise<void>;
-  deleteCollection: (...ids: string[]) => Promise<void>;
+  deleteCollection: (
+    info: DeleteCollectionInfo,
+    ...ids: string[]
+  ) => Promise<void>;
 };
 export type CollectionsCRUDAtom = Atom<CollectionsCRUD>;
 

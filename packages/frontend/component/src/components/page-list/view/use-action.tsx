@@ -1,4 +1,4 @@
-import type { Collection } from '@affine/env/filter';
+import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, FilterIcon } from '@blocksuite/icons';
 import { type ReactNode, useMemo } from 'react';
@@ -17,7 +17,9 @@ export const useActions = ({
   collection,
   setting,
   openEdit,
+  info,
 }: {
+  info: DeleteCollectionInfo;
   collection: Collection;
   setting: ReturnType<typeof useCollectionManager>;
   openEdit: (open: Collection) => void;
@@ -38,11 +40,11 @@ export const useActions = ({
         name: 'delete',
         tooltip: t['com.affine.collection-bar.action.tooltip.delete'](),
         click: () => {
-          setting.deleteCollection(collection.id).catch(err => {
+          setting.deleteCollection(info, collection.id).catch(err => {
             console.error(err);
           });
         },
       },
     ];
-  }, [collection, t, setting, openEdit]);
+  }, [info, collection, t, setting, openEdit]);
 };
