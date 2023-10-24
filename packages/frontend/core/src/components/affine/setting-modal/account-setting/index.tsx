@@ -7,6 +7,7 @@ import {
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
+  SubscriptionPlan,
   uploadAvatarMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -23,8 +24,13 @@ import {
   useState,
 } from 'react';
 
-import { authAtom, openSignOutModalAtom } from '../../../../atoms';
+import {
+  authAtom,
+  openSettingModalAtom,
+  openSignOutModalAtom,
+} from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
@@ -145,8 +151,18 @@ const StoragePanel = () => {
   const { data } = useQuery({
     query: allBlobSizesQuery,
   });
+  const [subscription] = useUserSubscription();
+  const plan = subscription?.plan ?? SubscriptionPlan.Free;
+  const maxLimit = plan === SubscriptionPlan.Free ? 10737418240 : 107374182400;
 
-  const onUpgrade = useCallback(() => {}, []);
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const onUpgrade = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      workspaceId: null,
+    });
+  }, [setSettingModalAtom]);
 
   return (
     <SettingRow
@@ -155,7 +171,8 @@ const StoragePanel = () => {
       spreadCol={false}
     >
       <StorageProgress
-        max={10737418240}
+        max={maxLimit}
+        plan={plan}
         value={data.collectAllBlobSizes.size}
         onUpgrade={onUpgrade}
       />

@@ -10,20 +10,25 @@ export interface StorageProgressProgress {
   max: number;
   value: number;
   onUpgrade: () => void;
+  plan: string;
 }
 
-const transformBytesToMB = (bytes: number) => {
-  return (bytes / 1024 / 1024).toFixed(2);
-};
+const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-const transformBytesToGB = (bytes: number) => {
-  return (bytes / 1024 / 1024 / 1024).toFixed(2);
+const transformBytes = (bytes: number) => {
+  const magnitude = Math.min(
+    (Math.log(bytes) / Math.log(1024)) | 0,
+    units.length - 1
+  );
+  const result = bytes / Math.pow(1024, magnitude);
+  return [Number(result.toFixed(2)), units[magnitude]];
 };
 
 export const StorageProgress = ({
   max: upperLimit,
   value,
   onUpgrade,
+  plan,
 }: StorageProgressProgress) => {
   const t = useAFFiNEI18N();
   const percent = useMemo(
@@ -31,51 +36,54 @@ export const StorageProgress = ({
     [upperLimit, value]
   );
 
-  const used = useMemo(() => transformBytesToMB(value), [value]);
-  const max = useMemo(() => transformBytesToGB(upperLimit), [upperLimit]);
+  const [used, usedUnit] = useMemo(() => transformBytes(value), [value]);
+  const [max, maxUnit] = useMemo(
+    () => transformBytes(upperLimit),
+    [upperLimit]
+  );
+
+  const buttonType = useMemo(() => {
+    if (plan === 'Free') {
+      return 'primary';
+    }
+    return 'default';
+  }, [plan]);
 
   return (
-    <>
-      <div className={styles.storageProgressContainer}>
-        <div className={styles.storageProgressWrapper}>
-          <div className="storage-progress-desc">
-            <span>{t['com.affine.storage.used.hint']()}</span>
-            <span>
-              {used}MB/{max}GB
-            </span>
-          </div>
-
-          <div className="storage-progress-bar-wrapper">
-            <div
-              className={clsx(styles.storageProgressBar, {
-                warning: percent > 80,
-                danger: percent > 99,
-              })}
-              style={{ width: `${percent}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <Tooltip content={t['com.affine.storage.disabled.hint']()}>
-          <span tabIndex={0}>
-            <Button disabled onClick={onUpgrade}>
-              {t['com.affine.storage.upgrade']()}
-            </Button>
+    <div className={styles.storageProgressContainer}>
+      <div className={styles.storageProgressWrapper}>
+        <div className="storage-progress-desc">
+          <span>{t['com.affine.storage.used.hint']()}</span>
+          <span>
+            {used}
+            {usedUnit}/{max}
+            {maxUnit}
+            {` (${plan} Plan)`}
           </span>
-        </Tooltip>
-      </div>
-      {percent > 80 ? (
-        <div className={styles.storageExtendHint}>
-          {t['com.affine.storage.extend.hint']()}
-          <a
-            href="https://community.affine.pro/c/insider-general/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t['com.affine.storage.extend.link']()}
-          </a>
         </div>
-      ) : null}
-    </>
+
+        <div className="storage-progress-bar-wrapper">
+          <div
+            className={clsx(styles.storageProgressBar, {
+              danger: percent > 80,
+            })}
+            style={{ width: `${percent > 100 ? '100' : percent}%` }}
+          ></div>
+        </div>
+      </div>
+
+      <Tooltip
+        options={{ hidden: percent < 100 }}
+        content={
+          'You have reached the maximum capacity limit for your current account'
+        }
+      >
+        <span tabIndex={0}>
+          <Button type={buttonType} onClick={onUpgrade}>
+            {plan === 'Free' ? 'Upgrade' : 'Change'}
+          </Button>
+        </span>
+      </Tooltip>
+    </div>
   );
 };
