@@ -1,31 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
-import { NewFeaturesKind } from './types';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly config: Config
-  ) {}
-
-  async canEarlyAccess(email: string) {
-    // TODO: Outdated, switch to feature gates
-    if (
-      this.config.featureFlags.earlyAccessPreview &&
-      !email.endsWith('@toeverything.info')
-    ) {
-      return this.prisma.newFeaturesWaitingList
-        .findUnique({
-          where: { email, type: NewFeaturesKind.EarlyAccess },
-        })
-        .catch(() => false);
-    } else {
-      return true;
-    }
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findUserByEmail(email: string) {
     return this.prisma.user

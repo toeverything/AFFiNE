@@ -142,7 +142,16 @@ export class FeatureService implements OnModuleInit {
           },
         },
         select: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              email: true,
+              emailVerified: true,
+              createdAt: true,
+            },
+          },
         },
       })
       .then(users => users.map(user => user.user));

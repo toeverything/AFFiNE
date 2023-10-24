@@ -51,17 +51,6 @@ type RemoveAvatar {
   success: Boolean!
 }
 
-type AddToNewFeaturesWaitingList {
-  email: String!
-
-  """New features kind"""
-  type: NewFeaturesKind!
-}
-
-enum NewFeaturesKind {
-  EarlyAccess
-}
-
 type TokenType {
   token: String!
   refresh: String!
@@ -281,6 +270,7 @@ type Query {
   """Get user by email"""
   user(email: String!): UserType
   prices: [SubscriptionPrice!]!
+  listEarlyAccess: [UserType!]!
 }
 
 type Mutation {
@@ -327,6 +317,8 @@ type Mutation {
   cancelSubscription(idempotencyKey: String!): UserSubscription!
   resumeSubscription(idempotencyKey: String!): UserSubscription!
   updateSubscriptionRecurring(recurring: SubscriptionRecurring!, idempotencyKey: String!): UserSubscription!
+  addToEarlyAccess(email: String!): String!
+  removeEarlyAccess(email: String!): Int!
 }
 
 """The `Upload` scalar type represents a file upload."""

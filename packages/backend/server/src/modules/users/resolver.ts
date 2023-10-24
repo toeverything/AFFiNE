@@ -12,8 +12,6 @@ import {
   Mutation,
   ObjectType,
   Query,
-  registerEnumType,
-  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
@@ -24,13 +22,9 @@ import { PrismaService } from '../../prisma/service';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
+import { FeatureManagementService } from '../quota';
 import { StorageService } from '../storage/storage.service';
-import { NewFeaturesKind } from './types';
 import { UsersService } from './users';
-
-registerEnumType(NewFeaturesKind, {
-  name: 'NewFeaturesKind',
-});
 
 @ObjectType()
 export class UserType implements Partial<User> {
@@ -70,14 +64,6 @@ export class RemoveAvatar {
   success!: boolean;
 }
 
-@ObjectType()
-export class AddToNewFeaturesWaitingList {
-  @Field()
-  email!: string;
-  @Field(() => NewFeaturesKind, { description: 'New features kind' })
-  type!: NewFeaturesKind;
-}
-
 /**
  * User resolver
  * All op rate limit: 10 req/m
@@ -89,7 +75,8 @@ export class UserResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    private readonly users: UsersService
+    private readonly users: UsersService,
+    private readonly feature: FeatureManagementService
   ) {}
 
   @Throttle({
@@ -137,7 +124,7 @@ export class UserResolver {
   })
   @Public()
   async user(@Args('email') email: string) {
-    if (!(await this.users.canEarlyAccess(email))) {
+    if (!(await this.feature.canEarlyAccess(email))) {
       return new GraphQLError(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
         {
@@ -232,27 +219,45 @@ export class UserResolver {
       ttl: 60,
     },
   })
-  @Mutation(() => AddToNewFeaturesWaitingList)
-  async addToNewFeaturesWaitingList(
+  @Mutation(() => String)
+  async addToEarlyAccess(
     @CurrentUser() user: UserType,
-    @Args('type', {
-      type: () => NewFeaturesKind,
-    })
-    type: NewFeaturesKind,
     @Args('email') email: string
-  ): Promise<AddToNewFeaturesWaitingList> {
-    if (!user.email.endsWith('@toeverything.info')) {
+  ): Promise<string> {
+    if (!this.feature.isStaff(user.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
-    await this.prisma.newFeaturesWaitingList.create({
-      data: {
-        email,
-        type,
-      },
-    });
-    return {
-      email,
-      type,
-    };
+    return this.feature.addEarlyAccess(email);
+  }
+
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
+  @Mutation(() => Int)
+  async removeEarlyAccess(
+    @CurrentUser() user: UserType,
+    @Args('email') email: string
+  ): Promise<number> {
+    if (!this.feature.isStaff(user.email)) {
+      throw new ForbiddenException('You are not allowed to do this');
+    }
+    return this.feature.removeEarlyAccess(email);
+  }
+
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60,
+    },
+  })
+  @Query(() => [UserType])
+  async listEarlyAccess(@CurrentUser() user: UserType): Promise<UserType[]> {
+    if (!this.feature.isStaff(user.email)) {
+      throw new ForbiddenException('You are not allowed to do this');
+    }
+    return this.feature.listEarlyAccess();
   }
 }

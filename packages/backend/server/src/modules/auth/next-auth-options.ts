@@ -11,7 +11,7 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
-import { NewFeaturesKind } from '../users/types';
+import { FeatureManagementService } from '../quota';
 import { MailService } from './mailer';
 import {
   decode,
@@ -30,7 +30,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     config: Config,
     prisma: PrismaService,
     mailer: MailService,
-    session: SessionService
+    session: SessionService,
+    feature: FeatureManagementService
   ) {
     const logger = new Logger('NextAuth');
     const prismaAdapter = PrismaAdapter(prisma);
@@ -246,18 +247,8 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         const email = profile?.email ?? user.email;
         if (email) {
-          if (email.endsWith('@toeverything.info')) {
-            return true;
-          }
-          return prisma.newFeaturesWaitingList
-            .findUnique({
-              where: {
-                email,
-                type: NewFeaturesKind.EarlyAccess,
-              },
-            })
-            .then(user => !!user)
-            .catch(() => false);
+          if (feature.isStaff(email)) return true;
+          return feature.canEarlyAccess(email);
         }
         return false;
       },
