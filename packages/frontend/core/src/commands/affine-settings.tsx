@@ -23,7 +23,7 @@ export function registerAffineSettingsCommands({
   languageHelper: ReturnType<typeof useLanguageHelper>;
 }) {
   const unsubs: Array<() => void> = [];
-  const { onSelect, languagesList, currentLanguage } = languageHelper;
+  const { onLanguageChange, languagesList, currentLanguage } = languageHelper;
   unsubs.push(
     registerAffineCommand({
       id: 'affine:show-quick-search',
@@ -156,7 +156,7 @@ export function registerAffineSettingsCommands({
         icon: <SettingsIcon />,
         preconditionStrategy: () => currentLanguage?.tag !== language.tag,
         run() {
-          onSelect(language.tag);
+          onLanguageChange(language.tag);
         },
       })
     );

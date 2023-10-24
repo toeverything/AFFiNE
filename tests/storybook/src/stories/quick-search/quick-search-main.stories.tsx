@@ -44,7 +44,7 @@ function useRegisterCommands() {
           themes: ['auto', 'dark', 'light'],
         },
         languageHelper: {
-          onSelect: () => {},
+          onLanguageChange: () => {},
           languagesList: [
             { tag: 'en', name: 'English', originalName: 'English' },
             {
