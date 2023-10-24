@@ -28,6 +28,7 @@ export const Highlight = memo(function Highlight({
   text = '',
   highlight = '',
 }: HighlightProps) {
+  //Regex is used to ignore case
   const regex = highlight.trim()
     ? new RegExp(`(${escapeRegExp(highlight)})`, 'ig')
     : null;
