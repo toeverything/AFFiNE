@@ -13,7 +13,7 @@ export const root = style({
   overflow: 'hidden',
   cursor: 'default',
   selectors: {
-    'a&': {
+    '&[data-clickable=true]': {
       cursor: 'pointer',
     },
   },

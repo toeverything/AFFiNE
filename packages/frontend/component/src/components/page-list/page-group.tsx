@@ -1,5 +1,6 @@
 import type { Tag } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, PageIcon, ToggleCollapseIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
@@ -113,6 +114,10 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
     const selectedPageIds = selectionState.selectedPageIds ?? [];
     return items.filter(item => selectedPageIds.includes(item.id));
   }, [items, selectionState.selectedPageIds]);
+  const onSelectAll = useCallback(() => {
+    selectionState.onSelectedPageIdsChange?.(items.map(item => item.id));
+  }, [items, selectionState]);
+  const t = useAFFiNEI18N();
   return (
     <Collapsible.Root
       data-testid="page-list-group"
@@ -139,6 +144,12 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
               {selectedItems.length}/{items.length}
             </div>
           ) : null}
+          <div className={styles.spacer} />
+          {selectionState.selectionActive ? (
+            <button className={styles.selectAllButton} onClick={onSelectAll}>
+              {t['com.affine.page.group-header.select-all']()}
+            </button>
+          ) : null}
         </div>
       ) : null}
       <Collapsible.Content className={styles.collapsibleContent}>
@@ -153,8 +164,7 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
 // todo: optimize how to render page meta list item
 const requiredPropNames = [
   'blockSuiteWorkspace',
-  'renderPageAsLink',
-  'onOpenPage',
+  'clickMode',
   'isPreferredEdgeless',
   'pageOperationsRenderer',
   'selectedPageIds',
@@ -204,6 +214,25 @@ function pageMetaToPageItemProp(
   pageMeta: PageMeta,
   props: RequiredProps
 ): PageListItemProps {
+  const toggleSelection = props.onSelectedPageIdsChange
+    ? () => {
+        assertExists(props.selectedPageIds);
+        const prevSelected = props.selectedPageIds.includes(pageMeta.id);
+        const shouldAdd = !prevSelected;
+        const shouldRemove = prevSelected;
+
+        if (shouldAdd) {
+          props.onSelectedPageIdsChange?.([
+            ...props.selectedPageIds,
+            pageMeta.id,
+          ]);
+        } else if (shouldRemove) {
+          props.onSelectedPageIdsChange?.(
+            props.selectedPageIds.filter(id => id !== pageMeta.id)
+          );
+        }
+      }
+    : undefined;
   const itemProps: PageListItemProps = {
     pageId: pageMeta.id,
     title: pageMeta.title,
@@ -214,14 +243,11 @@ function pageMetaToPageItemProp(
     updatedDate: pageMeta.updatedDate
       ? new Date(pageMeta.updatedDate)
       : undefined,
-    to: props.renderPageAsLink
-      ? `/workspace/${props.blockSuiteWorkspace.id}/${pageMeta.id}`
-      : undefined,
-    onClickPage: props.onOpenPage
-      ? newTab => {
-          props.onOpenPage?.(pageMeta.id, newTab);
-        }
-      : undefined,
+    to:
+      props.clickMode === 'link'
+        ? `/workspace/${props.blockSuiteWorkspace.id}/${pageMeta.id}`
+        : undefined,
+    onClick: props.clickMode === 'select' ? toggleSelection : undefined,
     icon: props.isPreferredEdgeless?.(pageMeta.id) ? (
       <EdgelessIcon />
     ) : (
@@ -234,25 +260,7 @@ function pageMetaToPageItemProp(
     operations: props.pageOperationsRenderer?.(pageMeta),
     selectable: props.selectable,
     selected: props.selectedPageIds?.includes(pageMeta.id),
-    onSelectedChange: props.onSelectedPageIdsChange
-      ? selected => {
-          assertExists(props.selectedPageIds);
-          const prevSelected = props.selectedPageIds.includes(pageMeta.id);
-          const shouldAdd = selected && !prevSelected;
-          const shouldRemove = !selected && prevSelected;
-
-          if (shouldAdd) {
-            props.onSelectedPageIdsChange?.([
-              ...props.selectedPageIds,
-              pageMeta.id,
-            ]);
-          } else if (shouldRemove) {
-            props.onSelectedPageIdsChange?.(
-              props.selectedPageIds.filter(id => id !== pageMeta.id)
-            );
-          }
-        }
-      : undefined,
+    onSelectedChange: toggleSelection,
     draggable: props.draggable,
     isPublicPage: !!pageMeta.isPublic,
     onDragStart: props.onDragStart

@@ -67,6 +67,25 @@ export const headerCount = style({
   color: 'var(--affine-text-disable-color)',
 });
 
+export const selectAllButton = style({
+  display: 'flex',
+  opacity: 0,
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  fontSize: 'var(--affine-font-xs)',
+  height: '100%',
+  padding: '0 8px',
+  selectors: {
+    '&:hover': {
+      background: 'var(--affine-hover-color)',
+    },
+    [`${header}:hover &`]: {
+      opacity: 1,
+    },
+  },
+});
+
 export const collapsedIcon = style({
   opacity: 0,
   transition: 'transform 0.2s ease-in-out',

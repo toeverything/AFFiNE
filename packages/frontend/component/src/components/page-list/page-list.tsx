@@ -57,15 +57,11 @@ const PageListInner = (props: PageListProps) => {
   return (
     <div className={clsx(props.className, styles.root)}>
       {!hideHeader ? <PageListHeader /> : null}
-      {groups.length === 0 && props.fallback ? (
-        props.fallback
-      ) : (
-        <div className={styles.groupsContainer}>
-          {groups.map(group => (
-            <PageGroup key={group.id} {...group} />
-          ))}
-        </div>
-      )}
+      <div className={styles.groupsContainer}>
+        {groups.map(group => (
+          <PageGroup key={group.id} {...group} />
+        ))}
+      </div>
     </div>
   );
 };

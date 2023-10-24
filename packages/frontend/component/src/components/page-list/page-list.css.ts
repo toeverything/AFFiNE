@@ -39,7 +39,7 @@ export const groupsContainer = style({
 export const header = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '10px 0 10px 16px',
+  padding: '10px 6px 10px 16px',
   position: 'sticky',
   overflow: 'hidden',
   zIndex: 1,
