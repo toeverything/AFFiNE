@@ -361,7 +361,7 @@ jobs:
         with:
           name: affine-linux-x64-builds
           path: ./
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
       - name: Generate Release yml
