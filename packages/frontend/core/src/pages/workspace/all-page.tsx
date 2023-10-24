@@ -15,7 +15,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -116,6 +116,7 @@ export const AllPage = () => {
   );
   const config = useAllPageListConfig();
   const setting = useCollectionManager(collectionsCRUDAtom);
+  const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   return (
     <div className={styles.root}>
       {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
@@ -152,6 +153,8 @@ export const AllPage = () => {
         {filteredPageMetas.length > 0 ? (
           <PageList
             selectable="toggle"
+            selectedPageIds={selectedPageIds}
+            onSelectedPageIdsChange={setSelectedPageIds}
             pages={filteredPageMetas}
             clickMode="link"
             isPreferredEdgeless={isPreferredEdgeless}

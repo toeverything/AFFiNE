@@ -20,6 +20,19 @@ interface TagItemProps {
   mode: 'sticky' | 'list-item';
 }
 
+// hack: map var(--affine-tag-xxx) colors to var(--affine-palette-line-xxx)
+const tagColorMap = (color: string) => {
+  const mapping: Record<string, string> = {
+    'var(--affine-tag-red)': 'var(--affine-palette-line-red)',
+    'var(--affine-tag-teal)': 'var(--affine-palette-line-green)',
+    'var(--affine-tag-blue)': 'var(--affine-palette-line-blue)',
+    'var(--affine-tag-yellow)': 'var(--affine-palette-line-yellow)',
+    'var(--affine-tag-pink)': 'var(--affine-palette-line-magenta)',
+    'var(--affine-tag-white)': 'var(--affine-palette-line-grey)',
+  };
+  return mapping[color] || color;
+};
+
 const TagItem = ({ tag, idx, mode }: TagItemProps) => {
   return (
     <div
@@ -31,7 +44,7 @@ const TagItem = ({ tag, idx, mode }: TagItemProps) => {
       <div
         className={styles.tagIndicator}
         style={{
-          backgroundColor: tag.color,
+          backgroundColor: tagColorMap(tag.color),
         }}
       />
       <div className={styles.tagLabel}>{tag.value}</div>
