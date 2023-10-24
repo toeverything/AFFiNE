@@ -108,6 +108,7 @@ const planDetail = new Map<SubscriptionPlan, FixedPrice | DynamicPrice>([
 const Settings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
+  const scrollWrapper = useRef<HTMLDivElement>(null);
 
   const {
     data: { prices },
@@ -138,6 +139,32 @@ const Settings = () => {
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
   )?.discount;
+
+  // auto scroll to current plan card
+  useEffect(() => {
+    if (!scrollWrapper.current) return;
+    const currentPlanCard = scrollWrapper.current?.querySelector(
+      '[data-current="true"]'
+    );
+    const wrapperComputedStyle = getComputedStyle(scrollWrapper.current);
+    const left = currentPlanCard
+      ? currentPlanCard.getBoundingClientRect().left -
+        scrollWrapper.current.getBoundingClientRect().left -
+        parseInt(wrapperComputedStyle.paddingLeft)
+      : 0;
+    const appeared =
+      scrollWrapper.current.getAttribute('data-appeared') === 'true';
+    const animationFrameId = requestAnimationFrame(() => {
+      scrollWrapper.current?.scrollTo({
+        behavior: appeared ? 'smooth' : 'instant',
+        left,
+      });
+      scrollWrapper.current?.setAttribute('data-appeared', 'true');
+    });
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [recurring]);
 
   return (
     <>
@@ -175,18 +202,19 @@ const Settings = () => {
             </RadioButton>
           ))}
         </RadioButtonGroup>
-        {/* TODO: plan cards horizontal scroll behavior is not the same as design */}
-        {/* TODO: may scroll current plan into view when first loading? */}
-        <div className={styles.planCardsWrapper}>
+        <div className={styles.planCardsWrapper} ref={scrollWrapper}>
           {Array.from(planDetail.values()).map(detail => {
+            const isCurrent =
+              loggedIn &&
+              detail.plan === currentPlan &&
+              (currentPlan === SubscriptionPlan.Free
+                ? true
+                : currentRecurring === recurring);
             return (
               <div
+                data-current={isCurrent}
                 key={detail.plan}
-                className={
-                  loggedIn && currentPlan === detail.plan
-                    ? styles.currentPlanCard
-                    : styles.planCard
-                }
+                className={isCurrent ? styles.currentPlanCard : styles.planCard}
               >
                 <div className={styles.planTitle}>
                   <p>
