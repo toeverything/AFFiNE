@@ -79,7 +79,11 @@ export const StorageProgress = ({
         }
       >
         <span tabIndex={0}>
-          <Button type={buttonType} onClick={onUpgrade}>
+          <Button
+            type={buttonType}
+            onClick={onUpgrade}
+            className={styles.storageButton}
+          >
             {plan === 'Free' ? 'Upgrade' : 'Change'}
           </Button>
         </span>

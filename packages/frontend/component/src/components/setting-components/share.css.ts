@@ -115,7 +115,7 @@ globalStyle(`${storageProgressWrapper} .storage-progress-desc`, {
 globalStyle(`${storageProgressWrapper} .storage-progress-bar-wrapper`, {
   height: '8px',
   borderRadius: '4px',
-  backgroundColor: 'var(--affine-pure-black-10)',
+  backgroundColor: 'var(--affine-black-10)',
   overflow: 'hidden',
 });
 export const storageProgressBar = style({
@@ -126,4 +126,8 @@ export const storageProgressBar = style({
       backgroundColor: 'var(--affine-error-color)',
     },
   },
+});
+
+export const storageButton = style({
+  padding: '4px 12px',
 });
