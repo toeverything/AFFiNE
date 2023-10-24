@@ -134,6 +134,7 @@ globalStyle(`${accountButton} .name-container`, {
   alignItems: 'center',
   width: '100%',
   gap: '4px',
+  height: '22px',
 });
 globalStyle(`${accountButton} .name`, {
   fontSize: 'var(--affine-font-sm)',
@@ -141,7 +142,7 @@ globalStyle(`${accountButton} .name`, {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  // flexGrow: 1,
+  height: '22px',
 });
 globalStyle(`${accountButton} .email`, {
   fontSize: 'var(--affine-font-xs)',
@@ -150,4 +151,5 @@ globalStyle(`${accountButton} .email`, {
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   flexGrow: 1,
+  height: '20px',
 });
