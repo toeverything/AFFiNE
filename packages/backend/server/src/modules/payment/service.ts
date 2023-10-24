@@ -393,12 +393,18 @@ export class SubscriptionService {
         throw new Error('Unexpected invoice with no recurring price');
       }
 
+      if (!price.lookup_key) {
+        throw new Error('Unexpected subscription with no key');
+      }
+
+      const [plan, recurring] = decodeLookupKey(price.lookup_key);
+
       await this.db.userInvoice.create({
         data: {
           userId: user.id,
           stripeInvoiceId: stripeInvoice.id,
-          plan: SubscriptionPlan.Pro,
-          recurring: price.lookup_key ?? price.id,
+          plan,
+          recurring,
           reason: stripeInvoice.billing_reason ?? 'contact support',
           ...(data as any),
         },
