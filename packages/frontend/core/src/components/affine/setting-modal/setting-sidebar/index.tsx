@@ -20,6 +20,7 @@ import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
+import { UserPlanButton } from '../../auth/user-plan-button';
 import type {
   GeneralSettingKeys,
   GeneralSettingList,
@@ -52,9 +53,13 @@ export const UserInfo = ({
       <Avatar size={28} name={user.name} url={user.image} className="avatar" />
 
       <div className="content">
-        <div className="name" title={user.name}>
-          {user.name}
+        <div className="name-container">
+          <div className="name" title={user.name}>
+            {user.name}
+          </div>
+          <UserPlanButton />
         </div>
+
         <div className="email" title={user.email}>
           {user.email}
         </div>
