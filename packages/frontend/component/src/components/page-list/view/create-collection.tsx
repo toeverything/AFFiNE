@@ -1,4 +1,7 @@
-import { createEmptyCollection } from '@affine/component/page-list';
+import {
+  createEmptyCollection,
+  useEditCollectionName,
+} from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SaveIcon } from '@blocksuite/icons';
@@ -16,6 +19,7 @@ export interface CreateCollectionModalProps {
   init: string;
   onConfirm: (title: string) => Promise<void>;
   open: boolean;
+  showTips?: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -23,6 +27,7 @@ export const CreateCollectionModal = ({
   init,
   onConfirm,
   open,
+  showTips,
   onOpenChange,
   title,
 }: CreateCollectionModalProps) => {
@@ -47,6 +52,7 @@ export const CreateCollectionModal = ({
     <Modal open={open} title={title} onOpenChange={onOpenChange} width={480}>
       {init != null ? (
         <CreateCollection
+          showTips={showTips}
           onConfirmText={t['com.affine.editCollection.save']()}
           init={init}
           onConfirm={onConfirmTitle}
@@ -60,6 +66,7 @@ export const CreateCollectionModal = ({
 export interface CreateCollectionProps {
   onConfirmText?: string;
   init: string;
+  showTips?: boolean;
   onCancel: () => void;
   onConfirm: (title: string) => void;
 }
@@ -67,6 +74,7 @@ export interface CreateCollectionProps {
 export const CreateCollection = ({
   onConfirmText,
   init,
+  showTips,
   onCancel,
   onConfirm,
 }: CreateCollectionProps) => {
@@ -86,14 +94,16 @@ export const CreateCollection = ({
         <Input
           autoFocus
           value={value}
-          placeholder="New Collection"
+          placeholder="Collection Name"
           onChange={useCallback((value: string) => onChange(value), [onChange])}
           onEnter={save}
         ></Input>
-        <div className={styles.createTips}>
-          Collection is a smart folder where you can manually add pages or
-          automatically add pages through rules.
-        </div>
+        {showTips ? (
+          <div className={styles.createTips}>
+            Collection is a smart folder where you can manually add pages or
+            automatically add pages through rules.
+          </div>
+        ) : null}
       </div>
       <div className={styles.footer}>
         <Button size="large" onClick={onCancel}>
@@ -120,17 +130,20 @@ interface SaveAsCollectionButtonProps {
 export const SaveAsCollectionButton = ({
   onConfirm,
 }: SaveAsCollectionButtonProps) => {
-  const [show, changeShow] = useState(false);
-  const handleClick = useCallback(() => {
-    changeShow(true);
-  }, [changeShow]);
   const t = useAFFiNEI18N();
-  const createCollection = useCallback(
-    (title: string) => {
-      return onConfirm(createEmptyCollection(nanoid(), { name: title }));
-    },
-    [onConfirm]
-  );
+  const { open, node } = useEditCollectionName({
+    title: t['com.affine.editCollection.saveCollection'](),
+    showTips: true,
+  });
+  const handleClick = useCallback(() => {
+    open('')
+      .then(name => {
+        return onConfirm(createEmptyCollection(nanoid(), { name }));
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [open, onConfirm]);
   return (
     <>
       <Button
@@ -142,13 +155,7 @@ export const SaveAsCollectionButton = ({
       >
         {t['com.affine.editCollection.saveCollection']()}
       </Button>
-      <CreateCollectionModal
-        title={t['com.affine.editCollection.saveCollection']()}
-        init=""
-        onConfirm={createCollection}
-        open={show}
-        onOpenChange={changeShow}
-      />
+      {node}
     </>
   );
 };

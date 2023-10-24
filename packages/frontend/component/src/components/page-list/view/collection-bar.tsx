@@ -1,4 +1,4 @@
-import type { PropertiesMeta } from '@affine/env/filter';
+import type { DeleteCollectionInfo, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
@@ -21,6 +21,7 @@ interface CollectionBarProps {
   collectionsAtom: CollectionsCRUDAtom;
   backToAll: () => void;
   allPageListConfig: AllPageListConfig;
+  info: DeleteCollectionInfo;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
@@ -32,6 +33,7 @@ export const CollectionBar = (props: CollectionBarProps) => {
   const actions = useActions({
     collection,
     setting,
+    info: props.info,
     openEdit: () => setOpen(true),
   });
   return !setting.isDefault ? (

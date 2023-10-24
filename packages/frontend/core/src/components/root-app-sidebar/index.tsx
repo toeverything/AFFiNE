@@ -28,6 +28,7 @@ import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
 import { useAppSetting } from '../../atoms/settings';
+import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
@@ -170,6 +171,7 @@ export const RootAppSidebar = ({
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
   useRegisterBlocksuiteEditorCommands(router.back, router.forward);
+  const userInfo = useDeleteCollectionInfo();
   return (
     <>
       <AppSidebar
@@ -249,7 +251,7 @@ export const RootAppSidebar = ({
           <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
             <AddCollectionButton />
           </CategoryDivider>
-          <CollectionsList workspace={blockSuiteWorkspace} />
+          <CollectionsList workspace={blockSuiteWorkspace} info={userInfo} />
           <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
           {/* fixme: remove the following spacer */}
           <div style={{ height: '4px' }} />

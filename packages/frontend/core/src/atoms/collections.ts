@@ -101,6 +101,7 @@ export const pageCollectionBaseAtom =
       const migrateCollectionsFromIdbData = async (
         workspace: Workspace
       ): Promise<Collection[]> => {
+        workspace.awarenessStore.awareness.emit('change log');
         const localCRUD = get(localCollectionCRUDAtom);
         const collections = await getCollections(localCRUD);
         const result = collections.filter(v => v.workspaceId === workspace.id);
@@ -189,6 +190,7 @@ export const pageCollectionBaseAtom =
     },
     { initialValue: { loading: true, collections: [] } }
   );
+
 export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(get => {
   const workspacePromise = get(currentWorkspaceAtom);
   return {
@@ -201,9 +203,9 @@ export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(get => {
       const workspace = await workspacePromise;
       getWorkspaceSetting(workspace).updateCollection(id, updater);
     },
-    deleteCollection: async (...ids) => {
+    deleteCollection: async (info, ...ids) => {
       const workspace = await workspacePromise;
-      getWorkspaceSetting(workspace).deleteCollection(...ids);
+      getWorkspaceSetting(workspace).deleteCollection(info, ...ids);
     },
   };
 });
