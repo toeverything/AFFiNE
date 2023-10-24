@@ -129,13 +129,19 @@ globalStyle(`${accountButton} .content`, {
   flexGrow: '1',
   minWidth: 0,
 });
+globalStyle(`${accountButton} .name-container`, {
+  display: 'flex',
+  justifyContent: 'flex-start',
+  width: '100%',
+  gap: '4px',
+});
 globalStyle(`${accountButton} .name`, {
   fontSize: 'var(--affine-font-sm)',
   fontWeight: 600,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  flexGrow: 1,
+  // flexGrow: 1,
 });
 globalStyle(`${accountButton} .email`, {
   fontSize: 'var(--affine-font-xs)',
