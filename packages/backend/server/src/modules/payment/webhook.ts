@@ -64,9 +64,14 @@ export class StripeWebhook {
         `[${event.id}] Stripe Webhook {${event.type}} received.`
       );
 
-      // handle duplicated events?
-      // see https://stripe.com/docs/webhooks#handle-duplicate-events
-      await this.event.emitAsync(event.type, event.data.object);
+      // Stripe requires responseing webhook immediately and handle event asynchronously.
+      setImmediate(() => {
+        // handle duplicated events?
+        // see https://stripe.com/docs/webhooks#handle-duplicate-events
+        this.event.emitAsync(event.type, event.data.object).catch(e => {
+          this.logger.error('Failed to handle Stripe Webhook event.', e);
+        });
+      });
     } catch (err) {
       this.logger.error('Stripe Webhook error', err);
       throw new NotAcceptableException();

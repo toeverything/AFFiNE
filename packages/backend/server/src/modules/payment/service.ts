@@ -17,7 +17,7 @@ const OnEvent = (
   opts?: Parameters<typeof RawOnEvent>[1]
 ) => RawOnEvent(event, opts);
 
-// also used as lookup key for stripe prices
+// Plan x Recurring make a stripe price lookup key
 export enum SubscriptionRecurring {
   Monthly = 'monthly',
   Yearly = 'yearly',
@@ -28,6 +28,21 @@ export enum SubscriptionPlan {
   Pro = 'pro',
   Team = 'team',
   Enterprise = 'enterprise',
+}
+
+export function encodeLookupKey(
+  plan: SubscriptionPlan,
+  recurring: SubscriptionRecurring
+): string {
+  return plan + '_' + recurring;
+}
+
+export function decodeLookupKey(
+  key: string
+): [SubscriptionPlan, SubscriptionRecurring] {
+  const [plan, recurring] = key.split('_');
+
+  return [plan as SubscriptionPlan, recurring as SubscriptionRecurring];
 }
 
 // see https://stripe.com/docs/api/subscriptions/object#subscription_object-status
@@ -48,6 +63,11 @@ export enum InvoiceStatus {
   Void = 'void',
   Paid = 'paid',
   Uncollectible = 'uncollectible',
+}
+
+export enum Coupon {
+  EarlyAccess = 'earlyaccess',
+  EarlyAccessRenew = 'earlyaccessrenew',
 }
 
 @Injectable()
@@ -72,17 +92,17 @@ export class SubscriptionService {
   }
 
   async listPrices() {
-    return this.stripe.prices.list({
-      lookup_keys: Object.values(SubscriptionRecurring),
-    });
+    return this.stripe.prices.list();
   }
 
   async createCheckoutSession({
     user,
     recurring,
     redirectUrl,
+    plan = SubscriptionPlan.Pro,
   }: {
     user: User;
+    plan?: SubscriptionPlan;
     recurring: SubscriptionRecurring;
     redirectUrl: string;
   }) {
@@ -96,19 +116,13 @@ export class SubscriptionService {
       throw new Error('You already have a subscription');
     }
 
-    const prices = await this.stripe.prices.list({
-      lookup_keys: [recurring],
-    });
-
-    if (!prices.data.length) {
-      throw new Error(`Unknown subscription recurring: ${recurring}`);
-    }
+    const price = await this.getPrice(plan, recurring);
 
     const customer = await this.getOrCreateCustomer(user);
     return await this.stripe.checkout.sessions.create({
       line_items: [
         {
-          price: prices.data[0].id,
+          price,
           quantity: 1,
         },
       ],
@@ -141,29 +155,32 @@ export class SubscriptionService {
     }
 
     if (user.subscription.canceledAt) {
-      throw new Error('Your subscription has already been canceled ');
+      throw new Error('Your subscription has already been canceled');
     }
 
     // should release the schedule first
     if (user.subscription.stripeScheduleId) {
-      await this.stripe.subscriptionSchedules.release(
-        user.subscription.stripeScheduleId
+      await this.cancelSubscriptionSchedule(user.subscription.stripeScheduleId);
+      return this.saveSubscription(
+        user,
+        await this.stripe.subscriptions.retrieve(
+          user.subscription.stripeSubscriptionId
+        )
       );
+    } else {
+      // let customer contact support if they want to cancel immediately
+      // see https://stripe.com/docs/billing/subscriptions/cancel
+      const subscription = await this.stripe.subscriptions.update(
+        user.subscription.stripeSubscriptionId,
+        {
+          cancel_at_period_end: true,
+        }
+      );
+      return await this.saveSubscription(user, subscription);
     }
-
-    // let customer contact support if they want to cancel immediately
-    // see https://stripe.com/docs/billing/subscriptions/cancel
-    const subscription = await this.stripe.subscriptions.update(
-      user.subscription.stripeSubscriptionId,
-      {
-        cancel_at_period_end: true,
-      }
-    );
-
-    return await this.saveSubscription(user, subscription);
   }
 
-  async resumeCanceledSubscriptin(userId: string): Promise<UserSubscription> {
+  async resumeCanceledSubscription(userId: string): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
         id: userId,
@@ -185,19 +202,29 @@ export class SubscriptionService {
       throw new Error('Your subscription is expired, please checkout again.');
     }
 
-    const subscription = await this.stripe.subscriptions.update(
-      user.subscription.stripeSubscriptionId,
-      {
-        cancel_at_period_end: false,
-      }
-    );
+    if (user.subscription.stripeScheduleId) {
+      await this.resumeSubscriptionSchedule(user.subscription.stripeScheduleId);
+      return this.saveSubscription(
+        user,
+        await this.stripe.subscriptions.retrieve(
+          user.subscription.stripeSubscriptionId
+        )
+      );
+    } else {
+      const subscription = await this.stripe.subscriptions.update(
+        user.subscription.stripeSubscriptionId,
+        {
+          cancel_at_period_end: false,
+        }
+      );
 
-    return await this.saveSubscription(user, subscription);
+      return await this.saveSubscription(user, subscription);
+    }
   }
 
   async updateSubscriptionRecurring(
     userId: string,
-    recurring: string
+    recurring: SubscriptionRecurring
   ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
@@ -220,82 +247,35 @@ export class SubscriptionService {
       throw new Error('You have already subscribed to this plan');
     }
 
-    const prices = await this.stripe.prices.list({
-      lookup_keys: [recurring],
-    });
+    const price = await this.getPrice(
+      user.subscription.plan as SubscriptionPlan,
+      recurring
+    );
 
-    if (!prices.data.length) {
-      throw new Error(`Unknown subscription recurring: ${recurring}`);
-    }
-
-    const newPrice = prices.data[0];
-
+    let scheduleId: string | null;
     // a schedule existing
     if (user.subscription.stripeScheduleId) {
-      const schedule = await this.stripe.subscriptionSchedules.retrieve(
-        user.subscription.stripeScheduleId
+      scheduleId = await this.scheduleNewPrice(
+        user.subscription.stripeScheduleId,
+        price
       );
-
-      // a scheduled subscription's old price equals the change
-      if (
-        schedule.phases[0] &&
-        (schedule.phases[0].items[0].price as string) === newPrice.id
-      ) {
-        await this.stripe.subscriptionSchedules.release(
-          user.subscription.stripeScheduleId
-        );
-
-        return await this.db.userSubscription.update({
-          where: {
-            id: user.subscription.id,
-          },
-          data: {
-            recurring,
-          },
-        });
-      } else {
-        throw new Error(
-          'Unexpected subscription scheduled, please contact the supporters'
-        );
-      }
     } else {
       const schedule = await this.stripe.subscriptionSchedules.create({
         from_subscription: user.subscription.stripeSubscriptionId,
       });
-
-      await this.stripe.subscriptionSchedules.update(schedule.id, {
-        phases: [
-          {
-            items: [
-              {
-                price: schedule.phases[0].items[0].price as string,
-                quantity: 1,
-              },
-            ],
-            start_date: schedule.phases[0].start_date,
-            end_date: schedule.phases[0].end_date,
-          },
-          {
-            items: [
-              {
-                price: newPrice.id,
-                quantity: 1,
-              },
-            ],
-          },
-        ],
-      });
-
-      return await this.db.userSubscription.update({
-        where: {
-          id: user.subscription.id,
-        },
-        data: {
-          recurring,
-          stripeScheduleId: schedule.id,
-        },
-      });
+      await this.scheduleNewPrice(schedule.id, price);
+      scheduleId = schedule.id;
     }
+
+    return await this.db.userSubscription.update({
+      where: {
+        id: user.subscription.id,
+      },
+      data: {
+        stripeScheduleId: scheduleId,
+        recurring,
+      },
+    });
   }
 
   async createCustomerPortal(id: string) {
@@ -450,6 +430,11 @@ export class SubscriptionService {
     }
 
     const price = subscription.items.data[0].price;
+    if (!price.lookup_key) {
+      throw new Error('Unexpected subscription with no key');
+    }
+
+    const [plan, recurring] = decodeLookupKey(price.lookup_key);
 
     const commonData = {
       start: new Date(subscription.current_period_start * 1000),
@@ -465,9 +450,8 @@ export class SubscriptionService {
         ? new Date(subscription.canceled_at * 1000)
         : null,
       stripeSubscriptionId: subscription.id,
-      recurring: price.lookup_key ?? price.id,
-      // TODO: dynamic plans
-      plan: SubscriptionPlan.Pro,
+      plan,
+      recurring,
       status: subscription.status,
       stripeScheduleId: subscription.schedule as string | null,
     };
@@ -582,5 +566,184 @@ export class SubscriptionService {
     });
 
     return user;
+  }
+
+  private async getPrice(
+    plan: SubscriptionPlan,
+    recurring: SubscriptionRecurring
+  ): Promise<string> {
+    const prices = await this.stripe.prices.list({
+      lookup_keys: [encodeLookupKey(plan, recurring)],
+    });
+
+    if (!prices.data.length) {
+      throw new Error(
+        `Unknown subscription plan ${plan} with recurring ${recurring}`
+      );
+    }
+
+    return prices.data[0].id;
+  }
+
+  /**
+   * If a subscription is managed by a schedule, it has a different way to cancel.
+   */
+  private async cancelSubscriptionSchedule(scheduleId: string) {
+    const schedule =
+      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
+
+    const currentPhase = schedule.phases.find(
+      phase =>
+        phase.start_date * 1000 < Date.now() &&
+        phase.end_date * 1000 > Date.now()
+    );
+
+    if (
+      schedule.status !== 'active' ||
+      schedule.phases.length > 2 ||
+      !currentPhase
+    ) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    if (schedule.status !== 'active') {
+      throw new Error('unexpected subscription schedule status');
+    }
+
+    const nextPhase = schedule.phases.find(
+      phase => phase.start_date * 1000 > Date.now()
+    );
+
+    if (!currentPhase) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    const update: Stripe.SubscriptionScheduleUpdateParams.Phase = {
+      items: [
+        {
+          price: currentPhase.items[0].price as string,
+          quantity: 1,
+        },
+      ],
+      coupon: (currentPhase.coupon as string | null) ?? undefined,
+      start_date: currentPhase.start_date,
+      end_date: currentPhase.end_date,
+    };
+
+    if (nextPhase) {
+      // cancel a subscription with a schedule exiting will delete the upcoming phase,
+      // it's hard to recover the subscription to the original state if user wan't to resume before due.
+      // so we manually save the next phase's key information to metadata for later easy resuming.
+      update.metadata = {
+        next_coupon: (nextPhase.coupon as string | null) || null, // avoid empty string
+        next_price: nextPhase.items[0].price as string,
+      };
+    }
+
+    await this.stripe.subscriptionSchedules.update(schedule.id, {
+      phases: [update],
+      end_behavior: 'cancel',
+    });
+  }
+
+  private async resumeSubscriptionSchedule(scheduleId: string) {
+    const schedule =
+      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
+
+    const currentPhase = schedule.phases.find(
+      phase =>
+        phase.start_date * 1000 < Date.now() &&
+        phase.end_date * 1000 > Date.now()
+    );
+
+    if (schedule.status !== 'active' || !currentPhase) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    const update: Stripe.SubscriptionScheduleUpdateParams.Phase[] = [
+      {
+        items: [
+          {
+            price: currentPhase.items[0].price as string,
+            quantity: 1,
+          },
+        ],
+        coupon: (currentPhase.coupon as string | null) ?? undefined,
+        start_date: currentPhase.start_date,
+        end_date: currentPhase.end_date,
+        metadata: {
+          next_coupon: null,
+          next_price: null,
+        },
+      },
+    ];
+
+    if (currentPhase.metadata && currentPhase.metadata.next_price) {
+      update.push({
+        items: [
+          {
+            price: currentPhase.metadata.next_price,
+            quantity: 1,
+          },
+        ],
+        coupon: currentPhase.metadata.next_coupon || undefined,
+      });
+    }
+
+    await this.stripe.subscriptionSchedules.update(schedule.id, {
+      phases: update,
+      end_behavior: 'release',
+    });
+  }
+
+  /**
+   * we only schedule a new price when user change the recurring plan and there is now upcoming phases.
+   */
+  private async scheduleNewPrice(
+    scheduleId: string,
+    priceId: string
+  ): Promise<string | null> {
+    const schedule =
+      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
+
+    const currentPhase = schedule.phases.find(
+      phase =>
+        phase.start_date * 1000 < Date.now() &&
+        phase.end_date * 1000 > Date.now()
+    );
+
+    if (schedule.status !== 'active' || !currentPhase) {
+      throw new Error('Unexpected subscription schedule status');
+    }
+
+    // if current phase's plan matches target, just release the schedule
+    if (currentPhase.items[0].price === priceId) {
+      await this.stripe.subscriptionSchedules.release(scheduleId);
+      return null;
+    } else {
+      await this.stripe.subscriptionSchedules.update(schedule.id, {
+        phases: [
+          {
+            items: [
+              {
+                price: currentPhase.items[0].price as string,
+              },
+            ],
+            start_date: schedule.phases[0].start_date,
+            end_date: schedule.phases[0].end_date,
+          },
+          {
+            items: [
+              {
+                price: priceId,
+                quantity: 1,
+              },
+            ],
+          },
+        ],
+      });
+
+      return scheduleId;
+    }
   }
 }
