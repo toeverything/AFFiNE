@@ -10,12 +10,18 @@ export const recurringRadioGroup = style({
 export const radioButtonDiscount = style({
   marginLeft: '4px',
   color: 'var(--affine-primary-color)',
+  fontWeight: 400,
 });
 
 export const planCardsWrapper = style({
+  marginLeft: 'calc(-1 * var(--setting-modal-gap-x))',
+  paddingLeft: 'var(--setting-modal-gap-x)',
+  paddingRight: 'calc(var(--setting-modal-gap-x) + 300px)',
+  width: 'var(--setting-modal-width)',
   marginTop: '24px',
   display: 'flex',
   overflowX: 'auto',
+  scrollSnapType: 'x mandatory',
 });
 
 export const planCard = style({
@@ -24,10 +30,17 @@ export const planCard = style({
   borderRadius: '16px',
   padding: '20px',
   border: '1px solid var(--affine-border-color)',
+  position: 'relative',
 
   selectors: {
     '&:not(:last-child)': {
       marginRight: '16px',
+    },
+    '&::before': {
+      content: '',
+      position: 'absolute',
+      right: 'calc(100% + var(--setting-modal-gap-x))',
+      scrollSnapAlign: 'start',
     },
   },
 });
@@ -37,6 +50,7 @@ export const currentPlanCard = style([
   {
     borderWidth: '2px',
     borderColor: 'var(--affine-primary-color)',
+    boxShadow: 'var(--affine-shadow-2)',
   },
 ]);
 
