@@ -361,6 +361,7 @@ const Upgrade = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: checkoutMutation,
   });
@@ -409,15 +410,24 @@ const Upgrade = ({
   }, [onClose]);
 
   return (
-    <Button
-      className={styles.planAction}
-      type="primary"
-      onClick={upgrade}
-      disabled={isMutating}
-      loading={isMutating}
-    >
-      {t['com.affine.settings.plans.upgrade']()}
-    </Button>
+    <>
+      <Button
+        className={styles.planAction}
+        type="primary"
+        onClick={() => setOpen(true)}
+        disabled={isMutating}
+        loading={isMutating}
+      >
+        {t['com.affine.settings.plans.upgrade']()}
+      </Button>
+      <ConfirmLoadingModal
+        type={'upgrade'}
+        open={open}
+        loading={isMutating}
+        onOpenChange={setOpen}
+        onConfirm={upgrade}
+      />
+    </>
   );
 };
 

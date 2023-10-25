@@ -676,6 +676,9 @@
   "com.affine.settings.plans.modal.change.title": "Change ?",
   "com.affine.settings.plans.modal.change.content": "After changing, the current workspace will be restored to the state before the change.",
   "com.affine.settings.plans.modal.change.confirm": "Change",
+  "com.affine.settings.plans.modal.upgrade.title": "Upgrade ?",
+  "com.affine.settings.plans.modal.upgrade.content": "After canceling, the current workspace will be restored to the state before the upgrade.",
+  "com.affine.settings.plans.modal.upgrade.confirm": "Upgrade",
   "com.affine.settings.plans.updated-notify-title": "Subscription updated",
   "com.affine.settings.plans.updated-notify-msg": "You have changed your plan to {{plan}} billing."
 }

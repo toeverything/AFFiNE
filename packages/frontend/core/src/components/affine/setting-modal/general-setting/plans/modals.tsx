@@ -18,7 +18,7 @@ export const ConfirmLoadingModal = ({
   onConfirm,
   ...props
 }: {
-  type: 'resume' | 'downgrade' | 'change';
+  type: 'resume' | 'downgrade' | 'change' | 'upgrade';
   loading?: boolean;
 } & ConfirmModalProps) => {
   const t = useAFFiNEI18N();
