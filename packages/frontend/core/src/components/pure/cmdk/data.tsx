@@ -157,6 +157,7 @@ export const pageToCommand = (
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+
   const title = page.title || t['Untitled']();
   const commandLabel = label || {
     title: title,
@@ -222,7 +223,7 @@ export const usePageCommands = () => {
           pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
 
         const label = {
-          title: page.title,
+          title: page.title || t['Untitled'](), // Used to ensure that a title exists
           subTitle:
             searchResults.find(result => result.space === page.id)?.content ||
             '',
