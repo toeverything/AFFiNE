@@ -54,7 +54,7 @@ export const SettingModal = ({
         const paddingX = parseInt(computedStyle.paddingLeft, 10);
         modalContentRef.current?.style.setProperty(
           '--setting-modal-width',
-          `${contentWidth + marginX * 2 + paddingX * 2}px`
+          `${contentWidth + marginX * 2}px`
         );
         modalContentRef.current?.style.setProperty(
           '--setting-modal-gap-x',
