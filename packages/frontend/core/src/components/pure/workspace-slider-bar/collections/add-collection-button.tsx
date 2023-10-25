@@ -10,6 +10,8 @@ import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
+import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 
 export const AddCollectionButton = () => {
   const setting = useCollectionManager(collectionsCRUDAtom);
@@ -18,12 +20,17 @@ export const AddCollectionButton = () => {
     title: t['com.affine.editCollection.createCollection'](),
     showTips: true,
   });
+  const navigateHelper = useNavigateHelper();
+  const [workspace] = useCurrentWorkspace();
   const handleClick = useCallback(() => {
     open('')
       .then(name => {
-        return setting.createCollection(
-          createEmptyCollection(nanoid(), { name })
-        );
+        const id = nanoid();
+        return setting
+          .createCollection(createEmptyCollection(id, { name }))
+          .then(() => {
+            navigateHelper.jumpToCollection(workspace.id, id);
+          });
       })
       .catch(err => {
         console.error(err);
