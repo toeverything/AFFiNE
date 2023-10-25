@@ -1,4 +1,5 @@
 import { RadioButton, RadioButtonGroup } from '@affine/component';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import {
   pricesQuery,
   SubscriptionPlan,
@@ -7,6 +8,7 @@ import {
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useQuery } from '@affine/workspace/affine/gql';
+import { useSetAtom } from 'jotai';
 import { Suspense, useEffect, useRef, useState } from 'react';
 
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
@@ -31,6 +33,8 @@ const getRecurringLabel = ({
 const Settings = () => {
   const t = useAFFiNEI18N();
   const [subscription, mutateSubscription] = useUserSubscription();
+  const pushNotification = useSetAtom(pushNotificationAtom);
+
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const planDetail = getPlanDetail(t);
   const scrollWrapper = useRef<HTMLDivElement>(null);
@@ -155,6 +159,21 @@ const Settings = () => {
           <PlanCard
             key={detail.plan}
             onSubscriptionUpdate={mutateSubscription}
+            onNotify={({ detail, recurring }) => {
+              pushNotification({
+                type: 'success',
+                title: t['com.affine.settings.plans.updated-notify-title'](),
+                message: t['com.affine.settings.plans.updated-notify-msg']({
+                  plan:
+                    detail.plan === SubscriptionPlan.Free
+                      ? SubscriptionPlan.Free
+                      : getRecurringLabel({
+                          recurring: recurring as SubscriptionRecurring,
+                          t,
+                        }),
+                }),
+              });
+            }}
             {...{ detail, subscription, recurring }}
           />
         );

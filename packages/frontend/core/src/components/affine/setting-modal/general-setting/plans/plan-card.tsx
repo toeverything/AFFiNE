@@ -51,6 +51,10 @@ interface PlanCardProps {
   subscription?: Subscription | null;
   recurring: string;
   onSubscriptionUpdate: SubscriptionMutator;
+  onNotify: (info: {
+    detail: FixedPrice | DynamicPrice;
+    recurring: string;
+  }) => void;
 }
 
 export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
@@ -192,11 +196,20 @@ const ActionButton = ({
   subscription,
   recurring,
   onSubscriptionUpdate,
+  onNotify,
 }: PlanCardProps) => {
   const t = useAFFiNEI18N();
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = subscription?.recurring;
+
+  const mutateAndNotify = useCallback(
+    (sub: Parameters<SubscriptionMutator>[0]) => {
+      onSubscriptionUpdate?.(sub);
+      onNotify?.({ detail, recurring });
+    },
+    [onSubscriptionUpdate, onNotify, detail, recurring]
+  );
 
   // branches:
   //  if contact                                => 'Contact Sales'
@@ -237,7 +250,7 @@ const ActionButton = ({
   // is current
   if (isCurrent) {
     return isCanceled ? (
-      <ResumeAction onSubscriptionUpdate={onSubscriptionUpdate} />
+      <ResumeAction onSubscriptionUpdate={mutateAndNotify} />
     ) : (
       <CurrentPlan />
     );
@@ -245,10 +258,7 @@ const ActionButton = ({
 
   if (isFree) {
     return (
-      <Downgrade
-        disabled={isCanceled}
-        onSubscriptionUpdate={onSubscriptionUpdate}
-      />
+      <Downgrade disabled={isCanceled} onSubscriptionUpdate={mutateAndNotify} />
     );
   }
 
@@ -256,13 +266,13 @@ const ActionButton = ({
     <ChangeRecurring
       from={currentRecurring as SubscriptionRecurring}
       to={recurring as SubscriptionRecurring}
-      onSubscriptionUpdate={onSubscriptionUpdate}
+      onSubscriptionUpdate={mutateAndNotify}
       disabled={isCanceled}
     />
   ) : (
     <Upgrade
       recurring={recurring as SubscriptionRecurring}
-      onSubscriptionUpdate={onSubscriptionUpdate}
+      onSubscriptionUpdate={mutateAndNotify}
     />
   );
 };
