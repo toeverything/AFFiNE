@@ -25,10 +25,8 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
-
-import { PlansSkeleton } from './skeleton';
 import { BulledListIcon } from './icons/bulled-list';
-
+import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
 interface FixedPrice {
