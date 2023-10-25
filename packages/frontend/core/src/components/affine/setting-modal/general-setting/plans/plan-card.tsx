@@ -12,8 +12,10 @@ import {
 import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { useAtom } from 'jotai';
 import { type PropsWithChildren, useCallback, useEffect, useRef } from 'react';
 
+import { openPaymentDisableAtom } from '../../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { BulledListIcon } from './icons/bulled-list';
 import * as styles from './style.css';
@@ -285,7 +287,13 @@ const Upgrade = ({
     onSubscriptionUpdate();
   }, [onSubscriptionUpdate]);
 
+  const [, openPaymentDisableModal] = useAtom(openPaymentDisableAtom);
   const upgrade = useCallback(() => {
+    if (!runtimeConfig.enablePayment) {
+      openPaymentDisableModal(true);
+      return;
+    }
+
     if (newTabRef.current) {
       newTabRef.current.focus();
     } else {
@@ -310,7 +318,7 @@ const Upgrade = ({
         }
       );
     }
-  }, [trigger, recurring, onClose]);
+  }, [trigger, recurring, onClose, openPaymentDisableModal]);
 
   useEffect(() => {
     return () => {

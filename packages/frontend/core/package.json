@@ -41,7 +41,7 @@
     "@mui/material": "^5.14.14",
     "@radix-ui/react-select": "^2.0.0",
     "@react-hookz/web": "^23.1.0",
-    "@toeverything/components": "^0.0.45",
+    "@toeverything/components": "^0.0.46",
     "async-call-rpc": "^6.3.1",
     "bytes": "^3.1.2",
     "css-spring": "^4.1.0",
