@@ -24,6 +24,7 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
+import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
 interface FixedPrice {
@@ -139,6 +140,7 @@ const Settings = () => {
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
   )?.discount;
 
+  // TODO: replace with layout: ./layout.tsx
   return (
     <>
       <SettingHeader
@@ -446,9 +448,8 @@ const SignupAction = ({ children }: PropsWithChildren) => {
 
 export const AFFiNECloudPlans = () => {
   return (
-    // TODO: loading skeleton
     // TODO: Error Boundary
-    <Suspense>
+    <Suspense fallback={<PlansSkeleton />}>
       <Settings />
     </Suspense>
   );
