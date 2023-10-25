@@ -653,7 +653,8 @@
   "com.affine.settings.plans.downgraded-tooltip": "You have successfully downgraded. After the current billing period ends, your account will automatically switch to the Free plan.",
   "com.affine.settings.plans.contact-sales": "Contact Sales",
   "com.affine.settings.plans.change-to": "Change to {{to}} Billing",
-  "com.affine.settings.plans.resume": "Resume Auto-renewal",
+  "com.affine.settings.plans.resume": "Resume",
+  "com.affine.settings.plans.resume-renewal": "Resume Auto-renewal",
   "com.affine.settings.plans.benefit-1": "Unlimited local workspace",
   "com.affine.settings.plans.benefit-2": "Unlimited login devices",
   "com.affine.settings.plans.benefit-3": "Unlimited blocks",
@@ -665,5 +666,14 @@
   "com.affine.settings.plans.dynamic-benefit-3": "Pay for seats, fits all team size.",
   "com.affine.settings.plans.dynamic-benefit-4": "Solutions & best practices for dedicated needs.",
   "com.affine.settings.plans.dynamic-benefit-5": "Embedable & interrogations with IT support.",
-  "com.affine.settings.plans.see-all-plans": "See all plans"
+  "com.affine.settings.plans.see-all-plans": "See all plans",
+  "com.affine.settings.plans.modal.resume.title": "Resume ?",
+  "com.affine.settings.plans.modal.resume.content": "After resuming, the current workspace will be restored to the state before the downgrade.",
+  "com.affine.settings.plans.modal.resume.confirm": "Resume",
+  "com.affine.settings.plans.modal.downgrade.title": "Downgrade ?",
+  "com.affine.settings.plans.modal.downgrade.content": "After downgrading, the current workspace will be restored to the state before the upgrade.",
+  "com.affine.settings.plans.modal.downgrade.confirm": "Downgrade",
+  "com.affine.settings.plans.modal.change.title": "Change ?",
+  "com.affine.settings.plans.modal.change.content": "After changing, the current workspace will be restored to the state before the change.",
+  "com.affine.settings.plans.modal.change.confirm": "Change"
 }

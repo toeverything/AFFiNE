@@ -27,6 +27,7 @@ import {
 import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { BulledListIcon } from './icons/bulled-list';
+import { ConfirmLoadingModal } from './modals';
 import * as styles from './style.css';
 
 export interface FixedPrice {
@@ -283,6 +284,7 @@ const Downgrade = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: cancelSubscriptionMutation,
   });
@@ -300,19 +302,28 @@ const Downgrade = ({
     : null;
 
   return (
-    <Tooltip content={tooltipContent} rootOptions={{ delayDuration: 0 }}>
-      <div className={styles.planAction}>
-        <Button
-          className={styles.planAction}
-          type="primary"
-          onClick={downgrade /* TODO: poppup confirmation modal instead */}
-          disabled={disabled || isMutating}
-          loading={isMutating}
-        >
-          {t['com.affine.settings.plans.downgrade']()}
-        </Button>
-      </div>
-    </Tooltip>
+    <>
+      <Tooltip content={tooltipContent} rootOptions={{ delayDuration: 0 }}>
+        <div className={styles.planAction}>
+          <Button
+            className={styles.planAction}
+            type="primary"
+            onClick={() => setOpen(true)}
+            disabled={disabled || isMutating}
+            loading={isMutating}
+          >
+            {t['com.affine.settings.plans.downgrade']()}
+          </Button>
+        </div>
+      </Tooltip>
+      <ConfirmLoadingModal
+        type={'downgrade'}
+        loading={isMutating}
+        open={open}
+        onConfirm={downgrade}
+        onOpenChange={setOpen}
+      />
+    </>
   );
 };
 
@@ -412,6 +423,7 @@ const ChangeRecurring = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: updateSubscriptionMutation,
   });
@@ -428,15 +440,25 @@ const ChangeRecurring = ({
   }, [trigger, onSubscriptionUpdate, to]);
 
   return (
-    <Button
-      className={styles.planAction}
-      type="primary"
-      onClick={change /* TODO: popup confirmation modal instead  */}
-      disabled={disabled || isMutating}
-      loading={isMutating}
-    >
-      {t['com.affine.settings.plans.change-to']({ to })}
-    </Button>
+    <>
+      <Button
+        className={styles.planAction}
+        type="primary"
+        onClick={() => setOpen(true)}
+        disabled={disabled || isMutating}
+        loading={isMutating}
+      >
+        {t['com.affine.settings.plans.change-to']({ to })}
+      </Button>
+
+      <ConfirmLoadingModal
+        type={'change'}
+        loading={isMutating}
+        open={open}
+        onConfirm={change}
+        onOpenChange={setOpen}
+      />
+    </>
   );
 };
 
@@ -467,6 +489,7 @@ const ResumeAction = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: resumeSubscriptionMutation,
@@ -481,17 +504,27 @@ const ResumeAction = ({
   }, [trigger, onSubscriptionUpdate]);
 
   return (
-    <Button
-      className={styles.planAction}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={resume}
-      loading={isMutating}
-      disabled={isMutating}
-    >
-      {hovered
-        ? t['com.affine.settings.plans.resume']()
-        : t['com.affine.settings.plans.current-plan']()}
-    </Button>
+    <>
+      <Button
+        className={styles.planAction}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={() => setOpen(true)}
+        loading={isMutating}
+        disabled={isMutating}
+      >
+        {hovered
+          ? t['com.affine.settings.plans.resume-renewal']()
+          : t['com.affine.settings.plans.current-plan']()}
+      </Button>
+
+      <ConfirmLoadingModal
+        type={'resume'}
+        open={open}
+        onConfirm={resume}
+        onOpenChange={setOpen}
+        loading={isMutating}
+      />
+    </>
   );
 };
