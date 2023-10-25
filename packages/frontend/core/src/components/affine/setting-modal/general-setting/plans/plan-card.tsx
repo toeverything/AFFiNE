@@ -12,8 +12,10 @@ import {
 import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { useSetAtom } from 'jotai';
 import { type PropsWithChildren, useCallback, useEffect, useRef } from 'react';
 
+import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { BulledListIcon } from './icons/bulled-list';
 import * as styles from './style.css';
@@ -194,11 +196,11 @@ export const PlanCard = ({
               />
             )
           ) : (
-            <SignupAction>
+            <SignUpAction>
               {detail.plan === SubscriptionPlan.Free
                 ? 'Sign up free'
                 : 'Buy Pro'}
-            </SignupAction>
+            </SignUpAction>
           )
         }
       </div>
@@ -371,10 +373,22 @@ const ChangeRecurring = ({
   );
 };
 
-const SignupAction = ({ children }: PropsWithChildren) => {
-  // TODO: add login action
+const SignUpAction = ({ children }: PropsWithChildren) => {
+  const setOpen = useSetAtom(authAtom);
+
+  const onClickSignIn = useCallback(async () => {
+    setOpen(state => ({
+      ...state,
+      openModal: true,
+    }));
+  }, [setOpen]);
+
   return (
-    <Button className={styles.planAction} type="primary">
+    <Button
+      onClick={onClickSignIn}
+      className={styles.planAction}
+      type="primary"
+    >
       {children}
     </Button>
   );
