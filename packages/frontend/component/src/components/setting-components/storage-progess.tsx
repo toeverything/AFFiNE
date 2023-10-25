@@ -1,6 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
+import bytes from 'bytes';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
@@ -12,17 +13,6 @@ export interface StorageProgressProgress {
   onUpgrade: () => void;
   plan: string;
 }
-
-const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-const transformBytes = (bytes: number) => {
-  const magnitude = Math.min(
-    (Math.log(bytes) / Math.log(1024)) | 0,
-    units.length - 1
-  );
-  const result = bytes / Math.pow(1024, magnitude);
-  return [Number(result.toFixed(2)), units[magnitude]];
-};
 
 export const StorageProgress = ({
   max: upperLimit,
@@ -36,11 +26,8 @@ export const StorageProgress = ({
     [upperLimit, value]
   );
 
-  const [used, usedUnit] = useMemo(() => transformBytes(value), [value]);
-  const [max, maxUnit] = useMemo(
-    () => transformBytes(upperLimit),
-    [upperLimit]
-  );
+  const used = useMemo(() => bytes(value), [value]);
+  const max = useMemo(() => bytes(upperLimit), [upperLimit]);
 
   const buttonType = useMemo(() => {
     if (plan === 'Free') {
@@ -55,9 +42,7 @@ export const StorageProgress = ({
         <div className="storage-progress-desc">
           <span>{t['com.affine.storage.used.hint']()}</span>
           <span>
-            {used}
-            {usedUnit}/{max}
-            {maxUnit}
+            {used}/{max}
             {` (${plan} Plan)`}
           </span>
         </div>
