@@ -9,6 +9,7 @@ import {
   updateSubscriptionMutation,
 } from '@affine/graphql';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
+import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import {
   type PropsWithChildren,
@@ -24,6 +25,7 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
+import { BulledListIcon } from './icons/bulled-list';
 import * as styles from './style.css';
 
 interface FixedPrice {
@@ -108,6 +110,7 @@ const planDetail = new Map<SubscriptionPlan, FixedPrice | DynamicPrice>([
 const Settings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
+  const scrollWrapper = useRef<HTMLDivElement>(null);
 
   const {
     data: { prices },
@@ -138,6 +141,32 @@ const Settings = () => {
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
   )?.discount;
+
+  // auto scroll to current plan card
+  useEffect(() => {
+    if (!scrollWrapper.current) return;
+    const currentPlanCard = scrollWrapper.current?.querySelector(
+      '[data-current="true"]'
+    );
+    const wrapperComputedStyle = getComputedStyle(scrollWrapper.current);
+    const left = currentPlanCard
+      ? currentPlanCard.getBoundingClientRect().left -
+        scrollWrapper.current.getBoundingClientRect().left -
+        parseInt(wrapperComputedStyle.paddingLeft)
+      : 0;
+    const appeared =
+      scrollWrapper.current.getAttribute('data-appeared') === 'true';
+    const animationFrameId = requestAnimationFrame(() => {
+      scrollWrapper.current?.scrollTo({
+        behavior: appeared ? 'smooth' : 'instant',
+        left,
+      });
+      scrollWrapper.current?.setAttribute('data-appeared', 'true');
+    });
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [recurring]);
 
   return (
     <>
@@ -175,18 +204,19 @@ const Settings = () => {
             </RadioButton>
           ))}
         </RadioButtonGroup>
-        {/* TODO: plan cards horizontal scroll behavior is not the same as design */}
-        {/* TODO: may scroll current plan into view when first loading? */}
-        <div className={styles.planCardsWrapper}>
+        <div className={styles.planCardsWrapper} ref={scrollWrapper}>
           {Array.from(planDetail.values()).map(detail => {
+            const isCurrent =
+              loggedIn &&
+              detail.plan === currentPlan &&
+              (currentPlan === SubscriptionPlan.Free
+                ? true
+                : currentRecurring === recurring);
             return (
               <div
+                data-current={isCurrent}
                 key={detail.plan}
-                className={
-                  loggedIn && currentPlan === detail.plan
-                    ? styles.currentPlanCard
-                    : styles.planCard
-                }
+                className={isCurrent ? styles.currentPlanCard : styles.planCard}
               >
                 <div className={styles.planTitle}>
                   <p>
@@ -198,23 +228,27 @@ const Settings = () => {
                         </span>
                       )}
                   </p>
-                  <p>
-                    {detail.type === 'dynamic' ? (
-                      <span className={styles.planPriceDesc}>
-                        Coming soon...
-                      </span>
-                    ) : (
-                      <>
-                        <span className={styles.planPrice}>
-                          $
-                          {recurring === SubscriptionRecurring.Monthly
-                            ? detail.price
-                            : detail.yearlyPrice}
+                  <div className={styles.planPriceWrapper}>
+                    <p>
+                      {detail.type === 'dynamic' ? (
+                        <span className={styles.planPriceDesc}>
+                          Coming soon...
                         </span>
-                        <span className={styles.planPriceDesc}>per month</span>
-                      </>
-                    )}
-                  </p>
+                      ) : (
+                        <>
+                          <span className={styles.planPrice}>
+                            $
+                            {recurring === SubscriptionRecurring.Monthly
+                              ? detail.price
+                              : detail.yearlyPrice}
+                          </span>
+                          <span className={styles.planPriceDesc}>
+                            per month
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
                   {
                     // branches:
                     //  if contact                                => 'Contact Sales'
@@ -264,8 +298,11 @@ const Settings = () => {
                   {detail.benefits.map((content, i) => (
                     <div key={i} className={styles.planBenefit}>
                       <div className={styles.planBenefitIcon}>
-                        {/* TODO: icons */}
-                        {detail.type == 'dynamic' ? '·' : '✅'}
+                        {detail.type == 'dynamic' ? (
+                          <BulledListIcon color="var(--affine-primary-color)" />
+                        ) : (
+                          <DoneIcon color="var(--affine-primary-color)" />
+                        )}
                       </div>
                       {content}
                     </div>

@@ -22,6 +22,8 @@ export const planCardsWrapper = style({
   display: 'flex',
   overflowX: 'auto',
   scrollSnapType: 'x mandatory',
+  // TODO: should display the horizontal scrollbar, ensure the box-shadow is not clipped
+  paddingBottom: '21px',
 });
 
 export const planCard = style({
@@ -73,6 +75,13 @@ export const planTitle = style({
   alignItems: 'flex-start',
   gap: '10px',
   fontWeight: 600,
+});
+
+export const planPriceWrapper = style({
+  minHeight: '28px',
+  lineHeight: 1,
+  display: 'flex',
+  alignItems: 'flex-end',
 });
 
 export const planPrice = style({
