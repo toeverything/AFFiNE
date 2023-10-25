@@ -41,6 +41,7 @@ export function FloatingToolbar({
   const contentRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
 
+  // todo: move dbclick / esc to close to page list instead
   useEffect(() => {
     animatingRef.current = true;
     const timer = setTimeout(() => {

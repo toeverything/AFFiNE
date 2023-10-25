@@ -59,6 +59,10 @@ export interface PageListProps {
   pageOperationsRenderer?: (page: PageMeta) => ReactNode;
 }
 
+export interface PageListHandle {
+  toggleSelectable: () => void;
+}
+
 export interface PageGroupDefinition {
   id: string;
   // using a function to render custom group header

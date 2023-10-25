@@ -5,6 +5,7 @@ import {
   NewPageButton,
   OperationCell,
   PageList,
+  type PageListHandle,
   PageListScrollContainer,
   useCollectionManager,
 } from '@affine/component/page-list';
@@ -17,7 +18,7 @@ import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -139,11 +140,9 @@ const usePageOperationsRenderer = () => {
 
 const PageListFloatingToolbar = ({
   selectedIds,
-  pageNames,
   onClose,
 }: {
   selectedIds: string[];
-  pageNames: string[];
   onClose: () => void;
 }) => {
   const open = selectedIds.length > 0;
@@ -159,13 +158,19 @@ const PageListFloatingToolbar = ({
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
+  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const handleMultiDelete = useCallback(() => {
+    const pageNameMapping = Object.fromEntries(
+      pageMetas.map(meta => [meta.id, meta.title])
+    );
+
+    const pageNames = selectedIds.map(id => pageNameMapping[id] ?? '');
     setTrashModal({
       open: true,
       pageIds: selectedIds,
       pageTitles: pageNames,
     });
-  }, [selectedIds, pageNames, setTrashModal]);
+  }, [pageMetas, selectedIds, setTrashModal]);
 
   return (
     <FloatingToolbar
@@ -209,15 +214,18 @@ export const AllPage = () => {
     currentWorkspace.blockSuiteWorkspace
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
-  const deselectAll = useCallback(() => {
+  const pageListRef = useRef<PageListHandle>(null);
+  const deselectAllAndToggleSelect = useCallback(() => {
     setSelectedPageIds([]);
+    pageListRef.current?.toggleSelectable();
   }, []);
-  const selectedPageNames = useMemo(() => {
-    return selectedPageIds.map(id => {
-      const page = pageMetas.find(page => page.id === id);
-      return page?.title || '';
-    });
-  }, [pageMetas, selectedPageIds]);
+
+  // make sure selected id is in the filtered list
+  const filteredSelectedPageIds = useMemo(() => {
+    const ids = filteredPageMetas.map(page => page.id);
+    return selectedPageIds.filter(id => ids.includes(id));
+  }, [filteredPageMetas, selectedPageIds]);
+
   return (
     <div className={styles.root}>
       {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
@@ -233,8 +241,9 @@ export const AllPage = () => {
         {filteredPageMetas.length > 0 ? (
           <>
             <PageList
+              ref={pageListRef}
               selectable="toggle"
-              selectedPageIds={selectedPageIds}
+              selectedPageIds={filteredSelectedPageIds}
               onSelectedPageIdsChange={setSelectedPageIds}
               pages={filteredPageMetas}
               clickMode="link"
@@ -243,9 +252,8 @@ export const AllPage = () => {
               pageOperationsRenderer={pageOperationsRenderer}
             />
             <PageListFloatingToolbar
-              selectedIds={selectedPageIds}
-              pageNames={selectedPageNames}
-              onClose={deselectAll}
+              selectedIds={filteredSelectedPageIds}
+              onClose={deselectAllAndToggleSelect}
             />
           </>
         ) : (

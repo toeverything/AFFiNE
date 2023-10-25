@@ -5,10 +5,13 @@ import clsx from 'clsx';
 import { Provider, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 import {
+  type ForwardedRef,
+  forwardRef,
   type MouseEventHandler,
   type ReactNode,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
 } from 'react';
 
@@ -24,21 +27,26 @@ import {
   showOperationsAtom,
   sorterAtom,
 } from './scoped-atoms';
-import type { PageListProps } from './types';
+import type { PageListHandle, PageListProps } from './types';
 import { ColWrapper, type ColWrapperProps, stopPropagation } from './utils';
 
 /**
  * Given a list of pages, render a list of pages
  */
-export const PageList = (props: PageListProps) => {
-  return (
-    <Provider>
-      <PageListInner {...props} />
-    </Provider>
-  );
-};
+export const PageList = forwardRef<PageListHandle, PageListProps>(
+  function PageListHandle(props, ref) {
+    return (
+      <Provider>
+        <PageListInner {...props} handleRef={ref} />
+      </Provider>
+    );
+  }
+);
 
-const PageListInner = (props: PageListProps) => {
+const PageListInner = ({
+  handleRef,
+  ...props
+}: PageListProps & { handleRef: ForwardedRef<PageListHandle> }) => {
   // push pageListProps to the atom so that downstream components can consume it
   useHydrateAtoms([[pageListPropsAtom, props]], {
     // note: by turning on dangerouslyForceHydrate, downstream component need to use selectAtom to consume the atom
@@ -47,10 +55,23 @@ const PageListInner = (props: PageListProps) => {
   });
 
   const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
+  const setPageListSelectionState = useSetAtom(selectionStateAtom);
 
   useEffect(() => {
     setPageListPropsAtom(props);
   }, [props, setPageListPropsAtom]);
+
+  useImperativeHandle(
+    handleRef,
+    () => {
+      return {
+        toggleSelectable: () => {
+          setPageListSelectionState(false);
+        },
+      };
+    },
+    [setPageListSelectionState]
+  );
 
   const groups = useAtomValue(pageGroupsAtom);
   const hideHeader = props.hideHeader;

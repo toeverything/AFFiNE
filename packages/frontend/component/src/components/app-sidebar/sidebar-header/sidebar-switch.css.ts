@@ -9,7 +9,7 @@ export const sidebarSwitch = style({
   selectors: {
     '&[data-show=true]': {
       opacity: 1,
-      display: 'block',
+      display: 'inline-flex !important',
       width: '32px',
       flexShrink: 0,
       fontSize: '24px',
