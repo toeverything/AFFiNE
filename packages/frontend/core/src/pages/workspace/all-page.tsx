@@ -1,6 +1,7 @@
 import { toast } from '@affine/component';
 import {
   currentCollectionAtom,
+  FloatingToolbar,
   NewPageButton,
   OperationCell,
   PageList,
@@ -8,9 +9,10 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { ViewLayersIcon } from '@blocksuite/icons';
+import { CloseIcon, DeleteIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
@@ -112,8 +114,8 @@ const usePageOperationsRenderer = () => {
             onRemoveToTrash={() =>
               setTrashModal({
                 open: true,
-                pageId: page.id,
-                pageTitle: page.title,
+                pageIds: [page.id],
+                pageTitles: [page.title],
               })
             }
             onToggleFavoritePage={() => {
@@ -135,6 +137,64 @@ const usePageOperationsRenderer = () => {
   return pageOperationsRenderer;
 };
 
+const PageListFloatingToolbar = ({
+  selectedIds,
+  pageNames,
+  onClose,
+}: {
+  selectedIds: string[];
+  pageNames: string[];
+  onClose: () => void;
+}) => {
+  const open = selectedIds.length > 0;
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+  const [currentWorkspace] = useCurrentWorkspace();
+  const { setTrashModal } = useTrashModalHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const handleMultiDelete = useCallback(() => {
+    setTrashModal({
+      open: true,
+      pageIds: selectedIds,
+      pageTitles: pageNames,
+    });
+  }, [selectedIds, pageNames, setTrashModal]);
+
+  return (
+    <FloatingToolbar
+      className={styles.floatingToolbar}
+      open={open}
+      onOpenChange={handleOpenChange}
+    >
+      <FloatingToolbar.Item>
+        <Trans
+          i18nKey="com.affine.page.toolbar.selected"
+          count={selectedIds.length}
+        >
+          <div className={styles.toolbarSelectedNumber}>
+            {{ count: selectedIds.length } as any}
+          </div>
+          pages selected
+        </Trans>
+      </FloatingToolbar.Item>
+      <FloatingToolbar.Button onClick={onClose} icon={<CloseIcon />} />
+      <FloatingToolbar.Separator />
+      <FloatingToolbar.Button
+        onClick={handleMultiDelete}
+        icon={<DeleteIcon />}
+        type="danger"
+      />
+    </FloatingToolbar>
+  );
+};
+
 // even though it is called all page, it is also being used for collection route as well
 export const AllPage = () => {
   const [currentWorkspace] = useCurrentWorkspace();
@@ -149,6 +209,15 @@ export const AllPage = () => {
     currentWorkspace.blockSuiteWorkspace
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
+  const deselectAll = useCallback(() => {
+    setSelectedPageIds([]);
+  }, []);
+  const selectedPageNames = useMemo(() => {
+    return selectedPageIds.map(id => {
+      const page = pageMetas.find(page => page.id === id);
+      return page?.title || '';
+    });
+  }, [pageMetas, selectedPageIds]);
   return (
     <div className={styles.root}>
       {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
@@ -162,16 +231,23 @@ export const AllPage = () => {
       <PageListScrollContainer className={styles.scrollContainer}>
         <PageListHeader />
         {filteredPageMetas.length > 0 ? (
-          <PageList
-            selectable="toggle"
-            selectedPageIds={selectedPageIds}
-            onSelectedPageIdsChange={setSelectedPageIds}
-            pages={filteredPageMetas}
-            clickMode="link"
-            isPreferredEdgeless={isPreferredEdgeless}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            pageOperationsRenderer={pageOperationsRenderer}
-          />
+          <>
+            <PageList
+              selectable="toggle"
+              selectedPageIds={selectedPageIds}
+              onSelectedPageIdsChange={setSelectedPageIds}
+              pages={filteredPageMetas}
+              clickMode="link"
+              isPreferredEdgeless={isPreferredEdgeless}
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              pageOperationsRenderer={pageOperationsRenderer}
+            />
+            <PageListFloatingToolbar
+              selectedIds={selectedPageIds}
+              pageNames={selectedPageNames}
+              onClose={deselectAll}
+            />
+          </>
         ) : (
           <EmptyPageList
             type="all"

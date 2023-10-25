@@ -32,6 +32,7 @@ export const root = style({
   gap: 4,
   minWidth: 'max-content',
   width: 'fit-content',
+  background: 'var(--affine-background-primary-color)',
 });
 
 export const popoverContent = style({
@@ -71,9 +72,22 @@ export const button = style([
   },
 ]);
 
+export const danger = style({
+  color: 'inherit',
+  ':hover': {
+    background: 'var(--affine-background-error-color)',
+    color: 'var(--affine-error-color)',
+  },
+});
+
 export const buttonIcon = style({
   display: 'flex',
   alignItems: 'center',
   fontSize: 20,
   color: 'var(--affine-icon-color)',
+  selectors: {
+    [`${danger}:hover &`]: {
+      color: 'var(--affine-error-color)',
+    },
+  },
 });

@@ -23,14 +23,13 @@ interface FloatingToolbarProps {
 interface FloatingToolbarButtonProps {
   icon: ReactNode;
   onClick: MouseEventHandler;
+  type?: 'danger' | 'default';
   label?: ReactNode;
   className?: string;
   style?: CSSProperties;
 }
 
 interface FloatingToolbarItemProps {}
-
-interface FloatingToolbarAnchorProps {}
 
 export function FloatingToolbar({
   children,
@@ -40,19 +39,28 @@ export function FloatingToolbar({
   onOpenChange,
 }: PropsWithChildren<FloatingToolbarProps>) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const animatingRef = useRef(false);
 
   useEffect(() => {
+    animatingRef.current = true;
+    const timer = setTimeout(() => {
+      animatingRef.current = false;
+    }, 200);
+
     if (open) {
       // when dbclick outside of the panel or typing ESC, close the toolbar
       const dbcHandler = (e: MouseEvent) => {
-        if (!contentRef.current?.contains(e.target as Node)) {
+        if (
+          !contentRef.current?.contains(e.target as Node) &&
+          !animatingRef.current
+        ) {
           // close the toolbar
           onOpenChange?.(false);
         }
       };
 
       const escHandler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
+        if (e.key === 'Escape' && !animatingRef.current) {
           onOpenChange?.(false);
         }
       };
@@ -60,37 +68,30 @@ export function FloatingToolbar({
       document.addEventListener('dblclick', dbcHandler);
       document.addEventListener('keydown', escHandler);
       return () => {
+        clearTimeout(timer);
         document.removeEventListener('dblclick', dbcHandler);
         document.removeEventListener('keydown', escHandler);
       };
     }
-    return;
+    return () => {
+      clearTimeout(timer);
+    };
   }, [onOpenChange, open]);
 
   return (
     <Popover.Root open={open}>
-      <Popover.Anchor />
+      {/* Having Anchor here to let Popover to calculate the position of the place it is being used */}
+      <Popover.Anchor className={className} style={style} />
       <Popover.Portal>
         {/* always pop up on top for now */}
         <Popover.Content side="top" className={styles.popoverContent}>
-          <Toolbar.Root
-            ref={contentRef}
-            className={clsx(styles.root, className)}
-            style={style}
-          >
+          <Toolbar.Root ref={contentRef} className={clsx(styles.root)}>
             {children}
           </Toolbar.Root>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
   );
-}
-
-// Popover will show relates to this anchor
-export function FloatingToolbarAnchor({
-  children,
-}: PropsWithChildren<FloatingToolbarAnchorProps>) {
-  return <Popover.Anchor asChild>{children}</Popover.Anchor>;
 }
 
 // freestyle item that allows user to do anything
@@ -103,6 +104,7 @@ export function FloatingToolbarItem({
 // a typical button that has icon and label
 export function FloatingToolbarButton({
   icon,
+  type,
   onClick,
   className,
   style,
@@ -111,7 +113,11 @@ export function FloatingToolbarButton({
   return (
     <Toolbar.Button
       onClick={onClick}
-      className={clsx(styles.button, className)}
+      className={clsx(
+        styles.button,
+        type === 'danger' && styles.danger,
+        className
+      )}
       style={style}
     >
       <div className={styles.buttonIcon}>{icon}</div>
@@ -125,6 +131,5 @@ export function FloatingToolbarSeparator() {
 }
 
 FloatingToolbar.Item = FloatingToolbarItem;
-FloatingToolbar.Anchor = FloatingToolbarAnchor;
 FloatingToolbar.Separator = FloatingToolbarSeparator;
 FloatingToolbar.Button = FloatingToolbarButton;

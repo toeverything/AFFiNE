@@ -29,19 +29,29 @@ export const MoveToTrash = (props: MenuItemProps) => {
 };
 
 const MoveToTrashConfirm = ({
-  title,
+  titles,
   ...confirmModalProps
 }: {
-  title: string;
+  titles: string[];
 } & ConfirmModalProps) => {
   const t = useAFFiNEI18N();
-
+  const multiple = titles.length > 1;
+  const title = multiple
+    ? t['com.affine.moveToTrash.confirmModal.title.multiple']({
+        number: titles.length.toString(),
+      })
+    : t['com.affine.moveToTrash.confirmModal.title']();
+  const description = multiple
+    ? t['com.affine.moveToTrash.confirmModal.description.multiple']({
+        number: titles.length.toString(),
+      })
+    : t['com.affine.moveToTrash.confirmModal.description']({
+        title: titles[0] || t['Untitled'](),
+      });
   return (
     <ConfirmModal
-      title={t['com.affine.moveToTrash.confirmModal.title']()}
-      description={t['com.affine.moveToTrash.confirmModal.description']({
-        title: title || 'Untitled',
-      })}
+      title={title}
+      description={description}
       cancelText={t['com.affine.confirmModal.button.cancel']()}
       confirmButtonOptions={{
         ['data-testid' as string]: 'confirm-delete-page',

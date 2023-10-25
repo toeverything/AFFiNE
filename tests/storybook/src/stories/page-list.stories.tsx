@@ -277,22 +277,25 @@ export const FloatingToolbarStory: StoryFn<typeof FloatingToolbar> = props => {
       >
         {open ? 'hide' : 'show'}
       </button>
-      <div style={{ position: 'fixed', bottom: '20px', width: '100%' }}>
-        <FloatingToolbar {...props} open={open} onOpenChange={setOpen}>
-          <FloatingToolbar.Item>10 Selected</FloatingToolbar.Item>
-          <FloatingToolbar.Separator />
-          <FloatingToolbar.Button
-            icon={<TagsIcon />}
-            label="Add Tags"
-            onClick={console.log}
-          />
-          <FloatingToolbar.Button
-            icon={<TagsIcon />}
-            label="Add Tags"
-            onClick={console.log}
-          />
-        </FloatingToolbar>
-      </div>
+      <FloatingToolbar
+        style={{ position: 'fixed', bottom: '20px', width: '100%' }}
+        {...props}
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <FloatingToolbar.Item>10 Selected</FloatingToolbar.Item>
+        <FloatingToolbar.Separator />
+        <FloatingToolbar.Button
+          icon={<TagsIcon />}
+          label="Add Tags"
+          onClick={console.log}
+        />
+        <FloatingToolbar.Button
+          icon={<TagsIcon />}
+          label="Add Tags"
+          onClick={console.log}
+        />
+      </FloatingToolbar>
     </div>
   );
 };

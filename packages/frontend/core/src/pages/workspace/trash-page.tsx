@@ -4,7 +4,6 @@ import {
   PageListScrollContainer,
   TrashOperationCell,
 } from '@affine/component/page-list';
-import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { PageMeta } from '@blocksuite/store';
@@ -12,7 +11,6 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useCallback } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import { WorkspaceHeader } from '../../components/workspace-header';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import * as styles from './all-page.css';
@@ -61,17 +59,12 @@ export const TrashPage = () => {
   );
   return (
     <div className={styles.root}>
-      <WorkspaceHeader
-        currentWorkspaceId={currentWorkspace.id}
-        currentEntry={{
-          subPath: WorkspaceSubPath.TRASH,
-        }}
-      />
       <PageListScrollContainer className={styles.scrollContainer}>
         {filteredPageMetas.length > 0 ? (
           <PageList
             pages={filteredPageMetas}
             clickMode="link"
+            groupBy={false}
             isPreferredEdgeless={isPreferredEdgeless}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
             pageOperationsRenderer={pageOperationsRenderer}

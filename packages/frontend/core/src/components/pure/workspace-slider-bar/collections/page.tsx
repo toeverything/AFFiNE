@@ -44,8 +44,8 @@ export const PageOperations = ({
   const onClickDelete = useCallback(() => {
     setTrashModal({
       open: true,
-      pageId: page.id,
-      pageTitle: page.title,
+      pageIds: [page.id],
+      pageTitles: [page.title],
     });
   }, [page.id, page.title, setTrashModal]);
   const actions = useMemo<

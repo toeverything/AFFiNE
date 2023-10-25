@@ -118,7 +118,7 @@ export const RootAppSidebar = ({
 
   const { trashModal, setTrashModal, handleOnConfirm } =
     useTrashModalHelper(blockSuiteWorkspace);
-  const deletePageTitle = trashModal.pageTitle;
+  const deletePageTitles = trashModal.pageTitles;
   const trashConfirmOpen = trashModal.open;
   const onTrashConfirmOpenChange = useCallback(
     (open: boolean) => {
@@ -189,7 +189,7 @@ export const RootAppSidebar = ({
           open={trashConfirmOpen}
           onConfirm={handleOnConfirm}
           onOpenChange={onTrashConfirmOpenChange}
-          title={deletePageTitle}
+          titles={deletePageTitles}
         />
         <SidebarContainer>
           <Menu

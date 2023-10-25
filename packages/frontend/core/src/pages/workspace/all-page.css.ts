@@ -54,3 +54,14 @@ export const titleIcon = style({
 export const titleCollectionName = style({
   color: 'var(--affine-text-primary-color)',
 });
+
+export const floatingToolbar = style({
+  position: 'absolute',
+  bottom: 26,
+  width: '100%',
+  zIndex: 1,
+});
+
+export const toolbarSelectedNumber = style({
+  color: 'var(--affine-text-secondary-color)',
+});

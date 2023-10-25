@@ -115,7 +115,15 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
     return items.filter(item => selectedPageIds.includes(item.id));
   }, [items, selectionState.selectedPageIds]);
   const onSelectAll = useCallback(() => {
-    selectionState.onSelectedPageIdsChange?.(items.map(item => item.id));
+    const nonCurrentGroupIds =
+      selectionState.selectedPageIds?.filter(
+        id => !items.map(item => item.id).includes(id)
+      ) ?? [];
+
+    selectionState.onSelectedPageIdsChange?.([
+      ...nonCurrentGroupIds,
+      ...items.map(item => item.id),
+    ]);
   }, [items, selectionState]);
   const t = useAFFiNEI18N();
   return (
