@@ -4,6 +4,8 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
 } from '@affine/graphql';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { Suspense, useEffect, useRef, useState } from 'react';
 
@@ -14,10 +16,23 @@ import { type FixedPrice, getPlanDetail, PlanCard } from './plan-card';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
+const getRecurringLabel = ({
+  recurring,
+  t,
+}: {
+  recurring: SubscriptionRecurring;
+  t: ReturnType<typeof useAFFiNEI18N>;
+}) => {
+  return recurring === SubscriptionRecurring.Monthly
+    ? t['com.affine.settings.plans.recurring-monthly']()
+    : t['com.affine.settings.plans.recurring-yearly']();
+};
+
 const Settings = () => {
+  const t = useAFFiNEI18N();
   const [subscription, mutateSubscription] = useUserSubscription();
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
-  const planDetail = getPlanDetail();
+  const planDetail = getPlanDetail(t);
   const scrollWrapper = useRef<HTMLDivElement>(null);
 
   const {
@@ -44,6 +59,9 @@ const Settings = () => {
   );
 
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
+  const isCanceled = !!subscription?.canceledAt;
+  const currentRecurring =
+    subscription?.recurring ?? SubscriptionRecurring.Monthly;
 
   const yearlyDiscount = (
     planDetail.get(SubscriptionPlan.Pro) as FixedPrice | undefined
@@ -76,22 +94,38 @@ const Settings = () => {
   }, [recurring]);
 
   const subtitle = loggedIn ? (
-    <p>
-      You are current on the {currentPlan} plan. If you have any questions,
-      please contact our <span>{/*TODO: add action*/}customer support</span>.
-    </p>
+    isCanceled ? (
+      <p>
+        {t['com.affine.settings.plans.subtitle-canceled']({
+          plan: `${getRecurringLabel({
+            recurring: currentRecurring,
+            t,
+          })} ${currentPlan}`,
+        })}
+      </p>
+    ) : (
+      <p>
+        <Trans
+          plan={currentPlan}
+          i18nKey="com.affine.settings.plans.subtitle-active"
+          values={{ currentPlan }}
+        >
+          You are current on the {{ currentPlan }} plan. If you have any
+          questions, please contact our&nbsp;
+          <a
+            href="#"
+            target="_blank"
+            style={{ color: 'var(--affine-link-color)' }}
+          >
+            customer support
+          </a>
+          .
+        </Trans>
+      </p>
+    )
   ) : (
-    <p>
-      This is the Pricing plans of AFFiNE Cloud. You can sign up or sign in to
-      your account first.
-    </p>
+    <p>{t['com.affine.settings.plans.subtitle-not-signed-in']()}</p>
   );
-
-  const getRecurringLabel = (recurring: SubscriptionRecurring) =>
-    ({
-      [SubscriptionRecurring.Monthly]: 'Monthly',
-      [SubscriptionRecurring.Yearly]: 'Annually',
-    })[recurring];
 
   const tabs = (
     <RadioButtonGroup
@@ -101,10 +135,12 @@ const Settings = () => {
     >
       {Object.values(SubscriptionRecurring).map(recurring => (
         <RadioButton key={recurring} value={recurring}>
-          {getRecurringLabel(recurring)}
+          {getRecurringLabel({ recurring, t })}
           {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
             <span className={styles.radioButtonDiscount}>
-              {yearlyDiscount}% off
+              {t['com.affine.settings.plans.discount-amount']({
+                amount: yearlyDiscount,
+              })}
             </span>
           )}
         </RadioButton>
