@@ -1,5 +1,5 @@
 import { CloseIcon } from '@blocksuite/icons';
-import type React from 'react';
+import type { ReactNode } from 'react';
 
 import {
   browserWarningStyle,
@@ -14,7 +14,7 @@ export const BrowserWarning = ({
 }: {
   show: boolean;
   onClose: () => void;
-  message: React.ReactNode;
+  message: ReactNode;
 }) => {
   if (!show) {
     return null;

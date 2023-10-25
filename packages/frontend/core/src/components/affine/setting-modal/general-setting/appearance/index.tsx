@@ -9,9 +9,9 @@ import { useCallback } from 'react';
 import {
   type AppSetting,
   fontStyleOptions,
-  useAppSetting,
   windowFrameStyleOptions,
 } from '../../../../../atoms/settings';
+import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
@@ -47,7 +47,7 @@ export const ThemeSettings = () => {
 
 const FontFamilySettings = () => {
   const t = useAFFiNEI18N();
-  const [appSettings, setAppSettings] = useAppSetting();
+  const { appSettings, updateSettings } = useAppSettingHelper();
   return (
     <RadioButtonGroup
       width={250}
@@ -55,9 +55,9 @@ const FontFamilySettings = () => {
       value={appSettings.fontStyle}
       onValueChange={useCallback(
         (key: AppSetting['fontStyle']) => {
-          setAppSettings({ fontStyle: key });
+          updateSettings('fontStyle', key);
         },
-        [setAppSettings]
+        [updateSettings]
       )}
     >
       {fontStyleOptions.map(({ key, value }) => {
@@ -95,14 +95,8 @@ const FontFamilySettings = () => {
 export const AppearanceSettings = () => {
   const t = useAFFiNEI18N();
 
-  const [appSettings, setAppSettings] = useAppSetting();
+  const { appSettings, updateSettings } = useAppSettingHelper();
 
-  const changeSwitch = useCallback(
-    (key: keyof AppSetting, checked: boolean) => {
-      setAppSettings({ [key]: checked });
-    },
-    [setAppSettings]
-  );
   return (
     <>
       <SettingHeader
@@ -139,7 +133,7 @@ export const AppearanceSettings = () => {
           >
             <Switch
               checked={appSettings.clientBorder}
-              onChange={checked => changeSwitch('clientBorder', checked)}
+              onChange={checked => updateSettings('clientBorder', checked)}
             />
           </SettingRow>
         ) : null}
@@ -151,7 +145,7 @@ export const AppearanceSettings = () => {
           <Switch
             data-testid="full-width-layout-trigger"
             checked={appSettings.fullWidthLayout}
-            onChange={checked => changeSwitch('fullWidthLayout', checked)}
+            onChange={checked => updateSettings('fullWidthLayout', checked)}
           />
         </SettingRow>
         {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
@@ -164,7 +158,7 @@ export const AppearanceSettings = () => {
               width={250}
               defaultValue={appSettings.windowFrameStyle}
               onValueChange={(value: AppSetting['windowFrameStyle']) => {
-                setAppSettings({ windowFrameStyle: value });
+                updateSettings('windowFrameStyle', value);
               }}
             >
               {windowFrameStyleOptions.map(option => {
@@ -194,7 +188,7 @@ export const AppearanceSettings = () => {
           >
             <Switch
               checked={appSettings.startWeekOnMonday}
-              onChange={checked => changeSwitch('startWeekOnMonday', checked)}
+              onChange={checked => updateSettings('startWeekOnMonday', checked)}
             />
           </SettingRow>
         </SettingWrapper>
@@ -213,7 +207,7 @@ export const AppearanceSettings = () => {
             <Switch
               checked={appSettings.enableNoisyBackground}
               onChange={checked =>
-                changeSwitch('enableNoisyBackground', checked)
+                updateSettings('enableNoisyBackground', checked)
               }
             />
           </SettingRow>
@@ -227,7 +221,7 @@ export const AppearanceSettings = () => {
               <Switch
                 checked={appSettings.enableBlurBackground}
                 onChange={checked =>
-                  changeSwitch('enableBlurBackground', checked)
+                  updateSettings('enableBlurBackground', checked)
                 }
               />
             </SettingRow>

@@ -33,7 +33,7 @@ export function registerAffineNavigationCommands({
       id: 'affine:goto-all-pages',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      label: () => t['com.affine.cmdk.affine.navigation.goto-all-pages'](),
+      label: t['com.affine.cmdk.affine.navigation.goto-all-pages'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
         setPageListMode('all');
@@ -49,7 +49,7 @@ export function registerAffineNavigationCommands({
       preconditionStrategy: () => {
         return pageListMode !== 'page';
       },
-      label: () => t['com.affine.cmdk.affine.navigation.goto-page-list'](),
+      label: t['com.affine.cmdk.affine.navigation.goto-page-list'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
         setPageListMode('page');
@@ -65,7 +65,7 @@ export function registerAffineNavigationCommands({
       preconditionStrategy: () => {
         return pageListMode !== 'edgeless';
       },
-      label: () => t['com.affine.cmdk.affine.navigation.goto-edgeless-list'](),
+      label: t['com.affine.cmdk.affine.navigation.goto-edgeless-list'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
         setPageListMode('edgeless');
@@ -78,7 +78,7 @@ export function registerAffineNavigationCommands({
       id: 'affine:goto-workspace',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      label: () => t['com.affine.cmdk.affine.navigation.goto-workspace'](),
+      label: t['com.affine.cmdk.affine.navigation.goto-workspace'](),
       run() {
         store.set(openWorkspaceListModalAtom, true);
       },
@@ -90,7 +90,7 @@ export function registerAffineNavigationCommands({
       id: 'affine:open-settings',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      label: () => t['com.affine.cmdk.affine.navigation.open-settings'](),
+      label: t['com.affine.cmdk.affine.navigation.open-settings'](),
       run() {
         store.set(openSettingModalAtom, {
           activeTab: 'appearance',
@@ -106,7 +106,7 @@ export function registerAffineNavigationCommands({
       id: 'affine:goto-trash',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      label: () => t['com.affine.cmdk.affine.navigation.goto-trash'](),
+      label: t['com.affine.cmdk.affine.navigation.goto-trash'](),
       run() {
         navigationHelper.jumpToSubPath(workspace.id, WorkspaceSubPath.TRASH);
         setPageListMode('all');

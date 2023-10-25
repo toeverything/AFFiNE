@@ -61,7 +61,7 @@ jobs:
     environment: development
     needs: build-core
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build AFFiNE native

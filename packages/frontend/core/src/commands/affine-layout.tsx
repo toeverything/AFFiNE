@@ -17,14 +17,11 @@ export function registerAffineLayoutCommands({
       id: 'affine:toggle-left-sidebar',
       category: 'affine:layout',
       icon: <SidebarIcon />,
-      label: () => {
-        const open = store.get(appSidebarOpenAtom);
-        return t[
-          open
-            ? 'com.affine.cmdk.affine.left-sidebar.collapse'
-            : 'com.affine.cmdk.affine.left-sidebar.expand'
-        ]();
-      },
+      label: () =>
+        store.get(appSidebarOpenAtom)
+          ? t['com.affine.cmdk.affine.left-sidebar.collapse']()
+          : t['com.affine.cmdk.affine.left-sidebar.expand'](),
+
       keyBinding: {
         binding: '$mod+/',
       },
