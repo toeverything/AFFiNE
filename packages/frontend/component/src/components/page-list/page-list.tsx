@@ -16,6 +16,7 @@ import {
 } from 'react';
 
 import { Checkbox, type CheckboxProps } from '../../ui/checkbox';
+import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { PageGroup } from './page-group';
 import * as styles from './page-list.css';
 import {
@@ -266,9 +267,12 @@ export const PageListScrollContainer = ({
   children: ReactNode;
   style?: React.CSSProperties;
 }) => {
+  const [hasScrollTop, ref] = useHasScrollTop();
   return (
     <div
       style={style}
+      ref={ref}
+      data-has-scroll-top={hasScrollTop}
       className={clsx(styles.pageListScrollContainer, className)}
     >
       {children}

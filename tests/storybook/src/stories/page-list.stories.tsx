@@ -8,6 +8,7 @@ import {
   PageListItem,
   type PageListItemProps,
   type PageListProps,
+  PageListScrollContainer,
   PageTags,
   type PageTagsProps,
 } from '@affine/component/page-list';
@@ -171,15 +172,13 @@ ListItemTags.args = {
 
 export const PageListStory: StoryFn<PageListProps> = (props, { loaded }) => {
   return (
-    <div
+    <PageListScrollContainer
       style={{
         height: '100vh',
-        overflow: 'auto',
-        scrollTimeline: '--list-scroll-root y',
       }}
     >
       <PageList {...props} {...loaded}></PageList>
-    </div>
+    </PageListScrollContainer>
   );
 };
 

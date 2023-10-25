@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-export function useHasScrollTop() {
-  const ref = useRef<HTMLDivElement>(null);
+export function useHasScrollTop<T extends HTMLElement = HTMLDivElement>() {
+  const ref = useRef<T>(null);
   const [hasScrollTop, setHasScrollTop] = useState(false);
 
   useEffect(() => {
@@ -13,8 +13,10 @@ export function useHasScrollTop() {
 
     function updateScrollTop() {
       if (container) {
-        const hasScrollTop = container.scrollTop > 0;
-        setHasScrollTop(hasScrollTop);
+        setTimeout(() => {
+          const hasScrollTop = container.scrollTop > 0;
+          setHasScrollTop(hasScrollTop);
+        });
       }
     }
 

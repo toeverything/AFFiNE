@@ -1,16 +1,4 @@
-import { keyframes, style } from '@vanilla-extract/css';
-
-const headerScrollAnimation = keyframes({
-  '0%': {
-    opacity: 1,
-  },
-  '30%': {
-    opacity: 0,
-  },
-  '100%': {
-    opacity: 0,
-  },
-});
+import { style } from '@vanilla-extract/css';
 
 export const root = style({
   height: '100%',
@@ -32,8 +20,6 @@ export const allPagesHeader = style({
   display: 'flex',
   justifyContent: 'space-between',
   background: 'var(--affine-background-primary-color)',
-  animationName: `${headerScrollAnimation}`,
-  animationTimeline: '--list-scroll-root',
 });
 
 export const allPagesHeaderTitle = style({
