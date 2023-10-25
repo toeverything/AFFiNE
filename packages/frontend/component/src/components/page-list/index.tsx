@@ -1,4 +1,5 @@
 export * from './components/favorite-tag';
+export * from './components/floating-toobar';
 export * from './components/new-page-buttton';
 export * from './components/title-cell';
 export * from './filter';

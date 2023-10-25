@@ -3,38 +3,47 @@ import { keyframes, style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 2,
+  gap: 6,
 });
 
 const slideDown = keyframes({
   '0%': {
+    opacity: 0,
     height: '0px',
   },
   '100%': {
+    opacity: 1,
     height: 'var(--radix-collapsible-content-height)',
   },
 });
 
 const slideUp = keyframes({
   '0%': {
+    opacity: 1,
     height: 'var(--radix-collapsible-content-height)',
   },
   '100%': {
+    opacity: 0,
     height: '0px',
   },
 });
 
 export const collapsibleContent = style({
   overflow: 'hidden',
-  marginTop: '4px',
   selectors: {
     '&[data-state="open"]': {
-      animation: `${slideDown} 0.2s ease-in-out`,
+      animation: `${slideDown} 0.3s ease-in-out`,
     },
     '&[data-state="closed"]': {
-      animation: `${slideUp} 0.2s ease-in-out`,
+      animation: `${slideUp} 0.3s ease-in-out`,
     },
   },
+});
+
+export const collapsibleContentInner = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
 });
 
 export const header = style({

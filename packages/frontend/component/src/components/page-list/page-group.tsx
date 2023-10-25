@@ -153,9 +153,11 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
         </div>
       ) : null}
       <Collapsible.Content className={styles.collapsibleContent}>
-        {items.map(item => (
-          <PageMetaListItemRenderer key={item.id} {...item} />
-        ))}
+        <div className={styles.collapsibleContentInner}>
+          {items.map(item => (
+            <PageMetaListItemRenderer key={item.id} {...item} />
+          ))}
+        </div>
       </Collapsible.Content>
     </Collapsible.Root>
   );

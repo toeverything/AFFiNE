@@ -4,6 +4,7 @@ export const root = style({
   display: 'flex',
   color: 'var(--affine-text-primary-color)',
   height: '54px', // 42 + 12
+  flexShrink: 0,
   width: '100%',
   alignItems: 'stretch',
   transition: 'background-color 0.2s',

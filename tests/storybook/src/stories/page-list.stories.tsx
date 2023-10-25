@@ -1,5 +1,6 @@
 import { toast } from '@affine/component';
 import {
+  FloatingToolbar,
   NewPageButton,
   OperationCell,
   type OperationCellProps,
@@ -11,11 +12,12 @@ import {
   type PageTagsProps,
 } from '@affine/component/page-list';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import { PageIcon } from '@blocksuite/icons';
+import { PageIcon, TagsIcon } from '@blocksuite/icons';
 import { Schema, Workspace } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { userEvent } from '@storybook/testing-library';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
+import { useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';
 
 export default {
@@ -256,3 +258,41 @@ PageListStory.loaders = [
     };
   },
 ];
+
+export const FloatingToolbarStory: StoryFn<typeof FloatingToolbar> = props => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      style={{
+        height: '100vh',
+        overflow: 'auto',
+      }}
+    >
+      <button
+        style={{
+          border: '1px solid black',
+          padding: '10px',
+        }}
+        onClick={() => setOpen(o => !o)}
+      >
+        {open ? 'hide' : 'show'}
+      </button>
+      <div style={{ position: 'fixed', bottom: '20px', width: '100%' }}>
+        <FloatingToolbar {...props} open={open}>
+          <FloatingToolbar.Item>10 Selected</FloatingToolbar.Item>
+          <FloatingToolbar.Separator />
+          <FloatingToolbar.Button
+            icon={<TagsIcon />}
+            label="Add Tags"
+            onClick={console.log}
+          />
+          <FloatingToolbar.Button
+            icon={<TagsIcon />}
+            label="Add Tags"
+            onClick={console.log}
+          />
+        </FloatingToolbar>
+      </div>
+    </div>
+  );
+};
