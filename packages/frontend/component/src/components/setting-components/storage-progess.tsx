@@ -30,11 +30,11 @@ export const StorageProgress = ({
   const max = useMemo(() => bytes.format(upperLimit), [upperLimit]);
 
   const buttonType = useMemo(() => {
-    if (plan === 'Free') {
+    if (plan === t['com.affine.price-plan.free']()) {
       return 'primary';
     }
     return 'default';
-  }, [plan]);
+  }, [plan, t]);
 
   return (
     <div className={styles.storageProgressContainer}>
@@ -43,7 +43,7 @@ export const StorageProgress = ({
           <span>{t['com.affine.storage.used.hint']()}</span>
           <span>
             {used}/{max}
-            {` (${plan} Plan)`}
+            {` (${plan} ${t['com.affine.storage.plan']()})`}
           </span>
         </div>
 
@@ -59,9 +59,7 @@ export const StorageProgress = ({
 
       <Tooltip
         options={{ hidden: percent < 100 }}
-        content={
-          'You have reached the maximum capacity limit for your current account'
-        }
+        content={t['com.affine.storage.maximum-tips']()}
       >
         <span tabIndex={0}>
           <Button
@@ -69,7 +67,9 @@ export const StorageProgress = ({
             onClick={onUpgrade}
             className={styles.storageButton}
           >
-            {plan === 'Free' ? 'Upgrade' : 'Change'}
+            {plan === 'Free'
+              ? t['com.affine.storage.upgrade']()
+              : t['com.affine.storage.change-plan']()}
           </Button>
         </span>
       </Tooltip>

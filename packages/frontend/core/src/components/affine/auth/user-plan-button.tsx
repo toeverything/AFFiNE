@@ -1,9 +1,11 @@
 import { SubscriptionPlan } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import Tooltip from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
 import { openSettingModalAtom } from '../../../atoms';
+import { usePlanI18NText } from '../../../hooks/use-plan-i18n-text';
 import { useUserSubscription } from '../../../hooks/use-subscription';
 import * as styles from './style.css';
 
@@ -24,10 +26,13 @@ export const UserPlanButton = () => {
     [setSettingModalAtom]
   );
 
+  const t = useAFFiNEI18N();
+  const planText = usePlanI18NText(plan);
+
   return (
-    <Tooltip content={'See all plans'} side="top">
+    <Tooltip content={t['com.affine.price-plan.tag-tooltips']()} side="top">
       <div className={styles.userPlanButton} onClick={handleClick}>
-        {plan}
+        {planText}
       </div>
     </Tooltip>
   );
