@@ -26,6 +26,7 @@ export const dragOverlay = style({
   height: '54px', // 42 + 12
   alignItems: 'center',
   background: 'var(--affine-black-10)',
+  boxShadow: 'var(--affine-menu-shadow)',
   borderRadius: 10,
   zIndex: 1001,
   cursor: 'pointer',
@@ -49,7 +50,7 @@ globalStyle(`[data-draggable=true] ${dndCell}:before`, {
   position: 'absolute',
   top: '50%',
   transform: 'translateY(-50%)',
-  left: -8,
+  left: -6,
   width: 4,
   height: 4,
   transition: 'height 0.2s, opacity 0.2s',
@@ -65,7 +66,8 @@ globalStyle(`[data-draggable=true] ${dndCell}:hover:before`, {
 });
 
 globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
-  height: 16,
+  height: 24,
+  width: 2,
   opacity: 1,
 });
 
