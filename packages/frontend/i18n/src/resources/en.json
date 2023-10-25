@@ -629,6 +629,8 @@
   "com.affine.cmdk.affine.getting-started": "Getting Started",
   "com.affine.cmdk.affine.contact-us": "Contact Us",
   "com.affine.cmdk.affine.restart-to-upgrade": "Restart to Upgrade",
+  "com.affine.payment.disable-payment.title": "Account Upgrade Unavailable",
+  "com.affine.payment.disable-payment.description": "This is a special testing(Canary) version of AFFiNE. Account upgrades are not supported in this version. If you want to experience the full service, please download the stable version from our website.",
   "com.affine.share-menu.publish-to-web": "Publish to Web",
   "com.affine.share-menu.publish-to-web.description": "Let anyone with a link view a read-only version of this page.",
   "com.affine.share-menu.share-privately": "Share Privately",

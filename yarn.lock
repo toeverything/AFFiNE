@@ -274,7 +274,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.34"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     "@types/marked": "npm:^6.0.0"
     "@vanilla-extract/css": "npm:^1.13.0"
     clsx: "npm:^2.0.0"
@@ -328,7 +328,7 @@ __metadata:
     "@sentry/webpack-plugin": "npm:^2.8.0"
     "@svgr/webpack": "npm:^8.1.0"
     "@swc/core": "npm:^1.3.93"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     "@types/bytes": "npm:^3.1.3"
     "@types/lodash-es": "npm:^4.17.9"
     "@types/webpack-env": "npm:^1.18.2"
@@ -490,7 +490,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.34"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
   languageName: unknown
   linkType: soft
 
@@ -516,7 +516,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.34"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     "@toeverything/theme": "npm:^0.7.20"
     clsx: "npm:^2.0.0"
     foxact: "npm:^0.2.20"
@@ -617,7 +617,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.34"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     jotai: "npm:^2.4.3"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
@@ -12546,9 +12546,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/components@npm:^0.0.45":
-  version: 0.0.45
-  resolution: "@toeverything/components@npm:0.0.45"
+"@toeverything/components@npm:^0.0.46":
+  version: 0.0.46
+  resolution: "@toeverything/components@npm:0.0.46"
   dependencies:
     "@blocksuite/icons": "npm:^2.1.33"
     "@radix-ui/react-dialog": "npm:^1.0.4"
@@ -12560,7 +12560,7 @@ __metadata:
     clsx: ^2
     react: ^18
     react-dom: ^18
-  checksum: fb168a83cd04da654ae1723098bf6902bf0eef8be9410a0814514b062d87e5fd2b972746a7770f8ca831a69d4a53255c87750e9fa8beab040d88deebc646dd92
+  checksum: 1e74a620d82bc6f6c318ccac35a2f4f86d5e3b97761e798d0ad3f3b31a74f377e402338ad00a2af54c62dda7d88c231cc07b53f2aa9c9bff1de5088659e1c712
   languageName: node
   linkType: hard
 

@@ -16,6 +16,7 @@ import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import {
   type PropsWithChildren,
   useCallback,
@@ -24,6 +25,7 @@ import {
   useState,
 } from 'react';
 
+import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { BulledListIcon } from './icons/bulled-list';
@@ -373,7 +375,13 @@ const Upgrade = ({
     onSubscriptionUpdate();
   }, [onSubscriptionUpdate]);
 
+  const [, openPaymentDisableModal] = useAtom(openPaymentDisableAtom);
   const upgrade = useCallback(() => {
+    if (!runtimeConfig.enablePayment) {
+      openPaymentDisableModal(true);
+      return;
+    }
+
     if (newTabRef.current) {
       newTabRef.current.focus();
     } else {
@@ -398,7 +406,7 @@ const Upgrade = ({
         }
       );
     }
-  }, [trigger, recurring, onClose]);
+  }, [trigger, recurring, onClose, openPaymentDisableModal]);
 
   useEffect(() => {
     return () => {
