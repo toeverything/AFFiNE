@@ -20,17 +20,17 @@ export class FeatureManagementService {
     return email.endsWith('@toeverything.info');
   }
 
-  async addEarlyAccess(email: string) {
+  async addEarlyAccess(userId: string) {
     return this.feature.addUserFeature(
-      email,
+      userId,
       'early_access',
       1,
       'Early access user'
     );
   }
 
-  async removeEarlyAccess(email: string) {
-    return this.feature.removeUserFeature(email, 'early_access');
+  async removeEarlyAccess(userId: string) {
+    return this.feature.removeUserFeature(userId, 'early_access');
   }
 
   async listEarlyAccess() {
@@ -42,23 +42,31 @@ export class FeatureManagementService {
       this.config.featureFlags.earlyAccessPreview &&
       !email.endsWith('@toeverything.info')
     ) {
-      const canEarlyAccess = await this.feature
-        .hasFeature(email, 'early_access')
-        .catch(() => false);
-      // TODO: Outdated, switch to feature gates
-      const oldCanEarlyAccess = await this.prisma.newFeaturesWaitingList
-        .findUnique({
-          where: { email, type: NewFeaturesKind.EarlyAccess },
-        })
-        .then(x => !!x)
-        .catch(() => false);
-      if (!canEarlyAccess && oldCanEarlyAccess) {
-        this.logger.warn(
-          `User ${email} has early access in old table but not in new table`
-        );
-      }
+      const user = await this.prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
+      if (user) {
+        const canEarlyAccess = await this.feature
+          .hasFeature(user.id, 'early_access')
+          .catch(() => false);
+        // TODO: Outdated, switch to feature gates
+        const oldCanEarlyAccess = await this.prisma.newFeaturesWaitingList
+          .findUnique({
+            where: { email, type: NewFeaturesKind.EarlyAccess },
+          })
+          .then(x => !!x)
+          .catch(() => false);
+        if (!canEarlyAccess && oldCanEarlyAccess) {
+          this.logger.warn(
+            `User ${email} has early access in old table but not in new table`
+          );
+        }
 
-      return canEarlyAccess || oldCanEarlyAccess;
+        return canEarlyAccess || oldCanEarlyAccess;
+      }
+      return false;
     } else {
       return true;
     }

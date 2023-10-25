@@ -22,6 +22,7 @@ import { PrismaService } from '../../prisma/service';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
+import { AuthService } from '../auth/service';
 import { FeatureManagementService } from '../quota';
 import { StorageService } from '../storage/storage.service';
 import { UsersService } from './users';
@@ -73,6 +74,7 @@ export class RemoveAvatar {
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
+    private readonly auth: AuthService,
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly users: UsersService,
@@ -221,13 +223,19 @@ export class UserResolver {
   })
   @Mutation(() => String)
   async addToEarlyAccess(
-    @CurrentUser() user: UserType,
+    @CurrentUser() currentUser: UserType,
     @Args('email') email: string
   ): Promise<string> {
-    if (!this.feature.isStaff(user.email)) {
+    if (!this.feature.isStaff(currentUser.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
-    return this.feature.addEarlyAccess(email);
+    const user = await this.users.findUserByEmail(email);
+    if (user) {
+      return this.feature.addEarlyAccess(user.id);
+    } else {
+      const user = await this.auth.createAnonymousUser(email);
+      return this.feature.addEarlyAccess(user.id);
+    }
   }
 
   @Throttle({
@@ -238,13 +246,17 @@ export class UserResolver {
   })
   @Mutation(() => Int)
   async removeEarlyAccess(
-    @CurrentUser() user: UserType,
+    @CurrentUser() currentUser: UserType,
     @Args('email') email: string
   ): Promise<number> {
-    if (!this.feature.isStaff(user.email)) {
+    if (!this.feature.isStaff(currentUser.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
-    return this.feature.removeEarlyAccess(email);
+    const user = await this.users.findUserByEmail(email);
+    if (!user) {
+      throw new BadRequestException(`User ${email} not found`);
+    }
+    return this.feature.removeEarlyAccess(user.id);
   }
 
   @Throttle({
