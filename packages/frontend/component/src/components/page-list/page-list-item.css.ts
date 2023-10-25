@@ -7,17 +7,66 @@ export const root = style({
   flexShrink: 0,
   width: '100%',
   alignItems: 'stretch',
-  transition: 'background-color 0.2s',
+  transition: 'background-color 0.2s, opacity 0.2s',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },
   overflow: 'hidden',
   cursor: 'default',
+  willChange: 'opacity',
   selectors: {
     '&[data-clickable=true]': {
       cursor: 'pointer',
     },
   },
+});
+
+export const dragOverlay = style({
+  display: 'flex',
+  height: '54px', // 42 + 12
+  alignItems: 'center',
+  background: 'var(--affine-black-10)',
+  borderRadius: 10,
+  zIndex: 1001,
+  cursor: 'pointer',
+  maxWidth: '360px',
+  transition: 'transform 0.2s',
+  willChange: 'transform',
+  selectors: {
+    '&[data-over=true]': {
+      transform: 'scale(0.8)',
+    },
+  },
+});
+
+export const dndCell = style({
+  position: 'relative',
+  overflow: 'visible !important',
+});
+
+globalStyle(`[data-draggable=true] ${dndCell}:before`, {
+  content: '""',
+  position: 'absolute',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  left: -8,
+  width: 4,
+  height: 4,
+  transition: 'height 0.2s, opacity 0.2s',
+  backgroundColor: 'var(--affine-placeholder-color)',
+  borderRadius: '2px',
+  opacity: 0,
+  willChange: 'height, opacity',
+});
+
+globalStyle(`[data-draggable=true] ${dndCell}:hover:before`, {
+  height: 12,
+  opacity: 1,
+});
+
+globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
+  height: 16,
+  opacity: 1,
 });
 
 // todo: remove global style

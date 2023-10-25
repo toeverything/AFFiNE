@@ -1,6 +1,6 @@
 import type { Tag } from '@affine/env/filter';
 import type { PageMeta, Workspace } from '@blocksuite/store';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
 // TODO: consider reducing the number of props here
@@ -21,8 +21,6 @@ export type PageListItemProps = {
   operations?: ReactNode; // operations to show on the right side of the item
   onClick?: () => void;
   onSelectedChange?: () => void;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
 };
 
 export interface PageListHeaderProps {}
@@ -85,7 +83,5 @@ export type PageMetaRecord = MakeRecord<PageMeta>;
 
 export type DraggableTitleCellData = {
   pageId: string;
-  pageTitle: string;
-  pagePreview?: string;
-  icon: ReactElement;
+  pageTitle: ReactNode;
 };

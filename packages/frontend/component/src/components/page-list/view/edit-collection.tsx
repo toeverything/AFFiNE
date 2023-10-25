@@ -436,6 +436,7 @@ const RulesMode = ({
             <div>
               <div className={styles.includeListTitle}>include</div>
               <PageList
+                hideHeader
                 clickMode="select"
                 className={styles.resultPages}
                 pages={allowListPages}

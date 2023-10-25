@@ -243,6 +243,7 @@ export const AllPage = () => {
             <PageList
               ref={pageListRef}
               selectable="toggle"
+              draggable
               selectedPageIds={filteredSelectedPageIds}
               onSelectedPageIdsChange={setSelectedPageIds}
               pages={filteredPageMetas}

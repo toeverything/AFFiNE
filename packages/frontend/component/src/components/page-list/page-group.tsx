@@ -180,8 +180,6 @@ const requiredPropNames = [
   'selectedPageIds',
   'onSelectedPageIdsChange',
   'draggable',
-  'onDragStart',
-  'onDragEnd',
 ] as const;
 
 type RequiredProps = Pick<PageListProps, (typeof requiredPropNames)[number]> & {
@@ -273,12 +271,6 @@ function pageMetaToPageItemProp(
     onSelectedChange: toggleSelection,
     draggable: props.draggable,
     isPublicPage: !!pageMeta.isPublic,
-    onDragStart: props.onDragStart
-      ? () => props.onDragStart?.(pageMeta.id)
-      : undefined,
-    onDragEnd: props.onDragEnd
-      ? () => props.onDragEnd?.(pageMeta.id)
-      : undefined,
   };
   return itemProps;
 }

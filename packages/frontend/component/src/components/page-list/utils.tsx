@@ -1,6 +1,10 @@
 import { useMediaQuery, useTheme } from '@mui/material';
 import clsx from 'clsx';
-import type { BaseSyntheticEvent, PropsWithChildren } from 'react';
+import {
+  type BaseSyntheticEvent,
+  forwardRef,
+  type PropsWithChildren,
+} from 'react';
 
 import * as styles from './page-list.css';
 
@@ -82,35 +86,41 @@ export type ColWrapperProps = PropsWithChildren<{
 }> &
   React.HTMLAttributes<Element>;
 
-export const ColWrapper = ({
-  flex,
-  alignment,
-  hideInSmallContainer,
-  className,
-  style,
-  children,
-  ...rest
-}: ColWrapperProps) => {
-  return (
-    <div
-      {...rest}
-      data-testid="page-list-flex-wrapper"
-      style={{
-        ...style,
-        flexGrow: flex,
-        flexBasis: flex ? `${(flex / 12) * 100}%` : 'auto',
-        justifyContent: alignment,
-      }}
-      className={clsx(
-        className,
-        styles.colWrapper,
-        hideInSmallContainer ? styles.hideInSmallContainer : null
-      )}
-    >
-      {children}
-    </div>
-  );
-};
+export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
+  function ColWrapper(
+    {
+      flex,
+      alignment,
+      hideInSmallContainer,
+      className,
+      style,
+      children,
+      ...rest
+    }: ColWrapperProps,
+    ref
+  ) {
+    return (
+      <div
+        {...rest}
+        ref={ref}
+        data-testid="page-list-flex-wrapper"
+        style={{
+          ...style,
+          flexGrow: flex,
+          flexBasis: flex ? `${(flex / 12) * 100}%` : 'auto',
+          justifyContent: alignment,
+        }}
+        className={clsx(
+          className,
+          styles.colWrapper,
+          hideInSmallContainer ? styles.hideInSmallContainer : null
+        )}
+      >
+        {children}
+      </div>
+    );
+  }
+);
 
 export const withinDaysAgo = (date: Date, days: number): boolean => {
   const startDate = new Date();

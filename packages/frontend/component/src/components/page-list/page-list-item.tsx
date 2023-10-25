@@ -1,11 +1,12 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useDraggable } from '@dnd-kit/core';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Checkbox } from '../../ui/checkbox';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
-import type { PageListItemProps } from './types';
+import type { DraggableTitleCellData, PageListItemProps } from './types';
 import { ColWrapper, formatDate, stopPropagation } from './utils';
 
 const PageListTitleCell = ({
@@ -110,14 +111,54 @@ const PageListOperationsCell = ({
 };
 
 export const PageListItem = (props: PageListItemProps) => {
+  const pageTitleElement = useMemo(() => {
+    return (
+      <>
+        <div className={styles.titleIconsWrapper}>
+          <PageSelectionCell
+            onSelectedChange={props.onSelectedChange}
+            selectable={props.selectable}
+            selected={props.selected}
+          />
+          <PageListIconCell icon={props.icon} />
+        </div>
+        <PageListTitleCell title={props.title} preview={props.preview} />
+      </>
+    );
+  }, [
+    props.icon,
+    props.onSelectedChange,
+    props.preview,
+    props.selectable,
+    props.selected,
+    props.title,
+  ]);
+
+  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
+    id: 'page-list-item-title-' + props.pageId,
+    data: {
+      pageId: props.pageId,
+      pageTitle: pageTitleElement,
+    } satisfies DraggableTitleCellData,
+    disabled: !props.draggable,
+  });
+
   return (
     <PageListItemWrapper
       onClick={props.onClick}
       to={props.to}
       pageId={props.pageId}
+      draggable={props.draggable}
+      isDragging={isDragging}
     >
       <ColWrapper flex={9}>
-        <ColWrapper flex={8}>
+        <ColWrapper
+          className={styles.dndCell}
+          flex={8}
+          ref={setNodeRef}
+          {...attributes}
+          {...listeners}
+        >
           <div className={styles.titleIconsWrapper}>
             <PageSelectionCell
               onSelectedChange={props.onSelectedChange}
@@ -151,13 +192,20 @@ export const PageListItem = (props: PageListItemProps) => {
   );
 };
 
-const PageListItemWrapper = ({
+type PageListWrapperProps = PropsWithChildren<
+  Pick<PageListItemProps, 'to' | 'pageId' | 'onClick' | 'draggable'> & {
+    isDragging: boolean;
+  }
+>;
+
+function PageListItemWrapper({
   to,
+  isDragging,
   pageId,
   onClick,
   children,
-}: Pick<PageListItemProps, 'to' | 'pageId' | 'onClick'> &
-  PropsWithChildren) => {
+  draggable,
+}: PageListWrapperProps) {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (onClick) {
@@ -167,15 +215,18 @@ const PageListItemWrapper = ({
     },
     [onClick]
   );
+
   const commonProps = useMemo(
     () => ({
       'data-testid': 'page-list-item',
       'data-page-id': pageId,
+      'data-draggable': draggable,
       className: styles.root,
       'data-clickable': !!onClick || !!to,
+      'data-dragging': isDragging,
       onClick: handleClick,
     }),
-    [pageId, onClick, to, handleClick]
+    [pageId, draggable, isDragging, onClick, to, handleClick]
   );
 
   if (to) {
@@ -187,4 +238,17 @@ const PageListItemWrapper = ({
   } else {
     return <div {...commonProps}>{children}</div>;
   }
+}
+
+export const PageListDragOverlay = ({
+  children,
+  over,
+}: PropsWithChildren<{
+  over?: boolean;
+}>) => {
+  return (
+    <div data-over={over} className={styles.dragOverlay}>
+      {children}
+    </div>
+  );
 };
