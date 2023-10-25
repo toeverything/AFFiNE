@@ -1,6 +1,5 @@
 import { toast } from '@affine/component';
 import {
-  CollectionBar,
   currentCollectionAtom,
   NewPageButton,
   OperationCell,
@@ -11,11 +10,12 @@ import {
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
+import { ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -23,13 +23,9 @@ import { NIL } from 'uuid';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import { WorkspaceHeader } from '../../components/workspace-header';
-import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
-import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
-import { useGetPageInfoById } from '../../hooks/use-get-page-info';
-import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import * as styles from './all-page.css';
 import { EmptyPageList } from './page-list-empty';
 import { useFilteredPageMetas } from './pages';
@@ -53,24 +49,52 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 
-export const AllPage = () => {
+const PageListHeader = () => {
+  const t = useAFFiNEI18N();
   const [currentWorkspace] = useCurrentWorkspace();
-  const { isPreferredEdgeless, importFile, createEdgeless, createPage } =
-    usePageHelper(currentWorkspace.blockSuiteWorkspace);
-  const { toggleFavorite } = useBlockSuiteMetaHelper(
+  const setting = useCollectionManager(collectionsCRUDAtom);
+  const { importFile, createEdgeless, createPage } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
+
+  const title = useMemo(() => {
+    if (setting.isDefault) {
+      return t['com.affine.all-pages.header']();
+    }
+    return (
+      <>
+        {t['com.affine.collections.header']()} /
+        <div className={styles.titleIcon}>
+          <ViewLayersIcon />
+        </div>
+        <div className={styles.titleCollectionName}>
+          {setting.currentCollection.name}
+        </div>
+      </>
+    );
+  }, [setting.currentCollection.name, setting.isDefault, t]);
+
+  return (
+    <div className={styles.allPagesHeader}>
+      <div className={styles.allPagesHeaderTitle}>{title}</div>
+      <NewPageButton
+        importFile={importFile}
+        createNewEdgeless={createEdgeless}
+        createNewPage={createPage}
+      />
+    </div>
+  );
+};
+
+const usePageOperationsRenderer = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
-  const navigateHelper = useNavigateHelper();
-  const backToAll = useCallback(() => {
-    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-  }, [navigateHelper, currentWorkspace.id]);
-
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const { toggleFavorite } = useBlockSuiteMetaHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
   const t = useAFFiNEI18N();
-
   const pageOperationsRenderer = useCallback(
     (page: PageMeta) => {
       const onDisablePublicSharing = () => {
@@ -108,16 +132,22 @@ export const AllPage = () => {
     [currentWorkspace.id, setTrashModal, t, toggleFavorite]
   );
 
-  const getPageInfo = useGetPageInfoById(currentWorkspace.blockSuiteWorkspace);
+  return pageOperationsRenderer;
+};
 
+// even though it is called all page, it is also being used for collection route as well
+export const AllPage = () => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const { isPreferredEdgeless } = usePageHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+  const pageOperationsRenderer = usePageOperationsRenderer();
   const filteredPageMetas = useFilteredPageMetas(
     'all',
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
   );
-  const config = useAllPageListConfig();
-  const userInfo = useDeleteCollectionInfo();
-  const setting = useCollectionManager(collectionsCRUDAtom);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   return (
     <div className={styles.root}>
@@ -130,29 +160,7 @@ export const AllPage = () => {
         />
       ) : null}
       <PageListScrollContainer className={styles.scrollContainer}>
-        <div className={styles.allPagesHeader}>
-          <div className={styles.allPagesHeaderTitle}>
-            {setting.isDefault
-              ? t['com.affine.all-pages.header']()
-              : t['com.affine.collections.header']()}
-            <CollectionBar
-              info={userInfo}
-              allPageListConfig={config}
-              backToAll={backToAll}
-              getPageInfo={getPageInfo}
-              collectionsAtom={collectionsCRUDAtom}
-              // the following props is not reactive right?
-              propertiesMeta={
-                currentWorkspace.blockSuiteWorkspace.meta.properties
-              }
-            />
-          </div>
-          <NewPageButton
-            importFile={importFile}
-            createNewEdgeless={createEdgeless}
-            createNewPage={createPage}
-          />
-        </div>
+        <PageListHeader />
         {filteredPageMetas.length > 0 ? (
           <PageList
             selectable="toggle"

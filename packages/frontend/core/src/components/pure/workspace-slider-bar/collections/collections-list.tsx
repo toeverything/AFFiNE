@@ -3,21 +3,15 @@ import {
   MenuLinkItem as SidebarMenuLinkItem,
 } from '@affine/component/app-sidebar';
 import {
+  CollectionOperations,
   filterPage,
   stopPropagation,
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
-import {
-  useEditCollection,
-  useEditCollectionName,
-} from '@affine/component/page-list';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
-  DeleteIcon,
-  EditIcon,
-  FilterIcon,
   InformationIcon,
   MoreHorizontalIcon,
   ViewLayersIcon,
@@ -27,14 +21,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { IconButton } from '@toeverything/components/button';
-import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@toeverything/components/menu';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import type { ReactElement } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -56,92 +43,7 @@ export const processCollectionsDrag = (e: DragEndEvent) => {
     e.over?.data.current?.addToCollection?.(e.active.data.current?.pageId);
   }
 };
-const CollectionOperations = ({
-  view,
-  showUpdateCollection,
-  showUpdateCollectionName,
-  setting,
-  info,
-}: {
-  info: DeleteCollectionInfo;
-  view: Collection;
-  showUpdateCollection: () => void;
-  showUpdateCollectionName: () => void;
-  setting: ReturnType<typeof useCollectionManager>;
-}) => {
-  const t = useAFFiNEI18N();
-  const actions = useMemo<
-    Array<
-      | {
-          icon: ReactElement;
-          name: string;
-          click: () => void;
-          type?: MenuItemProps['type'];
-          element?: undefined;
-        }
-      | {
-          element: ReactElement;
-        }
-    >
-  >(
-    () => [
-      {
-        icon: (
-          <MenuIcon>
-            <EditIcon />
-          </MenuIcon>
-        ),
-        name: t['com.affine.collection.menu.rename'](),
-        click: showUpdateCollectionName,
-      },
-      {
-        icon: (
-          <MenuIcon>
-            <FilterIcon />
-          </MenuIcon>
-        ),
-        name: t['com.affine.collection.menu.edit'](),
-        click: showUpdateCollection,
-      },
-      {
-        element: <div key="divider" className={styles.menuDividerStyle}></div>,
-      },
-      {
-        icon: (
-          <MenuIcon>
-            <DeleteIcon />
-          </MenuIcon>
-        ),
-        name: t['Delete'](),
-        click: () => {
-          return setting.deleteCollection(info, view.id);
-        },
-        type: 'danger',
-      },
-    ],
-    [setting, info, showUpdateCollection, t, view]
-  );
-  return (
-    <div style={{ minWidth: 150 }}>
-      {actions.map(action => {
-        if (action.element) {
-          return action.element;
-        }
-        return (
-          <MenuItem
-            data-testid="collection-option"
-            key={action.name}
-            type={action.type}
-            preFix={action.icon}
-            onClick={action.click}
-          >
-            {action.name}
-          </MenuItem>
-        );
-      })}
-    </div>
-  );
-};
+
 const CollectionRenderer = ({
   collection,
   pages,
@@ -170,31 +72,6 @@ const CollectionRenderer = ({
     () => Object.fromEntries(pages.map(v => [v.id, v])),
     [pages]
   );
-  const t = useAFFiNEI18N();
-  const { open: openEditCollectionNameModal, node: editCollectionNameNode } =
-    useEditCollectionName({
-      title: t['com.affine.editCollection.renameCollection'](),
-    });
-  const showEditName = useCallback(() => {
-    openEditCollectionNameModal(collection.name)
-      .then(name => {
-        return setting.updateCollection({ ...collection, name });
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [setting.updateCollection, collection, openEditCollectionNameModal]);
-  const { open: openEditCollectionModal, node: editCollectionNode } =
-    useEditCollection(config);
-  const showEdit = useCallback(() => {
-    openEditCollectionModal(collection)
-      .then(collection => {
-        return setting.updateCollection(collection);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [setting, collection, openEditCollectionModal]);
   const allowList = useMemo(
     () => new Set(collection.allowList),
     [collection.allowList]
@@ -216,8 +93,6 @@ const CollectionRenderer = ({
   const path = `/workspace/${workspace.id}/collection/${collection.id}`;
   return (
     <Collapsible.Root open={!collapsed}>
-      {editCollectionNameNode}
-      {editCollectionNode}
       <SidebarMenuLinkItem
         data-testid="collection-item"
         data-type="collection-list-item"
@@ -228,16 +103,11 @@ const CollectionRenderer = ({
         to={path}
         postfix={
           <div onClick={stopPropagation}>
-            <Menu
-              items={
-                <CollectionOperations
-                  info={info}
-                  view={collection}
-                  showUpdateCollection={showEdit}
-                  showUpdateCollectionName={showEditName}
-                  setting={setting}
-                />
-              }
+            <CollectionOperations
+              info={info}
+              collection={collection}
+              setting={setting}
+              config={config}
             >
               <IconButton
                 data-testid="collection-options"
@@ -246,7 +116,7 @@ const CollectionRenderer = ({
               >
                 <MoreHorizontalIcon />
               </IconButton>
-            </Menu>
+            </CollectionOperations>
           </div>
         }
         collapsed={pagesToRender.length > 0 ? collapsed : undefined}

@@ -17,6 +17,7 @@ import { useCallback } from 'react';
 import { collectionsCRUDAtom } from '../atoms/collections';
 import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
 import { useAllPageListConfig } from '../hooks/affine/use-all-page-list-config';
+import { useDeleteCollectionInfo } from '../hooks/affine/use-delete-collection-info';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useWorkspace } from '../hooks/use-workspace';
 import { SharePageModal } from './affine/share-page-modal';
@@ -76,6 +77,7 @@ export function WorkspaceHeader({
   const workspace = currentWorkspace.blockSuiteWorkspace;
   const setting = useCollectionManager(collectionsCRUDAtom);
   const config = useAllPageListConfig();
+  const userInfo = useDeleteCollectionInfo();
   // route in all page
   if (
     'subPath' in currentEntry &&
@@ -88,6 +90,7 @@ export function WorkspaceHeader({
           ref={setAppHeader}
           left={
             <CollectionList
+              userInfo={userInfo}
               allPageListConfig={config}
               setting={setting}
               propertiesMeta={workspace.meta.properties}

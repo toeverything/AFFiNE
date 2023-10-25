@@ -42,4 +42,15 @@ export const allPagesHeaderTitle = style({
   color: 'var(--affine-text-secondary-color)',
   display: 'flex',
   alignItems: 'center',
+  gap: 8,
+});
+
+export const titleIcon = style({
+  color: 'var(--affine-icon-color)',
+  display: 'inline-flex',
+  alignItems: 'center',
+});
+
+export const titleCollectionName = style({
+  color: 'var(--affine-text-primary-color)',
 });
