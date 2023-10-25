@@ -170,6 +170,7 @@ export type AllPageListConfig = {
   workspace: Workspace;
   isEdgeless: (id: string) => boolean;
   getPage: (id: string) => PageMeta | undefined;
+  favoriteRender: (page: PageMeta) => ReactNode;
 };
 const RulesMode = ({
   collection,
@@ -428,6 +429,7 @@ const RulesMode = ({
               groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
+              pageOperationsRenderer={allPageListConfig.favoriteRender}
             ></PageList>
           ) : null}
           {allowListPages.length > 0 ? (
@@ -507,6 +509,10 @@ const PagesMode = ({
       pages: [],
     });
   }, [collection, updateCollection]);
+  const pageOperationsRenderer = useCallback(
+    (page: PageMeta) => allPageListConfig.favoriteRender(page),
+    [allPageListConfig.favoriteRender]
+  );
   return (
     <>
       <input
@@ -599,6 +605,7 @@ const PagesMode = ({
                     pages: ids,
                   });
                 }}
+                pageOperationsRenderer={pageOperationsRenderer}
                 selectedPageIds={collection.pages}
                 isPreferredEdgeless={allPageListConfig.isEdgeless}
               ></PageList>
@@ -722,6 +729,7 @@ const SelectPage = ({
               onSelectedPageIdsChange={onChange}
               selectedPageIds={value}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
+              pageOperationsRenderer={allPageListConfig.favoriteRender}
             ></PageList>
           </PageListScrollContainer>
         ) : (
