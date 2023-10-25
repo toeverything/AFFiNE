@@ -129,12 +129,16 @@ export class FeatureService implements OnModuleInit {
 
   async removeUserFeature(userId: string, feature: string) {
     return this.prisma.userFeatureGates
-      .deleteMany({
+      .updateMany({
         where: {
           userId,
           feature: {
             feature,
           },
+          activated: true,
+        },
+        data: {
+          activated: false,
         },
       })
       .then(r => r.count);
@@ -156,6 +160,7 @@ export class FeatureService implements OnModuleInit {
     return this.prisma.userFeatureGates
       .findMany({
         where: {
+          activated: true,
           feature: {
             feature: feature,
           },
@@ -181,6 +186,7 @@ export class FeatureService implements OnModuleInit {
       .count({
         where: {
           userId,
+          activated: true,
           feature: {
             feature,
           },

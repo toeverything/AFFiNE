@@ -18,6 +18,7 @@ export async function migrateNewFeatureTable(
           feature: {
             feature: 'early_access',
           },
+          activated: true,
         },
       });
       if (hasEarlyAccess === 0) {
