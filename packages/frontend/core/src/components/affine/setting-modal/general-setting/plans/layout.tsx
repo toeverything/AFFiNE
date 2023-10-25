@@ -1,4 +1,5 @@
 import { SettingHeader } from '@affine/component/setting-components';
+import { ArrowRightBigIcon } from '@blocksuite/icons';
 import type { HtmlHTMLAttributes, ReactNode } from 'react';
 
 import * as styles from './layout.css';
@@ -10,6 +11,7 @@ export interface PlanLayoutProps
   tabs: ReactNode;
   scroll: ReactNode;
   footer?: ReactNode;
+  scrollRef?: React.RefObject<HTMLDivElement>;
 }
 
 const SeeAllLink = () => (
@@ -19,7 +21,8 @@ const SeeAllLink = () => (
     target="_blank"
     rel="noopener noreferrer"
   >
-    See all plans →{/* TODO: icon */}
+    See all plans
+    {<ArrowRightBigIcon width="16" height="16" />}
   </a>
 );
 
@@ -27,8 +30,9 @@ export const PlanLayout = ({
   subtitle,
   tabs,
   scroll,
-  title = 'Plans',
+  title = 'Pricing Plans',
   footer = <SeeAllLink />,
+  scrollRef,
 }: PlanLayoutProps) => {
   return (
     <div className={styles.plansLayoutRoot}>
@@ -39,7 +43,9 @@ export const PlanLayout = ({
         subtitle={subtitle}
       />
       {tabs}
-      <div className={styles.scrollArea}>{scroll}</div>
+      <div ref={scrollRef} className={styles.scrollArea}>
+        {scroll}
+      </div>
       {footer}
     </div>
   );

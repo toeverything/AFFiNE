@@ -14,16 +14,10 @@ export const radioButtonDiscount = style({
 });
 
 export const planCardsWrapper = style({
-  marginLeft: 'calc(-1 * var(--setting-modal-gap-x))',
-  paddingLeft: 'var(--setting-modal-gap-x)',
-  paddingRight: 'calc(var(--setting-modal-gap-x) + 300px)',
-  width: 'var(--setting-modal-width)',
-  marginTop: '24px',
+  paddingRight: 'calc(var(--setting-modal-gap-x))',
   display: 'flex',
-  overflowX: 'auto',
-  scrollSnapType: 'x mandatory',
-  // TODO: should display the horizontal scrollbar, ensure the box-shadow is not clipped
-  paddingBottom: '21px',
+  gap: '16px',
+  width: 'fit-content',
 });
 
 export const planCard = style({
@@ -35,9 +29,6 @@ export const planCard = style({
   position: 'relative',
 
   selectors: {
-    '&:not(:last-child)': {
-      marginRight: '16px',
-    },
     '&::before': {
       content: '',
       position: 'absolute',
@@ -101,27 +92,27 @@ export const planAction = style({
 export const planBenefits = style({
   marginTop: '20px',
   fontSize: 'var(--affine-font-xs)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
 });
 
 export const planBenefit = style({
   display: 'flex',
-  selectors: {
-    '&:not(:last-child)': {
-      marginBottom: '8px',
-    },
-  },
+  gap: '8px',
+  lineHeight: '20px',
+  alignItems: 'normal',
+  fontSize: '12px',
 });
 
 export const planBenefitIcon = style({
-  display: 'inline-block',
-  marginRight: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  height: '20px',
 });
 
-export const allPlansLink = style({
-  display: 'block',
-  marginTop: '36px',
-  color: 'var(--affine-primary-color)',
-  background: 'transparent',
-  borderColor: 'transparent',
-  fontSize: 'var(--affine-font-xs)',
+export const planBenefitText = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
 });
