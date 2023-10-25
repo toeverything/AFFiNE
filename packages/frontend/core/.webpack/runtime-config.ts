@@ -124,6 +124,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : currentBuildPreset.enableMoveDatabase,
     enablePayment: process.env.ENABLE_PAYMENT
       ? process.env.ENABLE_PAYMENT !== 'false'
+      : buildFlags.mode === 'development'
+      ? true
       : currentBuildPreset.enablePayment,
   };
 
