@@ -53,6 +53,9 @@ export class FeatureService implements OnModuleInit {
 
   async getFeaturesVersion() {
     const features = await this.prisma.userFeatures.findMany({
+      where: {
+        type: FeatureKind.Feature,
+      },
       select: {
         feature: true,
         version: true,
@@ -71,6 +74,7 @@ export class FeatureService implements OnModuleInit {
     return this.prisma.userFeatures.findFirst({
       where: {
         feature,
+        type: FeatureKind.Feature,
       },
       orderBy: {
         version: 'desc',
@@ -91,6 +95,7 @@ export class FeatureService implements OnModuleInit {
           userId,
           feature: {
             feature,
+            type: FeatureKind.Feature,
           },
           activated: true,
         },
@@ -118,6 +123,7 @@ export class FeatureService implements OnModuleInit {
                     feature,
                     version,
                   },
+                  type: FeatureKind.Feature,
                 },
               },
             },
@@ -134,6 +140,7 @@ export class FeatureService implements OnModuleInit {
           userId,
           feature: {
             feature,
+            type: FeatureKind.Feature,
           },
           activated: true,
         },
@@ -145,15 +152,19 @@ export class FeatureService implements OnModuleInit {
   }
 
   async getUserFeatures(userId: string) {
-    const userFeatures = await this.prisma.user.findUnique({
+    const userFeatures = await this.prisma.userFeatureGates.findUnique({
       where: {
         id: userId,
+        activated: true,
+        feature: {
+          type: FeatureKind.Feature,
+        },
       },
       select: {
-        features: true,
+        feature: true,
       },
     });
-    return userFeatures?.features;
+    return userFeatures?.feature;
   }
 
   async listFeatureUsers(feature: string) {
@@ -163,6 +174,7 @@ export class FeatureService implements OnModuleInit {
           activated: true,
           feature: {
             feature: feature,
+            type: FeatureKind.Feature,
           },
         },
         select: {
@@ -189,6 +201,7 @@ export class FeatureService implements OnModuleInit {
           activated: true,
           feature: {
             feature,
+            type: FeatureKind.Feature,
           },
         },
       })
