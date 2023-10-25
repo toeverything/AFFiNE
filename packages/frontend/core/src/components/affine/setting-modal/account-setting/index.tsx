@@ -15,12 +15,14 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
+import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {
   type FC,
   type MouseEvent,
   Suspense,
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 
@@ -152,9 +154,14 @@ const StoragePanel = () => {
   const { data } = useQuery({
     query: allBlobSizesQuery,
   });
+
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
-  const maxLimit = plan === SubscriptionPlan.Free ? 10737418240 : 107374182400;
+  const maxLimit = useMemo(() => {
+    return plan === SubscriptionPlan.Free ? bytes('10GB') : bytes('100GB');
+  }, [plan]);
+
+  console.log('maxLimit', maxLimit);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {
