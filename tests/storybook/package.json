@@ -36,7 +36,7 @@
     "@blocksuite/blocks": "0.0.0-20231024064721-2aee7119-nightly",
     "@blocksuite/editor": "0.0.0-20231024064721-2aee7119-nightly",
     "@blocksuite/global": "0.0.0-20231024064721-2aee7119-nightly",
-    "@blocksuite/icons": "2.1.34",
+    "@blocksuite/icons": "2.1.35",
     "@blocksuite/lit": "0.0.0-20231024064721-2aee7119-nightly",
     "@blocksuite/store": "0.0.0-20231024064721-2aee7119-nightly",
     "@dnd-kit/sortable": "^7.0.2",
