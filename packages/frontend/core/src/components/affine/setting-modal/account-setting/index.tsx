@@ -158,10 +158,8 @@ const StoragePanel = () => {
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
   const maxLimit = useMemo(() => {
-    return plan === SubscriptionPlan.Free ? bytes('10GB') : bytes('100GB');
+    return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
   }, [plan]);
-
-  console.log('maxLimit', maxLimit);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const onUpgrade = useCallback(() => {

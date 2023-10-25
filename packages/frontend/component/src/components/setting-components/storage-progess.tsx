@@ -26,8 +26,8 @@ export const StorageProgress = ({
     [upperLimit, value]
   );
 
-  const used = useMemo(() => bytes(value), [value]);
-  const max = useMemo(() => bytes(upperLimit), [upperLimit]);
+  const used = useMemo(() => bytes.format(value), [value]);
+  const max = useMemo(() => bytes.format(upperLimit), [upperLimit]);
 
   const buttonType = useMemo(() => {
     if (plan === 'Free') {
