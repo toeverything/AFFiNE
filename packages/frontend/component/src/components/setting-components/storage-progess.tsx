@@ -1,3 +1,4 @@
+import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
@@ -11,7 +12,12 @@ export interface StorageProgressProgress {
   max: number;
   value: number;
   onUpgrade: () => void;
-  plan: string;
+  plan: SubscriptionPlan;
+}
+
+enum ButtonType {
+  Primary = 'primary',
+  Default = 'default',
 }
 
 export const StorageProgress = ({
@@ -30,11 +36,11 @@ export const StorageProgress = ({
   const max = useMemo(() => bytes.format(upperLimit), [upperLimit]);
 
   const buttonType = useMemo(() => {
-    if (plan === t['com.affine.price-plan.free']()) {
-      return 'primary';
+    if (plan === SubscriptionPlan.Free) {
+      return ButtonType.Primary;
     }
-    return 'default';
-  }, [plan, t]);
+    return ButtonType.Default;
+  }, [plan]);
 
   return (
     <div className={styles.storageProgressContainer}>
