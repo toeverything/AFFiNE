@@ -21,7 +21,7 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
@@ -30,6 +30,22 @@ import {
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
 import * as styles from './style.css';
+
+enum DescriptionI18NKey {
+  Basic = 'com.affine.payment.billing-setting.current-plan.description',
+  Monthly = 'com.affine.payment.billing-setting.current-plan.description.monthly',
+  Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
+}
+
+const getMessageKey = (
+  plan: SubscriptionPlan,
+  recurring: SubscriptionRecurring
+): DescriptionI18NKey => {
+  if (plan !== SubscriptionPlan.Pro) {
+    return DescriptionI18NKey.Basic;
+  }
+  return DescriptionI18NKey[recurring];
+};
 
 export const BillingSettings = () => {
   const status = useCurrentLoginStatus();
@@ -81,7 +97,7 @@ const SubscriptionSettings = () => {
       : price
       ? recurring === SubscriptionRecurring.Monthly
         ? String(price.amount / 100)
-        : (price.yearlyAmount / 100 / 12).toFixed(2)
+        : String(price.yearlyAmount / 100)
       : '?';
 
   const t = useAFFiNEI18N();
@@ -96,6 +112,26 @@ const SubscriptionSettings = () => {
     });
   }, [setOpenSettingModalAtom]);
 
+  const currentPlanDesc = useMemo(() => {
+    const messageKey = getMessageKey(plan, recurring);
+    return (
+      <Trans
+        i18nKey={messageKey}
+        values={{
+          planName: plan,
+        }}
+        components={{
+          1: (
+            <span
+              onClick={gotoPlansSetting}
+              className={styles.currentPlanName}
+            />
+          ),
+        }}
+      />
+    );
+  }, [plan, recurring, gotoPlansSetting]);
+
   return (
     <div className={styles.subscription}>
       <div className={styles.planCard}>
@@ -103,28 +139,18 @@ const SubscriptionSettings = () => {
           <SettingRow
             spreadCol={false}
             name={t['com.affine.payment.billing-setting.current-plan']()}
-            desc={
-              <Trans
-                i18nKey="com.affine.payment.billing-setting.current-plan.description"
-                values={{
-                  planName: plan,
-                }}
-              >
-                You are current on the
-                <span
-                  onClick={gotoPlansSetting}
-                  className={styles.currentPlanName}
-                >
-                  {plan} plan
-                </span>
-                .
-              </Trans>
-            }
+            desc={currentPlanDesc}
           />
           <PlanAction plan={plan} gotoPlansSetting={gotoPlansSetting} />
         </div>
         <p className={styles.planPrice}>
-          ${amount}/{t['com.affine.payment.billing-setting.month']()}
+          ${amount}
+          <span className={styles.billingFrequency}>
+            /
+            {recurring === SubscriptionRecurring.Monthly
+              ? t['com.affine.payment.billing-setting.month']()
+              : t['com.affine.payment.billing-setting.year']()}
+          </span>
         </p>
       </div>
       {subscription?.status === SubscriptionStatus.Active && (
@@ -220,7 +246,12 @@ const PaymentMethodUpdater = () => {
   }, [trigger]);
 
   return (
-    <Button onClick={update} loading={isMutating} disabled={isMutating}>
+    <Button
+      className={styles.button}
+      onClick={update}
+      loading={isMutating}
+      disabled={isMutating}
+    >
       {t['com.affine.payment.billing-setting.upgrade']()}
     </Button>
   );
@@ -245,7 +276,12 @@ const ResumeSubscription = ({
   }, [trigger, onSubscriptionUpdate]);
 
   return (
-    <Button onClick={resume} loading={isMutating} disabled={isMutating}>
+    <Button
+      className={styles.button}
+      onClick={resume}
+      loading={isMutating}
+      disabled={isMutating}
+    >
       {t['com.affine.payment.billing-setting.resume-subscription']()}
     </Button>
   );
@@ -330,7 +366,7 @@ const InvoiceLine = ({
           : ''
       } $${invoice.amount / 100}`}
     >
-      <Button onClick={open}>
+      <Button className={styles.button} onClick={open}>
         {t['com.affine.payment.billing-setting.view-invoice']()}
       </Button>
     </SettingRow>
