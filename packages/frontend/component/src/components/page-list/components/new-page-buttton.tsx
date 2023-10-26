@@ -92,6 +92,7 @@ export const NewPageButton = ({
       }}
     >
       <DropdownButton
+        data-testid="new-page-button"
         onClick={useCallback(() => {
           createNewPage();
           setOpen(false);
