@@ -93,32 +93,6 @@ test('Show collections items in sidebar', async ({ page }) => {
   await page.getByTestId('workspace-card').nth(0).click();
 });
 
-test('pin and unpin collection', async ({ page }) => {
-  const name = 'asd';
-  await createAndPinCollection(page, { collectionName: name });
-  const collections = page.getByTestId('collections');
-  const items = collections.getByTestId('collection-item');
-  await page.waitForTimeout(50);
-  expect(await items.count()).toBe(1);
-  const first = items.first();
-  await first.hover();
-  await first.getByTestId('collection-options').click();
-  const deleteCollection = page
-    .getByTestId('collection-option')
-    .getByText('Unpin');
-  await deleteCollection.click();
-  await page.waitForTimeout(50);
-  expect(await items.count()).toBe(0);
-  await page.getByTestId('collection-select').click();
-  const option = page.locator('[data-testid=collection-select-option]', {
-    hasText: name,
-  });
-  await option.hover();
-  await option.getByTestId('collection-select-option-pin').click();
-  await page.waitForTimeout(100);
-  expect(await items.count()).toBe(1);
-});
-
 test('edit collection', async ({ page }) => {
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');

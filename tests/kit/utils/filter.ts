@@ -19,10 +19,7 @@ const monthNames = [
 ];
 
 export const createFirstFilter = async (page: Page, name: string) => {
-  await page
-    .locator('[data-testid="header"]')
-    .locator('button', { hasText: 'Filter' })
-    .click();
+  await page.locator('[data-testid="create-first-filter"]').click();
   await page
     .locator('[data-testid="variable-select-item"]', { hasText: name })
     .click();
@@ -42,9 +39,9 @@ const dateFormat = (date: Date) => {
 };
 
 export const checkPagesCount = async (page: Page, count: number) => {
-  expect((await page.locator('[data-testid="title"]').all()).length).toBe(
-    count
-  );
+  expect(
+    (await page.locator('[data-testid="page-list-item"]').all()).length
+  ).toBe(count);
 };
 
 export const checkDatePicker = async (page: Page, date: Date) => {
