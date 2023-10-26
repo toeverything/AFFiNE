@@ -11,6 +11,8 @@ import type {
   WorkspaceHeaderProps,
 } from '@affine/env/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { DeleteIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai/react';
 import { useCallback } from 'react';
 
@@ -26,6 +28,7 @@ import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
 import { PluginHeader } from './pure/plugin-header';
 import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
+import * as styles from './workspace-header.css';
 
 const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
   const currentWorkspace = useWorkspace(workspaceId);
@@ -78,6 +81,9 @@ export function WorkspaceHeader({
   const setting = useCollectionManager(collectionsCRUDAtom);
   const config = useAllPageListConfig();
   const userInfo = useDeleteCollectionInfo();
+
+  const t = useAFFiNEI18N();
+
   // route in all page
   if (
     'subPath' in currentEntry &&
@@ -96,6 +102,7 @@ export function WorkspaceHeader({
               propertiesMeta={workspace.meta.properties}
             />
           }
+          // right={123}
           center={<WorkspaceModeFilterTab />}
         />
         <FilterContainer workspaceId={currentWorkspaceId} />
@@ -106,14 +113,31 @@ export function WorkspaceHeader({
   // route in shared or trash
   if (
     'subPath' in currentEntry &&
-    (currentEntry.subPath === WorkspaceSubPath.SHARED ||
-      currentEntry.subPath === WorkspaceSubPath.TRASH)
+    currentEntry.subPath === WorkspaceSubPath.SHARED
   ) {
     return (
       <Header
         mainContainerAtom={mainContainerAtom}
         ref={setAppHeader}
         center={<WorkspaceModeFilterTab />}
+      />
+    );
+  }
+
+  if (
+    'subPath' in currentEntry &&
+    currentEntry.subPath === WorkspaceSubPath.TRASH
+  ) {
+    return (
+      <Header
+        mainContainerAtom={mainContainerAtom}
+        ref={setAppHeader}
+        left={
+          <div className={styles.trashTitle}>
+            <DeleteIcon className={styles.trashIcon} />
+            {t['com.affine.workspaceSubPath.trash']()}
+          </div>
+        }
       />
     );
   }
