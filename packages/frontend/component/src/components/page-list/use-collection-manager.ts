@@ -52,6 +52,12 @@ export const useSavedCollections = (collectionAtom: CollectionsCRUDAtom) => {
   const addPage = useCallback(
     async (collectionId: string, pageId: string) => {
       await updateCollection(collectionId, old => {
+        if (old.mode === 'page') {
+          return {
+            ...old,
+            pages: [pageId, ...(old.pages ?? [])],
+          };
+        }
         return {
           ...old,
           allowList: [pageId, ...(old.allowList ?? [])],
