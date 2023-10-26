@@ -14,7 +14,7 @@ export const radioButtonDiscount = style({
 });
 
 export const planCardsWrapper = style({
-  paddingRight: 'calc(var(--setting-modal-gap-x))',
+  paddingRight: 'calc(var(--setting-modal-gap-x) + 30px)',
   display: 'flex',
   gap: '16px',
   width: 'fit-content',
