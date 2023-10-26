@@ -1,4 +1,5 @@
 import { SubscriptionPlan } from '@affine/graphql';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import Tooltip from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
@@ -24,8 +25,10 @@ export const UserPlanButton = () => {
     [setSettingModalAtom]
   );
 
+  const t = useAFFiNEI18N();
+
   return (
-    <Tooltip content={'See all plans'} side="top">
+    <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
       <div className={styles.userPlanButton} onClick={handleClick}>
         {plan}
       </div>
