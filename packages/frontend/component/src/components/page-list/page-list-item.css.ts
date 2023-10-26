@@ -42,7 +42,10 @@ export const dragOverlay = style({
 
 export const dndCell = style({
   position: 'relative',
-  overflow: 'visible !important',
+  marginLeft: -8,
+  height: '100%',
+  outline: 'none',
+  paddingLeft: 8,
 });
 
 globalStyle(`[data-draggable=true] ${dndCell}:before`, {
@@ -50,7 +53,7 @@ globalStyle(`[data-draggable=true] ${dndCell}:before`, {
   position: 'absolute',
   top: '50%',
   transform: 'translateY(-50%)',
-  left: -6,
+  left: 0,
   width: 4,
   height: 4,
   transition: 'height 0.2s, opacity 0.2s',
