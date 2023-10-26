@@ -5,19 +5,32 @@ import type {
 import {
   cancelSubscriptionMutation,
   checkoutMutation,
+  resumeSubscriptionMutation,
   SubscriptionPlan,
   SubscriptionRecurring,
   updateSubscriptionMutation,
 } from '@affine/graphql';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { Tooltip } from '@toeverything/components/tooltip';
+import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
-import { type PropsWithChildren, useCallback, useEffect, useRef } from 'react';
+import {
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { openPaymentDisableAtom } from '../../../../../atoms';
+import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { BulledListIcon } from './icons/bulled-list';
+import { ConfirmLoadingModal, DowngradeModal } from './modals';
 import * as styles from './style.css';
 
 export interface FixedPrice {
@@ -41,12 +54,13 @@ interface PlanCardProps {
   subscription?: Subscription | null;
   recurring: string;
   onSubscriptionUpdate: SubscriptionMutator;
+  onNotify: (info: {
+    detail: FixedPrice | DynamicPrice;
+    recurring: string;
+  }) => void;
 }
 
-export function getPlanDetail() {
-  // const t = useAFFiNEI18N();
-
-  // TODO: i18n all things
+export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
   return new Map<SubscriptionPlan, FixedPrice | DynamicPrice>([
     [
       SubscriptionPlan.Free,
@@ -56,12 +70,12 @@ export function getPlanDetail() {
         price: '0',
         yearlyPrice: '0',
         benefits: [
-          'Unlimited local workspace',
-          'Unlimited login devices',
-          'Unlimited blocks',
-          'AFFiNE Cloud Storage 10GB',
-          'The maximum file size is 10M',
-          'Number of members per Workspace ≤ 3',
+          t['com.affine.payment.benefit-1'](),
+          t['com.affine.payment.benefit-2'](),
+          t['com.affine.payment.benefit-3'](),
+          t['com.affine.payment.benefit-4']({ capacity: '10GB' }),
+          t['com.affine.payment.benefit-5']({ capacity: '10M' }),
+          t['com.affine.payment.benefit-6']({ capacity: '3' }),
         ],
       },
     ],
@@ -73,12 +87,12 @@ export function getPlanDetail() {
         price: '1',
         yearlyPrice: '1',
         benefits: [
-          'Unlimited local workspace',
-          'Unlimited login devices',
-          'Unlimited blocks',
-          'AFFiNE Cloud Storage 100GB',
-          'The maximum file size is 500M',
-          'Number of members per Workspace ≤ 10',
+          t['com.affine.payment.benefit-1'](),
+          t['com.affine.payment.benefit-2'](),
+          t['com.affine.payment.benefit-3'](),
+          t['com.affine.payment.benefit-4']({ capacity: '100GB' }),
+          t['com.affine.payment.benefit-5']({ capacity: '500M' }),
+          t['com.affine.payment.benefit-6']({ capacity: '10' }),
         ],
       },
     ],
@@ -89,9 +103,9 @@ export function getPlanDetail() {
         plan: SubscriptionPlan.Team,
         contact: true,
         benefits: [
-          'Best team workspace for collaboration and knowledge distilling.',
-          'Focusing on what really matters with team project management and automation.',
-          'Pay for seats, fits all team size.',
+          t['com.affine.payment.dynamic-benefit-1'](),
+          t['com.affine.payment.dynamic-benefit-2'](),
+          t['com.affine.payment.dynamic-benefit-3'](),
         ],
       },
     ],
@@ -102,20 +116,16 @@ export function getPlanDetail() {
         plan: SubscriptionPlan.Enterprise,
         contact: true,
         benefits: [
-          'Solutions & best practices for dedicated needs.',
-          'Embedable & interrogations with IT support.',
+          t['com.affine.payment.dynamic-benefit-4'](),
+          t['com.affine.payment.dynamic-benefit-5'](),
         ],
       },
     ],
   ]);
 }
 
-export const PlanCard = ({
-  detail,
-  subscription,
-  recurring,
-  onSubscriptionUpdate,
-}: PlanCardProps) => {
+export const PlanCard = (props: PlanCardProps) => {
+  const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = subscription?.recurring;
@@ -160,49 +170,7 @@ export const PlanCard = ({
             )}
           </p>
         </div>
-        {
-          // branches:
-          //  if contact                                => 'Contact Sales'
-          //  if not signed in:
-          //    if free                                 => 'Sign up free'
-          //    else                                    => 'Buy Pro'
-          //  else
-          //    if isCurrent                            => 'Current Plan'
-          //    else if free                            => 'Downgrade'
-          //    else if currentRecurring !== recurring  => 'Change to {recurring} Billing'
-          //    else                                    => 'Upgrade'
-          // TODO: should replace with components with proper actions
-          detail.type === 'dynamic' ? (
-            <ContactSales />
-          ) : loggedIn ? (
-            detail.plan === currentPlan &&
-            (currentRecurring === recurring ||
-              (!currentRecurring && detail.plan === SubscriptionPlan.Free)) ? (
-              <CurrentPlan />
-            ) : detail.plan === SubscriptionPlan.Free ? (
-              <Downgrade onSubscriptionUpdate={onSubscriptionUpdate} />
-            ) : currentRecurring !== recurring &&
-              currentPlan === detail.plan ? (
-              <ChangeRecurring
-                // @ts-expect-error must exist
-                from={currentRecurring}
-                to={recurring as SubscriptionRecurring}
-                onSubscriptionUpdate={onSubscriptionUpdate}
-              />
-            ) : (
-              <Upgrade
-                recurring={recurring as SubscriptionRecurring}
-                onSubscriptionUpdate={onSubscriptionUpdate}
-              />
-            )
-          ) : (
-            <SignupAction>
-              {detail.plan === SubscriptionPlan.Free
-                ? 'Sign up free'
-                : 'Buy Pro'}
-            </SignupAction>
-          )
-        }
+        <ActionButton {...props} />
       </div>
       <div className={styles.planBenefits}>
         {detail.benefits.map((content, i) => (
@@ -226,15 +194,111 @@ export const PlanCard = ({
   );
 };
 
+const ActionButton = ({
+  detail,
+  subscription,
+  recurring,
+  onSubscriptionUpdate,
+  onNotify,
+}: PlanCardProps) => {
+  const t = useAFFiNEI18N();
+  const loggedIn = useCurrentLoginStatus() === 'authenticated';
+  const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
+  const currentRecurring = subscription?.recurring;
+
+  const mutateAndNotify = useCallback(
+    (sub: Parameters<SubscriptionMutator>[0]) => {
+      onSubscriptionUpdate?.(sub);
+      onNotify?.({ detail, recurring });
+    },
+    [onSubscriptionUpdate, onNotify, detail, recurring]
+  );
+
+  // branches:
+  //  if contact                                => 'Contact Sales'
+  //  if not signed in:
+  //    if free                                 => 'Sign up free'
+  //    else                                    => 'Buy Pro'
+  //  else
+  //    if isCurrent
+  //      if canceled                           => 'Resume'
+  //      else                                  => 'Current Plan'
+  //    if isCurrent                            => 'Current Plan'
+  //    else if free                            => 'Downgrade'
+  //    else if currentRecurring !== recurring  => 'Change to {recurring} Billing'
+  //    else                                    => 'Upgrade'
+
+  // contact
+  if (detail.type === 'dynamic') {
+    return <ContactSales />;
+  }
+
+  // not signed in
+  if (!loggedIn) {
+    return (
+      <SignUpAction>
+        {detail.plan === SubscriptionPlan.Free
+          ? t['com.affine.payment.sign-up-free']()
+          : t['com.affine.payment.buy-pro']()}
+      </SignUpAction>
+    );
+  }
+
+  const isCanceled = !!subscription?.canceledAt;
+  const isFree = detail.plan === SubscriptionPlan.Free;
+  const isCurrent =
+    detail.plan === currentPlan &&
+    (isFree ? true : currentRecurring === recurring);
+
+  // is current
+  if (isCurrent) {
+    return isCanceled ? (
+      <ResumeAction onSubscriptionUpdate={mutateAndNotify} />
+    ) : (
+      <CurrentPlan />
+    );
+  }
+
+  if (isFree) {
+    return (
+      <Downgrade disabled={isCanceled} onSubscriptionUpdate={mutateAndNotify} />
+    );
+  }
+
+  return currentPlan === detail.plan ? (
+    <ChangeRecurring
+      from={currentRecurring as SubscriptionRecurring}
+      to={recurring as SubscriptionRecurring}
+      due={subscription?.nextBillAt || ''}
+      onSubscriptionUpdate={mutateAndNotify}
+      disabled={isCanceled}
+    />
+  ) : (
+    <Upgrade
+      recurring={recurring as SubscriptionRecurring}
+      onSubscriptionUpdate={mutateAndNotify}
+    />
+  );
+};
+
 const CurrentPlan = () => {
-  return <Button className={styles.planAction}>Current Plan</Button>;
+  const t = useAFFiNEI18N();
+  return (
+    <Button className={styles.planAction}>
+      {t['com.affine.payment.current-plan']()}
+    </Button>
+  );
 };
 
 const Downgrade = ({
+  disabled,
   onSubscriptionUpdate,
 }: {
+  disabled?: boolean;
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
+  const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: cancelSubscriptionMutation,
   });
@@ -247,25 +311,43 @@ const Downgrade = ({
     });
   }, [trigger, onSubscriptionUpdate]);
 
+  const tooltipContent = disabled
+    ? t['com.affine.payment.downgraded-tooltip']()
+    : null;
+
   return (
-    <Button
-      className={styles.planAction}
-      type="primary"
-      onClick={downgrade /* TODO: poppup confirmation modal instead */}
-      disabled={isMutating}
-      loading={isMutating}
-    >
-      Downgrade
-    </Button>
+    <>
+      <Tooltip content={tooltipContent} rootOptions={{ delayDuration: 0 }}>
+        <div className={styles.planAction}>
+          <Button
+            className={styles.planAction}
+            type="primary"
+            onClick={() => setOpen(true)}
+            disabled={disabled || isMutating}
+            loading={isMutating}
+          >
+            {t['com.affine.payment.downgrade']()}
+          </Button>
+        </div>
+      </Tooltip>
+      <DowngradeModal open={open} onCancel={downgrade} onOpenChange={setOpen} />
+    </>
   );
 };
 
 const ContactSales = () => {
+  const t = useAFFiNEI18N();
   return (
-    // TODO: add action
-    <Button className={styles.planAction} type="primary">
-      Contact Sales
-    </Button>
+    <a
+      className={styles.planAction}
+      href="https://6dxre9ihosp.typeform.com/to/uZeBtpPm"
+      target="_blank"
+      rel="noreferrer"
+    >
+      <Button className={styles.planAction} type="primary">
+        {t['com.affine.payment.contact-sales']()}
+      </Button>
+    </a>
   );
 };
 
@@ -276,6 +358,7 @@ const Upgrade = ({
   recurring: SubscriptionRecurring;
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
+  const t = useAFFiNEI18N();
   const { isMutating, trigger } = useMutation({
     mutation: checkoutMutation,
   });
@@ -330,27 +413,35 @@ const Upgrade = ({
   }, [onClose]);
 
   return (
-    <Button
-      className={styles.planAction}
-      type="primary"
-      onClick={upgrade}
-      disabled={isMutating}
-      loading={isMutating}
-    >
-      Upgrade
-    </Button>
+    <>
+      <Button
+        className={styles.planAction}
+        type="primary"
+        onClick={upgrade}
+        disabled={isMutating}
+        loading={isMutating}
+      >
+        {t['com.affine.payment.upgrade']()}
+      </Button>
+    </>
   );
 };
 
 const ChangeRecurring = ({
-  from: _from /* TODO: from can be useful when showing confirmation modal  */,
+  from,
   to,
+  disabled,
+  due,
   onSubscriptionUpdate,
 }: {
   from: SubscriptionRecurring;
   to: SubscriptionRecurring;
+  disabled?: boolean;
+  due: string;
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
+  const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: updateSubscriptionMutation,
   });
@@ -366,24 +457,102 @@ const ChangeRecurring = ({
     );
   }, [trigger, onSubscriptionUpdate, to]);
 
+  const changeCurringContent = (
+    <Trans values={{ from, to, due }} className={styles.downgradeContent}>
+      You are changing your <span className={styles.textEmphasis}>{from}</span>{' '}
+      subscription to <span className={styles.textEmphasis}>{to}</span>{' '}
+      subscription. This change will take effect in the next billing cycle, with
+      an effective date of <span className={styles.textEmphasis}>{due}</span>.
+    </Trans>
+  );
+
+  return (
+    <>
+      <Button
+        className={styles.planAction}
+        type="primary"
+        onClick={() => setOpen(true)}
+        disabled={disabled || isMutating}
+        loading={isMutating}
+      >
+        {t['com.affine.payment.change-to']({ to })}
+      </Button>
+
+      <ConfirmLoadingModal
+        type={'change'}
+        loading={isMutating}
+        open={open}
+        onConfirm={change}
+        onOpenChange={setOpen}
+        content={changeCurringContent}
+      />
+    </>
+  );
+};
+
+const SignUpAction = ({ children }: PropsWithChildren) => {
+  const setOpen = useSetAtom(authAtom);
+
+  const onClickSignIn = useCallback(async () => {
+    setOpen(state => ({
+      ...state,
+      openModal: true,
+    }));
+  }, [setOpen]);
+
   return (
     <Button
+      onClick={onClickSignIn}
       className={styles.planAction}
       type="primary"
-      onClick={change /* TODO: popup confirmation modal instead  */}
-      disabled={isMutating}
-      loading={isMutating}
     >
-      Change to {to} Billing
+      {children}
     </Button>
   );
 };
 
-const SignupAction = ({ children }: PropsWithChildren) => {
-  // TODO: add login action
+const ResumeAction = ({
+  onSubscriptionUpdate,
+}: {
+  onSubscriptionUpdate: SubscriptionMutator;
+}) => {
+  const t = useAFFiNEI18N();
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const { isMutating, trigger } = useMutation({
+    mutation: resumeSubscriptionMutation,
+  });
+
+  const resume = useCallback(() => {
+    trigger(null, {
+      onSuccess: data => {
+        onSubscriptionUpdate(data.resumeSubscription);
+      },
+    });
+  }, [trigger, onSubscriptionUpdate]);
+
   return (
-    <Button className={styles.planAction} type="primary">
-      {children}
-    </Button>
+    <>
+      <Button
+        className={styles.planAction}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={() => setOpen(true)}
+        loading={isMutating}
+        disabled={isMutating}
+      >
+        {hovered
+          ? t['com.affine.payment.resume-renewal']()
+          : t['com.affine.payment.current-plan']()}
+      </Button>
+
+      <ConfirmLoadingModal
+        type={'resume'}
+        open={open}
+        onConfirm={resume}
+        onOpenChange={setOpen}
+        loading={isMutating}
+      />
+    </>
   );
 };

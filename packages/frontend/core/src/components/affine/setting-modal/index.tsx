@@ -39,6 +39,7 @@ export const SettingModal = ({
   const generalSettingList = useGeneralSettingList();
 
   const modalContentRef = useRef<HTMLDivElement>(null);
+  const modalContentWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!modalProps.open) return;
@@ -46,19 +47,18 @@ export const SettingModal = ({
     const onResize = debounce(() => {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = requestAnimationFrame(() => {
-        if (!modalContentRef.current) return;
+        if (!modalContentRef.current || !modalContentWrapperRef.current) return;
 
+        const wrapperWidth = modalContentWrapperRef.current.offsetWidth;
         const contentWidth = modalContentRef.current.offsetWidth;
-        const computedStyle = window.getComputedStyle(modalContentRef.current);
-        const marginX = parseInt(computedStyle.marginLeft, 10);
-        const paddingX = parseInt(computedStyle.paddingLeft, 10);
+
         modalContentRef.current?.style.setProperty(
           '--setting-modal-width',
-          `${contentWidth + marginX * 2}px`
+          `${wrapperWidth}px`
         );
         modalContentRef.current?.style.setProperty(
           '--setting-modal-gap-x',
-          `${marginX + paddingX}px`
+          `${(wrapperWidth - contentWidth) / 2}px`
         );
       });
     }, 200);
@@ -121,33 +121,35 @@ export const SettingModal = ({
       <div
         data-testid="setting-modal-content"
         className={style.wrapper}
-        ref={modalContentRef}
+        ref={modalContentWrapperRef}
       >
-        <div className={style.content}>
-          {activeTab === 'workspace' && workspaceId ? (
-            <Suspense fallback={<WorkspaceDetailSkeleton />}>
-              <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
-            </Suspense>
-          ) : null}
-          {generalSettingList.find(v => v.key === activeTab) ? (
-            <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
-          ) : null}
-          {activeTab === 'account' && loginStatus === 'authenticated' ? (
-            <AccountSetting />
-          ) : null}
-        </div>
-        <div className="footer">
-          <a
-            href="https://community.affine.pro/home"
-            target="_blank"
-            rel="noreferrer"
-            className={style.suggestionLink}
-          >
-            <span className={style.suggestionLinkIcon}>
-              <ContactWithUsIcon />
-            </span>
-            {t['com.affine.settings.suggestion']()}
-          </a>
+        <div ref={modalContentRef} className={style.centerContainer}>
+          <div className={style.content}>
+            {activeTab === 'workspace' && workspaceId ? (
+              <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+              </Suspense>
+            ) : null}
+            {generalSettingList.find(v => v.key === activeTab) ? (
+              <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
+            ) : null}
+            {activeTab === 'account' && loginStatus === 'authenticated' ? (
+              <AccountSetting />
+            ) : null}
+          </div>
+          <div className="footer">
+            <a
+              href="https://community.affine.pro/home"
+              target="_blank"
+              rel="noreferrer"
+              className={style.suggestionLink}
+            >
+              <span className={style.suggestionLinkIcon}>
+                <ContactWithUsIcon />
+              </span>
+              {t['com.affine.settings.suggestion']()}
+            </a>
+          </div>
         </div>
       </div>
     </Modal>
