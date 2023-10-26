@@ -2,19 +2,16 @@ import clsx from 'clsx';
 import Lottie, { type LottieRef } from 'lottie-react';
 import { useEffect, useRef } from 'react';
 
-import * as styles from './collections-icon.css';
-import animationData from './collections-icon.json';
+import * as styles from './delete-icon.css';
+import animationData from './delete-icon.json';
 
-export interface CollectionsIconProps {
-  closed: boolean; // eg, when collections icon is a "dragged over" state
+export interface DeleteIconProps {
+  closed: boolean; // eg, when delete icon is a "dragged over" state
   className?: string;
 }
 
-// animated collections icon that has two states: closed and opened
-export const AnimatedCollectionsIcon = ({
-  closed,
-  className,
-}: CollectionsIconProps) => {
+// animated delete icon that has two animation states
+export const AnimatedDeleteIcon = ({ closed, className }: DeleteIconProps) => {
   const lottieRef: LottieRef = useRef(null);
 
   useEffect(() => {

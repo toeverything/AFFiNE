@@ -68,6 +68,7 @@ export const OperationCell = ({
       {!environment.isDesktop && (
         <Link to={link}>
           <MenuItem
+            style={{ marginBottom: 4 }}
             preFix={
               <MenuIcon>
                 <OpenInNewIcon />

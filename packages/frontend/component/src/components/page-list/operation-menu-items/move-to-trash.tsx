@@ -1,5 +1,5 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DeleteTemporarilyIcon } from '@blocksuite/icons';
+import { DeleteIcon } from '@blocksuite/icons';
 import {
   MenuIcon,
   MenuItem,
@@ -17,7 +17,7 @@ export const MoveToTrash = (props: MenuItemProps) => {
     <MenuItem
       preFix={
         <MenuIcon>
-          <DeleteTemporarilyIcon />
+          <DeleteIcon />
         </MenuIcon>
       }
       type="danger"

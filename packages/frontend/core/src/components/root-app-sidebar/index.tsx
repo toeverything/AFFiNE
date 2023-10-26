@@ -1,3 +1,4 @@
+import { AnimatedDeleteIcon } from '@affine/component';
 import {
   AddPageButton,
   AppSidebar,
@@ -13,11 +14,7 @@ import {
 import { MoveToTrash } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteTemporarilyIcon,
-  FolderIcon,
-  SettingsIcon,
-} from '@blocksuite/icons';
+import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
@@ -258,7 +255,7 @@ export const RootAppSidebar = ({
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
             isDraggedOver={trashDroppable.isOver}
-            icon={<DeleteTemporarilyIcon />}
+            icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
             currentPath={currentPath}
             path={paths.trash(currentWorkspaceId)}
           >
