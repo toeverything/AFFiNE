@@ -215,7 +215,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
           APIKey: '',
           webhookKey: '',
         },
-        apiVersion: '2023-08-16',
+        apiVersion: '2023-10-16',
       },
     },
   } satisfies AFFiNEConfig;
