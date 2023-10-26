@@ -10,6 +10,7 @@ import {
   SubscriptionRecurring,
   updateSubscriptionMutation,
 } from '@affine/graphql';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
@@ -29,7 +30,7 @@ import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { BulledListIcon } from './icons/bulled-list';
-import { ConfirmLoadingModal } from './modals';
+import { ConfirmLoadingModal, DowngradeModal } from './modals';
 import * as styles from './style.css';
 
 export interface FixedPrice {
@@ -268,6 +269,7 @@ const ActionButton = ({
     <ChangeRecurring
       from={currentRecurring as SubscriptionRecurring}
       to={recurring as SubscriptionRecurring}
+      due={subscription?.nextBillAt || ''}
       onSubscriptionUpdate={mutateAndNotify}
       disabled={isCanceled}
     />
@@ -328,13 +330,7 @@ const Downgrade = ({
           </Button>
         </div>
       </Tooltip>
-      <ConfirmLoadingModal
-        type={'downgrade'}
-        loading={isMutating}
-        open={open}
-        onConfirm={downgrade}
-        onOpenChange={setOpen}
-      />
+      <DowngradeModal open={open} onCancel={downgrade} onOpenChange={setOpen} />
     </>
   );
 };
@@ -363,7 +359,6 @@ const Upgrade = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
-  const [open, setOpen] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: checkoutMutation,
   });
@@ -422,32 +417,27 @@ const Upgrade = ({
       <Button
         className={styles.planAction}
         type="primary"
-        onClick={() => setOpen(true)}
+        onClick={upgrade}
         disabled={isMutating}
         loading={isMutating}
       >
         {t['com.affine.settings.plans.upgrade']()}
       </Button>
-      <ConfirmLoadingModal
-        type={'upgrade'}
-        open={open}
-        loading={isMutating}
-        onOpenChange={setOpen}
-        onConfirm={upgrade}
-      />
     </>
   );
 };
 
 const ChangeRecurring = ({
-  from: _from /* TODO: from can be useful when showing confirmation modal  */,
+  from,
   to,
   disabled,
+  due,
   onSubscriptionUpdate,
 }: {
   from: SubscriptionRecurring;
   to: SubscriptionRecurring;
   disabled?: boolean;
+  due: string;
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
@@ -467,6 +457,15 @@ const ChangeRecurring = ({
     );
   }, [trigger, onSubscriptionUpdate, to]);
 
+  const changeCurringContent = (
+    <Trans values={{ from, to, due }} className={styles.downgradeContent}>
+      You are changing your <span className={styles.textEmphasis}>{from}</span>{' '}
+      subscription to <span className={styles.textEmphasis}>{to}</span>{' '}
+      subscription. This change will take effect in the next billing cycle, with
+      an effective date of <span className={styles.textEmphasis}>{due}</span>.
+    </Trans>
+  );
+
   return (
     <>
       <Button
@@ -485,6 +484,7 @@ const ChangeRecurring = ({
         open={open}
         onConfirm={change}
         onOpenChange={setOpen}
+        content={changeCurringContent}
       />
     </>
   );

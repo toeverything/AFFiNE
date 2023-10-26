@@ -116,3 +116,34 @@ export const planBenefitText = style({
   flexDirection: 'column',
   alignItems: 'center',
 });
+
+export const downgradeContentWrapper = style({
+  padding: '12px 0 20px 0px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+});
+
+export const downgradeContent = style({
+  fontSize: '15px',
+  lineHeight: '24px',
+  fontWeight: 400,
+  color: 'var(--affine-text-primary-color)',
+});
+
+export const downgradeCaption = style({
+  fontSize: '14px',
+  lineHeight: '22px',
+  color: 'var(--affine-text-secondary-color)',
+});
+
+export const downgradeFooter = style({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '20px',
+  paddingTop: '20px',
+});
+
+export const textEmphasis = style({
+  color: 'var(--affine-text-emphasis-color)',
+});
