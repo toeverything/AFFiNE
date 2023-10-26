@@ -16,7 +16,7 @@ export async function waitForAllPagesLoad(page: Page) {
 
 export async function clickNewPageButton(page: Page) {
   // fixme(himself65): if too fast, the page will crash
-  await page.getByTestId('new-page-button').click({
+  await page.getByTestId('new-page-button').first().click({
     delay: 100,
   });
   await waitForEditorLoad(page);

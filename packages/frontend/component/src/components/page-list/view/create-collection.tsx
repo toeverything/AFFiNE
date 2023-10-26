@@ -94,6 +94,7 @@ export const CreateCollection = ({
         <Input
           autoFocus
           value={value}
+          data-testid="input-collection-title"
           placeholder="Collection Name"
           onChange={useCallback((value: string) => onChange(value), [onChange])}
           onEnter={save}
