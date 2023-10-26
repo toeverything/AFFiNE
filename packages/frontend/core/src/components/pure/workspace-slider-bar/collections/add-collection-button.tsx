@@ -35,7 +35,7 @@ export const AddCollectionButton = () => {
       .catch(err => {
         console.error(err);
       });
-  }, [open, setting]);
+  }, [navigateHelper, open, setting, workspace.id]);
   return (
     <>
       <IconButton

@@ -515,7 +515,7 @@ const PagesMode = ({
   }, [collection, updateCollection]);
   const pageOperationsRenderer = useCallback(
     (page: PageMeta) => allPageListConfig.favoriteRender(page),
-    [allPageListConfig.favoriteRender]
+    [allPageListConfig]
   );
   return (
     <>

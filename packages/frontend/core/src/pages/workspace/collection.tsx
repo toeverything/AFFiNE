@@ -67,10 +67,12 @@ export const Component = function CollectionPage() {
     }
   }, [
     collection,
+    loading,
     navigate,
     params.collectionId,
     pushNotification,
     workspace.blockSuiteWorkspace,
+    workspace.id,
   ]);
   if (loading) {
     return null;

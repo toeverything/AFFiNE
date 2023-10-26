@@ -85,7 +85,7 @@ export function useBlockSuiteMetaHelper(
       setPageReadonly(pageId, true);
       getWorkspaceSetting(blockSuiteWorkspace).deletePages([pageId]);
     },
-    [getPageMeta, metas, setPageMeta, setPageReadonly]
+    [blockSuiteWorkspace, getPageMeta, metas, setPageMeta, setPageReadonly]
   );
 
   const restoreFromTrash = useCallback(
