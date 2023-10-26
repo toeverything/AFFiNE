@@ -31,13 +31,11 @@ export const ConfirmLoadingModal = ({
   const t = useAFFiNEI18N();
   const confirmed = useRef(false);
 
-  const title = t[`com.affine.settings.plans.modal.${type}.title`]();
-  const confirmText = t[`com.affine.settings.plans.modal.${type}.confirm`]();
-  const cancelText = t[`com.affine.settings.plans.modal.${type}.cancel`]();
+  const title = t[`com.affine.payment.modal.${type}.title`]();
+  const confirmText = t[`com.affine.payment.modal.${type}.confirm`]();
+  const cancelText = t[`com.affine.payment.modal.${type}.cancel`]();
   const contentText =
-    type !== 'change'
-      ? t[`com.affine.settings.plans.modal.${type}.content`]()
-      : '';
+    type !== 'change' ? t[`com.affine.payment.modal.${type}.content`]() : '';
 
   useEffect(() => {
     if (!loading && open && confirmed.current) {
@@ -86,7 +84,7 @@ export const DowngradeModal = ({
 
   return (
     <Modal
-      title={t['com.affine.settings.plans.modal.downgrade.title']()}
+      title={t['com.affine.payment.modal.downgrade.title']()}
       open={open}
       contentOptions={{}}
       width={480}
@@ -94,10 +92,10 @@ export const DowngradeModal = ({
     >
       <div className={styles.downgradeContentWrapper}>
         <p className={styles.downgradeContent}>
-          {t['com.affine.settings.plans.modal.downgrade.content']()}
+          {t['com.affine.payment.modal.downgrade.content']()}
         </p>
         <p className={styles.downgradeCaption}>
-          {t['com.affine.settings.plans.modal.downgrade.caption']()}
+          {t['com.affine.payment.modal.downgrade.caption']()}
         </p>
       </div>
 
@@ -108,11 +106,11 @@ export const DowngradeModal = ({
             onCancel?.();
           }}
         >
-          {t['com.affine.settings.plans.modal.downgrade.cancel']()}
+          {t['com.affine.payment.modal.downgrade.cancel']()}
         </Button>
         <DialogTrigger asChild>
           <Button onClick={() => onOpenChange?.(false)} type="primary">
-            {t['com.affine.settings.plans.modal.downgrade.confirm']()}
+            {t['com.affine.payment.modal.downgrade.confirm']()}
           </Button>
         </DialogTrigger>
       </footer>

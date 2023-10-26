@@ -25,7 +25,7 @@ const SeeAllLink = () => {
       target="_blank"
       rel="noopener noreferrer"
     >
-      {t['com.affine.settings.plans.see-all-plans']()}
+      {t['com.affine.payment.see-all-plans']()}
       {<ArrowRightBigIcon width="16" height="16" />}
     </a>
   );
@@ -45,7 +45,7 @@ export const PlanLayout = ({
       {/* TODO: SettingHeader component shouldn't have margin itself  */}
       <SettingHeader
         style={{ marginBottom: '0px' }}
-        title={title ?? t['com.affine.settings.plans.title']()}
+        title={title ?? t['com.affine.payment.title']()}
         subtitle={subtitle}
       />
       {tabs}

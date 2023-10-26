@@ -70,12 +70,12 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
         price: '0',
         yearlyPrice: '0',
         benefits: [
-          t['com.affine.settings.plans.benefit-1'](),
-          t['com.affine.settings.plans.benefit-2'](),
-          t['com.affine.settings.plans.benefit-3'](),
-          t['com.affine.settings.plans.benefit-4']({ capacity: '10GB' }),
-          t['com.affine.settings.plans.benefit-5']({ capacity: '10M' }),
-          t['com.affine.settings.plans.benefit-6']({ capacity: '3' }),
+          t['com.affine.payment.benefit-1'](),
+          t['com.affine.payment.benefit-2'](),
+          t['com.affine.payment.benefit-3'](),
+          t['com.affine.payment.benefit-4']({ capacity: '10GB' }),
+          t['com.affine.payment.benefit-5']({ capacity: '10M' }),
+          t['com.affine.payment.benefit-6']({ capacity: '3' }),
         ],
       },
     ],
@@ -87,12 +87,12 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
         price: '1',
         yearlyPrice: '1',
         benefits: [
-          t['com.affine.settings.plans.benefit-1'](),
-          t['com.affine.settings.plans.benefit-2'](),
-          t['com.affine.settings.plans.benefit-3'](),
-          t['com.affine.settings.plans.benefit-4']({ capacity: '100GB' }),
-          t['com.affine.settings.plans.benefit-5']({ capacity: '500M' }),
-          t['com.affine.settings.plans.benefit-6']({ capacity: '10' }),
+          t['com.affine.payment.benefit-1'](),
+          t['com.affine.payment.benefit-2'](),
+          t['com.affine.payment.benefit-3'](),
+          t['com.affine.payment.benefit-4']({ capacity: '100GB' }),
+          t['com.affine.payment.benefit-5']({ capacity: '500M' }),
+          t['com.affine.payment.benefit-6']({ capacity: '10' }),
         ],
       },
     ],
@@ -103,9 +103,9 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
         plan: SubscriptionPlan.Team,
         contact: true,
         benefits: [
-          t['com.affine.settings.plans.dynamic-benefit-1'](),
-          t['com.affine.settings.plans.dynamic-benefit-2'](),
-          t['com.affine.settings.plans.dynamic-benefit-3'](),
+          t['com.affine.payment.dynamic-benefit-1'](),
+          t['com.affine.payment.dynamic-benefit-2'](),
+          t['com.affine.payment.dynamic-benefit-3'](),
         ],
       },
     ],
@@ -116,8 +116,8 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
         plan: SubscriptionPlan.Enterprise,
         contact: true,
         benefits: [
-          t['com.affine.settings.plans.dynamic-benefit-4'](),
-          t['com.affine.settings.plans.dynamic-benefit-5'](),
+          t['com.affine.payment.dynamic-benefit-4'](),
+          t['com.affine.payment.dynamic-benefit-5'](),
         ],
       },
     ],
@@ -238,8 +238,8 @@ const ActionButton = ({
     return (
       <SignUpAction>
         {detail.plan === SubscriptionPlan.Free
-          ? t['com.affine.settings.plans.sign-up-free']()
-          : t['com.affine.settings.plans.buy-pro']()}
+          ? t['com.affine.payment.sign-up-free']()
+          : t['com.affine.payment.buy-pro']()}
       </SignUpAction>
     );
   }
@@ -285,7 +285,7 @@ const CurrentPlan = () => {
   const t = useAFFiNEI18N();
   return (
     <Button className={styles.planAction}>
-      {t['com.affine.settings.plans.current-plan']()}
+      {t['com.affine.payment.current-plan']()}
     </Button>
   );
 };
@@ -312,7 +312,7 @@ const Downgrade = ({
   }, [trigger, onSubscriptionUpdate]);
 
   const tooltipContent = disabled
-    ? t['com.affine.settings.plans.downgraded-tooltip']()
+    ? t['com.affine.payment.downgraded-tooltip']()
     : null;
 
   return (
@@ -326,7 +326,7 @@ const Downgrade = ({
             disabled={disabled || isMutating}
             loading={isMutating}
           >
-            {t['com.affine.settings.plans.downgrade']()}
+            {t['com.affine.payment.downgrade']()}
           </Button>
         </div>
       </Tooltip>
@@ -345,7 +345,7 @@ const ContactSales = () => {
       rel="noreferrer"
     >
       <Button className={styles.planAction} type="primary">
-        {t['com.affine.settings.plans.contact-sales']()}
+        {t['com.affine.payment.contact-sales']()}
       </Button>
     </a>
   );
@@ -421,7 +421,7 @@ const Upgrade = ({
         disabled={isMutating}
         loading={isMutating}
       >
-        {t['com.affine.settings.plans.upgrade']()}
+        {t['com.affine.payment.upgrade']()}
       </Button>
     </>
   );
@@ -475,7 +475,7 @@ const ChangeRecurring = ({
         disabled={disabled || isMutating}
         loading={isMutating}
       >
-        {t['com.affine.settings.plans.change-to']({ to })}
+        {t['com.affine.payment.change-to']({ to })}
       </Button>
 
       <ConfirmLoadingModal
@@ -542,8 +542,8 @@ const ResumeAction = ({
         disabled={isMutating}
       >
         {hovered
-          ? t['com.affine.settings.plans.resume-renewal']()
-          : t['com.affine.settings.plans.current-plan']()}
+          ? t['com.affine.payment.resume-renewal']()
+          : t['com.affine.payment.current-plan']()}
       </Button>
 
       <ConfirmLoadingModal

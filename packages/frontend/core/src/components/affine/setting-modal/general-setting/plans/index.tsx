@@ -26,8 +26,8 @@ const getRecurringLabel = ({
   t: ReturnType<typeof useAFFiNEI18N>;
 }) => {
   return recurring === SubscriptionRecurring.Monthly
-    ? t['com.affine.settings.plans.recurring-monthly']()
-    : t['com.affine.settings.plans.recurring-yearly']();
+    ? t['com.affine.payment.recurring-monthly']()
+    : t['com.affine.payment.recurring-yearly']();
 };
 
 const Settings = () => {
@@ -100,7 +100,7 @@ const Settings = () => {
   const subtitle = loggedIn ? (
     isCanceled ? (
       <p>
-        {t['com.affine.settings.plans.subtitle-canceled']({
+        {t['com.affine.payment.subtitle-canceled']({
           plan: `${getRecurringLabel({
             recurring: currentRecurring,
             t,
@@ -111,7 +111,7 @@ const Settings = () => {
       <p>
         <Trans
           plan={currentPlan}
-          i18nKey="com.affine.settings.plans.subtitle-active"
+          i18nKey="com.affine.payment.subtitle-active"
           values={{ currentPlan }}
         >
           You are current on the {{ currentPlan }} plan. If you have any
@@ -128,7 +128,7 @@ const Settings = () => {
       </p>
     )
   ) : (
-    <p>{t['com.affine.settings.plans.subtitle-not-signed-in']()}</p>
+    <p>{t['com.affine.payment.subtitle-not-signed-in']()}</p>
   );
 
   const tabs = (
@@ -142,7 +142,7 @@ const Settings = () => {
           {getRecurringLabel({ recurring, t })}
           {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
             <span className={styles.radioButtonDiscount}>
-              {t['com.affine.settings.plans.discount-amount']({
+              {t['com.affine.payment.discount-amount']({
                 amount: yearlyDiscount,
               })}
             </span>
@@ -162,8 +162,8 @@ const Settings = () => {
             onNotify={({ detail, recurring }) => {
               pushNotification({
                 type: 'success',
-                title: t['com.affine.settings.plans.updated-notify-title'](),
-                message: t['com.affine.settings.plans.updated-notify-msg']({
+                title: t['com.affine.payment.updated-notify-title'](),
+                message: t['com.affine.payment.updated-notify-msg']({
                   plan:
                     detail.plan === SubscriptionPlan.Free
                       ? SubscriptionPlan.Free
