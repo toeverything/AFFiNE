@@ -203,7 +203,7 @@ export class AuthService {
           features: {
             create: {
               reason: 'created by api sign up',
-              expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+              expiresAt: new Date('2099-12-31T23:59:59.000Z'),
               activated: true,
               feature: {
                 connect: {
@@ -248,7 +248,7 @@ export class AuthService {
           features: {
             create: {
               reason: 'created by invite sign up',
-              expiresAt: new Date('2021-12-31T23:59:59.000Z'),
+              expiresAt: new Date('2099-12-31T23:59:59.000Z'),
               activated: true,
               feature: {
                 connect: {
