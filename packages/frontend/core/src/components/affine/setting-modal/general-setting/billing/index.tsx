@@ -84,6 +84,16 @@ const SubscriptionSettings = () => {
   const t = useAFFiNEI18N();
   const planText = usePlanI18NText(plan);
 
+  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
+
+  const gotoPlansSetting = useCallback(() => {
+    setOpenSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      workspaceId: null,
+    });
+  }, [setOpenSettingModalAtom]);
+
   return (
     <div className={styles.subscription}>
       <div className={styles.planCard}>
@@ -98,11 +108,18 @@ const SubscriptionSettings = () => {
                   planName: planText,
                 }}
               >
-                You are current on the <a>planName</a> plan.
+                You are current on the
+                <span
+                  onClick={gotoPlansSetting}
+                  className={styles.currentPlanName}
+                >
+                  {planText} plan
+                </span>
+                .
               </Trans>
             }
           />
-          <PlanAction plan={plan} />
+          <PlanAction plan={plan} gotoPlansSetting={gotoPlansSetting} />
         </div>
         <p className={styles.planPrice}>
           ${amount}/{t['com.affine.billing.month']()}
@@ -153,17 +170,14 @@ const SubscriptionSettings = () => {
   );
 };
 
-const PlanAction = ({ plan }: { plan: string }) => {
+const PlanAction = ({
+  plan,
+  gotoPlansSetting,
+}: {
+  plan: string;
+  gotoPlansSetting: () => void;
+}) => {
   const t = useAFFiNEI18N();
-  const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
-
-  const gotoPlansSetting = useCallback(() => {
-    setOpenSettingModalAtom({
-      open: true,
-      activeTab: 'plans',
-      workspaceId: null,
-    });
-  }, [setOpenSettingModalAtom]);
 
   return (
     <Button

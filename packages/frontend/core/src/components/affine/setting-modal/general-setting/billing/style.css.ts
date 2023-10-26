@@ -37,3 +37,10 @@ export const noInvoice = style({
   color: 'var(--affine-text-secondary-color)',
   fontSize: 'var(--affine-font-xs)',
 });
+
+export const currentPlanName = style({
+  fontSize: 'var(--affine-font-xs)',
+  fontWeight: 500,
+  color: 'var(--affine-text-emphasis-color)',
+  cursor: 'pointer',
+});

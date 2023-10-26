@@ -652,7 +652,7 @@
   "com.affine.billing.information": "Information",
   "com.affine.billing.history": "Billing history",
   "com.affine.billing.current-plan": "Current Plan",
-  "com.affine.billing.current-plan.description": "You are current on the <1>{{planName}}</1> plan.",
+  "com.affine.billing.current-plan.description": "You are current on the <1>{{planName}} plan</1>.",
   "com.affine.billing.month": "month",
   "com.affine.billing.payment-method": "Payment Method",
   "com.affine.billing.payment-method.description": "Provided by Stripe.",
