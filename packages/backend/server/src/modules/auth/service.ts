@@ -14,6 +14,7 @@ import { nanoid } from 'nanoid';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { verifyChallengeResponse } from '../../storage';
+import { FeatureVersion_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 
 export type UserClaim = Pick<
@@ -185,38 +186,24 @@ export class AuthService {
 
     const hashedPassword = await hash(password);
 
-    return this.prisma.$transaction(async tx => {
-      const latestFreePlan = await tx.userFeatures.aggregate({
-        where: {
-          feature: 'free_plan_v1',
-        },
-        _max: {
-          version: true,
-        },
-      });
-
-      return tx.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-          features: {
-            create: {
-              reason: 'created by api sign up',
-              expiresAt: new Date('2099-12-31T23:59:59.000Z'),
-              activated: true,
-              feature: {
-                connect: {
-                  feature_version: {
-                    feature: 'free_plan_v1',
-                    version: latestFreePlan._max.version || 1,
-                  },
-                },
+    return this.prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        features: {
+          create: {
+            reason: 'created by api sign up',
+            expiresAt: new Date('2099-12-31T23:59:59.000Z'),
+            activated: true,
+            feature: {
+              connect: {
+                feature_version: FeatureVersion_FreePlanV1,
               },
             },
           },
         },
-      });
+      },
     });
   }
 
@@ -231,37 +218,23 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
-    return this.prisma.$transaction(async tx => {
-      const latestFreePlan = await tx.userFeatures.aggregate({
-        where: {
-          feature: 'free_plan_v1',
-        },
-        _max: {
-          version: true,
-        },
-      });
-
-      return tx.user.create({
-        data: {
-          name: 'Unnamed',
-          email,
-          features: {
-            create: {
-              reason: 'created by invite sign up',
-              expiresAt: new Date('2099-12-31T23:59:59.000Z'),
-              activated: true,
-              feature: {
-                connect: {
-                  feature_version: {
-                    feature: 'free_plan_v1',
-                    version: latestFreePlan._max.version || 1,
-                  },
-                },
+    return this.prisma.user.create({
+      data: {
+        name: 'Unnamed',
+        email,
+        features: {
+          create: {
+            reason: 'created by invite sign up',
+            expiresAt: new Date('2099-12-31T23:59:59.000Z'),
+            activated: true,
+            feature: {
+              connect: {
+                feature_version: FeatureVersion_FreePlanV1,
               },
             },
           },
         },
-      });
+      },
     });
   }
 

@@ -6,7 +6,7 @@ export enum FeatureKind {
 }
 
 export type CommonFeature = {
-  feature: string;
+  feature: FeatureType;
   type: FeatureKind;
   version: number;
   configs: Prisma.InputJsonValue;
@@ -23,3 +23,36 @@ export type Quota = CommonFeature & {
     storageQuota: number;
   };
 };
+
+export enum FeatureType {
+  // features
+  Feature_EarlyAccess = 'early_access',
+  // quotas
+  Quota_FreePlanV1 = 'free_plan_v1',
+  Quota_ProPlanV1 = 'pro_plan_v1',
+}
+
+export const Quotas: Quota[] = [
+  {
+    feature: FeatureType.Quota_FreePlanV1,
+    type: FeatureKind.Quota,
+    version: 1,
+    configs: {
+      // single blob limit 10MB
+      blobLimit: 10 * 1024 * 1024,
+      // total blob limit 10GB
+      storageQuota: 10 * 1024 * 1024 * 1024,
+    },
+  },
+  {
+    feature: FeatureType.Quota_ProPlanV1,
+    type: FeatureKind.Quota,
+    version: 1,
+    configs: {
+      // single blob limit 10MB
+      blobLimit: 10 * 1024 * 1024,
+      // total blob limit 100GB
+      storageQuota: 100 * 1024 * 1024 * 1024,
+    },
+  },
+];

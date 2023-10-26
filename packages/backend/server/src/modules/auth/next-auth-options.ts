@@ -11,6 +11,7 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
+import { FeatureVersion_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 import {
   decode,
@@ -37,15 +38,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const createUser = prismaAdapter.createUser!.bind(prismaAdapter);
     prismaAdapter.createUser = async data => {
-      const latestFreePlan = await prisma.userFeatures.aggregate({
-        where: {
-          feature: 'free_plan_v1',
-        },
-        _max: {
-          version: true,
-        },
-      });
-
       const userData = {
         name: data.name,
         email: data.email,
@@ -58,10 +50,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             activated: true,
             feature: {
               connect: {
-                feature_version: {
-                  feature: 'free_plan_v1',
-                  version: latestFreePlan._max.version || 1,
-                },
+                feature_version: FeatureVersion_FreePlanV1,
               },
             },
           },

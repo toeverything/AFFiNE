@@ -2,11 +2,11 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { PrismaService } from '../../../prisma';
 import { migrateNewFeatureTable } from './migration';
-import { CommonFeature, Feature, FeatureKind } from './types';
+import { CommonFeature, Feature, FeatureKind, FeatureType } from './types';
 
 const Features: Feature[] = [
   {
-    feature: 'early_access',
+    feature: FeatureType.Feature_EarlyAccess,
     type: FeatureKind.Feature,
     version: 1,
     configs: {

@@ -2,32 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { FeatureService } from './feature';
 import { PrismaService } from './index';
-import { FeatureKind, Quota } from './types';
-
-export const Quotas: Quota[] = [
-  {
-    feature: 'free_plan_v1',
-    type: FeatureKind.Quota,
-    version: 1,
-    configs: {
-      // single blob limit 10MB
-      blobLimit: 10 * 1024 * 1024,
-      // total blob limit 10GB
-      storageQuota: 10 * 1024 * 1024 * 1024,
-    },
-  },
-  {
-    feature: 'pro_plan_v1',
-    type: FeatureKind.Quota,
-    version: 1,
-    configs: {
-      // single blob limit 10MB
-      blobLimit: 10 * 1024 * 1024,
-      // total blob limit 100GB
-      storageQuota: 100 * 1024 * 1024 * 1024,
-    },
-  },
-];
+import { FeatureKind, FeatureType, Quota, Quotas } from './types';
 
 @Injectable()
 export class QuotaService implements OnModuleInit {
@@ -112,7 +87,7 @@ export class QuotaService implements OnModuleInit {
     await this.prisma.$transaction(async tx => {
       const latestFreePlan = await tx.userFeatures.aggregate({
         where: {
-          feature: 'free_plan_v1',
+          feature: FeatureType.Quota_FreePlanV1,
         },
         _max: {
           version: true,
