@@ -1,3 +1,4 @@
+import { AnimatedCollectionsIcon } from '@affine/component';
 import {
   MenuItem as SidebarMenuItem,
   MenuLinkItem as SidebarMenuLinkItem,
@@ -11,11 +12,7 @@ import {
 } from '@affine/component/page-list';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  InformationIcon,
-  MoreHorizontalIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons';
+import { InformationIcon, MoreHorizontalIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
@@ -99,7 +96,7 @@ const CollectionRenderer = ({
         ref={setNodeRef}
         onCollapsedChange={setCollapsed}
         active={isOver || currentPath === path}
-        icon={<ViewLayersIcon />}
+        icon={<AnimatedCollectionsIcon closed={isOver} />}
         to={path}
         postfix={
           <div onClick={stopPropagation}>
