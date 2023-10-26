@@ -32,7 +32,6 @@ import {
   openSignOutModalAtom,
 } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { usePlanI18NText } from '../../../../hooks/use-plan-i18n-text';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
@@ -158,7 +157,6 @@ const StoragePanel = () => {
 
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
-  const planText = usePlanI18NText(plan);
 
   const maxLimit = useMemo(() => {
     return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
@@ -181,7 +179,7 @@ const StoragePanel = () => {
     >
       <StorageProgress
         max={maxLimit}
-        plan={planText}
+        plan={plan}
         value={data.collectAllBlobSizes.size}
         onUpgrade={onUpgrade}
       />
