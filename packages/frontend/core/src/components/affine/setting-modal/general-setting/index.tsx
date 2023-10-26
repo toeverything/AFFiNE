@@ -51,8 +51,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     },
     {
       key: 'plans',
-      // TODO: i18n
-      title: 'AFFiNE Cloud Plans',
+      title: t['com.affine.payment.title'](),
       // TODO: icon
       icon: KeyboardIcon,
       testId: 'plans-panel-trigger',
@@ -75,8 +74,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
   if (status === 'authenticated') {
     settings.splice(3, 0, {
       key: 'billing',
-      // TODO: i18n
-      title: 'Billing',
+      title: t['com.affine.payment.billing-setting.title'](),
       // TODO: icon
       icon: KeyboardIcon,
       testId: 'billing-panel-trigger',

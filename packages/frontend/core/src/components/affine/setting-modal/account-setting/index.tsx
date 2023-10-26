@@ -157,6 +157,7 @@ const StoragePanel = () => {
 
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
+
   const maxLimit = useMemo(() => {
     return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
   }, [plan]);

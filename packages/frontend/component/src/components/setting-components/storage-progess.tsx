@@ -1,3 +1,4 @@
+import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
@@ -11,7 +12,12 @@ export interface StorageProgressProgress {
   max: number;
   value: number;
   onUpgrade: () => void;
-  plan: string;
+  plan: SubscriptionPlan;
+}
+
+enum ButtonType {
+  Primary = 'primary',
+  Default = 'default',
 }
 
 export const StorageProgress = ({
@@ -30,10 +36,10 @@ export const StorageProgress = ({
   const max = useMemo(() => bytes.format(upperLimit), [upperLimit]);
 
   const buttonType = useMemo(() => {
-    if (plan === 'Free') {
-      return 'primary';
+    if (plan === SubscriptionPlan.Free) {
+      return ButtonType.Primary;
     }
-    return 'default';
+    return ButtonType.Default;
   }, [plan]);
 
   return (
@@ -43,7 +49,7 @@ export const StorageProgress = ({
           <span>{t['com.affine.storage.used.hint']()}</span>
           <span>
             {used}/{max}
-            {` (${plan} Plan)`}
+            {` (${plan} ${t['com.affine.storage.plan']()})`}
           </span>
         </div>
 
@@ -59,9 +65,7 @@ export const StorageProgress = ({
 
       <Tooltip
         options={{ hidden: percent < 100 }}
-        content={
-          'You have reached the maximum capacity limit for your current account'
-        }
+        content={t['com.affine.storage.maximum-tips']()}
       >
         <span tabIndex={0}>
           <Button
@@ -69,7 +73,9 @@ export const StorageProgress = ({
             onClick={onUpgrade}
             className={styles.storageButton}
           >
-            {plan === 'Free' ? 'Upgrade' : 'Change'}
+            {plan === 'Free'
+              ? t['com.affine.storage.upgrade']()
+              : t['com.affine.storage.change-plan']()}
           </Button>
         </span>
       </Tooltip>

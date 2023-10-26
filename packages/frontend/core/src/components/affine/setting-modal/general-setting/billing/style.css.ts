@@ -25,6 +25,10 @@ export const planPrice = style({
   fontWeight: 600,
 });
 
+export const billingFrequency = style({
+  fontSize: 'var(--affine-font-base)',
+});
+
 export const paymentMethod = style({
   marginTop: '24px',
 });
@@ -36,4 +40,14 @@ globalStyle('.dangerous-setting .name', {
 export const noInvoice = style({
   color: 'var(--affine-text-secondary-color)',
   fontSize: 'var(--affine-font-xs)',
+});
+
+export const currentPlanName = style({
+  fontSize: 'var(--affine-font-xs)',
+  fontWeight: 500,
+  color: 'var(--affine-text-emphasis-color)',
+  cursor: 'pointer',
+});
+export const button = style({
+  padding: '4px 12px',
 });
