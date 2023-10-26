@@ -62,7 +62,6 @@ export class WorkspaceSetting {
   }
 
   deleteCollection(info: DeleteCollectionInfo, ...ids: string[]) {
-    console.log(info, ids);
     const set = new Set(ids);
     this.workspace.doc.transact(() => {
       const indexList: number[] = [];
@@ -91,6 +90,32 @@ export class WorkspaceSetting {
           this.collectionsTrashYArray.length - 10
         );
       }
+    });
+  }
+
+  deletePagesFromCollection(collection: Collection, idSet: Set<string>) {
+    const newAllowList = collection.allowList.filter(id => !idSet.has(id));
+    const newPages = collection.pages.filter(id => !idSet.has(id));
+    if (
+      newAllowList.length !== collection.allowList.length ||
+      newPages.length !== collection.pages.length
+    ) {
+      this.updateCollection(collection.id, old => {
+        return {
+          ...old,
+          allowList: newAllowList,
+          pages: newPages,
+        };
+      });
+    }
+  }
+
+  deletePages(ids: string[]) {
+    const idSet = new Set(ids);
+    this.workspace.doc.transact(() => {
+      this.collections.forEach(collection => {
+        this.deletePagesFromCollection(collection, idSet);
+      });
     });
   }
 }

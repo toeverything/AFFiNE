@@ -190,7 +190,6 @@ export const pageCollectionBaseAtom =
     },
     { initialValue: { loading: true, collections: [] } }
   );
-
 export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(get => {
   const workspacePromise = get(currentWorkspaceAtom);
   return {

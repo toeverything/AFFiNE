@@ -46,6 +46,7 @@ export const useAllPageListConfig = () => {
       favoriteRender: page => {
         return (
           <FavoriteTag
+            style={{ marginRight: 8 }}
             onClick={() => onToggleFavoritePage(page)}
             active={!!page.favorite}
           />

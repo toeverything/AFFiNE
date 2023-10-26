@@ -198,6 +198,9 @@ const RulesMode = ({
     localStorage.setItem('hide-rules-mode-include-page-tips', 'true');
   }, []);
   allPageListConfig.allPages.forEach(v => {
+    if (v.trash) {
+      return;
+    }
     const result = filterPageByRules(
       collection.filterList,
       collection.allowList,
@@ -853,6 +856,9 @@ const useFilter = (list: PageMeta[]) => {
     clickFilter,
     createFilter: onCreateFilter,
     filteredList: list.filter(v => {
+      if (v.trash) {
+        return false;
+      }
       return filterPageByRules(filters, [], v);
     }),
   };
