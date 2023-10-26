@@ -2,7 +2,7 @@ import { toast } from '@affine/component';
 import {
   currentCollectionAtom,
   FloatingToolbar,
-  NewPageButton,
+  NewPageButton as PureNewPageButton,
   OperationCell,
   PageList,
   type PageListHandle,
@@ -13,12 +13,25 @@ import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { CloseIcon, DeleteIcon, ViewLayersIcon } from '@blocksuite/icons';
+import {
+  CloseIcon,
+  DeleteIcon,
+  PlusIcon,
+  ViewLayersIcon,
+} from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import clsx from 'clsx';
+import {
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
@@ -54,12 +67,7 @@ export const loader: LoaderFunction = async args => {
 
 const PageListHeader = () => {
   const t = useAFFiNEI18N();
-  const [currentWorkspace] = useCurrentWorkspace();
   const setting = useCollectionManager(collectionsCRUDAtom);
-  const { importFile, createEdgeless, createPage } = usePageHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-
   const title = useMemo(() => {
     if (setting.isDefault) {
       return t['com.affine.all-pages.header']();
@@ -80,11 +88,7 @@ const PageListHeader = () => {
   return (
     <div className={styles.allPagesHeader}>
       <div className={styles.allPagesHeaderTitle}>{title}</div>
-      <NewPageButton
-        importFile={importFile}
-        createNewEdgeless={createEdgeless}
-        createNewPage={createPage}
-      />
+      <NewPageButton>{t['New Page']()}</NewPageButton>
     </div>
   );
 };
@@ -200,6 +204,29 @@ const PageListFloatingToolbar = ({
   );
 };
 
+const NewPageButton = ({
+  className,
+  children,
+}: PropsWithChildren<{
+  className?: string;
+}>) => {
+  const [currentWorkspace] = useCurrentWorkspace();
+  const { importFile, createEdgeless, createPage } = usePageHelper(
+    currentWorkspace.blockSuiteWorkspace
+  );
+  return (
+    <div className={className}>
+      <PureNewPageButton
+        importFile={importFile}
+        createNewEdgeless={createEdgeless}
+        createNewPage={createPage}
+      >
+        <div className={styles.newPageButtonLabel}>{children}</div>
+      </PureNewPageButton>
+    </div>
+  );
+};
+
 // even though it is called all page, it is also being used for collection route as well
 export const AllPage = () => {
   const [currentWorkspace] = useCurrentWorkspace();
@@ -215,6 +242,7 @@ export const AllPage = () => {
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const pageListRef = useRef<PageListHandle>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const deselectAllAndToggleSelect = useCallback(() => {
     setSelectedPageIds([]);
     pageListRef.current?.toggleSelectable();
@@ -226,6 +254,25 @@ export const AllPage = () => {
     return selectedPageIds.filter(id => ids.includes(id));
   }, [filteredPageMetas, selectedPageIds]);
 
+  const [showHeaderCreateNewPage, setShowHeaderCreateNewPage] = useState(false);
+  // when PageListScrollContainer scrolls above 40px, show the create new page button on header
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      const handleScroll = () => {
+        setTimeout(() => {
+          const scrollTop = container.scrollTop ?? 0;
+          setShowHeaderCreateNewPage(scrollTop > 40);
+        });
+      };
+      container.addEventListener('scroll', handleScroll);
+      return () => {
+        container.removeEventListener('scroll', handleScroll);
+      };
+    }
+    return;
+  }, []);
+
   return (
     <div className={styles.root}>
       {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
@@ -234,9 +281,22 @@ export const AllPage = () => {
           currentEntry={{
             subPath: WorkspaceSubPath.ALL,
           }}
+          rightSlot={
+            <NewPageButton
+              className={clsx(
+                styles.headerCreateNewButton,
+                !showHeaderCreateNewPage && styles.headerCreateNewButtonHidden
+              )}
+            >
+              <PlusIcon />
+            </NewPageButton>
+          }
         />
       ) : null}
-      <PageListScrollContainer className={styles.scrollContainer}>
+      <PageListScrollContainer
+        ref={containerRef}
+        className={styles.scrollContainer}
+      >
         <PageListHeader />
         {filteredPageMetas.length > 0 ? (
           <>

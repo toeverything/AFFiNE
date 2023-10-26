@@ -8,11 +8,13 @@ import {
   type ForwardedRef,
   forwardRef,
   type MouseEventHandler,
+  type PropsWithChildren,
   type ReactNode,
   useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
 } from 'react';
 
 import { Checkbox, type CheckboxProps } from '../../ui/checkbox';
@@ -258,24 +260,42 @@ export const PageListHeader = () => {
   );
 };
 
-export const PageListScrollContainer = ({
-  className,
-  children,
-  style,
-}: {
+interface PageListScrollContainerProps {
   className?: string;
-  children: ReactNode;
   style?: React.CSSProperties;
-}) => {
-  const [hasScrollTop, ref] = useHasScrollTop();
+}
+
+export const PageListScrollContainer = forwardRef<
+  HTMLDivElement,
+  PropsWithChildren<PageListScrollContainerProps>
+>(({ className, children, style }, ref) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const hasScrollTop = useHasScrollTop(containerRef);
+
+  const setNodeRef = useCallback(
+    (r: HTMLDivElement) => {
+      if (ref) {
+        if (typeof ref === 'function') {
+          ref(r);
+        } else {
+          ref.current = r;
+        }
+      }
+      containerRef.current = r;
+    },
+    [ref]
+  );
+
   return (
     <div
       style={style}
-      ref={ref}
+      ref={setNodeRef}
       data-has-scroll-top={hasScrollTop}
       className={clsx(styles.pageListScrollContainer, className)}
     >
       {children}
     </div>
   );
-};
+});
+
+PageListScrollContainer.displayName = 'PageListScrollContainer';

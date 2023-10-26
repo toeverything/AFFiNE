@@ -73,6 +73,7 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
 export function WorkspaceHeader({
   currentWorkspaceId,
   currentEntry,
+  rightSlot,
 }: WorkspaceHeaderProps<WorkspaceFlavour>) {
   const setAppHeader = useSetAtom(appHeaderAtom);
 
@@ -102,7 +103,7 @@ export function WorkspaceHeader({
               propertiesMeta={workspace.meta.properties}
             />
           }
-          // right={123}
+          right={rightSlot}
           center={<WorkspaceModeFilterTab />}
         />
         <FilterContainer workspaceId={currentWorkspaceId} />

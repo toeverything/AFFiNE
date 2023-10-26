@@ -136,6 +136,7 @@ type UIBaseProps<_Flavour extends keyof WorkspaceRegistry> = {
 
 export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
+    rightSlot?: ReactNode;
     currentEntry:
       | {
           subPath: WorkspaceSubPath;

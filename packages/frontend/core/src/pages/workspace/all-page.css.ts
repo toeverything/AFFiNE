@@ -51,3 +51,16 @@ export const floatingToolbar = style({
 export const toolbarSelectedNumber = style({
   color: 'var(--affine-text-secondary-color)',
 });
+
+export const headerCreateNewButton = style({
+  transition: 'opacity 0.1s ease-in-out',
+});
+
+export const newPageButtonLabel = style({
+  display: 'flex',
+  alignItems: 'center',
+});
+
+export const headerCreateNewButtonHidden = style({
+  opacity: 0,
+});

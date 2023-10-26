@@ -6,7 +6,7 @@ import {
 import { useIsTinyScreen } from '@toeverything/hooks/use-is-tiny-screen';
 import clsx from 'clsx';
 import { type Atom, useAtomValue } from 'jotai';
-import type { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 import { forwardRef, useRef } from 'react';
 
 import * as style from './style.css';
@@ -14,9 +14,9 @@ import { TopTip } from './top-tip';
 import { WindowsAppControls } from './windows-app-controls';
 
 interface HeaderPros {
-  left?: ReactElement;
-  right?: ReactElement;
-  center?: ReactElement;
+  left?: ReactNode;
+  right?: ReactNode;
+  center?: ReactNode;
   mainContainerAtom: Atom<HTMLDivElement | null>;
 }
 
