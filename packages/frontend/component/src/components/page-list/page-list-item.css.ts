@@ -25,7 +25,7 @@ export const dragOverlay = style({
   display: 'flex',
   height: '54px', // 42 + 12
   alignItems: 'center',
-  background: 'var(--affine-black-10)',
+  background: 'var(--affine-hover-color-filled)',
   boxShadow: 'var(--affine-menu-shadow)',
   borderRadius: 10,
   zIndex: 1001,
