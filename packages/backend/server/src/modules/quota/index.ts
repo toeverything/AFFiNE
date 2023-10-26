@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PermissionService } from '../workspaces/permission';
-import { FeatureService, Quotas, QuotaService, QuotaType } from './configure';
+import { FeatureService, FeatureType, Quotas, QuotaService } from './configure';
 import { FeatureManagementService } from './feature';
 import { QuotaManagementService } from './storage';
 
@@ -31,9 +31,9 @@ export class QuotaModule {}
 export {
   FeatureManagementService,
   FeatureService,
+  FeatureType,
   QuotaManagementService,
   Quotas,
   QuotaService,
-  QuotaType,
 };
 export { FeatureVersion_FreePlanV1, FeatureVersion_ProPlanV1 } from './preload';

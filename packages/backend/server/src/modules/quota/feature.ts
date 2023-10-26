@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { Config } from '../../config';
 import { FeatureService, PrismaService } from './configure';
+import { FeatureType } from './configure/types';
 
 export enum NewFeaturesKind {
   EarlyAccess,
@@ -23,18 +24,21 @@ export class FeatureManagementService {
   async addEarlyAccess(userId: string) {
     return this.feature.addUserFeature(
       userId,
-      'early_access',
+      FeatureType.Feature_EarlyAccess,
       1,
       'Early access user'
     );
   }
 
   async removeEarlyAccess(userId: string) {
-    return this.feature.removeUserFeature(userId, 'early_access');
+    return this.feature.removeUserFeature(
+      userId,
+      FeatureType.Feature_EarlyAccess
+    );
   }
 
   async listEarlyAccess() {
-    return this.feature.listFeatureUsers('early_access');
+    return this.feature.listFeatureUsers(FeatureType.Feature_EarlyAccess);
   }
 
   async canEarlyAccess(email: string) {
@@ -49,7 +53,7 @@ export class FeatureManagementService {
       });
       if (user) {
         const canEarlyAccess = await this.feature
-          .hasFeature(user.id, 'early_access')
+          .hasFeature(user.id, FeatureType.Feature_EarlyAccess)
           .catch(() => false);
         // TODO: Outdated, switch to feature gates
         const oldCanEarlyAccess = await this.prisma.newFeaturesWaitingList

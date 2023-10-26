@@ -11,7 +11,7 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
-import { FeatureVersion_FreePlanV1 } from '../quota';
+import { FeatureType, FeatureVersion_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 import {
   decode,
@@ -238,14 +238,14 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
           // it will cause prisma.account to be undefined
           // then prismaAdapter.getUserByAccount will throw error
           if (email.endsWith('@toeverything.info')) return true;
-          return prisma.userFeatureGates
+          return prisma.userFeatures
             .count({
               where: {
                 user: {
                   email,
                 },
                 feature: {
-                  feature: 'early_access',
+                  feature: FeatureType.Feature_EarlyAccess,
                 },
                 activated: true,
               },

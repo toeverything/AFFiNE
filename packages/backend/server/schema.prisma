@@ -118,7 +118,7 @@ model WorkspacePageUserPermission {
 // for example:
 // - early access is a feature that allow some users to access the insider version
 // - pro plan is a quota that allow some users access to more resources after they pay
-model UserFeatureGates {
+model UserFeatures {
   id        String @id @default(uuid()) @db.VarChar
   userId    String @map("user_id") @db.VarChar
   featureId String @db.VarChar
@@ -136,13 +136,13 @@ model UserFeatureGates {
   // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
   activated Boolean  @default(false)
 
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  feature UserFeatures @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature Features @relation(fields: [featureId], references: [id], onDelete: Cascade)
 
-  @@map("user_feature_gates")
+  @@map("user_features")
 }
 
-model UserFeatures {
+model Features {
   id        String   @id @default(uuid()) @db.VarChar
   feature   String   @db.VarChar
   version   Int      @default(0) @db.Integer
@@ -152,10 +152,10 @@ model UserFeatures {
   configs   Json     @db.Json
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  UserFeatureGates UserFeatureGates[]
+  UserFeatureGates UserFeatures[]
 
   @@unique([feature, version])
-  @@map("user_features")
+  @@map("features")
 }
 
 model Account {

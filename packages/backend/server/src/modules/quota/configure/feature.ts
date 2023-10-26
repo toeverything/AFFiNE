@@ -30,7 +30,7 @@ export class FeatureService implements OnModuleInit {
   // upgrade features from lower version to higher version
   async upsertFeature(feature: CommonFeature): Promise<void> {
     const hasEqualOrGreaterVersion =
-      (await this.prisma.userFeatures.count({
+      (await this.prisma.features.count({
         where: {
           feature: feature.feature,
           version: {
@@ -40,7 +40,7 @@ export class FeatureService implements OnModuleInit {
       })) > 0;
     // will not update exists version
     if (!hasEqualOrGreaterVersion) {
-      await this.prisma.userFeatures.create({
+      await this.prisma.features.create({
         data: {
           feature: feature.feature,
           type: feature.type,
@@ -52,7 +52,7 @@ export class FeatureService implements OnModuleInit {
   }
 
   async getFeaturesVersion() {
-    const features = await this.prisma.userFeatures.findMany({
+    const features = await this.prisma.features.findMany({
       where: {
         type: FeatureKind.Feature,
       },
@@ -70,8 +70,8 @@ export class FeatureService implements OnModuleInit {
     );
   }
 
-  async getFeature(feature: string) {
-    return this.prisma.userFeatures.findFirst({
+  async getFeature(feature: FeatureType) {
+    return this.prisma.features.findFirst({
       where: {
         feature,
         type: FeatureKind.Feature,
@@ -84,13 +84,13 @@ export class FeatureService implements OnModuleInit {
 
   async addUserFeature(
     userId: string,
-    feature: string,
+    feature: FeatureType,
     version: number,
     reason: string,
     expiresAt?: Date | string
   ) {
     return this.prisma.$transaction(async tx => {
-      const latestFlag = await tx.userFeatureGates.findFirst({
+      const latestFlag = await tx.userFeatures.findFirst({
         where: {
           userId,
           feature: {
@@ -106,7 +106,7 @@ export class FeatureService implements OnModuleInit {
       if (latestFlag) {
         return latestFlag.id;
       } else {
-        return tx.userFeatureGates
+        return tx.userFeatures
           .create({
             data: {
               reason,
@@ -133,8 +133,8 @@ export class FeatureService implements OnModuleInit {
     });
   }
 
-  async removeUserFeature(userId: string, feature: string) {
-    return this.prisma.userFeatureGates
+  async removeUserFeature(userId: string, feature: FeatureType) {
+    return this.prisma.userFeatures
       .updateMany({
         where: {
           userId,
@@ -152,7 +152,7 @@ export class FeatureService implements OnModuleInit {
   }
 
   async getUserFeatures(userId: string) {
-    const userFeatures = await this.prisma.userFeatureGates.findUnique({
+    const userFeatures = await this.prisma.userFeatures.findUnique({
       where: {
         id: userId,
         activated: true,
@@ -167,8 +167,8 @@ export class FeatureService implements OnModuleInit {
     return userFeatures?.feature;
   }
 
-  async listFeatureUsers(feature: string) {
-    return this.prisma.userFeatureGates
+  async listFeatureUsers(feature: FeatureType) {
+    return this.prisma.userFeatures
       .findMany({
         where: {
           activated: true,
@@ -193,8 +193,8 @@ export class FeatureService implements OnModuleInit {
       .then(users => users.map(user => user.user));
   }
 
-  async hasFeature(userId: string, feature: string) {
-    return this.prisma.userFeatureGates
+  async hasFeature(userId: string, feature: FeatureType) {
+    return this.prisma.userFeatures
       .count({
         where: {
           userId,

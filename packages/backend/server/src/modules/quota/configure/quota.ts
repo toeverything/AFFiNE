@@ -19,7 +19,7 @@ export class QuotaService implements OnModuleInit {
 
   // get activated user quota
   async getUserQuota(userId: string) {
-    const quota = await this.prisma.userFeatureGates.findFirst({
+    const quota = await this.prisma.userFeatures.findFirst({
       where: {
         user: {
           id: userId,
@@ -48,7 +48,7 @@ export class QuotaService implements OnModuleInit {
 
   // get all user quota records
   async getUserQuotas(userId: string) {
-    const quotas = await this.prisma.userFeatureGates.findMany({
+    const quotas = await this.prisma.userFeatures.findMany({
       where: {
         user: {
           id: userId,
@@ -80,12 +80,12 @@ export class QuotaService implements OnModuleInit {
   // currently each user can only have one quota
   async switchUserQuota(
     userId: string,
-    quota: string,
+    quota: FeatureType,
     reason?: string,
     expiresAt?: Date
   ) {
     await this.prisma.$transaction(async tx => {
-      const latestFreePlan = await tx.userFeatures.aggregate({
+      const latestFreePlan = await tx.features.aggregate({
         where: {
           feature: FeatureType.Quota_FreePlanV1,
         },
@@ -95,7 +95,7 @@ export class QuotaService implements OnModuleInit {
       });
 
       // we will deactivate all exists quota for this user
-      await tx.userFeatureGates.updateMany({
+      await tx.userFeatures.updateMany({
         where: {
           id: undefined,
           userId,
@@ -108,7 +108,7 @@ export class QuotaService implements OnModuleInit {
         },
       });
 
-      await tx.userFeatureGates.create({
+      await tx.userFeatures.create({
         data: {
           user: {
             connect: {
@@ -132,8 +132,8 @@ export class QuotaService implements OnModuleInit {
     });
   }
 
-  async hasQuota(userId: string, quota: string) {
-    return this.prisma.userFeatureGates
+  async hasQuota(userId: string, quota: FeatureType) {
+    return this.prisma.userFeatures
       .count({
         where: {
           userId,

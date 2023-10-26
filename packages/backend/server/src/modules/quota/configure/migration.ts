@@ -1,4 +1,5 @@
 import { FeatureService, PrismaService } from '.';
+import { FeatureType } from './types';
 
 export async function migrateNewFeatureTable(
   feature: FeatureService,
@@ -12,11 +13,11 @@ export async function migrateNewFeatureTable(
       },
     });
     if (user) {
-      const hasEarlyAccess = await prisma.userFeatureGates.count({
+      const hasEarlyAccess = await prisma.userFeatures.count({
         where: {
           userId: user.id,
           feature: {
-            feature: 'early_access',
+            feature: FeatureType.Feature_EarlyAccess,
           },
           activated: true,
         },
@@ -24,7 +25,7 @@ export async function migrateNewFeatureTable(
       if (hasEarlyAccess === 0) {
         await feature.addUserFeature(
           user.id,
-          'early_access',
+          FeatureType.Feature_EarlyAccess,
           1,
           'Early access user'
         );
