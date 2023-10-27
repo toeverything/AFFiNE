@@ -233,10 +233,13 @@ export class AuthService {
     return Boolean(user.password);
   }
 
-  async changePassword(id: string, newPassword: string): Promise<User> {
+  async changePassword(email: string, newPassword: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: {
-        id,
+        email,
+        emailVerified: {
+          not: null,
+        },
       },
     });
 
@@ -248,7 +251,7 @@ export class AuthService {
 
     return this.prisma.user.update({
       where: {
-        id,
+        id: user.id,
       },
       data: {
         password: hashedPassword,
