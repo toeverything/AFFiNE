@@ -127,6 +127,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
           <div>/</div>
         </div>
         <div
+          data-testid="collection-name"
           style={{ fontWeight: 600, color: 'var(--affine-text-primary-color)' }}
         >
           {collection.name}

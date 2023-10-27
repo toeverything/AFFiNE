@@ -169,7 +169,6 @@ test.describe('collaboration', () => {
       const page2 = await context.newPage();
       await loginUser(page2, user.email);
       await page2.goto(page.url());
-      await waitForEditorLoad(page2);
       const collections = page2.getByTestId('collections');
       await expect(collections.getByText('test collection')).toBeVisible();
     }
