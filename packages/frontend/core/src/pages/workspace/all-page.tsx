@@ -207,8 +207,10 @@ const PageListFloatingToolbar = ({
 const NewPageButton = ({
   className,
   children,
+  size,
 }: PropsWithChildren<{
   className?: string;
+  size?: 'small' | 'default';
 }>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { importFile, createEdgeless, createPage } = usePageHelper(
@@ -217,6 +219,7 @@ const NewPageButton = ({
   return (
     <div className={className}>
       <PureNewPageButton
+        size={size}
         importFile={importFile}
         createNewEdgeless={createEdgeless}
         createNewPage={createPage}
@@ -283,6 +286,7 @@ export const AllPage = () => {
           }}
           rightSlot={
             <NewPageButton
+              size="small"
               className={clsx(
                 styles.headerCreateNewButton,
                 !showHeaderCreateNewPage && styles.headerCreateNewButtonHidden

@@ -116,7 +116,7 @@ export function WorkspaceHeader({
     );
   }
 
-  // route in shared or trash
+  // route in shared
   if (
     'subPath' in currentEntry &&
     currentEntry.subPath === WorkspaceSubPath.SHARED
@@ -130,6 +130,7 @@ export function WorkspaceHeader({
     );
   }
 
+  // route in trash
   if (
     'subPath' in currentEntry &&
     currentEntry.subPath === WorkspaceSubPath.TRASH
@@ -170,6 +171,7 @@ export function WorkspaceHeader({
             <PluginHeader />
           </div>
         }
+        bottomBorder
       />
     );
   }

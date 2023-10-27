@@ -83,7 +83,8 @@ export const selectAllButton = style({
   justifyContent: 'center',
   cursor: 'pointer',
   fontSize: 'var(--affine-font-xs)',
-  height: '100%',
+  height: '20px',
+  borderRadius: 4,
   padding: '0 8px',
   selectors: {
     '&:hover': {

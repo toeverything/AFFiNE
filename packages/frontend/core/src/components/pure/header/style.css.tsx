@@ -24,6 +24,10 @@ export const header = style({
   },
 } as ComplexStyleRule);
 
+export const bottomBorder = style({
+  borderBottom: '1px solid var(--affine-border-color)',
+});
+
 export const headerItem = style({
   minHeight: '32px',
   display: 'flex',

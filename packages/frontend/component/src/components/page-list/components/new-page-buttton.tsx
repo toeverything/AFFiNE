@@ -3,14 +3,15 @@ import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import { Menu } from '@toeverything/components/menu';
 import { type PropsWithChildren, useCallback, useState } from 'react';
 
+import { DropdownButton } from '../../../ui/button';
 import { BlockCard } from '../../card/block-card';
-import { DropdownButton } from './dropdown';
-import { menuContent } from './dropdown.css';
+import { menuContent } from './new-page-button.css';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
   createNewEdgeless: () => void;
   importFile: () => void;
+  size?: 'small' | 'default';
 };
 
 export const CreateNewPagePopup = ({
@@ -58,6 +59,7 @@ export const NewPageButton = ({
   createNewPage,
   createNewEdgeless,
   importFile,
+  size,
   children,
 }: PropsWithChildren<NewPageButtonProps>) => {
   const [open, setOpen] = useState(false);
@@ -92,6 +94,7 @@ export const NewPageButton = ({
       }}
     >
       <DropdownButton
+        size={size}
         data-testid="new-page-button"
         onClick={useCallback(() => {
           createNewPage();
