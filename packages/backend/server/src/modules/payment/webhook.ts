@@ -1,20 +1,16 @@
 import type { RawBodyRequest } from '@nestjs/common';
 import {
   Controller,
-  Get,
   Logger,
   NotAcceptableException,
   Post,
   Req,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { User } from '@prisma/client';
 import type { Request } from 'express';
 import Stripe from 'stripe';
 
 import { Config } from '../../config';
-import { PrismaService } from '../../prisma';
-import { Auth, CurrentUser } from '../auth';
 
 @Controller('/api/stripe')
 export class StripeWebhook {
@@ -24,21 +20,9 @@ export class StripeWebhook {
   constructor(
     config: Config,
     private readonly stripe: Stripe,
-    private readonly event: EventEmitter2,
-    private readonly db: PrismaService
+    private readonly event: EventEmitter2
   ) {
     this.config = config.payment;
-  }
-
-  // just for test
-  @Auth()
-  @Get('/success')
-  async handleSuccess(@CurrentUser() user: User) {
-    return this.db.userSubscription.findUnique({
-      where: {
-        userId: user.id,
-      },
-    });
   }
 
   @Post('/webhook')

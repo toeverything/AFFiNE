@@ -194,7 +194,6 @@ export class SubscriptionResolver {
     const session = await this.service.createCheckoutSession({
       user,
       recurring,
-      // TODO: replace with frontend url
       redirectUrl: `${this.config.baseUrl}/upgrade-success`,
     });
 
