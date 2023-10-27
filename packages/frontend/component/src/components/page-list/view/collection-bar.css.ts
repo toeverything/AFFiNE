@@ -1,7 +1,5 @@
 import { style } from '@vanilla-extract/css';
 
-import { viewMenu } from './collection-list.css';
-
 export const view = style({
   display: 'flex',
   alignItems: 'center',
@@ -9,7 +7,6 @@ export const view = style({
   fontSize: 14,
   fontWeight: 600,
   height: '100%',
-  paddingLeft: 16,
 });
 
 export const option = style({
@@ -26,31 +23,6 @@ export const option = style({
   selectors: {
     [`${view}:hover &`]: {
       opacity: 1,
-    },
-  },
-});
-export const pin = style({
-  opacity: 1,
-});
-export const pinedIcon = style({
-  display: 'block',
-  selectors: {
-    [`${option}:hover &`]: {
-      display: 'none',
-    },
-    [`${viewMenu}:hover &`]: {
-      display: 'none',
-    },
-  },
-});
-export const pinIcon = style({
-  display: 'none',
-  selectors: {
-    [`${option}:hover &`]: {
-      display: 'block',
-    },
-    [`${viewMenu}:hover &`]: {
-      display: 'block',
     },
   },
 });

@@ -14,7 +14,9 @@ export type LiteralValue =
   | number
   | string
   | boolean
-  | { [K: string]: LiteralValue }
+  | {
+      [K: string]: LiteralValue;
+    }
   | Array<LiteralValue>;
 
 export const refSchema: z.ZodType<Ref, z.ZodTypeDef> = z.object({
@@ -48,15 +50,31 @@ export type Filter = z.input<typeof filterSchema>;
 
 export const collectionSchema = z.object({
   id: z.string(),
-  workspaceId: z.string(),
   name: z.string(),
-  pinned: z.boolean().optional(),
+  mode: z.union([z.literal('page'), z.literal('rule')]),
   filterList: z.array(filterSchema),
-  allowList: z.array(z.string()).optional(),
-  excludeList: z.array(z.string()).optional(),
+  allowList: z.array(z.string()),
+  // page id list
+  pages: z.array(z.string()),
 });
-
+export const deletedCollectionSchema = z.object({
+  userId: z.string().optional(),
+  userName: z.string(),
+  collection: collectionSchema,
+});
+export type DeprecatedCollection = {
+  id: string;
+  name: string;
+  workspaceId: string;
+  filterList: z.infer<typeof filterSchema>[];
+  allowList?: string[];
+};
 export type Collection = z.input<typeof collectionSchema>;
+export type DeleteCollectionInfo = {
+  userId: string;
+  userName: string;
+} | null;
+export type DeletedCollection = z.input<typeof deletedCollectionSchema>;
 
 export const tagSchema = z.object({
   id: z.string(),

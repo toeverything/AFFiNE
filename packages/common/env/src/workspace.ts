@@ -8,10 +8,9 @@ import type {
 import type { PropsWithChildren, ReactNode } from 'react';
 import type { DataSourceAdapter } from 'y-provider';
 
-import type { Collection } from './filter.js';
-
 export enum WorkspaceSubPath {
   ALL = 'all',
+  Collection = 'collection',
   SETTING = 'setting',
   TRASH = 'trash',
   SHARED = 'shared',
@@ -137,6 +136,7 @@ type UIBaseProps<_Flavour extends keyof WorkspaceRegistry> = {
 
 export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
+    rightSlot?: ReactNode;
     currentEntry:
       | {
           subPath: WorkspaceSubPath;
@@ -167,20 +167,12 @@ type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
     onLoadEditor: (page: Page, editor: EditorContainer) => () => void;
   };
 
-type PageListProps<_Flavour extends keyof WorkspaceRegistry> = {
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-  onOpenPage: (pageId: string, newTab?: boolean) => void;
-  collection: Collection;
-};
-
 interface FC<P> {
   (props: P): ReactNode;
 }
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
-  Header: FC<WorkspaceHeaderProps<Flavour>>;
   PageDetail: FC<PageDetailProps<Flavour>>;
-  PageList: FC<PageListProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
   LoginCard?: FC<object>;

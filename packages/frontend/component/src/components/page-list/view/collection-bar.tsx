@@ -1,4 +1,4 @@
-import type { PropertiesMeta } from '@affine/env/filter';
+import type { DeleteCollectionInfo, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ViewLayersIcon } from '@blocksuite/icons';
@@ -8,22 +8,24 @@ import clsx from 'clsx';
 import { useState } from 'react';
 
 import {
-  type CollectionsAtom,
+  type CollectionsCRUDAtom,
   useCollectionManager,
 } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
-import { EditCollectionModal } from './create-collection';
+import { type AllPageListConfig, EditCollectionModal } from './edit-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {
   getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
-  collectionsAtom: CollectionsAtom;
-  columnsCount: number;
+  collectionsAtom: CollectionsCRUDAtom;
+  backToAll: () => void;
+  allPageListConfig: AllPageListConfig;
+  info: DeleteCollectionInfo;
 }
 
 export const CollectionBar = (props: CollectionBarProps) => {
-  const { getPageInfo, propertiesMeta, columnsCount, collectionsAtom } = props;
+  const { collectionsAtom } = props;
   const t = useAFFiNEI18N();
   const setting = useCollectionManager(collectionsAtom);
   const collection = setting.currentCollection;
@@ -31,16 +33,23 @@ export const CollectionBar = (props: CollectionBarProps) => {
   const actions = useActions({
     collection,
     setting,
+    info: props.info,
     openEdit: () => setOpen(true),
   });
-
   return !setting.isDefault ? (
-    <tr style={{ userSelect: 'none' }}>
-      <td>
+    <div
+      style={{
+        userSelect: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 20px',
+      }}
+    >
+      <div>
         <div className={styles.view}>
           <EditCollectionModal
-            propertiesMeta={propertiesMeta}
-            getPageInfo={getPageInfo}
+            allPageListConfig={props.allPageListConfig}
             init={collection}
             open={open}
             onOpenChange={setOpen}
@@ -84,11 +93,8 @@ export const CollectionBar = (props: CollectionBarProps) => {
             );
           })}
         </div>
-      </td>
-      {Array.from({ length: columnsCount - 2 }).map((_, i) => (
-        <td key={i}></td>
-      ))}
-      <td
+      </div>
+      <div
         style={{
           display: 'flex',
           justifyContent: 'end',
@@ -96,11 +102,11 @@ export const CollectionBar = (props: CollectionBarProps) => {
       >
         <Button
           style={{ border: 'none', position: 'static' }}
-          onClick={() => setting.backToAll()}
+          onClick={props.backToAll}
         >
           {t['com.affine.collectionBar.backToAll']()}
         </Button>
-      </td>
-    </tr>
+      </div>
+    </div>
   ) : null;
 };

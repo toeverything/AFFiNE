@@ -1,16 +1,9 @@
-import type { Collection } from '@affine/env/filter';
+import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteIcon,
-  FilterIcon,
-  PinedIcon,
-  PinIcon,
-  UnpinIcon,
-} from '@blocksuite/icons';
+import { DeleteIcon, FilterIcon } from '@blocksuite/icons';
 import { type ReactNode, useMemo } from 'react';
 
 import type { useCollectionManager } from '../use-collection-manager';
-import * as styles from './collection-bar.css';
 
 interface CollectionBarAction {
   icon: ReactNode;
@@ -24,7 +17,9 @@ export const useActions = ({
   collection,
   setting,
   openEdit,
+  info,
 }: {
+  info: DeleteCollectionInfo;
   collection: Collection;
   setting: ReturnType<typeof useCollectionManager>;
   openEdit: (open: Collection) => void;
@@ -32,37 +27,6 @@ export const useActions = ({
   const t = useAFFiNEI18N();
   return useMemo<CollectionBarAction[]>(() => {
     return [
-      {
-        icon: (
-          <>
-            {collection.pinned ? (
-              <PinedIcon className={styles.pinedIcon}></PinedIcon>
-            ) : (
-              <PinIcon className={styles.pinedIcon}></PinIcon>
-            )}
-            {collection.pinned ? (
-              <UnpinIcon className={styles.pinIcon}></UnpinIcon>
-            ) : (
-              <PinIcon className={styles.pinIcon}></PinIcon>
-            )}
-          </>
-        ),
-        name: 'pin',
-        tooltip: collection.pinned
-          ? t['com.affine.collection-bar.action.tooltip.unpin']()
-          : t['com.affine.collection-bar.action.tooltip.pin'](),
-        className: styles.pin,
-        click: () => {
-          setting
-            .updateCollection({
-              ...collection,
-              pinned: !collection.pinned,
-            })
-            .catch(err => {
-              console.error(err);
-            });
-        },
-      },
       {
         icon: <FilterIcon />,
         name: 'edit',
@@ -76,11 +40,11 @@ export const useActions = ({
         name: 'delete',
         tooltip: t['com.affine.collection-bar.action.tooltip.delete'](),
         click: () => {
-          setting.deleteCollection(collection.id).catch(err => {
+          setting.deleteCollection(info, collection.id).catch(err => {
             console.error(err);
           });
         },
       },
     ];
-  }, [collection, t, setting, openEdit]);
+  }, [info, collection, t, setting, openEdit]);
 };

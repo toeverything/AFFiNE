@@ -25,17 +25,17 @@ import {
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
 import groupBy from 'lodash/groupBy';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   openQuickSearchModalAtom,
   pageSettingsAtom,
   recentPageIdsBaseAtom,
 } from '../../../atoms';
+import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
-import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 
@@ -295,7 +295,7 @@ export const collectionToCommand = (
   collection: Collection,
   store: ReturnType<typeof getCurrentStore>,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
-  selectCollection: ReturnType<typeof useCollectionManager>['selectCollection'],
+  selectCollection: (id: string) => void,
   t: ReturnType<typeof useAFFiNEI18N>
 ): CMDKCommand => {
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
@@ -329,14 +329,18 @@ export const collectionToCommand = (
 
 export const useCollectionsCommands = () => {
   // todo: considering collections for searching pages
-  const { savedCollections, selectCollection } = useCollectionManager(
-    currentCollectionsAtom
-  );
+  const { savedCollections } = useCollectionManager(collectionsCRUDAtom);
   const store = getCurrentStore();
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
-
+  const [workspace] = useCurrentWorkspace();
+  const selectCollection = useCallback(
+    (id: string) => {
+      navigationHelper.jumpToCollection(workspace.id, id);
+    },
+    [navigationHelper, workspace.id]
+  );
   return useMemo(() => {
     let results: CMDKCommand[] = [];
     if (query.trim() === '') {

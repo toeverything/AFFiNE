@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { setPageModeAtom } from '../../atoms';
 import { currentModeAtom } from '../../atoms/mode';
 import type { BlockSuiteWorkspace } from '../../shared';
+import { getWorkspaceSetting } from '../../utils/workspace-setting';
 import { useReferenceLinkHelper } from './use-reference-link-helper';
 
 export function useBlockSuiteMetaHelper(
@@ -82,8 +83,9 @@ export function useBlockSuiteMetaHelper(
         trashRelate: isRoot ? parentMeta?.id : undefined,
       });
       setPageReadonly(pageId, true);
+      getWorkspaceSetting(blockSuiteWorkspace).deletePages([pageId]);
     },
-    [getPageMeta, metas, setPageMeta, setPageReadonly]
+    [blockSuiteWorkspace, getPageMeta, metas, setPageMeta, setPageReadonly]
   );
 
   const restoreFromTrash = useCallback(

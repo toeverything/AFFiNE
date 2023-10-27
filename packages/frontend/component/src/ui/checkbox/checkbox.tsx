@@ -5,21 +5,26 @@ import { type HTMLAttributes, useCallback, useEffect, useRef } from 'react';
 import * as icons from './icons';
 import * as styles from './index.css';
 
-type CheckboxProps = Omit<HTMLAttributes<HTMLInputElement>, 'onChange'> & {
+export type CheckboxProps = Omit<
+  HTMLAttributes<HTMLInputElement>,
+  'onChange'
+> & {
   checked: boolean;
   onChange: (
     event: React.ChangeEvent<HTMLInputElement>,
     checked: boolean
   ) => void;
   disabled?: boolean;
-  intermediate?: boolean;
+  indeterminate?: boolean;
+  animation?: boolean;
 };
 
 export const Checkbox = ({
   checked,
   onChange,
-  intermediate,
+  indeterminate: indeterminate,
   disabled,
+  animation,
   ...otherProps
 }: CheckboxProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,23 +33,23 @@ export const Checkbox = ({
       const newChecked = event.target.checked;
       onChange(event, newChecked);
       const inputElement = inputRef.current;
-      if (newChecked && inputElement) {
+      if (newChecked && inputElement && animation) {
         playCheckAnimation(inputElement.parentElement as Element).catch(
           console.error
         );
       }
     },
-    [onChange]
+    [onChange, animation]
   );
 
   useEffect(() => {
     if (inputRef.current) {
-      inputRef.current.indeterminate = !!intermediate;
+      inputRef.current.indeterminate = !!indeterminate;
     }
-  }, [intermediate]);
+  }, [indeterminate]);
 
-  const icon = intermediate
-    ? icons.intermediate
+  const icon = indeterminate
+    ? icons.indeterminate
     : checked
     ? icons.checked
     : icons.unchecked;
@@ -83,18 +88,21 @@ export const playCheckAnimation = async (refElement: Element) => {
   await sparkingEl.animate(
     [
       {
-        offset: 0.5,
         boxShadow:
           '0 -18px 0 -8px #1e96eb, 16px -8px 0 -8px #1e96eb, 16px 8px 0 -8px #1e96eb, 0 18px 0 -8px #1e96eb, -16px 8px 0 -8px #1e96eb, -16px -8px 0 -8px #1e96eb',
       },
-      {
-        offset: 1,
-        boxShadow:
-          '0 -32px 0 -10px transparent, 32px -16px 0 -10px transparent, 32px 16px 0 -10px transparent, 0 36px 0 -10px transparent, -32px 16px 0 -10px transparent, -32px -16px 0 -10px transparent',
-      },
     ],
-    { duration: 500, easing: 'ease', fill: 'forwards' }
+    { duration: 240, easing: 'ease', fill: 'forwards' }
   ).finished;
 
+  await sparkingEl.animate(
+    [
+      {
+        boxShadow:
+          '0 -36px 0 -10px transparent, 32px -16px 0 -10px transparent, 32px 16px 0 -10px transparent, 0 36px 0 -10px transparent, -32px 16px 0 -10px transparent, -32px -16px 0 -10px transparent',
+      },
+    ],
+    { duration: 360, easing: 'ease', fill: 'forwards' }
+  ).finished;
   sparkingEl.remove();
 };

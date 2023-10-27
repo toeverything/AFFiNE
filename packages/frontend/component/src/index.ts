@@ -6,6 +6,8 @@ export * from './ui/checkbox';
 export * from './ui/empty';
 export * from './ui/input';
 export * from './ui/layout';
+export * from './ui/lottie/collections-icon';
+export * from './ui/lottie/delete-icon';
 export * from './ui/menu';
 export * from './ui/mui';
 export * from './ui/popper';
