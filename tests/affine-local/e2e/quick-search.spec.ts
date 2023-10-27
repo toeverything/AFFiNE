@@ -22,7 +22,6 @@ const keyboardDownAndSelect = async (page: Page, label: string) => {
   ) {
     await keyboardDownAndSelect(page, label);
   } else {
-    await page.pause();
     await page.keyboard.press('Enter');
   }
 };

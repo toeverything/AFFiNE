@@ -69,7 +69,7 @@ globalStyle(`[data-draggable=true] ${dndCell}:hover:before`, {
 });
 
 globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
-  height: 24,
+  height: 32,
   width: 2,
   opacity: 1,
 });
