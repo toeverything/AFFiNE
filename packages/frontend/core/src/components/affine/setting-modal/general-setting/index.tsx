@@ -11,6 +11,7 @@ import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-logi
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
+import { PaymentIcon, UpgradeIcon } from './icons';
 import { AFFiNECloudPlans } from './plans';
 import { Plugins } from './plugins';
 import { Shortcuts } from './shortcuts';
@@ -52,8 +53,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     {
       key: 'plans',
       title: t['com.affine.payment.title'](),
-      // TODO: icon
-      icon: KeyboardIcon,
+      icon: UpgradeIcon,
       testId: 'plans-panel-trigger',
     },
 
@@ -75,8 +75,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     settings.splice(3, 0, {
       key: 'billing',
       title: t['com.affine.payment.billing-setting.title'](),
-      // TODO: icon
-      icon: KeyboardIcon,
+      icon: PaymentIcon,
       testId: 'billing-panel-trigger',
     });
   }
