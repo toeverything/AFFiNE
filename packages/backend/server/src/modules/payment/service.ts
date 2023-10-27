@@ -11,6 +11,8 @@ import Stripe from 'stripe';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
+import { UsersService } from '../users';
+import { ScheduleManager } from './schedule';
 
 const OnEvent = (
   event: Stripe.Event.Type,
@@ -65,7 +67,7 @@ export enum InvoiceStatus {
   Uncollectible = 'uncollectible',
 }
 
-export enum Coupon {
+export enum CouponType {
   EarlyAccess = 'earlyaccess',
   EarlyAccessRenew = 'earlyaccessrenew',
 }
@@ -78,7 +80,9 @@ export class SubscriptionService {
   constructor(
     config: Config,
     private readonly stripe: Stripe,
-    private readonly db: PrismaService
+    private readonly db: PrismaService,
+    private readonly user: UsersService,
+    private readonly scheduleManager: ScheduleManager
   ) {
     this.paymentConfig = config.payment;
 
@@ -117,8 +121,9 @@ export class SubscriptionService {
     }
 
     const price = await this.getPrice(plan, recurring);
-
     const customer = await this.getOrCreateCustomer(user);
+    const coupon = await this.getAvailableCoupon(user, CouponType.EarlyAccess);
+
     return await this.stripe.checkout.sessions.create({
       line_items: [
         {
@@ -126,10 +131,16 @@ export class SubscriptionService {
           quantity: 1,
         },
       ],
-      allow_promotion_codes: true,
       tax_id_collection: {
         enabled: true,
       },
+      ...(coupon
+        ? {
+            discounts: [{ coupon }],
+          }
+        : {
+            allow_promotion_codes: true,
+          }),
       mode: 'subscription',
       success_url: redirectUrl,
       customer: customer.stripeCustomerId,
@@ -160,12 +171,16 @@ export class SubscriptionService {
 
     // should release the schedule first
     if (user.subscription.stripeScheduleId) {
-      await this.cancelSubscriptionSchedule(user.subscription.stripeScheduleId);
+      const manager = await this.scheduleManager.fromSchedule(
+        user.subscription.stripeScheduleId
+      );
+      await manager.cancel();
       return this.saveSubscription(
         user,
         await this.stripe.subscriptions.retrieve(
           user.subscription.stripeSubscriptionId
-        )
+        ),
+        false
       );
     } else {
       // let customer contact support if they want to cancel immediately
@@ -203,12 +218,16 @@ export class SubscriptionService {
     }
 
     if (user.subscription.stripeScheduleId) {
-      await this.resumeSubscriptionSchedule(user.subscription.stripeScheduleId);
+      const manager = await this.scheduleManager.fromSchedule(
+        user.subscription.stripeScheduleId
+      );
+      await manager.resume();
       return this.saveSubscription(
         user,
         await this.stripe.subscriptions.retrieve(
           user.subscription.stripeSubscriptionId
-        )
+        ),
+        false
       );
     } else {
       const subscription = await this.stripe.subscriptions.update(
@@ -252,27 +271,26 @@ export class SubscriptionService {
       recurring
     );
 
-    let scheduleId: string | null;
-    // a schedule existing
-    if (user.subscription.stripeScheduleId) {
-      scheduleId = await this.scheduleNewPrice(
-        user.subscription.stripeScheduleId,
-        price
-      );
-    } else {
-      const schedule = await this.stripe.subscriptionSchedules.create({
-        from_subscription: user.subscription.stripeSubscriptionId,
-      });
-      await this.scheduleNewPrice(schedule.id, price);
-      scheduleId = schedule.id;
-    }
+    const manager = await this.scheduleManager.fromSubscription(
+      user.subscription.stripeSubscriptionId
+    );
+
+    await manager.update(
+      price,
+      // if user is early access user, use early access coupon
+      manager.currentPhase?.coupon === CouponType.EarlyAccess ||
+        manager.currentPhase?.coupon === CouponType.EarlyAccessRenew ||
+        manager.nextPhase?.coupon === CouponType.EarlyAccessRenew
+        ? CouponType.EarlyAccessRenew
+        : undefined
+    );
 
     return await this.db.userSubscription.update({
       where: {
         id: user.subscription.id,
       },
       data: {
-        stripeScheduleId: scheduleId,
+        stripeScheduleId: manager.schedule?.id ?? null, // update schedule id or set to null(undefined means untouched)
         recurring,
       },
     });
@@ -325,8 +343,26 @@ export class SubscriptionService {
     });
   }
 
-  @OnEvent('invoice.created')
   @OnEvent('invoice.paid')
+  async onInvoicePaid(stripeInvoice: Stripe.Invoice) {
+    await this.saveInvoice(stripeInvoice);
+
+    const line = stripeInvoice.lines.data[0];
+
+    if (!line.price || line.price.type !== 'recurring') {
+      throw new Error('Unknown invoice with no recurring price');
+    }
+
+    // deal with early access user
+    if (stripeInvoice.discount?.coupon.id === CouponType.EarlyAccess) {
+      const manager = await this.scheduleManager.fromSubscription(
+        line.subscription as string
+      );
+      await manager.update(line.price.id, CouponType.EarlyAccessRenew);
+    }
+  }
+
+  @OnEvent('invoice.created')
   @OnEvent('invoice.finalization_failed')
   @OnEvent('invoice.payment_failed')
   async saveInvoice(stripeInvoice: Stripe.Invoice) {
@@ -591,165 +627,21 @@ export class SubscriptionService {
     return prices.data[0].id;
   }
 
-  /**
-   * If a subscription is managed by a schedule, it has a different way to cancel.
-   */
-  private async cancelSubscriptionSchedule(scheduleId: string) {
-    const schedule =
-      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
-
-    const currentPhase = schedule.phases.find(
-      phase =>
-        phase.start_date * 1000 < Date.now() &&
-        phase.end_date * 1000 > Date.now()
-    );
-
-    if (
-      schedule.status !== 'active' ||
-      schedule.phases.length > 2 ||
-      !currentPhase
-    ) {
-      throw new Error('Unexpected subscription schedule status');
-    }
-
-    if (schedule.status !== 'active') {
-      throw new Error('unexpected subscription schedule status');
-    }
-
-    const nextPhase = schedule.phases.find(
-      phase => phase.start_date * 1000 > Date.now()
-    );
-
-    if (!currentPhase) {
-      throw new Error('Unexpected subscription schedule status');
-    }
-
-    const update: Stripe.SubscriptionScheduleUpdateParams.Phase = {
-      items: [
-        {
-          price: currentPhase.items[0].price as string,
-          quantity: 1,
-        },
-      ],
-      coupon: (currentPhase.coupon as string | null) ?? undefined,
-      start_date: currentPhase.start_date,
-      end_date: currentPhase.end_date,
-    };
-
-    if (nextPhase) {
-      // cancel a subscription with a schedule exiting will delete the upcoming phase,
-      // it's hard to recover the subscription to the original state if user wan't to resume before due.
-      // so we manually save the next phase's key information to metadata for later easy resuming.
-      update.metadata = {
-        next_coupon: (nextPhase.coupon as string | null) || null, // avoid empty string
-        next_price: nextPhase.items[0].price as string,
-      };
-    }
-
-    await this.stripe.subscriptionSchedules.update(schedule.id, {
-      phases: [update],
-      end_behavior: 'cancel',
-    });
-  }
-
-  private async resumeSubscriptionSchedule(scheduleId: string) {
-    const schedule =
-      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
-
-    const currentPhase = schedule.phases.find(
-      phase =>
-        phase.start_date * 1000 < Date.now() &&
-        phase.end_date * 1000 > Date.now()
-    );
-
-    if (schedule.status !== 'active' || !currentPhase) {
-      throw new Error('Unexpected subscription schedule status');
-    }
-
-    const update: Stripe.SubscriptionScheduleUpdateParams.Phase[] = [
-      {
-        items: [
-          {
-            price: currentPhase.items[0].price as string,
-            quantity: 1,
-          },
-        ],
-        coupon: (currentPhase.coupon as string | null) ?? undefined,
-        start_date: currentPhase.start_date,
-        end_date: currentPhase.end_date,
-        metadata: {
-          next_coupon: null,
-          next_price: null,
-        },
-      },
-    ];
-
-    if (currentPhase.metadata && currentPhase.metadata.next_price) {
-      update.push({
-        items: [
-          {
-            price: currentPhase.metadata.next_price,
-            quantity: 1,
-          },
-        ],
-        coupon: currentPhase.metadata.next_coupon || undefined,
-      });
-    }
-
-    await this.stripe.subscriptionSchedules.update(schedule.id, {
-      phases: update,
-      end_behavior: 'release',
-    });
-  }
-
-  /**
-   * we only schedule a new price when user change the recurring plan and there is now upcoming phases.
-   */
-  private async scheduleNewPrice(
-    scheduleId: string,
-    priceId: string
+  private async getAvailableCoupon(
+    user: User,
+    couponType: CouponType
   ): Promise<string | null> {
-    const schedule =
-      await this.stripe.subscriptionSchedules.retrieve(scheduleId);
-
-    const currentPhase = schedule.phases.find(
-      phase =>
-        phase.start_date * 1000 < Date.now() &&
-        phase.end_date * 1000 > Date.now()
-    );
-
-    if (schedule.status !== 'active' || !currentPhase) {
-      throw new Error('Unexpected subscription schedule status');
+    const earlyAccess = await this.user.isEarlyAccessUser(user.email);
+    if (earlyAccess) {
+      try {
+        const coupon = await this.stripe.coupons.retrieve(couponType);
+        return coupon.valid ? coupon.id : null;
+      } catch (e) {
+        this.logger.error('Failed to get early access coupon', e);
+        return null;
+      }
     }
 
-    // if current phase's plan matches target, just release the schedule
-    if (currentPhase.items[0].price === priceId) {
-      await this.stripe.subscriptionSchedules.release(scheduleId);
-      return null;
-    } else {
-      await this.stripe.subscriptionSchedules.update(schedule.id, {
-        phases: [
-          {
-            items: [
-              {
-                price: currentPhase.items[0].price as string,
-              },
-            ],
-            start_date: schedule.phases[0].start_date,
-            end_date: schedule.phases[0].end_date,
-          },
-          {
-            items: [
-              {
-                price: priceId,
-                quantity: 1,
-              },
-            ],
-          },
-        ],
-      });
-
-      return scheduleId;
-    }
+    return null;
   }
 }

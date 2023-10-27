@@ -7,6 +7,7 @@ import { UsersService } from './users';
 @Module({
   imports: [StorageModule],
   providers: [UserResolver, UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}
 
