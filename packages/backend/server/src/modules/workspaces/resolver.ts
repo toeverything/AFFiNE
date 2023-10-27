@@ -87,9 +87,6 @@ export class WorkspaceType implements Partial<Workspace> {
     description: 'Members of workspace',
   })
   members!: InviteUserType[];
-
-  @Field({ description: 'Blobs size of workspace' })
-  blobsSize!: number;
 }
 
 @ObjectType()
