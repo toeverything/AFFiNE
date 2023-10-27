@@ -66,7 +66,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
-      enablePayment: false,
+      enablePayment: true,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
