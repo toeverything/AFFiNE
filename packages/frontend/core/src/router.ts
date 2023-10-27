@@ -53,6 +53,10 @@ export const routes = [
     lazy: () => import('./pages/open-app'),
   },
   {
+    path: '/upgrade-success',
+    lazy: () => import('./pages/upgrade-success'),
+  },
+  {
     path: '/desktop-signin',
     lazy: () => import('./pages/desktop-signin'),
   },

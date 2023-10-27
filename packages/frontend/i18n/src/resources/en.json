@@ -712,5 +712,14 @@
   "com.affine.payment.billing-setting.no-invoice": "There are no invoices to display.",
   "com.affine.payment.billing-setting.paid": "Paid",
   "com.affine.payment.billing-setting.view-invoice": "View Invoice",
+  "com.affine.payment.upgrade-success-page.title": "Upgrade Successful!",
+  "com.affine.payment.upgrade-success-page.text": "Congratulations! Your AFFiNE account has been successfully upgraded to a Pro account.",
+  "com.affine.payment.upgrade-success-page.support": "If you have any questions, please contact our <1> customer support</1>.",
+  "com.affine.other-page.nav.official-website": "Official Website",
+  "com.affine.other-page.nav.affine-community": "AFFiNE Community",
+  "com.affine.other-page.nav.blog": "Blog",
+  "com.affine.other-page.nav.contact-us": "Contact us",
+  "com.affine.other-page.nav.download-app": "Download App",
+  "com.affine.other-page.nav.open-affine": "Open AFFiNE",
   "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}"
 }
