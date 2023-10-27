@@ -221,11 +221,11 @@ export class UserResolver {
       ttl: 60,
     },
   })
-  @Mutation(() => String)
+  @Mutation(() => Int)
   async addToEarlyAccess(
     @CurrentUser() currentUser: UserType,
     @Args('email') email: string
-  ): Promise<string> {
+  ): Promise<number> {
     if (!this.feature.isStaff(currentUser.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }

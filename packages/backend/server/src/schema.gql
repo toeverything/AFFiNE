@@ -317,7 +317,7 @@ type Mutation {
   cancelSubscription(idempotencyKey: String!): UserSubscription!
   resumeSubscription(idempotencyKey: String!): UserSubscription!
   updateSubscriptionRecurring(recurring: SubscriptionRecurring!, idempotencyKey: String!): UserSubscription!
-  addToEarlyAccess(email: String!): String!
+  addToEarlyAccess(email: String!): Int!
   removeEarlyAccess(email: String!): Int!
 }
 

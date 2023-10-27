@@ -119,22 +119,22 @@ model WorkspacePageUserPermission {
 // - early access is a feature that allow some users to access the insider version
 // - pro plan is a quota that allow some users access to more resources after they pay
 model UserFeatures {
-  id        String @id @default(uuid()) @db.VarChar
-  userId    String @map("user_id") @db.VarChar
-  featureId String @db.VarChar
+  id        Int    @id @default(autoincrement())
+  userId    String @map("user_id") @db.VarChar(36)
+  featureId Int    @map("feature_id") @db.Integer
 
   // we will record the reason why the feature is enabled/disabled
   // for example:
   // - pro_plan_v1: "user buy the pro plan"
-  reason    String   @db.VarChar
+  reason    String    @db.VarChar
   // record the quota enabled time
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   // record the quota expired time, pay plan is a subscription, so it will expired
-  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
   // whether the feature is activated
   // for example:
   // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
-  activated Boolean  @default(false)
+  activated Boolean   @default(false)
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   feature Features @relation(fields: [featureId], references: [id], onDelete: Cascade)
@@ -143,7 +143,7 @@ model UserFeatures {
 }
 
 model Features {
-  id        String   @id @default(uuid()) @db.VarChar
+  id        Int      @id @default(autoincrement())
   feature   String   @db.VarChar
   version   Int      @default(0) @db.Integer
   // 0: feature, 1: quota

@@ -152,9 +152,9 @@ export class FeatureService implements OnModuleInit {
   }
 
   async getUserFeatures(userId: string) {
-    const userFeatures = await this.prisma.userFeatures.findUnique({
+    const userFeatures = await this.prisma.userFeatures.findMany({
       where: {
-        id: userId,
+        user: { id: userId },
         activated: true,
         feature: {
           type: FeatureKind.Feature,
@@ -164,7 +164,7 @@ export class FeatureService implements OnModuleInit {
         feature: true,
       },
     });
-    return userFeatures?.feature;
+    return userFeatures.map(userFeature => userFeature.feature);
   }
 
   async listFeatureUsers(feature: FeatureType) {
