@@ -142,3 +142,6 @@ export function stopPropagation(event: BaseSyntheticEvent) {
   event.stopPropagation();
   event.preventDefault();
 }
+export function stopPropagationWithoutPrevent(event: BaseSyntheticEvent) {
+  event.stopPropagation();
+}

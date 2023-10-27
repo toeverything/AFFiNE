@@ -51,3 +51,15 @@ export async function clickPageMoreActions(page: Page) {
     .getByTestId('header-dropDownButton')
     .click();
 }
+
+export const getPageOperationButton = (page: Page, id: string) => {
+  return getPageItem(page, id).getByTestId('page-list-operation-button');
+};
+
+export const getPageItem = (page: Page, id: string) => {
+  return page.locator(`[data-page-id="${id}"][data-testid="page-list-item"]`);
+};
+
+export const getPageByTitle = (page: Page, title: string) => {
+  return page.getByTestId('page-list-item').getByText(title);
+};

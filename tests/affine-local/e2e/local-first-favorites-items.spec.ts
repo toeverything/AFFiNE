@@ -5,6 +5,7 @@ import {
   clickPageMoreActions,
   createLinkedPage,
   getBlockSuiteEditorTitle,
+  getPageByTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
@@ -17,9 +18,7 @@ test('Show favorite items in sidebar', async ({ page, workspace }) => {
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   const newPageId = page.url().split('/').reverse()[0];
   await page.getByTestId('all-pages').click();
-  const cell = page.getByRole('cell', {
-    name: 'this is a new page to favorite',
-  });
+  const cell = getPageByTitle(page, 'this is a new page to favorite');
   await expect(cell).toBeVisible();
   await cell.click();
   await clickPageMoreActions(page);

@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 import { FavoriteTag } from './components/favorite-tag';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import * as styles from './page-list.css';
-import { ColWrapper } from './utils';
+import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
 
 export interface OperationCellProps {
   favorite: boolean;
@@ -38,7 +38,6 @@ export const OperationCell = ({
 }: OperationCellProps) => {
   const t = useAFFiNEI18N();
   const [openDisableShared, setOpenDisableShared] = useState(false);
-
   const OperationMenu = (
     <>
       {isPublic && (
@@ -66,7 +65,12 @@ export const OperationCell = ({
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {!environment.isDesktop && (
-        <Link to={link}>
+        <Link
+          onClick={stopPropagationWithoutPrevent}
+          to={link}
+          target={'_blank'}
+          rel="noopener noreferrer"
+        >
           <MenuItem
             style={{ marginBottom: 4 }}
             preFix={
@@ -128,6 +132,7 @@ export const TrashOperationCell = ({
     <ColWrapper flex={1}>
       <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
         <IconButton
+          data-testid="restore-page-button"
           style={{ marginRight: '12px' }}
           onClick={() => {
             onRestorePage();
@@ -142,6 +147,7 @@ export const TrashOperationCell = ({
         align="end"
       >
         <IconButton
+          data-testid="delete-page-button"
           onClick={() => {
             setOpen(true);
           }}
