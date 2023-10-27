@@ -10,9 +10,9 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Permission } from '@affine/graphql';
+import { Permission, SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { MoreVerticalIcon } from '@blocksuite/icons';
+import { ArrowRightBigIcon, MoreVerticalIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button, IconButton } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
@@ -31,15 +31,23 @@ import {
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import { openSettingModalAtom } from '../../../atoms';
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useMemberCount } from '../../../hooks/affine/use-member-count';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
+import { useUserSubscription } from '../../../hooks/use-subscription';
 import { AnyErrorBoundary } from '../any-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
+
+enum MemberLimitCount {
+  Free = '3',
+  Pro = '10',
+  Other = '?',
+}
 
 const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
@@ -130,11 +138,47 @@ export const CloudWorkspaceMembersPanel = ({
     [pushNotification, revokeMemberPermission, t]
   );
 
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const handleUpgrade = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      workspaceId: null,
+    });
+  }, [setSettingModalAtom]);
+
+  const [subscription] = useUserSubscription();
+  const plan = subscription?.plan ?? SubscriptionPlan.Free;
+  const memberLimit = useMemo(() => {
+    if (plan === SubscriptionPlan.Free) {
+      return MemberLimitCount.Free;
+    }
+    if (plan === SubscriptionPlan.Pro) {
+      return MemberLimitCount.Pro;
+    }
+    return MemberLimitCount.Other;
+  }, [plan]);
+  const desc = useMemo(() => {
+    return (
+      <span>
+        {t['com.affine.payment.member.description']({
+          planName: plan,
+          memberLimit,
+        })}
+        ,
+        <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
+          <span className={style.goUpgrade}>go upgrade</span>
+          <ArrowRightBigIcon className={style.arrowRight} />
+        </div>
+      </span>
+    );
+  }, [handleUpgrade, memberLimit, plan, t]);
+
   return (
     <>
       <SettingRow
         name={`${t['Members']()} (${memberCount})`}
-        desc={t['Members hint']()}
+        desc={desc}
         spreadCol={isOwner}
       >
         {isOwner ? (

@@ -711,5 +711,6 @@
   "com.affine.payment.billing-setting.resume-subscription": "Resume",
   "com.affine.payment.billing-setting.no-invoice": "There are no invoices to display.",
   "com.affine.payment.billing-setting.paid": "Paid",
-  "com.affine.payment.billing-setting.view-invoice": "View Invoice"
+  "com.affine.payment.billing-setting.view-invoice": "View Invoice",
+  "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}"
 }
