@@ -721,4 +721,5 @@
   "com.affine.other-page.nav.contact-us": "Contact us",
   "com.affine.other-page.nav.download-app": "Download App",
   "com.affine.other-page.nav.open-affine": "Open AFFiNE"
+  "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}"
 }
