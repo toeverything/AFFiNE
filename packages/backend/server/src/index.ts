@@ -70,7 +70,8 @@ app.use(serverTimingAndCache);
 
 app.use(
   graphqlUploadExpress({
-    maxFileSize: 10 * 1024 * 1024,
+    // TODO: dynamic limit by quota
+    maxFileSize: 100 * 1024 * 1024,
     maxFiles: 5,
   })
 );
