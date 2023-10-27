@@ -53,7 +53,7 @@ export const routes = [
     lazy: () => import('./pages/open-app'),
   },
   {
-    path: '/upgrade-success/:action',
+    path: '/upgrade-success',
     lazy: () => import('./pages/upgrade-success'),
   },
   {
