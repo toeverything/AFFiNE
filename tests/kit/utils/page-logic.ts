@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 export async function waitForEditorLoad(page: Page) {
@@ -62,4 +62,17 @@ export const getPageItem = (page: Page, id: string) => {
 
 export const getPageByTitle = (page: Page, title: string) => {
   return page.getByTestId('page-list-item').getByText(title);
+};
+
+export const dragTo = async (page: Page, locator: Locator, target: Locator) => {
+  await locator.hover();
+  await page.mouse.down();
+  await page.waitForTimeout(1000);
+  const targetElement = await target.boundingBox();
+  if (!targetElement) {
+    throw new Error('target element not found');
+  }
+  await page.mouse.move(targetElement.x, targetElement.y);
+  await target.hover();
+  await page.mouse.up();
 };

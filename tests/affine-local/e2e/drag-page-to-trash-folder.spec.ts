@@ -1,6 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import { dragTo, waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
 test('drag a page from "All pages" list onto the "Trash" folder in the sidebar to move it to trash list', async ({
@@ -11,19 +11,17 @@ test('drag a page from "All pages" list onto the "Trash" folder in the sidebar t
   {
     await openHomePage(page);
     await waitForEditorLoad(page);
-    await page.getByText('All Pages').click();
+    await page.getByTestId('app-sidebar').getByText('All Pages').click();
     await page.waitForTimeout(500);
   }
 
   const title = 'AFFiNE - not just a note-taking app';
 
-  // Drag-and-drop
-  // Ref: https://playwright.dev/docs/input#dragging-manually
-  await page.getByText(title).hover();
-  await page.mouse.down();
-  await page.waitForTimeout(1000);
-  await page.getByText('Trash').hover();
-  await page.mouse.up();
+  await dragTo(
+    page,
+    page.locator(`[role="button"]:has-text("${title}")`),
+    page.getByTestId('app-sidebar').getByText('Trash')
+  );
 
   await expect(
     page.getByText('Successfully deleted'),
