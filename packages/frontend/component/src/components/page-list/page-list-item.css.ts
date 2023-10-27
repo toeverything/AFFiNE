@@ -68,6 +68,10 @@ globalStyle(`[data-draggable=true] ${dndCell}:hover:before`, {
   opacity: 1,
 });
 
+globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}`, {
+  opacity: 0.5,
+});
+
 globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
   height: 32,
   width: 2,

@@ -232,7 +232,7 @@ export const PageListHeader = () => {
       },
       showOperations && {
         key: 'actions',
-        content: t['Actions'](),
+        content: '',
         flex: 1,
         alignment: 'end',
       },
