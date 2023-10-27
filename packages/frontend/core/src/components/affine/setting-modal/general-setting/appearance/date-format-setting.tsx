@@ -5,8 +5,8 @@ import { useCallback } from 'react';
 import {
   dateFormatOptions,
   type DateFormats,
-  useAppSetting,
 } from '../../../../../atoms/settings';
+import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 
 interface DateFormatMenuContentProps {
   currentOption: DateFormats;
@@ -35,12 +35,12 @@ const DateFormatMenuContent = ({
 };
 
 export const DateFormatSetting = () => {
-  const [appearanceSettings, setAppSettings] = useAppSetting();
+  const { appSettings, updateSettings } = useAppSettingHelper();
   const handleSelect = useCallback(
     (option: DateFormats) => {
-      setAppSettings({ dateFormat: option });
+      updateSettings('dateFormat', option);
     },
-    [setAppSettings]
+    [updateSettings]
   );
 
   return (
@@ -48,12 +48,12 @@ export const DateFormatSetting = () => {
       items={
         <DateFormatMenuContent
           onSelect={handleSelect}
-          currentOption={appearanceSettings.dateFormat}
+          currentOption={appSettings.dateFormat}
         />
       }
     >
       <MenuTrigger data-testid="date-format-menu-trigger" block>
-        {dayjs(new Date()).format(appearanceSettings.dateFormat)}
+        {dayjs(new Date()).format(appSettings.dateFormat)}
       </MenuTrigger>
     </Menu>
   );

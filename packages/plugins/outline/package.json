@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Outline plugin",
-  "version": "0.10.0-canary.2",
+  "version": "0.10.0-canary.3",
   "scripts": {
     "dev": "af dev",
     "build": "af build"
@@ -17,7 +17,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "2.1.34",
+    "@blocksuite/icons": "2.1.35",
     "@toeverything/components": "^0.0.46"
   },
   "devDependencies": {

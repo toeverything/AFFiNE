@@ -111,9 +111,6 @@ jobs:
           hard-link-nm: false
           build-plugins: false
           nmHoistingLimits: workspaces
-      - name: Setup Maker
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-maker
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
@@ -188,9 +185,6 @@ jobs:
           hard-link-nm: false
           build-plugins: false
           nmHoistingLimits: workspaces
-      - name: Setup Maker
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-maker
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
@@ -361,7 +355,7 @@ jobs:
         with:
           name: affine-linux-x64-builds
           path: ./
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
       - name: Generate Release yml
@@ -371,8 +365,6 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           name: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
           body: ''

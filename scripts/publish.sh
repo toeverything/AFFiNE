@@ -17,5 +17,5 @@ for package in "${packages[@]}"; do
     yarn npm publish
   fi
 
-  cd ../../
+  cd ../../../
 done

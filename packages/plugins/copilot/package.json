@@ -16,7 +16,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "2.1.34",
+    "@blocksuite/icons": "2.1.35",
     "@toeverything/components": "^0.0.46",
     "@vanilla-extract/css": "^1.13.0",
     "clsx": "^2.0.0",
@@ -38,5 +38,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.10.0-canary.2"
+  "version": "0.10.0-canary.3"
 }

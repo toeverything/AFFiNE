@@ -76,6 +76,8 @@ export const timestamp = style({
   display: 'flex',
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
+  minWidth: 120,
+  flexDirection: 'row-reverse',
 });
 
 export const keybinding = style({
@@ -153,8 +155,8 @@ globalStyle(`${root} [cmdk-list]:hover::-webkit-scrollbar-thumb:hover`, {
 
 globalStyle(`${root} [cmdk-item]`, {
   display: 'flex',
-  height: 44,
-  padding: '0 12px',
+  minHeight: 44,
+  padding: '6px 12px',
   alignItems: 'center',
   cursor: 'default',
   borderRadius: 4,

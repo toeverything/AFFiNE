@@ -52,7 +52,7 @@ export function useRegisterWorkspaceCommands() {
         languageHelper,
       })
     );
-    unsubs.push(registerAffineLayoutCommands({ store, t }));
+    unsubs.push(registerAffineLayoutCommands({ t, store }));
     unsubs.push(
       registerAffineCreationCommands({
         store,

@@ -16,7 +16,7 @@ export function useLanguageHelper() {
       })),
     []
   );
-  const onSelect = useCallback(
+  const onLanguageChange = useCallback(
     (event: string) => {
       i18n.changeLanguage(event);
     },
@@ -27,8 +27,8 @@ export function useLanguageHelper() {
     () => ({
       currentLanguage,
       languagesList,
-      onSelect,
+      onLanguageChange,
     }),
-    [currentLanguage, languagesList, onSelect]
+    [currentLanguage, languagesList, onLanguageChange]
   );
 }
