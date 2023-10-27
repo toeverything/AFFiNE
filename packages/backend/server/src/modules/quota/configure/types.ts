@@ -49,8 +49,8 @@ export const Quotas: Quota[] = [
     type: FeatureKind.Quota,
     version: 1,
     configs: {
-      // single blob limit 10MB
-      blobLimit: 10 * 1024 * 1024,
+      // single blob limit 100MB
+      blobLimit: 100 * 1024 * 1024,
       // total blob limit 100GB
       storageQuota: 100 * 1024 * 1024 * 1024,
     },
