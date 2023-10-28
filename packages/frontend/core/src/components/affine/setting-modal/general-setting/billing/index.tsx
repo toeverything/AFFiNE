@@ -21,7 +21,7 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
@@ -29,6 +29,7 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
+import { DowngradeModal } from '../plans/modals';
 import * as styles from './style.css';
 
 enum DescriptionI18NKey {
@@ -83,6 +84,19 @@ export const BillingSettings = () => {
 
 const SubscriptionSettings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
+  const { isMutating, trigger } = useMutation({
+    mutation: cancelSubscriptionMutation,
+  });
+  const [openCancelModal, setOpenCancelModal] = useState(false);
+
+  const cancel = useCallback(() => {
+    trigger(null, {
+      onSuccess: data => {
+        mutateSubscription(data.cancelSubscription);
+      },
+    });
+  }, [trigger, mutateSubscription]);
+
   const { data: pricesQueryResult } = useQuery({
     query: pricesQuery,
   });
@@ -189,6 +203,8 @@ const SubscriptionSettings = () => {
             </SettingRow>
           ) : (
             <SettingRow
+              style={{ cursor: 'pointer' }}
+              onClick={() => (isMutating ? null : setOpenCancelModal(true))}
               className="dangerous-setting"
               name={t[
                 'com.affine.payment.billing-setting.cancel-subscription'
@@ -199,9 +215,14 @@ const SubscriptionSettings = () => {
                 cancelDate: new Date(subscription.end).toLocaleDateString(),
               })}
             >
-              <CancelSubscription onSubscriptionUpdate={mutateSubscription} />
+              <CancelSubscription loading={isMutating} />
             </SettingRow>
           )}
+          <DowngradeModal
+            open={openCancelModal}
+            onCancel={() => (isMutating ? null : cancel())}
+            onOpenChange={setOpenCancelModal}
+          />
         </>
       )}
     </div>
@@ -287,29 +308,13 @@ const ResumeSubscription = ({
   );
 };
 
-const CancelSubscription = ({
-  onSubscriptionUpdate,
-}: {
-  onSubscriptionUpdate: SubscriptionMutator;
-}) => {
-  const { isMutating, trigger } = useMutation({
-    mutation: cancelSubscriptionMutation,
-  });
-
-  const cancel = useCallback(() => {
-    trigger(null, {
-      onSuccess: data => {
-        onSubscriptionUpdate(data.cancelSubscription);
-      },
-    });
-  }, [trigger, onSubscriptionUpdate]);
-
+const CancelSubscription = ({ loading }: { loading?: boolean }) => {
   return (
     <IconButton
+      style={{ pointerEvents: 'none' }}
       icon={<ArrowRightSmallIcon />}
-      disabled={isMutating}
-      loading={isMutating}
-      onClick={cancel /* TODO: popup confirmation modal instead */}
+      disabled={loading}
+      loading={loading}
     />
   );
 };
