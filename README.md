@@ -125,9 +125,9 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 | Official Plugin                                       | Description                               | Status |
 | ----------------------------------------------------- | ----------------------------------------- | ------ |
-| [@affine/copilot-plugin](plugins/copilot)             | AI Copilot that help you document writing | 🚧     |
-| [@affine/image-preview-plugin](plugins/image-preview) | Component for previewing an image         | ✅     |
-| [@affine/outline](plugins/outline)                    | Outline for your document                 | ✅     |
+| [@affine/copilot-plugin](./packages/plugins/copilot)             | AI Copilot that help you document writing | 🚧     |
+| [@affine/image-preview-plugin](./packages/plugins/image-preview) | Component for previewing an image         | ✅     |
+| [@affine/outline](./packages/plugins/outline)                    | Outline for your document                 | ✅     |
 
 ## Upstreams
 
