@@ -1,8 +1,4 @@
-import {
-  BadGatewayException,
-  ForbiddenException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -16,6 +12,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import type { User, UserInvoice, UserSubscription } from '@prisma/client';
+import { GraphQLError } from 'graphql';
 import { groupBy } from 'lodash-es';
 
 import { Config } from '../../config';
@@ -168,9 +165,12 @@ export class SubscriptionResolver {
       );
 
       if (!yearly || !monthly) {
-        throw new BadGatewayException(
-          'The prices are not configured correctly'
-        );
+        throw new GraphQLError('The prices are not configured correctly', {
+          extensions: {
+            status: HttpStatus[HttpStatus.BAD_GATEWAY],
+            code: HttpStatus.BAD_GATEWAY,
+          },
+        });
       }
 
       return {
@@ -198,9 +198,12 @@ export class SubscriptionResolver {
     });
 
     if (!session.url) {
-      throw new InternalServerErrorException(
-        'Failed to create checkout session'
-      );
+      throw new GraphQLError('Failed to create checkout session', {
+        extensions: {
+          status: HttpStatus[HttpStatus.BAD_GATEWAY],
+          code: HttpStatus.BAD_GATEWAY,
+        },
+      });
     }
 
     return session.url;
@@ -240,7 +243,15 @@ export class UserSubscriptionResolver {
   @ResolveField(() => UserSubscriptionType, { nullable: true })
   async subscription(@CurrentUser() me: User, @Parent() user: User) {
     if (me.id !== user.id) {
-      throw new ForbiddenException();
+      throw new GraphQLError(
+        'You are not allowed to access this subscription',
+        {
+          extensions: {
+            status: HttpStatus[HttpStatus.FORBIDDEN],
+            code: HttpStatus.FORBIDDEN,
+          },
+        }
+      );
     }
 
     return this.db.userSubscription.findUnique({
@@ -259,7 +270,12 @@ export class UserSubscriptionResolver {
     @Args('skip', { type: () => Int, nullable: true }) skip?: number
   ) {
     if (me.id !== user.id) {
-      throw new ForbiddenException();
+      throw new GraphQLError('You are not allowed to access this invoices', {
+        extensions: {
+          status: HttpStatus[HttpStatus.FORBIDDEN],
+          code: HttpStatus.FORBIDDEN,
+        },
+      });
     }
 
     return this.db.userInvoice.findMany({
