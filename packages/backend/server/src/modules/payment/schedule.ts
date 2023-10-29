@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 
 @Injectable()
 export class ScheduleManager {
   private _schedule: Stripe.SubscriptionSchedule | null = null;
+  private readonly logger = new Logger(ScheduleManager.name);
 
   constructor(private readonly stripe: Stripe) {}
 
@@ -50,7 +51,10 @@ export class ScheduleManager {
     if (typeof schedule === 'string') {
       const s = await this.stripe.subscriptionSchedules
         .retrieve(schedule)
-        .catch(() => undefined);
+        .catch(e => {
+          this.logger.error('Failed to retrieve subscription schedule', e);
+          return undefined;
+        });
 
       return ScheduleManager.create(this.stripe, s);
     } else {
