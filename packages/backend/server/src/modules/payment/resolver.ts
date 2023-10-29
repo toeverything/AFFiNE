@@ -190,7 +190,7 @@ export class SubscriptionResolver {
     @CurrentUser() user: User,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
     recurring: SubscriptionRecurring,
-    idempotencyKey: string
+    @Args('idempotencyKey') idempotencyKey: string
   ) {
     const session = await this.service.createCheckoutSession({
       user,
@@ -213,18 +213,24 @@ export class SubscriptionResolver {
   })
   async createCustomerPortal(
     @CurrentUser() user: User,
-    idempotencyKey: string
+    @Args('idempotencyKey') idempotencyKey: string
   ) {
     return this.service.createCustomerPortal(idempotencyKey, user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
-  async cancelSubscription(@CurrentUser() user: User, idempotencyKey: string) {
+  async cancelSubscription(
+    @CurrentUser() user: User,
+    @Args('idempotencyKey') idempotencyKey: string
+  ) {
     return this.service.cancelSubscription(idempotencyKey, user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
-  async resumeSubscription(@CurrentUser() user: User, idempotencyKey: string) {
+  async resumeSubscription(
+    @CurrentUser() user: User,
+    @Args('idempotencyKey') idempotencyKey: string
+  ) {
     return this.service.resumeCanceledSubscription(idempotencyKey, user.id);
   }
 
@@ -233,7 +239,7 @@ export class SubscriptionResolver {
     @CurrentUser() user: User,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
     recurring: SubscriptionRecurring,
-    idempotencyKey: string
+    @Args('idempotencyKey') idempotencyKey: string
   ) {
     return this.service.updateSubscriptionRecurring(
       idempotencyKey,
