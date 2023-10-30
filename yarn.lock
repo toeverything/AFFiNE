@@ -225,12 +225,14 @@ __metadata:
     "@toeverything/hooks": "workspace:*"
     "@toeverything/infra": "workspace:*"
     "@toeverything/theme": "npm:^0.7.20"
+    "@types/bytes": "npm:^3.1.3"
     "@types/react": "npm:^18.2.28"
     "@types/react-datepicker": "npm:^4.19.0"
     "@types/react-dnd": "npm:^3.0.2"
     "@types/react-dom": "npm:^18.2.13"
     "@vanilla-extract/css": "npm:^1.13.0"
     "@vanilla-extract/dynamic": "npm:^2.0.3"
+    bytes: "npm:^3.1.2"
     check-password-strength: "npm:^2.0.7"
     clsx: "npm:^2.0.0"
     dayjs: "npm:^1.11.10"
@@ -275,7 +277,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.35"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     "@types/marked": "npm:^6.0.0"
     "@vanilla-extract/css": "npm:^1.13.0"
     clsx: "npm:^2.0.0"
@@ -329,10 +331,12 @@ __metadata:
     "@sentry/webpack-plugin": "npm:^2.8.0"
     "@svgr/webpack": "npm:^8.1.0"
     "@swc/core": "npm:^1.3.93"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
+    "@types/bytes": "npm:^3.1.3"
     "@types/lodash-es": "npm:^4.17.9"
     "@types/webpack-env": "npm:^1.18.2"
     async-call-rpc: "npm:^6.3.1"
+    bytes: "npm:^3.1.2"
     copy-webpack-plugin: "npm:^11.0.0"
     css-loader: "npm:^6.8.1"
     css-spring: "npm:^4.1.0"
@@ -490,7 +494,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.35"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
   languageName: unknown
   linkType: soft
 
@@ -516,7 +520,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.35"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     "@toeverything/theme": "npm:^0.7.20"
     clsx: "npm:^2.0.0"
     foxact: "npm:^0.2.20"
@@ -617,7 +621,7 @@ __metadata:
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@blocksuite/icons": "npm:2.1.35"
-    "@toeverything/components": "npm:^0.0.45"
+    "@toeverything/components": "npm:^0.0.46"
     jotai: "npm:^2.4.3"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
@@ -675,6 +679,7 @@ __metadata:
     "@nestjs/apollo": "npm:^12.0.9"
     "@nestjs/common": "npm:^10.2.7"
     "@nestjs/core": "npm:^10.2.7"
+    "@nestjs/event-emitter": "npm:^2.0.2"
     "@nestjs/graphql": "npm:^12.0.9"
     "@nestjs/platform-express": "npm:^10.2.7"
     "@nestjs/platform-socket.io": "npm:^10.2.7"
@@ -740,6 +745,7 @@ __metadata:
     semver: "npm:^7.5.4"
     sinon: "npm:^16.1.0"
     socket.io: "npm:^4.7.2"
+    stripe: "npm:^14.1.0"
     supertest: "npm:^6.3.3"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.2.2"
@@ -7333,6 +7339,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@nestjs/event-emitter@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@nestjs/event-emitter@npm:2.0.2"
+  dependencies:
+    eventemitter2: "npm:6.4.9"
+  peerDependencies:
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
+    "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
+    reflect-metadata: ^0.1.12
+  checksum: 9c7d2645b14bef5a9d26a8fbafb5963e18c9c15e267980c55abd913c8af9215ae363b8c0fc78711c22126e0a973f80aec8b8e962a64e699f523128d11c033894
+  languageName: node
+  linkType: hard
+
 "@nestjs/graphql@npm:^12.0.9":
   version: 12.0.9
   resolution: "@nestjs/graphql@npm:12.0.9"
@@ -12580,9 +12599,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/components@npm:^0.0.45":
-  version: 0.0.45
-  resolution: "@toeverything/components@npm:0.0.45"
+"@toeverything/components@npm:^0.0.46":
+  version: 0.0.46
+  resolution: "@toeverything/components@npm:0.0.46"
   dependencies:
     "@blocksuite/icons": "npm:^2.1.33"
     "@radix-ui/react-dialog": "npm:^1.0.4"
@@ -12594,7 +12613,7 @@ __metadata:
     clsx: ^2
     react: ^18
     react-dom: ^18
-  checksum: fb168a83cd04da654ae1723098bf6902bf0eef8be9410a0814514b062d87e5fd2b972746a7770f8ca831a69d4a53255c87750e9fa8beab040d88deebc646dd92
+  checksum: 1e74a620d82bc6f6c318ccac35a2f4f86d5e3b97761e798d0ad3f3b31a74f377e402338ad00a2af54c62dda7d88c231cc07b53f2aa9c9bff1de5088659e1c712
   languageName: node
   linkType: hard
 
@@ -12891,6 +12910,13 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 686a1ff076dc35c69307c7214911989e1fa1d718120f212756ce7370bb1957d6586047ea60ea3bb0b416608c6ad8b989c0e676dbee42500c74729c1dbe554a73
+  languageName: node
+  linkType: hard
+
+"@types/bytes@npm:^3.1.3":
+  version: 3.1.3
+  resolution: "@types/bytes@npm:3.1.3"
+  checksum: c636b74d5a6f4925f1030382d8afcfe271e329da7c8103d175a874688118b60b0b1523e23477554e29456d024e5a180df1ba99d88c49b3a51433b714acffdac9
   languageName: node
   linkType: hard
 
@@ -13482,6 +13508,13 @@ __metadata:
   version: 20.5.1
   resolution: "@types/node@npm:20.5.1"
   checksum: e91034ba7eda82171dff73d3b30f584941400a5611b45d73a4d8159dc1fc309d4f1a423fbe84fd22d1ba7833383ee299c81ace6fab035c17affd0f4f0cbe7a89
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:>=8.1.0":
+  version: 20.6.2
+  resolution: "@types/node@npm:20.6.2"
+  checksum: 4b150698cf90c211d4f2f021618f06c33a337d74e9a0ce10ec2e7123f02aacc231eff62118101f56de75f7be309c2da6eb0edb8388d501d4195c50bb919c7a05
   languageName: node
   linkType: hard
 
@@ -16387,7 +16420,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bytes@npm:3.1.2":
+"bytes@npm:3.1.2, bytes@npm:^3.1.2":
   version: 3.1.2
   resolution: "bytes@npm:3.1.2"
   checksum: a10abf2ba70c784471d6b4f58778c0beeb2b5d405148e66affa91f23a9f13d07603d0a0354667310ae1d6dc141474ffd44e2a074be0f6e2254edb8fc21445388
@@ -20293,6 +20326,13 @@ __metadata:
   version: 5.0.1
   resolution: "event-target-shim@npm:5.0.1"
   checksum: 49ff46c3a7facbad3decb31f597063e761785d7fdb3920d4989d7b08c97a61c2f51183e2f3a03130c9088df88d4b489b1b79ab632219901f184f85158508f4c8
+  languageName: node
+  linkType: hard
+
+"eventemitter2@npm:6.4.9":
+  version: 6.4.9
+  resolution: "eventemitter2@npm:6.4.9"
+  checksum: b829b1c6b11e15926b635092b5ad62b4463d1c928859831dcae606e988cf41893059e3541f5a8209d21d2f15314422ddd4d84d20830b4bf44978608d15b06b08
   languageName: node
   linkType: hard
 
@@ -32288,6 +32328,16 @@ __metadata:
   dependencies:
     escape-string-regexp: "npm:^1.0.2"
   checksum: f8d65d33ca2b49aabc66bb41d689dda7b8b9959d320e3a40a2ef4d7079ff2f67ffb72db43f179f48dbf9495c2e33742863feab7a584d180fa62505439162c191
+  languageName: node
+  linkType: hard
+
+"stripe@npm:^14.1.0":
+  version: 14.1.0
+  resolution: "stripe@npm:14.1.0"
+  dependencies:
+    "@types/node": "npm:>=8.1.0"
+    qs: "npm:^6.11.0"
+  checksum: 1363bc6fed873a9d96312a7d33fb422b9e0ca32064cf027eee12cf5cd132a936d3e248013b59d7011ca5a40acaae9adfcbae175345f7c76ee778800ca1077756
   languageName: node
   linkType: hard
 

@@ -49,6 +49,9 @@ model User {
   /// Not available if user signed up through OAuth providers
   password      String?                   @db.VarChar
   features      UserFeatureGates[]
+  customer      UserStripeCustomer?
+  subscription  UserSubscription?
+  invoices      UserInvoice[]
 
   @@map("users")
 }
@@ -163,6 +166,70 @@ model NewFeaturesWaitingList {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("new_features_waiting_list")
+}
+
+model UserStripeCustomer {
+  userId           String   @id @map("user_id") @db.VarChar
+  stripeCustomerId String   @unique @map("stripe_customer_id") @db.VarChar
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stripe_customers")
+}
+
+model UserSubscription {
+  id                   Int       @id @default(autoincrement()) @db.Integer
+  userId               String    @unique @map("user_id") @db.VarChar(36)
+  plan                 String    @db.VarChar(20)
+  // yearly/monthly
+  recurring            String    @db.VarChar(20)
+  // subscription.id
+  stripeSubscriptionId String    @unique @map("stripe_subscription_id")
+  // subscription.status, active/past_due/canceled/unpaid...
+  status               String    @db.VarChar(20)
+  // subscription.current_period_start
+  start                DateTime  @map("start") @db.Timestamptz(6)
+  // subscription.current_period_end
+  end                  DateTime  @map("end") @db.Timestamptz(6)
+  // subscription.billing_cycle_anchor
+  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(6)
+  // subscription.canceled_at
+  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz(6)
+  // subscription.trial_start
+  trialStart           DateTime? @map("trial_start") @db.Timestamptz(6)
+  // subscription.trial_end
+  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(6)
+  stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_subscriptions")
+}
+
+model UserInvoice {
+  id               Int      @id @default(autoincrement()) @db.Integer
+  userId           String   @map("user_id") @db.VarChar(36)
+  stripeInvoiceId  String   @unique @map("stripe_invoice_id")
+  currency         String   @db.VarChar(3)
+  // CNY 12.50 stored as 1250
+  amount           Int      @db.Integer
+  status           String   @db.VarChar(20)
+  plan             String   @db.VarChar(20)
+  recurring        String   @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  // billing reason
+  reason           String   @db.VarChar
+  lastPaymentError String?  @map("last_payment_error") @db.Text
+  // stripe hosted invoice link
+  link             String?  @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_invoices")
 }
 
 model DataMigration {

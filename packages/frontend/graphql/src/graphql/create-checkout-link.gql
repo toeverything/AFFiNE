@@ -1,0 +1,6 @@
+mutation checkout(
+  $recurring: SubscriptionRecurring!
+  $idempotencyKey: String!
+) {
+  checkout(recurring: $recurring, idempotencyKey: $idempotencyKey)
+}

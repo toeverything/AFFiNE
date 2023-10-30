@@ -62,3 +62,17 @@ export const accessMessage = style({
   marginTop: 65,
   marginBottom: 40,
 });
+
+export const userPlanButton = style({
+  display: 'flex',
+  fontSize: 'var(--affine-font-xs)',
+  height: 20,
+  fontWeight: 500,
+  cursor: 'pointer',
+  color: 'var(--affine-pure-white)',
+  backgroundColor: 'var(--affine-brand-color)',
+  padding: '0 4px',
+  borderRadius: 4,
+  justifyContent: 'center',
+  alignItems: 'center',
+});

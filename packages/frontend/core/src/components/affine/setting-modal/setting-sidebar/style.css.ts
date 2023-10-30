@@ -94,7 +94,6 @@ export const currentWorkspaceLabel = style({
 export const sidebarFooter = style({ padding: '0 16px' });
 
 export const accountButton = style({
-  height: '42px',
   padding: '4px 8px',
   borderRadius: '8px',
   cursor: 'pointer',
@@ -129,13 +128,21 @@ globalStyle(`${accountButton} .content`, {
   flexGrow: '1',
   minWidth: 0,
 });
+globalStyle(`${accountButton} .name-container`, {
+  display: 'flex',
+  justifyContent: 'flex-start',
+  alignItems: 'center',
+  width: '100%',
+  gap: '4px',
+  height: '22px',
+});
 globalStyle(`${accountButton} .name`, {
   fontSize: 'var(--affine-font-sm)',
   fontWeight: 600,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  flexGrow: 1,
+  height: '22px',
 });
 globalStyle(`${accountButton} .email`, {
   fontSize: 'var(--affine-font-xs)',
@@ -144,4 +151,5 @@ globalStyle(`${accountButton} .email`, {
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   flexGrow: 1,
+  height: '20px',
 });

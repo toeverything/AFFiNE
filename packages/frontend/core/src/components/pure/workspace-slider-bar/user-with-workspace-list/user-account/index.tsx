@@ -14,6 +14,7 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '../../../../../atoms';
+import { UserPlanButton } from '../../../../affine/auth/user-plan-button';
 import * as styles from './index.css';
 
 const AccountMenu = ({ onEventEnd }: { onEventEnd?: () => void }) => {
@@ -73,7 +74,10 @@ export const UserAccountItem = ({
 }) => {
   return (
     <div className={styles.userAccountContainer}>
-      <div className={styles.userEmail}>{email}</div>
+      <div className={styles.leftContainer}>
+        <div className={styles.userEmail}>{email}</div>
+        <UserPlanButton />
+      </div>
       <Menu
         items={<AccountMenu onEventEnd={onEventEnd} />}
         contentOptions={{

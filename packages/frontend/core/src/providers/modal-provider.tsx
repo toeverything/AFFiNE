@@ -12,6 +12,7 @@ import {
   openSettingModalAtom,
   openSignOutModalAtom,
 } from '../atoms';
+import { PaymentDisableModal } from '../components/affine/payment-disable';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { signOutCloud } from '../utils/cloud-utils';
@@ -201,6 +202,7 @@ export const AllWorkspaceModals = (): ReactElement => {
       <Suspense>
         <SignOutConfirmModal />
       </Suspense>
+      <PaymentDisableModal />
     </>
   );
 };

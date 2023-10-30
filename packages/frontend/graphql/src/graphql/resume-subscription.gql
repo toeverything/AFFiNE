@@ -1,0 +1,9 @@
+mutation resumeSubscription($idempotencyKey: String!) {
+  resumeSubscription(idempotencyKey: $idempotencyKey) {
+    id
+    status
+    nextBillAt
+    start
+    end
+  }
+}

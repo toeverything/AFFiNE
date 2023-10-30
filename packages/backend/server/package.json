@@ -27,6 +27,7 @@
     "@nestjs/apollo": "^12.0.9",
     "@nestjs/common": "^10.2.7",
     "@nestjs/core": "^10.2.7",
+    "@nestjs/event-emitter": "^2.0.2",
     "@nestjs/graphql": "^12.0.9",
     "@nestjs/platform-express": "^10.2.7",
     "@nestjs/platform-socket.io": "^10.2.7",
@@ -74,6 +75,7 @@
     "rxjs": "^7.8.1",
     "semver": "^7.5.4",
     "socket.io": "^4.7.2",
+    "stripe": "^14.1.0",
     "ws": "^8.14.2",
     "yjs": "^13.6.8"
   },

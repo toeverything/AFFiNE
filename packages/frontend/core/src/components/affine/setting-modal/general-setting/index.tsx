@@ -7,8 +7,12 @@ import {
 } from '@blocksuite/icons';
 import type { ReactElement, SVGProps } from 'react';
 
+import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
+import { BillingSettings } from './billing';
+import { PaymentIcon, UpgradeIcon } from './icons';
+import { AFFiNECloudPlans } from './plans';
 import { Plugins } from './plugins';
 import { Shortcuts } from './shortcuts';
 
@@ -16,7 +20,9 @@ export type GeneralSettingKeys =
   | 'shortcuts'
   | 'appearance'
   | 'plugins'
-  | 'about';
+  | 'about'
+  | 'plans'
+  | 'billing';
 
 interface GeneralSettingListItem {
   key: GeneralSettingKeys;
@@ -29,8 +35,9 @@ export type GeneralSettingList = GeneralSettingListItem[];
 
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useAFFiNEI18N();
+  const status = useCurrentLoginStatus();
 
-  return [
+  const settings: GeneralSettingListItem[] = [
     {
       key: 'appearance',
       title: t['com.affine.settings.appearance'](),
@@ -44,6 +51,13 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'shortcuts-panel-trigger',
     },
     {
+      key: 'plans',
+      title: t['com.affine.payment.title'](),
+      icon: UpgradeIcon,
+      testId: 'plans-panel-trigger',
+    },
+
+    {
       key: 'plugins',
       title: 'Plugins',
       icon: PluginIcon,
@@ -56,6 +70,17 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'about-panel-trigger',
     },
   ];
+
+  if (status === 'authenticated') {
+    settings.splice(3, 0, {
+      key: 'billing',
+      title: t['com.affine.payment.billing-setting.title'](),
+      icon: PaymentIcon,
+      testId: 'billing-panel-trigger',
+    });
+  }
+
+  return settings;
 };
 
 interface GeneralSettingProps {
@@ -72,6 +97,10 @@ export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
       return <Plugins />;
     case 'about':
       return <AboutAffine />;
+    case 'plans':
+      return <AFFiNECloudPlans />;
+    case 'billing':
+      return <BillingSettings />;
     default:
       return null;
   }

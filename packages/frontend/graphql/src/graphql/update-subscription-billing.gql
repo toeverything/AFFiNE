@@ -1,0 +1,14 @@
+mutation updateSubscription(
+  $recurring: SubscriptionRecurring!
+  $idempotencyKey: String!
+) {
+  updateSubscriptionRecurring(
+    recurring: $recurring
+    idempotencyKey: $idempotencyKey
+  ) {
+    id
+    plan
+    recurring
+    nextBillAt
+  }
+}
