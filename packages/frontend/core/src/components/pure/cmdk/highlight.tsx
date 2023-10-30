@@ -1,5 +1,6 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 
+import { useHighlight } from '../../../hooks/affine/use-highlight';
 import * as styles from './highlight.css';
 
 type SearchResultLabel = {
@@ -17,63 +18,6 @@ type HighlightLabelProps = {
   highlight: string;
 };
 
-function useHighlight(text: string, query: string) {
-  return useMemo(() => {
-    const highlights = [];
-
-    const lowerCaseText = text.toLowerCase();
-    let startIndex = lowerCaseText.indexOf(query);
-
-    if (startIndex !== -1) {
-      // Full match found, highlight it
-      if (startIndex > 0) {
-        highlights.push({
-          text: text.substring(0, startIndex),
-          highlight: false,
-        });
-      }
-
-      highlights.push({
-        text: text.substring(startIndex, startIndex + query.length),
-        highlight: true,
-      });
-
-      if (startIndex + query.length < text.length) {
-        highlights.push({
-          text: text.substring(startIndex + query.length),
-          highlight: false,
-        });
-      }
-    } else {
-      // No full match found, so we proceed to partial matching
-      startIndex = 0;
-      for (const char of query) {
-        const pos = text.toLowerCase().indexOf(char, startIndex);
-        if (pos !== -1) {
-          if (pos > startIndex) {
-            highlights.push({
-              text: text.substring(startIndex, pos),
-              highlight: false,
-            });
-          }
-          highlights.push({
-            text: text.substring(pos, pos + 1),
-            highlight: true,
-          });
-          startIndex = pos + 1;
-        }
-      }
-      if (startIndex < text.length) {
-        highlights.push({
-          text: text.substring(startIndex),
-          highlight: false,
-        });
-      }
-    }
-    return highlights;
-  }, [text, query]);
-}
-
 export const Highlight = memo(function Highlight({
   text = '',
   highlight = '',
@@ -85,21 +29,16 @@ export const Highlight = memo(function Highlight({
 
   return (
     <div className={styles.highlightContainer}>
-      {highlights.map((part, i) => {
-        if (part.highlight) {
-          return (
-            <span key={i} className={styles.highlightKeyword}>
-              {part.text}
-            </span>
-          );
-        } else {
-          return (
-            <span key={i} className={styles.highlightText}>
-              {part.text}
-            </span>
-          );
-        }
-      })}
+      {highlights.map((part, i) => (
+        <span
+          key={i}
+          className={
+            part.highlight ? styles.highlightKeyword : styles.highlightText
+          }
+        >
+          {part.text}
+        </span>
+      ))}
     </div>
   );
 });
