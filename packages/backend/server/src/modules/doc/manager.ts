@@ -254,15 +254,15 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
    * get pending updates
    */
   async getUpdates(workspaceId: string, guid: string) {
-    return this.db.update.findMany({
+    const updates = await this.db.update.findMany({
       where: {
         workspaceId,
         id: guid,
       },
-      orderBy: {
-        seq: 'asc',
-      },
     });
+
+    // perf(memory): avoid sorting in db
+    return updates.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
   }
 
   /**
