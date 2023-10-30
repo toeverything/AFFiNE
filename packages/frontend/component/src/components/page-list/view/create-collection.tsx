@@ -90,19 +90,20 @@ export const CreateCollection = ({
   return (
     <div>
       <div className={styles.content}>
-        <div className={styles.label}>Name</div>
+        <div className={styles.label}>
+          {t['com.affine.editCollectionName.name']()}
+        </div>
         <Input
           autoFocus
           value={value}
           data-testid="input-collection-title"
-          placeholder="Collection Name"
+          placeholder={t['com.affine.editCollectionName.name.placeholder']()}
           onChange={useCallback((value: string) => onChange(value), [onChange])}
           onEnter={save}
         ></Input>
         {showTips ? (
           <div className={styles.createTips}>
-            Collection is a smart folder where you can manually add pages or
-            automatically add pages through rules.
+            {t['com.affine.editCollectionName.createTips']()}
           </div>
         ) : null}
       </div>

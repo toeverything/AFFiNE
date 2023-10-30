@@ -6,6 +6,8 @@ import {
   useEditCollection,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   CloseIcon,
   FilterIcon,
@@ -104,6 +106,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
     setShowTips(false);
     localStorage.setItem('hide-empty-collection-help-info', 'true');
   }, []);
+  const t = useAFFiNEI18N();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div
@@ -123,7 +126,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
           }}
         >
           <ViewLayersIcon style={{ color: 'var(--affine-icon-color)' }} />
-          All Collections
+          {t['com.affine.collection.allCollections']()}
           <div>/</div>
         </div>
         <div
@@ -162,7 +165,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
               color: 'var(--affine-text-primary-color)',
             }}
           >
-            Empty Collection
+            {t['com.affine.collection.emptyCollection']()}
           </div>
           <div
             style={{
@@ -172,8 +175,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
               textAlign: 'center',
             }}
           >
-            Collection is a smart folder where you can manually add pages or
-            automatically add pages through rules.
+            {t['com.affine.collection.emptyCollectionDescription']()}
           </div>
           <div
             style={{
@@ -192,7 +194,9 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
                   color: 'var(--affine-icon-color)',
                 }}
               />
-              <span style={{ padding: '0 4px' }}>Add Pages</span>
+              <span style={{ padding: '0 4px' }}>
+                {t['com.affine.collection.addPages']()}
+              </span>
             </div>
             <div onClick={openRuleEdit} className={styles.placeholderButton}>
               <FilterIcon
@@ -202,7 +206,9 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
                   color: 'var(--affine-icon-color)',
                 }}
               />
-              <span style={{ padding: '0 4px' }}>Add Rules</span>
+              <span style={{ padding: '0 4px' }}>
+                {t['com.affine.collection.addRules']()}
+              </span>
             </div>
           </div>
         </div>
@@ -230,7 +236,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
                 justifyContent: 'space-between',
               }}
             >
-              <div>HELP INFO</div>
+              <div>{t['com.affine.collection.helpInfo']()}</div>
               <CloseIcon
                 className={styles.button}
                 style={{ width: 16, height: 16 }}
@@ -247,14 +253,18 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
               }}
             >
               <div>
-                <span style={{ fontWeight: 600 }}>Add pages:</span> You can
-                freely select pages and add them to the collection.
+                <Trans i18nKey="com.affine.collection.addPages.tips">
+                  <span style={{ fontWeight: 600 }}>Add pages:</span> You can
+                  freely select pages and add them to the collection.
+                </Trans>
               </div>
               <div>
-                <span style={{ fontWeight: 600 }}>Add rules:</span> Rules are
-                based on filtering. After adding rules, pages that meet the
-                requirements will be automatically added to the current
-                collection.
+                <Trans i18nKey="com.affine.collection.addRules.tips">
+                  <span style={{ fontWeight: 600 }}>Add rules:</span> Rules are
+                  based on filtering. After adding rules, pages that meet the
+                  requirements will be automatically added to the current
+                  collection.
+                </Trans>
               </div>
             </div>
           </div>
