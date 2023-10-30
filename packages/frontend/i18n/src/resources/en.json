@@ -724,6 +724,7 @@
   "com.affine.payment.billing-setting.cancel-subscription": "Cancel Subscription",
   "com.affine.payment.billing-setting.cancel-subscription.description": "Subscription cancelled, your pro account will expire on {{cancelDate}}",
   "com.affine.payment.billing-setting.upgrade": "Upgrade",
+  "com.affine.payment.billing-setting.update": "Update",
   "com.affine.payment.billing-setting.change-plan": "Change Plan",
   "com.affine.payment.billing-setting.resume-subscription": "Resume",
   "com.affine.payment.billing-setting.no-invoice": "There are no invoices to display.",
