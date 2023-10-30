@@ -33,10 +33,10 @@ async function upsertFeature(
 }
 
 /**
- * Quota module provider pre-user quota management.
+ * Feature module provider pre-user feature flag management.
  * includes:
- * - quota query/update/permit
- * - quota statistics
+ * - feature query/update/permit
+ * - feature statistics
  */
 @Module({
   providers: [FeatureService, FeatureManagementService],

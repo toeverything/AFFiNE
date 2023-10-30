@@ -17,9 +17,13 @@ export class FeatureManagementService {
     private readonly config: Config
   ) {}
 
+  // ======== Admin ========
+
   isStaff(email: string) {
     return email.endsWith('@toeverything.info');
   }
+
+  // ======== Early Access ========
 
   async addEarlyAccess(userId: string) {
     return this.feature.addUserFeature(
