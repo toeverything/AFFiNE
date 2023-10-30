@@ -1,55 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../../prisma';
-import { migrateNewFeatureTable } from './migration';
-import { CommonFeature, Feature, FeatureKind, FeatureType } from './types';
-
-const Features: Feature[] = [
-  {
-    feature: FeatureType.Feature_EarlyAccess,
-    type: FeatureKind.Feature,
-    version: 1,
-    configs: {
-      whitelist: ['@toeverything.info'],
-    },
-  },
-];
+import { PrismaService } from '../../prisma';
+import { FeatureKind, FeatureType } from './types';
 
 @Injectable()
-export class FeatureService implements OnModuleInit {
+export class FeatureService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async onModuleInit() {
-    // upgrade features from lower version to higher version
-    for (const feature of Features) {
-      await this.upsertFeature(feature);
-      await migrateNewFeatureTable(this, this.prisma);
-    }
-  }
-
-  // upgrade features from lower version to higher version
-  async upsertFeature(feature: CommonFeature): Promise<void> {
-    const hasEqualOrGreaterVersion =
-      (await this.prisma.features.count({
-        where: {
-          feature: feature.feature,
-          version: {
-            gte: feature.version,
-          },
-        },
-      })) > 0;
-    // will not update exists version
-    if (!hasEqualOrGreaterVersion) {
-      await this.prisma.features.create({
-        data: {
-          feature: feature.feature,
-          type: feature.type,
-          version: feature.version,
-          configs: feature.configs,
-        },
-      });
-    }
-  }
 
   async getFeaturesVersion() {
     const features = await this.prisma.features.findMany({
