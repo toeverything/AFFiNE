@@ -130,7 +130,7 @@ model UserFeatures {
   // record the quota enabled time
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   // record the quota expired time, pay plan is a subscription, so it will expired
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
+  expiredAt DateTime? @map("expired_at") @db.Timestamptz(6)
   // whether the feature is activated
   // for example:
   // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it

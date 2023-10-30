@@ -25,7 +25,7 @@ export class QuotaManagementService {
         name: quota.feature.feature,
         reason: quota.reason,
         createAt: quota.createdAt,
-        expiresAt: quota.expiresAt,
+        expiredAt: quota.expiredAt,
         blobLimit: quota.feature.configs.blobLimit,
         storageQuota: quota.feature.configs.storageQuota,
       };

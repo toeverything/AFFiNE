@@ -17,7 +17,7 @@ CREATE TABLE "user_features" (
     "feature_id" INTEGER NOT NULL,
     "reason" VARCHAR NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expires_at" TIMESTAMPTZ(6),
+    "expired_at" TIMESTAMPTZ(6),
     "activated" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "user_features_pkey" PRIMARY KEY ("id")

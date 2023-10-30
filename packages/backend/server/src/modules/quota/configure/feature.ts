@@ -87,7 +87,7 @@ export class FeatureService implements OnModuleInit {
     feature: FeatureType,
     version: number,
     reason: string,
-    expiresAt?: Date | string
+    expiredAt?: Date | string
   ) {
     return this.prisma.$transaction(async tx => {
       const latestFlag = await tx.userFeatures.findFirst({
@@ -110,7 +110,7 @@ export class FeatureService implements OnModuleInit {
           .create({
             data: {
               reason,
-              expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
+              expiredAt,
               activated: true,
               user: {
                 connect: {

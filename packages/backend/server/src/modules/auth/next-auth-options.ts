@@ -46,7 +46,6 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         features: {
           create: {
             reason: 'created by email sign up',
-            expiresAt: new Date('2099-12-31T23:59:59.000Z'),
             activated: true,
             feature: {
               connect: {

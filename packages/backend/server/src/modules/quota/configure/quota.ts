@@ -32,7 +32,7 @@ export class QuotaService implements OnModuleInit {
       select: {
         reason: true,
         createdAt: true,
-        expiresAt: true,
+        expiredAt: true,
         feature: {
           select: {
             feature: true,
@@ -61,7 +61,7 @@ export class QuotaService implements OnModuleInit {
         activated: true,
         reason: true,
         createdAt: true,
-        expiresAt: true,
+        expiredAt: true,
         feature: {
           select: {
             feature: true,
@@ -82,7 +82,7 @@ export class QuotaService implements OnModuleInit {
     userId: string,
     quota: FeatureType,
     reason?: string,
-    expiresAt?: Date
+    expiredAt?: Date
   ) {
     await this.prisma.$transaction(async tx => {
       const latestFreePlan = await tx.features.aggregate({
@@ -126,7 +126,7 @@ export class QuotaService implements OnModuleInit {
           },
           reason: reason ?? 'switch quota',
           activated: true,
-          expiresAt: expiresAt ?? '2099-12-31T23:59:59.999Z',
+          expiredAt,
         },
       });
     });
