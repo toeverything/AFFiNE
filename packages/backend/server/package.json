@@ -13,7 +13,9 @@
     "dev": "nodemon ./src/index.ts",
     "test": "ava --concurrency 1 --serial",
     "test:coverage": "c8 ava --concurrency 1 --serial",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "data-migration": "node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/data/app.ts",
+    "predeploy": "yarn prisma migrate deploy && node --es-module-specifier-resolution node ./dist/data/app.js run"
   },
   "dependencies": {
     "@apollo/server": "^4.9.4",
@@ -60,6 +62,7 @@
     "keyv": "^4.5.4",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.1",
+    "nest-commander": "^3.12.0",
     "nestjs-throttler-storage-redis": "^0.4.1",
     "next-auth": "^4.23.2",
     "nodemailer": "^6.9.6",

@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useState } from 'react';
 
-export function useHasScrollTop() {
-  const ref = useRef<HTMLDivElement>(null);
+export function useHasScrollTop(ref: RefObject<HTMLElement> | null) {
   const [hasScrollTop, setHasScrollTop] = useState(false);
 
   useEffect(() => {
-    if (!ref.current) {
+    if (!ref?.current) {
       return;
     }
 
@@ -13,8 +12,10 @@ export function useHasScrollTop() {
 
     function updateScrollTop() {
       if (container) {
-        const hasScrollTop = container.scrollTop > 0;
-        setHasScrollTop(hasScrollTop);
+        setTimeout(() => {
+          const hasScrollTop = container.scrollTop > 0;
+          setHasScrollTop(hasScrollTop);
+        });
       }
     }
 
@@ -23,7 +24,7 @@ export function useHasScrollTop() {
     return () => {
       container.removeEventListener('scroll', updateScrollTop);
     };
-  }, []);
+  }, [ref]);
 
-  return [hasScrollTop, ref] as const;
+  return hasScrollTop;
 }

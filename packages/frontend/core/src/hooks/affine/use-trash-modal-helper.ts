@@ -10,14 +10,16 @@ import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 export function useTrashModalHelper(blocksuiteWorkspace: Workspace) {
   const t = useAFFiNEI18N();
   const [trashModal, setTrashModal] = useAtom(trashModalAtom);
-  const { pageId } = trashModal;
+  const { pageIds } = trashModal;
   const { removeToTrash } = useBlockSuiteMetaHelper(blocksuiteWorkspace);
 
   const handleOnConfirm = useCallback(() => {
-    removeToTrash(pageId);
+    pageIds.forEach(pageId => {
+      removeToTrash(pageId);
+    });
     toast(t['com.affine.toastMessage.movedTrash']());
     setTrashModal({ ...trashModal, open: false });
-  }, [pageId, removeToTrash, setTrashModal, t, trashModal]);
+  }, [pageIds, removeToTrash, setTrashModal, t, trashModal]);
 
   return {
     trashModal,

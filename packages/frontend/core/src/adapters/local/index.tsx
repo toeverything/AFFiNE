@@ -29,11 +29,9 @@ import { useCallback } from 'react';
 
 import { setPageModeAtom } from '../../atoms';
 import {
-  BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   Provider,
-  WorkspaceHeader,
 } from '../shared';
 
 const logger = new DebugLogger('use-create-first-workspace');
@@ -85,7 +83,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   },
   CRUD,
   UI: {
-    Header: WorkspaceHeader,
     Provider,
     PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
       const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentWorkspaceId);
@@ -103,16 +100,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
             workspace={workspace}
           />
         </>
-      );
-    },
-    PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
-      return (
-        <BlockSuitePageList
-          listType="all"
-          collection={collection}
-          onOpenPage={onOpenPage}
-          blockSuiteWorkspace={blockSuiteWorkspace}
-        />
       );
     },
     NewSettingsDetail: ({

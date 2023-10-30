@@ -35,8 +35,8 @@ export function useRegisterBlocksuiteEditorCommands(
   const onClickDelete = useCallback(() => {
     setTrashModal({
       open: true,
-      pageId: pageId,
-      pageTitle: pageMeta.title,
+      pageIds: [pageId],
+      pageTitles: [pageMeta.title],
     });
   }, [pageId, pageMeta.title, setTrashModal]);
 

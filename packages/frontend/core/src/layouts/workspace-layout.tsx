@@ -1,11 +1,12 @@
-import { Content, displayFlex } from '@affine/component';
 import {
   AppSidebarFallback,
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
-import type { DraggableTitleCellData } from '@affine/component/page-list';
-import { StyledTitleLink } from '@affine/component/page-list';
+import {
+  type DraggableTitleCellData,
+  PageListDragOverlay,
+} from '@affine/component/page-list';
 import {
   MainContainer,
   ToolContainer,
@@ -197,12 +198,9 @@ export const WorkspaceLayoutInner = ({
   const resizing = useAtomValue(appSidebarResizingAtom);
 
   const sensors = useSensors(
-    // Delay 10ms after mousedown
-    // Otherwise clicks would be intercepted
     useSensor(MouseSensor, {
       activationConstraint: {
-        delay: 500,
-        tolerance: 10,
+        distance: 10,
       },
     })
   );
@@ -288,34 +286,18 @@ export const WorkspaceLayoutInner = ({
 };
 
 function PageListTitleCellDragOverlay() {
-  const { active } = useDndContext();
-
+  const { active, over } = useDndContext();
   const renderChildren = useCallback(
-    ({ icon, pageTitle }: DraggableTitleCellData) => {
+    ({ pageTitle }: DraggableTitleCellData) => {
       return (
-        <StyledTitleLink>
-          {icon}
-          <Content ellipsis={true} color="inherit">
-            {pageTitle}
-          </Content>
-        </StyledTitleLink>
+        <PageListDragOverlay over={!!over}>{pageTitle}</PageListDragOverlay>
       );
     },
-    []
+    [over]
   );
 
   return (
-    <DragOverlay
-      style={{
-        zIndex: 1001,
-        backgroundColor: 'var(--affine-black-10)',
-        padding: '0 30px',
-        cursor: 'default',
-        borderRadius: 10,
-        ...displayFlex('flex-start', 'center'),
-      }}
-      dropAnimation={null}
-    >
+    <DragOverlay dropAnimation={null}>
       {active
         ? renderChildren(active.data.current as DraggableTitleCellData)
         : null}

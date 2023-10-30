@@ -1,114 +1,32 @@
-import type { Collection, Filter } from '@affine/env/filter';
+import type {
+  Collection,
+  DeleteCollectionInfo,
+  Filter,
+} from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
-import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilteredIcon, FolderIcon, ViewLayersIcon } from '@blocksuite/icons';
+import { FilteredIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
-import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
-import { Tooltip } from '@toeverything/components/tooltip';
-import clsx from 'clsx';
-import type { MouseEvent } from 'react';
+import { Menu } from '@toeverything/components/menu';
 import { useCallback, useState } from 'react';
 
 import { FlexWrapper } from '../../../ui/layout';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
-import { EditCollectionModal } from './create-collection';
-import { useActions } from './use-action';
+import { CollectionOperations } from './collection-operations';
+import { type AllPageListConfig, EditCollectionModal } from './edit-collection';
 
-const CollectionOption = ({
-  collection,
-  setting,
-  updateCollection,
-}: {
-  collection: Collection;
-  setting: ReturnType<typeof useCollectionManager>;
-  updateCollection: (view: Collection) => void;
-}) => {
-  const actions = useActions({
-    collection,
-    setting,
-    openEdit: updateCollection,
-  });
-
-  const selectCollection = useCallback(
-    () => setting.selectCollection(collection.id),
-    [setting, collection.id]
-  );
-  return (
-    <MenuItem
-      data-testid="collection-select-option"
-      preFix={
-        <MenuIcon>
-          <ViewLayersIcon />
-        </MenuIcon>
-      }
-      onClick={selectCollection}
-      key={collection.id}
-      className={styles.viewMenu}
-    >
-      <Tooltip
-        content={collection.name}
-        side="right"
-        rootOptions={{
-          delayDuration: 1500,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '150px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {collection.name}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            {actions.map((action, i) => {
-              const onClick = (e: MouseEvent<HTMLDivElement>) => {
-                e.stopPropagation();
-                action.click();
-              };
-
-              return (
-                <div
-                  data-testid={`collection-select-option-${action.name}`}
-                  key={i}
-                  onClick={onClick}
-                  style={{ marginLeft: i === 0 ? 28 : undefined }}
-                  className={clsx(styles.viewOption, action.className)}
-                >
-                  {action.icon}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Tooltip>
-    </MenuItem>
-  );
-};
 export const CollectionList = ({
   setting,
-  getPageInfo,
   propertiesMeta,
+  allPageListConfig,
+  userInfo,
 }: {
   setting: ReturnType<typeof useCollectionManager>;
-  getPageInfo: GetPageInfoById;
   propertiesMeta: PropertiesMeta;
+  allPageListConfig: AllPageListConfig;
+  userInfo: DeleteCollectionInfo;
 }) => {
   const t = useAFFiNEI18N();
   const [collection, setCollection] = useState<Collection>();
@@ -140,83 +58,51 @@ export const CollectionList = ({
   );
   return (
     <FlexWrapper alignItems="center">
-      {setting.savedCollections.length > 0 && (
-        <Menu
-          items={
-            <div style={{ minWidth: 150 }}>
-              <MenuItem
-                preFix={
-                  <MenuIcon>
-                    <FolderIcon />
-                  </MenuIcon>
-                }
-                onClick={setting.backToAll}
-                className={styles.viewMenu}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>All</div>
-                </div>
-              </MenuItem>
-              <div className={styles.menuTitleStyle}>Saved Collection</div>
-              <div className={styles.menuDividerStyle}></div>
-              {setting.savedCollections.map(view => (
-                <CollectionOption
-                  key={view.id}
-                  collection={view}
-                  setting={setting}
-                  updateCollection={setCollection}
-                />
-              ))}
-            </div>
-          }
+      {setting.isDefault ? (
+        <>
+          <Menu
+            items={
+              <CreateFilterMenu
+                propertiesMeta={propertiesMeta}
+                value={setting.currentCollection.filterList}
+                onChange={onChange}
+              />
+            }
+          >
+            <Button
+              className={styles.filterMenuTrigger}
+              type="default"
+              icon={<FilteredIcon />}
+              data-testid="create-first-filter"
+            >
+              {t['com.affine.filter']()}
+            </Button>
+          </Menu>
+          <EditCollectionModal
+            allPageListConfig={allPageListConfig}
+            init={collection}
+            open={!!collection}
+            onOpenChange={closeUpdateCollectionModal}
+            onConfirm={onConfirm}
+          />
+        </>
+      ) : (
+        <CollectionOperations
+          info={userInfo}
+          collection={setting.currentCollection}
+          config={allPageListConfig}
+          setting={setting}
         >
           <Button
-            data-testid="collection-select"
-            style={{ marginRight: '20px' }}
+            className={styles.filterMenuTrigger}
+            type="default"
+            icon={<FilteredIcon />}
+            data-testid="create-first-filter"
           >
-            <Tooltip
-              content={setting.currentCollection.name}
-              rootOptions={{
-                delayDuration: 1500,
-              }}
-            >
-              <>{setting.currentCollection.name}</>
-            </Tooltip>
+            {t['com.affine.filter']()}
           </Button>
-        </Menu>
+        </CollectionOperations>
       )}
-      <Menu
-        items={
-          <CreateFilterMenu
-            propertiesMeta={propertiesMeta}
-            value={setting.currentCollection.filterList}
-            onChange={onChange}
-          />
-        }
-      >
-        <Button
-          className={styles.filterMenuTrigger}
-          type="default"
-          icon={<FilteredIcon />}
-          data-testid="create-first-filter"
-        >
-          {t['com.affine.filter']()}
-        </Button>
-      </Menu>
-      <EditCollectionModal
-        propertiesMeta={propertiesMeta}
-        getPageInfo={getPageInfo}
-        init={collection}
-        open={!!collection}
-        onOpenChange={closeUpdateCollectionModal}
-        onConfirm={onConfirm}
-      />
     </FlexWrapper>
   );
 };

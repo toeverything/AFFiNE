@@ -231,3 +231,12 @@ model UserInvoice {
 
   @@map("user_invoices")
 }
+
+model DataMigration {
+  id         String    @id @default(uuid()) @db.VarChar(36)
+  name       String    @db.VarChar
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  @@map("_data_migrations")
+}

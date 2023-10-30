@@ -1,16 +1,17 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
 import { Menu } from '@toeverything/components/menu';
-import { useCallback, useState } from 'react';
+import { type PropsWithChildren, useCallback, useState } from 'react';
 
+import { DropdownButton } from '../../../ui/button';
 import { BlockCard } from '../../card/block-card';
-import { DropdownButton } from './dropdown';
-import { menuContent } from './dropdown.css';
+import { menuContent } from './new-page-button.css';
 
 type NewPageButtonProps = {
   createNewPage: () => void;
   createNewEdgeless: () => void;
   importFile: () => void;
+  size?: 'small' | 'default';
 };
 
 export const CreateNewPagePopup = ({
@@ -58,8 +59,9 @@ export const NewPageButton = ({
   createNewPage,
   createNewEdgeless,
   importFile,
-}: NewPageButtonProps) => {
-  const t = useAFFiNEI18N();
+  size,
+  children,
+}: PropsWithChildren<NewPageButtonProps>) => {
   const [open, setOpen] = useState(false);
   return (
     <Menu
@@ -92,13 +94,15 @@ export const NewPageButton = ({
       }}
     >
       <DropdownButton
+        size={size}
+        data-testid="new-page-button"
         onClick={useCallback(() => {
           createNewPage();
           setOpen(false);
         }, [createNewPage])}
         onClickDropDown={useCallback(() => setOpen(open => !open), [])}
       >
-        {t['New Page']()}
+        {children}
       </DropdownButton>
     </Menu>
   );

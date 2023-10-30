@@ -8,19 +8,25 @@ import {
 import * as styles from './styles.css';
 
 type DropdownButtonProps = {
+  size?: 'small' | 'default';
   onClickDropDown?: MouseEventHandler<HTMLElement>;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export const DropdownButton = forwardRef<
   HTMLButtonElement,
   DropdownButtonProps
->(({ onClickDropDown, children, ...props }, ref) => {
+>(({ onClickDropDown, children, size = 'default', ...props }, ref) => {
   const handleClickDropDown: MouseEventHandler<HTMLElement> = e => {
     e.stopPropagation();
     onClickDropDown?.(e);
   };
   return (
-    <button ref={ref} className={styles.dropdownBtn} {...props}>
+    <button
+      ref={ref}
+      data-size={size}
+      className={styles.dropdownBtn}
+      {...props}
+    >
       <span>{children}</span>
       <span className={styles.divider} />
       <span className={styles.dropdownWrapper} onClick={handleClickDropDown}>

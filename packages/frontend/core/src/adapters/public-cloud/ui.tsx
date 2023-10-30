@@ -5,13 +5,10 @@ import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useCallback } from 'react';
 
 import { useWorkspace } from '../../hooks/use-workspace';
-import { BlockSuitePageList, PageDetailEditor, Provider } from '../shared';
+import { PageDetailEditor, Provider } from '../shared';
 
 export const UI = {
   Provider,
-  Header: () => {
-    return null;
-  },
   PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
     const workspace = useWorkspace(currentWorkspaceId);
     const page = workspace.blockSuiteWorkspace.getPage(currentPageId);
@@ -27,16 +24,6 @@ export const UI = {
           workspace={workspace.blockSuiteWorkspace}
         />
       </>
-    );
-  },
-  PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
-    return (
-      <BlockSuitePageList
-        listType="all"
-        collection={collection}
-        onOpenPage={onOpenPage}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
     );
   },
   NewSettingsDetail: () => {

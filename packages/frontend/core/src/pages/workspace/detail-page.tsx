@@ -23,11 +23,12 @@ import type { Map as YMap } from 'yjs';
 
 import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
+import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
+import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { currentCollectionsAtom } from '../../utils/user-setting';
 
 const DetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
@@ -36,7 +37,7 @@ const DetailPageImpl = (): ReactElement => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const collectionManager = useCollectionManager(currentCollectionsAtom);
+  const collectionManager = useCollectionManager(collectionsCRUDAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
@@ -66,7 +67,6 @@ const DetailPageImpl = (): ReactElement => {
       });
       const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
         jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-        collectionManager.backToAll();
         collectionManager.setTemporaryFilter([createTagFilter(tagId)]);
       });
       return () => {
@@ -86,10 +86,10 @@ const DetailPageImpl = (): ReactElement => {
     ]
   );
 
-  const { PageDetail, Header } = getUIAdapter(currentWorkspace.flavour);
+  const { PageDetail } = getUIAdapter(currentWorkspace.flavour);
   return (
     <>
-      <Header
+      <WorkspaceHeader
         currentWorkspaceId={currentWorkspace.id}
         currentEntry={{
           pageId: currentPageId,
