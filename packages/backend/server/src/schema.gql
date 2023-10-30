@@ -278,13 +278,13 @@ type Mutation {
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
 
   """Create a subscription checkout link of stripe"""
-  checkout(recurring: SubscriptionRecurring!): String!
+  checkout(recurring: SubscriptionRecurring!, idempotencyKey: String!): String!
 
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
-  cancelSubscription: UserSubscription!
-  resumeSubscription: UserSubscription!
-  updateSubscriptionRecurring(recurring: SubscriptionRecurring!): UserSubscription!
+  cancelSubscription(idempotencyKey: String!): UserSubscription!
+  resumeSubscription(idempotencyKey: String!): UserSubscription!
+  updateSubscriptionRecurring(recurring: SubscriptionRecurring!, idempotencyKey: String!): UserSubscription!
 }
 
 """The `Upload` scalar type represents a file upload."""

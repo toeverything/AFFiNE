@@ -103,12 +103,14 @@ export class SubscriptionService {
     user,
     recurring,
     redirectUrl,
+    idempotencyKey,
     plan = SubscriptionPlan.Pro,
   }: {
     user: User;
     plan?: SubscriptionPlan;
     recurring: SubscriptionRecurring;
     redirectUrl: string;
+    idempotencyKey: string;
   }) {
     const currentSubscription = await this.db.userSubscription.findUnique({
       where: {
@@ -121,37 +123,43 @@ export class SubscriptionService {
     }
 
     const price = await this.getPrice(plan, recurring);
-    const customer = await this.getOrCreateCustomer(user);
+    const customer = await this.getOrCreateCustomer(idempotencyKey, user);
     const coupon = await this.getAvailableCoupon(user, CouponType.EarlyAccess);
 
-    return await this.stripe.checkout.sessions.create({
-      line_items: [
-        {
-          price,
-          quantity: 1,
+    return await this.stripe.checkout.sessions.create(
+      {
+        line_items: [
+          {
+            price,
+            quantity: 1,
+          },
+        ],
+        tax_id_collection: {
+          enabled: true,
         },
-      ],
-      tax_id_collection: {
-        enabled: true,
+        ...(coupon
+          ? {
+              discounts: [{ coupon }],
+            }
+          : {
+              allow_promotion_codes: true,
+            }),
+        mode: 'subscription',
+        success_url: redirectUrl,
+        customer: customer.stripeCustomerId,
+        customer_update: {
+          address: 'auto',
+          name: 'auto',
+        },
       },
-      ...(coupon
-        ? {
-            discounts: [{ coupon }],
-          }
-        : {
-            allow_promotion_codes: true,
-          }),
-      mode: 'subscription',
-      success_url: redirectUrl,
-      customer: customer.stripeCustomerId,
-      customer_update: {
-        address: 'auto',
-        name: 'auto',
-      },
-    });
+      { idempotencyKey }
+    );
   }
 
-  async cancelSubscription(userId: string): Promise<UserSubscription> {
+  async cancelSubscription(
+    idempotencyKey: string,
+    userId: string
+  ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
         id: userId,
@@ -174,7 +182,7 @@ export class SubscriptionService {
       const manager = await this.scheduleManager.fromSchedule(
         user.subscription.stripeScheduleId
       );
-      await manager.cancel();
+      await manager.cancel(idempotencyKey);
       return this.saveSubscription(
         user,
         await this.stripe.subscriptions.retrieve(
@@ -187,15 +195,17 @@ export class SubscriptionService {
       // see https://stripe.com/docs/billing/subscriptions/cancel
       const subscription = await this.stripe.subscriptions.update(
         user.subscription.stripeSubscriptionId,
-        {
-          cancel_at_period_end: true,
-        }
+        { cancel_at_period_end: true },
+        { idempotencyKey }
       );
       return await this.saveSubscription(user, subscription);
     }
   }
 
-  async resumeCanceledSubscription(userId: string): Promise<UserSubscription> {
+  async resumeCanceledSubscription(
+    idempotencyKey: string,
+    userId: string
+  ): Promise<UserSubscription> {
     const user = await this.db.user.findUnique({
       where: {
         id: userId,
@@ -221,7 +231,7 @@ export class SubscriptionService {
       const manager = await this.scheduleManager.fromSchedule(
         user.subscription.stripeScheduleId
       );
-      await manager.resume();
+      await manager.resume(idempotencyKey);
       return this.saveSubscription(
         user,
         await this.stripe.subscriptions.retrieve(
@@ -232,9 +242,8 @@ export class SubscriptionService {
     } else {
       const subscription = await this.stripe.subscriptions.update(
         user.subscription.stripeSubscriptionId,
-        {
-          cancel_at_period_end: false,
-        }
+        { cancel_at_period_end: false },
+        { idempotencyKey }
       );
 
       return await this.saveSubscription(user, subscription);
@@ -242,6 +251,7 @@ export class SubscriptionService {
   }
 
   async updateSubscriptionRecurring(
+    idempotencyKey: string,
     userId: string,
     recurring: SubscriptionRecurring
   ): Promise<UserSubscription> {
@@ -272,10 +282,12 @@ export class SubscriptionService {
     );
 
     const manager = await this.scheduleManager.fromSubscription(
+      idempotencyKey,
       user.subscription.stripeSubscriptionId
     );
 
     await manager.update(
+      idempotencyKey,
       price,
       // if user is early access user, use early access coupon
       manager.currentPhase?.coupon === CouponType.EarlyAccess ||
@@ -355,10 +367,16 @@ export class SubscriptionService {
 
     // deal with early access user
     if (stripeInvoice.discount?.coupon.id === CouponType.EarlyAccess) {
+      const idempotencyKey = stripeInvoice.id + '_earlyaccess';
       const manager = await this.scheduleManager.fromSubscription(
+        idempotencyKey,
         line.subscription as string
       );
-      await manager.update(line.price.id, CouponType.EarlyAccessRenew);
+      await manager.update(
+        idempotencyKey,
+        line.price.id,
+        CouponType.EarlyAccessRenew
+      );
     }
   }
 
@@ -530,7 +548,10 @@ export class SubscriptionService {
     }
   }
 
-  private async getOrCreateCustomer(user: User): Promise<UserStripeCustomer> {
+  private async getOrCreateCustomer(
+    idempotencyKey: string,
+    user: User
+  ): Promise<UserStripeCustomer> {
     const customer = await this.db.userStripeCustomer.findUnique({
       where: {
         userId: user.id,
@@ -550,9 +571,10 @@ export class SubscriptionService {
     if (stripeCustomersList.data.length) {
       stripeCustomer = stripeCustomersList.data[0];
     } else {
-      stripeCustomer = await this.stripe.customers.create({
-        email: user.email,
-      });
+      stripeCustomer = await this.stripe.customers.create(
+        { email: user.email },
+        { idempotencyKey }
+      );
     }
 
     return await this.db.userStripeCustomer.create({

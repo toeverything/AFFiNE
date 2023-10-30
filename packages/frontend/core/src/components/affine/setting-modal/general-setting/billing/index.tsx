@@ -21,6 +21,7 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Button, IconButton } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
+import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
@@ -89,13 +90,19 @@ const SubscriptionSettings = () => {
   });
   const [openCancelModal, setOpenCancelModal] = useState(false);
 
+  // allow replay request on network error until component unmount
+  const idempotencyKey = useMemo(() => nanoid(), []);
+
   const cancel = useCallback(() => {
-    trigger(null, {
-      onSuccess: data => {
-        mutateSubscription(data.cancelSubscription);
-      },
-    });
-  }, [trigger, mutateSubscription]);
+    trigger(
+      { idempotencyKey },
+      {
+        onSuccess: data => {
+          mutateSubscription(data.cancelSubscription);
+        },
+      }
+    );
+  }, [trigger, idempotencyKey, mutateSubscription]);
 
   const { data: pricesQueryResult } = useQuery({
     query: pricesQuery,
@@ -288,13 +295,19 @@ const ResumeSubscription = ({
     mutation: resumeSubscriptionMutation,
   });
 
+  // allow replay request on network error until component unmount
+  const idempotencyKey = useMemo(() => nanoid(), []);
+
   const resume = useCallback(() => {
-    trigger(null, {
-      onSuccess: data => {
-        onSubscriptionUpdate(data.resumeSubscription);
-      },
-    });
-  }, [trigger, onSubscriptionUpdate]);
+    trigger(
+      { idempotencyKey },
+      {
+        onSuccess: data => {
+          onSubscriptionUpdate(data.resumeSubscription);
+        },
+      }
+    );
+  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
     <Button

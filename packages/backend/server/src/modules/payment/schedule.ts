@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 
 @Injectable()
 export class ScheduleManager {
   private _schedule: Stripe.SubscriptionSchedule | null = null;
+  private readonly logger = new Logger(ScheduleManager.name);
 
   constructor(private readonly stripe: Stripe) {}
 
@@ -50,7 +51,10 @@ export class ScheduleManager {
     if (typeof schedule === 'string') {
       const s = await this.stripe.subscriptionSchedules
         .retrieve(schedule)
-        .catch(() => undefined);
+        .catch(e => {
+          this.logger.error('Failed to retrieve subscription schedule', e);
+          return undefined;
+        });
 
       return ScheduleManager.create(this.stripe, s);
     } else {
@@ -58,7 +62,10 @@ export class ScheduleManager {
     }
   }
 
-  async fromSubscription(subscription: string | Stripe.Subscription) {
+  async fromSubscription(
+    idempotencyKey: string,
+    subscription: string | Stripe.Subscription
+  ) {
     if (typeof subscription === 'string') {
       subscription = await this.stripe.subscriptions.retrieve(subscription, {
         expand: ['schedule'],
@@ -68,9 +75,10 @@ export class ScheduleManager {
     if (subscription.schedule) {
       return await this.fromSchedule(subscription.schedule);
     } else {
-      const schedule = await this.stripe.subscriptionSchedules.create({
-        from_subscription: subscription.id,
-      });
+      const schedule = await this.stripe.subscriptionSchedules.create(
+        { from_subscription: subscription.id },
+        { idempotencyKey }
+      );
 
       return await this.fromSchedule(schedule);
     }
@@ -80,7 +88,7 @@ export class ScheduleManager {
    * Cancel a subscription by marking schedule's end behavior to `cancel`.
    * At the same time, the coming phase's price and coupon will be saved to metadata for later resuming to correction subscription.
    */
-  async cancel() {
+  async cancel(idempotencyKey: string) {
     if (!this._schedule) {
       throw new Error('No schedule');
     }
@@ -111,13 +119,17 @@ export class ScheduleManager {
       };
     }
 
-    await this.stripe.subscriptionSchedules.update(this._schedule.id, {
-      phases: [phases],
-      end_behavior: 'cancel',
-    });
+    await this.stripe.subscriptionSchedules.update(
+      this._schedule.id,
+      {
+        phases: [phases],
+        end_behavior: 'cancel',
+      },
+      { idempotencyKey }
+    );
   }
 
-  async resume() {
+  async resume(idempotencyKey: string) {
     if (!this._schedule) {
       throw new Error('No schedule');
     }
@@ -156,21 +168,27 @@ export class ScheduleManager {
       });
     }
 
-    await this.stripe.subscriptionSchedules.update(this._schedule.id, {
-      phases: phases,
-      end_behavior: 'release',
-    });
+    await this.stripe.subscriptionSchedules.update(
+      this._schedule.id,
+      {
+        phases: phases,
+        end_behavior: 'release',
+      },
+      { idempotencyKey }
+    );
   }
 
-  async release() {
+  async release(idempotencyKey: string) {
     if (!this._schedule) {
       throw new Error('No schedule');
     }
 
-    await this.stripe.subscriptionSchedules.release(this._schedule.id);
+    await this.stripe.subscriptionSchedules.release(this._schedule.id, {
+      idempotencyKey,
+    });
   }
 
-  async update(price: string, coupon?: string) {
+  async update(idempotencyKey: string, price: string, coupon?: string) {
     if (!this._schedule) {
       throw new Error('No schedule');
     }
@@ -184,31 +202,37 @@ export class ScheduleManager {
       this.currentPhase.items[0].price === price &&
       (!coupon || this.currentPhase.coupon === coupon)
     ) {
-      await this.stripe.subscriptionSchedules.release(this._schedule.id);
+      await this.stripe.subscriptionSchedules.release(this._schedule.id, {
+        idempotencyKey,
+      });
       this._schedule = null;
     } else {
-      await this.stripe.subscriptionSchedules.update(this._schedule.id, {
-        phases: [
-          {
-            items: [
-              {
-                price: this.currentPhase.items[0].price as string,
-              },
-            ],
-            start_date: this.currentPhase.start_date,
-            end_date: this.currentPhase.end_date,
-          },
-          {
-            items: [
-              {
-                price: price,
-                quantity: 1,
-              },
-            ],
-            coupon,
-          },
-        ],
-      });
+      await this.stripe.subscriptionSchedules.update(
+        this._schedule.id,
+        {
+          phases: [
+            {
+              items: [
+                {
+                  price: this.currentPhase.items[0].price as string,
+                },
+              ],
+              start_date: this.currentPhase.start_date,
+              end_date: this.currentPhase.end_date,
+            },
+            {
+              items: [
+                {
+                  price: price,
+                  quantity: 1,
+                },
+              ],
+              coupon,
+            },
+          ],
+        },
+        { idempotencyKey }
+      );
     }
   }
 }

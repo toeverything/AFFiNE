@@ -85,8 +85,8 @@ export const cancelSubscriptionMutation = {
   definitionName: 'cancelSubscription',
   containsFile: false,
   query: `
-mutation cancelSubscription {
-  cancelSubscription {
+mutation cancelSubscription($idempotencyKey: String!) {
+  cancelSubscription(idempotencyKey: $idempotencyKey) {
     id
     status
     nextBillAt
@@ -133,8 +133,8 @@ export const checkoutMutation = {
   definitionName: 'checkout',
   containsFile: false,
   query: `
-mutation checkout($recurring: SubscriptionRecurring!) {
-  checkout(recurring: $recurring)
+mutation checkout($recurring: SubscriptionRecurring!, $idempotencyKey: String!) {
+  checkout(recurring: $recurring, idempotencyKey: $idempotencyKey)
 }`,
 };
 
@@ -434,8 +434,8 @@ export const resumeSubscriptionMutation = {
   definitionName: 'resumeSubscription',
   containsFile: false,
   query: `
-mutation resumeSubscription {
-  resumeSubscription {
+mutation resumeSubscription($idempotencyKey: String!) {
+  resumeSubscription(idempotencyKey: $idempotencyKey) {
     id
     status
     nextBillAt
@@ -593,8 +593,11 @@ export const updateSubscriptionMutation = {
   definitionName: 'updateSubscriptionRecurring',
   containsFile: false,
   query: `
-mutation updateSubscription($recurring: SubscriptionRecurring!) {
-  updateSubscriptionRecurring(recurring: $recurring) {
+mutation updateSubscription($recurring: SubscriptionRecurring!, $idempotencyKey: String!) {
+  updateSubscriptionRecurring(
+    recurring: $recurring
+    idempotencyKey: $idempotencyKey
+  ) {
     id
     plan
     recurring

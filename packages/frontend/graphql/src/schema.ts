@@ -131,7 +131,7 @@ export type AllBlobSizesQuery = {
 };
 
 export type CancelSubscriptionMutationVariables = Exact<{
-  [key: string]: never;
+  idempotencyKey: Scalars['String']['input'];
 }>;
 
 export type CancelSubscriptionMutation = {
@@ -178,6 +178,7 @@ export type ChangePasswordMutation = {
 
 export type CheckoutMutationVariables = Exact<{
   recurring: SubscriptionRecurring;
+  idempotencyKey: Scalars['String']['input'];
 }>;
 
 export type CheckoutMutation = { __typename?: 'Mutation'; checkout: string };
@@ -416,7 +417,7 @@ export type RemoveAvatarMutation = {
 };
 
 export type ResumeSubscriptionMutationVariables = Exact<{
-  [key: string]: never;
+  idempotencyKey: Scalars['String']['input'];
 }>;
 
 export type ResumeSubscriptionMutation = {
@@ -558,6 +559,7 @@ export type SubscriptionQuery = {
 
 export type UpdateSubscriptionMutationVariables = Exact<{
   recurring: SubscriptionRecurring;
+  idempotencyKey: Scalars['String']['input'];
 }>;
 
 export type UpdateSubscriptionMutation = {

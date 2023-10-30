@@ -189,12 +189,14 @@ export class SubscriptionResolver {
   async checkout(
     @CurrentUser() user: User,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
-    recurring: SubscriptionRecurring
+    recurring: SubscriptionRecurring,
+    @Args('idempotencyKey') idempotencyKey: string
   ) {
     const session = await this.service.createCheckoutSession({
       user,
       recurring,
       redirectUrl: `${this.config.baseUrl}/upgrade-success`,
+      idempotencyKey,
     });
 
     if (!session.url) {
@@ -217,22 +219,33 @@ export class SubscriptionResolver {
   }
 
   @Mutation(() => UserSubscriptionType)
-  async cancelSubscription(@CurrentUser() user: User) {
-    return this.service.cancelSubscription(user.id);
+  async cancelSubscription(
+    @CurrentUser() user: User,
+    @Args('idempotencyKey') idempotencyKey: string
+  ) {
+    return this.service.cancelSubscription(idempotencyKey, user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
-  async resumeSubscription(@CurrentUser() user: User) {
-    return this.service.resumeCanceledSubscription(user.id);
+  async resumeSubscription(
+    @CurrentUser() user: User,
+    @Args('idempotencyKey') idempotencyKey: string
+  ) {
+    return this.service.resumeCanceledSubscription(idempotencyKey, user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
   async updateSubscriptionRecurring(
     @CurrentUser() user: User,
     @Args({ name: 'recurring', type: () => SubscriptionRecurring })
-    recurring: SubscriptionRecurring
+    recurring: SubscriptionRecurring,
+    @Args('idempotencyKey') idempotencyKey: string
   ) {
-    return this.service.updateSubscriptionRecurring(user.id, recurring);
+    return this.service.updateSubscriptionRecurring(
+      idempotencyKey,
+      user.id,
+      recurring
+    );
   }
 }
 

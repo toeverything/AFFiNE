@@ -18,10 +18,12 @@ import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
+import { nanoid } from 'nanoid';
 import {
   type PropsWithChildren,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -303,13 +305,19 @@ const Downgrade = ({
     mutation: cancelSubscriptionMutation,
   });
 
+  // allow replay request on network error until component unmount
+  const idempotencyKey = useMemo(() => nanoid(), []);
+
   const downgrade = useCallback(() => {
-    trigger(null, {
-      onSuccess: data => {
-        onSubscriptionUpdate(data.cancelSubscription);
-      },
-    });
-  }, [trigger, onSubscriptionUpdate]);
+    trigger(
+      { idempotencyKey },
+      {
+        onSuccess: data => {
+          onSubscriptionUpdate(data.cancelSubscription);
+        },
+      }
+    );
+  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
 
   const tooltipContent = disabled
     ? t['com.affine.payment.downgraded-tooltip']()
@@ -365,6 +373,9 @@ const Upgrade = ({
 
   const newTabRef = useRef<Window | null>(null);
 
+  // allow replay request on network error until component unmount
+  const idempotencyKey = useMemo(() => nanoid(), []);
+
   const onClose = useCallback(() => {
     newTabRef.current = null;
     onSubscriptionUpdate();
@@ -381,7 +392,7 @@ const Upgrade = ({
       newTabRef.current.focus();
     } else {
       trigger(
-        { recurring },
+        { recurring, idempotencyKey },
         {
           onSuccess: data => {
             // FIXME: safari prevents from opening new tab by window api
@@ -401,7 +412,7 @@ const Upgrade = ({
         }
       );
     }
-  }, [trigger, recurring, onClose, openPaymentDisableModal]);
+  }, [openPaymentDisableModal, trigger, recurring, idempotencyKey, onClose]);
 
   useEffect(() => {
     return () => {
@@ -446,16 +457,19 @@ const ChangeRecurring = ({
     mutation: updateSubscriptionMutation,
   });
 
+  // allow replay request on network error until component unmount
+  const idempotencyKey = useMemo(() => nanoid(), []);
+
   const change = useCallback(() => {
     trigger(
-      { recurring: to },
+      { recurring: to, idempotencyKey },
       {
         onSuccess: data => {
           onSubscriptionUpdate(data.updateSubscriptionRecurring);
         },
       }
     );
-  }, [trigger, onSubscriptionUpdate, to]);
+  }, [trigger, to, idempotencyKey, onSubscriptionUpdate]);
 
   const changeCurringContent = (
     <Trans values={{ from, to, due }} className={styles.downgradeContent}>
@@ -523,13 +537,19 @@ const ResumeAction = ({
     mutation: resumeSubscriptionMutation,
   });
 
+  // allow replay request on network error until component unmount
+  const idempotencyKey = useMemo(() => nanoid(), []);
+
   const resume = useCallback(() => {
-    trigger(null, {
-      onSuccess: data => {
-        onSubscriptionUpdate(data.resumeSubscription);
-      },
-    });
-  }, [trigger, onSubscriptionUpdate]);
+    trigger(
+      { idempotencyKey },
+      {
+        onSuccess: data => {
+          onSubscriptionUpdate(data.resumeSubscription);
+        },
+      }
+    );
+  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
     <>
