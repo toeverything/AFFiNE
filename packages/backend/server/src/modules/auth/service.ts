@@ -14,7 +14,7 @@ import { nanoid } from 'nanoid';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { verifyChallengeResponse } from '../../storage';
-import { FeatureVersion_FreePlanV1 } from '../quota';
+import { Quota_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 
 export type UserClaim = Pick<
@@ -197,7 +197,7 @@ export class AuthService {
             activated: true,
             feature: {
               connect: {
-                feature_version: FeatureVersion_FreePlanV1,
+                feature_version: Quota_FreePlanV1,
               },
             },
           },
@@ -227,7 +227,7 @@ export class AuthService {
             activated: true,
             feature: {
               connect: {
-                feature_version: FeatureVersion_FreePlanV1,
+                feature_version: Quota_FreePlanV1,
               },
             },
           },

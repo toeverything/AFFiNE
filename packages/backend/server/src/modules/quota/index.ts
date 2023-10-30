@@ -18,4 +18,4 @@ export class QuotaModule {}
 
 export { QuotaManagementService, QuotaService };
 export { PrismaService } from '../../prisma';
-export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas } from './types';
+export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas, QuotaType } from './types';

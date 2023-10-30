@@ -11,7 +11,8 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
-import { FeatureType, FeatureVersion_FreePlanV1 } from '../quota';
+import { FeatureType } from '../features';
+import { Quota_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 import {
   decode,
@@ -49,7 +50,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             activated: true,
             feature: {
               connect: {
-                feature_version: FeatureVersion_FreePlanV1,
+                feature_version: Quota_FreePlanV1,
               },
             },
           },

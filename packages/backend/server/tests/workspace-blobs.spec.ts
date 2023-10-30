@@ -6,7 +6,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
-import { FeatureType, QuotaService } from '../src/modules/quota';
+import { QuotaService, QuotaType } from '../src/modules/quota';
 import {
   checkBlobSize,
   collectAllBlobSizes,
@@ -172,7 +172,7 @@ test('should be able calc quota after switch plan', async t => {
   );
   t.is(size1, 0, 'failed to check free plan blob size');
 
-  quota.switchUserQuota(u1.id, FeatureType.Quota_ProPlanV1);
+  quota.switchUserQuota(u1.id, QuotaType.Quota_ProPlanV1);
 
   const size2 = await checkBlobSize(
     app,

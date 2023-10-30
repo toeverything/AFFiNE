@@ -9,11 +9,11 @@ import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
 import {
-  FeatureType,
   QuotaManagementService,
   QuotaModule,
   Quotas,
   QuotaService,
+  QuotaType,
 } from '../src/modules/quota';
 import { PrismaModule } from '../src/prisma';
 import { StorageModule } from '../src/storage';
@@ -74,21 +74,14 @@ test('should be able to set quota', async t => {
 
   const q1 = await quota.getUserQuota(u1.id);
   t.truthy(q1, 'should have quota');
-  t.is(
-    q1?.feature.feature,
-    FeatureType.Quota_FreePlanV1,
-    'should be free plan'
-  );
+  t.is(q1?.feature.feature, QuotaType.Quota_FreePlanV1, 'should be free plan');
 
-  await quota.switchUserQuota(u1.id, FeatureType.Quota_ProPlanV1);
+  await quota.switchUserQuota(u1.id, QuotaType.Quota_ProPlanV1);
 
   const q2 = await quota.getUserQuota(u1.id);
-  t.is(q2?.feature.feature, FeatureType.Quota_ProPlanV1, 'should be pro plan');
+  t.is(q2?.feature.feature, QuotaType.Quota_ProPlanV1, 'should be pro plan');
 
-  const fail = quota.switchUserQuota(
-    u1.id,
-    'not_exists_plan_v1' as FeatureType
-  );
+  const fail = quota.switchUserQuota(u1.id, 'not_exists_plan_v1' as QuotaType);
   await t.throwsAsync(fail, { instanceOf: Error }, 'should throw error');
 });
 
@@ -100,7 +93,7 @@ test('should be able to check storage quota', async t => {
   t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
   t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
 
-  await quota.switchUserQuota(u1.id, FeatureType.Quota_ProPlanV1);
+  await quota.switchUserQuota(u1.id, QuotaType.Quota_ProPlanV1);
   const q2 = await storageQuota.getUserQuota(u1.id);
   t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
   t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
@@ -114,12 +107,12 @@ test('should be able revert quota', async t => {
   t.is(q1?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
   t.is(q1?.storageQuota, Quotas[0].configs.storageQuota, 'should be free plan');
 
-  await quota.switchUserQuota(u1.id, FeatureType.Quota_ProPlanV1);
+  await quota.switchUserQuota(u1.id, QuotaType.Quota_ProPlanV1);
   const q2 = await storageQuota.getUserQuota(u1.id);
   t.is(q2?.blobLimit, Quotas[1].configs.blobLimit, 'should be pro plan');
   t.is(q2?.storageQuota, Quotas[1].configs.storageQuota, 'should be pro plan');
 
-  await quota.switchUserQuota(u1.id, FeatureType.Quota_FreePlanV1);
+  await quota.switchUserQuota(u1.id, QuotaType.Quota_FreePlanV1);
   const q3 = await storageQuota.getUserQuota(u1.id);
   t.is(q3?.blobLimit, Quotas[0].configs.blobLimit, 'should be free plan');
 
@@ -127,17 +120,17 @@ test('should be able revert quota', async t => {
   t.is(quotas.length, 3, 'should have 3 quotas');
   t.is(
     quotas[0].feature.feature,
-    FeatureType.Quota_FreePlanV1,
+    QuotaType.Quota_FreePlanV1,
     'should be free plan'
   );
   t.is(
     quotas[1].feature.feature,
-    FeatureType.Quota_ProPlanV1,
+    QuotaType.Quota_ProPlanV1,
     'should be pro plan'
   );
   t.is(
     quotas[2].feature.feature,
-    FeatureType.Quota_FreePlanV1,
+    QuotaType.Quota_FreePlanV1,
     'should be free plan'
   );
   t.is(quotas[0].activated, false, 'should be activated');

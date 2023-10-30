@@ -11,7 +11,7 @@ import Stripe from 'stripe';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
-import { FeatureManagementService } from '../quota';
+import { FeatureManagementService } from '../features';
 import { ScheduleManager } from './schedule';
 
 const OnEvent = (

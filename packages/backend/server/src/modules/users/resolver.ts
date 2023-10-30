@@ -23,7 +23,7 @@ import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
 import { AuthService } from '../auth/service';
-import { FeatureManagementService } from '../quota';
+import { FeatureManagementService } from '../features';
 import { StorageService } from '../storage/storage.service';
 import { UsersService } from './users';
 
