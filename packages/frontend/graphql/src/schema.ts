@@ -184,7 +184,7 @@ export type CheckoutMutationVariables = Exact<{
 export type CheckoutMutation = { __typename?: 'Mutation'; checkout: string };
 
 export type CreateCustomerPortalMutationVariables = Exact<{
-  idempotencyKey: Scalars['String']['input'];
+  [key: string]: never;
 }>;
 
 export type CreateCustomerPortalMutation = {

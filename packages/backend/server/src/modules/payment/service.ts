@@ -308,7 +308,7 @@ export class SubscriptionService {
     });
   }
 
-  async createCustomerPortal(idempotencyKey: string, id: string) {
+  async createCustomerPortal(id: string) {
     const user = await this.db.userStripeCustomer.findUnique({
       where: {
         userId: id,
@@ -320,10 +320,9 @@ export class SubscriptionService {
     }
 
     try {
-      const portal = await this.stripe.billingPortal.sessions.create(
-        { customer: user.stripeCustomerId },
-        { idempotencyKey }
-      );
+      const portal = await this.stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+      });
 
       return portal.url;
     } catch (e) {

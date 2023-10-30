@@ -281,7 +281,7 @@ type Mutation {
   checkout(recurring: SubscriptionRecurring!, idempotencyKey: String!): String!
 
   """Create a stripe customer portal to manage payment methods"""
-  createCustomerPortal(idempotencyKey: String!): String!
+  createCustomerPortal: String!
   cancelSubscription(idempotencyKey: String!): UserSubscription!
   resumeSubscription(idempotencyKey: String!): UserSubscription!
   updateSubscriptionRecurring(recurring: SubscriptionRecurring!, idempotencyKey: String!): UserSubscription!

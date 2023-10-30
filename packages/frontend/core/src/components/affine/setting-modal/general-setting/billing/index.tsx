@@ -265,23 +265,13 @@ const PaymentMethodUpdater = () => {
   });
   const t = useAFFiNEI18N();
 
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
   const update = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          window.open(
-            data.createCustomerPortal,
-            '_blank',
-            'noopener noreferrer'
-          );
-        },
-      }
-    );
-  }, [idempotencyKey, trigger]);
+    trigger(null, {
+      onSuccess: data => {
+        window.open(data.createCustomerPortal, '_blank', 'noopener noreferrer');
+      },
+    });
+  }, [trigger]);
 
   return (
     <Button

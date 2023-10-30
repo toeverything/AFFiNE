@@ -144,8 +144,8 @@ export const createCustomerPortalMutation = {
   definitionName: 'createCustomerPortal',
   containsFile: false,
   query: `
-mutation createCustomerPortal($idempotencyKey: String!) {
-  createCustomerPortal(idempotencyKey: $idempotencyKey)
+mutation createCustomerPortal {
+  createCustomerPortal
 }`,
 };
 

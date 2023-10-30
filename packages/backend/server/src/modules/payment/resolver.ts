@@ -211,11 +211,8 @@ export class SubscriptionResolver {
   @Mutation(() => String, {
     description: 'Create a stripe customer portal to manage payment methods',
   })
-  async createCustomerPortal(
-    @CurrentUser() user: User,
-    @Args('idempotencyKey') idempotencyKey: string
-  ) {
-    return this.service.createCustomerPortal(idempotencyKey, user.id);
+  async createCustomerPortal(@CurrentUser() user: User) {
+    return this.service.createCustomerPortal(user.id);
   }
 
   @Mutation(() => UserSubscriptionType)
