@@ -5,7 +5,8 @@ import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
 
 // Fixme: keyboard focus should be supported by Menu component
 const LanguageMenuContent = memo(function LanguageMenuContent() {
-  const { currentLanguage, languagesList, onSelect } = useLanguageHelper();
+  const { currentLanguage, languagesList, onLanguageChange } =
+    useLanguageHelper();
   return (
     <>
       {languagesList.map(option => {
@@ -14,7 +15,7 @@ const LanguageMenuContent = memo(function LanguageMenuContent() {
             key={option.name}
             selected={currentLanguage?.originalName === option.originalName}
             title={option.name}
-            onSelect={() => onSelect(option.tag)}
+            onSelect={() => onLanguageChange(option.tag)}
           >
             {option.originalName}
           </MenuItem>

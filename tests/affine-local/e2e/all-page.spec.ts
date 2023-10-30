@@ -25,11 +25,9 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 function getAllPage(page: Page) {
-  const newPageButton = page
-    .locator('table')
-    .getByRole('button', { name: 'New Page' });
+  const newPageButton = page.getByTestId('new-page-button');
   const newPageDropdown = newPageButton.locator('svg');
-  const edgelessBlockCard = page.getByTestId('new-edgeless-button-in-all-page');
+  const edgelessBlockCard = page.getByTestId('switch-edgeless-mode-button');
 
   async function clickNewPageButton() {
     return newPageButton.click();
@@ -91,7 +89,7 @@ test('allow creation of filters by created time', async ({ page }) => {
   await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  const pages = await page.locator('[data-testid="title"]').all();
+  const pages = await page.locator('[data-testid="page-list-item"]').all();
   const pageCount = pages.length;
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Created');
@@ -123,7 +121,7 @@ test('creation of filters by created time, then click date picker to modify the 
   await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  const pages = await page.locator('[data-testid="title"]').all();
+  const pages = await page.locator('[data-testid="page-list-item"]').all();
   const pageCount = pages.length;
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Created');
@@ -176,18 +174,19 @@ test('allow creation of filters by tags', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  const pages = await page.locator('[data-testid="title"]').all();
+  const pages = await page.locator('[data-testid="page-list-item"]').all();
   const pageCount = pages.length;
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
-  const pagesWithTags = await page.locator('[data-testid="title"]').all();
+  const pagesWithTags = await page
+    .locator('[data-testid="page-list-item"]')
+    .all();
   const pagesWithTagsCount = pagesWithTags.length;
   expect(pagesWithTagsCount).not.toBe(0);
   await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
   await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
   await clickSideBarAllPageButton(page);
-  await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
   await checkPagesCount(page, pagesWithTagsCount + 2);
   await changeFilter(page, 'contains all');

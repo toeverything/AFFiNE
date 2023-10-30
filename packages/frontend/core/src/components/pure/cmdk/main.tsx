@@ -4,8 +4,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
-import { useAtom, useSetAtom } from 'jotai';
-import { Suspense, useLayoutEffect, useMemo } from 'react';
+import { useAtom } from 'jotai';
+import { Suspense, useLayoutEffect, useMemo, useState } from 'react';
 
 import {
   cmdkQueryAtom,
@@ -13,8 +13,10 @@ import {
   customCommandFilter,
   useCMDKCommandGroups,
 } from './data';
+import { HighlightLabel } from './highlight';
 import * as styles from './main.css';
 import { CMDKModal, type CMDKModalProps } from './modal';
+import { NotFoundGroup } from './not-found';
 import type { CMDKCommand } from './types';
 
 type NoParametersKeys<T> = {
@@ -52,10 +54,16 @@ const QuickSearchGroup = ({
 }) => {
   const t = useAFFiNEI18N();
   const i18nkey = categoryToI18nKey[category];
-  const setQuery = useSetAtom(cmdkQueryAtom);
+  const [query, setQuery] = useAtom(cmdkQueryAtom);
   return (
     <Command.Group key={category} heading={t[i18nkey]()}>
       {commands.map(command => {
+        const label =
+          typeof command.label === 'string'
+            ? {
+                title: command.label,
+              }
+            : command.label;
         return (
           <Command.Item
             key={command.id}
@@ -78,7 +86,7 @@ const QuickSearchGroup = ({
                 command.originalValue ? command.originalValue : undefined
               }
             >
-              {command.label}
+              <HighlightLabel highlight={query} label={label} />
             </div>
             {command.timestamp ? (
               <div className={styles.timestamp}>
@@ -126,8 +134,10 @@ export const CMDKContainer = ({
   query,
   children,
   pageMeta,
+  open,
   ...rest
 }: React.PropsWithChildren<{
+  open: boolean;
   className?: string;
   query: string;
   pageMeta?: PageMeta;
@@ -136,6 +146,24 @@ export const CMDKContainer = ({
   const t = useAFFiNEI18N();
   const [value, setValue] = useAtom(cmdkValueAtom);
   const isInEditor = pageMeta !== undefined;
+  const [opening, setOpening] = useState(open);
+
+  // fix list height animation on openning
+  useLayoutEffect(() => {
+    if (open) {
+      setOpening(true);
+      const timeout = setTimeout(() => {
+        setOpening(false);
+      }, 150);
+      return () => {
+        clearTimeout(timeout);
+      };
+    } else {
+      setOpening(false);
+    }
+    return;
+  }, [open]);
+
   return (
     <Command
       {...rest}
@@ -174,28 +202,33 @@ export const CMDKContainer = ({
           inEditor: isInEditor,
         })}
       />
-      <Command.List>{children}</Command.List>
+      <Command.List data-opening={opening ? true : undefined}>
+        {children}
+      </Command.List>
+      <NotFoundGroup />
     </Command>
   );
 };
 
 export const CMDKQuickSearchModal = ({
   pageMeta,
+  open,
   ...props
 }: CMDKModalProps & { pageMeta?: PageMeta }) => {
   const [query, setQuery] = useAtom(cmdkQueryAtom);
   useLayoutEffect(() => {
-    if (props.open) {
+    if (open) {
       setQuery('');
     }
-  }, [props.open, setQuery]);
+  }, [open, setQuery]);
   return (
-    <CMDKModal {...props}>
+    <CMDKModal open={open} {...props}>
       <CMDKContainer
         className={styles.root}
         query={query}
         onQueryChange={setQuery}
         pageMeta={pageMeta}
+        open={open}
       >
         <Suspense fallback={<Command.Loading />}>
           <QuickSearchCommands onOpenChange={props.onOpenChange} />

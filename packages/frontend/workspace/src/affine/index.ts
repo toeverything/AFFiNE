@@ -5,6 +5,7 @@ import {
   applyAwarenessUpdate,
   type Awareness,
   encodeAwarenessUpdate,
+  removeAwarenessStates,
 } from 'y-protocols/awareness';
 import type { DocDataSource } from 'y-provider';
 import type { Doc } from 'yjs';
@@ -190,6 +191,10 @@ function setupAffineAwareness(
       .catch(err => console.error(err));
   };
 
+  const windowBeforeUnloadHandler = () => {
+    removeAwarenessStates(awareness, [awareness.clientID], 'window unload');
+  };
+
   conn.on('server-awareness-broadcast', awarenessBroadcast);
   conn.on('new-client-awareness-init', newClientAwarenessInitHandler);
   awareness.on('update', awarenessUpdate);
@@ -198,9 +203,12 @@ function setupAffineAwareness(
     conn.emit('awareness-init', rootDoc.guid);
   });
 
+  window.addEventListener('beforeunload', windowBeforeUnloadHandler);
+
   return () => {
     awareness.off('update', awarenessUpdate);
     conn.off('server-awareness-broadcast', awarenessBroadcast);
     conn.off('new-client-awareness-init', newClientAwarenessInitHandler);
+    window.removeEventListener('unload', windowBeforeUnloadHandler);
   };
 }

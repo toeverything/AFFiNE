@@ -289,8 +289,8 @@ affine-block-hub {
 button,
 input,
 select,
-textarea,
-[role='button'] {
+textarea
+/* [role='button']  */ {
   -webkit-app-region: no-drag;
 }
 

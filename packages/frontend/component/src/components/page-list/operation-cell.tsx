@@ -12,14 +12,17 @@ import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { ConfirmModal } from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import { FlexWrapper } from '../../..';
+import { FavoriteTag } from './components/favorite-tag';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
+import * as styles from './page-list.css';
+import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
 
 export interface OperationCellProps {
   favorite: boolean;
   isPublic: boolean;
-  onOpenPageInNewTab: () => void;
+  link: string;
   onToggleFavoritePage: () => void;
   onRemoveToTrash: () => void;
   onDisablePublicSharing: () => void;
@@ -28,14 +31,13 @@ export interface OperationCellProps {
 export const OperationCell = ({
   favorite,
   isPublic,
-  onOpenPageInNewTab,
+  link,
   onToggleFavoritePage,
   onRemoveToTrash,
   onDisablePublicSharing,
 }: OperationCellProps) => {
   const t = useAFFiNEI18N();
   const [openDisableShared, setOpenDisableShared] = useState(false);
-
   const OperationMenu = (
     <>
       {isPublic && (
@@ -63,23 +65,38 @@ export const OperationCell = ({
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
       {!environment.isDesktop && (
-        <MenuItem
-          onClick={onOpenPageInNewTab}
-          preFix={
-            <MenuIcon>
-              <OpenInNewIcon />
-            </MenuIcon>
-          }
+        <Link
+          onClick={stopPropagationWithoutPrevent}
+          to={link}
+          target={'_blank'}
+          rel="noopener noreferrer"
         >
-          {t['com.affine.openPageOperation.newTab']()}
-        </MenuItem>
+          <MenuItem
+            style={{ marginBottom: 4 }}
+            preFix={
+              <MenuIcon>
+                <OpenInNewIcon />
+              </MenuIcon>
+            }
+          >
+            {t['com.affine.openPageOperation.newTab']()}
+          </MenuItem>
+        </Link>
       )}
       <MoveToTrash data-testid="move-to-trash" onSelect={onRemoveToTrash} />
     </>
   );
   return (
     <>
-      <FlexWrapper alignItems="center" justifyContent="center">
+      <ColWrapper
+        hideInSmallContainer
+        data-testid="page-list-item-favorite"
+        data-favorite={favorite ? true : undefined}
+        className={styles.favoriteCell}
+      >
+        <FavoriteTag onClick={onToggleFavoritePage} active={favorite} />
+      </ColWrapper>
+      <ColWrapper alignment="start">
         <Menu
           items={OperationMenu}
           contentOptions={{
@@ -90,7 +107,7 @@ export const OperationCell = ({
             <MoreVerticalIcon />
           </IconButton>
         </Menu>
-      </FlexWrapper>
+      </ColWrapper>
       <DisablePublicSharing.DisablePublicSharingModal
         onConfirm={onDisablePublicSharing}
         open={openDisableShared}
@@ -103,7 +120,6 @@ export const OperationCell = ({
 export interface TrashOperationCellProps {
   onPermanentlyDeletePage: () => void;
   onRestorePage: () => void;
-  onOpenPage: () => void;
 }
 
 export const TrashOperationCell = ({
@@ -113,9 +129,10 @@ export const TrashOperationCell = ({
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   return (
-    <FlexWrapper>
+    <ColWrapper flex={1}>
       <Tooltip content={t['com.affine.trashOperation.restoreIt']()} side="top">
         <IconButton
+          data-testid="restore-page-button"
           style={{ marginRight: '12px' }}
           onClick={() => {
             onRestorePage();
@@ -130,6 +147,7 @@ export const TrashOperationCell = ({
         align="end"
       >
         <IconButton
+          data-testid="delete-page-button"
           onClick={() => {
             setOpen(true);
           }}
@@ -152,6 +170,6 @@ export const TrashOperationCell = ({
           setOpen(false);
         }}
       />
-    </FlexWrapper>
+    </ColWrapper>
   );
 };

@@ -23,6 +23,8 @@ type UserType {
   """User password has been set"""
   hasPassword: Boolean
   token: TokenType!
+  subscription: UserSubscription
+  invoices(take: Int = 8, skip: Int): [UserInvoice!]!
 }
 
 """
@@ -53,6 +55,74 @@ type TokenType {
   token: String!
   refresh: String!
   sessionToken: String
+}
+
+type SubscriptionPrice {
+  type: String!
+  plan: SubscriptionPlan!
+  currency: String!
+  amount: Int!
+  yearlyAmount: Int!
+}
+
+enum SubscriptionPlan {
+  Free
+  Pro
+  Team
+  Enterprise
+}
+
+type UserSubscription {
+  id: String!
+  plan: SubscriptionPlan!
+  recurring: SubscriptionRecurring!
+  status: SubscriptionStatus!
+  start: DateTime!
+  end: DateTime!
+  trialStart: DateTime
+  trialEnd: DateTime
+  nextBillAt: DateTime
+  canceledAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum SubscriptionRecurring {
+  Monthly
+  Yearly
+}
+
+enum SubscriptionStatus {
+  Active
+  PastDue
+  Unpaid
+  Canceled
+  Incomplete
+  Paused
+  IncompleteExpired
+  Trialing
+}
+
+type UserInvoice {
+  id: String!
+  plan: SubscriptionPlan!
+  recurring: SubscriptionRecurring!
+  currency: String!
+  amount: Int!
+  status: InvoiceStatus!
+  reason: String!
+  lastPaymentError: String
+  link: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum InvoiceStatus {
+  Draft
+  Open
+  Void
+  Paid
+  Uncollectible
 }
 
 type InviteUserType {
@@ -166,10 +236,11 @@ type Query {
   checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 
   """Get current user"""
-  currentUser: UserType!
+  currentUser: UserType
 
   """Get user by email"""
   user(email: String!): UserType
+  prices: [SubscriptionPrice!]!
 }
 
 type Mutation {
@@ -205,6 +276,15 @@ type Mutation {
   removeAvatar: RemoveAvatar!
   deleteAccount: DeleteAccount!
   addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
+
+  """Create a subscription checkout link of stripe"""
+  checkout(recurring: SubscriptionRecurring!, idempotencyKey: String!): String!
+
+  """Create a stripe customer portal to manage payment methods"""
+  createCustomerPortal: String!
+  cancelSubscription(idempotencyKey: String!): UserSubscription!
+  resumeSubscription(idempotencyKey: String!): UserSubscription!
+  updateSubscriptionRecurring(recurring: SubscriptionRecurring!, idempotencyKey: String!): UserSubscription!
 }
 
 """The `Upload` scalar type represents a file upload."""

@@ -4,6 +4,7 @@ import {
   clickNewPageButton,
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
+  getPageByTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { waitForLogMessage } from '@affine-test/kit/utils/utils';
@@ -19,9 +20,9 @@ test('New a page and open it ,then favorite it', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   await page.getByTestId('all-pages').click();
-  const cell = page.getByRole('cell', {
-    name: 'this is a new page to favorite',
-  });
+  const cell = page
+    .getByTestId('page-list-item')
+    .getByText('this is a new page to favorite');
   expect(cell).not.toBeUndefined();
 
   await cell.click();
@@ -85,9 +86,7 @@ test('Cancel favorite', async ({ page, workspace }) => {
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   await page.getByTestId('all-pages').click();
-  const cell = page.getByRole('cell', {
-    name: 'this is a new page to favorite',
-  });
+  const cell = getPageByTitle(page, 'this is a new page to favorite');
   expect(cell).not.toBeUndefined();
 
   await cell.click();
@@ -105,9 +104,10 @@ test('Cancel favorite', async ({ page, workspace }) => {
 
   await page.getByTestId('all-pages').click();
 
-  const box = await page
-    .getByRole('cell', { name: 'this is a new page to favorite' })
-    .boundingBox();
+  const box = await getPageByTitle(
+    page,
+    'this is a new page to favorite'
+  ).boundingBox();
   //hover table record
   await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
 

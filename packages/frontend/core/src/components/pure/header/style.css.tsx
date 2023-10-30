@@ -8,7 +8,6 @@ export const header = style({
   padding: '0 16px',
   minHeight: '52px',
   background: 'var(--affine-background-primary-color)',
-  borderBottom: '1px solid var(--affine-border-color)',
   zIndex: 2,
   selectors: {
     '&[data-sidebar-floating="false"]': {
@@ -24,6 +23,10 @@ export const header = style({
     WebkitAppRegion: 'no-drag',
   },
 } as ComplexStyleRule);
+
+export const bottomBorder = style({
+  borderBottom: '1px solid var(--affine-border-color)',
+});
 
 export const headerItem = style({
   minHeight: '32px',

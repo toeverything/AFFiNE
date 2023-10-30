@@ -70,8 +70,8 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const handleOpenTrashModal = useCallback(() => {
     setTrashModal({
       open: true,
-      pageId,
-      pageTitle: pageMeta.title,
+      pageIds: [pageId],
+      pageTitles: [pageMeta.title],
     });
   }, [pageId, pageMeta.title, setTrashModal]);
 

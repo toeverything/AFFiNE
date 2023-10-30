@@ -4,6 +4,7 @@ import {
   registerAffineSettingsCommands,
 } from '@affine/core/commands';
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
+import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
@@ -12,7 +13,7 @@ import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useStore } from 'jotai';
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';
 
 export default {
@@ -43,7 +44,7 @@ function useRegisterCommands() {
           themes: ['auto', 'dark', 'light'],
         },
         languageHelper: {
-          onSelect: () => {},
+          onLanguageChange: () => {},
           languagesList: [
             { tag: 'en', name: 'English', originalName: 'English' },
             {
@@ -65,7 +66,10 @@ function useRegisterCommands() {
           isPreferredEdgeless: () => false,
         },
       }),
-      registerAffineLayoutCommands({ t, store }),
+      registerAffineLayoutCommands({
+        t,
+        store,
+      }),
     ];
 
     return () => {
@@ -98,3 +102,16 @@ export const CMDKStoryWithCommands: StoryFn = () => {
 };
 
 CMDKStoryWithCommands.decorators = [withRouter];
+
+export const HighlightStory: StoryFn = () => {
+  const [query, setQuery] = useState('');
+  const label = {
+    title: 'title',
+  };
+  return (
+    <>
+      <input value={query} onChange={e => setQuery(e.target.value)} />
+      <HighlightLabel label={label} highlight={query} />
+    </>
+  );
+};

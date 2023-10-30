@@ -15,7 +15,7 @@ export const relatedLinks = [
   },
   {
     icon: <TwitterIcon />,
-    title: 'Twitter',
+    title: 'X',
     link: 'https://twitter.com/AffineOfficial',
   },
   {

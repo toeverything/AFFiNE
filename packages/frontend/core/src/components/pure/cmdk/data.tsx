@@ -1,7 +1,6 @@
 import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
-import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
@@ -26,17 +25,17 @@ import {
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
 import groupBy from 'lodash/groupBy';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   openQuickSearchModalAtom,
   pageSettingsAtom,
   recentPageIdsBaseAtom,
 } from '../../../atoms';
+import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
-import { currentCollectionsAtom } from '../../../utils/user-setting';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 
@@ -150,19 +149,28 @@ export const pageToCommand = (
   page: PageMeta,
   store: ReturnType<typeof getCurrentStore>,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
-  t: ReturnType<typeof useAFFiNEI18N>
+  t: ReturnType<typeof useAFFiNEI18N>,
+  label?: {
+    title: string;
+    subTitle?: string;
+  }
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
-  const label = page.title || t['Untitled']();
+
+  const title = page.title || t['Untitled']();
+  const commandLabel = label || {
+    title: title,
+  };
+
   return {
     id: page.id,
-    label: label,
+    label: commandLabel,
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
     value:
-      label + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
-    originalValue: label,
+      title + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+    originalValue: title,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
@@ -179,8 +187,6 @@ export const pageToCommand = (
 const contentMatchedMagicString = '__$$content_matched$$__';
 
 export const usePageCommands = () => {
-  // todo: considering collections for searching pages
-  // const { savedCollections } = useCollectionManager(currentCollectionsAtom);
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
   const store = getCurrentStore();
@@ -203,11 +209,11 @@ export const usePageCommands = () => {
         workspace.blockSuiteWorkspace.search({ query }).values()
       ) as unknown as { space: string; content: string }[];
 
-      const pageIds = searchResults.map(id => {
-        if (id.space.startsWith('space:')) {
-          return id.space.slice(6);
+      const pageIds = searchResults.map(result => {
+        if (result.space.startsWith('space:')) {
+          return result.space.slice(6);
         } else {
-          return id.space;
+          return result.space;
         }
       });
 
@@ -215,12 +221,21 @@ export const usePageCommands = () => {
         const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
         const category =
           pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
+
+        const label = {
+          title: page.title || t['Untitled'](), // Used to ensure that a title exists
+          subTitle:
+            searchResults.find(result => result.space === page.id)?.content ||
+            '',
+        };
+
         const command = pageToCommand(
           category,
           page,
           store,
           navigationHelper,
-          t
+          t,
+          label
         );
 
         if (pageIds.includes(page.id)) {
@@ -235,14 +250,7 @@ export const usePageCommands = () => {
       if (results.every(command => command.originalValue !== query)) {
         results.push({
           id: 'affine:pages:create-page',
-          label: (
-            <Trans
-              i18nKey="com.affine.cmdk.affine.create-new-page-as"
-              values={{ query }}
-            >
-              Create New Page as: <strong>query</strong>
-            </Trans>
-          ),
+          label: `${t['com.affine.cmdk.affine.create-new-page-as']()} ${query}`,
           value: 'affine::create-page' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: async () => {
@@ -255,14 +263,9 @@ export const usePageCommands = () => {
 
         results.push({
           id: 'affine:pages:create-edgeless',
-          label: (
-            <Trans
-              values={{ query }}
-              i18nKey="com.affine.cmdk.affine.create-new-edgeless-as"
-            >
-              Create New Edgeless as: <strong>query</strong>
-            </Trans>
-          ),
+          label: `${t[
+            'com.affine.cmdk.affine.create-new-edgeless-as'
+          ]()} ${query}`,
           value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: async () => {
@@ -292,7 +295,7 @@ export const collectionToCommand = (
   collection: Collection,
   store: ReturnType<typeof getCurrentStore>,
   navigationHelper: ReturnType<typeof useNavigateHelper>,
-  selectCollection: ReturnType<typeof useCollectionManager>['selectCollection'],
+  selectCollection: (id: string) => void,
   t: ReturnType<typeof useAFFiNEI18N>
 ): CMDKCommand => {
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
@@ -326,14 +329,18 @@ export const collectionToCommand = (
 
 export const useCollectionsCommands = () => {
   // todo: considering collections for searching pages
-  const { savedCollections, selectCollection } = useCollectionManager(
-    currentCollectionsAtom
-  );
+  const { savedCollections } = useCollectionManager(collectionsCRUDAtom);
   const store = getCurrentStore();
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
-
+  const [workspace] = useCurrentWorkspace();
+  const selectCollection = useCallback(
+    (id: string) => {
+      navigationHelper.jumpToCollection(workspace.id, id);
+    },
+    [navigationHelper, workspace.id]
+  );
   return useMemo(() => {
     let results: CMDKCommand[] = [];
     if (query.trim() === '') {

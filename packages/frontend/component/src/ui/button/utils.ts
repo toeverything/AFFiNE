@@ -1,38 +1,6 @@
 import type { Theme } from '@mui/material';
 
 import type { ButtonProps } from './interface';
-import { SIZE_DEFAULT, SIZE_MIDDLE, SIZE_SMALL } from './interface';
-
-// TODO: Designer is not sure about the size, Now, is just use default size
-export const SIZE_CONFIG = {
-  [SIZE_SMALL]: {
-    iconSize: 16,
-    fontSize: 'var(--affine-font-xs)',
-    borderRadius: 8,
-    height: 28,
-    padding: 12,
-  },
-  [SIZE_MIDDLE]: {
-    iconSize: 20,
-    fontSize: 'var(--affine-font-sm)',
-    borderRadius: 8,
-    height: 32,
-    padding: 12,
-  },
-  [SIZE_DEFAULT]: {
-    iconSize: 24,
-    fontSize: 'var(--affine-font-base)',
-    height: 38,
-    padding: 24,
-    borderRadius: 8,
-  },
-} as const;
-
-export const getSize = (
-  size: typeof SIZE_SMALL | typeof SIZE_MIDDLE | typeof SIZE_DEFAULT
-) => {
-  return SIZE_CONFIG[size];
-};
 
 export const getButtonColors = (
   _theme: Theme,

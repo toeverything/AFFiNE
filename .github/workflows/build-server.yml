@@ -109,7 +109,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec ts-node-esm ./scripts/init-db.ts
+        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
@@ -180,7 +180,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec ts-node-esm ./scripts/init-db.ts
+        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
@@ -270,7 +270,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec ts-node-esm ./scripts/init-db.ts
+        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 

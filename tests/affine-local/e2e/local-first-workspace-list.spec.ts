@@ -47,15 +47,15 @@ test('create one workspace in the workspace list', async ({
   //check page list length
   await page.keyboard.press('Escape');
   await clickSideBarAllPageButton(page);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
   const pageList = page.locator('[data-testid=page-list-item]');
   const result = await pageList.count();
-  expect(result).toBe(0);
+  expect(result).toBe(13);
   await page.reload();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(4000);
   const pageList1 = page.locator('[data-testid=page-list-item]');
   const result1 = await pageList1.count();
-  expect(result1).toBe(0);
+  expect(result1).toBe(13);
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.flavour).toContain('local');

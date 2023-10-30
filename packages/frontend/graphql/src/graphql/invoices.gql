@@ -1,0 +1,16 @@
+query invoices($take: Int!, $skip: Int!) {
+  currentUser {
+    invoices(take: $take, skip: $skip) {
+      id
+      status
+      plan
+      recurring
+      currency
+      amount
+      reason
+      lastPaymentError
+      link
+      createdAt
+    }
+  }
+}

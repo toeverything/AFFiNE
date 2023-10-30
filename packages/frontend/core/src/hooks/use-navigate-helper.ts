@@ -12,6 +12,7 @@ export enum RouteLogic {
   PUSH = 'push',
 }
 
+// todo: add a name -> path helper in the results
 export function useNavigateHelper() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,6 +24,18 @@ export function useNavigateHelper() {
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
       return navigate(`/workspace/${workspaceId}/${pageId}`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+  const jumpToCollection = useCallback(
+    (
+      workspaceId: string,
+      collectionId: string,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      return navigate(`/workspace/${workspaceId}/collection/${collectionId}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -116,6 +129,7 @@ export function useNavigateHelper() {
       openPage,
       jumpToExpired,
       jumpToSignIn,
+      jumpToCollection,
     }),
     [
       jumpTo404,
@@ -126,6 +140,7 @@ export function useNavigateHelper() {
       jumpToSignIn,
       jumpToSubPath,
       openPage,
+      jumpToCollection,
     ]
   );
 }

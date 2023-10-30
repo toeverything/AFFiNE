@@ -1,4 +1,4 @@
-import { atom, useAtom } from 'jotai';
+import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
 export type DateFormats =
@@ -75,7 +75,3 @@ export const appSettingAtom = atom<
     set(appSettingBaseAtom, { ...prev, ...next });
   }
 );
-
-export const useAppSetting = () => {
-  return useAtom(appSettingAtom);
-};

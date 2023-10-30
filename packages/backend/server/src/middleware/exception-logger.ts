@@ -30,7 +30,7 @@ export class ExceptionLogger implements ExceptionFilter {
       new Error(
         `${requestId ? `requestId-${requestId}: ` : ''}${exception.message}${
           shouldVerboseLog ? '\n' + exception.stack : ''
-        }}`,
+        }`,
         { cause: exception }
       )
     );

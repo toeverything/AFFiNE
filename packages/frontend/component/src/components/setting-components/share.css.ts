@@ -86,7 +86,6 @@ globalStyle(`${settingRow} .desc`, {
   color: 'var(--affine-text-secondary-color)',
 });
 globalStyle(`${settingRow} .right-col`, {
-  width: '250px',
   display: 'flex',
   justifyContent: 'flex-end',
   paddingLeft: '15px',
@@ -116,31 +115,19 @@ globalStyle(`${storageProgressWrapper} .storage-progress-desc`, {
 globalStyle(`${storageProgressWrapper} .storage-progress-bar-wrapper`, {
   height: '8px',
   borderRadius: '4px',
-  backgroundColor: 'var(--affine-pure-black-10)',
+  backgroundColor: 'var(--affine-black-10)',
   overflow: 'hidden',
 });
 export const storageProgressBar = style({
   height: '100%',
   backgroundColor: 'var(--affine-processing-color)',
   selectors: {
-    '&.warning': {
-      // Wait for design
-      backgroundColor: '#FF7C09',
-    },
     '&.danger': {
       backgroundColor: 'var(--affine-error-color)',
     },
   },
 });
-export const storageExtendHint = style({
-  borderRadius: '4px',
-  padding: '4px 8px',
-  backgroundColor: 'var(--affine-background-secondary-color)',
-  color: 'var(--affine-text-secondary-color)',
-  fontSize: 'var(--affine-font-xs)',
-  lineHeight: '20px',
-  marginTop: 8,
-});
-globalStyle(`${storageExtendHint} a`, {
-  color: 'var(--affine-link-color)',
+
+export const storageButton = style({
+  padding: '4px 12px',
 });

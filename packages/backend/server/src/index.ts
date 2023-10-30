@@ -59,6 +59,7 @@ if (NODE_ENV === 'production') {
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
+  rawBody: true,
   bodyParser: true,
   logger:
     NODE_ENV !== 'production' || AFFINE_ENV !== 'production'
@@ -70,7 +71,8 @@ app.use(serverTimingAndCache);
 
 app.use(
   graphqlUploadExpress({
-    maxFileSize: 10 * 1024 * 1024,
+    // TODO: dynamic limit by quota
+    maxFileSize: 100 * 1024 * 1024,
     maxFiles: 5,
   })
 );

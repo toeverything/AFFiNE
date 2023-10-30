@@ -21,6 +21,7 @@ export const FavoriteTag = forwardRef<
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
+      e.preventDefault();
       onClick?.(e);
       setPlayAnimation(!active);
     },

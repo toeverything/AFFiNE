@@ -4,21 +4,14 @@ import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
-import { useCallback } from 'react';
 
-import { type AppSetting, useAppSetting } from '../../../../../atoms/settings';
+import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 import { relatedLinks } from './config';
 import { communityItem, communityWrapper, link } from './style.css';
 
 export const AboutAffine = () => {
   const t = useAFFiNEI18N();
-  const [appSettings, setAppSettings] = useAppSetting();
-  const changeSwitch = useCallback(
-    (key: keyof AppSetting, checked: boolean) => {
-      setAppSettings({ [key]: checked });
-    },
-    [setAppSettings]
-  );
+  const { appSettings, updateSettings } = useAppSettingHelper();
   return (
     <>
       <SettingHeader
@@ -47,7 +40,7 @@ export const AboutAffine = () => {
             >
               <Switch
                 checked={appSettings.autoCheckUpdate}
-                onChange={checked => changeSwitch('autoCheckUpdate', checked)}
+                onChange={checked => updateSettings('autoCheckUpdate', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -58,7 +51,7 @@ export const AboutAffine = () => {
             >
               <Switch
                 checked={appSettings.autoCheckUpdate}
-                onChange={checked => changeSwitch('autoCheckUpdate', checked)}
+                onChange={checked => updateSettings('autoCheckUpdate', checked)}
               />
             </SettingRow>
             <SettingRow

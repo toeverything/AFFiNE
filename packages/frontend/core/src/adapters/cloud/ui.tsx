@@ -11,11 +11,9 @@ import { useCurrentUser } from '../../hooks/affine/use-current-user';
 import { useIsWorkspaceOwner } from '../../hooks/affine/use-is-workspace-owner';
 import { useWorkspace } from '../../hooks/use-workspace';
 import {
-  BlockSuitePageList,
   NewWorkspaceSettingDetail,
   PageDetailEditor,
   Provider,
-  WorkspaceHeader,
 } from '../shared';
 
 const LoginCard = lazy(() =>
@@ -27,7 +25,6 @@ const LoginCard = lazy(() =>
 export const UI = {
   Provider,
   LoginCard,
-  Header: WorkspaceHeader,
   PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
     const workspace = useWorkspace(currentWorkspaceId);
     const page = workspace.blockSuiteWorkspace.getPage(currentPageId);
@@ -59,16 +56,6 @@ export const UI = {
           workspace={workspace.blockSuiteWorkspace}
         />
       </>
-    );
-  },
-  PageList: ({ blockSuiteWorkspace, onOpenPage, collection }) => {
-    return (
-      <BlockSuitePageList
-        listType="all"
-        collection={collection}
-        onOpenPage={onOpenPage}
-        blockSuiteWorkspace={blockSuiteWorkspace}
-      />
     );
   },
   NewSettingsDetail: ({

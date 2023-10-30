@@ -1,137 +1,124 @@
-import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import { useAtom } from 'jotai';
-import { atomWithReset, RESET } from 'jotai/utils';
-import type { WritableAtom } from 'jotai/vanilla';
+import type {
+  Collection,
+  DeleteCollectionInfo,
+  Filter,
+  VariableMap,
+} from '@affine/env/filter';
+import type { PageMeta } from '@blocksuite/store';
+import { type Atom, useAtom, useAtomValue } from 'jotai';
+import { atomWithReset } from 'jotai/utils';
 import { useCallback } from 'react';
 import { NIL } from 'uuid';
 
 import { evalFilterList } from './filter';
 
-const defaultCollection = {
-  id: NIL,
-  name: 'All',
-  filterList: [],
-  workspaceId: 'temporary',
+export const createEmptyCollection = (
+  id: string,
+  data?: Partial<Omit<Collection, 'id'>>
+): Collection => {
+  return {
+    id,
+    name: '',
+    mode: 'page',
+    filterList: [],
+    pages: [],
+    allowList: [],
+    ...data,
+  };
 };
-
-const collectionAtom = atomWithReset<{
-  currentId: string;
-  defaultCollection: Collection;
-}>({
-  currentId: NIL,
-  defaultCollection: defaultCollection,
+const defaultCollection: Collection = createEmptyCollection(NIL, {
+  name: 'All',
+  mode: 'rule',
 });
+const defaultCollectionAtom = atomWithReset<Collection>(defaultCollection);
+export const currentCollectionAtom = atomWithReset<string>(NIL);
 
-export type CollectionsAtom = WritableAtom<
-  Collection[] | Promise<Collection[]>,
-  [Collection[] | ((collection: Collection[]) => Collection[])],
-  Promise<void>
->;
+export type Updater<T> = (value: T) => T;
+export type CollectionUpdater = Updater<Collection>;
+export type CollectionsCRUD = {
+  addCollection: (...collections: Collection[]) => Promise<void>;
+  collections: Collection[];
+  updateCollection: (id: string, updater: CollectionUpdater) => Promise<void>;
+  deleteCollection: (
+    info: DeleteCollectionInfo,
+    ...ids: string[]
+  ) => Promise<void>;
+};
+export type CollectionsCRUDAtom = Atom<CollectionsCRUD>;
 
-export const useSavedCollections = (collectionAtom: CollectionsAtom) => {
-  const [savedCollections, setCollections] = useAtom(collectionAtom);
-
-  const saveCollection = useCallback(
-    async (collection: Collection) => {
-      if (collection.id === NIL) {
-        return;
-      }
-      await setCollections(old => [...old, collection]);
-    },
-    [setCollections]
-  );
-  const deleteCollection = useCallback(
-    async (id: string) => {
-      if (id === NIL) {
-        return;
-      }
-      await setCollections(old => old.filter(v => v.id !== id));
-    },
-    [setCollections]
-  );
+export const useSavedCollections = (collectionAtom: CollectionsCRUDAtom) => {
+  const [{ collections, addCollection, deleteCollection, updateCollection }] =
+    useAtom(collectionAtom);
   const addPage = useCallback(
     async (collectionId: string, pageId: string) => {
-      await setCollections(old => {
-        const collection = old.find(v => v.id === collectionId);
-        if (!collection) {
-          return old;
+      await updateCollection(collectionId, old => {
+        if (old.mode === 'page') {
+          return {
+            ...old,
+            pages: [pageId, ...(old.pages ?? [])],
+          };
         }
-        return [
-          ...old.filter(v => v.id !== collectionId),
-          {
-            ...collection,
-            allowList: [pageId, ...(collection.allowList ?? [])],
-          },
-        ];
+        return {
+          ...old,
+          allowList: [pageId, ...(old.allowList ?? [])],
+        };
       });
     },
-    [setCollections]
+    [updateCollection]
   );
   return {
-    savedCollections,
-    saveCollection,
+    collections,
+    addCollection,
+    updateCollection,
     deleteCollection,
     addPage,
   };
 };
 
-export const useCollectionManager = (collectionsAtom: CollectionsAtom) => {
-  const { savedCollections, saveCollection, deleteCollection, addPage } =
-    useSavedCollections(collectionsAtom);
-  const [collectionData, setCollectionData] = useAtom(collectionAtom);
-
-  const updateCollection = useCallback(
+export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
+  const {
+    collections,
+    updateCollection,
+    addCollection,
+    deleteCollection,
+    addPage,
+  } = useSavedCollections(collectionsAtom);
+  const currentCollectionId = useAtomValue(currentCollectionAtom);
+  const [defaultCollection, updateDefaultCollection] = useAtom(
+    defaultCollectionAtom
+  );
+  const update = useCallback(
     async (collection: Collection) => {
       if (collection.id === NIL) {
-        setCollectionData({
-          ...collectionData,
-          defaultCollection: collection,
-        });
+        updateDefaultCollection(collection);
       } else {
-        await saveCollection(collection);
+        await updateCollection(collection.id, () => collection);
       }
     },
-    [collectionData, saveCollection, setCollectionData]
+    [updateDefaultCollection, updateCollection]
   );
-  const selectCollection = useCallback(
-    (id: string) => {
-      setCollectionData({
-        ...collectionData,
-        currentId: id,
-      });
-    },
-    [collectionData, setCollectionData]
-  );
-  const backToAll = useCallback(() => {
-    setCollectionData(RESET);
-  }, [setCollectionData]);
   const setTemporaryFilter = useCallback(
     (filterList: Filter[]) => {
-      setCollectionData({
-        currentId: NIL,
-        defaultCollection: {
-          ...defaultCollection,
-          filterList: filterList,
-        },
+      updateDefaultCollection({
+        ...defaultCollection,
+        filterList: filterList,
       });
     },
-    [setCollectionData]
+    [updateDefaultCollection, defaultCollection]
   );
   const currentCollection =
-    collectionData.currentId === NIL
-      ? collectionData.defaultCollection
-      : savedCollections.find(v => v.id === collectionData.currentId) ??
-        collectionData.defaultCollection;
+    currentCollectionId === NIL
+      ? defaultCollection
+      : collections.find(v => v.id === currentCollectionId) ??
+        defaultCollection;
   return {
     currentCollection: currentCollection,
-    savedCollections,
-    isDefault: currentCollection.id === NIL,
+    savedCollections: collections,
+    isDefault: currentCollectionId === NIL,
 
     // actions
-    saveCollection,
-    updateCollection,
-    selectCollection,
-    backToAll,
+    createCollection: addCollection,
+    updateCollection: update,
     deleteCollection,
     addPage,
     setTemporaryFilter,
@@ -139,3 +126,25 @@ export const useCollectionManager = (collectionsAtom: CollectionsAtom) => {
 };
 export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
   evalFilterList(filterList, varMap);
+
+export const filterPage = (collection: Collection, page: PageMeta) => {
+  if (collection.mode === 'page') {
+    return collection.pages.includes(page.id);
+  }
+  return filterPageByRules(collection.filterList, collection.allowList, page);
+};
+export const filterPageByRules = (
+  rules: Filter[],
+  allowList: string[],
+  page: PageMeta
+) => {
+  if (allowList?.includes(page.id)) {
+    return true;
+  }
+  return filterByFilterList(rules, {
+    'Is Favourited': !!page.favorite,
+    Created: page.createDate,
+    Updated: page.updatedDate ?? page.createDate,
+    Tags: page.tags,
+  });
+};

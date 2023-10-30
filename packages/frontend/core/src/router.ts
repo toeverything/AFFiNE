@@ -15,6 +15,10 @@ export const routes = [
         lazy: () => import('./pages/workspace/all-page'),
       },
       {
+        path: 'collection/:collectionId',
+        lazy: () => import('./pages/workspace/collection'),
+      },
+      {
         path: 'trash',
         lazy: () => import('./pages/workspace/trash-page'),
       },
@@ -51,6 +55,10 @@ export const routes = [
   {
     path: '/open-app/:action',
     lazy: () => import('./pages/open-app'),
+  },
+  {
+    path: '/upgrade-success',
+    lazy: () => import('./pages/upgrade-success'),
   },
   {
     path: '/desktop-signin',

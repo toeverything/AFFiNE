@@ -6,7 +6,7 @@ import {
 import { useIsTinyScreen } from '@toeverything/hooks/use-is-tiny-screen';
 import clsx from 'clsx';
 import { type Atom, useAtomValue } from 'jotai';
-import type { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 import { forwardRef, useRef } from 'react';
 
 import * as style from './style.css';
@@ -14,17 +14,18 @@ import { TopTip } from './top-tip';
 import { WindowsAppControls } from './windows-app-controls';
 
 interface HeaderPros {
-  left?: ReactElement;
-  right?: ReactElement;
-  center?: ReactElement;
+  left?: ReactNode;
+  right?: ReactNode;
+  center?: ReactNode;
   mainContainerAtom: Atom<HTMLDivElement | null>;
+  bottomBorder?: boolean;
 }
 
 // The Header component is used to solve the following problems
 // 1. Manage layout issues independently of page or business logic
 // 2. Dynamic centered middle element (relative to the main-container), when the middle element is detected to collide with the two elements, the line wrapping process is performed
 export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
-  { left, center, right, mainContainerAtom },
+  { left, center, right, mainContainerAtom, bottomBorder },
   ref
 ) {
   const sidebarSwitchRef = useRef<HTMLDivElement | null>(null);
@@ -51,7 +52,7 @@ export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
     <>
       <TopTip />
       <div
-        className={style.header}
+        className={clsx(style.header, bottomBorder && style.bottomBorder)}
         // data-has-warning={showWarning}
         data-open={open}
         data-sidebar-floating={appSidebarFloating}

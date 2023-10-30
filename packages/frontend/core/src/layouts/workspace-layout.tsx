@@ -1,11 +1,12 @@
-import { Content, displayFlex } from '@affine/component';
 import {
   AppSidebarFallback,
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
 import { BlockHubWrapper } from '@affine/component/block-hub';
-import type { DraggableTitleCellData } from '@affine/component/page-list';
-import { StyledTitleLink } from '@affine/component/page-list';
+import {
+  type DraggableTitleCellData,
+  PageListDragOverlay,
+} from '@affine/component/page-list';
 import {
   MainContainer,
   ToolContainer,
@@ -38,7 +39,6 @@ import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
 import { mainContainerAtom } from '../atoms/element';
-import { useAppSetting } from '../atoms/settings';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -50,6 +50,7 @@ import {
   DROPPABLE_SIDEBAR_TRASH,
   RootAppSidebar,
 } from '../components/root-app-sidebar';
+import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -197,12 +198,9 @@ export const WorkspaceLayoutInner = ({
   const resizing = useAtomValue(appSidebarResizingAtom);
 
   const sensors = useSensors(
-    // Delay 10ms after mousedown
-    // Otherwise clicks would be intercepted
     useSensor(MouseSensor, {
       activationConstraint: {
-        delay: 500,
-        tolerance: 10,
+        distance: 10,
       },
     })
   );
@@ -230,7 +228,7 @@ export const WorkspaceLayoutInner = ({
     [moveToTrash, t]
   );
 
-  const [appSetting] = useAppSetting();
+  const { appSettings } = useAppSettingHelper();
   const location = useLocation();
   const { pageId } = useParams();
   const pageMeta = useBlockSuitePageMeta(
@@ -269,7 +267,7 @@ export const WorkspaceLayoutInner = ({
           <Suspense fallback={<MainContainer ref={setMainContainer} />}>
             <MainContainer
               ref={setMainContainer}
-              padding={appSetting.clientBorder}
+              padding={appSettings.clientBorder}
               inTrashPage={inTrashPage}
             >
               {incompatible ? <MigrationFallback /> : children}
@@ -288,34 +286,18 @@ export const WorkspaceLayoutInner = ({
 };
 
 function PageListTitleCellDragOverlay() {
-  const { active } = useDndContext();
-
+  const { active, over } = useDndContext();
   const renderChildren = useCallback(
-    ({ icon, pageTitle }: DraggableTitleCellData) => {
+    ({ pageTitle }: DraggableTitleCellData) => {
       return (
-        <StyledTitleLink>
-          {icon}
-          <Content ellipsis={true} color="inherit">
-            {pageTitle}
-          </Content>
-        </StyledTitleLink>
+        <PageListDragOverlay over={!!over}>{pageTitle}</PageListDragOverlay>
       );
     },
-    []
+    [over]
   );
 
   return (
-    <DragOverlay
-      style={{
-        zIndex: 1001,
-        backgroundColor: 'var(--affine-black-10)',
-        padding: '0 30px',
-        cursor: 'default',
-        borderRadius: 10,
-        ...displayFlex('flex-start', 'center'),
-      }}
-      dropAnimation={null}
-    >
+    <DragOverlay dropAnimation={null}>
       {active
         ? renderChildren(active.data.current as DraggableTitleCellData)
         : null}

@@ -31,6 +31,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
+      enablePayment: true,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
@@ -65,6 +66,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCloud: true,
       enableCaptcha: true,
       enableEnhanceShareMode: false,
+      enablePayment: true,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -120,6 +122,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableMoveDatabase: process.env.ENABLE_MOVE_DATABASE
       ? process.env.ENABLE_MOVE_DATABASE === 'true'
       : currentBuildPreset.enableMoveDatabase,
+    enablePayment: process.env.ENABLE_PAYMENT
+      ? process.env.ENABLE_PAYMENT !== 'false'
+      : buildFlags.mode === 'development'
+      ? true
+      : currentBuildPreset.enablePayment,
   };
 
   if (buildFlags.mode === 'development') {

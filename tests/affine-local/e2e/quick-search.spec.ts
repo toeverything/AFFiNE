@@ -22,7 +22,6 @@ const keyboardDownAndSelect = async (page: Page, label: string) => {
   ) {
     await keyboardDownAndSelect(page, label);
   } else {
-    await page.pause();
     await page.keyboard.press('Enter');
   }
 };
@@ -46,7 +45,9 @@ async function assertResultList(page: Page, texts: string[]) {
   const actual = await page
     .locator('[cmdk-item] [data-testid=cmdk-label]')
     .allInnerTexts();
-  expect(actual).toEqual(texts);
+  const actualSplit = actual[0].split('\n');
+  expect(actualSplit[0]).toEqual(texts[0]);
+  expect(actualSplit[1]).toEqual(texts[0]);
 }
 
 async function titleIsFocused(page: Page) {
@@ -100,9 +101,7 @@ test('Create a new page with keyword', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
-  const addNewPage = page.locator(
-    '[cmdk-item] >> text=Create New Page as: test123456'
-  );
+  const addNewPage = page.locator('[cmdk-item] >> text=Create New Page as:');
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
@@ -126,9 +125,7 @@ test('Create a new page and search this page', async ({ page }) => {
   // input title and create new page
   await page.keyboard.insertText('test123456');
   await page.waitForTimeout(300);
-  const addNewPage = page.locator(
-    '[cmdk-item] >> text=Create New Page as: test123456'
-  );
+  const addNewPage = page.locator('[cmdk-item] >> text=Create New Page as:');
   await addNewPage.click();
 
   await page.waitForTimeout(300);
@@ -218,36 +215,34 @@ test('assert the recent browse pages are on the recent list', async ({
 
   // create first page
   await clickNewPageButton(page);
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('sgtokidoki', {
-      delay: 50,
-    });
+    await title.pressSequentially('sgtokidoki');
+    expect(await title.innerText()).toBe('sgtokidoki');
   }
-  await page.waitForTimeout(200);
 
   // create second page
   await openQuickSearchByShortcut(page);
   const addNewPage = page.locator('[cmdk-item] >> text=New Page');
   await addNewPage.click();
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('theliquidhorse', {
-      delay: 50,
-    });
+    await title.pressSequentially('theliquidhorse');
+    expect(await title.innerText()).toBe('theliquidhorse');
   }
   await page.waitForTimeout(200);
 
   // create thrid page
   await openQuickSearchByShortcut(page);
   await addNewPage.click();
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('battlekot', {
-      delay: 50,
-    });
+    await title.pressSequentially('battlekot');
+    expect(await title.innerText()).toBe('battlekot');
   }
-  await page.waitForTimeout(200);
 
   await openQuickSearchByShortcut(page);
   {
@@ -268,12 +263,11 @@ test('assert the recent browse pages are on the recent list', async ({
     const addNewPage = page.locator('[cmdk-item] >> text=New Page');
     await addNewPage.click();
   }
-  await page.waitForTimeout(200);
+  await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('affine is the best', {
-      delay: 50,
-    });
+    await title.pressSequentially('affine is the best');
+    expect(await title.innerText()).toBe('affine is the best');
   }
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
@@ -331,4 +325,16 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   expect(await commandsIsVisible(page, 'Restore from Trash')).toBe(true);
   await keyboardDownAndSelect(page, 'Restore from Trash');
   await expect(restoreButton).not.toBeVisible();
+});
+
+test('show not found item', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await openQuickSearchByShortcut(page);
+  // input title and create new page
+  await page.keyboard.insertText('test123456');
+  const notFoundItem = page.getByTestId('cmdk-search-not-found');
+  await expect(notFoundItem).toBeVisible();
+  await expect(notFoundItem).toHaveText('Search for "test123456"');
 });

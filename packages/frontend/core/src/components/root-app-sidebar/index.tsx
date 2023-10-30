@@ -1,3 +1,4 @@
+import { AnimatedDeleteIcon } from '@affine/component';
 import {
   AddPageButton,
   AppSidebar,
@@ -10,13 +11,10 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { MoveToTrash, useCollectionManager } from '@affine/component/page-list';
+import { MoveToTrash } from '@affine/component/page-list';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  DeleteTemporarilyIcon,
-  FolderIcon,
-  SettingsIcon,
-} from '@blocksuite/icons';
+import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
@@ -26,12 +24,13 @@ import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
-import { useAppSetting } from '../../atoms/settings';
+import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
+import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/use-shortcut-commands';
 import type { AllWorkspace } from '../../shared';
-import { currentCollectionsAtom } from '../../utils/user-setting';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
@@ -100,8 +99,7 @@ export const RootAppSidebar = ({
   onOpenSettingModal,
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
-  const [appSettings] = useAppSetting();
-  const { backToAll } = useCollectionManager(currentCollectionsAtom);
+  const { appSettings } = useAppSettingHelper();
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
@@ -117,7 +115,7 @@ export const RootAppSidebar = ({
 
   const { trashModal, setTrashModal, handleOnConfirm } =
     useTrashModalHelper(blockSuiteWorkspace);
-  const deletePageTitle = trashModal.pageTitle;
+  const deletePageTitles = trashModal.pageTitles;
   const trashConfirmOpen = trashModal.open;
   const onTrashConfirmOpenChange = useCallback(
     (open: boolean) => {
@@ -129,6 +127,10 @@ export const RootAppSidebar = ({
     [trashModal, setTrashModal]
   );
 
+  const navigateHelper = useNavigateHelper();
+  const backToAll = useCallback(() => {
+    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
+  }, [currentWorkspace.id, navigateHelper]);
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
@@ -166,6 +168,7 @@ export const RootAppSidebar = ({
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
   useRegisterBlocksuiteEditorCommands(router.back, router.forward);
+  const userInfo = useDeleteCollectionInfo();
   return (
     <>
       <AppSidebar
@@ -183,7 +186,7 @@ export const RootAppSidebar = ({
           open={trashConfirmOpen}
           onConfirm={handleOnConfirm}
           onOpenChange={onTrashConfirmOpenChange}
-          title={deletePageTitle}
+          titles={deletePageTitles}
         />
         <SidebarContainer>
           <Menu
@@ -243,16 +246,16 @@ export const RootAppSidebar = ({
           </CategoryDivider>
           <FavoriteList workspace={blockSuiteWorkspace} />
           <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
-            <AddCollectionButton workspace={blockSuiteWorkspace} />
+            <AddCollectionButton />
           </CategoryDivider>
-          <CollectionsList workspace={blockSuiteWorkspace} />
+          <CollectionsList workspace={blockSuiteWorkspace} info={userInfo} />
           <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
           {/* fixme: remove the following spacer */}
           <div style={{ height: '4px' }} />
           <RouteMenuLinkItem
             ref={trashDroppable.setNodeRef}
             isDraggedOver={trashDroppable.isOver}
-            icon={<DeleteTemporarilyIcon />}
+            icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
             currentPath={currentPath}
             path={paths.trash(currentWorkspaceId)}
           >

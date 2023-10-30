@@ -1,3 +1,4 @@
+import type { DeleteCollectionInfo } from '@affine/env/filter';
 import type { Workspace } from '@blocksuite/store';
 
 export type FavoriteListProps = {
@@ -6,4 +7,5 @@ export type FavoriteListProps = {
 
 export type CollectionsListProps = {
   workspace: Workspace;
+  info: DeleteCollectionInfo;
 };

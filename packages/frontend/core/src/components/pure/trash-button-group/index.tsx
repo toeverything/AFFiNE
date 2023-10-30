@@ -10,7 +10,7 @@ import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useAppSetting } from '../../../atoms/settings';
+import { useAppSettingHelper } from '../../../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
@@ -29,7 +29,7 @@ export const TrashButtonGroup = () => {
   );
   assertExists(pageMeta);
   const t = useAFFiNEI18N();
-  const [appSettings] = useAppSetting();
+  const { appSettings } = useAppSettingHelper();
   const { jumpToSubPath } = useNavigateHelper();
   const { restoreFromTrash } = useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const restoreRef = useRef(null);

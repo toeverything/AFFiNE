@@ -18,7 +18,7 @@ export function registerAffineHelpCommands({
       id: 'affine:help-whats-new',
       category: 'affine:help',
       icon: <NewIcon />,
-      label: () => t['com.affine.cmdk.affine.whats-new'](),
+      label: t['com.affine.cmdk.affine.whats-new'](),
       run() {
         window.open(runtimeConfig.changelogUrl, '_blank');
       },
@@ -29,7 +29,7 @@ export function registerAffineHelpCommands({
       id: 'affine:help-contact-us',
       category: 'affine:help',
       icon: <ContactWithUsIcon />,
-      label: () => t['com.affine.cmdk.affine.contact-us'](),
+      label: t['com.affine.cmdk.affine.contact-us'](),
       run() {
         store.set(openSettingModalAtom, {
           open: true,
@@ -44,7 +44,7 @@ export function registerAffineHelpCommands({
       id: 'affine:help-getting-started',
       category: 'affine:help',
       icon: <UserGuideIcon />,
-      label: () => t['com.affine.cmdk.affine.getting-started'](),
+      label: t['com.affine.cmdk.affine.getting-started'](),
       preconditionStrategy: () => environment.isDesktop,
       run() {
         store.set(openOnboardingModalAtom, true);

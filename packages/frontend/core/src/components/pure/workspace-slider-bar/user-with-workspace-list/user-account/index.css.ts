@@ -3,9 +3,10 @@ import { style } from '@vanilla-extract/css';
 export const userAccountContainer = style({
   display: 'flex',
   padding: '4px 0px 4px 12px',
-  gap: '12px',
+  gap: '8px',
   alignItems: 'center',
   justifyContent: 'space-between',
+  width: '100%',
 });
 export const userEmail = style({
   fontSize: 'var(--affine-font-sm)',
@@ -14,5 +15,12 @@ export const userEmail = style({
   textOverflow: 'ellipsis',
   overflow: 'hidden',
   whiteSpace: 'nowrap',
-  maxWidth: 'calc(100% - 36px)',
+});
+
+export const leftContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  width: '100%',
+  overflow: 'hidden',
 });

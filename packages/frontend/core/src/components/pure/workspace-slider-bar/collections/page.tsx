@@ -4,7 +4,6 @@ import {
   DeleteIcon,
   EdgelessIcon,
   FilterMinusIcon,
-  FilterUndoIcon,
   MoreHorizontalIcon,
   PageIcon,
 } from '@blocksuite/icons';
@@ -32,25 +31,21 @@ import * as styles from './styles.css';
 export const PageOperations = ({
   page,
   inAllowList,
-  addToExcludeList,
   removeFromAllowList,
-  inExcludeList,
   workspace,
 }: {
   workspace: Workspace;
   page: PageMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
-  inExcludeList: boolean;
-  addToExcludeList: (id: string) => void;
 }) => {
   const t = useAFFiNEI18N();
   const { setTrashModal } = useTrashModalHelper(workspace);
   const onClickDelete = useCallback(() => {
     setTrashModal({
       open: true,
-      pageId: page.id,
-      pageTitle: page.title,
+      pageIds: [page.id],
+      pageTitles: [page.title],
     });
   }, [page.id, page.title, setTrashModal]);
   const actions = useMemo<
@@ -79,24 +74,13 @@ export const PageOperations = ({
               name: t['Remove special filter'](),
               click: () => removeFromAllowList(page.id),
             },
-          ]
-        : []),
-      ...(!inExcludeList
-        ? [
             {
-              icon: (
-                <MenuIcon>
-                  <FilterUndoIcon />
-                </MenuIcon>
+              element: (
+                <div key="divider" className={styles.menuDividerStyle}></div>
               ),
-              name: t['Exclude from filter'](),
-              click: () => addToExcludeList(page.id),
             },
           ]
         : []),
-      {
-        element: <div key="divider" className={styles.menuDividerStyle}></div>,
-      },
       {
         icon: (
           <MenuIcon>
@@ -108,15 +92,7 @@ export const PageOperations = ({
         type: 'danger',
       },
     ],
-    [
-      inAllowList,
-      t,
-      inExcludeList,
-      onClickDelete,
-      removeFromAllowList,
-      page.id,
-      addToExcludeList,
-    ]
+    [inAllowList, t, onClickDelete, removeFromAllowList, page.id]
   );
   return (
     <>
@@ -144,15 +120,11 @@ export const Page = ({
   workspace,
   allPageMeta,
   inAllowList,
-  inExcludeList,
   removeFromAllowList,
-  addToExcludeList,
 }: {
   page: PageMeta;
   inAllowList: boolean;
   removeFromAllowList: (id: string) => void;
-  inExcludeList: boolean;
-  addToExcludeList: (id: string) => void;
   workspace: Workspace;
   allPageMeta: Record<string, PageMeta>;
 }) => {
@@ -186,8 +158,6 @@ export const Page = ({
               <PageOperations
                 inAllowList={inAllowList}
                 removeFromAllowList={removeFromAllowList}
-                inExcludeList={inExcludeList}
-                addToExcludeList={addToExcludeList}
                 page={page}
                 workspace={workspace}
               />

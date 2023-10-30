@@ -1,41 +1,41 @@
 import {
-  EditCollectionModal,
+  createEmptyCollection,
   useCollectionManager,
+  useEditCollectionName,
 } from '@affine/component/page-list';
-import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PlusIcon } from '@blocksuite/icons';
-import type { Workspace } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
 import { nanoid } from 'nanoid';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
-import { useGetPageInfoById } from '../../../../hooks/use-get-page-info';
-import { currentCollectionsAtom } from '../../../../utils/user-setting';
+import { collectionsCRUDAtom } from '../../../../atoms/collections';
+import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 
-type AddCollectionButtonProps = {
-  workspace: Workspace;
-};
-
-export const AddCollectionButton = ({
-  workspace,
-}: AddCollectionButtonProps) => {
-  const getPageInfo = useGetPageInfoById(workspace);
-  const setting = useCollectionManager(currentCollectionsAtom);
+export const AddCollectionButton = () => {
+  const setting = useCollectionManager(collectionsCRUDAtom);
   const t = useAFFiNEI18N();
-  const [show, showUpdateCollection] = useState(false);
-  const [defaultCollection, setDefaultCollection] = useState<Collection>();
+  const { node, open } = useEditCollectionName({
+    title: t['com.affine.editCollection.createCollection'](),
+    showTips: true,
+  });
+  const navigateHelper = useNavigateHelper();
+  const [workspace] = useCurrentWorkspace();
   const handleClick = useCallback(() => {
-    showUpdateCollection(true);
-    setDefaultCollection({
-      id: nanoid(),
-      name: '',
-      pinned: true,
-      filterList: [],
-      workspaceId: workspace.id,
-    });
-  }, [showUpdateCollection, workspace.id]);
-
+    open('')
+      .then(name => {
+        const id = nanoid();
+        return setting
+          .createCollection(createEmptyCollection(id, { name }))
+          .then(() => {
+            navigateHelper.jumpToCollection(workspace.id, id);
+          });
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [navigateHelper, open, setting, workspace.id]);
   return (
     <>
       <IconButton
@@ -45,16 +45,7 @@ export const AddCollectionButton = ({
       >
         <PlusIcon />
       </IconButton>
-
-      <EditCollectionModal
-        propertiesMeta={workspace.meta.properties}
-        getPageInfo={getPageInfo}
-        onConfirm={setting.saveCollection}
-        open={show}
-        onOpenChange={showUpdateCollection}
-        title={t['com.affine.editCollection.saveCollection']()}
-        init={defaultCollection}
-      />
+      {node}
     </>
   );
 };

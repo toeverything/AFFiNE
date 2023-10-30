@@ -67,6 +67,6 @@ test('should be able to delete user', async t => {
         `,
     })
     .expect(200);
-  await t.throwsAsync(() => currentUser(app, user.token.token));
+  t.is(await currentUser(app, user.token.token), null);
   t.pass();
 });

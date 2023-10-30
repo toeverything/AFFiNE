@@ -4,6 +4,7 @@ import {
   clickNewPageButton,
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
+  getPageOperationButton,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
@@ -24,11 +25,7 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   });
   expect(cell).not.toBeUndefined();
 
-  await page
-    .getByTestId('more-actions-' + newPageId)
-    .getByRole('button')
-    .first()
-    .click();
+  await getPageOperationButton(page, newPageId).click();
   const deleteBtn = page.getByTestId('move-to-trash');
   await deleteBtn.click();
   const confirmTip = page.getByText('Delete page?');

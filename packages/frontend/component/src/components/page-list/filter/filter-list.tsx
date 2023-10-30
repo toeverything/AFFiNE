@@ -63,7 +63,7 @@ export const FilterList = ({
       >
         {value.length === 0 ? (
           <Button
-            icon={<PlusIcon />}
+            icon={<PlusIcon style={{ color: 'var(--affine-icon-color)' }} />}
             iconPosition="end"
             style={{ fontSize: 'var(--affine-font-xs)', padding: '0 8px' }}
           >
