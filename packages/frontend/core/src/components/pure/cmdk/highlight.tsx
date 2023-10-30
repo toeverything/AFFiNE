@@ -36,6 +36,9 @@ export const Highlight = memo(function Highlight({
   if (!regex) {
     return <span>{text}</span>;
   }
+
+  //Replacing \n part
+  text = text.replace(/(\r\n|\n|\r)/gm, '');
   const parts = text.split(regex);
 
   return (
