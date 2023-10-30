@@ -74,6 +74,11 @@ export const input = style({
     '&::placeholder': {
       color: 'var(--affine-placeholder-color)',
     },
+    '&:autofill, &:-webkit-autofill, &:-internal-autofill-selected, &:-webkit-autofill:hover, &:-webkit-autofill:focus, &:-webkit-autofill:active':
+      {
+        backgroundColor: 'var(--affine-white-10) !important',
+        ['-webkit-box-shadow' as string]: 'none !important',
+      },
     '&:disabled': {
       color: 'var(--affine-text-disable-color)',
     },
