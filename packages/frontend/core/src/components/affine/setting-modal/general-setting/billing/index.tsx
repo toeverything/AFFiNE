@@ -19,7 +19,9 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { Skeleton } from '@mui/material';
 import { Button, IconButton } from '@toeverything/components/button';
+import { Loading } from '@toeverything/components/loading';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useMemo, useState } from 'react';
@@ -63,16 +65,14 @@ export const BillingSettings = () => {
         title={t['com.affine.payment.billing-setting.title']()}
         subtitle={t['com.affine.payment.billing-setting.subtitle']()}
       />
-      {/* TODO: loading fallback */}
-      <Suspense>
+      <Suspense fallback={<SubscriptionSettingSkeleton />}>
         <SettingWrapper
           title={t['com.affine.payment.billing-setting.information']()}
         >
           <SubscriptionSettings />
         </SettingWrapper>
       </Suspense>
-      {/* TODO: loading fallback */}
-      <Suspense>
+      <Suspense fallback={<BillingHistorySkeleton />}>
         <SettingWrapper
           title={t['com.affine.payment.billing-setting.history']()}
         >
@@ -388,5 +388,30 @@ const InvoiceLine = ({
         {t['com.affine.payment.billing-setting.view-invoice']()}
       </Button>
     </SettingRow>
+  );
+};
+
+const SubscriptionSettingSkeleton = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <SettingWrapper
+      title={t['com.affine.payment.billing-setting.information']()}
+    >
+      <div className={styles.subscriptionSettingSkeleton}>
+        <Skeleton variant="rounded" height="104px" />
+        <Skeleton variant="rounded" height="46px" />
+      </div>
+    </SettingWrapper>
+  );
+};
+
+const BillingHistorySkeleton = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <SettingWrapper title={t['com.affine.payment.billing-setting.history']()}>
+      <div className={styles.billingHistorySkeleton}>
+        <Loading />
+      </div>
+    </SettingWrapper>
   );
 };
