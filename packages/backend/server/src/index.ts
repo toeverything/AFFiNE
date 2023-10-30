@@ -59,6 +59,7 @@ if (NODE_ENV === 'production') {
 
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
   cors: true,
+  rawBody: true,
   bodyParser: true,
   logger:
     NODE_ENV !== 'production' || AFFINE_ENV !== 'production'

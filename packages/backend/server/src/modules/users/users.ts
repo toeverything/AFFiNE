@@ -15,14 +15,19 @@ export class UsersService {
 
   async canEarlyAccess(email: string) {
     if (this.config.featureFlags.earlyAccessPreview && !isStaff(email)) {
-      return this.prisma.newFeaturesWaitingList
-        .findUnique({
-          where: { email, type: NewFeaturesKind.EarlyAccess },
-        })
-        .catch(() => false);
+      return this.isEarlyAccessUser(email);
     } else {
       return true;
     }
+  }
+
+  async isEarlyAccessUser(email: string) {
+    return this.prisma.newFeaturesWaitingList
+      .count({
+        where: { email, type: NewFeaturesKind.EarlyAccess },
+      })
+      .then(count => count > 0)
+      .catch(() => false);
   }
 
   async getStorageQuotaById(id: string) {

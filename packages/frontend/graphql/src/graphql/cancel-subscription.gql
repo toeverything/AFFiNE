@@ -1,0 +1,8 @@
+mutation cancelSubscription($idempotencyKey: String!) {
+  cancelSubscription(idempotencyKey: $idempotencyKey) {
+    id
+    status
+    nextBillAt
+    canceledAt
+  }
+}

@@ -17,7 +17,7 @@
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/icons": "2.1.35",
-    "@toeverything/components": "^0.0.45",
+    "@toeverything/components": "^0.0.46",
     "@vanilla-extract/css": "^1.13.0",
     "clsx": "^2.0.0",
     "idb": "^7.1.1",

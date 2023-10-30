@@ -30,6 +30,7 @@ export const runtimeFlagsSchema = z.object({
   enableCloud: z.boolean(),
   enableCaptcha: z.boolean(),
   enableEnhanceShareMode: z.boolean(),
+  enablePayment: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),

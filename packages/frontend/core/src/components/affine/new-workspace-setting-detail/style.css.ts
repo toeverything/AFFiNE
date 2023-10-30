@@ -182,3 +182,22 @@ export const workspaceLabel = style({
   lineHeight: '20px',
   whiteSpace: 'nowrap',
 });
+
+export const goUpgrade = style({
+  fontSize: 'var(--affine-font-xs)',
+  color: 'var(--affine-text-emphasis-color)',
+  cursor: 'pointer',
+  marginLeft: '4px',
+  display: 'inline',
+});
+
+export const goUpgradeWrapper = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+});
+
+export const arrowRight = style({
+  fontSize: '16px',
+  color: 'var(--affine-text-emphasis-color)',
+  cursor: 'pointer',
+});

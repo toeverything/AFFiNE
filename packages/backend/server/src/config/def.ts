@@ -363,4 +363,13 @@ export interface AFFiNEConfig {
       experimentalMergeWithJwstCodec: boolean;
     };
   };
+
+  payment: {
+    stripe: {
+      keys: {
+        APIKey: string;
+        webhookKey: string;
+      };
+    } & import('stripe').Stripe.StripeConfig;
+  };
 }

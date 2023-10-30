@@ -7,6 +7,7 @@ import {
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
+  SubscriptionPlan,
   uploadAvatarMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -14,17 +15,24 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
+import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {
   type FC,
   type MouseEvent,
   Suspense,
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 
-import { authAtom, openSignOutModalAtom } from '../../../../atoms';
+import {
+  authAtom,
+  openSettingModalAtom,
+  openSignOutModalAtom,
+} from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
@@ -124,6 +132,7 @@ export const AvatarAndName = () => {
                 <Button
                   data-testid="save-user-name"
                   onClick={handleUpdateUserName}
+                  className={style.button}
                   style={{
                     marginLeft: '12px',
                   }}
@@ -146,7 +155,21 @@ const StoragePanel = () => {
     query: allBlobSizesQuery,
   });
 
-  const onUpgrade = useCallback(() => {}, []);
+  const [subscription] = useUserSubscription();
+  const plan = subscription?.plan ?? SubscriptionPlan.Free;
+
+  const maxLimit = useMemo(() => {
+    return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
+  }, [plan]);
+
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const onUpgrade = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      workspaceId: null,
+    });
+  }, [setSettingModalAtom]);
 
   return (
     <SettingRow
@@ -155,7 +178,8 @@ const StoragePanel = () => {
       spreadCol={false}
     >
       <StorageProgress
-        max={10737418240}
+        max={maxLimit}
+        plan={plan}
         value={data.collectAllBlobSizes.size}
         onUpgrade={onUpgrade}
       />
@@ -200,7 +224,7 @@ export const AccountSetting: FC = () => {
       />
       <AvatarAndName />
       <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
-        <Button onClick={onChangeEmail}>
+        <Button onClick={onChangeEmail} className={style.button}>
           {t['com.affine.settings.email.action']()}
         </Button>
       </SettingRow>
@@ -208,7 +232,7 @@ export const AccountSetting: FC = () => {
         name={t['com.affine.settings.password']()}
         desc={t['com.affine.settings.password.message']()}
       >
-        <Button onClick={onPasswordButtonClick}>
+        <Button onClick={onPasswordButtonClick} className={style.button}>
           {user.hasPassword
             ? t['com.affine.settings.password.action.change']()
             : t['com.affine.settings.password.action.set']()}

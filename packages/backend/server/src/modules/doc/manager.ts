@@ -2,7 +2,6 @@ import {
   Inject,
   Injectable,
   Logger,
-  OnApplicationBootstrap,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
@@ -14,7 +13,6 @@ import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
-import { DocID } from '../../utils/doc';
 
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   if (yBinary.equals(jwstBinary)) {
@@ -44,9 +42,7 @@ const MAX_SEQ_NUM = 0x3fffffff; // u31
  * along side all the updates that have not been applies to that snapshot(timestamp).
  */
 @Injectable()
-export class DocManager
-  implements OnModuleInit, OnModuleDestroy, OnApplicationBootstrap
-{
+export class DocManager implements OnModuleInit, OnModuleDestroy {
   protected logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
   private seqMap = new Map<string, number>();
@@ -59,12 +55,6 @@ export class DocManager
     protected readonly config: Config,
     protected readonly metrics: Metrics
   ) {}
-
-  async onApplicationBootstrap() {
-    if (!this.config.node.test) {
-      await this.refreshDocGuid();
-    }
-  }
 
   onModuleInit() {
     if (this.automation) {
@@ -264,15 +254,15 @@ export class DocManager
    * get pending updates
    */
   async getUpdates(workspaceId: string, guid: string) {
-    return this.db.update.findMany({
+    const updates = await this.db.update.findMany({
       where: {
         workspaceId,
         id: guid,
       },
-      orderBy: {
-        seq: 'asc',
-      },
     });
+
+    // perf(memory): avoid sorting in db
+    return updates.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
   }
 
   /**
@@ -419,58 +409,6 @@ export class DocManager
       const last = this.seqMap.get(workspaceId + guid) ?? 0;
       this.seqMap.set(workspaceId + guid, last + 1);
       return last + 1;
-    }
-  }
-
-  /**
-   * deal with old records that has wrong guid format
-   * correct guid with `${non-wsId}:${variant}:${subId}` to `${subId}`
-   *
-   * @TODO delete in next release
-   * @deprecated
-   */
-  private async refreshDocGuid() {
-    let turn = 0;
-    let lastTurnCount = 100;
-    while (lastTurnCount === 100) {
-      const docs = await this.db.snapshot.findMany({
-        select: {
-          workspaceId: true,
-          id: true,
-        },
-        skip: turn * 100,
-        take: 100,
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
-
-      lastTurnCount = docs.length;
-      for (const doc of docs) {
-        const docId = new DocID(doc.id, doc.workspaceId);
-
-        if (docId && !docId.isWorkspace && docId.guid !== doc.id) {
-          await this.db.snapshot.deleteMany({
-            where: {
-              id: docId.guid,
-              workspaceId: doc.workspaceId,
-            },
-          });
-          await this.db.snapshot.update({
-            where: {
-              id_workspaceId: {
-                id: doc.id,
-                workspaceId: doc.workspaceId,
-              },
-            },
-            data: {
-              id: docId.guid,
-            },
-          });
-        }
-      }
-
-      turn++;
     }
   }
 }

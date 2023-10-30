@@ -39,3 +39,7 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   color: 'var(--affine-white)',
   fontSize: 'var(--affine-font-h-4)',
 });
+
+export const button = style({
+  padding: '4px 12px',
+});

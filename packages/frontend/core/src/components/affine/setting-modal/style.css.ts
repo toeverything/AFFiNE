@@ -3,20 +3,23 @@ import { style } from '@vanilla-extract/css';
 export const wrapper = style({
   flexGrow: '1',
   height: '100%',
-  maxWidth: '560px',
-  margin: '0 auto',
-  padding: '40px 15px 20px 15px',
-  overflow: 'hidden auto',
 
-  // children
+  // margin: '0 auto',
+  padding: '40px 15px 20px 15px',
+  overflowX: 'hidden',
+  overflowY: 'auto',
+
   display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  justifyContent: 'center',
 
   '::-webkit-scrollbar': {
     display: 'none',
   },
+});
+
+export const centerContainer = style({
+  width: '100%',
+  maxWidth: '560px',
 });
 
 export const content = style({
