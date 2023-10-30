@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       flavor:
-        description: 'Build type (canary, beta, internal or stable)'
+        description: 'Build type (canary, beta, or stable)'
         type: string
         default: canary
 
@@ -40,7 +40,6 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +67,6 @@ jobs:
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
 
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +88,6 @@ jobs:
   build-storage-arm64:
     name: Build Storage arm64
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
 
     steps:
       - uses: actions/checkout@v4
@@ -112,7 +109,6 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
     needs:
       - build-server
       - build-core
