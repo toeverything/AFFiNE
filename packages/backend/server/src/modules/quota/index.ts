@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PermissionService } from '../workspaces/permission';
-import { FeatureService, FeatureType, Quotas, QuotaService } from './configure';
-import { FeatureManagementService } from './feature';
+import { QuotaService } from './quota';
 import { QuotaManagementService } from './storage';
 
 /**
@@ -12,28 +11,11 @@ import { QuotaManagementService } from './storage';
  * - quota statistics
  */
 @Module({
-  providers: [
-    PermissionService,
-    FeatureService,
-    QuotaService,
-    FeatureManagementService,
-    QuotaManagementService,
-  ],
-  exports: [
-    FeatureService,
-    FeatureManagementService,
-    QuotaService,
-    QuotaManagementService,
-  ],
+  providers: [PermissionService, QuotaService, QuotaManagementService],
+  exports: [QuotaService, QuotaManagementService],
 })
 export class QuotaModule {}
 
-export {
-  FeatureManagementService,
-  FeatureService,
-  FeatureType,
-  QuotaManagementService,
-  Quotas,
-  QuotaService,
-};
-export { FeatureVersion_FreePlanV1, FeatureVersion_ProPlanV1 } from './preload';
+export { QuotaManagementService, QuotaService };
+export { PrismaService } from '../../prisma';
+export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas } from './types';

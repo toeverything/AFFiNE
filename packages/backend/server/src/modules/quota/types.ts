@@ -1,3 +1,5 @@
+import { CommonFeature, FeatureKind } from '../features';
+
 export enum QuotaType {
   Quota_FreePlanV1 = 'free_plan_v1',
   Quota_ProPlanV1 = 'pro_plan_v1',
@@ -36,3 +38,15 @@ export const Quotas: Quota[] = [
     },
   },
 ];
+
+// ======== payload ========
+
+export const Quota_FreePlanV1 = {
+  feature: Quotas[0].feature,
+  version: Quotas[0].version,
+};
+
+export const Quota_ProPlanV1 = {
+  feature: Quotas[1].feature,
+  version: Quotas[1].version,
+};

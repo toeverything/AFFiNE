@@ -20,3 +20,14 @@ export type Feature = CommonFeature & {
 export enum FeatureType {
   Feature_EarlyAccess = 'early_access',
 }
+
+export const Features: Feature[] = [
+  {
+    feature: FeatureType.Feature_EarlyAccess,
+    type: FeatureKind.Feature,
+    version: 1,
+    configs: {
+      whitelist: ['@toeverything.info'],
+    },
+  },
+];

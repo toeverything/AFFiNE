@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { Config } from '../../config';
-import { PrismaService } from '../../prisma';
 import { FeatureService } from './configure';
-import { FeatureType } from './types';
+import { FeatureType, PrismaService } from './index';
 
 export enum NewFeaturesKind {
   EarlyAccess,

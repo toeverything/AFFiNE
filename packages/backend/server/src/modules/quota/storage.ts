@@ -8,7 +8,7 @@ import {
 
 import { StorageProvide } from '../../storage';
 import { PermissionService } from '../workspaces/permission';
-import { QuotaService } from './configure';
+import { QuotaService } from './quota';
 
 @Injectable()
 export class QuotaManagementService {

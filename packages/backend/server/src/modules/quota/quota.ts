@@ -1,21 +1,12 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FeatureService } from './feature';
+import { FeatureKind } from '../features';
 import { PrismaService } from './index';
-import { FeatureKind, FeatureType, Quota, Quotas } from './types';
+import { Quota, QuotaType } from './types';
 
 @Injectable()
-export class QuotaService implements OnModuleInit {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly features: FeatureService
-  ) {}
-
-  async onModuleInit() {
-    for (const quota of Quotas) {
-      await this.features.upsertFeature(quota);
-    }
-  }
+export class QuotaService {
+  constructor(private readonly prisma: PrismaService) {}
 
   // get activated user quota
   async getUserQuota(userId: string) {
@@ -80,14 +71,14 @@ export class QuotaService implements OnModuleInit {
   // currently each user can only have one quota
   async switchUserQuota(
     userId: string,
-    quota: FeatureType,
+    quota: QuotaType,
     reason?: string,
     expiredAt?: Date
   ) {
     await this.prisma.$transaction(async tx => {
       const latestFreePlan = await tx.features.aggregate({
         where: {
-          feature: FeatureType.Quota_FreePlanV1,
+          feature: QuotaType.Quota_FreePlanV1,
         },
         _max: {
           version: true,
@@ -132,7 +123,7 @@ export class QuotaService implements OnModuleInit {
     });
   }
 
-  async hasQuota(userId: string, quota: FeatureType) {
+  async hasQuota(userId: string, quota: QuotaType) {
     return this.prisma.userFeatures
       .count({
         where: {

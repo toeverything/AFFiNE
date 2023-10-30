@@ -44,7 +44,13 @@ async function upsertFeature(
 })
 export class FeatureModule {}
 
-export { CommonFeature, Feature, FeatureKind, FeatureType } from './types';
+export {
+  CommonFeature,
+  Feature,
+  FeatureKind,
+  Features,
+  FeatureType,
+} from './types';
 export {
   FeatureManagementService,
   FeatureService,
