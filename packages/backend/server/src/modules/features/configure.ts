@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
-import { FeatureKind, FeatureType } from './types';
+import { Feature, FeatureKind, FeatureType } from './types';
 
 @Injectable()
 export class FeatureService {
@@ -108,19 +108,30 @@ export class FeatureService {
   }
 
   async getUserFeatures(userId: string) {
-    const userFeatures = await this.prisma.userFeatures.findMany({
+    const features = await this.prisma.userFeatures.findMany({
       where: {
         user: { id: userId },
-        activated: true,
         feature: {
           type: FeatureKind.Feature,
         },
       },
       select: {
-        feature: true,
+        activated: true,
+        reason: true,
+        createdAt: true,
+        expiredAt: true,
+        feature: {
+          select: {
+            feature: true,
+            configs: true,
+          },
+        },
       },
     });
-    return userFeatures.map(userFeature => userFeature.feature);
+    return features as typeof features &
+      {
+        feature: Pick<Feature, 'feature' | 'configs'>;
+      }[];
   }
 
   async listFeatureUsers(feature: FeatureType) {
