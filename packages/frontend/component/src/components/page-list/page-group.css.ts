@@ -52,8 +52,9 @@ export const header = style({
   padding: '0px 16px 0px 6px',
   gap: 4,
   height: '28px',
+  background: 'var(--affine-background-primary-color)',
   ':hover': {
-    background: 'var(--affine-hover-color)',
+    background: 'var(--affine-hover-color-filled)',
   },
   userSelect: 'none',
 });

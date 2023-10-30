@@ -2,6 +2,7 @@ import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { PageMeta } from '@blocksuite/store';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
+import { createIsolation } from 'jotai-scope';
 
 import { pagesToPageGroups } from './page-group';
 import type { PageListProps, PageMetaRecord } from './types';
@@ -38,6 +39,10 @@ export const selectionStateAtom = atom(
     set(selectionActiveAtom, active);
   }
 );
+
+// id -> isCollapsed
+// maybe reset on page on unmount?
+export const pageGroupCollapseStateAtom = atom<Record<string, boolean>>({});
 
 // get handlers from pageListPropsAtom
 export const pageListHandlersAtom = selectAtom(pageListPropsAtom, props => {
@@ -177,3 +182,10 @@ export const pageGroupsAtom = atom(get => {
   }
   return pagesToPageGroups(sorter.pages, groupBy);
 });
+
+export const {
+  Provider: PageListProvider,
+  useAtom,
+  useAtomValue,
+  useSetAtom,
+} = createIsolation();

@@ -6,7 +6,6 @@ import {
   OperationCell,
   PageList,
   type PageListHandle,
-  PageListScrollContainer,
   useCollectionManager,
 } from '@affine/component/page-list';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
@@ -297,37 +296,32 @@ export const AllPage = () => {
           }
         />
       ) : null}
-      <PageListScrollContainer
-        ref={containerRef}
-        className={styles.scrollContainer}
-      >
-        <PageListHeader />
-        {filteredPageMetas.length > 0 ? (
-          <>
-            <PageList
-              ref={pageListRef}
-              selectable="toggle"
-              draggable
-              selectedPageIds={filteredSelectedPageIds}
-              onSelectedPageIdsChange={setSelectedPageIds}
-              pages={filteredPageMetas}
-              clickMode="link"
-              isPreferredEdgeless={isPreferredEdgeless}
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              pageOperationsRenderer={pageOperationsRenderer}
-            />
-            <PageListFloatingToolbar
-              selectedIds={filteredSelectedPageIds}
-              onClose={deselectAllAndToggleSelect}
-            />
-          </>
-        ) : (
-          <EmptyPageList
-            type="all"
+      {filteredPageMetas.length > 0 ? (
+        <>
+          <PageList
+            ref={pageListRef}
+            selectable="toggle"
+            draggable
+            heading={<PageListHeader />}
+            selectedPageIds={filteredSelectedPageIds}
+            onSelectedPageIdsChange={setSelectedPageIds}
+            pages={filteredPageMetas}
+            clickMode="link"
+            isPreferredEdgeless={isPreferredEdgeless}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            pageOperationsRenderer={pageOperationsRenderer}
           />
-        )}
-      </PageListScrollContainer>
+          <PageListFloatingToolbar
+            selectedIds={filteredSelectedPageIds}
+            onClose={deselectAllAndToggleSelect}
+          />
+        </>
+      ) : (
+        <EmptyPageList
+          type="all"
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        />
+      )}
     </div>
   );
 };

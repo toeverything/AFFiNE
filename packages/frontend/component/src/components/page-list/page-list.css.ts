@@ -7,6 +7,7 @@ export const listRootContainer = createContainer('list-root-container');
 export const pageListScrollContainer = style({
   overflowY: 'auto',
   width: '100%',
+  flex: 1,
 });
 
 export const root = style({
@@ -23,7 +24,9 @@ export const groupsContainer = style({
   rowGap: '16px',
 });
 
-export const header = style({
+export const heading = style({});
+
+export const tableHeader = style({
   display: 'flex',
   alignItems: 'center',
   padding: '10px 6px 10px 16px',
@@ -37,7 +40,7 @@ export const header = style({
   transform: 'translateY(-0.5px)', // fix sticky look through issue
 });
 
-globalStyle(`[data-has-scroll-top=true] ${header}`, {
+globalStyle(`[data-has-scroll-top=true] ${tableHeader}`, {
   boxShadow: '0 1px var(--affine-border-color)',
 });
 
