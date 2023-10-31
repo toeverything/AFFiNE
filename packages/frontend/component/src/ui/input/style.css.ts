@@ -74,6 +74,14 @@ export const input = style({
     '&::placeholder': {
       color: 'var(--affine-placeholder-color)',
     },
+    '&:autofill, &:-webkit-autofill, &:-internal-autofill-selected, &:-webkit-autofill:hover, &:-webkit-autofill:focus, &:-webkit-autofill:active':
+      {
+        // The reason for using ‘!important’ here is:
+        // The user agent style sheets of many browsers utilise !important in their :-webkit-autofill style declarations.
+        // https://developer.mozilla.org/en-US/docs/Web/CSS/:autofill#:~:text=%2C%20254)-,!important,-%3B%0Abackground%2Dimage
+        backgroundColor: 'var(--affine-white-10) !important',
+        ['-webkit-box-shadow' as string]: 'none !important',
+      },
     '&:disabled': {
       color: 'var(--affine-text-disable-color)',
     },
