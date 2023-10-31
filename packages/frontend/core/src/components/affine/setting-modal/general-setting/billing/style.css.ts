@@ -51,3 +51,17 @@ export const currentPlanName = style({
 export const button = style({
   padding: '4px 12px',
 });
+
+export const subscriptionSettingSkeleton = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '24px',
+});
+
+export const billingHistorySkeleton = style({
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: '72px',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
