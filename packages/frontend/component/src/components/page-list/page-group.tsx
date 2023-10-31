@@ -8,7 +8,6 @@ import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import { isEqual } from 'lodash-es';
 import { type MouseEventHandler, useCallback, useMemo, useState } from 'react';
 
 import { PagePreview } from './page-content-preview';
@@ -186,15 +185,11 @@ type RequiredProps = Pick<PageListProps, (typeof requiredPropNames)[number]> & {
   selectable: boolean;
 };
 
-const listPropsAtom = selectAtom(
-  pageListPropsAtom,
-  props => {
-    return Object.fromEntries(
-      requiredPropNames.map(name => [name, props[name]])
-    ) as RequiredProps;
-  },
-  isEqual
-);
+const listPropsAtom = selectAtom(pageListPropsAtom, props => {
+  return Object.fromEntries(
+    requiredPropNames.map(name => [name, props[name]])
+  ) as RequiredProps;
+});
 
 const PageMetaListItemRenderer = (pageMeta: PageMeta) => {
   const props = useAtomValue(listPropsAtom);
