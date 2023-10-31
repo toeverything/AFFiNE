@@ -1,0 +1,28 @@
+{
+  "name": "@affine/slackbot-plugin",
+  "type": "module",
+  "private": true,
+  "description": "slack bot plugin",
+  "version": "0.10.0-canary.3",
+  "scripts": {
+    "dev": "af dev",
+    "build": "af build"
+  },
+  "affinePlugin": {
+    "release": "development",
+    "entry": {
+      "core": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/sdk": "workspace:*",
+    "@blocksuite/icons": "2.1.35",
+    "@toeverything/components": "^0.0.46"
+  },
+  "devDependencies": {
+    "@affine/plugin-cli": "workspace:*",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  }
+}

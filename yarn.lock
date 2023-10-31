@@ -756,6 +756,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/slackbot-plugin@workspace:packages/plugins/slackbot":
+  version: 0.0.0-use.local
+  resolution: "@affine/slackbot-plugin@workspace:packages/plugins/slackbot"
+  dependencies:
+    "@affine/component": "workspace:*"
+    "@affine/plugin-cli": "workspace:*"
+    "@affine/sdk": "workspace:*"
+    "@blocksuite/icons": "npm:2.1.35"
+    "@toeverything/components": "npm:^0.0.46"
+    react: "npm:18.2.0"
+    react-dom: "npm:18.2.0"
+  languageName: unknown
+  linkType: soft
+
 "@affine/storage@workspace:*, @affine/storage@workspace:packages/backend/storage":
   version: 0.0.0-use.local
   resolution: "@affine/storage@workspace:packages/backend/storage"

@@ -12,6 +12,7 @@ export const builtinPluginPaths = new Set([
   '/plugins/image-preview',
   '/plugins/vue-hello-world',
   '/plugins/outline',
+  '/plugins/slackbot',
 ]);
 
 const pluginCleanupMap = new Map<string, Set<() => void>>();
@@ -43,6 +44,7 @@ export const pluginPackageJson = atom<
 export const enabledPluginAtom = atomWithStorage('affine-enabled-plugin', [
   '@affine/image-preview-plugin',
   '@affine/outline-plugin',
+  '@affine/slackbot-plugin',
 ]);
 
 export const pluginHeaderItemAtom = atom<
