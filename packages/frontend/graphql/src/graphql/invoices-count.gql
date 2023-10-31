@@ -1,0 +1,5 @@
+query getInvoicesCount {
+  currentUser {
+    invoiceCount
+  }
+}
