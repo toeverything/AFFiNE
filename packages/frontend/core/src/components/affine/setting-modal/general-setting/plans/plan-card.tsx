@@ -375,7 +375,7 @@ const Upgrade = ({
   const newTabRef = useRef<Window | null>(null);
 
   // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
+  const idempotencyKey = useMemo(() => `${nanoid()}-${recurring}`, [recurring]);
 
   const onClose = useCallback(() => {
     newTabRef.current = null;
