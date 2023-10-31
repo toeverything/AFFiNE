@@ -359,6 +359,19 @@ query getWorkspaces {
 }`,
 };
 
+export const getInvoicesCountQuery = {
+  id: 'getInvoicesCountQuery' as const,
+  operationName: 'getInvoicesCount',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getInvoicesCount {
+  currentUser {
+    invoiceCount
+  }
+}`,
+};
+
 export const invoicesQuery = {
   id: 'invoicesQuery' as const,
   operationName: 'invoices',

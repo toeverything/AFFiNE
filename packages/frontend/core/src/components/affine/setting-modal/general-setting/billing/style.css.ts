@@ -2,7 +2,15 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 export const subscription = style({});
 
-export const billingHistory = style({});
+export const history = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '24px',
+});
+export const historyContent = style({
+  width: '100%',
+});
 
 export const planCard = style({
   display: 'flex',
