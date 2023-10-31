@@ -5,8 +5,10 @@ import { selectAtom } from 'jotai/utils';
 import {
   type ForwardedRef,
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
+  useState,
 } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -182,10 +184,22 @@ const PageListInner = ({
   );
 
   const virtuosoItems = useAtomValue(virtuosoItemsAtom);
+
+  const [atTop, setAtTop] = useState(false);
+
+  const handleAtTopStateChange = useCallback(
+    (atTop: boolean) => {
+      setAtTop(atTop);
+      atTopStateChange?.(atTop);
+    },
+    [atTopStateChange]
+  );
+
   return (
     <Virtuoso<VirtuosoItem>
-      atTopThreshold={atTopThreshold}
-      atTopStateChange={atTopStateChange}
+      data-has-scroll-top={!atTop}
+      atTopThreshold={atTopThreshold ?? 0}
+      atTopStateChange={handleAtTopStateChange}
       components={{
         Header: props.heading ? PageListHeading : undefined,
       }}

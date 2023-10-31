@@ -26,7 +26,6 @@ import clsx from 'clsx';
 import {
   type PropsWithChildren,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -244,7 +243,6 @@ export const AllPage = () => {
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const pageListRef = useRef<PageListHandle>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const deselectAllAndToggleSelect = useCallback(() => {
     setSelectedPageIds([]);
     pageListRef.current?.toggleSelectable();
@@ -256,24 +254,7 @@ export const AllPage = () => {
     return selectedPageIds.filter(id => ids.includes(id));
   }, [filteredPageMetas, selectedPageIds]);
 
-  const [showHeaderCreateNewPage, setShowHeaderCreateNewPage] = useState(false);
-  // when PageListScrollContainer scrolls above 40px, show the create new page button on header
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      const handleScroll = () => {
-        setTimeout(() => {
-          const scrollTop = container.scrollTop ?? 0;
-          setShowHeaderCreateNewPage(scrollTop > 40);
-        });
-      };
-      container.addEventListener('scroll', handleScroll);
-      return () => {
-        container.removeEventListener('scroll', handleScroll);
-      };
-    }
-    return;
-  }, []);
+  const [hideHeaderCreateNewPage, setHideHeaderCreateNewPage] = useState(true);
 
   return (
     <div className={styles.root}>
@@ -288,7 +269,7 @@ export const AllPage = () => {
               size="small"
               className={clsx(
                 styles.headerCreateNewButton,
-                !showHeaderCreateNewPage && styles.headerCreateNewButtonHidden
+                hideHeaderCreateNewPage && styles.headerCreateNewButtonHidden
               )}
             >
               <PlusIcon />
@@ -302,6 +283,8 @@ export const AllPage = () => {
             ref={pageListRef}
             selectable="toggle"
             draggable
+            atTopThreshold={80}
+            atTopStateChange={setHideHeaderCreateNewPage}
             heading={<PageListHeader />}
             selectedPageIds={filteredSelectedPageIds}
             onSelectedPageIdsChange={setSelectedPageIds}
