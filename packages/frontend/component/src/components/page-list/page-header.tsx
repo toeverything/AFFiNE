@@ -2,14 +2,12 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MultiSelectIcon, SortDownIcon, SortUpIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
-import { selectAtom } from 'jotai/utils';
 import {
   type MouseEventHandler,
   type ReactNode,
   useCallback,
   useMemo,
 } from 'react';
-import { type TopItemListProps } from 'react-virtuoso';
 
 import { Checkbox, type CheckboxProps } from '../../ui/checkbox';
 import * as styles from './page-list.css';
@@ -200,26 +198,4 @@ export const PageListTableHeader = () => {
       })}
     </div>
   );
-};
-
-// for GroupedVirtuoso.components.TopItemList
-export const PageListTopItemListHeader = ({
-  style,
-  children,
-}: TopItemListProps) => {
-  return (
-    <div style={style}>
-      <div style={{ position: 'absolute', top: 0, width: '100%' }}>
-        {children}
-      </div>
-      <PageListTableHeader />
-    </div>
-  );
-};
-
-const headingAtom = selectAtom(pageListPropsAtom, props => props.heading);
-
-export const PageListHeading = () => {
-  const heading = useAtomValue(headingAtom);
-  return <div className={styles.heading}>{heading}</div>;
 };

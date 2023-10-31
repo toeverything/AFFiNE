@@ -5,12 +5,18 @@ import { selectAtom } from 'jotai/utils';
 import { createIsolation } from 'jotai-scope';
 
 import { pagesToPageGroups } from './page-group';
-import type { PageListProps, PageMetaRecord } from './types';
+import type {
+  PageListProps,
+  PageMetaRecord,
+  VirtualizedPageListProps,
+} from './types';
 
 // for ease of use in the component tree
 // note: must use selectAtom to access this atom for efficiency
 // @ts-expect-error the error is expected but we will assume the default value is always there by using useHydrateAtoms
-export const pageListPropsAtom = atom<PageListProps>();
+export const pageListPropsAtom = atom<
+  PageListProps & Partial<VirtualizedPageListProps>
+>();
 
 // whether or not the table is in selection mode (showing selection checkbox & selection floating bar)
 const selectionActiveAtom = atom(false);
@@ -46,12 +52,10 @@ export const pageGroupCollapseStateAtom = atom<Record<string, boolean>>({});
 
 // get handlers from pageListPropsAtom
 export const pageListHandlersAtom = selectAtom(pageListPropsAtom, props => {
-  const { onSelectedPageIdsChange, onDragStart, onDragEnd } = props;
+  const { onSelectedPageIdsChange } = props;
 
   return {
     onSelectedPageIdsChange,
-    onDragStart,
-    onDragEnd,
   };
 });
 

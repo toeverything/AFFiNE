@@ -4,9 +4,9 @@ import {
   FloatingToolbar,
   NewPageButton as PureNewPageButton,
   OperationCell,
-  PageList,
   type PageListHandle,
   useCollectionManager,
+  VirtualizedPageList,
 } from '@affine/component/page-list';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
@@ -298,7 +298,7 @@ export const AllPage = () => {
       ) : null}
       {filteredPageMetas.length > 0 ? (
         <>
-          <PageList
+          <VirtualizedPageList
             ref={pageListRef}
             selectable="toggle"
             draggable

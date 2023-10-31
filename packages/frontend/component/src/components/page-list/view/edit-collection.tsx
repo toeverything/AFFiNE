@@ -2,6 +2,7 @@ import {
   AffineShapeIcon,
   PageList,
   PageListScrollContainer,
+  VirtualizedPageList,
 } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
@@ -604,25 +605,23 @@ const PagesMode = ({
             </div>
           ) : null}
           {searchedList.length ? (
-            <PageListScrollContainer>
-              <PageList
-                clickMode="select"
-                className={styles.pageList}
-                pages={searchedList}
-                groupBy={false}
-                blockSuiteWorkspace={allPageListConfig.workspace}
-                selectable
-                onSelectedPageIdsChange={ids => {
-                  updateCollection({
-                    ...collection,
-                    pages: ids,
-                  });
-                }}
-                pageOperationsRenderer={pageOperationsRenderer}
-                selectedPageIds={collection.pages}
-                isPreferredEdgeless={allPageListConfig.isEdgeless}
-              ></PageList>
-            </PageListScrollContainer>
+            <VirtualizedPageList
+              clickMode="select"
+              className={styles.pageList}
+              pages={searchedList}
+              groupBy={false}
+              blockSuiteWorkspace={allPageListConfig.workspace}
+              selectable
+              onSelectedPageIdsChange={ids => {
+                updateCollection({
+                  ...collection,
+                  pages: ids,
+                });
+              }}
+              pageOperationsRenderer={pageOperationsRenderer}
+              selectedPageIds={collection.pages}
+              isPreferredEdgeless={allPageListConfig.isEdgeless}
+            />
           ) : (
             <EmptyList search={searchText} />
           )}
@@ -732,19 +731,17 @@ const SelectPage = ({
           </div>
         ) : null}
         {searchedList.length ? (
-          <PageListScrollContainer>
-            <PageList
-              clickMode="select"
-              className={styles.pageList}
-              pages={searchedList}
-              blockSuiteWorkspace={allPageListConfig.workspace}
-              selectable
-              onSelectedPageIdsChange={onChange}
-              selectedPageIds={value}
-              isPreferredEdgeless={allPageListConfig.isEdgeless}
-              pageOperationsRenderer={allPageListConfig.favoriteRender}
-            ></PageList>
-          </PageListScrollContainer>
+          <VirtualizedPageList
+            clickMode="select"
+            className={styles.pageList}
+            pages={searchedList}
+            blockSuiteWorkspace={allPageListConfig.workspace}
+            selectable
+            onSelectedPageIdsChange={onChange}
+            selectedPageIds={value}
+            isPreferredEdgeless={allPageListConfig.isEdgeless}
+            pageOperationsRenderer={allPageListConfig.favoriteRender}
+          />
         ) : (
           <EmptyList search={searchText} />
         )}

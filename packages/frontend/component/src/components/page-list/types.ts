@@ -40,14 +40,8 @@ export interface PageListProps {
   // required data:
   pages: PageMeta[];
   blockSuiteWorkspace: Workspace;
-
   className?: string;
-
-  atTopThreshold?: number; // the threshold to determine whether or not the user has scrolled to the top. default is 0
-  atTopStateChange?: (atTop: boolean) => void; // called when the user scrolls to the top or not
-
   hideHeader?: boolean; // whether or not to hide the header. default is false (showing header)
-  heading?: ReactNode; // the user provided heading part (non sticky, above the original header)
   groupBy?: PagesGroupByType | false;
   isPreferredEdgeless: (pageId: string) => boolean; // determines the icon used for each row
   clickMode?: 'select' | 'link'; // select => click to select; link => click to navigate
@@ -55,11 +49,15 @@ export interface PageListProps {
   selectedPageIds?: string[]; // selected page ids
   onSelectedPageIdsChange?: (selected: string[]) => void;
   draggable?: boolean; // whether or not to allow dragging this page item
-  onDragStart?: (pageId: string) => void;
-  onDragEnd?: (pageId: string) => void;
   // we also need the following to make sure the page list functions properly
   // maybe we could also give a function to render PageListItem?
   pageOperationsRenderer?: (page: PageMeta) => ReactNode;
+}
+
+export interface VirtualizedPageListProps extends PageListProps {
+  heading?: ReactNode; // the user provided heading part (non sticky, above the original header)
+  atTopThreshold?: number; // the threshold to determine whether or not the user has scrolled to the top. default is 0
+  atTopStateChange?: (atTop: boolean) => void; // called when the user scrolls to the top or not
 }
 
 export interface PageListHandle {

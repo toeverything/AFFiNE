@@ -11,3 +11,4 @@ export * from './types';
 export * from './use-collection-manager';
 export * from './utils';
 export * from './view';
+export * from './virtualized-page-list';

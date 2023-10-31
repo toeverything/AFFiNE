@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useHydrateAtoms } from 'jotai/utils';
 import {
   type ForwardedRef,
   forwardRef,
@@ -6,17 +7,14 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
 } from 'react';
-import { GroupedVirtuoso } from 'react-virtuoso';
 
 import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
-import { PageGroupHeader, PageMetaListItemRenderer } from './page-group';
-import { PageListHeading, PageListTopItemListHeader } from './page-header';
+import { PageGroup } from './page-group';
+import { PageListTableHeader } from './page-header';
 import * as styles from './page-list.css';
 import {
-  pageGroupCollapseStateAtom,
   pageGroupsAtom,
   pageListPropsAtom,
   PageListProvider,
@@ -44,10 +42,15 @@ export const PageList = forwardRef<PageListHandle, PageListProps>(
 
 const PageListInner = ({
   handleRef,
-  atTopStateChange,
-  atTopThreshold,
   ...props
 }: PageListProps & { handleRef: ForwardedRef<PageListHandle> }) => {
+  // push pageListProps to the atom so that downstream components can consume it
+  useHydrateAtoms([[pageListPropsAtom, props]], {
+    // note: by turning on dangerouslyForceHydrate, downstream component need to use selectAtom to consume the atom
+    // note2: not using it for now because it will cause some other issues
+    // dangerouslyForceHydrate: true,
+  });
+
   const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
   const setPageListSelectionState = useSetAtom(selectionStateAtom);
 
@@ -68,47 +71,16 @@ const PageListInner = ({
   );
 
   const groups = useAtomValue(pageGroupsAtom);
-  const groupCollapsedState = useAtomValue(pageGroupCollapseStateAtom);
-  const groupCounts = useMemo(() => {
-    // if the group is collapsed, we will only show the header
-    return groups.map(group =>
-      groupCollapsedState[group.id] ? 0 : group.items.length
-    );
-  }, [groupCollapsedState, groups]);
+  const hideHeader = props.hideHeader;
   return (
-    <GroupedVirtuoso
-      atTopThreshold={atTopThreshold}
-      atTopStateChange={atTopStateChange}
-      components={{
-        TopItemList: PageListTopItemListHeader,
-        Header: PageListHeading,
-      }}
-      groupCounts={groupCounts}
-      groupContent={idx => {
-        const group = groups[idx];
-        return (
-          <>
-            <div style={{ height: 35 }} />
-            <PageGroupHeader {...group} />
-          </>
-        );
-      }}
-      itemContent={(index, groupIndex) => {
-        // calculate the index in group
-        const prevGroupCounts = groupCounts
-          .slice(0, groupIndex)
-          .reduce((a, b) => a + b, 0);
-        const itemIndex = index - prevGroupCounts;
-        const group = groups[groupIndex];
-        const item = group.items[itemIndex];
-        return (
-          <>
-            <PageMetaListItemRenderer {...item} />
-          </>
-        );
-      }}
-      className={clsx(props.className, styles.root)}
-    />
+    <div className={clsx(props.className, styles.root)}>
+      {!hideHeader ? <PageListTableHeader /> : null}
+      <div className={styles.groupsContainer}>
+        {groups.map(group => (
+          <PageGroup key={group.id} {...group} />
+        ))}
+      </div>
+    </div>
   );
 };
 
