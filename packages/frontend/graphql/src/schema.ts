@@ -359,6 +359,13 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type GetInvoicesCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetInvoicesCountQuery = {
+  __typename?: 'Query';
+  currentUser: { __typename?: 'UserType'; invoiceCount: number } | null;
+};
+
 export type InvoicesQueryVariables = Exact<{
   take: Scalars['Int']['input'];
   skip: Scalars['Int']['input'];
@@ -692,6 +699,11 @@ export type Queries =
       name: 'getWorkspacesQuery';
       variables: GetWorkspacesQueryVariables;
       response: GetWorkspacesQuery;
+    }
+  | {
+      name: 'getInvoicesCountQuery';
+      variables: GetInvoicesCountQueryVariables;
+      response: GetInvoicesCountQuery;
     }
   | {
       name: 'invoicesQuery';

@@ -1,3 +1,4 @@
+import { Pagination } from '@affine/component/member-components';
 import {
   SettingHeader,
   SettingRow,
@@ -6,6 +7,7 @@ import {
 import {
   cancelSubscriptionMutation,
   createCustomerPortalMutation,
+  getInvoicesCountQuery,
   type InvoicesQuery,
   invoicesQuery,
   InvoiceStatus,
@@ -40,6 +42,8 @@ enum DescriptionI18NKey {
   Monthly = 'com.affine.payment.billing-setting.current-plan.description.monthly',
   Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
 }
+
+const INVOICE_PAGE_SIZE = 12;
 
 const getMessageKey = (
   plan: SubscriptionPlan,
@@ -334,27 +338,40 @@ const CancelSubscription = ({ loading }: { loading?: boolean }) => {
 
 const BillingHistory = () => {
   const t = useAFFiNEI18N();
+  const { data: invoicesCountQueryResult } = useQuery({
+    query: getInvoicesCountQuery,
+  });
+
+  const [skip, setSkip] = useState(0);
+
   const { data: invoicesQueryResult } = useQuery({
     query: invoicesQuery,
-    variables: {
-      skip: 0,
-      take: 12,
-    },
+    variables: { skip, take: INVOICE_PAGE_SIZE },
   });
 
   const invoices = invoicesQueryResult.currentUser?.invoices ?? [];
+  const invoiceCount = invoicesCountQueryResult.currentUser?.invoiceCount ?? 0;
 
   return (
-    <div className={styles.billingHistory}>
-      {invoices.length === 0 ? (
-        <p className={styles.noInvoice}>
-          {t['com.affine.payment.billing-setting.no-invoice']()}
-        </p>
-      ) : (
-        // TODO: pagination
-        invoices.map(invoice => (
-          <InvoiceLine key={invoice.id} invoice={invoice} />
-        ))
+    <div className={styles.history}>
+      <div className={styles.historyContent}>
+        {invoices.length === 0 ? (
+          <p className={styles.noInvoice}>
+            {t['com.affine.payment.billing-setting.no-invoice']()}
+          </p>
+        ) : (
+          invoices.map(invoice => (
+            <InvoiceLine key={invoice.id} invoice={invoice} />
+          ))
+        )}
+      </div>
+
+      {invoiceCount > INVOICE_PAGE_SIZE && (
+        <Pagination
+          totalCount={invoiceCount}
+          countPerPage={INVOICE_PAGE_SIZE}
+          onPageChange={skip => setSkip(skip)}
+        />
       )}
     </div>
   );
