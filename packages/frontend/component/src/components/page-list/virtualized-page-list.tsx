@@ -88,9 +88,6 @@ const headingAtom = selectAtom(pageListPropsAtom, props => props.heading);
 
 const PageListHeading = () => {
   const heading = useAtomValue(headingAtom);
-  if (!heading) {
-    return null;
-  }
   return <div className={styles.heading}>{heading}</div>;
 };
 
@@ -109,10 +106,13 @@ const virtuosoItemsAtom = atom(get => {
   // 2.
   // iterate groups and add page items
   for (const group of groups) {
-    items.push({
-      type: 'page-group-header',
-      data: group,
-    });
+    // skip empty group header since it will cause issue in virtuoso ("Zero-sized element")
+    if (group.label) {
+      items.push({
+        type: 'page-group-header',
+        data: group,
+      });
+    }
     // do not render items if the group is collapsed
     if (!groupCollapsedState[group.id]) {
       for (const item of group.items) {
@@ -156,10 +156,6 @@ const itemContentRenderer = (_index: number, data: VirtuosoItem) => {
   }
 };
 
-const customVirtuosoComponents = {
-  Header: PageListHeading,
-};
-
 const PageListInner = ({
   handleRef,
   atTopStateChange,
@@ -190,7 +186,9 @@ const PageListInner = ({
     <Virtuoso<VirtuosoItem>
       atTopThreshold={atTopThreshold}
       atTopStateChange={atTopStateChange}
-      components={customVirtuosoComponents}
+      components={{
+        Header: props.heading ? PageListHeading : undefined,
+      }}
       data={virtuosoItems}
       topItemCount={1} // sticky header
       totalCount={virtuosoItems.length}
