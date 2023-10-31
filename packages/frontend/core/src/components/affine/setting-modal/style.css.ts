@@ -25,6 +25,7 @@ export const centerContainer = style({
 export const content = style({
   width: '100%',
   marginBottom: '24px',
+  minHeight: 'calc(100% - 48px)',
 });
 
 export const suggestionLink = style({
@@ -38,4 +39,11 @@ export const suggestionLinkIcon = style({
   color: 'var(--affine-icon-color)',
   marginRight: '12px',
   display: 'flex',
+});
+
+export const footer = style({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingBottom: '20px',
 });
