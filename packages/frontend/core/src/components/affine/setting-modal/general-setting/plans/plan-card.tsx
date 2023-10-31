@@ -301,18 +301,19 @@ const Downgrade = ({
 }) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
+  // allow replay request on network error until component unmount or success
+  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const { isMutating, trigger } = useMutation({
     mutation: cancelSubscriptionMutation,
   });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
 
   const downgrade = useCallback(() => {
     trigger(
       { idempotencyKey },
       {
         onSuccess: data => {
+          // refresh idempotency key
+          setIdempotencyKey(nanoid());
           onSubscriptionUpdate(data.cancelSubscription);
         },
       }
@@ -374,7 +375,7 @@ const Upgrade = ({
   const newTabRef = useRef<Window | null>(null);
 
   // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
+  const idempotencyKey = useMemo(() => `${nanoid()}-${recurring}`, [recurring]);
 
   const onClose = useCallback(() => {
     newTabRef.current = null;
@@ -453,18 +454,19 @@ const ChangeRecurring = ({
 }) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
+  // allow replay request on network error until component unmount or success
+  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const { isMutating, trigger } = useMutation({
     mutation: updateSubscriptionMutation,
   });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
 
   const change = useCallback(() => {
     trigger(
       { recurring: to, idempotencyKey },
       {
         onSuccess: data => {
+          // refresh idempotency key
+          setIdempotencyKey(nanoid());
           onSubscriptionUpdate(data.updateSubscriptionRecurring);
         },
       }
@@ -532,19 +534,20 @@ const ResumeAction = ({
 }) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
+  // allow replay request on network error until component unmount or success
+  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [hovered, setHovered] = useState(false);
   const { isMutating, trigger } = useMutation({
     mutation: resumeSubscriptionMutation,
   });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
 
   const resume = useCallback(() => {
     trigger(
       { idempotencyKey },
       {
         onSuccess: data => {
+          // refresh idempotency key
+          setIdempotencyKey(nanoid());
           onSubscriptionUpdate(data.resumeSubscription);
         },
       }

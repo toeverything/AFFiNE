@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
@@ -12,7 +11,6 @@ interface PagePreviewInnerProps {
 
 const PagePreviewInner = ({ workspace, pageId }: PagePreviewInnerProps) => {
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
-  assertExists(page);
   const previewAtom = useBlockSuitePagePreview(page);
   const preview = useAtomValue(previewAtom);
   return preview ? preview : null;
