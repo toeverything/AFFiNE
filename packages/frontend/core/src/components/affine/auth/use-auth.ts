@@ -5,6 +5,7 @@ import { type SignInResponse } from 'next-auth/react';
 import { useCallback } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';
+import { useSubscriptionSearch } from './use-subscription';
 
 const COUNT_DOWN_TIME = 60;
 export const INTERNAL_BETA_URL = `https://community.affine.pro/c/insider-general/`;
@@ -58,6 +59,7 @@ const countDownAtom = atom(
 );
 
 export const useAuth = () => {
+  const subscriptionData = useSubscriptionSearch();
   const pushNotification = useSetAtom(pushNotificationAtom);
   const [authStore, setAuthStore] = useAtom(authStoreAtom);
   const startResendCountDown = useSetAtom(countDownAtom);
@@ -75,7 +77,9 @@ export const useAuth = () => {
         'email',
         {
           email: email,
-          callbackUrl: '/auth/signIn',
+          callbackUrl: subscriptionData
+            ? subscriptionData.redirectUrl
+            : '/auth/signIn',
           redirect: false,
         },
         challenge
@@ -98,7 +102,7 @@ export const useAuth = () => {
 
       return res;
     },
-    [pushNotification, setAuthStore, startResendCountDown]
+    [pushNotification, setAuthStore, startResendCountDown, subscriptionData]
   );
 
   const signUp = useCallback(
@@ -114,7 +118,9 @@ export const useAuth = () => {
         'email',
         {
           email: email,
-          callbackUrl: '/auth/signUp',
+          callbackUrl: subscriptionData
+            ? subscriptionData.redirectUrl
+            : '/auth/signUp',
           redirect: false,
         },
         challenge
@@ -137,7 +143,7 @@ export const useAuth = () => {
 
       return res;
     },
-    [pushNotification, setAuthStore, startResendCountDown]
+    [pushNotification, setAuthStore, startResendCountDown, subscriptionData]
   );
 
   const signInWithGoogle = useCallback(() => {
