@@ -123,7 +123,10 @@ export class SubscriptionService {
     }
 
     const price = await this.getPrice(plan, recurring);
-    const customer = await this.getOrCreateCustomer(idempotencyKey, user);
+    const customer = await this.getOrCreateCustomer(
+      `${idempotencyKey}-getOrCreateCustomer`,
+      user
+    );
     const coupon = await this.getAvailableCoupon(user, CouponType.EarlyAccess);
 
     return await this.stripe.checkout.sessions.create(
@@ -152,7 +155,7 @@ export class SubscriptionService {
           name: 'auto',
         },
       },
-      { idempotencyKey }
+      { idempotencyKey: `${idempotencyKey}-checkoutSession` }
     );
   }
 
@@ -282,12 +285,12 @@ export class SubscriptionService {
     );
 
     const manager = await this.scheduleManager.fromSubscription(
-      idempotencyKey,
+      `${idempotencyKey}-fromSubscription`,
       user.subscription.stripeSubscriptionId
     );
 
     await manager.update(
-      idempotencyKey,
+      `${idempotencyKey}-update`,
       price,
       // if user is early access user, use early access coupon
       manager.currentPhase?.coupon === CouponType.EarlyAccess ||
@@ -369,11 +372,11 @@ export class SubscriptionService {
     if (stripeInvoice.discount?.coupon.id === CouponType.EarlyAccess) {
       const idempotencyKey = stripeInvoice.id + '_earlyaccess';
       const manager = await this.scheduleManager.fromSubscription(
-        idempotencyKey,
+        `${idempotencyKey}-fromSubscription`,
         line.subscription as string
       );
       await manager.update(
-        idempotencyKey,
+        `${idempotencyKey}-update`,
         line.price.id,
         CouponType.EarlyAccessRenew
       );
