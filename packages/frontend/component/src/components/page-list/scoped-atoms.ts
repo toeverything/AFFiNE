@@ -2,7 +2,6 @@ import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { PageMeta } from '@blocksuite/store';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import { isEqual } from 'lodash-es';
 
 import { pagesToPageGroups } from './page-group';
 import type { PageListProps, PageMetaRecord } from './types';
@@ -17,18 +16,14 @@ const selectionActiveAtom = atom(false);
 
 export const selectionStateAtom = atom(
   get => {
-    const baseAtom = selectAtom(
-      pageListPropsAtom,
-      props => {
-        const { selectable, selectedPageIds, onSelectedPageIdsChange } = props;
-        return {
-          selectable,
-          selectedPageIds,
-          onSelectedPageIdsChange,
-        };
-      },
-      isEqual
-    );
+    const baseAtom = selectAtom(pageListPropsAtom, props => {
+      const { selectable, selectedPageIds, onSelectedPageIdsChange } = props;
+      return {
+        selectable,
+        selectedPageIds,
+        onSelectedPageIdsChange,
+      };
+    });
     const baseState = get(baseAtom);
     const selectionActive =
       baseState.selectable === 'toggle'
@@ -45,19 +40,15 @@ export const selectionStateAtom = atom(
 );
 
 // get handlers from pageListPropsAtom
-export const pageListHandlersAtom = selectAtom(
-  pageListPropsAtom,
-  props => {
-    const { onSelectedPageIdsChange, onDragStart, onDragEnd } = props;
+export const pageListHandlersAtom = selectAtom(pageListPropsAtom, props => {
+  const { onSelectedPageIdsChange, onDragStart, onDragEnd } = props;
 
-    return {
-      onSelectedPageIdsChange,
-      onDragStart,
-      onDragEnd,
-    };
-  },
-  isEqual
-);
+  return {
+    onSelectedPageIdsChange,
+    onDragStart,
+    onDragEnd,
+  };
+});
 
 export const pagesAtom = selectAtom(pageListPropsAtom, props => props.pages);
 

@@ -27,5 +27,5 @@
   "dependencies": {
     "lit": "^2.8.0"
   },
-  "version": "0.10.0-canary.4"
+  "version": "0.10.0-canary.5"
 }
