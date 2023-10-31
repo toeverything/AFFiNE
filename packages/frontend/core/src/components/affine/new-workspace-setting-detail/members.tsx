@@ -1,6 +1,7 @@
 import {
   InviteModal,
   type InviteModalProps,
+  MemberLimitModal,
 } from '@affine/component/member-components';
 import {
   Pagination,
@@ -67,12 +68,26 @@ const MembersPanelLocal = () => {
   );
 };
 
+const shouldShowLimitModal = (
+  memberCount: number,
+  plan: SubscriptionPlan
+): boolean => {
+  return (
+    (memberCount >= 3 && plan === SubscriptionPlan.Free) ||
+    (memberCount >= 10 && plan === SubscriptionPlan.Pro)
+  );
+};
+
 export const CloudWorkspaceMembersPanel = ({
   workspace,
   isOwner,
 }: MembersPanelProps) => {
   const workspaceId = workspace.id;
   const memberCount = useMemberCount(workspaceId);
+
+  const [subscription] = useUserSubscription();
+  const plan = subscription?.plan ?? SubscriptionPlan.Free;
+  const isLimited = shouldShowLimitModal(memberCount, plan);
 
   const t = useAFFiNEI18N();
   const { invite, isMutating } = useInviteMember(workspaceId);
@@ -111,6 +126,15 @@ export const CloudWorkspaceMembersPanel = ({
     [invite, pushNotification, t]
   );
 
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const handleUpgradeConfirm = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      workspaceId: null,
+    });
+  }, [setSettingModalAtom]);
+
   const listContainerRef = useRef<HTMLDivElement | null>(null);
   const [memberListHeight, setMemberListHeight] = useState<number | null>(null);
 
@@ -138,17 +162,6 @@ export const CloudWorkspaceMembersPanel = ({
     [pushNotification, revokeMemberPermission, t]
   );
 
-  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-  const handleUpgrade = useCallback(() => {
-    setSettingModalAtom({
-      open: true,
-      activeTab: 'plans',
-      workspaceId: null,
-    });
-  }, [setSettingModalAtom]);
-
-  const [subscription] = useUserSubscription();
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
   const memberLimit = useMemo(() => {
     if (plan === SubscriptionPlan.Free) {
       return MemberLimitCount.Free;
@@ -166,13 +179,13 @@ export const CloudWorkspaceMembersPanel = ({
           memberLimit,
         })}
         ,
-        <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
+        <div className={style.goUpgradeWrapper} onClick={handleUpgradeConfirm}>
           <span className={style.goUpgrade}>go upgrade</span>
           <ArrowRightBigIcon className={style.arrowRight} />
         </div>
       </span>
     );
-  }, [handleUpgrade, memberLimit, plan, t]);
+  }, [handleUpgradeConfirm, memberLimit, plan, t]);
 
   return (
     <>
@@ -184,12 +197,21 @@ export const CloudWorkspaceMembersPanel = ({
         {isOwner ? (
           <>
             <Button onClick={openModal}>{t['Invite Members']()}</Button>
-            <InviteModal
-              open={open}
-              setOpen={setOpen}
-              onConfirm={onInviteConfirm}
-              isMutating={isMutating}
-            />
+            {isLimited ? (
+              <MemberLimitModal
+                plan={plan}
+                open={open}
+                setOpen={setOpen}
+                onConfirm={handleUpgradeConfirm}
+              />
+            ) : (
+              <InviteModal
+                open={open}
+                setOpen={setOpen}
+                onConfirm={onInviteConfirm}
+                isMutating={isMutating}
+              />
+            )}
           </>
         ) : null}
       </SettingRow>

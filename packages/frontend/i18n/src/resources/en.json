@@ -766,5 +766,10 @@
   "com.affine.other-page.nav.open-affine": "Open AFFiNE",
   "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}",
   "com.affine.cmdk.affine.switch-state.on": "ON",
-  "com.affine.cmdk.affine.switch-state.off": "OFF"
+  "com.affine.cmdk.affine.switch-state.off": "OFF",
+  "com.affine.payment.member-limit.title": "You have reached the limit",
+  "com.affine.payment.member-limit.free.description": "Each free user can invite up to 3 members to join their workspace. You can upgrade your account to unlock more members.",
+  "com.affine.payment.member-limit.free.confirm": "Upgrade",
+  "com.affine.payment.member-limit.pro.description": "Each pro user can invite up to 10 members to join their workspace. If you want to continue adding collaboration members, you can create a new workspace.",
+  "com.affine.payment.member-limit.pro.confirm": "Got it"
 }
