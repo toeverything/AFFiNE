@@ -87,5 +87,5 @@
     "vitest": "0.34.6",
     "yjs": "^13.6.8"
   },
-  "version": "0.10.0-canary.5"
+  "version": "0.10.0-canary.6"
 }
