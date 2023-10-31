@@ -198,15 +198,38 @@ jobs:
           file: .github/deployment/node/Dockerfile
           tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}
 
+  setup-deploy-environment:
+    runs-on: ubuntu-latest
+    name: Setup deploy environment
+    outputs:
+      environment: ${{ steps.environment.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: 'workspaces focus @affine/monorepo'
+          hard-link-nm: false
+          electron-install: false
+          build-infra: false
+          build-plugins: false
+      - name: Setup output value
+        id: environment
+        run: |
+          node -e "const env = process.env.flavor ? process.env.flavor : require('semver').parse('${{ github.ref_name }}').prerelease[0] ?? 'stable'; console.log(`value={env}`)" >> "$GITHUB_OUTPUT"
+        env:
+          flavor: ${{ github.event.inputs.flavor }}
+
   deploy:
     name: Deploy to cluster
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref_type == 'tag' }}
-    environment: ${{ github.event.inputs.flavor }}
+    environment: ${{ needs.setup-deploy-environment.outputs.environment }}
     permissions:
       contents: 'write'
       id-token: 'write'
     needs:
       - build-docker
+      - setup-deploy-environment
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
