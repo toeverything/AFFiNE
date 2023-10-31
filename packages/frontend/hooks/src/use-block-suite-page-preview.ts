@@ -17,8 +17,12 @@ export const getPagePreviewText = (page: Page) => {
   return text.slice(0, 300);
 };
 
-export function useBlockSuitePagePreview(page: Page): Atom<string> {
-  if (weakMap.has(page)) {
+const emptyAtom = atom<string>('');
+
+export function useBlockSuitePagePreview(page: Page | null): Atom<string> {
+  if (page === null) {
+    return emptyAtom;
+  } else if (weakMap.has(page)) {
     return weakMap.get(page) as Atom<string>;
   } else {
     const baseAtom = atom<string>(getPagePreviewText(page));
