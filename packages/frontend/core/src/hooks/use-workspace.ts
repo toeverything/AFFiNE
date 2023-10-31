@@ -1,6 +1,8 @@
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
+import {
+  type AffineOfficialWorkspace,
+  WorkspaceFlavour,
+} from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import type { Atom } from 'jotai';
@@ -24,12 +26,21 @@ export function useWorkspace(workspaceId: string): AffineOfficialWorkspace {
   const workspace = useAtomValue(workspaceAtom);
   if (!workspaceWeakMap.has(workspace)) {
     const baseAtom = atom(async get => {
-      const metadata = await get(rootWorkspacesMetadataAtom);
-      const flavour = metadata.find(({ id }) => id === workspaceId)?.flavour;
-      assertExists(flavour, 'workspace flavour not found');
+      const metadataList = await get(rootWorkspacesMetadataAtom);
+      const flavour = metadataList.find(({ id }) => id === workspaceId)
+        ?.flavour;
+
+      if (!flavour) {
+        // when last workspace is removed, we may encounter this warning. it should be fine
+        console.warn(
+          'workspace not found in rootWorkspacesMetadataAtom, maybe it is removed',
+          workspaceId
+        );
+      }
+
       return {
         id: workspaceId,
-        flavour,
+        flavour: flavour ?? WorkspaceFlavour.LOCAL,
         blockSuiteWorkspace: workspace,
       };
     });
