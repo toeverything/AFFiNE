@@ -25,6 +25,7 @@ import {
 } from 'react-router-dom';
 import { z } from 'zod';
 
+import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
@@ -36,6 +37,7 @@ const authTypeSchema = z.enum([
   'signUp',
   'changeEmail',
   'confirm-change-email',
+  'subscription-redirect',
 ]);
 
 export const AuthPage = (): ReactElement | null => {
@@ -131,6 +133,9 @@ export const AuthPage = (): ReactElement | null => {
     }
     case 'confirm-change-email': {
       return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
+    }
+    case 'subscription-redirect': {
+      return <SubscriptionRedirect />;
     }
   }
   return null;
