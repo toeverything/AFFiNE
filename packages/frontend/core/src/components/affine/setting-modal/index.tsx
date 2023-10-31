@@ -137,7 +137,7 @@ export const SettingModal = ({
               <AccountSetting />
             ) : null}
           </div>
-          <div className="footer">
+          <div className={style.footer}>
             <a
               href="https://community.affine.pro/home"
               target="_blank"
