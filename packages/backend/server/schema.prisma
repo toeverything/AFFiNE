@@ -146,16 +146,14 @@ model Snapshot {
   @@map("snapshots")
 }
 
-// backup during other update operation queue downtime
 model Update {
-  objectId    String   @id @default(uuid()) @map("object_id") @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
   id          String   @map("guid") @db.VarChar
   seq         Int      @db.Integer
   blob        Bytes    @db.ByteA
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@unique([workspaceId, id, seq])
+  @@id([workspaceId, id, seq])
   @@map("updates")
 }
 

@@ -280,7 +280,7 @@ const PaymentMethodUpdater = () => {
       loading={isMutating}
       disabled={isMutating}
     >
-      {t['com.affine.payment.billing-setting.upgrade']()}
+      {t['com.affine.payment.billing-setting.update']()}
     </Button>
   );
 };

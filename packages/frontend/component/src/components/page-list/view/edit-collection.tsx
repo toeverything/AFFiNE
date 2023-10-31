@@ -229,6 +229,7 @@ const RulesMode = ({
     );
   }, [open, updateCollection, collection]);
   const [expandInclude, setExpandInclude] = useState(false);
+  const count = allowListPages.length + rulesPages.length;
   return (
     <>
       <div className={clsx(styles.rulesTitle, styles.ellipsis)}>
@@ -334,16 +335,20 @@ const RulesMode = ({
                             ) : (
                               <PageIcon style={{ width: 16, height: 16 }} />
                             )}
-                            Page
+                            {t[
+                              'com.affine.editCollection.rules.include.page'
+                            ]()}
                           </div>
-                          <div className={styles.includeItemContentIs}>is</div>
+                          <div className={styles.includeItemContentIs}>
+                            {t['com.affine.editCollection.rules.include.is']()}
+                          </div>
                           <div
                             className={clsx(
                               styles.includeItemTitle,
                               styles.ellipsis
                             )}
                           >
-                            {page?.title || 'Untitled'}
+                            {page?.title || t['Untitled']()}
                           </div>
                         </div>
                         <CloseIcon
@@ -368,7 +373,7 @@ const RulesMode = ({
                     <div
                       style={{ color: 'var(--affine-text-secondary-color)' }}
                     >
-                      Add include page
+                      {t['com.affine.editCollection.rules.include.add']()}
                     </div>
                   </div>
                 </div>
@@ -396,7 +401,7 @@ const RulesMode = ({
                     justifyContent: 'space-between',
                   }}
                 >
-                  <div>HELP INFO</div>
+                  <div>{t['com.affine.collection.helpInfo']()}</div>
                   <CloseIcon
                     color="var(--affine-icon-color)"
                     onClick={hideTips}
@@ -405,14 +410,9 @@ const RulesMode = ({
                   />
                 </div>
                 <div style={{ marginBottom: 10, fontWeight: 600 }}>
-                  What is &quot;Include&quot;？
+                  {t['com.affine.editCollection.rules.include.tipsTitle']()}
                 </div>
-                <div>
-                  &quot;Include&quot; refers to manually adding pages rather
-                  than automatically adding them through rule matching. You can
-                  manually add pages through the &quot;Add pages&quot; option or
-                  by dragging and dropping (coming soon).
-                </div>
+                <div>{t['com.affine.editCollection.rules.include.tips']()}</div>
               </div>
             ) : null}
           </div>
@@ -463,20 +463,29 @@ const RulesMode = ({
               setShowPreview(!showPreview);
             }}
           >
-            Preview
+            {t['com.affine.editCollection.rules.preview']()}
           </div>
           <div
             className={clsx(styles.button, styles.bottomButton)}
             onClick={reset}
           >
-            Reset
+            {t['com.affine.editCollection.rules.reset']()}
           </div>
           <div className={styles.previewCountTips}>
-            After searching, there are currently{' '}
-            <span className={styles.previewCountTipsHighlight}>
-              {allowListPages.length + rulesPages.length}
-            </span>{' '}
-            pages.
+            <Trans
+              i18nKey={
+                count === 0
+                  ? 'com.affine.editCollection.rules.countTips.zero'
+                  : count === 1
+                  ? 'com.affine.editCollection.rules.countTips.one'
+                  : 'com.affine.editCollection.rules.countTips.more'
+              }
+              values={{ count: count }}
+            >
+              After searching, there are currently
+              <span className={styles.previewCountTipsHighlight}>count</span>
+              pages.
+            </Trans>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>{buttons}</div>
@@ -622,7 +631,7 @@ const PagesMode = ({
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>
           <div className={styles.selectedCountTips}>
-            Selected
+            {t['com.affine.selectPage.selected']()}
             <span
               style={{ marginLeft: 7 }}
               className={styles.previewCountTipsHighlight}
@@ -683,7 +692,7 @@ const SelectPage = ({
       <div className={styles.pagesTab}>
         <div className={styles.pagesTabContent}>
           <div style={{ fontSize: 12, lineHeight: '20px', fontWeight: 600 }}>
-            Add include page
+            {t['com.affine.selectPage.title']()}
           </div>
           {!showFilter && filters.length === 0 ? (
             <Menu
@@ -743,7 +752,7 @@ const SelectPage = ({
       <div className={styles.pagesBottom}>
         <div className={styles.pagesBottomLeft}>
           <div className={styles.selectedCountTips}>
-            Selected
+            {t['com.affine.selectPage.selected']()}
             <span
               style={{ marginLeft: 7 }}
               className={styles.previewCountTipsHighlight}
@@ -770,7 +779,7 @@ const SelectPage = ({
             type="primary"
             onClick={confirm}
           >
-            Confirm
+            {t['Confirm']()}
           </Button>
         </div>
       </div>
@@ -874,6 +883,7 @@ const useSearch = (list: PageMeta[]) => {
   };
 };
 const EmptyList = ({ search }: { search?: string }) => {
+  const t = useAFFiNEI18N();
   return (
     <div
       style={{
@@ -893,19 +903,21 @@ const EmptyList = ({ search }: { search?: string }) => {
           fontWeight: 600,
         }}
       >
-        Empty
+        {t['com.affine.selectPage.empty']()}
       </div>
       {search ? (
         <div
           className={styles.ellipsis}
           style={{ maxWidth: 300, fontSize: 15, lineHeight: '24px' }}
         >
-          No page titles contain{' '}
-          <span
-            style={{ fontWeight: 600, color: 'var(--affine-primary-color)' }}
-          >
-            {search}
-          </span>
+          <Trans i18nKey="com.affine.selectPage.empty.tips" values={{ search }}>
+            No page titles contain
+            <span
+              style={{ fontWeight: 600, color: 'var(--affine-primary-color)' }}
+            >
+              search
+            </span>
+          </Trans>
         </div>
       ) : null}
     </div>

@@ -25,6 +25,8 @@ const {
   GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT,
   REDIS_HOST,
   REDIS_PASSWORD,
+  STRIPE_API_KEY,
+  STRIPE_WEBHOOK_KEY,
 } = process.env;
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -96,6 +98,8 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.oauth.google.enabled=true`,
     `--set-string graphql.app.oauth.google.clientId="${AFFINE_GOOGLE_CLIENT_ID}"`,
     `--set-string graphql.app.oauth.google.clientSecret="${AFFINE_GOOGLE_CLIENT_SECRET}"`,
+    `--set-string graphql.app.payment.stripe.apiKey="${STRIPE_API_KEY}"`,
+    `--set-string graphql.app.payment.stripe.webhookKey="${STRIPE_WEBHOOK_KEY}"`,
     `--set        graphql.app.experimental.enableJwstCodec=true`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${imageTag}"`,
