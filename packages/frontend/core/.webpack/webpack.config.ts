@@ -7,6 +7,8 @@ import HTMLPlugin from 'html-webpack-plugin';
 
 import { gitShortHash } from './s3-plugin.js';
 
+const DESCRIPTION = `There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.`;
+
 export default async function (cli_env: any, _: any) {
   const flags: BuildFlags = JSON.parse(
     Buffer.from(cli_env.flags, 'hex').toString('utf-8')
@@ -48,6 +50,7 @@ export default async function (cli_env: any, _: any) {
         filename: 'index.html',
         templateParameters: {
           GIT_SHORT_SHA: gitShortHash(),
+          DESCRIPTION,
         },
       }),
       new HTMLPlugin({
@@ -65,6 +68,7 @@ export default async function (cli_env: any, _: any) {
         filename: '_plugin/index.html',
         templateParameters: {
           GIT_SHORT_SHA: gitShortHash(),
+          DESCRIPTION,
         },
       }),
     ],

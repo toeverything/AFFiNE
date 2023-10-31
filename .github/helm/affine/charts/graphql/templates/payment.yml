@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Values.app.payment.stripe.secretName }}"
+type: Opaque
+data:
+  stripeAPIKey: "{{ .Values.app.payment.stripe.apiKey | b64enc }}"
+  stripeWebhookKey: "{{ .Values.app.payment.stripe.webhookKey | b64enc }}"
