@@ -22,7 +22,6 @@ jobs:
   publish-storybook:
     name: Publish Storybook
     runs-on: ubuntu-latest
-    environment: development
     steps:
       - uses: actions/checkout@v4
         with:
