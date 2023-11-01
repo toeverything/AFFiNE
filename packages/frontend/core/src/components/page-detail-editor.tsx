@@ -25,7 +25,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
@@ -70,10 +69,10 @@ const EditorWrapper = memo(function EditorWrapper({
   const meta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === pageId
   );
+
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode = pageSetting?.mode ?? 'page';
-  const [loading, setLoading] = useState(true);
 
   const setBlockHub = useSetAtom(rootBlockHubAtom);
   const { appSettings } = useAppSettingHelper();
@@ -90,10 +89,10 @@ const EditorWrapper = memo(function EditorWrapper({
   const query = useRouterQuery();
   const blockId = query.get('blockId');
 
-  if (!loading && blockId) {
-    const editor = document.querySelector(`[data-block-id="${blockId}"]`);
-    if (editor) {
-      editor.scrollIntoView({
+  if (blockId) {
+    const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+    if (blockElement) {
+      blockElement.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
         inline: 'center',
@@ -158,7 +157,6 @@ const EditorWrapper = memo(function EditorWrapper({
               clearTimeout(renderTimeout);
               window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());
-                setLoading(false);
               });
             };
           },
