@@ -21,13 +21,17 @@ import * as styles from './style.css';
 const getRecurringLabel = ({
   recurring,
   t,
+  shouldLowerCase,
 }: {
   recurring: SubscriptionRecurring;
   t: ReturnType<typeof useAFFiNEI18N>;
+  shouldLowerCase?: boolean;
 }) => {
-  return recurring === SubscriptionRecurring.Monthly
-    ? t['com.affine.payment.recurring-monthly']()
-    : t['com.affine.payment.recurring-yearly']();
+  const text =
+    recurring === SubscriptionRecurring.Monthly
+      ? t['com.affine.payment.recurring-monthly']()
+      : t['com.affine.payment.recurring-yearly']();
+  return shouldLowerCase ? text.toLowerCase() : text;
 };
 
 const Settings = () => {
@@ -104,6 +108,7 @@ const Settings = () => {
           plan: `${getRecurringLabel({
             recurring: currentRecurring,
             t,
+            shouldLowerCase: true,
           })} ${currentPlan}`,
         })}
       </p>
@@ -169,6 +174,7 @@ const Settings = () => {
                       : getRecurringLabel({
                           recurring: recurring as SubscriptionRecurring,
                           t,
+                          shouldLowerCase: true,
                         }),
                 }),
               });
