@@ -129,14 +129,8 @@ export const PlanCard = (props: PlanCardProps) => {
   const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
-  const currentRecurring = subscription?.recurring;
 
-  const isCurrent =
-    loggedIn &&
-    detail.plan === currentPlan &&
-    (currentPlan === SubscriptionPlan.Free
-      ? true
-      : currentRecurring === recurring);
+  const isCurrent = loggedIn && detail.plan === currentPlan;
 
   return (
     <div
