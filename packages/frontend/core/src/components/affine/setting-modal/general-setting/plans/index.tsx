@@ -117,8 +117,7 @@ const Settings = () => {
           You are current on the {{ currentPlan }} plan. If you have any
           questions, please contact our&nbsp;
           <a
-            href="#"
-            target="_blank"
+            href="mailto:support@toeverything.info"
             style={{ color: 'var(--affine-link-color)' }}
           >
             customer support
