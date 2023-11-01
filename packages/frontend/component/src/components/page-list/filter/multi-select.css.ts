@@ -6,6 +6,7 @@ export const content = style({
   borderRadius: 8,
   padding: '3px 4px',
   cursor: 'pointer',
+  overflow: 'hidden',
   ':hover': {
     backgroundColor: 'var(--affine-hover-color)',
   },

@@ -232,6 +232,12 @@ const RulesMode = ({
   const count = allowListPages.length + rulesPages.length;
   return (
     <>
+      {/*prevents modal autofocus to the first input*/}
+      <input
+        type="text"
+        style={{ width: 0, height: 0 }}
+        onFocus={e => requestAnimationFrame(() => e.target.blur())}
+      />
       <div className={clsx(styles.rulesTitle, styles.ellipsis)}>
         <Trans
           i18nKey="com.affine.editCollection.rules.tips"
@@ -532,6 +538,9 @@ const PagesMode = ({
         value={searchText}
         onChange={e => updateSearchText(e.target.value)}
         className={styles.rulesTitle}
+        style={{
+          color: 'var(--affine-text-primary-color)',
+        }}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
       <div className={styles.pagesList}>
