@@ -124,17 +124,26 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
     const selectedPageIds = selectionState.selectedPageIds ?? [];
     return items.filter(item => selectedPageIds.includes(item.id));
   }, [items, selectionState.selectedPageIds]);
+
+  const allSelected = useMemo(() => {
+    return items.every(
+      item => selectionState.selectedPageIds?.includes(item.id)
+    );
+  }, [items, selectionState.selectedPageIds]);
+
   const onSelectAll = useCallback(() => {
     const nonCurrentGroupIds =
       selectionState.selectedPageIds?.filter(
         id => !items.map(item => item.id).includes(id)
       ) ?? [];
 
-    selectionState.onSelectedPageIdsChange?.([
-      ...nonCurrentGroupIds,
-      ...items.map(item => item.id),
-    ]);
-  }, [items, selectionState]);
+    const newSelectedPageIds = allSelected
+      ? nonCurrentGroupIds
+      : [...nonCurrentGroupIds, ...items.map(item => item.id)];
+
+    selectionState.onSelectedPageIdsChange?.(newSelectedPageIds);
+  }, [items, selectionState, allSelected]);
+
   const t = useAFFiNEI18N();
 
   return label ? (
@@ -159,7 +168,11 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
       <div className={styles.spacer} />
       {selectionState.selectionActive ? (
         <button className={styles.selectAllButton} onClick={onSelectAll}>
-          {t['com.affine.page.group-header.select-all']()}
+          {t[
+            allSelected
+              ? 'com.affine.page.group-header.clear'
+              : 'com.affine.page.group-header.select-all'
+          ]()}
         </button>
       ) : null}
     </div>

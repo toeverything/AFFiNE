@@ -394,6 +394,7 @@
   "com.affine.all-pages.header": "All Pages",
   "com.affine.collections.header": "Collections",
   "com.affine.page.group-header.select-all": "Select All",
+  "com.affine.page.group-header.clear": "Clear Selection",
   "com.affine.page.toolbar.selected": "<0>{{count}}</0> selected",
   "com.affine.collection.allCollections": "All Collections",
   "com.affine.collection.emptyCollection": "Empty Collection",
