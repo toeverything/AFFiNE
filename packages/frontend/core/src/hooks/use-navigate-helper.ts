@@ -29,6 +29,22 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToPageBlock = useCallback(
+    (
+      workspaceId: string,
+      pageId: string,
+      blockId: string,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      return navigate(
+        `/workspace/${workspaceId}/${pageId}?blockId=${blockId}`,
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
+    },
+    [navigate]
+  );
   const jumpToCollection = useCallback(
     (
       workspaceId: string,
@@ -122,6 +138,7 @@ export function useNavigateHelper() {
   return useMemo(
     () => ({
       jumpToPage,
+      jumpToPageBlock,
       jumpToPublicWorkspacePage,
       jumpToSubPath,
       jumpToIndex,
@@ -132,14 +149,15 @@ export function useNavigateHelper() {
       jumpToCollection,
     }),
     [
-      jumpTo404,
-      jumpToExpired,
-      jumpToIndex,
       jumpToPage,
+      jumpToPageBlock,
       jumpToPublicWorkspacePage,
-      jumpToSignIn,
       jumpToSubPath,
+      jumpToIndex,
+      jumpTo404,
       openPage,
+      jumpToExpired,
+      jumpToSignIn,
       jumpToCollection,
     ]
   );

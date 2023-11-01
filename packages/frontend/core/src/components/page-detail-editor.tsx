@@ -25,8 +25,10 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useLocation } from 'react-router-dom';
 
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions } from '../atoms/settings';
@@ -36,6 +38,10 @@ import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
+
+function useRouterQuery() {
+  return new URLSearchParams(useLocation().search);
+}
 
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
 
@@ -67,6 +73,7 @@ const EditorWrapper = memo(function EditorWrapper({
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode = pageSetting?.mode ?? 'page';
+  const [loading, setLoading] = useState(true);
 
   const setBlockHub = useSetAtom(rootBlockHubAtom);
   const { appSettings } = useAppSettingHelper();
@@ -79,6 +86,20 @@ const EditorWrapper = memo(function EditorWrapper({
     assertExists(fontStyle);
     return fontStyle.value;
   }, [appSettings.fontStyle]);
+
+  const query = useRouterQuery();
+  const blockId = query.get('blockId');
+
+  if (!loading && blockId) {
+    const editor = document.querySelector(`[data-block-id="${blockId}"]`);
+    if (editor) {
+      editor.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+    }
+  }
 
   return (
     <>
@@ -137,6 +158,7 @@ const EditorWrapper = memo(function EditorWrapper({
               clearTimeout(renderTimeout);
               window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());
+                setLoading(false);
               });
             };
           },
