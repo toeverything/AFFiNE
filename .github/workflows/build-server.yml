@@ -39,7 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: '-C debuginfo=1'
-    environment: development
 
     steps:
       - uses: actions/checkout@v4
@@ -66,7 +65,6 @@ jobs:
   server-test:
     name: Server Test
     runs-on: ubuntu-latest
-    environment: development
     needs: build-storage
     services:
       postgres:
@@ -137,7 +135,6 @@ jobs:
   server-e2e-test:
     name: Server E2E Test
     runs-on: ubuntu-latest
-    environment: development
     needs: build-storage
     services:
       postgres:
@@ -219,7 +216,6 @@ jobs:
   server-desktop-e2e-test:
     name: Server Desktop E2E Test
     runs-on: ubuntu-latest
-    environment: development
     needs: build-storage
     services:
       postgres:
