@@ -167,16 +167,18 @@ const Settings = () => {
               pushNotification({
                 type: 'success',
                 title: t['com.affine.payment.updated-notify-title'](),
-                message: t['com.affine.payment.updated-notify-msg']({
-                  plan:
-                    detail.plan === SubscriptionPlan.Free
-                      ? SubscriptionPlan.Free
-                      : getRecurringLabel({
+                message:
+                  detail.plan === SubscriptionPlan.Free
+                    ? t[
+                        'com.affine.payment.updated-notify-msg.cancel-subscription'
+                      ]()
+                    : t['com.affine.payment.updated-notify-msg']({
+                        plan: getRecurringLabel({
                           recurring: recurring as SubscriptionRecurring,
                           t,
                           shouldLowerCase: true,
                         }),
-                }),
+                      }),
               });
             }}
             {...{ detail, subscription, recurring }}
