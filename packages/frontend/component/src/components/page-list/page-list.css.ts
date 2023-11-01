@@ -107,7 +107,7 @@ export const favoriteCell = style({
   flexShrink: 0,
   opacity: 0,
   selectors: {
-    [`&[data-favorite], &${itemStyles.root}:hover &`]: {
+    [`&[data-favorite], ${itemStyles.root}:hover &`]: {
       opacity: 1,
     },
   },
