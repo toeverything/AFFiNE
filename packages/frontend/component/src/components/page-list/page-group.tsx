@@ -26,7 +26,7 @@ import type {
   PageListProps,
 } from './types';
 import { type DateKey } from './types';
-import { betweenDaysAgo, withinDaysAgo } from './utils';
+import { betweenDaysAgo, shallowEqual, withinDaysAgo } from './utils';
 
 // todo: optimize date matchers
 const getDateGroupDefinitions = (key: DateKey): PageGroupDefinition[] => [
@@ -250,11 +250,15 @@ type RequiredProps = Pick<PageListProps, (typeof requiredPropNames)[number]> & {
   selectable: boolean;
 };
 
-const listPropsAtom = selectAtom(pageListPropsAtom, props => {
-  return Object.fromEntries(
-    requiredPropNames.map(name => [name, props[name]])
-  ) as RequiredProps;
-});
+const listPropsAtom = selectAtom(
+  pageListPropsAtom,
+  props => {
+    return Object.fromEntries(
+      requiredPropNames.map(name => [name, props[name]])
+    ) as RequiredProps;
+  },
+  shallowEqual
+);
 
 export const PageMetaListItemRenderer = (pageMeta: PageMeta) => {
   const props = useAtomValue(listPropsAtom);

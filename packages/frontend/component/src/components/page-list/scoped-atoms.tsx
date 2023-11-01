@@ -10,6 +10,7 @@ import type {
   PageMetaRecord,
   VirtualizedPageListProps,
 } from './types';
+import { shallowEqual } from './utils';
 
 // for ease of use in the component tree
 // note: must use selectAtom to access this atom for efficiency
@@ -23,14 +24,18 @@ const selectionActiveAtom = atom(false);
 
 export const selectionStateAtom = atom(
   get => {
-    const baseAtom = selectAtom(pageListPropsAtom, props => {
-      const { selectable, selectedPageIds, onSelectedPageIdsChange } = props;
-      return {
-        selectable,
-        selectedPageIds,
-        onSelectedPageIdsChange,
-      };
-    });
+    const baseAtom = selectAtom(
+      pageListPropsAtom,
+      props => {
+        const { selectable, selectedPageIds, onSelectedPageIdsChange } = props;
+        return {
+          selectable,
+          selectedPageIds,
+          onSelectedPageIdsChange,
+        };
+      },
+      shallowEqual
+    );
     const baseState = get(baseAtom);
     const selectionActive =
       baseState.selectable === 'toggle'
@@ -51,15 +56,22 @@ export const selectionStateAtom = atom(
 export const pageGroupCollapseStateAtom = atom<Record<string, boolean>>({});
 
 // get handlers from pageListPropsAtom
-export const pageListHandlersAtom = selectAtom(pageListPropsAtom, props => {
-  const { onSelectedPageIdsChange } = props;
+export const pageListHandlersAtom = selectAtom(
+  pageListPropsAtom,
+  props => {
+    const { onSelectedPageIdsChange } = props;
+    return {
+      onSelectedPageIdsChange,
+    };
+  },
+  shallowEqual
+);
 
-  return {
-    onSelectedPageIdsChange,
-  };
-});
-
-export const pagesAtom = selectAtom(pageListPropsAtom, props => props.pages);
+export const pagesAtom = selectAtom(
+  pageListPropsAtom,
+  props => props.pages,
+  shallowEqual
+);
 
 export const showOperationsAtom = selectAtom(
   pageListPropsAtom,

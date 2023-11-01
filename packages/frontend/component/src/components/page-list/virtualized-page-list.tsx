@@ -2,7 +2,7 @@ import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import { forwardRef, useCallback, useState } from 'react';
+import { forwardRef, useCallback, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { PageGroupHeader, PageMetaListItemRenderer } from './page-group';
@@ -166,14 +166,17 @@ const PageListInner = ({
     },
     [atTopStateChange]
   );
+  const components = useMemo(() => {
+    return {
+      Header: props.heading ? PageListHeading : undefined,
+    };
+  }, [props.heading]);
   return (
     <Virtuoso<VirtuosoItem>
       data-has-scroll-top={!atTop}
       atTopThreshold={atTopThreshold ?? 0}
       atTopStateChange={handleAtTopStateChange}
-      components={{
-        Header: props.heading ? PageListHeading : undefined,
-      }}
+      components={components}
       data={virtuosoItems}
       topItemCount={1} // sticky header
       totalCount={virtuosoItems.length}

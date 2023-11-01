@@ -84,7 +84,11 @@ const PageCreateDateCell = ({
   createDate,
 }: Pick<PageListItemProps, 'createDate'>) => {
   return (
-    <div data-testid="page-list-item-date" className={styles.dateCell}>
+    <div
+      data-testid="page-list-item-date"
+      data-date-raw={createDate}
+      className={styles.dateCell}
+    >
       {formatDate(createDate)}
     </div>
   );
@@ -94,7 +98,11 @@ const PageUpdatedDateCell = ({
   updatedDate,
 }: Pick<PageListItemProps, 'updatedDate'>) => {
   return (
-    <div data-testid="page-list-item-date" className={styles.dateCell}>
+    <div
+      data-testid="page-list-item-date"
+      data-date-raw={updatedDate}
+      className={styles.dateCell}
+    >
       {updatedDate ? formatDate(updatedDate) : '-'}
     </div>
   );
