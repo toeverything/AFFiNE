@@ -83,7 +83,7 @@ export const headerTitleSelectionIconWrapper = style({
       width: 32,
     },
     [`${tableHeader}[data-selection-active=true] &`]: {
-      width: 68,
+      width: 24,
     },
   },
 });
