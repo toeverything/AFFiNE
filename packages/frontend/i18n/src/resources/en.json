@@ -110,7 +110,7 @@
   "com.affine.auth.set.password.save": "Save Password",
   "com.affine.auth.sign.auth.code.error.hint": "Wrong code, please try again",
   "com.affine.auth.sign.auth.code.message": "If you haven't received the email, please check your spam folder.",
-  "com.affine.auth.sign.auth.code.message.password": "If you haven't received the email, please check your spam folder. Or <1>sign in with password</1> instead.",
+  "com.affine.auth.sign.auth.code.message.password": "Or <1>sign in with password</1> instead.",
   "com.affine.auth.sign.auth.code.on.resend.hint": "Send code again",
   "com.affine.auth.sign.auth.code.resend.hint": "Resend code",
   "com.affine.auth.sign.condition": "Terms of Conditions",

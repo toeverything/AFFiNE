@@ -27,6 +27,7 @@ export const filterItemStyle = style({
   borderRadius: '8px',
   background: 'var(--affine-white)',
   padding: '4px 8px',
+  overflow: 'hidden',
 });
 
 export const filterItemCloseStyle = style({
@@ -58,6 +59,7 @@ export const switchStyle = style({
     background: 'var(--affine-hover-color)',
     borderRadius: '4px',
   },
+  whiteSpace: 'nowrap',
 });
 export const filterTypeStyle = style({
   fontSize: 'var(--affine-font-sm)',

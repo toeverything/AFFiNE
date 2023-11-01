@@ -44,7 +44,6 @@ env:
 jobs:
   set-build-version:
     runs-on: ubuntu-latest
-    environment: production
     outputs:
       version: 0.0.0-internal.${{ steps.version.outputs.version }}
     steps:
@@ -55,7 +54,6 @@ jobs:
 
   before-make:
     runs-on: ubuntu-latest
-    environment: production
     needs:
       - set-build-version
     steps:
@@ -83,7 +81,6 @@ jobs:
           path: packages/frontend/electron/resources/web-static
 
   make-distribution:
-    environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
       # For windows, we need a separate approach

@@ -38,7 +38,6 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-    environment: development
 
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +57,6 @@ jobs:
   build-native:
     name: Build Native
     runs-on: ubuntu-latest
-    environment: development
     needs: build-core
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +75,6 @@ jobs:
   desktop-test:
     name: Desktop Test
     runs-on: ${{ matrix.spec.os }}
-    environment: development
     strategy:
       fail-fast: false
       # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
