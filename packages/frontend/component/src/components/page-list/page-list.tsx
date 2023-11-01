@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { useHydrateAtoms } from 'jotai/utils';
 import {
   type ForwardedRef,
   forwardRef,
@@ -19,6 +18,7 @@ import {
   pageListPropsAtom,
   PageListProvider,
   selectionStateAtom,
+  useAtom,
   useAtomValue,
   useSetAtom,
 } from './scoped-atoms';
@@ -28,31 +28,82 @@ import type { PageListHandle, PageListProps } from './types';
  * Given a list of pages, render a list of pages
  */
 export const PageList = forwardRef<PageListHandle, PageListProps>(
-  function PageListHandle(props, ref) {
+  function PageList(props, ref) {
     return (
       // push pageListProps to the atom so that downstream components can consume it
       // this makes sure pageListPropsAtom is always populated
       // @ts-expect-error fix type issues later
       <PageListProvider initialValues={[[pageListPropsAtom, props]]}>
-        <PageListInner {...props} handleRef={ref} />
+        <PageListInnerWrapper {...props} handleRef={ref}>
+          <PageListInner {...props} />
+        </PageListInnerWrapper>
       </PageListProvider>
     );
   }
 );
 
-const PageListInner = ({
-  handleRef,
-  ...props
-}: PageListProps & { handleRef: ForwardedRef<PageListHandle> }) => {
-  // push pageListProps to the atom so that downstream components can consume it
-  useHydrateAtoms([[pageListPropsAtom, props]], {
-    // note: by turning on dangerouslyForceHydrate, downstream component need to use selectAtom to consume the atom
-    // note2: not using it for now because it will cause some other issues
-    // dangerouslyForceHydrate: true,
-  });
+// when pressing ESC or double clicking outside of the page list, close the selection mode
+// todo: use jotai-effect instead but it seems it does not work with jotai-scope?
+const usePageSelectionStateEffect = () => {
+  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
+  useEffect(() => {
+    if (
+      selectionState.selectionActive &&
+      selectionState.selectable === 'toggle'
+    ) {
+      const startTime = Date.now();
+      const dblClickHandler = (e: MouseEvent) => {
+        if (Date.now() - startTime < 200) {
+          return;
+        }
+        const target = e.target as HTMLElement;
+        // skip if event target is inside of a button or input
+        // or within a toolbar (like page list floating toolbar)
+        if (
+          target.tagName === 'BUTTON' ||
+          target.tagName === 'INPUT' ||
+          (e.target as HTMLElement).closest('button, input, [role="toolbar"]')
+        ) {
+          return;
+        }
+        setSelectionActive(false);
+      };
 
+      const escHandler = (e: KeyboardEvent) => {
+        if (Date.now() - startTime < 200) {
+          return;
+        }
+        if (e.key === 'Escape') {
+          setSelectionActive(false);
+        }
+      };
+
+      document.addEventListener('dblclick', dblClickHandler);
+      document.addEventListener('keydown', escHandler);
+
+      return () => {
+        document.removeEventListener('dblclick', dblClickHandler);
+        document.removeEventListener('keydown', escHandler);
+      };
+    }
+    return;
+  }, [
+    selectionState.selectable,
+    selectionState.selectionActive,
+    setSelectionActive,
+  ]);
+};
+
+export const PageListInnerWrapper = ({
+  handleRef,
+  children,
+  ...props
+}: PropsWithChildren<
+  PageListProps & { handleRef: ForwardedRef<PageListHandle> }
+>) => {
   const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
   const setPageListSelectionState = useSetAtom(selectionStateAtom);
+  usePageSelectionStateEffect();
 
   useEffect(() => {
     setPageListPropsAtom(props);
@@ -69,7 +120,10 @@ const PageListInner = ({
     },
     [setPageListSelectionState]
   );
+  return children;
+};
 
+const PageListInner = (props: PageListProps) => {
   const groups = useAtomValue(pageGroupsAtom);
   const hideHeader = props.hideHeader;
   return (

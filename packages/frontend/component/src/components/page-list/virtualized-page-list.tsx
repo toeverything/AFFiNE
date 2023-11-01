@@ -2,27 +2,19 @@ import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import {
-  type ForwardedRef,
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { PageGroupHeader, PageMetaListItemRenderer } from './page-group';
 import { PageListTableHeader } from './page-header';
+import { PageListInnerWrapper } from './page-list';
 import * as styles from './page-list.css';
 import {
   pageGroupCollapseStateAtom,
   pageGroupsAtom,
   pageListPropsAtom,
   PageListProvider,
-  selectionStateAtom,
   useAtomValue,
-  useSetAtom,
 } from './scoped-atoms';
 import type {
   PageGroupProps,
@@ -81,7 +73,9 @@ export const VirtualizedPageList = forwardRef<
     // this makes sure pageListPropsAtom is always populated
     // @ts-expect-error fix type issues later
     <PageListProvider initialValues={[[pageListPropsAtom, props]]}>
-      <PageListInner {...props} handleRef={ref} />
+      <PageListInnerWrapper {...props} handleRef={ref}>
+        <PageListInner {...props} />
+      </PageListInnerWrapper>
     </PageListProvider>
   );
 });
@@ -159,34 +153,12 @@ const itemContentRenderer = (_index: number, data: VirtuosoItem) => {
 };
 
 const PageListInner = ({
-  handleRef,
   atTopStateChange,
   atTopThreshold,
   ...props
-}: VirtualizedPageListProps & { handleRef: ForwardedRef<PageListHandle> }) => {
-  const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
-  const setPageListSelectionState = useSetAtom(selectionStateAtom);
-
-  useEffect(() => {
-    setPageListPropsAtom(props);
-  }, [props, setPageListPropsAtom]);
-
-  useImperativeHandle(
-    handleRef,
-    () => {
-      return {
-        toggleSelectable: () => {
-          setPageListSelectionState(false);
-        },
-      };
-    },
-    [setPageListSelectionState]
-  );
-
+}: VirtualizedPageListProps) => {
   const virtuosoItems = useAtomValue(virtuosoItemsAtom);
-
   const [atTop, setAtTop] = useState(false);
-
   const handleAtTopStateChange = useCallback(
     (atTop: boolean) => {
       setAtTop(atTop);
@@ -194,7 +166,6 @@ const PageListInner = ({
     },
     [atTopStateChange]
   );
-
   return (
     <Virtuoso<VirtuosoItem>
       data-has-scroll-top={!atTop}

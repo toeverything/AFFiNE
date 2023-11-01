@@ -48,6 +48,7 @@ export interface PageListProps {
   selectable?: 'toggle' | boolean; // show selection checkbox. toggle means showing a toggle selection in header on click; boolean == true means showing a selection checkbox for each item
   selectedPageIds?: string[]; // selected page ids
   onSelectedPageIdsChange?: (selected: string[]) => void;
+  onSelectionActiveChange?: (active: boolean) => void;
   draggable?: boolean; // whether or not to allow dragging this page item
   // we also need the following to make sure the page list functions properly
   // maybe we could also give a function to render PageListItem?

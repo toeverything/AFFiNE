@@ -148,14 +148,6 @@ const PageListFloatingToolbar = ({
   onClose: () => void;
 }) => {
   const open = selectedIds.length > 0;
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
   const [currentWorkspace] = useCurrentWorkspace();
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -175,11 +167,7 @@ const PageListFloatingToolbar = ({
   }, [pageMetas, selectedIds, setTrashModal]);
 
   return (
-    <FloatingToolbar
-      className={styles.floatingToolbar}
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <FloatingToolbar className={styles.floatingToolbar} open={open}>
       <FloatingToolbar.Item>
         <Trans
           i18nKey="com.affine.page.toolbar.selected"
@@ -188,7 +176,7 @@ const PageListFloatingToolbar = ({
           <div className={styles.toolbarSelectedNumber}>
             {{ count: selectedIds.length } as any}
           </div>
-          pages selected
+          selected
         </Trans>
       </FloatingToolbar.Item>
       <FloatingToolbar.Button onClick={onClose} icon={<CloseIcon />} />
