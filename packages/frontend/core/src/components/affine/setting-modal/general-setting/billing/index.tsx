@@ -5,14 +5,12 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import {
-  cancelSubscriptionMutation,
   createCustomerPortalMutation,
   getInvoicesCountQuery,
   type InvoicesQuery,
   invoicesQuery,
   InvoiceStatus,
   pricesQuery,
-  resumeSubscriptionMutation,
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
@@ -25,7 +23,6 @@ import { Skeleton } from '@mui/material';
 import { Button, IconButton } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
 import { useSetAtom } from 'jotai';
-import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
@@ -34,7 +31,7 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
-import { DowngradeModal } from '../plans/modals';
+import { CancelAction, ResumeAction } from '../plans/actions';
 import * as styles from './style.css';
 
 enum DescriptionI18NKey {
@@ -89,24 +86,7 @@ export const BillingSettings = () => {
 
 const SubscriptionSettings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
-  const { isMutating, trigger } = useMutation({
-    mutation: cancelSubscriptionMutation,
-  });
   const [openCancelModal, setOpenCancelModal] = useState(false);
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
-  const cancel = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          mutateSubscription(data.cancelSubscription);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, mutateSubscription]);
 
   const { data: pricesQueryResult } = useQuery({
     query: pricesQuery,
@@ -213,27 +193,28 @@ const SubscriptionSettings = () => {
               <ResumeSubscription onSubscriptionUpdate={mutateSubscription} />
             </SettingRow>
           ) : (
-            <SettingRow
-              style={{ cursor: 'pointer' }}
-              onClick={() => (isMutating ? null : setOpenCancelModal(true))}
-              className="dangerous-setting"
-              name={t[
-                'com.affine.payment.billing-setting.cancel-subscription'
-              ]()}
-              desc={t[
-                'com.affine.payment.billing-setting.cancel-subscription.description'
-              ]({
-                cancelDate: new Date(subscription.end).toLocaleDateString(),
-              })}
+            <CancelAction
+              open={openCancelModal}
+              onOpenChange={setOpenCancelModal}
+              onSubscriptionUpdate={mutateSubscription}
             >
-              <CancelSubscription loading={isMutating} />
-            </SettingRow>
+              <SettingRow
+                style={{ cursor: 'pointer' }}
+                onClick={() => setOpenCancelModal(true)}
+                className="dangerous-setting"
+                name={t[
+                  'com.affine.payment.billing-setting.cancel-subscription'
+                ]()}
+                desc={t[
+                  'com.affine.payment.billing-setting.cancel-subscription.description'
+                ]({
+                  cancelDate: new Date(subscription.end).toLocaleDateString(),
+                })}
+              >
+                <CancelSubscription />
+              </SettingRow>
+            </CancelAction>
           )}
-          <DowngradeModal
-            open={openCancelModal}
-            onCancel={() => (isMutating ? null : cancel())}
-            onOpenChange={setOpenCancelModal}
-          />
         </>
       )}
     </div>
@@ -295,33 +276,18 @@ const ResumeSubscription = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
-  const { isMutating, trigger } = useMutation({
-    mutation: resumeSubscriptionMutation,
-  });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
-  const resume = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          onSubscriptionUpdate(data.resumeSubscription);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
+  const [open, setOpen] = useState(false);
 
   return (
-    <Button
-      className={styles.button}
-      onClick={resume}
-      loading={isMutating}
-      disabled={isMutating}
+    <ResumeAction
+      open={open}
+      onOpenChange={setOpen}
+      onSubscriptionUpdate={onSubscriptionUpdate}
     >
-      {t['com.affine.payment.billing-setting.resume-subscription']()}
-    </Button>
+      <Button className={styles.button} onClick={() => setOpen(true)}>
+        {t['com.affine.payment.billing-setting.resume-subscription']()}
+      </Button>
+    </ResumeAction>
   );
 };
 
