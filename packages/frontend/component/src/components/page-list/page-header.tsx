@@ -2,6 +2,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MultiSelectIcon, SortDownIcon, SortUpIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
+import { selectAtom } from 'jotai/utils';
 import {
   type MouseEventHandler,
   type ReactNode,
@@ -130,11 +131,14 @@ const PageListHeaderTitleCell = () => {
   );
 };
 
+const hideHeaderAtom = selectAtom(pageListPropsAtom, props => props.hideHeader);
+
 // the table header for page list
 export const PageListTableHeader = () => {
   const t = useAFFiNEI18N();
   const showOperations = useAtomValue(showOperationsAtom);
-  const { hideHeader } = useAtomValue(pageListPropsAtom);
+  const hideHeader = useAtomValue(hideHeaderAtom);
+  const selectionState = useAtomValue(selectionStateAtom);
   const headerCols = useMemo(() => {
     const cols: (HeaderColDef | boolean)[] = [
       {
@@ -181,7 +185,11 @@ export const PageListTableHeader = () => {
   }
 
   return (
-    <div className={clsx(styles.tableHeader)}>
+    <div
+      className={clsx(styles.tableHeader)}
+      data-selectable={selectionState.selectable}
+      data-selection-active={selectionState.selectionActive}
+    >
       {headerCols.map(col => {
         return (
           <PageListHeaderCell

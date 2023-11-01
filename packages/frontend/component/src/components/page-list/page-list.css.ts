@@ -76,13 +76,22 @@ export const headerTitleCell = style({
 export const headerTitleSelectionIconWrapper = style({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   fontSize: '16px',
+  selectors: {
+    [`${tableHeader}[data-selectable=toggle] &`]: {
+      width: 32,
+    },
+    [`${tableHeader}[data-selection-active=true] &`]: {
+      width: 68,
+    },
+  },
 });
 
 export const headerCellSortIcon = style({
-  width: '14px',
-  height: '14px',
+  display: 'inline-flex',
+  fontSize: 14,
+  color: 'var(--affine-icon-color)',
 });
 
 export const colWrapper = style({
