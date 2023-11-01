@@ -97,17 +97,23 @@ const usePageSelectionStateEffect = () => {
 export const PageListInnerWrapper = ({
   handleRef,
   children,
+  onSelectionActiveChange,
   ...props
 }: PropsWithChildren<
   PageListProps & { handleRef: ForwardedRef<PageListHandle> }
 >) => {
   const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
-  const setPageListSelectionState = useSetAtom(selectionStateAtom);
+  const [selectionState, setPageListSelectionState] =
+    useAtom(selectionStateAtom);
   usePageSelectionStateEffect();
 
   useEffect(() => {
     setPageListPropsAtom(props);
   }, [props, setPageListPropsAtom]);
+
+  useEffect(() => {
+    onSelectionActiveChange?.(!!selectionState.selectionActive);
+  }, [onSelectionActiveChange, selectionState.selectionActive]);
 
   useImperativeHandle(
     handleRef,

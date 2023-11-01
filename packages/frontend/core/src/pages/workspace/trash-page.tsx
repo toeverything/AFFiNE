@@ -72,7 +72,7 @@ export const TrashPage = () => {
           {filteredPageMetas.length > 0 ? (
             <PageList
               pages={filteredPageMetas}
-              clickMode="link"
+              rowAsLink
               groupBy={false}
               isPreferredEdgeless={isPreferredEdgeless}
               blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}

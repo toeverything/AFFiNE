@@ -44,7 +44,7 @@ export interface PageListProps {
   hideHeader?: boolean; // whether or not to hide the header. default is false (showing header)
   groupBy?: PagesGroupByType | false;
   isPreferredEdgeless: (pageId: string) => boolean; // determines the icon used for each row
-  clickMode?: 'select' | 'link'; // select => click to select; link => click to navigate
+  rowAsLink?: boolean;
   selectable?: 'toggle' | boolean; // show selection checkbox. toggle means showing a toggle selection in header on click; boolean == true means showing a selection checkbox for each item
   selectedPageIds?: string[]; // selected page ids
   onSelectedPageIdsChange?: (selected: string[]) => void;

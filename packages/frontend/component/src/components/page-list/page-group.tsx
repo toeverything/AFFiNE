@@ -251,7 +251,7 @@ export const PageGroup = ({ id, items, label }: PageGroupProps) => {
 // todo: optimize how to render page meta list item
 const requiredPropNames = [
   'blockSuiteWorkspace',
-  'clickMode',
+  'rowAsLink',
   'isPreferredEdgeless',
   'pageOperationsRenderer',
   'selectedPageIds',
@@ -329,10 +329,10 @@ function pageMetaToPageItemProp(
       ? new Date(pageMeta.updatedDate)
       : undefined,
     to:
-      props.clickMode === 'link'
+      props.rowAsLink && !props.selectable
         ? `/workspace/${props.blockSuiteWorkspace.id}/${pageMeta.id}`
         : undefined,
-    onClick: props.clickMode === 'select' ? toggleSelection : undefined,
+    onClick: props.selectable ? toggleSelection : undefined,
     icon: props.isPreferredEdgeless?.(pageMeta.id) ? (
       <EdgelessIcon />
     ) : (

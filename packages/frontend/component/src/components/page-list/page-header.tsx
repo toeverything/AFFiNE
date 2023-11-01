@@ -44,6 +44,7 @@ export const PageListHeaderCell = (props: HeaderCellProps) => {
       data-sortable={props.sortable ? true : undefined}
       data-sorting={sorting ? true : undefined}
       style={props.style}
+      role="columnheader"
       hideInSmallContainer={props.hideInSmallContainer}
     >
       {props.children}

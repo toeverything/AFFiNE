@@ -143,11 +143,12 @@ const usePageOperationsRenderer = () => {
 const PageListFloatingToolbar = ({
   selectedIds,
   onClose,
+  open,
 }: {
+  open: boolean;
   selectedIds: string[];
   onClose: () => void;
 }) => {
-  const open = selectedIds.length > 0;
   const [currentWorkspace] = useCurrentWorkspace();
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -231,8 +232,10 @@ export const AllPage = () => {
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const pageListRef = useRef<PageListHandle>(null);
-  const deselectAllAndToggleSelect = useCallback(() => {
-    setSelectedPageIds([]);
+
+  const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
+
+  const hideFloatingToolbar = useCallback(() => {
     pageListRef.current?.toggleSelectable();
   }, []);
 
@@ -273,18 +276,20 @@ export const AllPage = () => {
             draggable
             atTopThreshold={80}
             atTopStateChange={setHideHeaderCreateNewPage}
+            onSelectionActiveChange={setShowFloatingToolbar}
             heading={<PageListHeader />}
             selectedPageIds={filteredSelectedPageIds}
             onSelectedPageIdsChange={setSelectedPageIds}
             pages={filteredPageMetas}
-            clickMode="link"
+            rowAsLink
             isPreferredEdgeless={isPreferredEdgeless}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
             pageOperationsRenderer={pageOperationsRenderer}
           />
           <PageListFloatingToolbar
+            open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
             selectedIds={filteredSelectedPageIds}
-            onClose={deselectAllAndToggleSelect}
+            onClose={hideFloatingToolbar}
           />
         </>
       ) : (
