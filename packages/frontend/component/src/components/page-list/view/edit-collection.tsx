@@ -532,6 +532,9 @@ const PagesMode = ({
         value={searchText}
         onChange={e => updateSearchText(e.target.value)}
         className={styles.rulesTitle}
+        style={{
+          color: 'var(--affine-text-primary-color)',
+        }}
         placeholder={t['com.affine.editCollection.search.placeholder']()}
       ></input>
       <div className={styles.pagesList}>
