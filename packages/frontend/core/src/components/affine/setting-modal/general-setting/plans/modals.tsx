@@ -72,6 +72,7 @@ export const ConfirmLoadingModal = ({
  */
 export const DowngradeModal = ({
   open,
+  loading,
   onOpenChange,
   onCancel,
 }: {
@@ -81,6 +82,14 @@ export const DowngradeModal = ({
   onCancel?: () => void;
 }) => {
   const t = useAFFiNEI18N();
+  const canceled = useRef(false);
+
+  useEffect(() => {
+    if (!loading && open && canceled.current) {
+      onOpenChange?.(false);
+      canceled.current = false;
+    }
+  }, [loading, open, onOpenChange]);
 
   return (
     <Modal
@@ -102,14 +111,19 @@ export const DowngradeModal = ({
       <footer className={styles.downgradeFooter}>
         <Button
           onClick={() => {
-            onOpenChange?.(false);
+            canceled.current = true;
             onCancel?.();
           }}
+          loading={loading}
         >
           {t['com.affine.payment.modal.downgrade.cancel']()}
         </Button>
         <DialogTrigger asChild>
-          <Button onClick={() => onOpenChange?.(false)} type="primary">
+          <Button
+            disabled={loading}
+            onClick={() => onOpenChange?.(false)}
+            type="primary"
+          >
             {t['com.affine.payment.modal.downgrade.confirm']()}
           </Button>
         </DialogTrigger>
