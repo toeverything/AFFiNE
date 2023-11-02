@@ -30,8 +30,10 @@ interface LazyProviderOptions {
 export type DocProvider = {
   // backport from `@blocksuite/store`
   passive: true;
+  active: true;
 
   sync(onlyRootDoc?: boolean): Promise<void>;
+  get whenReady(): Promise<void>;
 
   get connected(): boolean;
   connect(): void;
@@ -346,18 +348,33 @@ export const createLazyProvider = (
     );
   };
 
+  let _resolve: () => void;
+  let _reject: (error: unknown) => void;
+  const syncPromise = new Promise<void>((resolve, reject) => {
+    _resolve = resolve;
+    _reject = reject;
+  });
+
   return {
-    sync: async onlyRootDoc => {
-      connected = true;
+    active: true,
+    sync: async (onlyRootDoc = true) => {
+      if (!connected) {
+        connect();
+      }
       try {
         if (onlyRootDoc) {
           await syncDoc(rootDoc);
         } else {
           await syncDocRecursive(rootDoc);
         }
-      } finally {
-        connected = false;
+        _resolve();
+      } catch (err) {
+        _reject(err);
+        throw err;
       }
+    },
+    get whenReady() {
+      return syncPromise;
     },
     get status() {
       return currentStatus;

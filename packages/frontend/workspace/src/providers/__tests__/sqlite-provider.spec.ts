@@ -1,7 +1,4 @@
-import type {
-  SQLiteDBDownloadProvider,
-  SQLiteProvider,
-} from '@affine/env/workspace';
+import type { SQLiteProvider } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { Y as YType } from '@blocksuite/store';
 import { Schema, Workspace } from '@blocksuite/store';
@@ -15,17 +12,14 @@ import { setTimeout } from 'timers/promises';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { getDoc } from 'y-provider';
 
-import {
-  createSQLiteDBDownloadProvider,
-  createSQLiteProvider,
-} from '../sqlite-providers';
+import { createSQLiteProvider } from '../sqlite-providers';
 
 const Y = Workspace.Y;
 
 let id: string;
 let workspace: Workspace;
 let provider: SQLiteProvider;
-let downloadProvider: SQLiteDBDownloadProvider;
+let downloadProvider: SQLiteProvider;
 
 let offlineYdoc: YType.Doc;
 
@@ -89,13 +83,9 @@ beforeEach(() => {
   provider = createSQLiteProvider(workspace.id, workspace.doc, {
     awareness: workspace.awarenessStore.awareness,
   }) as SQLiteProvider;
-  downloadProvider = createSQLiteDBDownloadProvider(
-    workspace.id,
-    workspace.doc,
-    {
-      awareness: workspace.awarenessStore.awareness,
-    }
-  ) as SQLiteDBDownloadProvider;
+  downloadProvider = createSQLiteProvider(workspace.id, workspace.doc, {
+    awareness: workspace.awarenessStore.awareness,
+  }) as SQLiteProvider;
   offlineYdoc = new Y.Doc();
   offlineYdoc.getText('text').insert(0, 'sqlite-hello');
 });

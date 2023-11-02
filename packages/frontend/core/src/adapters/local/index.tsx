@@ -3,7 +3,7 @@ import {
   DEFAULT_WORKSPACE_NAME,
   PageNotFoundError,
 } from '@affine/env/constant';
-import type { LocalIndexedDBDownloadProvider } from '@affine/env/workspace';
+import type { LocalIndexedDBBackgroundProvider } from '@affine/env/workspace';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
@@ -18,7 +18,7 @@ import {
   getOrCreateWorkspace,
   globalBlockSuiteSchema,
 } from '@affine/workspace/manager';
-import { createIndexedDBDownloadProvider } from '@affine/workspace/providers';
+import { createIndexedDBBackgroundProvider } from '@affine/workspace/providers';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
@@ -67,13 +67,13 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
           logger.error('init page with empty failed', error);
         });
       }
-      const provider = createIndexedDBDownloadProvider(
+      const provider = createIndexedDBBackgroundProvider(
         blockSuiteWorkspace.id,
         blockSuiteWorkspace.doc,
         {
           awareness: blockSuiteWorkspace.awarenessStore.awareness,
         }
-      ) as LocalIndexedDBDownloadProvider;
+      ) as LocalIndexedDBBackgroundProvider;
       provider.sync();
       provider.whenReady.catch(console.error);
       saveWorkspaceToLocalStorage(blockSuiteWorkspace.id);

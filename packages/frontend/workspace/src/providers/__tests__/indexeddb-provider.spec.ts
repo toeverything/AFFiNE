@@ -3,18 +3,12 @@
  */
 import 'fake-indexeddb/auto';
 
-import type {
-  LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
-} from '@affine/env/workspace';
+import type { LocalIndexedDBBackgroundProvider } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema, Workspace } from '@blocksuite/store';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import {
-  createIndexedDBBackgroundProvider,
-  createIndexedDBDownloadProvider,
-} from '..';
+import { createIndexedDBBackgroundProvider } from '..';
 
 const schema = new Schema();
 
@@ -63,13 +57,13 @@ describe('download provider', () => {
         isSSR: true,
         schema,
       });
-      const provider = createIndexedDBDownloadProvider(
+      const provider = createIndexedDBBackgroundProvider(
         workspace.id,
         workspace.doc,
         {
           awareness: workspace.awarenessStore.awareness,
         }
-      ) as LocalIndexedDBDownloadProvider;
+      ) as LocalIndexedDBBackgroundProvider;
       provider.sync();
       await provider.whenReady;
       expect(workspace.doc.toJSON()).toEqual({

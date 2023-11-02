@@ -32,24 +32,21 @@ export interface BroadCastChannelProvider extends PassiveDocProvider {
  */
 export interface LocalIndexedDBBackgroundProvider
   extends DataSourceAdapter,
-    PassiveDocProvider {
+    PassiveDocProvider,
+    ActiveDocProvider {
   flavour: 'local-indexeddb-background';
 }
 
-export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
-  flavour: 'local-indexeddb';
-}
-
-export interface SQLiteProvider extends PassiveDocProvider, DataSourceAdapter {
+export interface SQLiteProvider
+  extends PassiveDocProvider,
+    ActiveDocProvider,
+    DataSourceAdapter {
   flavour: 'sqlite';
-}
-
-export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
-  flavour: 'sqlite-download';
 }
 
 export interface AffineSocketIOProvider
   extends PassiveDocProvider,
+    ActiveDocProvider,
     DataSourceAdapter {
   flavour: 'affine-socket-io';
 }

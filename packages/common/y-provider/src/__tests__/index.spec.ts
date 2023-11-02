@@ -216,6 +216,7 @@ describe('y-provider', () => {
     const provider = createLazyProvider(rootDoc, datasource);
 
     await provider.sync(true);
+    provider.disconnect();
     expect(rootDoc.getText().toJSON()).toBe('hello, world!');
 
     const remotesubdoc = new Doc();
@@ -224,12 +225,15 @@ describe('y-provider', () => {
     expect(rootDoc.subdocs.size).toBe(0);
 
     await provider.sync(true);
+    provider.disconnect();
     expect(rootDoc.subdocs.size).toBe(1);
     const subdoc = rootDoc.getMap('map').get('subdoc') as Doc;
     expect(subdoc.getText('text').toJSON()).toBe('');
     await provider.sync(true);
+    provider.disconnect();
     expect(subdoc.getText('text').toJSON()).toBe('');
     await provider.sync(false);
+    provider.disconnect();
     expect(subdoc.getText('text').toJSON()).toBe('test-subdoc-value');
   });
 });

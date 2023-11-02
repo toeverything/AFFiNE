@@ -2,31 +2,17 @@ import { DebugLogger } from '@affine/debug';
 import type {
   AffineSocketIOProvider,
   LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
 } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DocProviderCreator } from '@blocksuite/store';
-import { Workspace } from '@blocksuite/store';
 import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
-import {
-  createIndexedDBDatasource,
-  createIndexedDBProvider as create,
-} from '@toeverything/y-indexeddb';
+import { createIndexedDBProvider as create } from '@toeverything/y-indexeddb';
 import { createLazyProvider } from 'y-provider';
-import { encodeStateVector } from 'yjs';
 
 import { createAffineDataSource } from '../affine';
-import {
-  createCloudDownloadProvider,
-  createMergeCloudSnapshotProvider,
-  downloadBinaryFromCloud,
-} from './cloud';
-import {
-  createSQLiteDBDownloadProvider,
-  createSQLiteProvider,
-} from './sqlite-providers';
+import { createCloudDownloadProvider, downloadBinaryFromCloud } from './cloud';
+import { createSQLiteProvider } from './sqlite-providers';
 
-const Y = Workspace.Y;
 const logger = new DebugLogger('indexeddb-provider');
 
 const createAffineSocketIOProvider: DocProviderCreator = (
@@ -55,6 +41,10 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
     flavour: 'local-indexeddb-background',
     datasource: indexeddbProvider.datasource,
     passive: true,
+    active: true,
+    get whenReady() {
+      return indexeddbProvider.whenReady;
+    },
     get status() {
       return indexeddbProvider.status;
     },
@@ -69,6 +59,9 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
       logger.info('connect indexeddb provider', id);
       indexeddbProvider.connect();
     },
+    sync: () => {
+      indexeddbProvider.sync();
+    },
     disconnect: () => {
       assertExists(indexeddbProvider);
       logger.info('disconnect indexeddb provider', id);
@@ -78,68 +71,23 @@ const createIndexedDBBackgroundProvider: DocProviderCreator = (
   };
 };
 
-const indexedDBDownloadOrigin = 'indexeddb-download-provider';
-
-const createIndexedDBDownloadProvider: DocProviderCreator = (
-  id,
-  doc
-): LocalIndexedDBDownloadProvider => {
-  const datasource = createIndexedDBDatasource({});
-  let _resolve: () => void;
-  let _reject: (error: unknown) => void;
-  const promise = new Promise<void>((resolve, reject) => {
-    _resolve = resolve;
-    _reject = reject;
-  });
-
-  return {
-    flavour: 'local-indexeddb',
-    active: true,
-    get whenReady() {
-      return promise;
-    },
-    cleanup: () => {
-      // todo: cleanup data
-    },
-    sync: () => {
-      logger.info('sync indexeddb provider', id);
-      datasource
-        .queryDocState(doc.guid, {
-          stateVector: encodeStateVector(doc),
-        })
-        .then(docState => {
-          if (docState) {
-            Y.applyUpdate(doc, docState.missing, indexedDBDownloadOrigin);
-          }
-          _resolve();
-        })
-        .catch(_reject);
-    },
-  };
-};
-
 export {
   createAffineSocketIOProvider,
   createBroadcastChannelProvider,
   createIndexedDBBackgroundProvider,
-  createIndexedDBDownloadProvider,
-  createSQLiteDBDownloadProvider,
   createSQLiteProvider,
   downloadBinaryFromCloud,
 };
 
 export const createLocalProviders = (): DocProviderCreator[] => {
-  const providers = [
-    createIndexedDBBackgroundProvider,
-    createIndexedDBDownloadProvider,
-  ] as DocProviderCreator[];
+  const providers = [createIndexedDBBackgroundProvider] as DocProviderCreator[];
 
   if (runtimeConfig.enableBroadcastChannelProvider) {
     providers.push(createBroadcastChannelProvider);
   }
 
   if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-    providers.push(createSQLiteProvider, createSQLiteDBDownloadProvider);
+    providers.push(createSQLiteProvider);
   }
 
   return providers;
@@ -150,7 +98,6 @@ export const createAffineProviders = (): DocProviderCreator[] => {
     [
       ...createLocalProviders(),
       runtimeConfig.enableCloud && createAffineSocketIOProvider,
-      runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
     ] as DocProviderCreator[]
   ).filter(v => Boolean(v));
 };

@@ -66,33 +66,3 @@ export const createCloudDownloadProvider: DocProviderCreator = (
     },
   };
 };
-
-export const createMergeCloudSnapshotProvider: DocProviderCreator = (
-  id,
-  doc
-): ActiveDocProvider => {
-  let _resolve: () => void;
-  const promise = new Promise<void>(resolve => {
-    _resolve = resolve;
-  });
-
-  return {
-    flavour: 'affine-cloud-merge-snapshot',
-    active: true,
-    sync() {
-      downloadBinary(id, doc)
-        .then(() => {
-          logger.info(`Downloaded ${id}`);
-          _resolve();
-        })
-        // ignore error
-        .catch(e => {
-          console.error(e);
-          _resolve();
-        });
-    },
-    get whenReady() {
-      return promise;
-    },
-  };
-};

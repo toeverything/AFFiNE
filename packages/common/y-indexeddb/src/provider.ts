@@ -152,6 +152,17 @@ export const createIndexedDBProvider = (
     cleanup: async () => {
       await datasource?.cleanup();
     },
+    sync: () => {
+      if (!provider) {
+        apis.connect();
+      }
+      provider?.sync(true).catch(() => {
+        /* noop */
+      });
+    },
+    get whenReady() {
+      return Promise.resolve(provider?.whenReady);
+    },
     get connected() {
       return provider?.connected || false;
     },

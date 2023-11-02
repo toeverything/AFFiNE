@@ -12,6 +12,8 @@ export function upgradeDB(db: IDBPDatabase<BlockSuiteBinaryDB>) {
 export interface IndexedDBProvider extends DataSourceAdapter {
   connect: () => void;
   disconnect: () => void;
+  sync: () => void;
+  readonly whenReady: Promise<void>;
   cleanup: () => Promise<void>;
   readonly connected: boolean;
 }
