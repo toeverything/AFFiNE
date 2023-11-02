@@ -24,7 +24,7 @@ jobs:
         run: |
           node -e "const env = require('semver').parse('${{ github.ref_name }}').prerelease[0] ?? 'stable'; console.log(`flavor=${env}`)" >> "$GITHUB_OUTPUT"
       - name: dispatch deploy
-        uses: benc-uk/workflow-dispatch@v1
+        uses: benc-uk/workflow-dispatch@v121
         with:
           workflow: deploy.yml
           inputs: '{ "flavor": "${{ steps.flavor.outputs.flavor }}" }'
