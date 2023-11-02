@@ -40,7 +40,6 @@ env:
 jobs:
   before-make:
     runs-on: ubuntu-latest
-    environment: production
     outputs:
       RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
     steps:
@@ -76,7 +75,6 @@ jobs:
           path: packages/frontend/electron/resources/web-static
 
   make-distribution:
-    environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
       # For windows, we need a separate approach
@@ -159,7 +157,6 @@ jobs:
           path: builds
 
   package-distribution-windows:
-    environment: production
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
       # For windows, we need a separate approach
@@ -235,7 +232,6 @@ jobs:
       artifact-name: packaged-win32-x64
 
   make-windows-installer:
-    environment: production
     needs: sign-packaged-artifacts-windows
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64
@@ -289,7 +285,6 @@ jobs:
       artifact-name: installer-win32-x64
 
   finalize-installer-windows:
-    environment: production
     needs: sign-installer-artifacts-windows
     strategy:
       # all combinations: macos-latest x64, macos-latest arm64, ubuntu-latest x64

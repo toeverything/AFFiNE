@@ -39,7 +39,6 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    environment: development
 
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +74,6 @@ jobs:
   e2e-plugin-test:
     name: E2E Plugin Test
     runs-on: ubuntu-latest
-    environment: development
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -115,7 +113,6 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5]
-    environment: development
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -153,7 +150,6 @@ jobs:
   e2e-migration-test:
     name: E2E Migration Test
     runs-on: ubuntu-latest
-    environment: development
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -176,7 +172,6 @@ jobs:
   unit-test:
     name: Unit Test
     runs-on: ubuntu-latest
-    environment: development
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
