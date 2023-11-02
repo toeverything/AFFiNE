@@ -5,7 +5,6 @@ import * as itemStyles from './page-list-item.css';
 export const listRootContainer = createContainer('list-root-container');
 
 export const pageListScrollContainer = style({
-  overflowY: 'auto',
   width: '100%',
   flex: 1,
 });

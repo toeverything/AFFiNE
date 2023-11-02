@@ -9,6 +9,7 @@ import {
   useRef,
 } from 'react';
 
+import { Scrollable } from '../../ui/scrollbar';
 import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { PageGroup } from './page-group';
 import { PageListTableHeader } from './page-header';
@@ -171,14 +172,14 @@ export const PageListScrollContainer = forwardRef<
   );
 
   return (
-    <div
+    <Scrollable.Root
       style={style}
-      ref={setNodeRef}
       data-has-scroll-top={hasScrollTop}
       className={clsx(styles.pageListScrollContainer, className)}
     >
-      {children}
-    </div>
+      <Scrollable.Viewport ref={setNodeRef}>{children}</Scrollable.Viewport>
+      <Scrollable.Scrollbar />
+    </Scrollable.Root>
   );
 });
 

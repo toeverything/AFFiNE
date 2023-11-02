@@ -2,9 +2,17 @@ import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import { forwardRef, useCallback, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  type HTMLAttributes,
+  type PropsWithChildren,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
+import { Scrollable } from '../../ui/scrollbar';
 import { PageGroupHeader, PageMetaListItemRenderer } from './page-group';
 import { PageListTableHeader } from './page-header';
 import { PageListInnerWrapper } from './page-list';
@@ -87,57 +95,64 @@ const PageListHeading = () => {
   return <div className={styles.heading}>{heading}</div>;
 };
 
-const virtuosoItemsAtom = atom(get => {
-  const groups = get(pageGroupsAtom);
-  const groupCollapsedState = get(pageGroupCollapseStateAtom);
-  const items: VirtuosoItem[] = [];
+const useVirtuosoItems = () => {
+  const virtuosoItemsAtom = useMemo(
+    () =>
+      atom(get => {
+        const groups = get(pageGroupsAtom);
+        const groupCollapsedState = get(pageGroupCollapseStateAtom);
+        const items: VirtuosoItem[] = [];
 
-  // 1.
-  // always put sticky header at the top
-  // the visibility of sticky header is inside of PageListTableHeader
-  items.push({
-    type: 'sticky-header',
-  });
-
-  // 2.
-  // iterate groups and add page items
-  for (const group of groups) {
-    // skip empty group header since it will cause issue in virtuoso ("Zero-sized element")
-    if (group.label) {
-      items.push({
-        type: 'page-group-header',
-        data: group,
-      });
-    }
-    // do not render items if the group is collapsed
-    if (!groupCollapsedState[group.id]) {
-      for (const item of group.items) {
+        // 1.
+        // always put sticky header at the top
+        // the visibility of sticky header is inside of PageListTableHeader
         items.push({
-          type: 'page-item',
-          data: item,
+          type: 'sticky-header',
         });
-        // add a spacer between items (4px), unless it's the last item
-        if (item !== group.items[group.items.length - 1]) {
+
+        // 2.
+        // iterate groups and add page items
+        for (const group of groups) {
+          // skip empty group header since it will cause issue in virtuoso ("Zero-sized element")
+          if (group.label) {
+            items.push({
+              type: 'page-group-header',
+              data: group,
+            });
+          }
+          // do not render items if the group is collapsed
+          if (!groupCollapsedState[group.id]) {
+            for (const item of group.items) {
+              items.push({
+                type: 'page-item',
+                data: item,
+              });
+              // add a spacer between items (4px), unless it's the last item
+              if (item !== group.items[group.items.length - 1]) {
+                items.push({
+                  type: 'page-item-spacer',
+                  data: {
+                    height: 4,
+                  },
+                });
+              }
+            }
+          }
+
+          // add a spacer between groups (16px)
           items.push({
             type: 'page-item-spacer',
             data: {
-              height: 4,
+              height: 16,
             },
           });
         }
-      }
-    }
-
-    // add a spacer between groups (16px)
-    items.push({
-      type: 'page-item-spacer',
-      data: {
-        height: 16,
-      },
-    });
-  }
-  return items;
-});
+        return items;
+      }),
+    []
+  );
+  return useAtomValue(virtuosoItemsAtom);
+};
 
 const itemContentRenderer = (_index: number, data: VirtuosoItem) => {
   switch (data.type) {
@@ -152,12 +167,28 @@ const itemContentRenderer = (_index: number, data: VirtuosoItem) => {
   }
 };
 
+const Scroller = forwardRef<
+  HTMLDivElement,
+  PropsWithChildren<HTMLAttributes<HTMLDivElement>>
+>(({ children, ...props }, ref) => {
+  return (
+    <Scrollable.Root>
+      <Scrollable.Viewport {...props} ref={ref}>
+        {children}
+      </Scrollable.Viewport>
+      <Scrollable.Scrollbar />
+    </Scrollable.Root>
+  );
+});
+
+Scroller.displayName = 'Scroller';
+
 const PageListInner = ({
   atTopStateChange,
   atTopThreshold,
   ...props
 }: VirtualizedPageListProps) => {
-  const virtuosoItems = useAtomValue(virtuosoItemsAtom);
+  const virtuosoItems = useVirtuosoItems();
   const [atTop, setAtTop] = useState(false);
   const handleAtTopStateChange = useCallback(
     (atTop: boolean) => {
@@ -169,6 +200,7 @@ const PageListInner = ({
   const components = useMemo(() => {
     return {
       Header: props.heading ? PageListHeading : undefined,
+      Scroller: Scroller,
     };
   }, [props.heading]);
   return (

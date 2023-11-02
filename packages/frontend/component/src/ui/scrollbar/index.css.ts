@@ -30,8 +30,7 @@ export const scrollableViewport = style({
 });
 
 globalStyle(`${scrollableViewport} > div`, {
-  maxWidth: '100%',
-  display: 'block !important',
+  display: 'contents !important',
 });
 
 export const scrollableContainer = style({
@@ -44,7 +43,6 @@ export const scrollbar = style({
   flexDirection: 'column',
   userSelect: 'none',
   touchAction: 'none',
-  marginRight: '4px',
   width: 'var(--scrollbar-width)',
   height: '100%',
   opacity: 1,
