@@ -51,11 +51,7 @@ export const EditorModeSwitch = ({
       return;
     }
     const keydown = (e: KeyboardEvent) => {
-      if (
-        !environment.isServer && environment.isMacOs
-          ? e.key === 'ß'
-          : e.key === 's' && e.altKey
-      ) {
+      if (e.code === 'KeyS' && e.altKey) {
         e.preventDefault();
         togglePageMode(pageId);
         toast(
