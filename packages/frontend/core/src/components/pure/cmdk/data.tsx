@@ -39,6 +39,11 @@ import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 
+interface SearchResultsValue {
+  space: string;
+  content: string;
+}
+
 export const cmdkQueryAtom = atom('');
 export const cmdkValueAtom = atom('');
 
@@ -153,7 +158,8 @@ export const pageToCommand = (
   label?: {
     title: string;
     subTitle?: string;
-  }
+  },
+  blockId?: string
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
   const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
@@ -177,7 +183,14 @@ export const pageToCommand = (
         console.error('current workspace not found');
         return;
       }
-      navigationHelper.jumpToPage(currentWorkspaceId, page.id);
+      if (blockId) {
+        return navigationHelper.jumpToPageBlock(
+          currentWorkspaceId,
+          page.id,
+          blockId
+        );
+      }
+      return navigationHelper.jumpToPage(currentWorkspaceId, page.id);
     },
     icon: pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
     timestamp: page.updatedDate,
@@ -205,16 +218,22 @@ export const usePageCommands = () => {
       });
     } else {
       // queried pages that has matched contents
-      const searchResults = Array.from(
-        workspace.blockSuiteWorkspace.search({ query }).values()
-      ) as unknown as { space: string; content: string }[];
+      // TODO: we shall have a debounce for global search here
+      const searchResults = workspace.blockSuiteWorkspace.search({
+        query,
+      }) as unknown as Map<string, SearchResultsValue>;
+      const resultValues = Array.from(searchResults.values());
 
-      const pageIds = searchResults.map(result => {
+      const pageIds = resultValues.map(result => {
         if (result.space.startsWith('space:')) {
           return result.space.slice(6);
         } else {
           return result.space;
         }
+      });
+      const reverseMapping: Map<string, string> = new Map();
+      searchResults.forEach((value, key) => {
+        reverseMapping.set(value.space, key);
       });
 
       results = pages.map(page => {
@@ -225,9 +244,11 @@ export const usePageCommands = () => {
         const label = {
           title: page.title || t['Untitled'](), // Used to ensure that a title exists
           subTitle:
-            searchResults.find(result => result.space === page.id)?.content ||
+            resultValues.find(result => result.space === page.id)?.content ||
             '',
         };
+
+        const blockId = reverseMapping.get(page.id);
 
         const command = pageToCommand(
           category,
@@ -235,7 +256,8 @@ export const usePageCommands = () => {
           store,
           navigationHelper,
           t,
-          label
+          label,
+          blockId
         );
 
         if (pageIds.includes(page.id)) {
