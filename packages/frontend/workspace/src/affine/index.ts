@@ -52,7 +52,7 @@ export const createAffineDataSource = (
 
     return new Promise(resolve => {
       socket.emit(
-        'client-updates',
+        'client-update-v2',
         {
           workspaceId: rootDoc.guid,
           guid,
@@ -65,7 +65,7 @@ export const createAffineDataSource = (
         }) => {
           // TODO: raise error with different code to users
           if (response.error) {
-            logger.error('client-updates error', {
+            logger.error('client-update-v2 error', {
               workspaceId: rootDoc.guid,
               guid,
               response,
@@ -92,13 +92,13 @@ export const createAffineDataSource = (
         : undefined;
 
       return new Promise((resolve, reject) => {
-        logger.debug('doc-load', {
+        logger.debug('doc-load-v2', {
           workspaceId: rootDoc.guid,
           guid,
           stateVector,
         });
         socket.emit(
-          'doc-load',
+          'doc-load-v2',
           {
             workspaceId: rootDoc.guid,
             guid,
@@ -135,7 +135,7 @@ export const createAffineDataSource = (
       });
     },
     sendDocUpdate: async (guid: string, update: Uint8Array) => {
-      logger.debug('client-update', {
+      logger.debug('client-update-v2', {
         workspaceId: rootDoc.guid,
         guid,
         update,

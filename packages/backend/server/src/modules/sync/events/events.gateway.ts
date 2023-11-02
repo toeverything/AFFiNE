@@ -116,8 +116,100 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('client-updates')
-  async handleClientUpdate(
+  /**
+   * This is the old version of the `client-update` event without any data protocol.
+   * It only exists for backwards compatibility to adapt older clients.
+   *
+   * @deprecated
+   */
+  @SubscribeMessage('client-update')
+  async handleClientUpdateV1(
+    @MessageBody()
+    {
+      workspaceId,
+      guid,
+      update,
+    }: {
+      workspaceId: string;
+      guid: string;
+      update: string;
+    },
+    @ConnectedSocket() client: Socket
+  ) {
+    if (!client.rooms.has(workspaceId)) {
+      this.logger.verbose(
+        `Client ${client.id} tried to push update to workspace ${workspaceId} without joining it first`
+      );
+      return;
+    }
+
+    const docId = new DocID(guid, workspaceId);
+
+    client
+      .to(docId.workspace)
+      .emit('server-update', { workspaceId, guid, update });
+
+    // broadcast to all clients with newer version that only listen to `server-updates`
+    client
+      .to(docId.workspace)
+      .emit('server-updates', { workspaceId, guid, updates: [update] });
+
+    const buf = Buffer.from(update, 'base64');
+    await this.docManager.push(docId.workspace, docId.guid, buf);
+  }
+
+  /**
+   * This is the old version of the `doc-load` event without any data protocol.
+   * It only exists for backwards compatibility to adapt older clients.
+   *
+   * @deprecated
+   */
+  @Auth()
+  @SubscribeMessage('doc-load')
+  async loadDocV1(
+    @ConnectedSocket() client: Socket,
+    @CurrentUser() user: UserType,
+    @MessageBody()
+    {
+      workspaceId,
+      guid,
+      stateVector,
+    }: {
+      workspaceId: string;
+      guid: string;
+      stateVector?: string;
+    }
+  ): Promise<{ missing: string; state?: string } | false> {
+    if (!client.rooms.has(workspaceId)) {
+      const canRead = await this.permissions.tryCheck(workspaceId, user.id);
+      if (!canRead) {
+        return false;
+      }
+    }
+
+    const docId = new DocID(guid, workspaceId);
+    const doc = await this.docManager.get(docId.workspace, docId.guid);
+
+    if (!doc) {
+      return false;
+    }
+
+    const missing = Buffer.from(
+      encodeStateAsUpdate(
+        doc,
+        stateVector ? Buffer.from(stateVector, 'base64') : undefined
+      )
+    ).toString('base64');
+    const state = Buffer.from(encodeStateVector(doc)).toString('base64');
+
+    return {
+      missing,
+      state,
+    };
+  }
+
+  @SubscribeMessage('client-update-v2')
+  async handleClientUpdateV2(
     @MessageBody()
     {
       workspaceId,
@@ -158,8 +250,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @Auth()
-  @SubscribeMessage('doc-load')
-  async loadDoc(
+  @SubscribeMessage('doc-load-v2')
+  async loadDocV2(
     @ConnectedSocket() client: Socket,
     @CurrentUser() user: UserType,
     @MessageBody()
