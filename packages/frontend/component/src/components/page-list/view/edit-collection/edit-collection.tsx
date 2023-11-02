@@ -1,6 +1,7 @@
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
@@ -21,7 +22,16 @@ export interface EditCollectionModalProps {
   onConfirm: (view: Collection) => Promise<void>;
   allPageListConfig: AllPageListConfig;
 }
-
+const contentOptions: DialogContentProps = {
+  onPointerDownOutside: e => {
+    e.preventDefault();
+  },
+  style: {
+    padding: 0,
+    maxWidth: 944,
+    backgroundColor: 'var(--affine-white)',
+  },
+};
 export const EditCollectionModal = ({
   init,
   onConfirm,
@@ -55,13 +65,7 @@ export const EditCollectionModal = ({
       withoutCloseButton
       width="calc(100% - 64px)"
       height="80%"
-      contentOptions={{
-        style: {
-          padding: 0,
-          maxWidth: 944,
-          backgroundColor: 'var(--affine-white)',
-        },
-      }}
+      contentOptions={contentOptions}
     >
       {init ? (
         <EditCollection
