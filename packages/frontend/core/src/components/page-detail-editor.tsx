@@ -31,6 +31,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
+import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
@@ -64,6 +65,8 @@ const EditorWrapper = memo(function EditorWrapper({
   const meta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === pageId
   );
+  const { switchToEdgelessMode, switchToPageMode } =
+    useBlockSuiteMetaHelper(workspace);
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode = pageSetting?.mode ?? 'page';
@@ -80,6 +83,17 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
+  const setEditorMode = useCallback(
+    (mode: 'page' | 'edgeless') => {
+      if (mode === 'edgeless') {
+        switchToEdgelessMode(pageId);
+      } else {
+        switchToPageMode(pageId);
+      }
+    },
+    [switchToEdgelessMode, switchToPageMode, pageId]
+  );
+
   return (
     <>
       <Editor
@@ -94,6 +108,7 @@ const EditorWrapper = memo(function EditorWrapper({
         }
         mode={isPublic ? 'page' : currentMode}
         page={page}
+        onModeChange={setEditorMode}
         onInit={useCallback(
           (page: Page, editor: Readonly<EditorContainer>) => {
             onInit(page, editor);
