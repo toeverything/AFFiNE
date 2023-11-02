@@ -101,7 +101,7 @@ test('Create a new page with keyword', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('test123456');
-  const addNewPage = page.locator('[cmdk-item] >> text=Create New Page as:');
+  const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Page');
   await addNewPage.click();
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
@@ -125,7 +125,7 @@ test('Create a new page and search this page', async ({ page }) => {
   // input title and create new page
   await page.keyboard.insertText('test123456');
   await page.waitForTimeout(300);
-  const addNewPage = page.locator('[cmdk-item] >> text=Create New Page as:');
+  const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Page');
   await addNewPage.click();
 
   await page.waitForTimeout(300);
