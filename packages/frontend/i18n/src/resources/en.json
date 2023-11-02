@@ -424,6 +424,8 @@
   "com.affine.selectPage.selected": "Selected",
   "com.affine.selectPage.empty": "Empty",
   "com.affine.selectPage.empty.tips": "No page titles contain <1>{{search}}</1>",
+  "com.affine.collection.addPage.alreadyExists": "Page already exists",
+  "com.affine.collection.addPage.success": "Added successfully",
   "Confirm": "Confirm",
   "Connector": "Connector",
   "Continue with Google": "Continue with Google",

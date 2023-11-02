@@ -54,14 +54,15 @@ const CollectionRenderer = ({
 }) => {
   const [collapsed, setCollapsed] = useState(true);
   const setting = useCollectionManager(collectionsCRUDAtom);
+  const t = useAFFiNEI18N();
   const { setNodeRef, isOver } = useDroppable({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {
       addToCollection: (id: string) => {
         if (collection.allowList.includes(id)) {
-          toast('Page already exists');
+          toast(t['com.affine.collection.addPage.alreadyExists']());
         } else {
-          toast('Added successfully');
+          toast(t['com.affine.collection.addPage.success']());
         }
         setting.addPage(collection.id, id).catch(err => {
           console.error(err);
