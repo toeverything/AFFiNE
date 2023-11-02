@@ -1,4 +1,5 @@
 import {
+  filterPage,
   filterPageByRules,
   useCollectionManager,
 } from '@affine/component/page-list';
@@ -18,7 +19,8 @@ export const useFilteredPageMetas = (
 ) => {
   const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMode = useAtomValue(allPageModeSelectAtom);
-  const { currentCollection } = useCollectionManager(collectionsCRUDAtom);
+  const { currentCollection, isDefault } =
+    useCollectionManager(collectionsCRUDAtom);
 
   const filteredPageMetas = useMemo(
     () =>
@@ -46,13 +48,22 @@ export const useFilteredPageMetas = (
           if (!currentCollection) {
             return true;
           }
-          return filterPageByRules(
-            currentCollection.filterList,
-            currentCollection.allowList,
-            pageMeta
-          );
+          return isDefault
+            ? filterPageByRules(
+                currentCollection.filterList,
+                currentCollection.allowList,
+                pageMeta
+              )
+            : filterPage(currentCollection, pageMeta);
         }),
-    [pageMetas, pageMode, isPreferredEdgeless, route, currentCollection]
+    [
+      currentCollection,
+      isDefault,
+      isPreferredEdgeless,
+      pageMetas,
+      pageMode,
+      route,
+    ]
   );
 
   return filteredPageMetas;
