@@ -6,6 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Snapshot, Update } from '@prisma/client';
+import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
 import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
@@ -89,10 +90,10 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
   protected applyUpdates(guid: string, ...updates: Buffer[]): Doc {
     const doc = this.recoverDoc(...updates);
-    this.metrics.jwstCodecMerge(1, {});
 
     // test jwst codec
     if (this.config.doc.manager.experimentalMergeWithJwstCodec) {
+      this.metrics.jwstCodecMerge(1, {});
       const yjsResult = Buffer.from(encodeStateAsUpdate(doc));
       let log = false;
       try {
@@ -163,7 +164,12 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   /**
    * add update to manager for later processing.
    */
-  async push(workspaceId: string, guid: string, update: Buffer) {
+  async push(
+    workspaceId: string,
+    guid: string,
+    update: Buffer,
+    retryTimes = 10
+  ) {
     await new Promise<void>((resolve, reject) => {
       defer(async () => {
         const seq = await this.getUpdateSeq(workspaceId, guid);
@@ -176,7 +182,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           },
         });
       })
-        .pipe(retry(MAX_SEQ_NUM)) // retry until seq num not conflict
+        .pipe(retry(retryTimes)) // retry until seq num not conflict
         .subscribe({
           next: () => {
             this.logger.verbose(
@@ -184,7 +190,54 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
             );
             resolve();
           },
-          error: reject,
+          error: e => {
+            this.logger.error('Failed to push updates', e);
+            reject(new Error('Failed to push update'));
+          },
+        });
+    });
+  }
+
+  async batchPush(
+    workspaceId: string,
+    guid: string,
+    updates: Buffer[],
+    retryTimes = 10
+  ) {
+    await new Promise<void>((resolve, reject) => {
+      defer(async () => {
+        const seq = await this.getUpdateSeq(workspaceId, guid, updates.length);
+        let turn = 0;
+        const batchCount = 10;
+        for (const batch of chunk(updates, batchCount)) {
+          await this.db.update.createMany({
+            data: batch.map((update, i) => ({
+              workspaceId,
+              id: guid,
+              // `seq` is the last seq num of the batch
+              // example for 11 batched updates, start from seq num 20
+              // seq for first update in the batch should be:
+              // 31             - 11                + 0        * 10          + 0 + 1 = 21
+              // ^ last seq num   ^ updates.length    ^ turn     ^ batchCount  ^i
+              seq: seq - updates.length + turn * batchCount + i + 1,
+              blob: update,
+            })),
+          });
+          turn++;
+        }
+      })
+        .pipe(retry(retryTimes)) // retry until seq num not conflict
+        .subscribe({
+          next: () => {
+            this.logger.verbose(
+              `pushed updates for workspace: ${workspaceId}, guid: ${guid}`
+            );
+            resolve();
+          },
+          error: e => {
+            this.logger.error('Failed to push updates', e);
+            reject(new Error('Failed to push update'));
+          },
         });
     });
   }
@@ -370,7 +423,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     return doc;
   }
 
-  private async getUpdateSeq(workspaceId: string, guid: string) {
+  private async getUpdateSeq(workspaceId: string, guid: string, batch = 1) {
     try {
       const { seq } = await this.db.snapshot.update({
         select: {
@@ -384,13 +437,13 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         },
         data: {
           seq: {
-            increment: 1,
+            increment: batch,
           },
         },
       });
 
       // reset
-      if (seq === MAX_SEQ_NUM) {
+      if (seq >= MAX_SEQ_NUM) {
         await this.db.snapshot.update({
           where: {
             id_workspaceId: {
@@ -406,9 +459,10 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
       return seq;
     } catch {
+      // not existing snapshot just count it from 1
       const last = this.seqMap.get(workspaceId + guid) ?? 0;
-      this.seqMap.set(workspaceId + guid, last + 1);
-      return last + 1;
+      this.seqMap.set(workspaceId + guid, last + batch);
+      return last + batch;
     }
   }
 }
