@@ -59,12 +59,12 @@ export const rulesBottom = style({
 });
 
 export const includeListTitle = style({
-  marginTop: 8,
   fontSize: 14,
   fontWeight: 400,
   lineHeight: '22px',
   color: 'var(--affine-text-secondary-color)',
-  paddingLeft: 18,
+  padding: '4px 16px',
+  borderTop: '1px solid var(--affine-border-color)',
 });
 
 export const rulesContainerRight = style({

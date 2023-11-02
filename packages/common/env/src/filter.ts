@@ -51,11 +51,8 @@ export type Filter = z.input<typeof filterSchema>;
 export const collectionSchema = z.object({
   id: z.string(),
   name: z.string(),
-  mode: z.union([z.literal('page'), z.literal('rule')]),
   filterList: z.array(filterSchema),
   allowList: z.array(z.string()),
-  // page id list
-  pages: z.array(z.string()),
 });
 export const deletedCollectionSchema = z.object({
   userId: z.string().optional(),
