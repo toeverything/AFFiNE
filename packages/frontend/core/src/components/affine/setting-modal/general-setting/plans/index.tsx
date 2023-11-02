@@ -21,17 +21,13 @@ import * as styles from './style.css';
 const getRecurringLabel = ({
   recurring,
   t,
-  shouldLowerCase,
 }: {
   recurring: SubscriptionRecurring;
   t: ReturnType<typeof useAFFiNEI18N>;
-  shouldLowerCase?: boolean;
 }) => {
-  const text =
-    recurring === SubscriptionRecurring.Monthly
-      ? t['com.affine.payment.recurring-monthly']()
-      : t['com.affine.payment.recurring-yearly']();
-  return shouldLowerCase ? text.toLowerCase() : text;
+  return recurring === SubscriptionRecurring.Monthly
+    ? t['com.affine.payment.recurring-monthly']()
+    : t['com.affine.payment.recurring-yearly']();
 };
 
 const Settings = () => {
@@ -108,7 +104,6 @@ const Settings = () => {
           plan: `${getRecurringLabel({
             recurring: currentRecurring,
             t,
-            shouldLowerCase: true,
           })} ${currentPlan}`,
         })}
       </p>
@@ -143,7 +138,9 @@ const Settings = () => {
     >
       {Object.values(SubscriptionRecurring).map(recurring => (
         <RadioButton key={recurring} value={recurring}>
-          {getRecurringLabel({ recurring, t })}
+          <span className={styles.radioButtonText}>
+            {getRecurringLabel({ recurring, t })}
+          </span>
           {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
             <span className={styles.radioButtonDiscount}>
               {t['com.affine.payment.discount-amount']({
@@ -176,7 +173,6 @@ const Settings = () => {
                         plan: getRecurringLabel({
                           recurring: recurring as SubscriptionRecurring,
                           t,
-                          shouldLowerCase: true,
                         }),
                       }),
               });
