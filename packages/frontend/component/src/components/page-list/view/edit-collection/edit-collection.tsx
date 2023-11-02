@@ -160,7 +160,7 @@ export const EditCollection = ({
         </RadioButton>
       </RadioButtonGroup>
     ),
-    [mode]
+    [mode, t]
   );
   return (
     <div className={styles.collectionEditContainer}>
