@@ -225,6 +225,31 @@ test('should have sequential update number', async t => {
   t.not(records.length, 0);
 });
 
+test('should have correct sequential update number with batching push', async t => {
+  const manager = m.get(DocManager);
+  const doc = new YDoc();
+  const text = doc.getText('content');
+  const updates: Buffer[] = [];
+
+  doc.on('update', update => {
+    updates.push(Buffer.from(update));
+  });
+
+  text.insert(0, 'hello');
+  text.insert(5, 'world');
+  text.insert(5, ' ');
+
+  await manager.batchPush('2', '2', updates);
+
+  // [1,2,3]
+  const records = await manager.getUpdates('2', '2');
+
+  t.deepEqual(
+    records.map(({ seq }) => seq),
+    [1, 2, 3]
+  );
+});
+
 test('should retry if seq num conflict', async t => {
   const manager = m.get(DocManager);
 
@@ -239,4 +264,20 @@ test('should retry if seq num conflict', async t => {
   await t.notThrowsAsync(() => manager.push('1', '1', Buffer.from([0, 0])));
 
   t.is(stub.callCount, 3);
+});
+
+test('should throw if meet max retry times', async t => {
+  const manager = m.get(DocManager);
+
+  // @ts-expect-error private method
+  const stub = Sinon.stub(manager, 'getUpdateSeq');
+
+  stub.resolves(1);
+  await t.notThrowsAsync(() => manager.push('1', '1', Buffer.from([0, 0])));
+
+  await t.throwsAsync(
+    () => manager.push('1', '1', Buffer.from([0, 0]), 3 /* retry 3 times */),
+    { message: 'Failed to push update' }
+  );
+  t.is(stub.callCount, 5);
 });
