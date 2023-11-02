@@ -1,4 +1,8 @@
-import { filterPage, useCollectionManager } from '@affine/component/page-list';
+import {
+  filterPage,
+  filterPageByRules,
+  useCollectionManager,
+} from '@affine/component/page-list';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
@@ -15,7 +19,8 @@ export const useFilteredPageMetas = (
 ) => {
   const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMode = useAtomValue(allPageModeSelectAtom);
-  const { currentCollection } = useCollectionManager(collectionsCRUDAtom);
+  const { currentCollection, isDefault } =
+    useCollectionManager(collectionsCRUDAtom);
 
   const filteredPageMetas = useMemo(
     () =>
@@ -43,9 +48,22 @@ export const useFilteredPageMetas = (
           if (!currentCollection) {
             return true;
           }
-          return filterPage(currentCollection, pageMeta);
+          return isDefault
+            ? filterPageByRules(
+                currentCollection.filterList,
+                currentCollection.allowList,
+                pageMeta
+              )
+            : filterPage(currentCollection, pageMeta);
         }),
-    [pageMetas, pageMode, isPreferredEdgeless, route, currentCollection]
+    [
+      currentCollection,
+      isDefault,
+      isPreferredEdgeless,
+      pageMetas,
+      pageMode,
+      route,
+    ]
   );
 
   return filteredPageMetas;

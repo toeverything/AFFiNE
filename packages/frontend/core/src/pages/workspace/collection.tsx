@@ -93,10 +93,10 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
   const { node, open } = useEditCollection(useAllPageListConfig());
   const openPageEdit = useCallback(() => {
-    open({ ...collection, mode: 'page' }).then(updateCollection);
+    open({ ...collection }, 'page').then(updateCollection);
   }, [open, collection, updateCollection]);
   const openRuleEdit = useCallback(() => {
-    open({ ...collection, mode: 'rule' }).then(updateCollection);
+    open({ ...collection }, 'rule').then(updateCollection);
   }, [collection, open, updateCollection]);
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {
@@ -277,9 +277,6 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
 
 const isEmpty = (collection: Collection) => {
   return (
-    (collection.mode === 'page' && collection.pages.length === 0) ||
-    (collection.mode === 'rule' &&
-      collection.allowList.length === 0 &&
-      collection.filterList.length === 0)
+    collection.allowList.length === 0 && collection.filterList.length === 0
   );
 };

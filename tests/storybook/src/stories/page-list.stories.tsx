@@ -280,7 +280,6 @@ export const FloatingToolbarStory: StoryFn<typeof FloatingToolbar> = props => {
         style={{ position: 'fixed', bottom: '20px', width: '100%' }}
         {...props}
         open={open}
-        onOpenChange={setOpen}
       >
         <FloatingToolbar.Item>10 Selected</FloatingToolbar.Item>
         <FloatingToolbar.Separator />

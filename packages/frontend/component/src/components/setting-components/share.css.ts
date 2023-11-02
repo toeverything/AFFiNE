@@ -1,8 +1,8 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
 export const settingHeader = style({
-  height: '68px',
   borderBottom: '1px solid var(--affine-border-color)',
+  paddingBottom: '24px',
   marginBottom: '24px',
 });
 

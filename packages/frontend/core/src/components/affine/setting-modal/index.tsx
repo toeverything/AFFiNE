@@ -145,7 +145,7 @@ export const SettingModal = ({
               className={style.suggestionLink}
             >
               <span className={style.suggestionLinkIcon}>
-                <ContactWithUsIcon />
+                <ContactWithUsIcon width="16" height="16" />
               </span>
               {t['com.affine.settings.suggestion']()}
             </a>
