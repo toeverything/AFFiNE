@@ -113,7 +113,6 @@ export const PageTags = ({
         // @ts-expect-error it's fine
         '--hover-max-width': sanitizedWidthOnHover,
       }}
-      onClick={stopPropagation}
     >
       <div
         style={{
@@ -127,7 +126,12 @@ export const PageTags = ({
           {tagsNormal}
         </div>
         {maxItems && tags.length > maxItems ? (
-          <Menu items={tagsInPopover}>
+          <Menu
+            items={tagsInPopover}
+            contentOptions={{
+              onClick: stopPropagation,
+            }}
+          >
             <div className={styles.showMoreTag}>
               <MoreHorizontalIcon />
             </div>
