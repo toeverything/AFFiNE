@@ -1,4 +1,4 @@
-import { AnimatedCollectionsIcon } from '@affine/component';
+import { AnimatedCollectionsIcon, toast } from '@affine/component';
 import {
   MenuItem as SidebarMenuItem,
   MenuLinkItem as SidebarMenuLinkItem,
@@ -58,6 +58,11 @@ const CollectionRenderer = ({
     id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
     data: {
       addToCollection: (id: string) => {
+        if (collection.allowList.includes(id)) {
+          toast('Page already exists');
+        } else {
+          toast('Added successfully');
+        }
         setting.addPage(collection.id, id).catch(err => {
           console.error(err);
         });
