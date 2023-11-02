@@ -270,6 +270,7 @@ export class UserSubscriptionResolver {
     return this.db.userSubscription.findUnique({
       where: {
         userId: user.id,
+        status: SubscriptionStatus.Active,
       },
     });
   }
