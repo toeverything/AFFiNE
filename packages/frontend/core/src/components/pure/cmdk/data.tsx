@@ -218,11 +218,11 @@ export const usePageCommands = () => {
       });
     } else {
       // queried pages that has matched contents
+      // TODO: we shall have a debounce for global search here
       const searchResults = workspace.blockSuiteWorkspace.search({
         query,
       }) as unknown as Map<string, SearchResultsValue>;
       const resultValues = Array.from(searchResults.values());
-      // const blockIds = searchResults.keys();
 
       const pageIds = resultValues.map(result => {
         if (result.space.startsWith('space:')) {
