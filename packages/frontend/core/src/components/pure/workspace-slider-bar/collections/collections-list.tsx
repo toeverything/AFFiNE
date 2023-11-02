@@ -61,6 +61,7 @@ const CollectionRenderer = ({
       addToCollection: (id: string) => {
         if (collection.allowList.includes(id)) {
           toast(t['com.affine.collection.addPage.alreadyExists']());
+          return;
         } else {
           toast(t['com.affine.collection.addPage.success']());
         }
