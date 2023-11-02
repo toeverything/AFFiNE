@@ -1,4 +1,7 @@
-import { filterPage, useCollectionManager } from '@affine/component/page-list';
+import {
+  filterPageByRules,
+  useCollectionManager,
+} from '@affine/component/page-list';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
@@ -43,7 +46,11 @@ export const useFilteredPageMetas = (
           if (!currentCollection) {
             return true;
           }
-          return filterPage(currentCollection, pageMeta);
+          return filterPageByRules(
+            currentCollection.filterList,
+            currentCollection.allowList,
+            pageMeta
+          );
         }),
     [pageMetas, pageMode, isPreferredEdgeless, route, currentCollection]
   );
