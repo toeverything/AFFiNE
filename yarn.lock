@@ -239,6 +239,8 @@ __metadata:
     fake-indexeddb: "npm:^5.0.0"
     foxact: "npm:^0.2.20"
     jotai: "npm:^2.4.3"
+    jotai-effect: "npm:^0.2.2"
+    jotai-scope: "npm:^0.4.0"
     lit: "npm:^2.8.0"
     lodash: "npm:^4.17.21"
     lodash-es: "npm:^4.17.21"
@@ -253,6 +255,7 @@ __metadata:
     react-is: "npm:^18.2.0"
     react-paginate: "npm:^8.2.0"
     react-router-dom: "npm:^6.16.0"
+    react-virtuoso: "npm:^4.6.2"
     rxjs: "npm:^7.8.1"
     typescript: "npm:^5.2.2"
     uuid: "npm:^9.0.1"
@@ -24429,6 +24432,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jotai-effect@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "jotai-effect@npm:0.2.2"
+  peerDependencies:
+    jotai: ">=2.4.3"
+  checksum: f74f90836b3afb203d65e4621ce9fc267b838685007cf30db2802e15088f40e9bbb4f232121a7010194562286187fe7bc488935d75a948fd256c5bb58e5c858f
+  languageName: node
+  linkType: hard
+
+"jotai-scope@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "jotai-scope@npm:0.4.0"
+  peerDependencies:
+    jotai: ">=2.5.0"
+    react: ">=17.0.0"
+  checksum: 398b76507570a674af3e5cbb6f45ede8e8e02014c5d416825952d21f274da6191bbb41d18d0b9bac4dd375e9b5b8c848886a13f930a9810e3de823bfe7a22137
+  languageName: node
+  linkType: hard
+
 "jotai@npm:^2.4.3":
   version: 2.4.3
   resolution: "jotai@npm:2.4.3"
@@ -30524,6 +30546,16 @@ __metadata:
     react: ">=16.6.0"
     react-dom: ">=16.6.0"
   checksum: ca32d3fd2168c976c5d90a317f25d5f5cd723608b415fb3b9006f9d793c8965c619562d0884503a3e44e4b06efbca4fdd1520f30e58ca3e00a0890e637d55419
+  languageName: node
+  linkType: hard
+
+"react-virtuoso@npm:^4.6.2":
+  version: 4.6.2
+  resolution: "react-virtuoso@npm:4.6.2"
+  peerDependencies:
+    react: ">=16 || >=17 || >= 18"
+    react-dom: ">=16 || >=17 || >= 18"
+  checksum: 770c5bc5a842c40cac780bfe6e8bfcf4a1fc79fe84438459240e33e1c347b75a5581cc0cf21035bb250591a7f09fe3eed35b94d0f47540e1ce09f2fc47337840
   languageName: node
   linkType: hard
 

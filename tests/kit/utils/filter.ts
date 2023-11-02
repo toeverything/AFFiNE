@@ -38,10 +38,17 @@ const dateFormat = (date: Date) => {
   return `${month} ${day}`;
 };
 
-export const checkPagesCount = async (page: Page, count: number) => {
-  expect(
-    (await page.locator('[data-testid="page-list-item"]').all()).length
-  ).toBe(count);
+// fixme: there could be multiple page lists in the Page
+export const getPagesCount = async (page: Page) => {
+  const locator = page.locator('[data-testid="virtualized-page-list"]');
+  const pageListCount = await locator.count();
+
+  if (pageListCount === 0) {
+    return 0;
+  }
+
+  const count = await locator.getAttribute('data-total-count');
+  return count ? parseInt(count) : 0;
 };
 
 export const checkDatePicker = async (page: Page, date: Date) => {

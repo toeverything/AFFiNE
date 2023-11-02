@@ -4,10 +4,9 @@ import {
   FloatingToolbar,
   NewPageButton as PureNewPageButton,
   OperationCell,
-  PageList,
   type PageListHandle,
-  PageListScrollContainer,
   useCollectionManager,
+  VirtualizedPageList,
 } from '@affine/component/page-list';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
@@ -27,7 +26,6 @@ import clsx from 'clsx';
 import {
   type PropsWithChildren,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -145,19 +143,12 @@ const usePageOperationsRenderer = () => {
 const PageListFloatingToolbar = ({
   selectedIds,
   onClose,
+  open,
 }: {
+  open: boolean;
   selectedIds: string[];
   onClose: () => void;
 }) => {
-  const open = selectedIds.length > 0;
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
   const [currentWorkspace] = useCurrentWorkspace();
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -177,11 +168,7 @@ const PageListFloatingToolbar = ({
   }, [pageMetas, selectedIds, setTrashModal]);
 
   return (
-    <FloatingToolbar
-      className={styles.floatingToolbar}
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <FloatingToolbar className={styles.floatingToolbar} open={open}>
       <FloatingToolbar.Item>
         <Trans
           i18nKey="com.affine.page.toolbar.selected"
@@ -190,7 +177,7 @@ const PageListFloatingToolbar = ({
           <div className={styles.toolbarSelectedNumber}>
             {{ count: selectedIds.length } as any}
           </div>
-          pages selected
+          selected
         </Trans>
       </FloatingToolbar.Item>
       <FloatingToolbar.Button onClick={onClose} icon={<CloseIcon />} />
@@ -245,9 +232,10 @@ export const AllPage = () => {
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const pageListRef = useRef<PageListHandle>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const deselectAllAndToggleSelect = useCallback(() => {
-    setSelectedPageIds([]);
+
+  const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
+
+  const hideFloatingToolbar = useCallback(() => {
     pageListRef.current?.toggleSelectable();
   }, []);
 
@@ -257,24 +245,7 @@ export const AllPage = () => {
     return selectedPageIds.filter(id => ids.includes(id));
   }, [filteredPageMetas, selectedPageIds]);
 
-  const [showHeaderCreateNewPage, setShowHeaderCreateNewPage] = useState(false);
-  // when PageListScrollContainer scrolls above 40px, show the create new page button on header
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      const handleScroll = () => {
-        setTimeout(() => {
-          const scrollTop = container.scrollTop ?? 0;
-          setShowHeaderCreateNewPage(scrollTop > 40);
-        });
-      };
-      container.addEventListener('scroll', handleScroll);
-      return () => {
-        container.removeEventListener('scroll', handleScroll);
-      };
-    }
-    return;
-  }, []);
+  const [hideHeaderCreateNewPage, setHideHeaderCreateNewPage] = useState(true);
 
   return (
     <div className={styles.root}>
@@ -289,7 +260,7 @@ export const AllPage = () => {
               size="small"
               className={clsx(
                 styles.headerCreateNewButton,
-                !showHeaderCreateNewPage && styles.headerCreateNewButtonHidden
+                hideHeaderCreateNewPage && styles.headerCreateNewButtonHidden
               )}
             >
               <PlusIcon />
@@ -297,37 +268,36 @@ export const AllPage = () => {
           }
         />
       ) : null}
-      <PageListScrollContainer
-        ref={containerRef}
-        className={styles.scrollContainer}
-      >
-        <PageListHeader />
-        {filteredPageMetas.length > 0 ? (
-          <>
-            <PageList
-              ref={pageListRef}
-              selectable="toggle"
-              draggable
-              selectedPageIds={filteredSelectedPageIds}
-              onSelectedPageIdsChange={setSelectedPageIds}
-              pages={filteredPageMetas}
-              clickMode="link"
-              isPreferredEdgeless={isPreferredEdgeless}
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              pageOperationsRenderer={pageOperationsRenderer}
-            />
-            <PageListFloatingToolbar
-              selectedIds={filteredSelectedPageIds}
-              onClose={deselectAllAndToggleSelect}
-            />
-          </>
-        ) : (
-          <EmptyPageList
-            type="all"
+      {filteredPageMetas.length > 0 ? (
+        <>
+          <VirtualizedPageList
+            ref={pageListRef}
+            selectable="toggle"
+            draggable
+            atTopThreshold={80}
+            atTopStateChange={setHideHeaderCreateNewPage}
+            onSelectionActiveChange={setShowFloatingToolbar}
+            heading={<PageListHeader />}
+            selectedPageIds={filteredSelectedPageIds}
+            onSelectedPageIdsChange={setSelectedPageIds}
+            pages={filteredPageMetas}
+            rowAsLink
+            isPreferredEdgeless={isPreferredEdgeless}
             blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            pageOperationsRenderer={pageOperationsRenderer}
           />
-        )}
-      </PageListScrollContainer>
+          <PageListFloatingToolbar
+            open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
+            selectedIds={filteredSelectedPageIds}
+            onClose={hideFloatingToolbar}
+          />
+        </>
+      ) : (
+        <EmptyPageList
+          type="all"
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        />
+      )}
     </div>
   );
 };

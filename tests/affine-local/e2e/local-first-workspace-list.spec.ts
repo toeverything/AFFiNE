@@ -1,4 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
+import { getPagesCount } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
@@ -48,13 +49,11 @@ test('create one workspace in the workspace list', async ({
   await page.keyboard.press('Escape');
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(2000);
-  const pageList = page.locator('[data-testid=page-list-item]');
-  const result = await pageList.count();
+  const result = await getPagesCount(page);
   expect(result).toBe(13);
   await page.reload();
   await page.waitForTimeout(4000);
-  const pageList1 = page.locator('[data-testid=page-list-item]');
-  const result1 = await pageList1.count();
+  const result1 = await getPagesCount(page);
   expect(result1).toBe(13);
   const currentWorkspace = await workspace.current();
 

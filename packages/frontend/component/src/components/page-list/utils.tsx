@@ -124,10 +124,10 @@ export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
 
 export const withinDaysAgo = (date: Date, days: number): boolean => {
   const startDate = new Date();
-  const day = startDate.getDay();
+  const day = startDate.getDate();
   const month = startDate.getMonth();
   const year = startDate.getFullYear();
-  return new Date(year, month, day - days) <= date;
+  return new Date(year, month, day - days + 1) <= date;
 };
 
 export const betweenDaysAgo = (
@@ -144,4 +144,39 @@ export function stopPropagation(event: BaseSyntheticEvent) {
 }
 export function stopPropagationWithoutPrevent(event: BaseSyntheticEvent) {
   event.stopPropagation();
+}
+
+// credit: https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
+export function shallowEqual(objA: any, objB: any) {
+  if (Object.is(objA, objB)) {
+    return true;
+  }
+
+  if (
+    typeof objA !== 'object' ||
+    objA === null ||
+    typeof objB !== 'object' ||
+    objB === null
+  ) {
+    return false;
+  }
+
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  // Test for A's keys different from B.
+  for (let i = 0; i < keysA.length; i++) {
+    if (
+      !Object.prototype.hasOwnProperty.call(objB, keysA[i]) ||
+      !Object.is(objA[keysA[i]], objB[keysA[i]])
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }

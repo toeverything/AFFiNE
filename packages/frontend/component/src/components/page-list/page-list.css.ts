@@ -5,8 +5,8 @@ import * as itemStyles from './page-list-item.css';
 export const listRootContainer = createContainer('list-root-container');
 
 export const pageListScrollContainer = style({
-  overflowY: 'auto',
   width: '100%',
+  flex: 1,
 });
 
 export const root = style({
@@ -23,7 +23,9 @@ export const groupsContainer = style({
   rowGap: '16px',
 });
 
-export const header = style({
+export const heading = style({});
+
+export const tableHeader = style({
   display: 'flex',
   alignItems: 'center',
   padding: '10px 6px 10px 16px',
@@ -37,7 +39,7 @@ export const header = style({
   transform: 'translateY(-0.5px)', // fix sticky look through issue
 });
 
-globalStyle(`[data-has-scroll-top=true] ${header}`, {
+globalStyle(`[data-has-scroll-top=true] ${tableHeader}`, {
   boxShadow: '0 1px var(--affine-border-color)',
 });
 
@@ -73,13 +75,22 @@ export const headerTitleCell = style({
 export const headerTitleSelectionIconWrapper = style({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   fontSize: '16px',
+  selectors: {
+    [`${tableHeader}[data-selectable=toggle] &`]: {
+      width: 32,
+    },
+    [`${tableHeader}[data-selection-active=true] &`]: {
+      width: 24,
+    },
+  },
 });
 
 export const headerCellSortIcon = style({
-  width: '14px',
-  height: '14px',
+  display: 'inline-flex',
+  fontSize: 14,
+  color: 'var(--affine-icon-color)',
 });
 
 export const colWrapper = style({
@@ -104,7 +115,7 @@ export const favoriteCell = style({
   flexShrink: 0,
   opacity: 0,
   selectors: {
-    [`&[data-favorite], &${itemStyles.root}:hover &`]: {
+    [`&[data-favorite], ${itemStyles.root}:hover &`]: {
       opacity: 1,
     },
   },

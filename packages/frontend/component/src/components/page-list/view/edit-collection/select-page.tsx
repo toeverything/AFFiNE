@@ -6,9 +6,9 @@ import { Menu } from '@toeverything/components/menu';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
+import { VirtualizedPageList } from '../..';
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
-import { PageList, PageListScrollContainer } from '../../page-list';
 import { AffineShapeIcon } from '../affine-shape';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
@@ -93,19 +93,17 @@ export const SelectPage = ({
           </div>
         ) : null}
         {searchedList.length ? (
-          <PageListScrollContainer>
-            <PageList
-              clickMode="select"
-              className={styles.pageList}
-              pages={searchedList}
-              blockSuiteWorkspace={allPageListConfig.workspace}
-              selectable
-              onSelectedPageIdsChange={onChange}
-              selectedPageIds={value}
-              isPreferredEdgeless={allPageListConfig.isEdgeless}
-              pageOperationsRenderer={allPageListConfig.favoriteRender}
-            ></PageList>
-          </PageListScrollContainer>
+          <VirtualizedPageList
+            className={styles.pageList}
+            pages={searchedList}
+            blockSuiteWorkspace={allPageListConfig.workspace}
+            selectable
+            groupBy={false}
+            onSelectedPageIdsChange={onChange}
+            selectedPageIds={value}
+            isPreferredEdgeless={allPageListConfig.isEdgeless}
+            pageOperationsRenderer={allPageListConfig.favoriteRender}
+          />
         ) : (
           <EmptyList search={searchText} />
         )}

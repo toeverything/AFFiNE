@@ -57,6 +57,7 @@ export const Checkbox = ({
   return (
     <div
       className={clsx(styles.root, disabled && styles.disabled)}
+      role="checkbox"
       {...otherProps}
     >
       {icon}

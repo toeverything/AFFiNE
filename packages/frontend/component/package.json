@@ -48,6 +48,8 @@
     "dayjs": "^1.11.10",
     "foxact": "^0.2.20",
     "jotai": "^2.4.3",
+    "jotai-effect": "^0.2.2",
+    "jotai-scope": "^0.4.0",
     "lit": "^2.8.0",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
@@ -62,6 +64,7 @@
     "react-is": "^18.2.0",
     "react-paginate": "^8.2.0",
     "react-router-dom": "^6.16.0",
+    "react-virtuoso": "^4.6.2",
     "rxjs": "^7.8.1",
     "uuid": "^9.0.1"
   },
