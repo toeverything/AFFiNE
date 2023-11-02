@@ -2,6 +2,7 @@ import {
   type AllPageListConfig,
   CreateCollectionModal,
   EditCollectionModal,
+  type EditCollectionMode,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useCallback, useState } from 'react';
@@ -9,6 +10,7 @@ import { useCallback, useState } from 'react';
 export const useEditCollection = (config: AllPageListConfig) => {
   const [data, setData] = useState<{
     collection: Collection;
+    mode?: 'page' | 'rule';
     onConfirm: (collection: Collection) => Promise<void>;
   }>();
   const close = useCallback(() => setData(undefined), []);
@@ -19,14 +21,19 @@ export const useEditCollection = (config: AllPageListConfig) => {
         allPageListConfig={config}
         init={data.collection}
         open={!!data}
+        mode={data.mode}
         onOpenChange={close}
         onConfirm={data.onConfirm}
       />
     ) : null,
-    open: (collection: Collection): Promise<Collection> =>
+    open: (
+      collection: Collection,
+      mode?: EditCollectionMode
+    ): Promise<Collection> =>
       new Promise<Collection>(res => {
         setData({
           collection,
+          mode,
           onConfirm: async collection => {
             res(collection);
           },

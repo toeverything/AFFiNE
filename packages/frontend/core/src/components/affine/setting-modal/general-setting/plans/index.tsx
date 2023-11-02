@@ -117,8 +117,7 @@ const Settings = () => {
           You are current on the {{ currentPlan }} plan. If you have any
           questions, please contact our&nbsp;
           <a
-            href="#"
-            target="_blank"
+            href="mailto:support@toeverything.info"
             style={{ color: 'var(--affine-link-color)' }}
           >
             customer support
@@ -139,7 +138,9 @@ const Settings = () => {
     >
       {Object.values(SubscriptionRecurring).map(recurring => (
         <RadioButton key={recurring} value={recurring}>
-          {getRecurringLabel({ recurring, t })}
+          <span className={styles.radioButtonText}>
+            {getRecurringLabel({ recurring, t })}
+          </span>
           {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
             <span className={styles.radioButtonDiscount}>
               {t['com.affine.payment.discount-amount']({
@@ -163,15 +164,17 @@ const Settings = () => {
               pushNotification({
                 type: 'success',
                 title: t['com.affine.payment.updated-notify-title'](),
-                message: t['com.affine.payment.updated-notify-msg']({
-                  plan:
-                    detail.plan === SubscriptionPlan.Free
-                      ? SubscriptionPlan.Free
-                      : getRecurringLabel({
+                message:
+                  detail.plan === SubscriptionPlan.Free
+                    ? t[
+                        'com.affine.payment.updated-notify-msg.cancel-subscription'
+                      ]()
+                    : t['com.affine.payment.updated-notify-msg']({
+                        plan: getRecurringLabel({
                           recurring: recurring as SubscriptionRecurring,
                           t,
                         }),
-                }),
+                      }),
               });
             }}
             {...{ detail, subscription, recurring }}

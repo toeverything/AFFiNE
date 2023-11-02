@@ -95,16 +95,11 @@ export class WorkspaceSetting {
 
   deletePagesFromCollection(collection: Collection, idSet: Set<string>) {
     const newAllowList = collection.allowList.filter(id => !idSet.has(id));
-    const newPages = collection.pages.filter(id => !idSet.has(id));
-    if (
-      newAllowList.length !== collection.allowList.length ||
-      newPages.length !== collection.pages.length
-    ) {
+    if (newAllowList.length !== collection.allowList.length) {
       this.updateCollection(collection.id, old => {
         return {
           ...old,
           allowList: newAllowList,
-          pages: newPages,
         };
       });
     }

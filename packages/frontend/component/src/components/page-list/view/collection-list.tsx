@@ -15,7 +15,10 @@ import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
 import { CollectionOperations } from './collection-operations';
-import { type AllPageListConfig, EditCollectionModal } from './edit-collection';
+import {
+  type AllPageListConfig,
+  EditCollectionModal,
+} from './edit-collection/edit-collection';
 
 export const CollectionList = ({
   setting,

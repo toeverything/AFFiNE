@@ -38,13 +38,10 @@ const createAffineSocketIOProvider: DocProviderCreator = (
   const lazyProvider = createLazyProvider(doc, dataSource, {
     origin: 'affine-socket-io',
   });
-  return {
-    flavour: 'affine-socket-io',
-    ...lazyProvider,
-    get status() {
-      return lazyProvider.status;
-    },
-  };
+
+  Object.assign(lazyProvider, { flavour: 'affine-socket-io' });
+
+  return lazyProvider as unknown as AffineSocketIOProvider;
 };
 
 const createIndexedDBBackgroundProvider: DocProviderCreator = (

@@ -92,7 +92,7 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
           t['com.affine.payment.benefit-2'](),
           t['com.affine.payment.benefit-3'](),
           t['com.affine.payment.benefit-4']({ capacity: '100GB' }),
-          t['com.affine.payment.benefit-5']({ capacity: '500M' }),
+          t['com.affine.payment.benefit-5']({ capacity: '100M' }),
           t['com.affine.payment.benefit-6']({ capacity: '10' }),
         ],
       },

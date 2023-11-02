@@ -12,7 +12,10 @@ import {
   useCollectionManager,
 } from '../use-collection-manager';
 import * as styles from './collection-bar.css';
-import { type AllPageListConfig, EditCollectionModal } from './edit-collection';
+import {
+  type AllPageListConfig,
+  EditCollectionModal,
+} from './edit-collection/edit-collection';
 import { useActions } from './use-action';
 
 interface CollectionBarProps {

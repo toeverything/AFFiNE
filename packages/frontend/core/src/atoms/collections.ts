@@ -116,10 +116,8 @@ export const pageCollectionBaseAtom =
           return {
             id: v.id,
             name: v.name,
-            mode: 'rule',
             filterList: v.filterList,
             allowList: v.allowList ?? [],
-            pages: [],
           };
         });
       };
@@ -140,10 +138,8 @@ export const pageCollectionBaseAtom =
             return {
               id: v.id,
               name: v.name,
-              mode: 'rule',
               filterList: v.filterList,
               allowList: v.allowList ?? [],
-              pages: [],
             };
           });
         }

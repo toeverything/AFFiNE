@@ -8,6 +8,7 @@ import type {
 } from '@affine/graphql';
 import { gqlFetcherFactory } from '@affine/graphql';
 import type { GraphQLError } from 'graphql';
+import { useMemo } from 'react';
 import type { Key, SWRConfiguration, SWRResponse } from 'swr';
 import useSWR from 'swr';
 import type {
@@ -70,10 +71,18 @@ export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>,
   config?: any
 ) {
+  const configWithSuspense: SWRConfiguration = useMemo(
+    () => ({
+      suspense: true,
+      ...config,
+    }),
+    [config]
+  );
+
   return useSWR(
     () => ['cloud', options.query.id, options.variables],
     () => fetcher(options),
-    config
+    configWithSuspense
   );
 }
 

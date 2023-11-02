@@ -10,6 +10,7 @@ import {
 import type { DocDataSource } from 'y-provider';
 import type { Doc } from 'yjs';
 
+import { MultipleBatchSyncSender } from './batch-sync-sender';
 import {
   type AwarenessChanges,
   base64ToUint8Array,
@@ -41,8 +42,44 @@ export const createAffineDataSource = (
     console.warn('important!! please use doc.guid as roomName');
   }
 
-  logger.debug('createAffineDataSource', id, rootDoc.guid, awareness);
+  logger.debug('createAffineDataSource', id, rootDoc.guid);
   const socket = getIoManager().socket('/');
+  const syncSender = new MultipleBatchSyncSender(async (guid, updates) => {
+    const payload = await Promise.all(
+      updates.map(update => uint8ArrayToBase64(update))
+    );
+
+    return new Promise(resolve => {
+      socket.emit(
+        'client-update-v2',
+        {
+          workspaceId: rootDoc.guid,
+          guid,
+          updates: payload,
+        },
+        (response: {
+          // TODO: reuse `EventError` with server
+          error?: any;
+          data: any;
+        }) => {
+          // TODO: raise error with different code to users
+          if (response.error) {
+            logger.error('client-update-v2 error', {
+              workspaceId: rootDoc.guid,
+              guid,
+              response,
+            });
+          }
+
+          resolve({
+            accepted: !response.error,
+            // TODO: reuse `EventError` with server
+            retry: response.error?.code === 'INTERNAL',
+          });
+        }
+      );
+    });
+  });
 
   return {
     get socket() {
@@ -54,78 +91,93 @@ export const createAffineDataSource = (
         : undefined;
 
       return new Promise((resolve, reject) => {
-        logger.debug('doc-load', {
+        logger.debug('doc-load-v2', {
           workspaceId: rootDoc.guid,
           guid,
           stateVector,
         });
         socket.emit(
-          'doc-load',
+          'doc-load-v2',
           {
             workspaceId: rootDoc.guid,
             guid,
             stateVector,
           },
-          (docState: Error | { missing: string; state: string } | null) => {
+          (
+            response: // TODO: reuse `EventError` with server
+            { error: any } | { data: { missing: string; state: string } }
+          ) => {
             logger.debug('doc-load callback', {
               workspaceId: rootDoc.guid,
               guid,
               stateVector,
-              docState,
+              response,
             });
-            if (docState instanceof Error) {
-              reject(docState);
-              return;
-            }
 
-            resolve(
-              docState
-                ? {
-                    missing: base64ToUint8Array(docState.missing),
-                    state: docState.state
-                      ? base64ToUint8Array(docState.state)
-                      : undefined,
-                  }
-                : false
-            );
+            if ('error' in response) {
+              // TODO: result `EventError` with server
+              if (response.error.code === 'DOC_NOT_FOUND') {
+                resolve(false);
+              } else {
+                reject(new Error(response.error.message));
+              }
+            } else {
+              resolve({
+                missing: base64ToUint8Array(response.data.missing),
+                state: response.data.state
+                  ? base64ToUint8Array(response.data.state)
+                  : undefined,
+              });
+            }
           }
         );
       });
     },
     sendDocUpdate: async (guid: string, update: Uint8Array) => {
-      logger.debug('client-update', {
+      logger.debug('client-update-v2', {
         workspaceId: rootDoc.guid,
         guid,
         update,
       });
-      socket.emit('client-update', {
-        workspaceId: rootDoc.guid,
-        guid,
-        update: await uint8ArrayToBase64(update),
-      });
 
-      return Promise.resolve();
+      await syncSender.send(guid, update);
     },
     onDocUpdate: callback => {
-      socket.on('connect', () => {
-        socket.emit('client-handshake', rootDoc.guid);
-      });
       const onUpdate = async (message: {
         workspaceId: string;
         guid: string;
-        update: string;
+        updates: string[];
       }) => {
         if (message.workspaceId === rootDoc.guid) {
-          callback(message.guid, base64ToUint8Array(message.update));
+          message.updates.forEach(update => {
+            callback(message.guid, base64ToUint8Array(update));
+          });
         }
       };
-      socket.on('server-update', onUpdate);
-      const destroyAwareness = setupAffineAwareness(socket, rootDoc, awareness);
+      let destroyAwareness = () => {};
+      socket.on('server-updates', onUpdate);
+      socket.on('connect', () => {
+        socket.emit(
+          'client-handshake',
+          rootDoc.guid,
+          (response: { error?: any }) => {
+            if (!response.error) {
+              syncSender.start();
+              destroyAwareness = setupAffineAwareness(
+                socket,
+                rootDoc,
+                awareness
+              );
+            }
+          }
+        );
+      });
 
       socket.connect();
       return () => {
+        syncSender.stop();
         socket.emit('client-leave', rootDoc.guid);
-        socket.off('server-update', onUpdate);
+        socket.off('server-updates', onUpdate);
         destroyAwareness();
         socket.disconnect();
       };
@@ -148,7 +200,6 @@ function setupAffineAwareness(
     if (workspaceId !== rootDoc.guid) {
       return;
     }
-
     applyAwarenessUpdate(
       awareness,
       base64ToUint8Array(awarenessUpdate),
@@ -174,7 +225,7 @@ function setupAffineAwareness(
           awarenessUpdate: encodedUpdate,
         });
       })
-      .catch(err => console.error(err));
+      .catch(err => logger.error(err));
   };
 
   const newClientAwarenessInitHandler = () => {
@@ -188,7 +239,7 @@ function setupAffineAwareness(
           awarenessUpdate: encodedAwarenessUpdate,
         });
       })
-      .catch(err => console.error(err));
+      .catch(err => logger.error(err));
   };
 
   const windowBeforeUnloadHandler = () => {
@@ -199,11 +250,9 @@ function setupAffineAwareness(
   conn.on('new-client-awareness-init', newClientAwarenessInitHandler);
   awareness.on('update', awarenessUpdate);
 
-  conn.on('connect', () => {
-    conn.emit('awareness-init', rootDoc.guid);
-  });
-
   window.addEventListener('beforeunload', windowBeforeUnloadHandler);
+
+  conn.emit('awareness-init', rootDoc.guid);
 
   return () => {
     awareness.off('update', awarenessUpdate);

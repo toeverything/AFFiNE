@@ -36,10 +36,8 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
   const setting = useCollectionManager(collectionsCRUDAtom);
   const saveToCollection = useCallback(
     async (collection: Collection) => {
-      console.log(setting.currentCollection.filterList);
       await setting.createCollection({
         ...collection,
-        mode: 'rule',
         filterList: setting.currentCollection.filterList,
       });
       navigateHelper.jumpToCollection(workspaceId, collection.id);
