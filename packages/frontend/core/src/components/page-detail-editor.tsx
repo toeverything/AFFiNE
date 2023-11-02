@@ -25,6 +25,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
@@ -38,8 +39,8 @@ import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
 
-function useRouterQuery() {
-  return new URLSearchParams(useLocation().search);
+function useRouterHash() {
+  return useLocation().hash.substring(1);
 }
 
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
@@ -86,19 +87,28 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-  const query = useRouterQuery();
-  const blockId = query.get('blockId');
-
-  if (blockId) {
-    const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-    if (blockElement) {
-      blockElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center',
-      });
+  const [loading, setLoading] = useState(true);
+  const blockId = useRouterHash();
+  const blockElement = useMemo(() => {
+    if (!blockId || loading) {
+      return null;
     }
-  }
+    return document.querySelector(`[data-block-id="${blockId}"]`);
+  }, [blockId, loading]);
+
+  useEffect(() => {
+    if (blockElement) {
+      setTimeout(
+        () =>
+          blockElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center',
+          }),
+        0
+      );
+    }
+  }, [blockElement]);
 
   return (
     <>
@@ -158,6 +168,7 @@ const EditorWrapper = memo(function EditorWrapper({
               window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());
               });
+              setLoading(false);
             };
           },
           [onLoad]

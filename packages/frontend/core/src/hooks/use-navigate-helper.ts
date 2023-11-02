@@ -36,12 +36,9 @@ export function useNavigateHelper() {
       blockId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(
-        `/workspace/${workspaceId}/${pageId}?blockId=${blockId}`,
-        {
-          replace: logic === RouteLogic.REPLACE,
-        }
-      );
+      return navigate(`/workspace/${workspaceId}/${pageId}#${blockId}`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
     },
     [navigate]
   );
