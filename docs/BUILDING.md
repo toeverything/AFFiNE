@@ -43,7 +43,7 @@ Please follow the official guide at https://www.rust-lang.org/tools/install.
 
 ### Setup Node.js Environment
 
-This setup requires modern yarn (currently `3.x`), run this if your yarn version is `1.x`
+This setup requires modern yarn (currently `4.x`), run this if your yarn version is `1.x`
 
 Reference: [Yarn installation doc](https://yarnpkg.com/getting-started/install)
 

@@ -1,11 +1,6 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - master
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
   workflow_dispatch:
     inputs:
       flavor:
@@ -200,7 +195,7 @@ jobs:
 
   deploy:
     name: Deploy to cluster
-    if: ${{ github.event_name == 'workflow_dispatch' || github.ref_type == 'tag' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     environment: ${{ github.event.inputs.flavor }}
     permissions:
       contents: 'write'

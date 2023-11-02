@@ -47,7 +47,12 @@ export const Condition = ({
       const args = renderArgs(value, onChange, data.type);
       return (
         <div
-          style={{ display: 'flex', userSelect: 'none', alignItems: 'center' }}
+          style={{
+            display: 'flex',
+            userSelect: 'none',
+            alignItems: 'center',
+            overflow: 'hidden',
+          }}
         >
           <Menu
             items={
@@ -135,7 +140,10 @@ export const Arg = ({
     return null;
   }
   return (
-    <div data-testid="filter-arg" style={{ marginLeft: 4, fontWeight: 600 }}>
+    <div
+      data-testid="filter-arg"
+      style={{ marginLeft: 4, fontWeight: 600, overflow: 'hidden' }}
+    >
       {data.render({
         type,
         value: value?.value,
