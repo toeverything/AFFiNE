@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import { isEqual } from 'lodash-es';
 import type { Socket } from 'socket.io-client';
 import { Manager } from 'socket.io-client';
 import {
@@ -191,23 +190,6 @@ function setupAffineAwareness(
   rootDoc: Doc,
   awareness: Awareness
 ) {
-  let lastAwarenessState: Map<number, any> = new Map();
-  // can't compare on update binary because the protocol will encode clock in it but the state is still the same
-  const compareAwarenessState = (clients: number[]) => {
-    const newAwarenessState = new Map();
-    clients.forEach(client => {
-      newAwarenessState.set(client, awareness.states.get(client));
-    });
-
-    const equal = isEqual(lastAwarenessState, newAwarenessState);
-
-    if (!equal) {
-      lastAwarenessState = newAwarenessState;
-    }
-
-    return equal;
-  };
-
   const awarenessBroadcast = ({
     workspaceId,
     awarenessUpdate,
@@ -234,11 +216,6 @@ function setupAffineAwareness(
       ...res,
       ...cur,
     ]);
-
-    // hit the last awareness update cache, skip
-    if (compareAwarenessState(changedClients)) {
-      return;
-    }
 
     const update = encodeAwarenessUpdate(awareness, changedClients);
     uint8ArrayToBase64(update)
