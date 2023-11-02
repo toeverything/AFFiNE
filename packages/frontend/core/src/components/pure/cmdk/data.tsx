@@ -250,7 +250,9 @@ export const usePageCommands = () => {
       if (results.every(command => command.originalValue !== query)) {
         results.push({
           id: 'affine:pages:create-page',
-          label: `${t['com.affine.cmdk.affine.create-new-page-as']()} ${query}`,
+          label: t['com.affine.cmdk.affine.create-new-page-as']({
+            keyWord: query,
+          }),
           value: 'affine::create-page' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: async () => {
@@ -263,9 +265,9 @@ export const usePageCommands = () => {
 
         results.push({
           id: 'affine:pages:create-edgeless',
-          label: `${t[
-            'com.affine.cmdk.affine.create-new-edgeless-as'
-          ]()} ${query}`,
+          label: t['com.affine.cmdk.affine.create-new-edgeless-as']({
+            keyWord: query,
+          }),
           value: 'affine::create-edgeless' + query, // hack to make the page always showing in the search result
           category: 'affine:creation',
           run: async () => {

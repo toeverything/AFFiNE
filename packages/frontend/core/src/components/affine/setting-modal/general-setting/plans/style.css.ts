@@ -12,6 +12,13 @@ export const radioButtonDiscount = style({
   color: 'var(--affine-primary-color)',
   fontWeight: 400,
 });
+export const radioButtonText = style({
+  selectors: {
+    '&:first-letter': {
+      textTransform: 'uppercase',
+    },
+  },
+});
 
 export const planCardsWrapper = style({
   paddingRight: 'calc(var(--setting-modal-gap-x) + 30px)',
