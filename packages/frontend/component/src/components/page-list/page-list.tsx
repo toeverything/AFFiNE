@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import {
   type ForwardedRef,
   forwardRef,
+  memo,
   type PropsWithChildren,
   useCallback,
   useEffect,
@@ -95,40 +96,44 @@ const usePageSelectionStateEffect = () => {
   ]);
 };
 
-export const PageListInnerWrapper = ({
-  handleRef,
-  children,
-  onSelectionActiveChange,
-  ...props
-}: PropsWithChildren<
-  PageListProps & { handleRef: ForwardedRef<PageListHandle> }
->) => {
-  const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
-  const [selectionState, setPageListSelectionState] =
-    useAtom(selectionStateAtom);
-  usePageSelectionStateEffect();
-
-  useEffect(() => {
-    setPageListPropsAtom(props);
-  }, [props, setPageListPropsAtom]);
-
-  useEffect(() => {
-    onSelectionActiveChange?.(!!selectionState.selectionActive);
-  }, [onSelectionActiveChange, selectionState.selectionActive]);
-
-  useImperativeHandle(
+export const PageListInnerWrapper = memo(
+  ({
     handleRef,
-    () => {
-      return {
-        toggleSelectable: () => {
-          setPageListSelectionState(false);
-        },
-      };
-    },
-    [setPageListSelectionState]
-  );
-  return children;
-};
+    children,
+    onSelectionActiveChange,
+    ...props
+  }: PropsWithChildren<
+    PageListProps & { handleRef: ForwardedRef<PageListHandle> }
+  >) => {
+    const setPageListPropsAtom = useSetAtom(pageListPropsAtom);
+    const [selectionState, setPageListSelectionState] =
+      useAtom(selectionStateAtom);
+    usePageSelectionStateEffect();
+
+    useEffect(() => {
+      setPageListPropsAtom(props);
+    }, [props, setPageListPropsAtom]);
+
+    useEffect(() => {
+      onSelectionActiveChange?.(!!selectionState.selectionActive);
+    }, [onSelectionActiveChange, selectionState.selectionActive]);
+
+    useImperativeHandle(
+      handleRef,
+      () => {
+        return {
+          toggleSelectable: () => {
+            setPageListSelectionState(false);
+          },
+        };
+      },
+      [setPageListSelectionState]
+    );
+    return children;
+  }
+);
+
+PageListInnerWrapper.displayName = 'PageListInnerWrapper';
 
 const PageListInner = (props: PageListProps) => {
   const groups = useAtomValue(pageGroupsAtom);
