@@ -91,7 +91,6 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-
   const [loading, setLoading] = useState(true);
   const blockId = useRouterHash();
   const blockElement = useMemo(() => {
