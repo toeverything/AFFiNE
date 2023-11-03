@@ -13,15 +13,26 @@ export const scrollArea = style({
   overflowX: 'auto',
   scrollSnapType: 'x mandatory',
   paddingBottom: '21px',
+});
 
-  '::-webkit-scrollbar': {
-    display: 'block',
-    height: '5px',
-    background: 'transparent',
-  },
-  '::-webkit-scrollbar-thumb': {
-    background: 'var(--affine-icon-secondary)',
-    borderRadius: '5px',
+export const scrollBar = style({
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  touchAction: 'none',
+  height: '9px',
+  width: '100%',
+});
+
+export const scrollThumb = style({
+  background: 'var(--affine-icon-secondary)',
+  opacity: 0.6,
+  overflow: 'hidden',
+  height: '4px',
+  borderRadius: '4px',
+
+  vars: {
+    '--radix-scroll-area-thumb-height': '4px',
   },
 });
 

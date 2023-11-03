@@ -1,6 +1,7 @@
 import { SettingHeader } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon } from '@blocksuite/icons';
+import * as ScrollArea from '@radix-ui/react-scroll-area';
 import type { HtmlHTMLAttributes, ReactNode } from 'react';
 
 import * as styles from './layout.css';
@@ -49,9 +50,18 @@ export const PlanLayout = ({
         subtitle={subtitle}
       />
       {tabs}
-      <div ref={scrollRef} className={styles.scrollArea}>
-        {scroll}
-      </div>
+      <ScrollArea.Root>
+        <ScrollArea.Viewport ref={scrollRef} className={styles.scrollArea}>
+          {scroll}
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar
+          forceMount
+          orientation="horizontal"
+          className={styles.scrollBar}
+        >
+          <ScrollArea.Thumb className={styles.scrollThumb}></ScrollArea.Thumb>
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
       {footer}
     </div>
   );
