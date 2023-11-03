@@ -112,13 +112,14 @@ export class SubscriptionService {
     redirectUrl: string;
     idempotencyKey: string;
   }) {
-    const currentSubscription = await this.db.userSubscription.findUnique({
+    const currentSubscription = await this.db.userSubscription.findFirst({
       where: {
         userId: user.id,
+        status: SubscriptionStatus.Active,
       },
     });
 
-    if (currentSubscription && currentSubscription.end < new Date()) {
+    if (currentSubscription) {
       throw new Error('You already have a subscription');
     }
 
