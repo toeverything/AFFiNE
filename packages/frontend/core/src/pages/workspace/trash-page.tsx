@@ -1,8 +1,7 @@
 import { toast } from '@affine/component';
 import {
-  PageList,
-  PageListScrollContainer,
   TrashOperationCell,
+  VirtualizedPageList,
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -61,30 +60,28 @@ export const TrashPage = () => {
   );
   return (
     <>
-      <WorkspaceHeader
-        currentWorkspaceId={currentWorkspace.id}
-        currentEntry={{
-          subPath: WorkspaceSubPath.TRASH,
-        }}
-      />
       <div className={styles.root}>
-        <PageListScrollContainer className={styles.scrollContainer}>
-          {filteredPageMetas.length > 0 ? (
-            <PageList
-              pages={filteredPageMetas}
-              clickMode="link"
-              groupBy={false}
-              isPreferredEdgeless={isPreferredEdgeless}
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              pageOperationsRenderer={pageOperationsRenderer}
-            />
-          ) : (
-            <EmptyPageList
-              type="trash"
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            />
-          )}
-        </PageListScrollContainer>
+        <WorkspaceHeader
+          currentWorkspaceId={currentWorkspace.id}
+          currentEntry={{
+            subPath: WorkspaceSubPath.TRASH,
+          }}
+        />
+        {filteredPageMetas.length > 0 ? (
+          <VirtualizedPageList
+            pages={filteredPageMetas}
+            rowAsLink
+            groupBy={false}
+            isPreferredEdgeless={isPreferredEdgeless}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            pageOperationsRenderer={pageOperationsRenderer}
+          />
+        ) : (
+          <EmptyPageList
+            type="trash"
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        )}
       </div>
     </>
   );

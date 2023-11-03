@@ -248,7 +248,6 @@ export const RulesMode = ({
           {rulesPages.length > 0 ? (
             <PageList
               hideHeader
-              clickMode="select"
               className={styles.resultPages}
               pages={rulesPages}
               groupBy={false}
@@ -269,7 +268,6 @@ export const RulesMode = ({
               </div>
               <PageList
                 hideHeader
-                clickMode="select"
                 className={styles.resultPages}
                 pages={allowListPages}
                 groupBy={false}

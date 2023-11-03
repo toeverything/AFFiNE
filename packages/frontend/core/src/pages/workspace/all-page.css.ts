@@ -15,6 +15,8 @@ export const scrollContainer = style({
 });
 
 export const allPagesHeader = style({
+  height: 100,
+  alignItems: 'center',
   padding: '48px 16px 20px 24px',
   overflow: 'hidden',
   display: 'flex',
@@ -23,7 +25,7 @@ export const allPagesHeader = style({
 });
 
 export const allPagesHeaderTitle = style({
-  fontSize: 'var(--affine-font-h-3)',
+  fontSize: 'var(--affine-font-h-5)',
   fontWeight: 500,
   color: 'var(--affine-text-secondary-color)',
   display: 'flex',

@@ -24,6 +24,6 @@ export const workspaceType = style({
 });
 
 export const scrollbar = style({
-  transform: 'translateX(10px)',
+  transform: 'translateX(8px)',
   width: '4px',
 });

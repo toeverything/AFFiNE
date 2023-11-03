@@ -1,8 +1,7 @@
 import {
   type AllPageListConfig,
   FilterList,
-  PageList,
-  PageListScrollContainer,
+  VirtualizedPageList,
 } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -104,25 +103,22 @@ export const PagesMode = ({
             </div>
           ) : null}
           {searchedList.length ? (
-            <PageListScrollContainer>
-              <PageList
-                clickMode="select"
-                className={styles.pageList}
-                pages={searchedList}
-                groupBy={false}
-                blockSuiteWorkspace={allPageListConfig.workspace}
-                selectable
-                onSelectedPageIdsChange={ids => {
-                  updateCollection({
-                    ...collection,
-                    allowList: ids,
-                  });
-                }}
-                pageOperationsRenderer={pageOperationsRenderer}
-                selectedPageIds={collection.allowList}
-                isPreferredEdgeless={allPageListConfig.isEdgeless}
-              ></PageList>
-            </PageListScrollContainer>
+            <VirtualizedPageList
+              className={styles.pageList}
+              pages={searchedList}
+              groupBy={false}
+              blockSuiteWorkspace={allPageListConfig.workspace}
+              selectable
+              onSelectedPageIdsChange={ids => {
+                updateCollection({
+                  ...collection,
+                  allowList: ids,
+                });
+              }}
+              pageOperationsRenderer={pageOperationsRenderer}
+              selectedPageIds={collection.allowList}
+              isPreferredEdgeless={allPageListConfig.isEdgeless}
+            ></VirtualizedPageList>
           ) : (
             <EmptyList search={searchText} />
           )}

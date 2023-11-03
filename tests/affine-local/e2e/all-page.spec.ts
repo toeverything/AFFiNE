@@ -4,11 +4,11 @@ import {
   checkDatePicker,
   checkDatePickerMonth,
   checkFilterName,
-  checkPagesCount,
   clickDatePicker,
   createFirstFilter,
   createPageWithTag,
   fillDatePicker,
+  getPagesCount,
   selectDateFromDatePicker,
   selectMonthFromMonthPicker,
   selectTag,
@@ -89,8 +89,7 @@ test('allow creation of filters by created time', async ({ page }) => {
   await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  const pages = await page.locator('[data-testid="page-list-item"]').all();
-  const pageCount = pages.length;
+  const pageCount = await getPagesCount(page);
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
@@ -98,11 +97,11 @@ test('allow creation of filters by created time', async ({ page }) => {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   await checkDatePicker(page, yesterday);
-  await checkPagesCount(page, 1);
+  expect(await getPagesCount(page)).toBe(1);
   // change date
   const today = new Date();
   await fillDatePicker(page, today);
-  await checkPagesCount(page, 0);
+  expect(await getPagesCount(page)).toBe(0);
   // change filter
   await page.getByTestId('filter-name').click();
   await page.getByTestId('filler-tag-before').click();
@@ -110,7 +109,7 @@ test('allow creation of filters by created time', async ({ page }) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   await fillDatePicker(page, tomorrow);
   await checkDatePicker(page, tomorrow);
-  await checkPagesCount(page, pageCount);
+  expect(await getPagesCount(page)).toBe(pageCount);
 });
 
 test('creation of filters by created time, then click date picker to modify the date', async ({
@@ -121,8 +120,7 @@ test('creation of filters by created time, then click date picker to modify the 
   await clickNewPageButton(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  const pages = await page.locator('[data-testid="page-list-item"]').all();
-  const pageCount = pages.length;
+  const pageCount = await getPagesCount(page);
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Created');
   await checkFilterName(page, 'after');
@@ -130,11 +128,11 @@ test('creation of filters by created time, then click date picker to modify the 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   await checkDatePicker(page, yesterday);
-  await checkPagesCount(page, 1);
+  expect(await getPagesCount(page)).toBe(1);
   // change date
   const today = new Date();
   await selectDateFromDatePicker(page, today);
-  await checkPagesCount(page, 0);
+  expect(await getPagesCount(page)).toBe(0);
   // change filter
   await page.locator('[data-testid="filter-name"]').click();
   await page.getByTestId('filler-tag-before').click();
@@ -142,7 +140,7 @@ test('creation of filters by created time, then click date picker to modify the 
   tomorrow.setDate(tomorrow.getDate() + 1);
   await selectDateFromDatePicker(page, tomorrow);
   await checkDatePicker(page, tomorrow);
-  await checkPagesCount(page, pageCount);
+  expect(await getPagesCount(page)).toBe(pageCount);
 });
 
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {
@@ -174,8 +172,7 @@ test('allow creation of filters by tags', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  const pages = await page.locator('[data-testid="page-list-item"]').all();
-  const pageCount = pages.length;
+  const pageCount = await getPagesCount(page);
   expect(pageCount).not.toBe(0);
   await createFirstFilter(page, 'Tags');
   await checkFilterName(page, 'is not empty');
@@ -188,12 +185,12 @@ test('allow creation of filters by tags', async ({ page }) => {
   await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
   await clickSideBarAllPageButton(page);
   await checkFilterName(page, 'is not empty');
-  await checkPagesCount(page, pagesWithTagsCount + 2);
+  expect(await getPagesCount(page)).toBe(pagesWithTagsCount + 2);
   await changeFilter(page, 'contains all');
-  await checkPagesCount(page, pageCount + 2);
+  expect(await getPagesCount(page)).toBe(pageCount + 2);
   await selectTag(page, 'A');
-  await checkPagesCount(page, 1);
+  expect(await getPagesCount(page)).toBe(1);
   await changeFilter(page, 'does not contains all');
   await selectTag(page, 'B');
-  await checkPagesCount(page, pageCount + 1);
+  expect(await getPagesCount(page)).toBe(pageCount + 1);
 });
