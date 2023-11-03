@@ -455,7 +455,11 @@ const ChangeRecurring = ({
       You are changing your <span className={styles.textEmphasis}>{from}</span>{' '}
       subscription to <span className={styles.textEmphasis}>{to}</span>{' '}
       subscription. This change will take effect in the next billing cycle, with
-      an effective date of <span className={styles.textEmphasis}>{due}</span>.
+      an effective date of{' '}
+      <span className={styles.textEmphasis}>
+        {new Date(due).toLocaleDateString()}
+      </span>
+      .
     </Trans>
   );
 
