@@ -22,6 +22,7 @@ export interface EditCollectionModalProps {
   onConfirm: (view: Collection) => Promise<void>;
   allPageListConfig: AllPageListConfig;
 }
+
 const contentOptions: DialogContentProps = {
   onPointerDownOutside: e => {
     e.preventDefault();
@@ -167,7 +168,15 @@ export const EditCollection = ({
     [mode, t]
   );
   return (
-    <div className={styles.collectionEditContainer}>
+    <div
+      onKeyDown={e => {
+        if (e.key === 'Escape') {
+          return;
+        }
+        e.stopPropagation();
+      }}
+      className={styles.collectionEditContainer}
+    >
       {mode === 'page' ? (
         <PagesMode
           collection={value}

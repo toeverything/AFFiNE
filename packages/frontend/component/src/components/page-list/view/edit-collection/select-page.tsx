@@ -45,9 +45,6 @@ export const SelectPage = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <input
-        onKeyDown={e => {
-          e.stopPropagation();
-        }}
         className={styles.rulesTitle}
         value={searchText}
         onChange={e => updateSearchText(e.target.value)}
