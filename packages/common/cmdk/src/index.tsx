@@ -834,7 +834,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {...etc}
         cmdk-input=""
         onKeyDown={e => {
-          if (e.key === 'Escape' || e.key === 'k') {
+          if (
+            e.key === 'Escape' ||
+            e.key === 'k' ||
+            e.key.startsWith('Arrow') ||
+            e.key === 'Enter'
+          ) {
             return;
           }
           e.stopPropagation();
