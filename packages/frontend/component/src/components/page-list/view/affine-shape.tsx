@@ -9,7 +9,6 @@ export const AffineShapeIcon = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
-    <rect width="200" height="173.475" fill="white" />
     <rect
       x="51.7242"
       y="38.4618"
