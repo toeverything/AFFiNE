@@ -58,7 +58,13 @@ const loadPageQueue = new PQueue({
 
 const loadedPages = new WeakSet<Page>();
 
-const awaitForIdle = () => new Promise(resolve => requestIdleCallback(resolve));
+const awaitForIdle = () =>
+  new Promise(resolve =>
+    requestIdleCallback(resolve, {
+      timeout: 1000, // do not wait for too long
+    })
+  );
+
 const awaitForTimeout = (timeout: number) =>
   new Promise(resolve => setTimeout(resolve, timeout));
 
@@ -66,23 +72,28 @@ const awaitForTimeout = (timeout: number) =>
  * Load a page and wait for it to be loaded
  * This page will be loaded in a queue so that it will not jam the network and browser CPU
  */
-export function loadPage(page: Page) {
+export function loadPage(page: Page, priority = 0) {
   if (loadedPages.has(page)) {
     return Promise.resolve();
   }
   loadedPages.add(page);
-  return loadPageQueue.add(async () => {
-    if (!page.loaded) {
-      await awaitForIdle();
-      await page.waitForLoaded();
-      // we do not know how long it takes to load a page here
-      // so that we just use 300ms timeout as the default page processing time
-      await awaitForTimeout(300);
-      logger.debug('page loaded', page.id);
-    } else {
-      // do nothing if it is already loaded
+  return loadPageQueue.add(
+    async () => {
+      if (!page.loaded) {
+        await awaitForIdle();
+        await page.waitForLoaded();
+        // we do not know how long it takes to load a page here
+        // so that we just use 300ms timeout as the default page processing time
+        await awaitForTimeout(300);
+        logger.debug('page loaded', page.id);
+      } else {
+        // do nothing if it is already loaded
+      }
+    },
+    {
+      priority,
     }
-  });
+  );
 }
 
 export function useBlockSuiteWorkspacePage(
