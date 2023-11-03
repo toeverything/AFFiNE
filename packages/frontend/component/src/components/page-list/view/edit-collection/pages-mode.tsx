@@ -55,6 +55,9 @@ export const PagesMode = ({
       <input
         value={searchText}
         onChange={e => updateSearchText(e.target.value)}
+        onKeyDown={e => {
+          e.stopPropagation();
+        }}
         className={styles.rulesTitle}
         style={{
           color: 'var(--affine-text-primary-color)',
