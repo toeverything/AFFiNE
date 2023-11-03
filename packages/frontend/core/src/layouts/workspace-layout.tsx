@@ -133,7 +133,7 @@ function useLoadWorkspacePages() {
           .map(id => currentWorkspace.blockSuiteWorkspace.getPage(id))
           .filter((p): p is Page => !!p);
         pages.forEach(page => {
-          loadPage(page, 10);
+          loadPage(page, -10);
         });
       }, 10 * 1000); // load pages after 10s
       return () => {
