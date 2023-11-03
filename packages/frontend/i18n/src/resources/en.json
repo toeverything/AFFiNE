@@ -772,5 +772,6 @@
   "com.affine.other-page.nav.open-affine": "Open AFFiNE",
   "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}",
   "com.affine.cmdk.affine.switch-state.on": "ON",
-  "com.affine.cmdk.affine.switch-state.off": "OFF"
+  "com.affine.cmdk.affine.switch-state.off": "OFF",
+  "com.affine.workspaceSubPath.trash.empty-description": "Deleted pages will appear here."
 }
