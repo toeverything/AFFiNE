@@ -12509,6 +12509,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/hooks@workspace:packages/frontend/hooks"
   dependencies:
+    "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@blocksuite/block-std": "npm:0.0.0-20231101080734-aa27dc89-nightly"
     "@blocksuite/blocks": "npm:0.0.0-20231101080734-aa27dc89-nightly"
@@ -12522,6 +12523,7 @@ __metadata:
     foxact: "npm:^0.2.20"
     jotai: "npm:^2.4.3"
     lodash.debounce: "npm:^4.0.8"
+    p-queue: "npm:^7.4.1"
     react: "npm:18.2.0"
     swr: "npm:2.2.4"
     uuid: "npm:^9.0.1"
@@ -12571,7 +12573,7 @@ __metadata:
     async-call-rpc: "npm:^6.3.1"
     electron: "link:../../frontend/electron/node_modules/electron"
     jotai: "npm:^2.4.3"
-    jotai-effect: "npm:^0.1.0"
+    jotai-effect: "npm:^0.2.2"
     nanoid: "npm:^5.0.1"
     react: "npm:^18.2.0"
     rxjs: "npm:^7.8.1"
@@ -24423,15 +24425,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-effect@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "jotai-effect@npm:0.1.0"
-  peerDependencies:
-    jotai: ">=2.4.3"
-  checksum: 38d87a3c64dfd9e1b9467b9b589947f03fdd29134f950bb11591cd335a670ce6cd13261e7e7bc4c0c9852ce0f663be215aa469c43f974ab1ef8823828e81db3d
-  languageName: node
-  linkType: hard
-
 "jotai-effect@npm:^0.2.2":
   version: 0.2.2
   resolution: "jotai-effect@npm:0.2.2"
@@ -28487,6 +28480,16 @@ __metadata:
     eventemitter3: "npm:^4.0.4"
     p-timeout: "npm:^3.2.0"
   checksum: 60fe227ffce59fbc5b1b081305b61a2f283ff145005853702b7d4d3f99a0176bd21bb126c99a962e51fe1e01cb8aa10f0488b7bbe73b5dc2e84b5cc650b8ffd2
+  languageName: node
+  linkType: hard
+
+"p-queue@npm:^7.4.1":
+  version: 7.4.1
+  resolution: "p-queue@npm:7.4.1"
+  dependencies:
+    eventemitter3: "npm:^5.0.1"
+    p-timeout: "npm:^5.0.2"
+  checksum: 82934551f20a38cc19b31cda7200f2db93ca99b8c642d3ac861d12a7a9160eb32235738a8cd53f1a7ea0c7b52d6c0bb27644b6461e9a51e6a59f1e8d65904b78
   languageName: node
   linkType: hard
 
