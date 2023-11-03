@@ -12,7 +12,7 @@ import { StorageProvide } from '../src/storage';
 import { FakePrisma } from './utils';
 
 class FakePermission {
-  async tryCheck() {
+  async tryCheckWorkspace() {
     return true;
   }
   async getWorkspaceOwner() {
@@ -37,7 +37,7 @@ test.beforeEach(async t => {
   })
     .overrideProvider(PrismaService)
     .useValue({
-      userWorkspacePermission: {
+      workspaceUserPermission: {
         async findMany() {
           return [];
         },
