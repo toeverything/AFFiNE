@@ -46,7 +46,7 @@ export const EmptyPageList = ({
       );
     }
     if (type === 'trash') {
-      return t['emptyTrash']();
+      return t['com.affine.workspaceSubPath.trash.empty-description']();
     }
     if (type === 'shared') {
       return t['emptySharedPages']();
