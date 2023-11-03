@@ -9,11 +9,13 @@
     "foxact": "^0.2.20",
     "jotai": "^2.4.3",
     "lodash.debounce": "^4.0.8",
+    "p-queue": "^7.4.1",
     "react": "18.2.0",
     "swr": "2.2.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@blocksuite/block-std": "0.0.0-20231101080734-aa27dc89-nightly",
     "@blocksuite/blocks": "0.0.0-20231101080734-aa27dc89-nightly",
