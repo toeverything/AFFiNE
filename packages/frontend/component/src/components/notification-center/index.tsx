@@ -17,6 +17,7 @@ import {
   useState,
 } from 'react';
 
+import { SuccessIcon } from './icons';
 import * as styles from './index.css';
 import type { Notification } from './index.jotai';
 import {
@@ -47,21 +48,25 @@ const typeColorMap = {
     light: styles.lightInfoStyle,
     dark: styles.darkInfoStyle,
     default: '',
+    icon: <InformationFillDuotoneIcon />,
   },
   success: {
     light: styles.lightSuccessStyle,
     dark: styles.darkSuccessStyle,
     default: '',
+    icon: <SuccessIcon />,
   },
   warning: {
     light: styles.lightWarningStyle,
     dark: styles.darkWarningStyle,
     default: '',
+    icon: <InformationFillDuotoneIcon />,
   },
   error: {
     light: styles.lightErrorStyle,
     dark: styles.darkErrorStyle,
     default: '',
+    icon: <InformationFillDuotoneIcon />,
   },
 };
 
@@ -286,7 +291,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
               [styles.lightInfoIconStyle]: notification.theme === 'light',
             })}
           >
-            <InformationFillDuotoneIcon />
+            {typeColorMap[notification.type]?.icon ?? (
+              <InformationFillDuotoneIcon />
+            )}
           </div>
           <div className={styles.notificationTitleContactStyle}>
             {notification.title}
