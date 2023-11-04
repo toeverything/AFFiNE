@@ -6,6 +6,7 @@ import {
   checkoutMutation,
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
   updateSubscriptionMutation,
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
@@ -243,7 +244,10 @@ const ActionButton = ({
   const isFree = detail.plan === SubscriptionPlan.Free;
   const isCurrent =
     detail.plan === currentPlan &&
-    (isFree ? true : currentRecurring === recurring);
+    (isFree
+      ? true
+      : currentRecurring === recurring &&
+        subscription?.status === SubscriptionStatus.Active);
 
   // is current
   if (isCurrent) {
