@@ -9,8 +9,10 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import type { FallbackProps } from 'react-error-boundary';
 
+import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { PlanLayout } from './layout';
@@ -192,9 +194,30 @@ const Settings = () => {
 
 export const AFFiNECloudPlans = () => {
   return (
-    // TODO: Error Boundary
-    <Suspense fallback={<PlansSkeleton />}>
-      <Settings />
-    </Suspense>
+    <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
+      <Suspense fallback={<PlansSkeleton />}>
+        <Settings />
+      </Suspense>
+    </SWRErrorBoundary>
   );
+};
+
+const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
+  const t = useAFFiNEI18N();
+
+  const title = t['com.affine.payment.title']();
+  const subtitle = <React.Fragment />;
+  const tabs = <React.Fragment />;
+  const footer = <React.Fragment />;
+
+  const scroll = (
+    <div className={styles.errorTip}>
+      <span>{t['com.affine.payment.plans-error-tip']()}</span>
+      <a onClick={resetErrorBoundary} className={styles.errorTipRetry}>
+        {t['com.affine.payment.plans-error-retry']()}
+      </a>
+    </div>
+  );
+
+  return <PlanLayout {...{ title, subtitle, tabs, scroll, footer }} />;
 };

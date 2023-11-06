@@ -382,7 +382,9 @@ export const createConfiguration: (
     devServer: {
       hot: 'only',
       liveReload: true,
-      client: undefined,
+      client: {
+        overlay: process.env.DISABLE_DEV_OVERLAY === 'true' ? false : undefined,
+      },
       historyApiFallback: true,
       static: {
         directory: resolve(rootPath, 'public'),

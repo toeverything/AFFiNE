@@ -45,6 +45,9 @@
         },
         {
           "env": "COVERAGE"
+        },
+        {
+          "env": "DISABLE_DEV_OVERLAY"
         }
       ],
       "options": {
