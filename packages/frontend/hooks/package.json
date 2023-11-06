@@ -7,6 +7,7 @@
   "private": true,
   "dependencies": {
     "foxact": "^0.2.20",
+    "image-blob-reduce": "^4.1.0",
     "jotai": "^2.4.3",
     "lodash.debounce": "^4.0.8",
     "p-queue": "^7.4.1",
@@ -24,6 +25,7 @@
     "@blocksuite/lit": "0.0.0-20231101080734-aa27dc89-nightly",
     "@blocksuite/store": "0.0.0-20231101080734-aa27dc89-nightly",
     "@testing-library/react": "^14.0.0",
+    "@types/image-blob-reduce": "^4.1.3",
     "@types/lodash.debounce": "^4.0.7",
     "fake-indexeddb": "^5.0.0",
     "vitest": "0.34.6",

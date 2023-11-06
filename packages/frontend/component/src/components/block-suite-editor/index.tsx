@@ -13,6 +13,7 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
+import { getPresets } from './preset';
 
 export type EditorProps = {
   page: Page;
@@ -59,19 +60,23 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editor.page = page;
   }
 
+  const presets = getPresets();
+  editor.pagePreset = presets.pageModePreset;
+  editor.edgelessPreset = presets.edgelessModePreset;
+
   useEffect(() => {
     const disposes = [] as ((() => void) | undefined)[];
 
     if (editor) {
-      const dipose = editor.slots.pageModeSwitched.on(mode => {
+      const dispose = editor.slots.pageModeSwitched.on(mode => {
         onModeChange?.(mode);
       });
 
-      disposes.push(() => dipose.dispose());
-    }
+      disposes.push(() => dispose?.dispose());
 
-    if (editor.page && onLoad) {
-      disposes.push(onLoad?.(page, editor));
+      if (editor.page && onLoad) {
+        disposes.push(onLoad?.(page, editor));
+      }
     }
 
     return () => {
