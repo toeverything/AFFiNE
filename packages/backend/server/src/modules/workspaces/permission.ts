@@ -291,6 +291,7 @@ export class PermissionService {
         },
       },
       update: {
+        public: true,
         mode,
       },
       create: {
