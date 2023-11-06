@@ -2,7 +2,7 @@
   "name": "@affine-test/kit",
   "private": true,
   "type": "module",
-  "version": "0.10.0-canary.11",
+  "version": "0.10.0-canary.12",
   "exports": {
     "./electron": "./electron.ts",
     "./playwright": "./playwright.ts",

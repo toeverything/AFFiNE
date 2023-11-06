@@ -1,7 +1,7 @@
 {
   "name": "y-provider",
   "type": "module",
-  "version": "0.10.0-canary.11",
+  "version": "0.10.0-canary.12",
   "description": "Yjs provider protocol for multi document support",
   "exports": {
     ".": "./src/index.ts"
