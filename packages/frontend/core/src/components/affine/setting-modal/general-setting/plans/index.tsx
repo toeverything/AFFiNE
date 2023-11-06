@@ -163,6 +163,7 @@ const Settings = () => {
             onNotify={({ detail, recurring }) => {
               pushNotification({
                 type: 'success',
+                theme: 'default',
                 title: t['com.affine.payment.updated-notify-title'](),
                 message:
                   detail.plan === SubscriptionPlan.Free
