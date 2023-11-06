@@ -428,7 +428,7 @@ export const customCommandFilter = (value: string, search: string) => {
   // hack to make the page title result always before the content result
   // if the command has matched the title but not the subtitle,
   // we should give it a higher score
-  if (pageTitleMatched) {
+  if (originalScore > 0 && pageTitleMatched) {
     return 0.999;
   }
   // if the command has matched the content but not the label,
