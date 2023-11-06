@@ -103,9 +103,9 @@ export class RedisDocManager extends DocManager {
       const snapshot = await this.getSnapshot(docId.workspace, docId.guid);
 
       // merge
-      const doc = snapshot
+      const doc = await (snapshot
         ? this.applyUpdates(docId.full, snapshot.blob, ...updates)
-        : this.applyUpdates(docId.full, ...updates);
+        : this.applyUpdates(docId.full, ...updates));
 
       // update snapshot
       await this.upsert(docId.workspace, docId.guid, doc, snapshot?.seq);
