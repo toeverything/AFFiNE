@@ -46,7 +46,10 @@ async function handleFileRequest(request: Request) {
   const urlObject = new URL(request.url);
   if (isNetworkResource(urlObject.pathname)) {
     // just pass through (proxy)
-    return net.fetch(CLOUD_BASE_URL + urlObject.pathname, clonedRequest);
+    return net.fetch(
+      CLOUD_BASE_URL + urlObject.pathname + urlObject.search,
+      clonedRequest
+    );
   } else {
     // this will be file types (in the web-static folder)
     let filepath = '';
