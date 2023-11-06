@@ -67,13 +67,13 @@ export function useUpgradeWorkspace() {
           remoteProvider.datasource
         );
       }
-    })()
-      .then(() => setState('done'))
-      .catch((e: any) => {
-        console.error(e);
-        setError(e);
-        setState('error');
-      });
+
+      setState('done');
+    })().catch((e: any) => {
+      console.error(e);
+      setError(e);
+      setState('error');
+    });
   }, [
     localProvider.datasource,
     remoteProvider,
