@@ -95,8 +95,8 @@ test.describe('basic', () => {
     await page.reload();
     await page.waitForTimeout(1000);
     await page.goto(`${coreUrl}/workspace/${workspaceId}/all`);
-    await page.getByTestId('upgrade-workspace').click();
-    await expect(page.getByText('Done, please refresh the page.')).toBeVisible({
+    await page.getByTestId('upgrade-workspace-button').click();
+    await expect(page.getByText('Refresh Current Page')).toBeVisible({
       timeout: 60000,
     });
     await page.goto(
