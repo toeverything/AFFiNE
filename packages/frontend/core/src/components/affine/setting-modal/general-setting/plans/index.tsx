@@ -53,10 +53,9 @@ const Settings = () => {
     if (detail?.type === 'fixed') {
       detail.price = (price.amount / 100).toFixed(2);
       detail.yearlyPrice = (price.yearlyAmount / 100 / 12).toFixed(2);
-      detail.discount = (
-        (1 - price.yearlyAmount / 12 / price.amount) *
-        100
-      ).toFixed(2);
+      detail.discount = Math.floor(
+        (1 - price.yearlyAmount / 12 / price.amount) * 100
+      ).toString();
     }
   });
 
