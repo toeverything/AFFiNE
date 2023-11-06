@@ -12,7 +12,6 @@ import { AppModule } from '../src/app';
 import { MailService } from '../src/modules/auth/mailer';
 import { AuthService } from '../src/modules/auth/service';
 import {
-  acceptInvite,
   acceptInviteById,
   createWorkspace,
   getWorkspace,
@@ -78,33 +77,20 @@ test('should invite a user', async t => {
   t.truthy(invite, 'failed to invite user');
 });
 
-test('should accept an invite', async t => {
-  const { app } = t.context;
-  const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-  const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
-
-  const workspace = await createWorkspace(app, u1.token.token);
-  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-
-  const accept = await acceptInvite(app, u2.token.token, workspace.id);
-  t.is(accept, true, 'failed to accept invite');
-
-  const currWorkspace = await getWorkspace(app, u1.token.token, workspace.id);
-  const currMember = currWorkspace.members.find(u => u.email === u2.email);
-  t.not(currMember, undefined, 'failed to invite user');
-  t.is(currMember!.id, u2.id, 'failed to invite user');
-  t.true(!currMember!.accepted, 'failed to invite user');
-  t.pass();
-});
-
 test('should leave a workspace', async t => {
   const { app } = t.context;
   const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
   const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
 
   const workspace = await createWorkspace(app, u1.token.token);
-  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-  await acceptInvite(app, u2.token.token, workspace.id);
+  const id = await inviteUser(
+    app,
+    u1.token.token,
+    workspace.id,
+    u2.email,
+    'Admin'
+  );
+  await acceptInviteById(app, workspace.id, id, false);
 
   const leave = await leaveWorkspace(app, u2.token.token, workspace.id);
 
@@ -253,11 +239,23 @@ test('should support pagination for member', async t => {
   const u3 = await signUp(app, 'u3', 'u3@affine.pro', '1');
 
   const workspace = await createWorkspace(app, u1.token.token);
-  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-  await inviteUser(app, u1.token.token, workspace.id, u3.email, 'Admin');
+  const invite1 = await inviteUser(
+    app,
+    u1.token.token,
+    workspace.id,
+    u2.email,
+    'Admin'
+  );
+  const invite2 = await inviteUser(
+    app,
+    u1.token.token,
+    workspace.id,
+    u3.email,
+    'Admin'
+  );
 
-  await acceptInvite(app, u2.token.token, workspace.id);
-  await acceptInvite(app, u3.token.token, workspace.id);
+  await acceptInviteById(app, workspace.id, invite1, false);
+  await acceptInviteById(app, workspace.id, invite2, false);
 
   const firstPageWorkspace = await getWorkspace(
     app,

@@ -1,3 +1,0 @@
-mutation acceptInviteByWorkspaceId($workspaceId: String!) {
-  acceptInvite(workspaceId: $workspaceId)
-}

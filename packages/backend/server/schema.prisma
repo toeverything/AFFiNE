@@ -9,51 +9,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String    @id @default(uuid()) @db.VarChar
+  name          String
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  // image field is for the next-auth
+  avatarUrl     String?   @map("avatar_url") @db.VarChar
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Not available if user signed up through OAuth providers
+  password      String?   @db.VarChar
+
+  accounts             Account[]
+  sessions             Session[]
+  features             UserFeatureGates[]
+  customer             UserStripeCustomer?
+  subscription         UserSubscription?
+  invoices             UserInvoice[]
+  workspacePermissions WorkspaceUserPermission[]
+  pagePermissions      WorkspacePageUserPermission[]
+
+  @@map("users")
+}
+
 model Workspace {
-  id        String                    @id @default(uuid()) @db.VarChar
+  id        String   @id @default(uuid()) @db.VarChar
   public    Boolean
-  createdAt DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  users     UserWorkspacePermission[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  pages           WorkspacePage[]
+  permissions     WorkspaceUserPermission[]
+  pagePermissions WorkspacePageUserPermission[]
 
   @@map("workspaces")
 }
 
-model UserWorkspacePermission {
-  id          String    @id @default(uuid()) @db.VarChar
-  workspaceId String    @map("workspace_id") @db.VarChar
-  subPageId   String?   @map("sub_page_id") @db.VarChar
-  userId      String?   @map("entity_id") @db.VarChar
+// Table for workspace page meta data
+// NOTE:
+//   We won't make sure every page has a corresponding record in this table.
+//   Only the ones that have ever changed will have records here,
+//   and for others we will make sure it's has a default value return in our bussiness logic.
+model WorkspacePage {
+  workspaceId String  @map("workspace_id") @db.VarChar(36)
+  pageId      String  @map("page_id") @db.VarChar(36)
+  public      Boolean @default(false)
+  // Page/Edgeless
+  mode        Int     @default(0) @db.SmallInt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, pageId])
+  @@map("workspace_pages")
+}
+
+// @deprecated, use WorkspaceUserPermission
+model DeprecatedUserWorkspacePermission {
+  id          String   @id @default(uuid()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  subPageId   String?  @map("sub_page_id") @db.VarChar
+  userId      String?  @map("entity_id") @db.VarChar
   /// Read/Write/Admin/Owner
-  type        Int       @db.SmallInt
+  type        Int      @db.SmallInt
   /// Whether the permission invitation is accepted by the user
-  accepted    Boolean   @default(false)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accepted    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([workspaceId, subPageId, userId])
   @@map("user_workspace_permissions")
 }
 
-model User {
-  id            String                    @id @default(uuid()) @db.VarChar
-  name          String
-  email         String                    @unique
-  emailVerified DateTime?                 @map("email_verified")
-  // image field is for the next-auth
-  avatarUrl     String?                   @map("avatar_url") @db.VarChar
-  accounts      Account[]
-  sessions      Session[]
-  workspaces    UserWorkspacePermission[]
-  createdAt     DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  /// Not available if user signed up through OAuth providers
-  password      String?                   @db.VarChar
-  features      UserFeatureGates[]
-  customer      UserStripeCustomer?
-  subscription  UserSubscription?
-  invoices      UserInvoice[]
+model WorkspaceUserPermission {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  workspaceId String   @map("workspace_id") @db.VarChar(36)
+  userId      String   @map("user_id") @db.VarChar(36)
+  // Read/Write
+  type        Int      @db.SmallInt
+  /// Whether the permission invitation is accepted by the user
+  accepted    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@map("users")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_user_permissions")
+}
+
+model WorkspacePageUserPermission {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  workspaceId String   @map("workspace_id") @db.VarChar(36)
+  pageId      String   @map("page_id") @db.VarChar(36)
+  userId      String   @map("user_id") @db.VarChar(36)
+  // Read/Write
+  type        Int      @db.SmallInt
+  /// Whether the permission invitation is accepted by the user
+  accepted    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, pageId, userId])
+  @@map("workspace_page_user_permissions")
 }
 
 model UserFeatureGates {
