@@ -8,6 +8,7 @@
   },
   "references": [
     { "path": "../../common/env" },
-    { "path": "../../common/y-indexeddb" }
+    { "path": "../../common/y-indexeddb" },
+    { "path": "../../common/debug" }
   ]
 }
