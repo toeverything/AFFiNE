@@ -775,5 +775,12 @@
   "com.affine.payment.member.description": "Manage members here. {{planName}} Users can invite up to {{memberLimit}}",
   "com.affine.cmdk.affine.switch-state.on": "ON",
   "com.affine.cmdk.affine.switch-state.off": "OFF",
+  "com.affine.upgrade.button-text.pending": "Upgrade Workspace Data",
+  "com.affine.upgrade.button-text.upgrading": "Upgrading",
+  "com.affine.upgrade.button-text.done": "Refresh Current Page",
+  "com.affine.upgrade.button-text.error": "Data Upgrade Error",
+  "com.affine.upgrade.tips.normal": "To ensure compatibility with the updated AFFiNE client, please upgrade your data by clicking the \"Upgrade Workspace Data\" button below.",
+  "com.affine.upgrade.tips.done": "After upgrading the workspace data, please refresh the page to see the changes.",
+  "com.affine.upgrade.tips.error": "We encountered some errors while upgrading the workspace data.",
   "com.affine.workspaceSubPath.trash.empty-description": "Deleted pages will appear here."
 }

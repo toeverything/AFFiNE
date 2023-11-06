@@ -44,7 +44,6 @@ import { mainContainerAtom } from '../atoms/element';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import { MigrationFallback } from '../components/migration-fallback';
 import type { IslandItemNames } from '../components/pure/help-island';
 import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
@@ -52,6 +51,7 @@ import {
   DROPPABLE_SIDEBAR_TRASH,
   RootAppSidebar,
 } from '../components/root-app-sidebar';
+import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
@@ -297,7 +297,7 @@ export const WorkspaceLayoutInner = ({
               padding={appSettings.clientBorder}
               inTrashPage={inTrashPage}
             >
-              {incompatible ? <MigrationFallback /> : children}
+              {incompatible ? <WorkspaceUpgrade /> : children}
               <ToolContainer inTrashPage={inTrashPage}>
                 <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
                 <HelpIsland showList={pageId ? undefined : showList} />
