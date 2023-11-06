@@ -1,48 +1,49 @@
 import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
+import reduce from 'image-blob-reduce';
 import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 
-export function validateImage(file: File) {
-  return new Promise((resolve, reject) => {
-    // check file size
-    const sizeInMB = file.size / (1024 * 1024);
-    if (sizeInMB > 10) {
-      reject('File is too large, please select a file less than 10MB');
-      return;
-    }
-
+// validate and reduce image size and return as file
+export const validateAndReduceImage = async (file: File): Promise<File> => {
+  // Declare a new async function that wraps the decode logic
+  const decodeAndReduceImage = async (): Promise<Blob> => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-
-    img.onload = () => {
-      // check image dimensions
-      if (img.width > 4000 || img.height > 4000) {
-        img.src = '';
-        URL.revokeObjectURL(url);
-        reject('Image dimensions are too large. Maximum size is 4K');
-        return;
-      }
-      img
-        .decode()
-        .then(() => {
-          URL.revokeObjectURL(url);
-          resolve('Image is valid.');
-        })
-        .catch(error => {
-          URL.revokeObjectURL(url);
-          reject('Image could not be decoded: ' + error);
-        });
-    };
-
-    img.onerror = error => {
-      URL.revokeObjectURL(url);
-      reject('Image could not be loaded: ' + error);
-    };
-
     img.src = url;
-  });
-}
+
+    await img.decode().catch(() => {
+      URL.revokeObjectURL(url);
+      throw new Error('Image could not be decoded');
+    });
+
+    img.onload = img.onerror = () => {
+      URL.revokeObjectURL(url);
+    };
+
+    const sizeInMB = file.size / (1024 * 1024);
+    if (sizeInMB > 10 || img.width > 4000 || img.height > 4000) {
+      // Compress the file to less than 10MB
+      const compressedImg = await reduce().toBlob(file, {
+        max: 4000,
+        unsharpAmount: 80,
+        unsharpRadius: 0.6,
+        unsharpThreshold: 2,
+      });
+      return compressedImg;
+    }
+
+    return file;
+  };
+
+  try {
+    const reducedBlob = await decodeAndReduceImage();
+
+    return new File([reducedBlob], file.name, { type: file.type });
+  } catch (error) {
+    throw new Error('Image could not be reduce :' + error);
+  }
+};
 
 export function useBlockSuiteWorkspaceAvatarUrl(
   blockSuiteWorkspace: Workspace
@@ -73,10 +74,9 @@ export function useBlockSuiteWorkspaceAvatarUrl(
         return false;
       }
       try {
-        await validateImage(file);
-        const blob = new Blob([file], { type: file.type });
+        const reducedFile = await validateAndReduceImage(file);
         const blobs = blockSuiteWorkspace.blobs;
-        const blobId = await blobs.set(blob);
+        const blobId = await blobs.set(reducedFile);
         blockSuiteWorkspace.meta.setAvatar(blobId);
         await mutate(blobId);
         return true;

@@ -16,7 +16,7 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
-import { validateImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
+import { validateAndReduceImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {
@@ -53,9 +53,9 @@ export const UserAvatar = () => {
   const handleUpdateUserAvatar = useCallback(
     async (file: File) => {
       try {
-        await validateImage(file);
+        const reducedFile = await validateAndReduceImage(file);
         await avatarTrigger({
-          avatar: file,
+          avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
         });
         // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
         await user.update({ name: user.name });
@@ -73,6 +73,7 @@ export const UserAvatar = () => {
     },
     [avatarTrigger, pushNotification, user]
   );
+
   const handleRemoveUserAvatar = useCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
