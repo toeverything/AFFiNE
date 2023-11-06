@@ -155,3 +155,12 @@ export const downgradeFooter = style({
 export const textEmphasis = style({
   color: 'var(--affine-text-emphasis-color)',
 });
+
+export const errorTip = style({
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: '12px',
+  lineHeight: '20px',
+});
+export const errorTipRetry = style({
+  textDecoration: 'underline',
+});

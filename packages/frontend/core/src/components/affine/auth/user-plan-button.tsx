@@ -2,13 +2,14 @@ import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import Tooltip from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
+import { withErrorBoundary } from 'react-error-boundary';
 
 import { openSettingModalAtom } from '../../../atoms';
 import { useUserSubscription } from '../../../hooks/use-subscription';
 import * as styles from './style.css';
 
-export const UserPlanButton = () => {
+const UserPlanButtonWithData = () => {
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
 
@@ -35,3 +36,8 @@ export const UserPlanButton = () => {
     </Tooltip>
   );
 };
+
+// If fetch user data failed, just render empty.
+export const UserPlanButton = withErrorBoundary(UserPlanButtonWithData, {
+  fallbackRender: () => <React.Fragment />,
+});

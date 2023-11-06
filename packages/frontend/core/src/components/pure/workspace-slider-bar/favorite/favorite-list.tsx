@@ -6,6 +6,8 @@ import { ReferencePage } from '../components/reference-page';
 import type { FavoriteListProps } from '../index';
 import EmptyItem from './empty-item';
 
+const emptyPageIdSet = new Set<string>();
+
 export const FavoriteList = ({ workspace }: FavoriteListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
 
@@ -35,7 +37,7 @@ export const FavoriteList = ({ workspace }: FavoriteListProps) => {
             metaMapping={metaMapping}
             pageId={pageMeta.id}
             // memo?
-            parentIds={new Set()}
+            parentIds={emptyPageIdSet}
             workspace={workspace}
           />
         );

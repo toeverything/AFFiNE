@@ -734,6 +734,8 @@
   "com.affine.payment.updated-notify-title": "Subscription updated",
   "com.affine.payment.updated-notify-msg": "You have changed your plan to {{plan}} billing.",
   "com.affine.payment.updated-notify-msg.cancel-subscription": "No further charges will be made starting from the next billing cycle.",
+  "com.affine.payment.plans-error-tip": "Unable to load Pricing plans, please check your network. ",
+  "com.affine.payment.plans-error-retry": "Refresh",
   "com.affine.storage.maximum-tips": "You have reached the maximum capacity limit for your current account",
   "com.affine.payment.tag-tooltips": "See all plans",
   "com.affine.payment.billing-setting.title": "Billing",
