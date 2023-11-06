@@ -390,11 +390,10 @@ test('can use cmdk to search page content and scroll to it', async ({
   await openQuickSearchByShortcut(page);
   await page.keyboard.insertText('123456');
   await page.waitForTimeout(300);
-  await assertResultList(page, [
-    'this is a new page to search for content',
-    '123456',
-  ]);
-  await page.keyboard.press('Enter');
+  await keyboardDownAndSelect(
+    page,
+    'this is a new page to search for content\n123456'
+  );
   await waitForScrollToFinish(page);
   const isVisitable = await checkElementIsInView(page, '123456');
   expect(isVisitable).toBe(true);
