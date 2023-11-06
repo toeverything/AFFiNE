@@ -116,7 +116,7 @@ const Settings = () => {
           i18nKey="com.affine.payment.subtitle-active"
           values={{ currentPlan }}
         >
-          You are current on the {{ currentPlan }} plan. If you have any
+          You are currently on the {{ currentPlan }} plan. If you have any
           questions, please contact our&nbsp;
           <a
             href="mailto:support@toeverything.info"
