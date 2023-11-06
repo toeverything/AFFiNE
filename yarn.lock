@@ -864,6 +864,7 @@ __metadata:
     "@types/ws": "npm:^8.5.7"
     async-call-rpc: "npm:^6.3.1"
     fake-indexeddb: "npm:^5.0.0"
+    is-svg: "npm:^5.0.0"
     jotai: "npm:^2.4.3"
     js-base64: "npm:^3.7.5"
     ky: "npm:^1.0.1"
@@ -20626,6 +20627,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fast-xml-parser@npm:^4.1.3":
+  version: 4.3.2
+  resolution: "fast-xml-parser@npm:4.3.2"
+  dependencies:
+    strnum: "npm:^1.0.5"
+  bin:
+    fxparser: src/cli/cli.js
+  checksum: cb3d9ad7d5508e7ec1e6ee4b4753f659c7b7c93c3eb76439cb03072532d07521d53a7e35f243b490dce3fcc16519415bf1f99c6a1004a6de1dccd3d3647c336f
+  languageName: node
+  linkType: hard
+
 "fastest-levenshtein@npm:^1.0.12":
   version: 1.0.16
   resolution: "fastest-levenshtein@npm:1.0.16"
@@ -23426,6 +23438,15 @@ __metadata:
   version: 3.0.0
   resolution: "is-stream@npm:3.0.0"
   checksum: 172093fe99119ffd07611ab6d1bcccfe8bc4aa80d864b15f43e63e54b7abc71e779acd69afdb854c4e2a67fdc16ae710e370eda40088d1cfc956a50ed82d8f16
+  languageName: node
+  linkType: hard
+
+"is-svg@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "is-svg@npm:5.0.0"
+  dependencies:
+    fast-xml-parser: "npm:^4.1.3"
+  checksum: cd3b0810a005440613e9e7752b3ca4639760fbfb0d79af5275b9639670526dd05c501c89edc63ce16c6ff4d568348485db4299f4bae1131cbd260fce6943abea
   languageName: node
   linkType: hard
 
