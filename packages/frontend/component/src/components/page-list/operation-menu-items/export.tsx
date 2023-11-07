@@ -97,7 +97,7 @@ export const ExportMenuItems = ({
   const items = itemMap.map(({ component: Component, props }) => (
     <Component key={props.label} {...props} />
   ));
-  return <>{items}</>;
+  return items;
 };
 
 export const Export = ({ exportHandler, className }: ExportProps) => {

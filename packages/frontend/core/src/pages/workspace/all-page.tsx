@@ -108,30 +108,28 @@ const usePageOperationsRenderer = () => {
         });
       };
       return (
-        <>
-          <OperationCell
-            favorite={!!page.favorite}
-            isPublic={!!page.isPublic}
-            onDisablePublicSharing={onDisablePublicSharing}
-            link={`/workspace/${currentWorkspace.id}/${page.id}`}
-            onRemoveToTrash={() =>
-              setTrashModal({
-                open: true,
-                pageIds: [page.id],
-                pageTitles: [page.title],
-              })
-            }
-            onToggleFavoritePage={() => {
-              const status = page.favorite;
-              toggleFavorite(page.id);
-              toast(
-                status
-                  ? t['com.affine.toastMessage.removedFavorites']()
-                  : t['com.affine.toastMessage.addedFavorites']()
-              );
-            }}
-          />
-        </>
+        <OperationCell
+          favorite={!!page.favorite}
+          isPublic={!!page.isPublic}
+          onDisablePublicSharing={onDisablePublicSharing}
+          link={`/workspace/${currentWorkspace.id}/${page.id}`}
+          onRemoveToTrash={() =>
+            setTrashModal({
+              open: true,
+              pageIds: [page.id],
+              pageTitles: [page.title],
+            })
+          }
+          onToggleFavoritePage={() => {
+            const status = page.favorite;
+            toggleFavorite(page.id);
+            toast(
+              status
+                ? t['com.affine.toastMessage.removedFavorites']()
+                : t['com.affine.toastMessage.addedFavorites']()
+            );
+          }}
+        />
       );
     },
     [currentWorkspace.id, setTrashModal, t, toggleFavorite]

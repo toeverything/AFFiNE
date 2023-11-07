@@ -9,7 +9,7 @@ export type Notification = {
   theme?: 'light' | 'dark' | 'default';
   timeout?: number;
   progressingBar?: boolean;
-  multimedia?: React.ReactNode | JSX.Element | HTMLElement;
+  multimedia?: React.ReactNode | JSX.Element;
   // actions
   undo?: () => Promise<void>;
 };

@@ -15,7 +15,7 @@ test('ProviderComposer', async () => {
   };
   const ConsumerComponent = () => {
     const value = useContext(Context);
-    return <>{value}</>;
+    return value;
   };
   const Component = () => {
     return (

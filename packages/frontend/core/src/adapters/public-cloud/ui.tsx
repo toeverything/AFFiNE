@@ -16,14 +16,12 @@ export const UI = {
       throw new PageNotFoundError(workspace.blockSuiteWorkspace, currentPageId);
     }
     return (
-      <>
-        <PageDetailEditor
-          pageId={currentPageId}
-          onInit={useCallback(async page => initEmptyPage(page), [])}
-          onLoad={onLoadEditor}
-          workspace={workspace.blockSuiteWorkspace}
-        />
-      </>
+      <PageDetailEditor
+        pageId={currentPageId}
+        onInit={useCallback(async page => initEmptyPage(page), [])}
+        onLoad={onLoadEditor}
+        workspace={workspace.blockSuiteWorkspace}
+      />
     );
   },
   NewSettingsDetail: () => {

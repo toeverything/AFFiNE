@@ -170,109 +170,105 @@ export const RootAppSidebar = ({
   useRegisterBlocksuiteEditorCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
   return (
-    <>
-      <AppSidebar
-        router={router}
-        hasBackground={
-          !(
-            appSettings.enableBlurBackground &&
-            environment.isDesktop &&
-            environment.isMacOs
-          )
-        }
-        generalShortcutsInfo={generalShortcutsInfo}
-      >
-        <MoveToTrash.ConfirmModal
-          open={trashConfirmOpen}
-          onConfirm={handleOnConfirm}
-          onOpenChange={onTrashConfirmOpenChange}
-          titles={deletePageTitles}
-        />
-        <SidebarContainer>
-          <Menu
-            rootOptions={{
-              open: openUserWorkspaceList,
-            }}
-            items={
-              <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
-            }
-            contentOptions={{
-              // hide trigger
-              sideOffset: -58,
-              onInteractOutside: closeUserWorkspaceList,
-              onEscapeKeyDown: closeUserWorkspaceList,
-              style: {
-                width: '300px',
-              },
-            }}
-          >
-            <WorkspaceCard
-              currentWorkspace={currentWorkspace}
-              onClick={useCallback(() => {
-                setOpenUserWorkspaceList(true);
-              }, [setOpenUserWorkspaceList])}
-            />
-          </Menu>
-          <QuickSearchInput
-            data-testid="slider-bar-quick-search-button"
-            onClick={onOpenQuickSearchModal}
+    <AppSidebar
+      router={router}
+      hasBackground={
+        !(
+          appSettings.enableBlurBackground &&
+          environment.isDesktop &&
+          environment.isMacOs
+        )
+      }
+      generalShortcutsInfo={generalShortcutsInfo}
+    >
+      <MoveToTrash.ConfirmModal
+        open={trashConfirmOpen}
+        onConfirm={handleOnConfirm}
+        onOpenChange={onTrashConfirmOpenChange}
+        titles={deletePageTitles}
+      />
+      <SidebarContainer>
+        <Menu
+          rootOptions={{
+            open: openUserWorkspaceList,
+          }}
+          items={<UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />}
+          contentOptions={{
+            // hide trigger
+            sideOffset: -58,
+            onInteractOutside: closeUserWorkspaceList,
+            onEscapeKeyDown: closeUserWorkspaceList,
+            style: {
+              width: '300px',
+            },
+          }}
+        >
+          <WorkspaceCard
+            currentWorkspace={currentWorkspace}
+            onClick={useCallback(() => {
+              setOpenUserWorkspaceList(true);
+            }, [setOpenUserWorkspaceList])}
           />
-          <RouteMenuLinkItem
-            icon={<FolderIcon />}
-            currentPath={currentPath}
-            path={paths.all(currentWorkspaceId)}
-            onClick={backToAll}
+        </Menu>
+        <QuickSearchInput
+          data-testid="slider-bar-quick-search-button"
+          onClick={onOpenQuickSearchModal}
+        />
+        <RouteMenuLinkItem
+          icon={<FolderIcon />}
+          currentPath={currentPath}
+          path={paths.all(currentWorkspaceId)}
+          onClick={backToAll}
+        >
+          <span data-testid="all-pages">
+            {t['com.affine.workspaceSubPath.all']()}
+          </span>
+        </RouteMenuLinkItem>
+        {runtimeConfig.enableNewSettingModal ? (
+          <MenuItem
+            data-testid="slider-bar-workspace-setting-button"
+            icon={<SettingsIcon />}
+            onClick={onOpenSettingModal}
           >
-            <span data-testid="all-pages">
-              {t['com.affine.workspaceSubPath.all']()}
+            <span data-testid="settings-modal-trigger">
+              {t['com.affine.settingSidebar.title']()}
             </span>
-          </RouteMenuLinkItem>
-          {runtimeConfig.enableNewSettingModal ? (
-            <MenuItem
-              data-testid="slider-bar-workspace-setting-button"
-              icon={<SettingsIcon />}
-              onClick={onOpenSettingModal}
-            >
-              <span data-testid="settings-modal-trigger">
-                {t['com.affine.settingSidebar.title']()}
-              </span>
-            </MenuItem>
-          ) : null}
-        </SidebarContainer>
+          </MenuItem>
+        ) : null}
+      </SidebarContainer>
 
-        <SidebarScrollableContainer>
-          <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
-            <AddFavouriteButton workspace={blockSuiteWorkspace} />
-          </CategoryDivider>
-          <FavoriteList workspace={blockSuiteWorkspace} />
-          <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
-            <AddCollectionButton />
-          </CategoryDivider>
-          <CollectionsList workspace={blockSuiteWorkspace} info={userInfo} />
-          <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
-          {/* fixme: remove the following spacer */}
-          <div style={{ height: '4px' }} />
-          <RouteMenuLinkItem
-            ref={trashDroppable.setNodeRef}
-            isDraggedOver={trashDroppable.isOver}
-            icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
-            currentPath={currentPath}
-            path={paths.trash(currentWorkspaceId)}
-          >
-            <span data-testid="trash-page">
-              {t['com.affine.workspaceSubPath.trash']()}
-            </span>
-          </RouteMenuLinkItem>
-          {blockSuiteWorkspace && (
-            <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
-          )}
-        </SidebarScrollableContainer>
-        <SidebarContainer>
-          {environment.isDesktop && <AppUpdaterButton />}
-          <div style={{ height: '4px' }} />
-          <AddPageButton onClick={onClickNewPage} />
-        </SidebarContainer>
-      </AppSidebar>
-    </>
+      <SidebarScrollableContainer>
+        <CategoryDivider label={t['com.affine.rootAppSidebar.favorites']()}>
+          <AddFavouriteButton workspace={blockSuiteWorkspace} />
+        </CategoryDivider>
+        <FavoriteList workspace={blockSuiteWorkspace} />
+        <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
+          <AddCollectionButton />
+        </CategoryDivider>
+        <CollectionsList workspace={blockSuiteWorkspace} info={userInfo} />
+        <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
+        {/* fixme: remove the following spacer */}
+        <div style={{ height: '4px' }} />
+        <RouteMenuLinkItem
+          ref={trashDroppable.setNodeRef}
+          isDraggedOver={trashDroppable.isOver}
+          icon={<AnimatedDeleteIcon closed={trashDroppable.isOver} />}
+          currentPath={currentPath}
+          path={paths.trash(currentWorkspaceId)}
+        >
+          <span data-testid="trash-page">
+            {t['com.affine.workspaceSubPath.trash']()}
+          </span>
+        </RouteMenuLinkItem>
+        {blockSuiteWorkspace && (
+          <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
+        )}
+      </SidebarScrollableContainer>
+      <SidebarContainer>
+        {environment.isDesktop && <AppUpdaterButton />}
+        <div style={{ height: '4px' }} />
+        <AddPageButton onClick={onClickNewPage} />
+      </SidebarContainer>
+    </AppSidebar>
   );
 };

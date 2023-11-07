@@ -86,16 +86,14 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   }, [pushNotification, syncing, t, workspace, workspaceId]);
 
   return (
-    <>
-      <SettingRow name={t['Export']()} desc={t['Export Description']()}>
-        <Button
-          data-testid="export-affine-backup"
-          onClick={onExport}
-          disabled={syncing}
-        >
-          {t['Export']()}
-        </Button>
-      </SettingRow>
-    </>
+    <SettingRow name={t['Export']()} desc={t['Export Description']()}>
+      <Button
+        data-testid="export-affine-backup"
+        onClick={onExport}
+        disabled={syncing}
+      >
+        {t['Export']()}
+      </Button>
+    </SettingRow>
   );
 };

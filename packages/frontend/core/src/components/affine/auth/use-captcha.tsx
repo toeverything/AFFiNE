@@ -43,7 +43,7 @@ export const Captcha = () => {
   const [response] = useAtom(responseAtom);
 
   if (!runtimeConfig.enableCaptcha) {
-    return <></>;
+    return null;
   }
 
   if (environment.isDesktop) {
