@@ -26,59 +26,87 @@ export function useRegisterWorkspaceCommands() {
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
   const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
+
+  // register AffineUpdatesCommands
   useEffect(() => {
-    const unsubs: Array<() => void> = [];
-    unsubs.push(
-      registerAffineUpdatesCommands({
-        store,
-        t,
-      })
-    );
-    unsubs.push(
-      registerAffineNavigationCommands({
-        store,
-        t,
-        workspace: currentWorkspace.blockSuiteWorkspace,
-        navigationHelper,
-        pageListMode,
-        setPageListMode,
-      })
-    );
-    unsubs.push(
-      registerAffineSettingsCommands({
-        store,
-        t,
-        theme,
-        languageHelper,
-      })
-    );
-    unsubs.push(registerAffineLayoutCommands({ t, store }));
-    unsubs.push(
-      registerAffineCreationCommands({
-        store,
-        pageHelper: pageHelper,
-        t,
-      })
-    );
-    unsubs.push(
-      registerAffineHelpCommands({
-        store,
-        t,
-      })
-    );
+    const unsub = registerAffineUpdatesCommands({
+      store,
+      t,
+    });
 
     return () => {
-      unsubs.forEach(unsub => unsub());
+      unsub();
+    };
+  }, [store, t]);
+
+  // register AffineNavigationCommands
+  useEffect(() => {
+    const unsub = registerAffineNavigationCommands({
+      store,
+      t,
+      workspace: currentWorkspace.blockSuiteWorkspace,
+      navigationHelper,
+      pageListMode,
+      setPageListMode,
+    });
+
+    return () => {
+      unsub();
     };
   }, [
     store,
-    pageHelper,
     t,
-    theme,
     currentWorkspace.blockSuiteWorkspace,
     navigationHelper,
     pageListMode,
     setPageListMode,
-    languageHelper,
   ]);
+
+  // register AffineSettingsCommands
+  useEffect(() => {
+    const unsub = registerAffineSettingsCommands({
+      store,
+      t,
+      theme,
+      languageHelper,
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [store, t, theme, languageHelper]);
+
+  // register AffineLayoutCommands
+  useEffect(() => {
+    const unsub = registerAffineLayoutCommands({ t, store });
+
+    return () => {
+      unsub();
+    };
+  }, [store, t]);
+
+  // register AffineCreationCommands
+  useEffect(() => {
+    const unsub = registerAffineCreationCommands({
+      store,
+      pageHelper: pageHelper,
+      t,
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [store, pageHelper, t]);
+
+  // register AffineHelpCommands
+  useEffect(() => {
+    const unsub = registerAffineHelpCommands({
+      store,
+      t,
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [store, t]);
 }

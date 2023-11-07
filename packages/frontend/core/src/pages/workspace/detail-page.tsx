@@ -37,7 +37,7 @@ const DetailPageImpl = (): ReactElement => {
   assertExists(currentWorkspace);
   assertExists(currentPageId);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
-  const collectionManager = useCollectionManager(collectionsCRUDAtom);
+  const { setTemporaryFilter } = useCollectionManager(collectionsCRUDAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
@@ -67,7 +67,7 @@ const DetailPageImpl = (): ReactElement => {
       });
       const disposeTagClick = editor.slots.tagClicked.on(async ({ tagId }) => {
         jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-        collectionManager.setTemporaryFilter([createTagFilter(tagId)]);
+        setTemporaryFilter([createTagFilter(tagId)]);
       });
       return () => {
         dispose.dispose();
@@ -76,13 +76,13 @@ const DetailPageImpl = (): ReactElement => {
     },
     [
       blockSuiteWorkspace.id,
-      collectionManager,
       currentPageId,
       currentWorkspace.id,
       jumpToSubPath,
       mode,
       openPage,
       setPageMode,
+      setTemporaryFilter,
     ]
   );
 
