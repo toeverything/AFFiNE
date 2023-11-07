@@ -75,11 +75,32 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
     },
     [update]
   );
+
+  const handleUploadAvatar = useCallback(
+    async (file: File) => {
+      await update(file)
+        .then(() => {
+          pushNotification({
+            title: 'Update workspace avatar success',
+            type: 'success',
+          });
+        })
+        .catch(error => {
+          pushNotification({
+            title: 'Update workspace avatar failed',
+            message: error,
+            type: 'error',
+          });
+        });
+    },
+    [pushNotification, update]
+  );
+
   return (
     <div className={style.profileWrapper}>
       <Upload
         accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
-        fileChange={update}
+        fileChange={handleUploadAvatar}
         data-testid="upload-avatar"
         disabled={!isOwner}
       >

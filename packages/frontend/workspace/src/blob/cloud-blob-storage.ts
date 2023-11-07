@@ -24,6 +24,7 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
             // status not in the range 200-299
             return null;
           }
+          // todo: shall we add svg type here if it is missing?
           return res.blob();
         });
       },

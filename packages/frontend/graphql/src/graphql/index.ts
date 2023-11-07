@@ -665,14 +665,3 @@ mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $send
   )
 }`,
 };
-
-export const acceptInviteByWorkspaceIdMutation = {
-  id: 'acceptInviteByWorkspaceIdMutation' as const,
-  operationName: 'acceptInviteByWorkspaceId',
-  definitionName: 'acceptInvite',
-  containsFile: false,
-  query: `
-mutation acceptInviteByWorkspaceId($workspaceId: String!) {
-  acceptInvite(workspaceId: $workspaceId)
-}`,
-};

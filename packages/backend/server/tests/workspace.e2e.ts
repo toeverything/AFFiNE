@@ -7,14 +7,14 @@ import request from 'supertest';
 
 import { AppModule } from '../src/app';
 import {
-  acceptInvite,
+  acceptInviteById,
   createWorkspace,
   currentUser,
   getPublicWorkspace,
-  getWorkspaceSharedPages,
+  getWorkspacePublicPages,
   inviteUser,
-  revokePage,
-  sharePage,
+  publishPage,
+  revokePublicPage,
   signUp,
   updateWorkspace,
 } from './utils';
@@ -122,15 +122,19 @@ test('should share a page', async t => {
 
   const workspace = await createWorkspace(app, u1.token.token);
 
-  const share = await sharePage(app, u1.token.token, workspace.id, 'page1');
-  t.true(share, 'failed to share page');
-  const pages = await getWorkspaceSharedPages(
+  const share = await publishPage(app, u1.token.token, workspace.id, 'page1');
+  t.is(share.id, 'page1', 'failed to share page');
+  const pages = await getWorkspacePublicPages(
     app,
     u1.token.token,
     workspace.id
   );
   t.is(pages.length, 1, 'failed to get shared pages');
-  t.is(pages[0], 'page1', 'failed to get shared page: page1');
+  t.deepEqual(
+    pages[0],
+    { id: 'page1', mode: 'Page' },
+    'failed to get shared page: page1'
+  );
 
   const resp1 = await request(app.getHttpServer())
     .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
@@ -139,7 +143,7 @@ test('should share a page', async t => {
   const resp2 = await request(app.getHttpServer()).get(
     `/api/workspaces/${workspace.id}/docs/${workspace.id}`
   );
-  t.is(resp2.statusCode, 200, 'should not get root doc without token');
+  t.is(resp2.statusCode, 200, 'failed to get root doc with public pages');
 
   const resp3 = await request(app.getHttpServer())
     .get(`/api/workspaces/${workspace.id}/docs/page1`)
@@ -152,32 +156,55 @@ test('should share a page', async t => {
   // 404 because we don't put the page doc to server
   t.is(resp4.statusCode, 404, 'should not get shared doc without token');
 
-  const msg1 = await sharePage(app, u2.token.token, 'not_exists_ws', 'page2');
+  const msg1 = await publishPage(app, u2.token.token, 'not_exists_ws', 'page2');
   t.is(msg1, 'Permission denied', 'unauthorized user can share page');
-  const msg2 = await revokePage(app, u2.token.token, 'not_exists_ws', 'page2');
+  const msg2 = await revokePublicPage(
+    app,
+    u2.token.token,
+    'not_exists_ws',
+    'page2'
+  );
   t.is(msg2, 'Permission denied', 'unauthorized user can share page');
 
-  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
-  await acceptInvite(app, u2.token.token, workspace.id);
-  const invited = await sharePage(app, u2.token.token, workspace.id, 'page2');
-  t.true(invited, 'failed to share page');
+  await acceptInviteById(
+    app,
+    workspace.id,
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin')
+  );
+  const invited = await publishPage(app, u2.token.token, workspace.id, 'page2');
+  t.is(invited.id, 'page2', 'failed to share page');
 
-  const revoke = await revokePage(app, u1.token.token, workspace.id, 'page1');
-  t.true(revoke, 'failed to revoke page');
-  const pages2 = await getWorkspaceSharedPages(
+  const revoke = await revokePublicPage(
+    app,
+    u1.token.token,
+    workspace.id,
+    'page1'
+  );
+  t.false(revoke.public, 'failed to revoke page');
+  const pages2 = await getWorkspacePublicPages(
     app,
     u1.token.token,
     workspace.id
   );
   t.is(pages2.length, 1, 'failed to get shared pages');
-  t.is(pages2[0], 'page2', 'failed to get shared page: page2');
+  t.is(pages2[0].id, 'page2', 'failed to get shared page: page2');
 
-  const msg3 = await revokePage(app, u1.token.token, workspace.id, 'page3');
-  t.false(msg3, 'can revoke non-exists page');
+  const msg3 = await revokePublicPage(
+    app,
+    u1.token.token,
+    workspace.id,
+    'page3'
+  );
+  t.is(msg3, 'Page is not public');
 
-  const msg4 = await revokePage(app, u1.token.token, workspace.id, 'page2');
-  t.true(msg4, 'failed to revoke page');
-  const page3 = await getWorkspaceSharedPages(
+  const msg4 = await revokePublicPage(
+    app,
+    u1.token.token,
+    workspace.id,
+    'page2'
+  );
+  t.false(msg4.public, 'failed to revoke page');
+  const page3 = await getWorkspacePublicPages(
     app,
     u1.token.token,
     workspace.id
@@ -211,13 +238,17 @@ test('should can get workspace doc', async t => {
     .auth(u2.token.token, { type: 'bearer' })
     .expect(403);
 
-  await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin');
   await request(app.getHttpServer())
     .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .auth(u2.token.token, { type: 'bearer' })
     .expect(403);
 
-  await acceptInvite(app, u2.token.token, workspace.id);
+  await acceptInviteById(
+    app,
+    workspace.id,
+    await inviteUser(app, u1.token.token, workspace.id, u2.email, 'Admin')
+  );
+
   const res2 = await request(app.getHttpServer())
     .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .auth(u2.token.token, { type: 'bearer' })

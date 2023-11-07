@@ -9,8 +9,10 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import type { FallbackProps } from 'react-error-boundary';
 
+import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { PlanLayout } from './layout';
@@ -51,10 +53,9 @@ const Settings = () => {
     if (detail?.type === 'fixed') {
       detail.price = (price.amount / 100).toFixed(2);
       detail.yearlyPrice = (price.yearlyAmount / 100 / 12).toFixed(2);
-      detail.discount = (
-        (1 - price.yearlyAmount / 12 / price.amount) *
-        100
-      ).toFixed(2);
+      detail.discount = Math.floor(
+        (1 - price.yearlyAmount / 12 / price.amount) * 100
+      ).toString();
     }
   });
 
@@ -114,7 +115,7 @@ const Settings = () => {
           i18nKey="com.affine.payment.subtitle-active"
           values={{ currentPlan }}
         >
-          You are current on the {{ currentPlan }} plan. If you have any
+          You are currently on the {{ currentPlan }} plan. If you have any
           questions, please contact our&nbsp;
           <a
             href="mailto:support@toeverything.info"
@@ -163,6 +164,7 @@ const Settings = () => {
             onNotify={({ detail, recurring }) => {
               pushNotification({
                 type: 'success',
+                theme: 'default',
                 title: t['com.affine.payment.updated-notify-title'](),
                 message:
                   detail.plan === SubscriptionPlan.Free
@@ -191,9 +193,30 @@ const Settings = () => {
 
 export const AFFiNECloudPlans = () => {
   return (
-    // TODO: Error Boundary
-    <Suspense fallback={<PlansSkeleton />}>
-      <Settings />
-    </Suspense>
+    <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
+      <Suspense fallback={<PlansSkeleton />}>
+        <Settings />
+      </Suspense>
+    </SWRErrorBoundary>
   );
+};
+
+const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
+  const t = useAFFiNEI18N();
+
+  const title = t['com.affine.payment.title']();
+  const subtitle = <React.Fragment />;
+  const tabs = <React.Fragment />;
+  const footer = <React.Fragment />;
+
+  const scroll = (
+    <div className={styles.errorTip}>
+      <span>{t['com.affine.payment.plans-error-tip']()}</span>
+      <a onClick={resetErrorBoundary} className={styles.errorTipRetry}>
+        {t['com.affine.payment.plans-error-retry']()}
+      </a>
+    </div>
+  );
+
+  return <PlanLayout {...{ title, subtitle, tabs, scroll, footer }} />;
 };
