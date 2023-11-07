@@ -198,6 +198,8 @@ export const pageToCommand = (
 };
 
 const contentMatchedMagicString = '__$$content_matched$$__';
+const contentMatchedWithoutSubtitle =
+  '__$$content_matched_without_subtitle$$__';
 
 export const usePageCommands = () => {
   const recentPages = useRecentPages();
@@ -241,11 +243,11 @@ export const usePageCommands = () => {
         const category =
           pageMode === 'edgeless' ? 'affine:edgeless' : 'affine:pages';
 
+        const subTitle = resultValues.find(result => result.space === page.id)
+          ?.content;
         const label = {
           title: page.title || t['Untitled'](), // Used to ensure that a title exists
-          subTitle:
-            resultValues.find(result => result.space === page.id)?.content ||
-            '',
+          subTitle: subTitle || '',
         };
 
         const blockId = reverseMapping.get(page.id);
@@ -263,6 +265,10 @@ export const usePageCommands = () => {
         if (pageIds.includes(page.id)) {
           // hack to make the page always showing in the search result
           command.value += contentMatchedMagicString;
+        }
+        if (!subTitle) {
+          // hack to make the page title result always before the content result
+          command.value += contentMatchedWithoutSubtitle;
         }
 
         return command;
@@ -392,8 +398,8 @@ export const useCMDKCommandGroups = () => {
 
   return useMemo(() => {
     const commands = [
-      ...pageCommands,
       ...collectionCommands,
+      ...pageCommands,
       ...affineCommands,
     ];
     const groups = groupBy(commands, command => command.category);
@@ -412,14 +418,25 @@ export const customCommandFilter = (value: string, search: string) => {
   if (pageContentMatched) {
     label = label.replace(contentMatchedMagicString, '');
   }
+  const pageTitleMatched = label.includes(contentMatchedWithoutSubtitle);
+  if (pageTitleMatched) {
+    label = label.replace(contentMatchedWithoutSubtitle, '');
+  }
 
   const originalScore = commandScore(label, search);
 
+  // hack to make the page title result always before the content result
+  // if the command has matched the title but not the subtitle,
+  // we should give it a higher score
+  if (originalScore > 0 && pageTitleMatched) {
+    return 0.999;
+  }
   // if the command has matched the content but not the label,
   // we should give it a higher score, but not too high
   if (originalScore < 0.01 && pageContentMatched) {
     return 0.3;
   }
+
   return originalScore;
 };
 

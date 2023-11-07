@@ -78,11 +78,11 @@ async function createWorkspace(
   return res.body.data.createWorkspace;
 }
 
-export async function getWorkspaceSharedPages(
+export async function getWorkspacePublicPages(
   app: INestApplication,
   token: string,
   workspaceId: string
-): Promise<string[]> {
+) {
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
@@ -91,13 +91,16 @@ export async function getWorkspaceSharedPages(
       query: `
           query {
             workspace(id: "${workspaceId}") {
-              sharedPages
+              publicPages {
+                id
+                mode
+              }
             }
           }
         `,
     })
     .expect(200);
-  return res.body.data.workspace.sharedPages;
+  return res.body.data.workspace.publicPages;
 }
 
 async function getWorkspace(
@@ -210,26 +213,6 @@ async function acceptInviteById(
   return res.body.data.acceptInviteById;
 }
 
-async function acceptInvite(
-  app: INestApplication,
-  token: string,
-  workspaceId: string
-): Promise<boolean> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-          mutation {
-            acceptInvite(workspaceId: "${workspaceId}")
-          }
-        `,
-    })
-    .expect(200);
-  return res.body.data.acceptInvite;
-}
-
 async function leaveWorkspace(
   app: INestApplication,
   token: string,
@@ -272,12 +255,12 @@ async function revokeUser(
   return res.body.data.revoke;
 }
 
-async function sharePage(
+async function publishPage(
   app: INestApplication,
   token: string,
   workspaceId: string,
   pageId: string
-): Promise<boolean | string> {
+) {
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
@@ -285,20 +268,23 @@ async function sharePage(
     .send({
       query: `
           mutation {
-            sharePage(workspaceId: "${workspaceId}", pageId: "${pageId}")
+            publishPage(workspaceId: "${workspaceId}", pageId: "${pageId}") {
+              id
+              mode
+            }
           }
         `,
     })
     .expect(200);
-  return res.body.errors?.[0]?.message || res.body.data?.sharePage;
+  return res.body.errors?.[0]?.message || res.body.data?.publishPage;
 }
 
-async function revokePage(
+async function revokePublicPage(
   app: INestApplication,
   token: string,
   workspaceId: string,
   pageId: string
-): Promise<boolean | string> {
+) {
   const res = await request(app.getHttpServer())
     .post(gql)
     .auth(token, { type: 'bearer' })
@@ -306,12 +292,16 @@ async function revokePage(
     .send({
       query: `
           mutation {
-            revokePage(workspaceId: "${workspaceId}", pageId: "${pageId}")
+            revokePublicPage(workspaceId: "${workspaceId}", pageId: "${pageId}") {
+              id
+              mode
+              public
+            }
           }
         `,
     })
     .expect(200);
-  return res.body.errors?.[0]?.message || res.body.data?.revokePage;
+  return res.body.errors?.[0]?.message || res.body.data?.revokePublicPage;
 }
 
 async function listBlobs(
@@ -572,7 +562,6 @@ export class FakePrisma {
 }
 
 export {
-  acceptInvite,
   acceptInviteById,
   changeEmail,
   checkBlobSize,
@@ -587,12 +576,12 @@ export {
   inviteUser,
   leaveWorkspace,
   listBlobs,
-  revokePage,
+  publishPage,
+  revokePublicPage,
   revokeUser,
   sendChangeEmail,
   sendVerifyChangeEmail,
   setBlob,
-  sharePage,
   signUp,
   updateWorkspace,
 };

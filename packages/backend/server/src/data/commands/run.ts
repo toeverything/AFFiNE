@@ -84,6 +84,7 @@ export class RunCommand extends CommandRunner {
         done.push(migration);
       } catch (e) {
         this.logger.error('Failed to run data migration', e);
+        process.exit(1);
       }
     }
 

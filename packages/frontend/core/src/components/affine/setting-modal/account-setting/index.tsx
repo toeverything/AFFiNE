@@ -1,4 +1,5 @@
 import { FlexWrapper, Input } from '@affine/component';
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import {
   SettingHeader,
   SettingRow,
@@ -15,6 +16,7 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
+import { validateAndReduceImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {
@@ -39,6 +41,7 @@ import * as style from './style.css';
 export const UserAvatar = () => {
   const t = useAFFiNEI18N();
   const user = useCurrentUser();
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const { trigger: avatarTrigger } = useMutation({
     mutation: uploadAvatarMutation,
@@ -49,14 +52,28 @@ export const UserAvatar = () => {
 
   const handleUpdateUserAvatar = useCallback(
     async (file: File) => {
-      await avatarTrigger({
-        avatar: file,
-      });
-      // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
-      user.update({ name: user.name }).catch(console.error);
+      try {
+        const reducedFile = await validateAndReduceImage(file);
+        await avatarTrigger({
+          avatar: reducedFile, // Pass the reducedFile directly to the avatarTrigger
+        });
+        // XXX: This is a hack to force the user to update, since next-auth can not only use update function without params
+        await user.update({ name: user.name });
+        pushNotification({
+          title: 'Update user avatar success',
+          type: 'success',
+        });
+      } catch (e) {
+        pushNotification({
+          title: 'Update user avatar failed',
+          message: String(e),
+          type: 'error',
+        });
+      }
     },
-    [avatarTrigger, user]
+    [avatarTrigger, pushNotification, user]
   );
+
   const handleRemoveUserAvatar = useCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
@@ -66,6 +83,7 @@ export const UserAvatar = () => {
     },
     [removeAvatarTrigger, user]
   );
+
   return (
     <Upload
       accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
