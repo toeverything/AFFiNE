@@ -78,7 +78,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
 
   protected recoverDoc(...updates: Buffer[]): Promise<Doc> {
     const doc = new Doc();
-    const chunks = chunk(updates, 100);
+    const chunks = chunk(updates, 10);
 
     return new Promise(resolve => {
       const next = () => {
@@ -355,8 +355,9 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   protected async autoSquash() {
     // find the first update and batch process updates with same id
     const first = await this.db.update.findFirst({
-      orderBy: {
-        createdAt: 'asc',
+      select: {
+        id: true,
+        workspaceId: true,
       },
     });
 
