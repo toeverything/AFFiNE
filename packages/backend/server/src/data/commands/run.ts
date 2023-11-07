@@ -64,28 +64,36 @@ export class RunCommand extends CommandRunner {
         continue;
       }
 
+      this.logger.log(`Running ${migration.name}...`);
+      const record = await this.db.dataMigration.create({
+        data: {
+          name: migration.name,
+          startedAt: new Date(),
+        },
+      });
+
       try {
-        this.logger.log(`Running ${migration.name}...`);
-        const record = await this.db.dataMigration.create({
-          data: {
-            name: migration.name,
-            startedAt: new Date(),
-          },
-        });
         await migration.up(this.db);
-        await this.db.dataMigration.update({
+      } catch (e) {
+        await this.db.dataMigration.delete({
           where: {
             id: record.id,
           },
-          data: {
-            finishedAt: new Date(),
-          },
         });
-        done.push(migration);
-      } catch (e) {
+        await migration.down(this.db);
         this.logger.error('Failed to run data migration', e);
         process.exit(1);
       }
+
+      await this.db.dataMigration.update({
+        where: {
+          id: record.id,
+        },
+        data: {
+          finishedAt: new Date(),
+        },
+      });
+      done.push(migration);
     }
 
     this.logger.log(`Done ${done.length} migrations`);
