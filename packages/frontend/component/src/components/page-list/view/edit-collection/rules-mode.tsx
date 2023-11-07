@@ -75,7 +75,9 @@ export const RulesMode = ({
       }
     );
   }, [open, updateCollection, collection]);
-  const [expandInclude, setExpandInclude] = useState(true);
+  const [expandInclude, setExpandInclude] = useState(
+    collection.allowList.length > 0
+  );
   return (
     <>
       {/*prevents modal autofocus to the first input*/}

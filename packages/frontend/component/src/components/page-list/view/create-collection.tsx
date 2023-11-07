@@ -96,6 +96,9 @@ export const CreateCollection = ({
         <Input
           autoFocus
           value={value}
+          onKeyDown={e => {
+            e.stopPropagation();
+          }}
           data-testid="input-collection-title"
           placeholder={t['com.affine.editCollectionName.name.placeholder']()}
           onChange={useCallback((value: string) => onChange(value), [onChange])}
