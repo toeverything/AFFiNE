@@ -32,6 +32,14 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   return compare(yBinary, yBinary2, true);
 }
 
+function isEmptyBuffer(buf: Buffer): boolean {
+  return (
+    buf.length == 0 ||
+    // 0x0000
+    (buf.length === 2 && buf[0] === 0 && buf[1] === 0)
+  );
+}
+
 const MAX_SEQ_NUM = 0x3fffffff; // u31
 
 /**
@@ -377,6 +385,11 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   ) {
     const blob = Buffer.from(encodeStateAsUpdate(doc));
     const state = Buffer.from(encodeStateVector(doc));
+
+    if (isEmptyBuffer(blob)) {
+      return null;
+    }
+
     return this.db.snapshot.upsert({
       where: {
         id_workspaceId: {
