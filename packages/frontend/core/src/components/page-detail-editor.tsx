@@ -113,6 +113,11 @@ const EditorWrapper = memo(function EditorWrapper({
       if (!blockElement) {
         return;
       }
+      blockElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
 
       const path = blockElement?.path;
 
