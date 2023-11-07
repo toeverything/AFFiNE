@@ -4,7 +4,9 @@ import * as RadixDialog from '@radix-ui/react-dialog';
 import * as React from 'react';
 import { commandScore } from './command-score';
 
-type Children = { children?: React.ReactNode };
+type Children = {
+  children?: React.ReactNode;
+};
 type DivProps = React.HTMLAttributes<HTMLDivElement>;
 
 type LoadingProps = Children &
@@ -117,7 +119,11 @@ type Context = {
 type State = {
   search: string;
   value: string;
-  filtered: { count: number; items: Map<string, number>; groups: Set<string> };
+  filtered: {
+    count: number;
+    items: Map<string, number>;
+    groups: Set<string>;
+  };
 };
 type Store = {
   subscribe: (callback: () => void) => () => void;
@@ -827,6 +833,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={forwardedRef}
         {...etc}
         cmdk-input=""
+        onKeyDown={e => {
+          if (
+            e.key === 'Escape' ||
+            e.key === 'k' ||
+            e.key.startsWith('Arrow') ||
+            e.key === 'Enter'
+          ) {
+            return;
+          }
+          e.stopPropagation();
+        }}
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}

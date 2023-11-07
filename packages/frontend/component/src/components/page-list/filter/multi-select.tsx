@@ -29,6 +29,7 @@ export const MultiSelect = ({
             const selected = value.includes(option.value);
             const click = (e: MouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
+              e.preventDefault();
               if (selected) {
                 onChange(value.filter(v => v !== option.value));
               } else {
