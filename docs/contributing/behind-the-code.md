@@ -160,7 +160,7 @@ The `provider` is a connector that bridges the current data in memory and the da
 
 You can combine different providers to build different data storage and loading strategy.
 
-For example, if there is only have `affine-cloud`,
+For example, if there is only `affine-cloud`,
 the data will be only loaded from the Cloud and not saved in the local storage,
 which might be useful for the enterprise user.
 
