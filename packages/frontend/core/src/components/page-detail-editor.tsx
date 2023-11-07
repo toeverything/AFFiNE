@@ -25,7 +25,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
@@ -54,17 +53,12 @@ export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
-  onInit: (
-    page: Page,
-    editor: Readonly<EditorContainer>
-  ) => Promise<void> | void;
   onLoad?: OnLoadEditor;
 }
 
 const EditorWrapper = memo(function EditorWrapper({
   workspace,
   pageId,
-  onInit,
   onLoad,
   isPublic,
 }: PageDetailEditorProps) {
@@ -95,29 +89,7 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-  const [loading, setLoading] = useState(true);
   const blockId = useRouterHash();
-  const [elementPath, setElementPath] = useState<string[]>([]);
-
-  useEffect(() => {
-    const blockElement = document.querySelector(
-      `[data-block-id="${blockId}"]`
-    ) as BlockElement | null;
-
-    if (!loading && blockElement) {
-      setTimeout(
-        () =>
-          blockElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center',
-          }),
-        0
-      );
-      const path = blockElement.path as unknown as string[];
-      setElementPath(path);
-    }
-  }, [blockId, loading]);
 
   const setEditorMode = useCallback(
     (mode: 'page' | 'edgeless') => {
@@ -128,6 +100,30 @@ const EditorWrapper = memo(function EditorWrapper({
       }
     },
     [switchToEdgelessMode, switchToPageMode, pageId]
+  );
+
+  const handleScrollToBlock = useCallback(
+    (editor: EditorContainer) => {
+      const selectManager = editor.root.value?.selection;
+
+      const blockElement = document.querySelector(
+        `[data-block-id="${blockId}"]`
+      ) as BlockElement | null;
+
+      if (!blockElement) {
+        return;
+      }
+
+      const path = blockElement?.path;
+
+      if (!path || path.length === 0 || !selectManager) {
+        return;
+      }
+
+      const selection = selectManager.getInstance('block', { path: path });
+      selectManager.set([selection]);
+    },
+    [blockId]
   );
 
   return (
@@ -143,15 +139,8 @@ const EditorWrapper = memo(function EditorWrapper({
           } as CSSProperties
         }
         mode={isPublic ? 'page' : currentMode}
-        path={elementPath}
         page={page}
         onModeChange={setEditorMode}
-        onInit={useCallback(
-          (page: Page, editor: Readonly<EditorContainer>) => {
-            onInit(page, editor);
-          },
-          [onInit]
-        )}
         setBlockHub={setBlockHub}
         onLoad={useCallback(
           (page: Page, editor: EditorContainer) => {
@@ -184,16 +173,19 @@ const EditorWrapper = memo(function EditorWrapper({
               });
             });
 
+            editor.updateComplete.then(() => {
+              handleScrollToBlock(editor);
+            });
+
             return () => {
               disposableGroup.dispose();
               clearTimeout(renderTimeout);
               window.setTimeout(() => {
                 disposes.forEach(dispose => dispose());
               });
-              setLoading(false);
             };
           },
-          [onLoad]
+          [handleScrollToBlock, onLoad]
         )}
       />
       {meta.trash && <TrashButtonGroup />}

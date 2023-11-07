@@ -7,7 +7,6 @@ import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { Meta } from '@storybook/react';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
-import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 export default {
@@ -54,11 +53,7 @@ export const Default = () => {
           overflow: 'auto',
         }}
       >
-        <BlockSuiteEditor
-          mode="page"
-          page={page}
-          onInit={useCallback(async page => initEmptyPage(page), [])}
-        />
+        <BlockSuiteEditor mode="page" page={page} />
         {createPortal(
           <ImagePreviewModal pageId={page.id} workspace={page.workspace} />,
           document.body

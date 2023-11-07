@@ -18,13 +18,12 @@ import { getPresets } from './preset';
 export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
-  onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
   onModeChange?: (mode: 'page' | 'edgeless') => void;
   setBlockHub?: (blockHub: BlockHub | null) => void;
+  // on Editor instance instantiated
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
-  path?: string[];
 };
 
 export type ErrorBoundaryProps = {
@@ -84,7 +83,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
         .filter((dispose): dispose is () => void => !!dispose)
         .forEach(dispose => dispose());
     };
-  }, [editor, editor.page, page, onLoad, onModeChange, props.path]);
+  }, [editor, editor.page, page, onLoad, onModeChange]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -128,21 +127,6 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       blockHubRef.current?.remove();
     };
   }, [editor, page.awarenessStore, page.meta.trash, setBlockHub]);
-
-  useEffect(() => {
-    if (props.path?.length) {
-      const selectPath = props.path;
-      const selectManager = editor.root.value?.selection;
-      if (selectManager) {
-        setTimeout(() => {
-          const selection = selectManager.getInstance('block', {
-            path: selectPath,
-          });
-          selectManager.set([selection]);
-        }, 0);
-      }
-    }
-  }, [editor, props.path]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
