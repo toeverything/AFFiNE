@@ -23,6 +23,7 @@ export const createFirstFilter = async (page: Page, name: string) => {
   await page
     .locator('[data-testid="variable-select-item"]', { hasText: name })
     .click();
+  await page.keyboard.press('Escape');
 };
 
 export const checkFilterName = async (page: Page, name: string) => {
