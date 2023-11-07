@@ -213,4 +213,5 @@ export const changeFilter = async (page: Page, to: string) => {
 export async function selectTag(page: Page, name: string | RegExp) {
   await page.getByTestId('filter-arg').click();
   await page.getByTestId(`multi-select-${name}`).click();
+  await page.keyboard.press('Escape', { delay: 100 });
 }
