@@ -372,7 +372,7 @@ test('show not found item', async ({ page }) => {
   await expect(notFoundItem).toHaveText('Search for "test123456"');
 });
 
-test('can use cmdk to search page content and scroll to it', async ({
+test('can use cmdk to search page content and scroll to it, then the block will be selected', async ({
   page,
 }) => {
   await openHomePage(page);
@@ -398,4 +398,6 @@ test('can use cmdk to search page content and scroll to it', async ({
   await waitForScrollToFinish(page);
   const isVisitable = await checkElementIsInView(page, '123456');
   expect(isVisitable).toBe(true);
+  const selectionElement = page.locator('affine-block-selection');
+  await expect(selectionElement).toBeVisible();
 });

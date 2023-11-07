@@ -46,6 +46,10 @@ function useRouterHash() {
 
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
 
+interface BlockElement extends Element {
+  path: string[];
+}
+
 export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
@@ -93,15 +97,14 @@ const EditorWrapper = memo(function EditorWrapper({
 
   const [loading, setLoading] = useState(true);
   const blockId = useRouterHash();
-  const blockElement = useMemo(() => {
-    if (!blockId || loading) {
-      return null;
-    }
-    return document.querySelector(`[data-block-id="${blockId}"]`);
-  }, [blockId, loading]);
+  const [elementPath, setElementPath] = useState<string[]>([]);
 
   useEffect(() => {
-    if (blockElement) {
+    const blockElement = document.querySelector(
+      `[data-block-id="${blockId}"]`
+    ) as BlockElement | null;
+
+    if (!loading && blockElement) {
       setTimeout(
         () =>
           blockElement.scrollIntoView({
@@ -111,8 +114,10 @@ const EditorWrapper = memo(function EditorWrapper({
           }),
         0
       );
+      const path = blockElement.path as unknown as string[];
+      setElementPath(path);
     }
-  }, [blockElement]);
+  }, [blockId, loading]);
 
   const setEditorMode = useCallback(
     (mode: 'page' | 'edgeless') => {
@@ -138,6 +143,7 @@ const EditorWrapper = memo(function EditorWrapper({
           } as CSSProperties
         }
         mode={isPublic ? 'page' : currentMode}
+        path={elementPath}
         page={page}
         onModeChange={setEditorMode}
         onInit={useCallback(

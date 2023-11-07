@@ -24,6 +24,7 @@ export type EditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  path?: string[];
 };
 
 export type ErrorBoundaryProps = {
@@ -59,7 +60,6 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
   if (editor.page !== page) {
     editor.page = page;
   }
-
   const presets = getPresets();
   editor.pagePreset = presets.pageModePreset;
   editor.edgelessPreset = presets.edgelessModePreset;
@@ -84,7 +84,7 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
         .filter((dispose): dispose is () => void => !!dispose)
         .forEach(dispose => dispose());
     };
-  }, [editor, editor.page, page, onLoad, onModeChange]);
+  }, [editor, editor.page, page, onLoad, onModeChange, props.path]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -128,6 +128,19 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       blockHubRef.current?.remove();
     };
   }, [editor, page.awarenessStore, page.meta.trash, setBlockHub]);
+
+  useEffect(() => {
+    if (props.path?.length) {
+      const selectPath = props.path;
+      const selectManager = editor.root.value?.selection;
+      if (selectManager) {
+        setTimeout(() => {
+          const path = selectManager.getInstance('block', { path: selectPath });
+          selectManager.set([path]);
+        }, 0);
+      }
+    }
+  }, [editor, props.path]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
