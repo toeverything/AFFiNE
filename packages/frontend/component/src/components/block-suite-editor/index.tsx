@@ -24,6 +24,7 @@ export type EditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  selectPath?: string[];
 };
 
 export type ErrorBoundaryProps = {
@@ -38,7 +39,7 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
-  const { onLoad, onModeChange, page, mode, style } = props;
+  const { onLoad, onModeChange, page, mode, style, selectPath } = props;
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
@@ -127,6 +128,21 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       blockHubRef.current?.remove();
     };
   }, [editor, page.awarenessStore, page.meta.trash, setBlockHub]);
+
+  //hack: select block when jumping to block
+  useEffect(() => {
+    if (selectPath?.length) {
+      const selectManager = editor.root.value?.selection;
+      if (selectManager) {
+        setTimeout(() => {
+          const selection = selectManager.getInstance('block', {
+            path: selectPath,
+          });
+          selectManager.set([selection]);
+        }, 0);
+      }
+    }
+  }, [editor, selectPath]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${

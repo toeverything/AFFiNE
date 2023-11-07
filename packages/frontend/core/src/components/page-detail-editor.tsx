@@ -25,6 +25,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
@@ -102,34 +103,24 @@ const EditorWrapper = memo(function EditorWrapper({
     [switchToEdgelessMode, switchToPageMode, pageId]
   );
 
-  const handleScrollToBlock = useCallback(
-    (editor: EditorContainer) => {
-      const selectManager = editor.root.value?.selection;
+  //hack: scroll to block when jumping to block
+  const [elementPath, setElementPath] = useState<string[]>([]);
+  const blockElement = document.querySelector(
+    `[data-block-id="${blockId}"]`
+  ) as BlockElement | null;
 
-      const blockElement = document.querySelector(
-        `[data-block-id="${blockId}"]`
-      ) as BlockElement | null;
-
-      if (!blockElement) {
-        return;
-      }
-      blockElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center',
-      });
-
-      const path = blockElement?.path;
-
-      if (!path || path.length === 0 || !selectManager) {
-        return;
-      }
-
-      const selection = selectManager.getInstance('block', { path: path });
-      selectManager.set([selection]);
-    },
-    [blockId]
-  );
+  useEffect(() => {
+    if (blockElement) {
+      setTimeout(() => {
+        blockElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center',
+        });
+        setElementPath(blockElement.path);
+      }, 0);
+    }
+  }, [blockElement]);
 
   return (
     <>
@@ -144,6 +135,7 @@ const EditorWrapper = memo(function EditorWrapper({
           } as CSSProperties
         }
         mode={isPublic ? 'page' : currentMode}
+        selectPath={elementPath}
         page={page}
         onModeChange={setEditorMode}
         setBlockHub={setBlockHub}
@@ -178,10 +170,6 @@ const EditorWrapper = memo(function EditorWrapper({
               });
             });
 
-            editor.updateComplete.then(() => {
-              handleScrollToBlock(editor);
-            });
-
             return () => {
               disposableGroup.dispose();
               clearTimeout(renderTimeout);
@@ -190,7 +178,7 @@ const EditorWrapper = memo(function EditorWrapper({
               });
             };
           },
-          [handleScrollToBlock, onLoad]
+          [onLoad]
         )}
       />
       {meta.trash && <TrashButtonGroup />}
