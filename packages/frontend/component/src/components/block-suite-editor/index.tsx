@@ -135,8 +135,10 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
       const selectManager = editor.root.value?.selection;
       if (selectManager) {
         setTimeout(() => {
-          const path = selectManager.getInstance('block', { path: selectPath });
-          selectManager.set([path]);
+          const selection = selectManager.getInstance('block', {
+            path: selectPath,
+          });
+          selectManager.set([selection]);
         }, 0);
       }
     }
