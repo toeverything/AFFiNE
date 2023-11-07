@@ -55,7 +55,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
   const { data: avatar, mutate } = useSWR(url, {
     fetcher: async avatar => {
       assertExists(blockSuiteWorkspace);
-      const blobs = blockSuiteWorkspace.blobs;
+      const blobs = blockSuiteWorkspace.blob;
       const blob = await blobs.get(avatar);
       if (blob) {
         return URL.createObjectURL(blob);
@@ -75,7 +75,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
       }
       try {
         const reducedFile = await validateAndReduceImage(file);
-        const blobs = blockSuiteWorkspace.blobs;
+        const blobs = blockSuiteWorkspace.blob;
         const blobId = await blobs.set(reducedFile);
         blockSuiteWorkspace.meta.setAvatar(blobId);
         await mutate(blobId);

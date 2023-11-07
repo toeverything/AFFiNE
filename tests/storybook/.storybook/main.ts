@@ -51,6 +51,7 @@ export default {
         }),
       ],
       define: {
+        'process.on': '(() => void 0)',
         'process.env': {},
         'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
         'process.env.SHOULD_REPORT_TRACE': `${Boolean(

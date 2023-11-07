@@ -21,7 +21,7 @@ initEmptyPage(page);
 fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
   .then(res => res.arrayBuffer())
   .then(async buffer => {
-    const id = await workspace.blobs.set(
+    const id = await workspace.blob.set(
       new Blob([buffer], { type: 'image/png' })
     );
     const frameId = page.getBlockByFlavour('affine:note')[0].id;

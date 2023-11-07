@@ -24,7 +24,7 @@
     "build": "vite build"
   },
   "devDependencies": {
-    "@blocksuite/store": "0.0.0-20231101080734-aa27dc89-nightly",
+    "@blocksuite/store": "0.0.0-20231108041746-2e7e3467-nightly",
     "vite": "^4.4.11",
     "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",

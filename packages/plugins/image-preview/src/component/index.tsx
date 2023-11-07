@@ -190,7 +190,7 @@ const ImagePreviewModalImpl = (
       if (typeof blockId === 'string') {
         const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
-        const store = block.page.blobs;
+        const store = block.page.blob;
         const url = store?.get(block.sourceId);
         const img = await url;
         if (!img) {
@@ -260,7 +260,7 @@ const ImagePreviewModalImpl = (
         assertExists(page);
         const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
-        return props.workspace.blobs.get(block?.sourceId);
+        return props.workspace.blob.get(block?.sourceId);
       },
       suspense: true,
     }
