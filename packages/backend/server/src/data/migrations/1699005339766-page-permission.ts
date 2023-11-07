@@ -3,8 +3,8 @@ import { PrismaService } from '../../prisma';
 export class PagePermission1699005339766 {
   // do the migration
   static async up(db: PrismaService) {
-    const turn = 0;
-    const lastTurnCount = 50;
+    let turn = 0;
+    let lastTurnCount = 50;
     const done = new Set<string>();
 
     while (lastTurnCount === 50) {
@@ -15,6 +15,7 @@ export class PagePermission1699005339766 {
           createdAt: 'asc',
         },
       });
+      lastTurnCount = workspaces.length;
 
       for (const workspace of workspaces) {
         if (done.has(workspace.id)) {
@@ -58,17 +59,21 @@ export class PagePermission1699005339766 {
             });
 
             if (!existed) {
-              await db.workspaceUserPermission.create({
-                select: null,
-                data: {
-                  // this id is used at invite email, should keep
-                  id: oldPermission.id,
-                  workspaceId: oldPermission.workspaceId,
-                  userId: oldPermission.userId,
-                  type: oldPermission.type,
-                  accepted: oldPermission.accepted,
-                },
-              });
+              await db.workspaceUserPermission
+                .create({
+                  select: null,
+                  data: {
+                    // this id is used at invite email, should keep
+                    id: oldPermission.id,
+                    workspaceId: oldPermission.workspaceId,
+                    userId: oldPermission.userId,
+                    type: oldPermission.type,
+                    accepted: oldPermission.accepted,
+                  },
+                })
+                .catch(() => {
+                  // duplicated
+                });
             }
           } else {
             // ignore wrong data
@@ -77,11 +82,14 @@ export class PagePermission1699005339766 {
 
         done.add(workspace.id);
       }
+
+      turn++;
     }
   }
 
   // revert the migration
-  static async down() {
-    //
+  static async down(db: PrismaService) {
+    await db.workspaceUserPermission.deleteMany({});
+    await db.workspacePageUserPermission.deleteMany({});
   }
 }
