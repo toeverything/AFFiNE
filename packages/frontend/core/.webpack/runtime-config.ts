@@ -20,7 +20,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
-      changelogUrl: 'https://affine.pro/blog/what-is-new-affine-0818',
+      changelogUrl: 'https://affine.pro/what-is-new',
       imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
       enablePreloading: true,
       enableNewSettingModal: true,
