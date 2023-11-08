@@ -101,7 +101,6 @@ export const pageCollectionBaseAtom =
       const migrateCollectionsFromIdbData = async (
         workspace: Workspace
       ): Promise<Collection[]> => {
-        workspace.awarenessStore.awareness.emit('change log');
         const localCRUD = get(localCollectionCRUDAtom);
         const collections = await getCollections(localCRUD);
         const result = collections.filter(v => v.workspaceId === workspace.id);
@@ -149,18 +148,17 @@ export const pageCollectionBaseAtom =
       return new Observable<BaseCollectionsDataType>(subscriber => {
         const group = new DisposableGroup();
         currentWorkspacePromise.then(async currentWorkspace => {
-          const collectionsFromLocal =
-            await migrateCollectionsFromIdbData(currentWorkspace);
-          const collectionFromUserSetting =
-            await migrateCollectionsFromUserData(currentWorkspace);
           const workspaceSetting = getWorkspaceSetting(currentWorkspace);
-          if (collectionsFromLocal.length || collectionFromUserSetting.length) {
-            // migrate collections
-            workspaceSetting.addCollection(
-              ...collectionFromUserSetting,
-              ...collectionsFromLocal
-            );
-          }
+          migrateCollectionsFromIdbData(currentWorkspace).then(collections => {
+            if (collections.length) {
+              workspaceSetting.addCollection(...collections);
+            }
+          });
+          migrateCollectionsFromUserData(currentWorkspace).then(collections => {
+            if (collections.length) {
+              workspaceSetting.addCollection(...collections);
+            }
+          });
           subscriber.next({
             loading: false,
             collections: workspaceSetting.collections,
