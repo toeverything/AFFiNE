@@ -7234,76 +7234,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/xattr-android-arm-eabi@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-android-arm-eabi@npm:1.0.0"
-  conditions: os=android & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-android-arm64@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-android-arm64@npm:1.0.0"
-  conditions: os=android & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-darwin-arm64@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-darwin-arm64@npm:1.0.0"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-darwin-x64@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-darwin-x64@npm:1.0.0"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-freebsd-x64@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-freebsd-x64@npm:1.0.0"
-  conditions: os=freebsd & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-arm-gnueabihf@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-linux-arm-gnueabihf@npm:1.0.0"
-  conditions: os=linux & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-arm64-gnu@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-linux-arm64-gnu@npm:1.0.0"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-arm64-musl@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-linux-arm64-musl@npm:1.0.0"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-x64-gnu@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-linux-x64-gnu@npm:1.0.0"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-x64-musl@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr-linux-x64-musl@npm:1.0.0"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
 "@ndelangen/get-tarball@npm:^3.0.7":
   version: 3.0.9
   resolution: "@ndelangen/get-tarball@npm:3.0.9"
@@ -21344,42 +21274,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-xattr@npm:@napi-rs/xattr@latest":
-  version: 1.0.0
-  resolution: "@napi-rs/xattr@npm:1.0.0"
-  dependencies:
-    "@napi-rs/xattr-android-arm-eabi": "npm:1.0.0"
-    "@napi-rs/xattr-android-arm64": "npm:1.0.0"
-    "@napi-rs/xattr-darwin-arm64": "npm:1.0.0"
-    "@napi-rs/xattr-darwin-x64": "npm:1.0.0"
-    "@napi-rs/xattr-freebsd-x64": "npm:1.0.0"
-    "@napi-rs/xattr-linux-arm-gnueabihf": "npm:1.0.0"
-    "@napi-rs/xattr-linux-arm64-gnu": "npm:1.0.0"
-    "@napi-rs/xattr-linux-arm64-musl": "npm:1.0.0"
-    "@napi-rs/xattr-linux-x64-gnu": "npm:1.0.0"
-    "@napi-rs/xattr-linux-x64-musl": "npm:1.0.0"
-  dependenciesMeta:
-    "@napi-rs/xattr-android-arm-eabi":
-      optional: true
-    "@napi-rs/xattr-android-arm64":
-      optional: true
-    "@napi-rs/xattr-darwin-arm64":
-      optional: true
-    "@napi-rs/xattr-darwin-x64":
-      optional: true
-    "@napi-rs/xattr-freebsd-x64":
-      optional: true
-    "@napi-rs/xattr-linux-arm-gnueabihf":
-      optional: true
-    "@napi-rs/xattr-linux-arm64-gnu":
-      optional: true
-    "@napi-rs/xattr-linux-arm64-musl":
-      optional: true
-    "@napi-rs/xattr-linux-x64-gnu":
-      optional: true
-    "@napi-rs/xattr-linux-x64-musl":
-      optional: true
-  checksum: 2f19af08a4a75febfc29c58c343e1af839c45bfdf61ac36998aa1090f6a954b6fa9e941c9460d02f36bd74c482ff1833c384259b9da23ab01bf0c8e95ac0ac64
+"fs-xattr@npm:fs-xattr-building@latest":
+  version: 0.4.2
+  resolution: "fs-xattr-building@npm:0.4.2"
+  conditions: "!os=win32"
   languageName: node
   linkType: hard
 
