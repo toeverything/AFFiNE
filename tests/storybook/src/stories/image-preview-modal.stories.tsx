@@ -1,9 +1,8 @@
-import { BlockHubWrapper } from '@affine/component/block-hub';
+import { RootBlockHub } from '@affine/component/block-hub';
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { ImagePreviewModal } from '@affine/image-preview-plugin/src/component';
-import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import type { Meta } from '@storybook/react';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
@@ -59,14 +58,7 @@ export const Default = () => {
           document.body
         )}
       </div>
-      <BlockHubWrapper
-        style={{
-          position: 'absolute',
-          right: 12,
-          bottom: 12,
-        }}
-        blockHubAtom={rootBlockHubAtom}
-      />
+      <RootBlockHub />
     </>
   );
 };

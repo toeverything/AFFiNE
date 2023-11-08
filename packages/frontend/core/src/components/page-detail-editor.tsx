@@ -1,8 +1,9 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
-import type { LayoutNode } from '@affine/sdk//entry';
+import type { LayoutNode } from '@affine/sdk/entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
+import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
@@ -25,8 +26,10 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useLocation } from 'react-router-dom';
 
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions } from '../atoms/settings';
@@ -38,6 +41,11 @@ import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
 
+declare global {
+  // eslint-disable-next-line no-var
+  var currentEditor: EditorContainer | undefined;
+}
+
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
 
 export interface PageDetailEditorProps {
@@ -45,6 +53,34 @@ export interface PageDetailEditorProps {
   workspace: Workspace;
   pageId: string;
   onLoad?: OnLoadEditor;
+}
+
+function useRouterHash() {
+  return useLocation().hash.substring(1);
+}
+
+function useCreateAndSetRootBlockHub(editor?: EditorContainer, page?: Page) {
+  const setBlockHub = useSetAtom(rootBlockHubAtom);
+  useEffect(() => {
+    let canceled = false;
+    let blockHub: BlockHub | undefined;
+    if (editor && !page?.meta.trash) {
+      editor
+        .createBlockHub()
+        .then(bh => {
+          if (canceled) {
+            return;
+          }
+          blockHub = bh;
+          setBlockHub(blockHub);
+        })
+        .catch(console.error);
+    }
+    return () => {
+      canceled = true;
+      blockHub?.remove();
+    };
+  }, [editor, page, setBlockHub]);
 }
 
 const EditorWrapper = memo(function EditorWrapper({
@@ -68,7 +104,6 @@ const EditorWrapper = memo(function EditorWrapper({
   const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode = pageSetting?.mode ?? 'page';
 
-  const setBlockHub = useSetAtom(rootBlockHubAtom);
   const { appSettings } = useAppSettingHelper();
 
   assertExists(meta);
@@ -91,6 +126,55 @@ const EditorWrapper = memo(function EditorWrapper({
     [switchToEdgelessMode, switchToPageMode, pageId]
   );
 
+  const [editor, setEditor] = useState<EditorContainer>();
+  const blockId = useRouterHash();
+  useCreateAndSetRootBlockHub(editor, page);
+
+  const onLoadEditor = useCallback(
+    (editor: EditorContainer) => {
+      // debug current detail editor
+      globalThis.currentEditor = editor;
+      setEditor(editor);
+      const disposableGroup = new DisposableGroup();
+      disposableGroup.add(
+        page.slots.blockUpdated.once(() => {
+          page.workspace.setPageMeta(page.id, {
+            updatedDate: Date.now(),
+          });
+        })
+      );
+      localStorage.setItem('last_page_id', page.id);
+      if (onLoad) {
+        disposableGroup.add(onLoad(page, editor));
+      }
+      const rootStore = getCurrentStore();
+      const editorItems = rootStore.get(pluginEditorAtom);
+      let disposes: (() => void)[] = [];
+      const renderTimeout = window.setTimeout(() => {
+        disposes = Object.entries(editorItems).map(([id, editorItem]) => {
+          const div = document.createElement('div');
+          div.setAttribute('plugin-id', id);
+          const cleanup = editorItem(div, editor);
+          assertExists(parent);
+          document.body.appendChild(div);
+          return () => {
+            cleanup();
+            document.body.removeChild(div);
+          };
+        });
+      });
+
+      return () => {
+        disposableGroup.dispose();
+        clearTimeout(renderTimeout);
+        window.setTimeout(() => {
+          disposes.forEach(dispose => dispose());
+        });
+      };
+    },
+    [onLoad, page]
+  );
+
   return (
     <>
       <Editor
@@ -106,48 +190,8 @@ const EditorWrapper = memo(function EditorWrapper({
         mode={isPublic ? 'page' : currentMode}
         page={page}
         onModeChange={setEditorMode}
-        setBlockHub={setBlockHub}
-        onLoad={useCallback(
-          (page: Page, editor: EditorContainer) => {
-            const disposableGroup = new DisposableGroup();
-            disposableGroup.add(
-              page.slots.blockUpdated.once(() => {
-                page.workspace.setPageMeta(page.id, {
-                  updatedDate: Date.now(),
-                });
-              })
-            );
-            localStorage.setItem('last_page_id', page.id);
-            if (onLoad) {
-              disposableGroup.add(onLoad(page, editor));
-            }
-            const rootStore = getCurrentStore();
-            const editorItems = rootStore.get(pluginEditorAtom);
-            let disposes: (() => void)[] = [];
-            const renderTimeout = window.setTimeout(() => {
-              disposes = Object.entries(editorItems).map(([id, editorItem]) => {
-                const div = document.createElement('div');
-                div.setAttribute('plugin-id', id);
-                const cleanup = editorItem(div, editor);
-                assertExists(parent);
-                document.body.appendChild(div);
-                return () => {
-                  cleanup();
-                  document.body.removeChild(div);
-                };
-              });
-            });
-
-            return () => {
-              disposableGroup.dispose();
-              clearTimeout(renderTimeout);
-              window.setTimeout(() => {
-                disposes.forEach(dispose => dispose());
-              });
-            };
-          },
-          [onLoad]
-        )}
+        defaultSelectedBlockId={blockId}
+        onLoadEditor={onLoadEditor}
       />
       {meta.trash && <TrashButtonGroup />}
       <Bookmark page={page} />
