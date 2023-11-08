@@ -59,12 +59,15 @@ function useRouterHash() {
   return useLocation().hash.substring(1);
 }
 
-function useCreateAndSetRootBlockHub(editor?: EditorContainer, page?: Page) {
+function useCreateAndSetRootBlockHub(
+  editor?: EditorContainer,
+  showBlockHub?: boolean
+) {
   const setBlockHub = useSetAtom(rootBlockHubAtom);
   useEffect(() => {
     let canceled = false;
     let blockHub: BlockHub | undefined;
-    if (editor && !page?.meta.trash) {
+    if (editor && showBlockHub) {
       editor
         .createBlockHub()
         .then(bh => {
@@ -80,7 +83,7 @@ function useCreateAndSetRootBlockHub(editor?: EditorContainer, page?: Page) {
       canceled = true;
       blockHub?.remove();
     };
-  }, [editor, page, setBlockHub]);
+  }, [editor, showBlockHub, setBlockHub]);
 }
 
 const EditorWrapper = memo(function EditorWrapper({
@@ -128,7 +131,8 @@ const EditorWrapper = memo(function EditorWrapper({
 
   const [editor, setEditor] = useState<EditorContainer>();
   const blockId = useRouterHash();
-  useCreateAndSetRootBlockHub(editor, page);
+
+  useCreateAndSetRootBlockHub(editor, !meta.trash);
 
   const onLoadEditor = useCallback(
     (editor: EditorContainer) => {
