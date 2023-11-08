@@ -171,7 +171,7 @@ const BlockSuiteEditorImpl = ({
   return (
     <div
       data-testid={`editor-${page.id}`}
-      className={clsx('editor-wrapper ${editor.mode}-mode', className)}
+      className={clsx(`editor-wrapper ${editor.mode}-mode`, className)}
       style={style}
       ref={containerRef}
     />
