@@ -76,17 +76,13 @@ export const TreeNodeItem = <RenderProps,>({
   disableCollapse,
   allowDrop = true,
 }: TreeNodeItemProps<RenderProps>) => {
-  return (
-    <>
-      {node.render?.(node, {
-        isOver: isOver && allowDrop,
-        onAdd: () => onAdd?.(node.id),
-        onDelete: () => onDelete?.(node.id),
-        collapsed,
-        setCollapsed,
-        isSelected: selectedId === node.id,
-        disableCollapse,
-      })}
-    </>
-  );
+  return node.render?.(node, {
+    isOver: isOver && allowDrop,
+    onAdd: () => onAdd?.(node.id),
+    onDelete: () => onDelete?.(node.id),
+    collapsed,
+    setCollapsed,
+    isSelected: selectedId === node.id,
+    disableCollapse,
+  });
 };

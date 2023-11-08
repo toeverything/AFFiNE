@@ -53,12 +53,10 @@ const Main = () => {
 
 export const Default: StoryFn = () => {
   return (
-    <>
-      <Container>
-        <AppSidebar />
-        <Main />
-      </Container>
-    </>
+    <Container>
+      <AppSidebar />
+      <Main />
+    </Container>
   );
 };
 

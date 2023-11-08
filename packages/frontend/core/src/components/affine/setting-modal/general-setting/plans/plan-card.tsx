@@ -406,17 +406,15 @@ const Upgrade = ({
   }, [onClose]);
 
   return (
-    <>
-      <Button
-        className={styles.planAction}
-        type="primary"
-        onClick={upgrade}
-        disabled={isMutating}
-        loading={isMutating}
-      >
-        {t['com.affine.payment.upgrade']()}
-      </Button>
-    </>
+    <Button
+      className={styles.planAction}
+      type="primary"
+      onClick={upgrade}
+      disabled={isMutating}
+      loading={isMutating}
+    >
+      {t['com.affine.payment.upgrade']()}
+    </Button>
   );
 };
 

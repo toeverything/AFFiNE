@@ -38,30 +38,25 @@ export const LocalSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
 
   return (
-    <>
-      <div className={styles.localSharePage}>
-        <div className={styles.columnContainerStyle} style={{ gap: '12px' }}>
-          <div
-            className={styles.descriptionStyle}
-            style={{ maxWidth: '230px' }}
-          >
-            {t['com.affine.share-menu.EnableCloudDescription']()}
-          </div>
-          <div>
-            <Button
-              onClick={props.onEnableAffineCloud}
-              type="primary"
-              data-testid="share-menu-enable-affine-cloud-button"
-            >
-              {t['Enable AFFiNE Cloud']()}
-            </Button>
-          </div>
+    <div className={styles.localSharePage}>
+      <div className={styles.columnContainerStyle} style={{ gap: '12px' }}>
+        <div className={styles.descriptionStyle} style={{ maxWidth: '230px' }}>
+          {t['com.affine.share-menu.EnableCloudDescription']()}
         </div>
-        <div className={styles.cloudSvgContainer}>
-          <CloudSvg />
+        <div>
+          <Button
+            onClick={props.onEnableAffineCloud}
+            type="primary"
+            data-testid="share-menu-enable-affine-cloud-button"
+          >
+            {t['Enable AFFiNE Cloud']()}
+          </Button>
         </div>
       </div>
-    </>
+      <div className={styles.cloudSvgContainer}>
+        <CloudSvg />
+      </div>
+    </div>
   );
 };
 
@@ -218,11 +213,7 @@ export const SharePage = (props: ShareMenuProps) => {
   if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
   } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    return (
-      <>
-        <AffineSharePage {...props} />
-      </>
-    );
+    return <AffineSharePage {...props} />;
   }
   throw new Error('Unreachable');
 };

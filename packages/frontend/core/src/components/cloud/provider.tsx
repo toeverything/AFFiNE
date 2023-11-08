@@ -2,7 +2,7 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { assertExists } from '@blocksuite/global/utils';
 import { GraphQLError } from 'graphql';
 import { useSetAtom } from 'jotai';
-import type { PropsWithChildren, ReactElement } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
 import { SWRConfig } from 'swr';
@@ -49,9 +49,9 @@ const cloudConfig: SWRConfiguration = {
   ],
 };
 
-export const Provider = (props: PropsWithChildren): ReactElement => {
+export const Provider = (props: PropsWithChildren): ReactNode => {
   if (!runtimeConfig.enableCloud) {
-    return <>{props.children}</>;
+    return props.children;
   }
 
   return <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>;

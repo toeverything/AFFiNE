@@ -2,7 +2,7 @@ import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import Tooltip from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { withErrorBoundary } from 'react-error-boundary';
 
 import { openSettingModalAtom } from '../../../atoms';
@@ -39,5 +39,5 @@ const UserPlanButtonWithData = () => {
 
 // If fetch user data failed, just render empty.
 export const UserPlanButton = withErrorBoundary(UserPlanButtonWithData, {
-  fallbackRender: () => <React.Fragment />,
+  fallbackRender: () => null,
 });

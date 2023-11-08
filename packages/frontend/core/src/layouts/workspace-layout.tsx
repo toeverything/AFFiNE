@@ -34,7 +34,7 @@ import { loadPage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
-import type { PropsWithChildren, ReactElement } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
@@ -101,7 +101,7 @@ const showList: IslandItemNames[] = environment.isDesktop
 
 export const CurrentWorkspaceContext = ({
   children,
-}: PropsWithChildren): ReactElement => {
+}: PropsWithChildren): ReactNode => {
   const workspaceId = useAtomValue(currentWorkspaceIdAtom);
   const metadata = useAtomValue(rootWorkspacesMetadataAtom);
   const exist = metadata.find(m => m.id === workspaceId);
@@ -114,7 +114,7 @@ export const CurrentWorkspaceContext = ({
   if (!exist) {
     return <WorkspaceFallback key="workspace-not-found" />;
   }
-  return <>{children}</>;
+  return children;
 };
 
 type WorkspaceLayoutProps = {

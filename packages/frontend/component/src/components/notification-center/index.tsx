@@ -7,7 +7,7 @@ import * as Toast from '@radix-ui/react-toast';
 import { IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 import {
   useCallback,
   useEffect,
@@ -70,7 +70,7 @@ const typeColorMap = {
   },
 };
 
-function NotificationCard(props: NotificationCardProps): ReactElement {
+function NotificationCard(props: NotificationCardProps): ReactNode {
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, notifications, setHeights, heights, index } = props;
 
@@ -270,7 +270,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       >
         {notification.multimedia ? (
           <div className={styles.notificationMultimediaStyle}>
-            <>{notification.multimedia}</>
+            {notification.multimedia}
             <IconButton className={styles.closeButtonWithMediaStyle}>
               <CloseIcon onClick={onClickRemove} />
             </IconButton>
@@ -373,7 +373,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   );
 }
 
-export function NotificationCenter(): ReactElement {
+export function NotificationCenter(): ReactNode {
   const notifications = useAtomValue(notificationsAtom);
   const [expand, setExpand] = useAtom(expandNotificationCenterAtom);
 
@@ -390,7 +390,7 @@ export function NotificationCenter(): ReactElement {
     }
   }, [notifications, setExpand]);
 
-  if (!notifications.length) return <></>;
+  if (!notifications.length) return null;
   return (
     <Toast.Provider swipeDirection="right">
       {notifications.map((notification, index) =>

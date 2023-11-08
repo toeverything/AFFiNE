@@ -9,7 +9,7 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
 import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
@@ -205,9 +205,9 @@ const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
   const t = useAFFiNEI18N();
 
   const title = t['com.affine.payment.title']();
-  const subtitle = <React.Fragment />;
-  const tabs = <React.Fragment />;
-  const footer = <React.Fragment />;
+  const subtitle = '';
+  const tabs = '';
+  const footer = '';
 
   const scroll = (
     <div className={styles.errorTip}>
