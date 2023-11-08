@@ -177,6 +177,6 @@
     "@electron-forge/core@^6.4.2": "patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch",
     "@electron-forge/core@6.4.2": "patch:@electron-forge/core@npm%3A6.4.2#./.yarn/patches/@electron-forge-core-npm-6.4.2-ab60c87e75.patch",
     "macos-alias": "npm:macos-alias-building@latest",
-    "fs-xattr": "npm:fs-xattr-building@latest"
+    "fs-xattr": "npm:@napi-rs/xattr@latest"
   }
 }
