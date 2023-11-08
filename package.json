@@ -119,6 +119,9 @@
   "dependenciesMeta": {
     "@parcel/watcher": {
       "built": false
+    },
+    "@swc/core": {
+      "built": false
     }
   },
   "resolutions": {

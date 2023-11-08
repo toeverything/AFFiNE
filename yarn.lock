@@ -598,6 +598,8 @@ __metadata:
   dependenciesMeta:
     "@parcel/watcher":
       built: false
+    "@swc/core":
+      built: false
   languageName: unknown
   linkType: soft
 
