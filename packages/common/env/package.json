@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/global": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/store": "0.0.0-20231101080734-aa27dc89-nightly",
+    "@blocksuite/global": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/store": "0.0.0-20231108041746-2e7e3467-nightly",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "vitest": "0.34.6",
@@ -25,7 +25,7 @@
     "@toeverything/infra": "workspace:*"
   },
   "dependencies": {
-    "lit": "^2.8.0"
+    "lit": "^3.0.2"
   },
-  "version": "0.10.0-canary.13"
+  "version": "0.10.0-canary.14"
 }

@@ -331,10 +331,8 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   }
 
   return (
-    <>
-      <Suspense>
-        <LayoutPanel node={layout} editorProps={props} depth={0} />
-      </Suspense>
-    </>
+    <Suspense>
+      <LayoutPanel node={layout} editorProps={props} depth={0} />
+    </Suspense>
   );
 };

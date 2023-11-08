@@ -55,9 +55,9 @@
   },
   "dependencies": {
     "@affine/sdk": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/global": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/store": "0.0.0-20231101080734-aa27dc89-nightly",
+    "@blocksuite/blocks": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/global": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/store": "0.0.0-20231108041746-2e7e3467-nightly",
     "jotai": "^2.4.3",
     "jotai-effect": "^0.2.2",
     "tinykeys": "^2.1.0",
@@ -66,8 +66,8 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/editor": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/lit": "0.0.0-20231101080734-aa27dc89-nightly",
+    "@blocksuite/editor": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/lit": "0.0.0-20231108041746-2e7e3467-nightly",
     "@testing-library/react": "^14.0.0",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../frontend/electron/node_modules/electron",
@@ -111,5 +111,5 @@
       "optional": true
     }
   },
-  "version": "0.10.0-canary.13"
+  "version": "0.10.0-canary.14"
 }

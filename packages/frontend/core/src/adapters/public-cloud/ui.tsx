@@ -14,13 +14,11 @@ export const UI = {
       throw new PageNotFoundError(workspace.blockSuiteWorkspace, currentPageId);
     }
     return (
-      <>
-        <PageDetailEditor
-          pageId={currentPageId}
-          onLoad={onLoadEditor}
-          workspace={workspace.blockSuiteWorkspace}
-        />
-      </>
+      <PageDetailEditor
+        pageId={currentPageId}
+        onLoad={onLoadEditor}
+        workspace={workspace.blockSuiteWorkspace}
+      />
     );
   },
   NewSettingsDetail: () => {

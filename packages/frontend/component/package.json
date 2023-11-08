@@ -50,7 +50,7 @@
     "jotai": "^2.4.3",
     "jotai-effect": "^0.2.2",
     "jotai-scope": "^0.4.0",
-    "lit": "^2.8.0",
+    "lit": "^3.0.2",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "lottie-react": "^2.4.0",
@@ -69,12 +69,12 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/editor": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/global": "0.0.0-20231101080734-aa27dc89-nightly",
+    "@blocksuite/blocks": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/editor": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/global": "0.0.0-20231108041746-2e7e3467-nightly",
     "@blocksuite/icons": "2.1.35",
-    "@blocksuite/lit": "0.0.0-20231101080734-aa27dc89-nightly",
-    "@blocksuite/store": "0.0.0-20231101080734-aa27dc89-nightly",
+    "@blocksuite/lit": "0.0.0-20231108041746-2e7e3467-nightly",
+    "@blocksuite/store": "0.0.0-20231108041746-2e7e3467-nightly",
     "@storybook/jest": "^0.2.3",
     "@storybook/testing-library": "^0.2.2",
     "@testing-library/react": "^14.0.0",
@@ -90,5 +90,5 @@
     "vitest": "0.34.6",
     "yjs": "^13.6.8"
   },
-  "version": "0.10.0-canary.13"
+  "version": "0.10.0-canary.14"
 }

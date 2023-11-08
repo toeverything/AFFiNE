@@ -59,31 +59,29 @@ export const TrashPage = () => {
     [permanentlyDeletePage, restoreFromTrash, t]
   );
   return (
-    <>
-      <div className={styles.root}>
-        <WorkspaceHeader
-          currentWorkspaceId={currentWorkspace.id}
-          currentEntry={{
-            subPath: WorkspaceSubPath.TRASH,
-          }}
+    <div className={styles.root}>
+      <WorkspaceHeader
+        currentWorkspaceId={currentWorkspace.id}
+        currentEntry={{
+          subPath: WorkspaceSubPath.TRASH,
+        }}
+      />
+      {filteredPageMetas.length > 0 ? (
+        <VirtualizedPageList
+          pages={filteredPageMetas}
+          rowAsLink
+          groupBy={false}
+          isPreferredEdgeless={isPreferredEdgeless}
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          pageOperationsRenderer={pageOperationsRenderer}
         />
-        {filteredPageMetas.length > 0 ? (
-          <VirtualizedPageList
-            pages={filteredPageMetas}
-            rowAsLink
-            groupBy={false}
-            isPreferredEdgeless={isPreferredEdgeless}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            pageOperationsRenderer={pageOperationsRenderer}
-          />
-        ) : (
-          <EmptyPageList
-            type="trash"
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          />
-        )}
-      </div>
-    </>
+      ) : (
+        <EmptyPageList
+          type="trash"
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+        />
+      )}
+    </div>
   );
 };
 

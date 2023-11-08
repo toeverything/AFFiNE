@@ -47,13 +47,11 @@ export const UI = {
     );
 
     return (
-      <>
-        <PageDetailEditor
-          pageId={currentPageId}
-          onLoad={onLoad}
-          workspace={workspace.blockSuiteWorkspace}
-        />
-      </>
+      <PageDetailEditor
+        pageId={currentPageId}
+        onLoad={onLoad}
+        workspace={workspace.blockSuiteWorkspace}
+      />
     );
   },
   NewSettingsDetail: ({

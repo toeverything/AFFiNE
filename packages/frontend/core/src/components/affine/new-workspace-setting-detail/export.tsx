@@ -12,7 +12,7 @@ import { encodeStateAsUpdate } from 'yjs';
 
 async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
   if (window.apis && isDesktop) {
-    const bs = workspace.blockSuiteWorkspace.blobs;
+    const bs = workspace.blockSuiteWorkspace.blob;
     const blobsInDb = await window.apis.db.getBlobKeys(workspace.id);
     const blobsInStorage = await bs.list();
     const blobsToSync = blobsInStorage.filter(
@@ -86,16 +86,14 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   }, [pushNotification, syncing, t, workspace, workspaceId]);
 
   return (
-    <>
-      <SettingRow name={t['Export']()} desc={t['Export Description']()}>
-        <Button
-          data-testid="export-affine-backup"
-          onClick={onExport}
-          disabled={syncing}
-        >
-          {t['Export']()}
-        </Button>
-      </SettingRow>
-    </>
+    <SettingRow name={t['Export']()} desc={t['Export Description']()}>
+      <Button
+        data-testid="export-affine-backup"
+        onClick={onExport}
+        disabled={syncing}
+      >
+        {t['Export']()}
+      </Button>
+    </SettingRow>
   );
 };
