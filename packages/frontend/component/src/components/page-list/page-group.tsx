@@ -119,7 +119,7 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
     [id, setCollapseState]
   );
 
-  const selectionState = useAtomValue(selectionStateAtom);
+  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
   const selectedItems = useMemo(() => {
     const selectedPageIds = selectionState.selectedPageIds ?? [];
     return items.filter(item => selectedPageIds.includes(item.id));
@@ -132,6 +132,9 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
   }, [items, selectionState.selectedPageIds]);
 
   const onSelectAll = useCallback(() => {
+    // also enable selection active
+    setSelectionActive(true);
+
     const nonCurrentGroupIds =
       selectionState.selectedPageIds?.filter(
         id => !items.map(item => item.id).includes(id)
@@ -142,7 +145,7 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
       : [...nonCurrentGroupIds, ...items.map(item => item.id)];
 
     selectionState.onSelectedPageIdsChange?.(newSelectedPageIds);
-  }, [items, selectionState, allSelected]);
+  }, [setSelectionActive, selectionState, allSelected, items]);
 
   const t = useAFFiNEI18N();
 
@@ -166,15 +169,13 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
         </div>
       ) : null}
       <div className={styles.spacer} />
-      {selectionState.selectionActive ? (
-        <button className={styles.selectAllButton} onClick={onSelectAll}>
-          {t[
-            allSelected
-              ? 'com.affine.page.group-header.clear'
-              : 'com.affine.page.group-header.select-all'
-          ]()}
-        </button>
-      ) : null}
+      <button className={styles.selectAllButton} onClick={onSelectAll}>
+        {t[
+          allSelected
+            ? 'com.affine.page.group-header.clear'
+            : 'com.affine.page.group-header.select-all'
+        ]()}
+      </button>
     </div>
   ) : null;
 };
