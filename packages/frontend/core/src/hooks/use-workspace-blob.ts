@@ -9,7 +9,7 @@ const logger = new DebugLogger('useWorkspaceBlob');
 export function useWorkspaceBlob(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ): BlobManager {
-  return useMemo(() => blockSuiteWorkspace.blobs, [blockSuiteWorkspace.blobs]);
+  return useMemo(() => blockSuiteWorkspace.blob, [blockSuiteWorkspace.blob]);
 }
 
 export function useWorkspaceBlobImage(
