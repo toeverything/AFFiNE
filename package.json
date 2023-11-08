@@ -116,6 +116,11 @@
     "vitest-mock-extended": "^1.3.1"
   },
   "packageManager": "yarn@4.0.1",
+  "dependenciesMeta": {
+    "@parcel/watcher": {
+      "built": false
+    }
+  },
   "resolutions": {
     "vite": "^4.4.11",
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@latest",

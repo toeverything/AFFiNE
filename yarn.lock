@@ -595,6 +595,9 @@ __metadata:
     vitest: "npm:0.34.6"
     vitest-fetch-mock: "npm:^0.2.2"
     vitest-mock-extended: "npm:^1.3.1"
+  dependenciesMeta:
+    "@parcel/watcher":
+      built: false
   languageName: unknown
   linkType: soft
 
