@@ -21297,11 +21297,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-xattr@npm:^0.3.0":
-  version: 0.3.1
-  resolution: "fs-xattr@npm:0.3.1"
-  dependencies:
-    node-gyp: "npm:latest"
+"fs-xattr@npm:fs-xattr-building@latest":
+  version: 0.4.1
+  resolution: "fs-xattr-building@npm:0.4.1"
   conditions: "!os=win32"
   languageName: node
   linkType: hard
@@ -25912,12 +25910,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"macos-alias@npm:~0.2.5":
-  version: 0.2.11
-  resolution: "macos-alias@npm:0.2.11"
-  dependencies:
-    nan: "npm:^2.4.0"
-    node-gyp: "npm:latest"
+"macos-alias@npm:macos-alias-building@latest":
+  version: 0.2.12
+  resolution: "macos-alias-building@npm:0.2.12"
   conditions: os=darwin
   languageName: node
   linkType: hard
@@ -27396,15 +27391,6 @@ __metadata:
   version: 0.0.8
   resolution: "mute-stream@npm:0.0.8"
   checksum: a2d2e79dde87e3424ffc8c334472c7f3d17b072137734ca46e6f221131f1b014201cc593b69a38062e974fb2394d3d1cb4349f80f012bbf8b8ac1b28033e515f
-  languageName: node
-  linkType: hard
-
-"nan@npm:^2.4.0":
-  version: 2.18.0
-  resolution: "nan@npm:2.18.0"
-  dependencies:
-    node-gyp: "npm:latest"
-  checksum: 5520e22c64e2b5b495b1d765d6334c989b848bbe1502fec89c5857cabcc7f9f0474563377259e7574bff1c8a041d3b90e9ffa1f5e15502ffddee7b2550cc26a0
   languageName: node
   linkType: hard
 
