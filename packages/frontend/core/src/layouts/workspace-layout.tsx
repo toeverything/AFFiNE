@@ -35,7 +35,7 @@ import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { lazy, Suspense, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
@@ -314,20 +314,24 @@ export const WorkspaceLayoutInner = ({
 
 function PageListTitleCellDragOverlay() {
   const { active, over } = useDndContext();
-  const renderChildren = useCallback(
-    ({ pageTitle }: DraggableTitleCellData) => {
-      return (
-        <PageListDragOverlay over={!!over}>{pageTitle}</PageListDragOverlay>
-      );
-    },
-    [over]
-  );
+  const [content, setContent] = useState<ReactNode>();
+
+  useEffect(() => {
+    if (active) {
+      const data = active.data.current as DraggableTitleCellData;
+      setContent(data.pageTitle);
+    }
+    // do not update content since it may disappear because of virtual rendering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id]);
+
+  const renderChildren = useCallback(() => {
+    return <PageListDragOverlay over={!!over}>{content}</PageListDragOverlay>;
+  }, [content, over]);
 
   return (
     <DragOverlay dropAnimation={null}>
-      {active
-        ? renderChildren(active.data.current as DraggableTitleCellData)
-        : null}
+      {active ? renderChildren() : null}
     </DragOverlay>
   );
 }
