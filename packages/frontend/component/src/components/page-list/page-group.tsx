@@ -125,11 +125,7 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
     return items.filter(item => selectedPageIds.includes(item.id));
   }, [items, selectionState.selectedPageIds]);
 
-  const allSelected = useMemo(() => {
-    return items.every(
-      item => selectionState.selectedPageIds?.includes(item.id)
-    );
-  }, [items, selectionState.selectedPageIds]);
+  const allSelected = selectedItems.length === items.length;
 
   const onSelectAll = useCallback(() => {
     // also enable selection active
@@ -150,7 +146,13 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
   const t = useAFFiNEI18N();
 
   return label ? (
-    <div data-testid="page-list-group-header" className={styles.header}>
+    <div
+      data-testid="page-list-group-header"
+      className={styles.header}
+      data-group-id={id}
+      data-group-items-count={items.length}
+      data-group-selected-items-count={selectedItems.length}
+    >
       <div
         role="button"
         onClick={onExpandedClicked}

@@ -101,6 +101,7 @@ const PageListHeaderCheckbox = () => {
 
   return (
     <div
+      data-testid="page-list-header-selection-checkbox"
       className={styles.headerTitleSelectionIconWrapper}
       onClick={onActivateSelection}
     >

@@ -3,6 +3,7 @@ import * as Toolbar from '@radix-ui/react-toolbar';
 import clsx from 'clsx';
 import {
   type CSSProperties,
+  type HTMLAttributes,
   type MouseEventHandler,
   type PropsWithChildren,
   type ReactNode,
@@ -16,13 +17,11 @@ interface FloatingToolbarProps {
   open?: boolean;
 }
 
-interface FloatingToolbarButtonProps {
+interface FloatingToolbarButtonProps extends HTMLAttributes<HTMLButtonElement> {
   icon: ReactNode;
   onClick: MouseEventHandler;
   type?: 'danger' | 'default';
   label?: ReactNode;
-  className?: string;
-  style?: CSSProperties;
 }
 
 interface FloatingToolbarItemProps {}
@@ -40,7 +39,12 @@ export function FloatingToolbar({
       <Popover.Portal>
         {/* always pop up on top for now */}
         <Popover.Content side="top" className={styles.popoverContent}>
-          <Toolbar.Root className={clsx(styles.root)}>{children}</Toolbar.Root>
+          <Toolbar.Root
+            data-testid="floating-toolbar"
+            className={clsx(styles.root)}
+          >
+            {children}
+          </Toolbar.Root>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
@@ -62,6 +66,7 @@ export function FloatingToolbarButton({
   className,
   style,
   label,
+  ...props
 }: FloatingToolbarButtonProps) {
   return (
     <Toolbar.Button
@@ -72,6 +77,7 @@ export function FloatingToolbarButton({
         className
       )}
       style={style}
+      {...props}
     >
       <div className={styles.buttonIcon}>{icon}</div>
       {label}
