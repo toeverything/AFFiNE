@@ -382,8 +382,8 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   await getBlockSuiteEditorTitle(page).fill(
     'this is a new page to search for content'
   );
-  for (let i = 0; i < 50; i++) {
-    await page.keyboard.press('Enter');
+  for (let i = 0; i < 30; i++) {
+    await page.keyboard.press('Enter', { delay: 10 });
   }
   await page.keyboard.insertText('123456');
   await clickSideBarAllPageButton(page);

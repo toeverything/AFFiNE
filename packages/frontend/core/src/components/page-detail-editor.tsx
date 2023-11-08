@@ -25,10 +25,8 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useLocation } from 'react-router-dom';
 
 import { pageSettingFamily } from '../atoms';
 import { fontStyleOptions } from '../atoms/settings';
@@ -40,15 +38,7 @@ import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
 
-function useRouterHash() {
-  return useLocation().hash.substring(1);
-}
-
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
-
-interface BlockElement extends Element {
-  path: string[];
-}
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;
@@ -90,8 +80,6 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-  const blockId = useRouterHash();
-
   const setEditorMode = useCallback(
     (mode: 'page' | 'edgeless') => {
       if (mode === 'edgeless') {
@@ -102,25 +90,6 @@ const EditorWrapper = memo(function EditorWrapper({
     },
     [switchToEdgelessMode, switchToPageMode, pageId]
   );
-
-  //hack: scroll to block when jumping to block
-  const [elementPath, setElementPath] = useState<string[]>([]);
-  const blockElement = document.querySelector(
-    `[data-block-id="${blockId}"]`
-  ) as BlockElement | null;
-
-  useEffect(() => {
-    if (blockElement) {
-      setTimeout(() => {
-        blockElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center',
-        });
-        setElementPath(blockElement.path);
-      }, 0);
-    }
-  }, [blockElement]);
 
   return (
     <>
@@ -135,7 +104,6 @@ const EditorWrapper = memo(function EditorWrapper({
           } as CSSProperties
         }
         mode={isPublic ? 'page' : currentMode}
-        selectPath={elementPath}
         page={page}
         onModeChange={setEditorMode}
         setBlockHub={setBlockHub}

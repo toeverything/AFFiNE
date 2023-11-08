@@ -5,15 +5,31 @@ import type { Page } from '@blocksuite/store';
 import { Skeleton } from '@mui/material';
 import { use } from 'foxact/use';
 import type { CSSProperties, ReactElement } from 'react';
-import { memo, Suspense, useCallback, useEffect, useRef } from 'react';
+import {
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useLocation } from 'react-router-dom';
 
 import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
 import { getPresets } from './preset';
+
+function useRouterHash() {
+  return useLocation().hash.substring(1);
+}
+
+interface BlockElement extends Element {
+  path: string[];
+}
 
 export type EditorProps = {
   page: Page;
@@ -24,7 +40,6 @@ export type EditorProps = {
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
-  selectPath?: string[];
 };
 
 export type ErrorBoundaryProps = {
@@ -39,7 +54,7 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
-  const { onLoad, onModeChange, page, mode, style, selectPath } = props;
+  const { onLoad, onModeChange, page, mode, style } = props;
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
@@ -129,20 +144,41 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     };
   }, [editor, page.awarenessStore, page.meta.trash, setBlockHub]);
 
-  //hack: select block when jumping to block
-  useEffect(() => {
-    if (selectPath?.length) {
-      const selectManager = editor.root.value?.selection;
-      if (selectManager) {
-        setTimeout(() => {
-          const selection = selectManager.getInstance('block', {
-            path: selectPath,
-          });
-          selectManager.set([selection]);
-        }, 0);
-      }
+  //hack: scroll to block and select it when jumping to block
+  // {
+  const [selectPath, setSelectPath] = useState<string[]>([]);
+  const [blockElement, setBlockElement] = useState<BlockElement | null>(null);
+  const blockId = useRouterHash();
+
+  if (!blockElement && blockId) {
+    const element = document.querySelector(
+      `[data-block-id="${blockId}"]`
+    ) as BlockElement | null;
+
+    if (element) {
+      setBlockElement(element);
     }
-  }, [editor, selectPath]);
+  }
+
+  useEffect(() => {
+    if (blockElement) {
+      blockElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+      setSelectPath(blockElement.path);
+    }
+    const selectManager = editor.root.value?.selection;
+    if (!selectPath.length || !selectManager) {
+      return;
+    }
+    const selection = selectManager.getInstance('block', {
+      path: selectPath,
+    });
+    requestAnimationFrame(() => selectManager.set([selection]));
+  }, [blockElement, editor, selectPath]);
+  // }
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   const className = `editor-wrapper ${editor.mode}-mode ${
