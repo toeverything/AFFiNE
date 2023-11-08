@@ -9,5 +9,5 @@
     "@types/debug": "^4.1.9",
     "vitest": "0.34.6"
   },
-  "version": "0.10.0-canary.13"
+  "version": "0.10.0-canary.14"
 }
