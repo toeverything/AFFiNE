@@ -19,19 +19,15 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
           ? `/static/${key}`
           : `/api/workspaces/${workspaceId}/blobs/${key}`;
 
-        const buffer = await fetchWithTraceReport(
+        return fetchWithTraceReport(
           runtimeConfig.serverUrlPrefix + suffix
-        ).then(res => {
+        ).then(async res => {
           if (!res.ok) {
             // status not in the range 200-299
             return null;
           }
-          return res.arrayBuffer();
+          return bufferToBlob(await res.arrayBuffer());
         });
-        if (buffer) {
-          return bufferToBlob(buffer);
-        }
-        return null;
       },
       set: async (key, value) => {
         const {
