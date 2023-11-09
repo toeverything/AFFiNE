@@ -286,7 +286,7 @@ test('select two pages and delete', async ({ page }) => {
   expect(await getPagesCount(page)).toBe(pageCount - 2);
 });
 
-test.only('select a group of items by clicking "Select All" in group header', async ({
+test('select a group of items by clicking "Select All" in group header', async ({
   page,
 }) => {
   await openHomePage(page);
