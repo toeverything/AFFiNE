@@ -136,12 +136,12 @@ export class AuthResolver {
     @Args('newPassword') newPassword: string
   ) {
     // we only create user account after user sign in with email link
-    const email = await this.session.get(token);
-    if (!email || email !== user.email || !user.emailVerified) {
+    const id = await this.session.get(token);
+    if (!id || id !== user.id || !user.emailVerified) {
       throw new ForbiddenException('Invalid token');
     }
 
-    await this.auth.changePassword(email, newPassword);
+    await this.auth.changePassword(user.email, newPassword);
     await this.session.delete(token);
 
     return user;
