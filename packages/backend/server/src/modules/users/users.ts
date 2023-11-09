@@ -4,7 +4,6 @@ import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { getStorageQuota } from './gates';
 import { NewFeaturesKind } from './types';
-import { isStaff } from './utils';
 
 @Injectable()
 export class UsersService {
@@ -13,12 +12,8 @@ export class UsersService {
     private readonly config: Config
   ) {}
 
-  async canEarlyAccess(email: string) {
-    if (this.config.featureFlags.earlyAccessPreview && !isStaff(email)) {
-      return this.isEarlyAccessUser(email);
-    } else {
-      return true;
-    }
+  async canEarlyAccess(_email: string) {
+    return true;
   }
 
   async isEarlyAccessUser(email: string) {
