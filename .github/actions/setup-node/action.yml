@@ -64,6 +64,7 @@ runs:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         SENTRYCLI_SKIP_DOWNLOAD: '1'
+        DEBUG: '*'
 
     - name: yarn install (try again)
       if: ${{ steps.install.outcome == 'failure' }}
@@ -74,6 +75,7 @@ runs:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         SENTRYCLI_SKIP_DOWNLOAD: '1'
+        DEBUG: '*'
 
     - name: Get installed Playwright version
       id: playwright-version

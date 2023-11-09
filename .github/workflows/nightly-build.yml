@@ -86,11 +86,11 @@ jobs:
       # For windows, we need a separate approach
       matrix:
         spec:
-          - runner: macos-latest
+          - runner: macos-latest-xlarge
             platform: darwin
             arch: x64
             target: x86_64-apple-darwin
-          - runner: macos-latest
+          - runner: macos-latest-xlarge
             platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
