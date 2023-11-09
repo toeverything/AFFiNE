@@ -3,7 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import { Modal, type ModalProps } from '@toeverything/components/modal';
 import { debounce } from 'lodash-es';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { AccountSetting } from './account-setting';
@@ -41,7 +41,7 @@ export const SettingModal = ({
   const modalContentRef = useRef<HTMLDivElement>(null);
   const modalContentWrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!modalProps.open) return;
     let animationFrameId: number;
     const onResize = debounce(() => {
@@ -137,7 +137,7 @@ export const SettingModal = ({
               <AccountSetting />
             ) : null}
           </div>
-          <div className="footer">
+          <div className={style.footer}>
             <a
               href="https://community.affine.pro/home"
               target="_blank"
@@ -145,7 +145,7 @@ export const SettingModal = ({
               className={style.suggestionLink}
             >
               <span className={style.suggestionLinkIcon}>
-                <ContactWithUsIcon />
+                <ContactWithUsIcon width="16" height="16" />
               </span>
               {t['com.affine.settings.suggestion']()}
             </a>

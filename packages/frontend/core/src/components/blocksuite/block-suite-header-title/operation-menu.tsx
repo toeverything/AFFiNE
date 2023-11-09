@@ -218,17 +218,15 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     return null;
   }
   return (
-    <>
-      <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>
-        <Menu
-          items={EditMenu}
-          contentOptions={{
-            align: 'center',
-          }}
-        >
-          <HeaderDropDownButton />
-        </Menu>
-      </FlexWrapper>
-    </>
+    <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>
+      <Menu
+        items={EditMenu}
+        contentOptions={{
+          align: 'center',
+        }}
+      >
+        <HeaderDropDownButton />
+      </Menu>
+    </FlexWrapper>
   );
 };

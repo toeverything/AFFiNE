@@ -2,6 +2,7 @@ import { registerEnumType } from '@nestjs/graphql';
 
 export enum DocVariant {
   Workspace = 'workspace',
+  Page = 'page',
   Space = 'space',
   Settings = 'settings',
   Unknown = 'unknown',

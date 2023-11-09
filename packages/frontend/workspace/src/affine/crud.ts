@@ -59,14 +59,6 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       WorkspaceFlavour.AFFINE_CLOUD
     );
 
-    const datasource = createAffineDataSource(
-      createWorkspace.id,
-      newBlockSuiteWorkspace.doc,
-      newBlockSuiteWorkspace.awarenessStore.awareness
-    );
-
-    await syncDataSourceFromDoc(upstreamWorkspace.doc, datasource);
-
     Y.applyUpdate(
       newBlockSuiteWorkspace.doc,
       Y.encodeStateAsUpdate(upstreamWorkspace.doc)
@@ -84,6 +76,16 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
         });
       })
     );
+
+    const datasource = createAffineDataSource(
+      createWorkspace.id,
+      newBlockSuiteWorkspace.doc,
+      newBlockSuiteWorkspace.awarenessStore.awareness
+    );
+
+    const disconnect = datasource.onDocUpdate(() => {});
+    await syncDataSourceFromDoc(upstreamWorkspace.doc, datasource);
+    disconnect();
 
     const provider = createIndexedDBProvider(
       newBlockSuiteWorkspace.doc,

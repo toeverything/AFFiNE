@@ -23,6 +23,7 @@ export const createFirstFilter = async (page: Page, name: string) => {
   await page
     .locator('[data-testid="variable-select-item"]', { hasText: name })
     .click();
+  await page.keyboard.press('Escape');
 };
 
 export const checkFilterName = async (page: Page, name: string) => {
@@ -38,10 +39,17 @@ const dateFormat = (date: Date) => {
   return `${month} ${day}`;
 };
 
-export const checkPagesCount = async (page: Page, count: number) => {
-  expect(
-    (await page.locator('[data-testid="page-list-item"]').all()).length
-  ).toBe(count);
+// fixme: there could be multiple page lists in the Page
+export const getPagesCount = async (page: Page) => {
+  const locator = page.locator('[data-testid="virtualized-page-list"]');
+  const pageListCount = await locator.count();
+
+  if (pageListCount === 0) {
+    return 0;
+  }
+
+  const count = await locator.getAttribute('data-total-count');
+  return count ? parseInt(count) : 0;
 };
 
 export const checkDatePicker = async (page: Page, date: Date) => {
@@ -205,4 +213,5 @@ export const changeFilter = async (page: Page, to: string) => {
 export async function selectTag(page: Page, name: string | RegExp) {
   await page.getByTestId('filter-arg').click();
   await page.getByTestId(`multi-select-${name}`).click();
+  await page.keyboard.press('Escape', { delay: 100 });
 }

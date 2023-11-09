@@ -1,10 +1,10 @@
-import { Logger } from '@nestjs/common';
+import { applyDecorators, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  SubscribeMessage,
+  SubscribeMessage as RawSubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
@@ -12,12 +12,40 @@ import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import { Metrics } from '../../../metrics/metrics';
+import { CallCounter, CallTimer } from '../../../metrics/utils';
 import { DocID } from '../../../utils/doc';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { UserType } from '../../users';
 import { PermissionService } from '../../workspaces/permission';
 import { Permission } from '../../workspaces/types';
+import {
+  AccessDeniedError,
+  DocNotFoundError,
+  EventError,
+  InternalError,
+  NotInWorkspaceError,
+  WorkspaceNotFoundError,
+} from './error';
+
+const SubscribeMessage = (event: string) =>
+  applyDecorators(
+    CallCounter('socket_io_counter', { event }),
+    CallTimer('socket_io_timer', { event }),
+    RawSubscribeMessage(event)
+  );
+
+type EventResponse<Data = any> =
+  | {
+      error: EventError;
+    }
+  | (Data extends never
+      ? {
+          data?: never;
+        }
+      : {
+          data: Data;
+        });
 
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
@@ -52,38 +80,50 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @CurrentUser() user: UserType,
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
-  ) {
-    this.metric.socketIOEventCounter(1, { event: 'client-handshake' });
-    const endTimer = this.metric.socketIOEventTimer({
-      event: 'client-handshake',
-    });
-
-    const canWrite = await this.permissions.tryCheck(
+  ): Promise<EventResponse<{ clientId: string }>> {
+    const canWrite = await this.permissions.tryCheckWorkspace(
       workspaceId,
       user.id,
       Permission.Write
     );
-    if (canWrite) await client.join(workspaceId);
 
-    endTimer();
-    return canWrite;
+    if (canWrite) {
+      await client.join(workspaceId);
+      return {
+        data: {
+          clientId: client.id,
+        },
+      };
+    } else {
+      return {
+        error: new AccessDeniedError(workspaceId),
+      };
+    }
   }
 
   @SubscribeMessage('client-leave')
   async handleClientLeave(
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
-  ) {
-    this.metric.socketIOEventCounter(1, { event: 'client-leave' });
-    const endTimer = this.metric.socketIOEventTimer({
-      event: 'client-leave',
-    });
-    await client.leave(workspaceId);
-    endTimer();
+  ): Promise<EventResponse> {
+    if (client.rooms.has(workspaceId)) {
+      await client.leave(workspaceId);
+      return {};
+    } else {
+      return {
+        error: new NotInWorkspaceError(workspaceId),
+      };
+    }
   }
 
+  /**
+   * This is the old version of the `client-update` event without any data protocol.
+   * It only exists for backwards compatibility to adapt older clients.
+   *
+   * @deprecated
+   */
   @SubscribeMessage('client-update')
-  async handleClientUpdate(
+  async handleClientUpdateV1(
     @MessageBody()
     {
       workspaceId,
@@ -96,31 +136,37 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
     @ConnectedSocket() client: Socket
   ) {
-    this.metric.socketIOEventCounter(1, { event: 'client-update' });
-    const endTimer = this.metric.socketIOEventTimer({ event: 'client-update' });
-
     if (!client.rooms.has(workspaceId)) {
       this.logger.verbose(
         `Client ${client.id} tried to push update to workspace ${workspaceId} without joining it first`
       );
-      endTimer();
       return;
     }
 
     const docId = new DocID(guid, workspaceId);
+
     client
       .to(docId.workspace)
       .emit('server-update', { workspaceId, guid, update });
 
-    const buf = Buffer.from(update, 'base64');
+    // broadcast to all clients with newer version that only listen to `server-updates`
+    client
+      .to(docId.workspace)
+      .emit('server-updates', { workspaceId, guid, updates: [update] });
 
+    const buf = Buffer.from(update, 'base64');
     await this.docManager.push(docId.workspace, docId.guid, buf);
-    endTimer();
   }
 
+  /**
+   * This is the old version of the `doc-load` event without any data protocol.
+   * It only exists for backwards compatibility to adapt older clients.
+   *
+   * @deprecated
+   */
   @Auth()
   @SubscribeMessage('doc-load')
-  async loadDoc(
+  async loadDocV1(
     @ConnectedSocket() client: Socket,
     @CurrentUser() user: UserType,
     @MessageBody()
@@ -134,12 +180,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       stateVector?: string;
     }
   ): Promise<{ missing: string; state?: string } | false> {
-    this.metric.socketIOEventCounter(1, { event: 'doc-load' });
-    const endTimer = this.metric.socketIOEventTimer({ event: 'doc-load' });
     if (!client.rooms.has(workspaceId)) {
-      const canRead = await this.permissions.tryCheck(workspaceId, user.id);
+      const canRead = await this.permissions.tryCheckWorkspace(
+        workspaceId,
+        user.id
+      );
       if (!canRead) {
-        endTimer();
         return false;
       }
     }
@@ -148,7 +194,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const doc = await this.docManager.get(docId.workspace, docId.guid);
 
     if (!doc) {
-      endTimer();
       return false;
     }
 
@@ -160,10 +205,105 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ).toString('base64');
     const state = Buffer.from(encodeStateVector(doc)).toString('base64');
 
-    endTimer();
     return {
       missing,
       state,
+    };
+  }
+
+  @SubscribeMessage('client-update-v2')
+  async handleClientUpdateV2(
+    @MessageBody()
+    {
+      workspaceId,
+      guid,
+      updates,
+    }: {
+      workspaceId: string;
+      guid: string;
+      updates: string[];
+    },
+    @ConnectedSocket() client: Socket
+  ): Promise<EventResponse<{ accepted: true }>> {
+    if (!client.rooms.has(workspaceId)) {
+      return {
+        error: new NotInWorkspaceError(workspaceId),
+      };
+    }
+
+    try {
+      const docId = new DocID(guid, workspaceId);
+      client
+        .to(docId.workspace)
+        .emit('server-updates', { workspaceId, guid, updates });
+
+      const buffers = updates.map(update => Buffer.from(update, 'base64'));
+
+      await this.docManager.batchPush(docId.workspace, docId.guid, buffers);
+      return {
+        data: {
+          accepted: true,
+        },
+      };
+    } catch (e) {
+      return {
+        error: new InternalError(e as Error),
+      };
+    }
+  }
+
+  @Auth()
+  @SubscribeMessage('doc-load-v2')
+  async loadDocV2(
+    @ConnectedSocket() client: Socket,
+    @CurrentUser() user: UserType,
+    @MessageBody()
+    {
+      workspaceId,
+      guid,
+      stateVector,
+    }: {
+      workspaceId: string;
+      guid: string;
+      stateVector?: string;
+    }
+  ): Promise<EventResponse<{ missing: string; state?: string }>> {
+    if (!client.rooms.has(workspaceId)) {
+      const canRead = await this.permissions.tryCheckWorkspace(
+        workspaceId,
+        user.id
+      );
+      if (!canRead) {
+        return {
+          error: new AccessDeniedError(workspaceId),
+        };
+      }
+    }
+
+    const docId = new DocID(guid, workspaceId);
+    const doc = await this.docManager.get(docId.workspace, docId.guid);
+
+    if (!doc) {
+      return {
+        error: docId.isWorkspace
+          ? new WorkspaceNotFoundError(workspaceId)
+          : new DocNotFoundError(workspaceId, docId.guid),
+      };
+    }
+
+    const missing = Buffer.from(
+      encodeStateAsUpdate(
+        doc,
+        stateVector ? Buffer.from(stateVector, 'base64') : undefined
+      )
+    ).toString('base64');
+    const state = Buffer.from(encodeStateVector(doc)).toString('base64');
+
+    return {
+      data: {
+        missing,
+        state,
+      },
     };
   }
 
@@ -171,42 +311,35 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleInitAwareness(
     @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
-  ) {
-    this.metric.socketIOEventCounter(1, { event: 'awareness-init' });
-    const endTimer = this.metric.socketIOEventTimer({
-      event: 'init-awareness',
-    });
+  ): Promise<EventResponse<{ clientId: string }>> {
     if (client.rooms.has(workspaceId)) {
       client.to(workspaceId).emit('new-client-awareness-init');
+      return {
+        data: {
+          clientId: client.id,
+        },
+      };
     } else {
-      this.logger.verbose(
-        `Client ${client.id} tried to init awareness for workspace ${workspaceId} without joining it first`
-      );
+      return {
+        error: new NotInWorkspaceError(workspaceId),
+      };
     }
-    endTimer();
   }
 
   @SubscribeMessage('awareness-update')
   async handleHelpGatheringAwareness(
     @MessageBody() message: { workspaceId: string; awarenessUpdate: string },
     @ConnectedSocket() client: Socket
-  ) {
-    this.metric.socketIOEventCounter(1, { event: 'awareness-update' });
-    const endTimer = this.metric.socketIOEventTimer({
-      event: 'awareness-update',
-    });
-
+  ): Promise<EventResponse> {
     if (client.rooms.has(message.workspaceId)) {
-      client.to(message.workspaceId).emit('server-awareness-broadcast', {
-        ...message,
-      });
+      client
+        .to(message.workspaceId)
+        .emit('server-awareness-broadcast', message);
+      return {};
     } else {
-      this.logger.verbose(
-        `Client ${client.id} tried to update awareness for workspace ${message.workspaceId} without joining it first`
-      );
+      return {
+        error: new NotInWorkspaceError(message.workspaceId),
+      };
     }
-
-    endTimer();
-    return 'ack';
   }
 }

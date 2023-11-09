@@ -2,15 +2,22 @@ import { DEFAULT_SORT_KEY } from '@affine/env/constant';
 import type { PageMeta } from '@blocksuite/store';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import { isEqual } from 'lodash-es';
+import { createIsolation } from 'jotai-scope';
 
 import { pagesToPageGroups } from './page-group';
-import type { PageListProps, PageMetaRecord } from './types';
+import type {
+  PageListProps,
+  PageMetaRecord,
+  VirtualizedPageListProps,
+} from './types';
+import { shallowEqual } from './utils';
 
 // for ease of use in the component tree
 // note: must use selectAtom to access this atom for efficiency
 // @ts-expect-error the error is expected but we will assume the default value is always there by using useHydrateAtoms
-export const pageListPropsAtom = atom<PageListProps>();
+export const pageListPropsAtom = atom<
+  PageListProps & Partial<VirtualizedPageListProps>
+>();
 
 // whether or not the table is in selection mode (showing selection checkbox & selection floating bar)
 const selectionActiveAtom = atom(false);
@@ -27,7 +34,7 @@ export const selectionStateAtom = atom(
           onSelectedPageIdsChange,
         };
       },
-      isEqual
+      shallowEqual
     );
     const baseState = get(baseAtom);
     const selectionActive =
@@ -44,22 +51,27 @@ export const selectionStateAtom = atom(
   }
 );
 
+// id -> isCollapsed
+// maybe reset on page on unmount?
+export const pageGroupCollapseStateAtom = atom<Record<string, boolean>>({});
+
 // get handlers from pageListPropsAtom
 export const pageListHandlersAtom = selectAtom(
   pageListPropsAtom,
   props => {
-    const { onSelectedPageIdsChange, onDragStart, onDragEnd } = props;
-
+    const { onSelectedPageIdsChange } = props;
     return {
       onSelectedPageIdsChange,
-      onDragStart,
-      onDragEnd,
     };
   },
-  isEqual
+  shallowEqual
 );
 
-export const pagesAtom = selectAtom(pageListPropsAtom, props => props.pages);
+export const pagesAtom = selectAtom(
+  pageListPropsAtom,
+  props => props.pages,
+  shallowEqual
+);
 
 export const showOperationsAtom = selectAtom(
   pageListPropsAtom,
@@ -186,3 +198,10 @@ export const pageGroupsAtom = atom(get => {
   }
   return pagesToPageGroups(sorter.pages, groupBy);
 });
+
+export const {
+  Provider: PageListProvider,
+  useAtom,
+  useAtomValue,
+  useSetAtom,
+} = createIsolation();

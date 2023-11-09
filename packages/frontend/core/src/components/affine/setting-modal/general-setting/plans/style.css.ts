@@ -12,6 +12,13 @@ export const radioButtonDiscount = style({
   color: 'var(--affine-primary-color)',
   fontWeight: 400,
 });
+export const radioButtonText = style({
+  selectors: {
+    '&:first-letter': {
+      textTransform: 'uppercase',
+    },
+  },
+});
 
 export const planCardsWrapper = style({
   paddingRight: 'calc(var(--setting-modal-gap-x) + 30px)',
@@ -21,6 +28,7 @@ export const planCardsWrapper = style({
 });
 
 export const planCard = style({
+  backgroundColor: 'var(--affine-background-primary-color)',
   minHeight: '426px',
   minWidth: '258px',
   borderRadius: '16px',
@@ -146,4 +154,13 @@ export const downgradeFooter = style({
 
 export const textEmphasis = style({
   color: 'var(--affine-text-emphasis-color)',
+});
+
+export const errorTip = style({
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: '12px',
+  lineHeight: '20px',
+});
+export const errorTipRetry = style({
+  textDecoration: 'underline',
 });

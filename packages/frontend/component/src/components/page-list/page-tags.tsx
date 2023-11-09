@@ -29,6 +29,10 @@ const tagColorMap = (color: string) => {
     'var(--affine-tag-yellow)': 'var(--affine-palette-line-yellow)',
     'var(--affine-tag-pink)': 'var(--affine-palette-line-magenta)',
     'var(--affine-tag-white)': 'var(--affine-palette-line-grey)',
+    'var(--affine-tag-gray)': 'var(--affine-palette-line-grey)',
+    'var(--affine-tag-orange)': 'var(--affine-palette-line-orange)',
+    'var(--affine-tag-purple)': 'var(--affine-palette-line-purple)',
+    'var(--affine-tag-green)': 'var(--affine-palette-line-green)',
   };
   return mapping[color] || color;
 };
@@ -109,7 +113,6 @@ export const PageTags = ({
         // @ts-expect-error it's fine
         '--hover-max-width': sanitizedWidthOnHover,
       }}
-      onClick={stopPropagation}
     >
       <div
         style={{
@@ -123,7 +126,12 @@ export const PageTags = ({
           {tagsNormal}
         </div>
         {maxItems && tags.length > maxItems ? (
-          <Menu items={tagsInPopover}>
+          <Menu
+            items={tagsInPopover}
+            contentOptions={{
+              onClick: stopPropagation,
+            }}
+          >
             <div className={styles.showMoreTag}>
               <MoreHorizontalIcon />
             </div>

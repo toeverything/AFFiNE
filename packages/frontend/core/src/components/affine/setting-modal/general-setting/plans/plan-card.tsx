@@ -3,11 +3,10 @@ import type {
   SubscriptionMutator,
 } from '@affine/core/hooks/use-subscription';
 import {
-  cancelSubscriptionMutation,
   checkoutMutation,
-  resumeSubscriptionMutation,
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
   updateSubscriptionMutation,
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
@@ -31,8 +30,9 @@ import {
 import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
+import { CancelAction, ResumeAction } from './actions';
 import { BulledListIcon } from './icons/bulled-list';
-import { ConfirmLoadingModal, DowngradeModal } from './modals';
+import { ConfirmLoadingModal } from './modals';
 import * as styles from './style.css';
 
 export interface FixedPrice {
@@ -93,7 +93,7 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
           t['com.affine.payment.benefit-2'](),
           t['com.affine.payment.benefit-3'](),
           t['com.affine.payment.benefit-4']({ capacity: '100GB' }),
-          t['com.affine.payment.benefit-5']({ capacity: '500M' }),
+          t['com.affine.payment.benefit-5']({ capacity: '100M' }),
           t['com.affine.payment.benefit-6']({ capacity: '10' }),
         ],
       },
@@ -130,14 +130,8 @@ export const PlanCard = (props: PlanCardProps) => {
   const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
-  const currentRecurring = subscription?.recurring;
 
-  const isCurrent =
-    loggedIn &&
-    detail.plan === currentPlan &&
-    (currentPlan === SubscriptionPlan.Free
-      ? true
-      : currentRecurring === recurring);
+  const isCurrent = loggedIn && detail.plan === currentPlan;
 
   return (
     <div
@@ -250,12 +244,15 @@ const ActionButton = ({
   const isFree = detail.plan === SubscriptionPlan.Free;
   const isCurrent =
     detail.plan === currentPlan &&
-    (isFree ? true : currentRecurring === recurring);
+    (isFree
+      ? true
+      : currentRecurring === recurring &&
+        subscription?.status === SubscriptionStatus.Active);
 
   // is current
   if (isCurrent) {
     return isCanceled ? (
-      <ResumeAction onSubscriptionUpdate={mutateAndNotify} />
+      <ResumeButton onSubscriptionUpdate={mutateAndNotify} />
     ) : (
       <CurrentPlan />
     );
@@ -301,45 +298,30 @@ const Downgrade = ({
 }) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
-  const { isMutating, trigger } = useMutation({
-    mutation: cancelSubscriptionMutation,
-  });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
-  const downgrade = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          onSubscriptionUpdate(data.cancelSubscription);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
 
   const tooltipContent = disabled
     ? t['com.affine.payment.downgraded-tooltip']()
     : null;
 
   return (
-    <>
+    <CancelAction
+      open={open}
+      onOpenChange={setOpen}
+      onSubscriptionUpdate={onSubscriptionUpdate}
+    >
       <Tooltip content={tooltipContent} rootOptions={{ delayDuration: 0 }}>
         <div className={styles.planAction}>
           <Button
             className={styles.planAction}
             type="primary"
             onClick={() => setOpen(true)}
-            disabled={disabled || isMutating}
-            loading={isMutating}
+            disabled={disabled}
           >
             {t['com.affine.payment.downgrade']()}
           </Button>
         </div>
       </Tooltip>
-      <DowngradeModal open={open} onCancel={downgrade} onOpenChange={setOpen} />
-    </>
+    </CancelAction>
   );
 };
 
@@ -374,7 +356,7 @@ const Upgrade = ({
   const newTabRef = useRef<Window | null>(null);
 
   // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
+  const idempotencyKey = useMemo(() => `${nanoid()}-${recurring}`, [recurring]);
 
   const onClose = useCallback(() => {
     newTabRef.current = null;
@@ -424,17 +406,15 @@ const Upgrade = ({
   }, [onClose]);
 
   return (
-    <>
-      <Button
-        className={styles.planAction}
-        type="primary"
-        onClick={upgrade}
-        disabled={isMutating}
-        loading={isMutating}
-      >
-        {t['com.affine.payment.upgrade']()}
-      </Button>
-    </>
+    <Button
+      className={styles.planAction}
+      type="primary"
+      onClick={upgrade}
+      disabled={isMutating}
+      loading={isMutating}
+    >
+      {t['com.affine.payment.upgrade']()}
+    </Button>
   );
 };
 
@@ -453,18 +433,19 @@ const ChangeRecurring = ({
 }) => {
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
+  // allow replay request on network error until component unmount or success
+  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const { isMutating, trigger } = useMutation({
     mutation: updateSubscriptionMutation,
   });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
 
   const change = useCallback(() => {
     trigger(
       { recurring: to, idempotencyKey },
       {
         onSuccess: data => {
+          // refresh idempotency key
+          setIdempotencyKey(nanoid());
           onSubscriptionUpdate(data.updateSubscriptionRecurring);
         },
       }
@@ -476,7 +457,11 @@ const ChangeRecurring = ({
       You are changing your <span className={styles.textEmphasis}>{from}</span>{' '}
       subscription to <span className={styles.textEmphasis}>{to}</span>{' '}
       subscription. This change will take effect in the next billing cycle, with
-      an effective date of <span className={styles.textEmphasis}>{due}</span>.
+      an effective date of{' '}
+      <span className={styles.textEmphasis}>
+        {new Date(due).toLocaleDateString()}
+      </span>
+      .
     </Trans>
   );
 
@@ -525,7 +510,7 @@ const SignUpAction = ({ children }: PropsWithChildren) => {
   );
 };
 
-const ResumeAction = ({
+const ResumeButton = ({
   onSubscriptionUpdate,
 }: {
   onSubscriptionUpdate: SubscriptionMutator;
@@ -533,46 +518,23 @@ const ResumeAction = ({
   const t = useAFFiNEI18N();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const { isMutating, trigger } = useMutation({
-    mutation: resumeSubscriptionMutation,
-  });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
-  const resume = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          onSubscriptionUpdate(data.resumeSubscription);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
 
   return (
-    <>
+    <ResumeAction
+      open={open}
+      onOpenChange={setOpen}
+      onSubscriptionUpdate={onSubscriptionUpdate}
+    >
       <Button
         className={styles.planAction}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={() => setOpen(true)}
-        loading={isMutating}
-        disabled={isMutating}
       >
         {hovered
           ? t['com.affine.payment.resume-renewal']()
           : t['com.affine.payment.current-plan']()}
       </Button>
-
-      <ConfirmLoadingModal
-        type={'resume'}
-        open={open}
-        onConfirm={resume}
-        onOpenChange={setOpen}
-        loading={isMutating}
-      />
-    </>
+    </ResumeAction>
   );
 };

@@ -359,6 +359,19 @@ query getWorkspaces {
 }`,
 };
 
+export const getInvoicesCountQuery = {
+  id: 'getInvoicesCountQuery' as const,
+  operationName: 'getInvoicesCount',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query getInvoicesCount {
+  currentUser {
+    invoiceCount
+  }
+}`,
+};
+
 export const invoicesQuery = {
   id: 'invoicesQuery' as const,
   operationName: 'invoices',
@@ -650,16 +663,5 @@ mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $send
     inviteId: $inviteId
     sendAcceptMail: $sendAcceptMail
   )
-}`,
-};
-
-export const acceptInviteByWorkspaceIdMutation = {
-  id: 'acceptInviteByWorkspaceIdMutation' as const,
-  operationName: 'acceptInviteByWorkspaceId',
-  definitionName: 'acceptInvite',
-  containsFile: false,
-  query: `
-mutation acceptInviteByWorkspaceId($workspaceId: String!) {
-  acceptInvite(workspaceId: $workspaceId)
 }`,
 };

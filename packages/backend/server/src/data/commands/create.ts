@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Logger } from '@nestjs/common';
-import { camelCase, snakeCase, upperFirst } from 'lodash-es';
+import { camelCase, kebabCase, upperFirst } from 'lodash-es';
 import {
   Command,
   CommandRunner,
@@ -45,7 +45,7 @@ export class CreateCommand extends CommandRunner {
 
     const timestamp = Date.now();
     const content = this.createScript(upperFirst(camelCase(name)) + timestamp);
-    const fileName = `${timestamp}-${snakeCase(name)}.ts`;
+    const fileName = `${timestamp}-${kebabCase(name)}.ts`;
     const filePath = join(
       fileURLToPath(import.meta.url),
       '../../migrations',
@@ -54,6 +54,7 @@ export class CreateCommand extends CommandRunner {
 
     this.logger.log(`Creating ${fileName}...`);
     writeFileSync(filePath, content);
+    this.logger.log('Migration file created at', filePath);
     this.logger.log('Done');
   }
 

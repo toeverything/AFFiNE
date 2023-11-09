@@ -92,14 +92,12 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
         throw new PageNotFoundError(workspace, currentPageId);
       }
       return (
-        <>
-          <PageDetailEditor
-            pageId={currentPageId}
-            onInit={useCallback(async page => initEmptyPage(page), [])}
-            onLoad={onLoadEditor}
-            workspace={workspace}
-          />
-        </>
+        <PageDetailEditor
+          pageId={currentPageId}
+          onInit={useCallback(async page => initEmptyPage(page), [])}
+          onLoad={onLoadEditor}
+          workspace={workspace}
+        />
       );
     },
     NewSettingsDetail: ({

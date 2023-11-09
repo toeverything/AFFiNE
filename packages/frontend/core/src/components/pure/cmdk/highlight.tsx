@@ -1,13 +1,7 @@
-import { escapeRegExp } from 'lodash-es';
 import { memo } from 'react';
 
-import {
-  highlightContainer,
-  highlightKeyword,
-  highlightText,
-  labelContent,
-  labelTitle,
-} from './highlight.css';
+import { useHighlight } from '../../../hooks/affine/use-highlight';
+import * as styles from './highlight.css';
 
 type SearchResultLabel = {
   title: string;
@@ -28,33 +22,23 @@ export const Highlight = memo(function Highlight({
   text = '',
   highlight = '',
 }: HighlightProps) {
-  //Regex is used to ignore case
-  const regex = highlight.trim()
-    ? new RegExp(`(${escapeRegExp(highlight)})`, 'ig')
-    : null;
+  // Use regular expression to replace all line breaks and carriage returns in the text
+  const cleanedText = text.replace(/\r?\n|\r/g, '');
 
-  if (!regex) {
-    return <span>{text}</span>;
-  }
-  const parts = text.split(regex);
+  const highlights = useHighlight(cleanedText, highlight.toLowerCase());
 
   return (
-    <div className={highlightContainer}>
-      {parts.map((part, i) => {
-        if (regex.test(part)) {
-          return (
-            <span key={i} className={highlightKeyword}>
-              {part}
-            </span>
-          );
-        } else {
-          return (
-            <span key={i} className={highlightText}>
-              {part}
-            </span>
-          );
-        }
-      })}
+    <div className={styles.highlightContainer}>
+      {highlights.map((part, i) => (
+        <span
+          key={i}
+          className={
+            part.highlight ? styles.highlightKeyword : styles.highlightText
+          }
+        >
+          {part.text}
+        </span>
+      ))}
     </div>
   );
 });
@@ -65,11 +49,11 @@ export const HighlightLabel = memo(function HighlightLabel({
 }: HighlightLabelProps) {
   return (
     <div>
-      <div className={labelTitle}>
+      <div className={styles.labelTitle}>
         <Highlight text={label.title} highlight={highlight} />
       </div>
       {label.subTitle ? (
-        <div className={labelContent}>
+        <div className={styles.labelContent}>
           <Highlight text={label.subTitle} highlight={highlight} />
         </div>
       ) : null}

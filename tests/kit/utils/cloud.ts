@@ -79,10 +79,9 @@ export async function addUserToWorkspace(
     if (workspace == null) {
       throw new Error(`workspace ${workspaceId} not found`);
     }
-    await client.userWorkspacePermission.create({
+    await client.workspaceUserPermission.create({
       data: {
         workspaceId: workspace.id,
-        subPageId: null,
         userId,
         accepted: true,
         type: permission,

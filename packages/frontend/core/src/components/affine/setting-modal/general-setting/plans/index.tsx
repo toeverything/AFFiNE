@@ -10,7 +10,9 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import type { FallbackProps } from 'react-error-boundary';
 
+import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { PlanLayout } from './layout';
@@ -51,10 +53,9 @@ const Settings = () => {
     if (detail?.type === 'fixed') {
       detail.price = (price.amount / 100).toFixed(2);
       detail.yearlyPrice = (price.yearlyAmount / 100 / 12).toFixed(2);
-      detail.discount = (
-        (1 - price.yearlyAmount / 12 / price.amount) *
-        100
-      ).toFixed(2);
+      detail.discount = Math.floor(
+        (1 - price.yearlyAmount / 12 / price.amount) * 100
+      ).toString();
     }
   });
 
@@ -114,11 +115,10 @@ const Settings = () => {
           i18nKey="com.affine.payment.subtitle-active"
           values={{ currentPlan }}
         >
-          You are current on the {{ currentPlan }} plan. If you have any
+          You are currently on the {{ currentPlan }} plan. If you have any
           questions, please contact our&nbsp;
           <a
-            href="#"
-            target="_blank"
+            href="mailto:support@toeverything.info"
             style={{ color: 'var(--affine-link-color)' }}
           >
             customer support
@@ -139,7 +139,9 @@ const Settings = () => {
     >
       {Object.values(SubscriptionRecurring).map(recurring => (
         <RadioButton key={recurring} value={recurring}>
-          {getRecurringLabel({ recurring, t })}
+          <span className={styles.radioButtonText}>
+            {getRecurringLabel({ recurring, t })}
+          </span>
           {recurring === SubscriptionRecurring.Yearly && yearlyDiscount && (
             <span className={styles.radioButtonDiscount}>
               {t['com.affine.payment.discount-amount']({
@@ -162,16 +164,19 @@ const Settings = () => {
             onNotify={({ detail, recurring }) => {
               pushNotification({
                 type: 'success',
+                theme: 'default',
                 title: t['com.affine.payment.updated-notify-title'](),
-                message: t['com.affine.payment.updated-notify-msg']({
-                  plan:
-                    detail.plan === SubscriptionPlan.Free
-                      ? SubscriptionPlan.Free
-                      : getRecurringLabel({
+                message:
+                  detail.plan === SubscriptionPlan.Free
+                    ? t[
+                        'com.affine.payment.updated-notify-msg.cancel-subscription'
+                      ]()
+                    : t['com.affine.payment.updated-notify-msg']({
+                        plan: getRecurringLabel({
                           recurring: recurring as SubscriptionRecurring,
                           t,
                         }),
-                }),
+                      }),
               });
             }}
             {...{ detail, subscription, recurring }}
@@ -188,9 +193,30 @@ const Settings = () => {
 
 export const AFFiNECloudPlans = () => {
   return (
-    // TODO: Error Boundary
-    <Suspense fallback={<PlansSkeleton />}>
-      <Settings />
-    </Suspense>
+    <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
+      <Suspense fallback={<PlansSkeleton />}>
+        <Settings />
+      </Suspense>
+    </SWRErrorBoundary>
   );
+};
+
+const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
+  const t = useAFFiNEI18N();
+
+  const title = t['com.affine.payment.title']();
+  const subtitle = '';
+  const tabs = '';
+  const footer = '';
+
+  const scroll = (
+    <div className={styles.errorTip}>
+      <span>{t['com.affine.payment.plans-error-tip']()}</span>
+      <a onClick={resetErrorBoundary} className={styles.errorTipRetry}>
+        {t['com.affine.payment.plans-error-retry']()}
+      </a>
+    </div>
+  );
+
+  return <PlanLayout {...{ title, subtitle, tabs, scroll, footer }} />;
 };

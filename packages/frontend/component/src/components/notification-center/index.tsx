@@ -7,7 +7,7 @@ import * as Toast from '@radix-ui/react-toast';
 import { IconButton } from '@toeverything/components/button';
 import clsx from 'clsx';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import type { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 import {
   useCallback,
   useEffect,
@@ -17,6 +17,7 @@ import {
   useState,
 } from 'react';
 
+import { SuccessIcon } from './icons';
 import * as styles from './index.css';
 import type { Notification } from './index.jotai';
 import {
@@ -47,25 +48,29 @@ const typeColorMap = {
     light: styles.lightInfoStyle,
     dark: styles.darkInfoStyle,
     default: '',
+    icon: <InformationFillDuotoneIcon />,
   },
   success: {
     light: styles.lightSuccessStyle,
     dark: styles.darkSuccessStyle,
     default: '',
+    icon: <SuccessIcon />,
   },
   warning: {
     light: styles.lightWarningStyle,
     dark: styles.darkWarningStyle,
     default: '',
+    icon: <InformationFillDuotoneIcon />,
   },
   error: {
     light: styles.lightErrorStyle,
     dark: styles.darkErrorStyle,
     default: '',
+    icon: <InformationFillDuotoneIcon />,
   },
 };
 
-function NotificationCard(props: NotificationCardProps): ReactElement {
+function NotificationCard(props: NotificationCardProps): ReactNode {
   const removeNotification = useSetAtom(removeNotificationAtom);
   const { notification, notifications, setHeights, heights, index } = props;
 
@@ -265,7 +270,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
       >
         {notification.multimedia ? (
           <div className={styles.notificationMultimediaStyle}>
-            <>{notification.multimedia}</>
+            {notification.multimedia}
             <IconButton className={styles.closeButtonWithMediaStyle}>
               <CloseIcon onClick={onClickRemove} />
             </IconButton>
@@ -286,7 +291,9 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
               [styles.lightInfoIconStyle]: notification.theme === 'light',
             })}
           >
-            <InformationFillDuotoneIcon />
+            {typeColorMap[notification.type]?.icon ?? (
+              <InformationFillDuotoneIcon />
+            )}
           </div>
           <div className={styles.notificationTitleContactStyle}>
             {notification.title}
@@ -366,7 +373,7 @@ function NotificationCard(props: NotificationCardProps): ReactElement {
   );
 }
 
-export function NotificationCenter(): ReactElement {
+export function NotificationCenter(): ReactNode {
   const notifications = useAtomValue(notificationsAtom);
   const [expand, setExpand] = useAtom(expandNotificationCenterAtom);
 
@@ -383,7 +390,7 @@ export function NotificationCenter(): ReactElement {
     }
   }, [notifications, setExpand]);
 
-  if (!notifications.length) return <></>;
+  if (!notifications.length) return null;
   return (
     <Toast.Provider swipeDirection="right">
       {notifications.map((notification, index) =>

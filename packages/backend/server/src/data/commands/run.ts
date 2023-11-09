@@ -18,7 +18,9 @@ async function collectMigrations(): Promise<Migration[]> {
   const folder = join(fileURLToPath(import.meta.url), '../../migrations');
 
   const migrationFiles = readdirSync(folder)
-    .filter(desc => desc.endsWith('.ts') && desc !== 'index.ts')
+    .filter(desc =>
+      desc.endsWith(import.meta.url.endsWith('.ts') ? '.ts' : '.js')
+    )
     .map(desc => join(folder, desc));
 
   const migrations: Migration[] = await Promise.all(
@@ -62,27 +64,36 @@ export class RunCommand extends CommandRunner {
         continue;
       }
 
+      this.logger.log(`Running ${migration.name}...`);
+      const record = await this.db.dataMigration.create({
+        data: {
+          name: migration.name,
+          startedAt: new Date(),
+        },
+      });
+
       try {
-        this.logger.log(`Running ${migration.name}...`);
-        const record = await this.db.dataMigration.create({
-          data: {
-            name: migration.name,
-            startedAt: new Date(),
-          },
-        });
         await migration.up(this.db);
-        await this.db.dataMigration.update({
+      } catch (e) {
+        await this.db.dataMigration.delete({
           where: {
             id: record.id,
           },
-          data: {
-            finishedAt: new Date(),
-          },
         });
-        done.push(migration);
-      } catch (e) {
+        await migration.down(this.db);
         this.logger.error('Failed to run data migration', e);
+        process.exit(1);
       }
+
+      await this.db.dataMigration.update({
+        where: {
+          id: record.id,
+        },
+        data: {
+          finishedAt: new Date(),
+        },
+      });
+      done.push(migration);
     }
 
     this.logger.log(`Done ${done.length} migrations`);

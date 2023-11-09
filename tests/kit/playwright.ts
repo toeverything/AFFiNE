@@ -51,7 +51,7 @@ export const test = baseTest.extend<{
                   once: true,
                 }
               );
-              setTimeout(() => reject(new Error('timeout')), 2000);
+              setTimeout(() => reject(new Error('timeout')), 5000);
             });
           }
           return (globalThis as any).currentWorkspace;

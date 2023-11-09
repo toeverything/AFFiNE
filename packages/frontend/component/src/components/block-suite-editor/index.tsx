@@ -13,11 +13,13 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
+import { getPresets } from './preset';
 
 export type EditorProps = {
   page: Page;
   mode: 'page' | 'edgeless';
   onInit: (page: Page, editor: Readonly<EditorContainer>) => void;
+  onModeChange?: (mode: 'page' | 'edgeless') => void;
   setBlockHub?: (blockHub: BlockHub | null) => void;
   onLoad?: (page: Page, editor: EditorContainer) => () => void;
   style?: CSSProperties;
@@ -36,7 +38,7 @@ declare global {
 }
 
 const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
-  const { onLoad, page, mode, style } = props;
+  const { onLoad, onModeChange, page, mode, style } = props;
   if (!page.loaded) {
     use(page.waitForLoaded());
   }
@@ -58,18 +60,31 @@ const BlockSuiteEditorImpl = (props: EditorProps): ReactElement => {
     editor.page = page;
   }
 
+  const presets = getPresets();
+  editor.pagePreset = presets.pageModePreset;
+  editor.edgelessPreset = presets.edgelessModePreset;
+
   useEffect(() => {
-    if (editor.page && onLoad) {
-      const disposes = [] as ((() => void) | undefined)[];
-      disposes.push(onLoad?.(page, editor));
-      return () => {
-        disposes
-          .filter((dispose): dispose is () => void => !!dispose)
-          .forEach(dispose => dispose());
-      };
+    const disposes = [] as ((() => void) | undefined)[];
+
+    if (editor) {
+      const dispose = editor.slots.pageModeSwitched.on(mode => {
+        onModeChange?.(mode);
+      });
+
+      disposes.push(() => dispose?.dispose());
+
+      if (editor.page && onLoad) {
+        disposes.push(onLoad?.(page, editor));
+      }
     }
-    return;
-  }, [editor, editor.page, page, onLoad]);
+
+    return () => {
+      disposes
+        .filter((dispose): dispose is () => void => !!dispose)
+        .forEach(dispose => dispose());
+    };
+  }, [editor, editor.page, page, onLoad, onModeChange]);
 
   const ref = useRef<HTMLDivElement>(null);
 

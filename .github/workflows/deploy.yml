@@ -1,15 +1,10 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - master
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
   workflow_dispatch:
     inputs:
       flavor:
-        description: 'Build type (canary, beta, internal or stable)'
+        description: 'Build type (canary, beta, or stable)'
         type: string
         default: canary
 
@@ -40,7 +35,6 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +62,6 @@ jobs:
   build-storage:
     name: Build Storage
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
 
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +83,6 @@ jobs:
   build-storage-arm64:
     name: Build Storage arm64
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
 
     steps:
       - uses: actions/checkout@v4
@@ -112,7 +104,6 @@ jobs:
   build-docker:
     name: Build Docker
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
     needs:
       - build-server
       - build-core
@@ -204,7 +195,7 @@ jobs:
 
   deploy:
     name: Deploy to cluster
-    if: ${{ github.event_name == 'workflow_dispatch' || github.ref_type == 'tag' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     environment: ${{ github.event.inputs.flavor }}
     permissions:
       contents: 'write'
@@ -247,3 +238,5 @@ jobs:
           REDIS_HOST: ${{ secrets.REDIS_HOST }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_KEY: ${{ secrets.STRIPE_WEBHOOK_KEY }}

@@ -162,7 +162,9 @@ export const SettingSidebar = ({
         ) : null}
 
         {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
-          <UserInfo onAccountSettingClick={onAccountSettingClick} />
+          <Suspense>
+            <UserInfo onAccountSettingClick={onAccountSettingClick} />
+          </Suspense>
         ) : null}
       </div>
     </div>

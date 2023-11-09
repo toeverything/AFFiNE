@@ -19,16 +19,13 @@ export const createEmptyCollection = (
   return {
     id,
     name: '',
-    mode: 'page',
     filterList: [],
-    pages: [],
     allowList: [],
     ...data,
   };
 };
 const defaultCollection: Collection = createEmptyCollection(NIL, {
   name: 'All',
-  mode: 'rule',
 });
 const defaultCollectionAtom = atomWithReset<Collection>(defaultCollection);
 export const currentCollectionAtom = atomWithReset<string>(NIL);
@@ -52,12 +49,6 @@ export const useSavedCollections = (collectionAtom: CollectionsCRUDAtom) => {
   const addPage = useCallback(
     async (collectionId: string, pageId: string) => {
       await updateCollection(collectionId, old => {
-        if (old.mode === 'page') {
-          return {
-            ...old,
-            pages: [pageId, ...(old.pages ?? [])],
-          };
-        }
         return {
           ...old,
           allowList: [pageId, ...(old.allowList ?? [])],
@@ -128,8 +119,8 @@ export const filterByFilterList = (filterList: Filter[], varMap: VariableMap) =>
   evalFilterList(filterList, varMap);
 
 export const filterPage = (collection: Collection, page: PageMeta) => {
-  if (collection.mode === 'page') {
-    return collection.pages.includes(page.id);
+  if (collection.filterList.length === 0) {
+    return collection.allowList.includes(page.id);
   }
   return filterPageByRules(collection.filterList, collection.allowList, page);
 };

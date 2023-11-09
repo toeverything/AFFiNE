@@ -25,7 +25,11 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User, Workspace } from '@prisma/client';
+import type {
+  User,
+  Workspace,
+  WorkspacePage as PrismaWorkspacePage,
+} from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
@@ -39,7 +43,7 @@ import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
 import { UsersService } from '../users';
 import { UserType } from '../users/resolver';
-import { PermissionService } from './permission';
+import { PermissionService, PublicPageMode } from './permission';
 import { Permission } from './types';
 import { defaultWorkspaceAvatar } from './utils';
 
@@ -172,28 +176,11 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   memberCount(@Parent() workspace: WorkspaceType) {
-    return this.prisma.userWorkspacePermission.count({
-      where: {
-        workspaceId: workspace.id,
-        userId: {
-          not: null,
-        },
-      },
-    });
-  }
-
-  @ResolveField(() => [String], {
-    description: 'Shared pages of workspace',
-    complexity: 2,
-  })
-  async sharedPages(@Parent() workspace: WorkspaceType) {
-    const data = await this.prisma.userWorkspacePermission.findMany({
+    return this.prisma.workspaceUserPermission.count({
       where: {
         workspaceId: workspace.id,
       },
     });
-
-    return data.map(item => item.subPageId).filter(Boolean);
   }
 
   @ResolveField(() => UserType, {
@@ -215,12 +202,9 @@ export class WorkspaceResolver {
     @Args('skip', { type: () => Int, nullable: true }) skip?: number,
     @Args('take', { type: () => Int, nullable: true }) take?: number
   ) {
-    const data = await this.prisma.userWorkspacePermission.findMany({
+    const data = await this.prisma.workspaceUserPermission.findMany({
       where: {
         workspaceId: workspace.id,
-        userId: {
-          not: null,
-        },
       },
       skip,
       take: take || 8,
@@ -265,7 +249,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   async workspaces(@CurrentUser() user: User) {
-    const data = await this.prisma.userWorkspacePermission.findMany({
+    const data = await this.prisma.workspaceUserPermission.findMany({
       where: {
         userId: user.id,
         accepted: true,
@@ -309,7 +293,7 @@ export class WorkspaceResolver {
     description: 'Get workspace by id',
   })
   async workspace(@CurrentUser() user: UserType, @Args('id') id: string) {
-    await this.permissions.check(id, user.id);
+    await this.permissions.checkWorkspace(id, user.id);
     const workspace = await this.prisma.workspace.findUnique({ where: { id } });
 
     if (!workspace) {
@@ -343,7 +327,7 @@ export class WorkspaceResolver {
     const workspace = await this.prisma.workspace.create({
       data: {
         public: false,
-        users: {
+        permissions: {
           create: {
             type: Permission.Owner,
             user: {
@@ -378,7 +362,7 @@ export class WorkspaceResolver {
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
-    await this.permissions.check(id, user.id, Permission.Admin);
+    await this.permissions.checkWorkspace(id, user.id, Permission.Admin);
 
     return this.prisma.workspace.update({
       where: {
@@ -390,7 +374,7 @@ export class WorkspaceResolver {
 
   @Mutation(() => Boolean)
   async deleteWorkspace(@CurrentUser() user: UserType, @Args('id') id: string) {
-    await this.permissions.check(id, user.id, Permission.Owner);
+    await this.permissions.checkWorkspace(id, user.id, Permission.Owner);
 
     await this.prisma.workspace.delete({
       where: {
@@ -422,7 +406,11 @@ export class WorkspaceResolver {
     @Args('permission', { type: () => Permission }) permission: Permission,
     @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Admin);
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
 
     if (permission === Permission.Owner) {
       throw new ForbiddenException('Cannot change owner');
@@ -431,7 +419,7 @@ export class WorkspaceResolver {
     const target = await this.users.findUserByEmail(email);
 
     if (target) {
-      const originRecord = await this.prisma.userWorkspacePermission.findFirst({
+      const originRecord = await this.prisma.workspaceUserPermission.findFirst({
         where: {
           workspaceId,
           userId: target.id,
@@ -463,7 +451,10 @@ export class WorkspaceResolver {
             },
           });
         } catch (e) {
-          const ret = await this.permissions.revoke(workspaceId, target.id);
+          const ret = await this.permissions.revokeWorkspace(
+            workspaceId,
+            target.id
+          );
 
           if (!ret) {
             this.logger.fatal(
@@ -502,7 +493,10 @@ export class WorkspaceResolver {
             },
           });
         } catch (e) {
-          const ret = await this.permissions.revoke(workspaceId, user.id);
+          const ret = await this.permissions.revokeWorkspace(
+            workspaceId,
+            user.id
+          );
 
           if (!ret) {
             this.logger.fatal(
@@ -532,7 +526,7 @@ export class WorkspaceResolver {
     description: 'Update workspace',
   })
   async getInviteInfo(@Args('inviteId') inviteId: string) {
-    const workspaceId = await this.prisma.userWorkspacePermission
+    const workspaceId = await this.prisma.workspaceUserPermission
       .findUniqueOrThrow({
         where: {
           id: inviteId,
@@ -556,7 +550,7 @@ export class WorkspaceResolver {
     const metaJSON = doc.getMap('meta').toJSON();
 
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
-    const invitee = await this.permissions.getInvitationById(
+    const invitee = await this.permissions.getWorkspaceInvitation(
       inviteId,
       workspaceId
     );
@@ -588,9 +582,13 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Admin);
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
 
-    return this.permissions.revoke(workspaceId, userId);
+    return this.permissions.revokeWorkspace(workspaceId, userId);
   }
 
   @Mutation(() => Boolean)
@@ -619,15 +617,7 @@ export class WorkspaceResolver {
       });
     }
 
-    return this.permissions.acceptById(workspaceId, inviteId);
-  }
-
-  @Mutation(() => Boolean)
-  async acceptInvite(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    return this.permissions.accept(workspaceId, user.id);
+    return this.permissions.acceptWorkspaceInvitation(inviteId, workspaceId);
   }
 
   @Mutation(() => Boolean)
@@ -637,7 +627,7 @@ export class WorkspaceResolver {
     @Args('workspaceName') workspaceName: string,
     @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
-    await this.permissions.check(workspaceId, user.id);
+    await this.permissions.checkWorkspace(workspaceId, user.id);
 
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
 
@@ -654,50 +644,7 @@ export class WorkspaceResolver {
       });
     }
 
-    return this.permissions.revoke(workspaceId, user.id);
-  }
-
-  @Mutation(() => Boolean)
-  async sharePage(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string
-  ) {
-    const docId = new DocID(pageId, workspaceId);
-
-    if (docId.isWorkspace) {
-      throw new ForbiddenException('Expect page not to be workspace');
-    }
-
-    const userWorkspace = await this.prisma.userWorkspacePermission.findFirst({
-      where: {
-        userId: user.id,
-        workspaceId: docId.workspace,
-      },
-    });
-
-    if (!userWorkspace?.accepted) {
-      throw new ForbiddenException('Permission denied');
-    }
-
-    return this.permissions.grantPage(docId.workspace, docId.guid);
-  }
-
-  @Mutation(() => Boolean)
-  async revokePage(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string
-  ) {
-    const docId = new DocID(pageId, workspaceId);
-
-    if (docId.isWorkspace) {
-      throw new ForbiddenException('Expect page not to be workspace');
-    }
-
-    await this.permissions.check(docId.workspace, user.id, Permission.Admin);
-
-    return this.permissions.revokePage(docId.workspace, docId.guid);
+    return this.permissions.revokeWorkspace(workspaceId, user.id);
   }
 
   @Query(() => [String], {
@@ -707,7 +654,7 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.permissions.check(workspaceId, user.id);
+    await this.permissions.checkWorkspace(workspaceId, user.id);
 
     return this.storage.listBlobs(workspaceId);
   }
@@ -717,14 +664,14 @@ export class WorkspaceResolver {
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.permissions.check(workspaceId, user.id);
+    await this.permissions.checkWorkspace(workspaceId, user.id);
 
     return this.storage.blobsSize([workspaceId]).then(size => ({ size }));
   }
 
   @Query(() => WorkspaceBlobSizes)
   async collectAllBlobSizes(@CurrentUser() user: UserType) {
-    const workspaces = await this.prisma.userWorkspacePermission
+    const workspaces = await this.prisma.workspaceUserPermission
       .findMany({
         where: {
           userId: user.id,
@@ -751,7 +698,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('size', { type: () => Float }) size: number
   ) {
-    const canWrite = await this.permissions.tryCheck(
+    const canWrite = await this.permissions.tryCheckWorkspace(
       workspaceId,
       user.id,
       Permission.Write
@@ -775,7 +722,11 @@ export class WorkspaceResolver {
     @Args({ name: 'blob', type: () => GraphQLUpload })
     blob: FileUpload
   ) {
-    await this.permissions.check(workspaceId, user.id, Permission.Write);
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Write
+    );
 
     // quota was apply to owner's account
     const { user: owner } =
@@ -831,8 +782,151 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('hash') hash: string
   ) {
-    await this.permissions.check(workspaceId, user.id);
+    await this.permissions.checkWorkspace(workspaceId, user.id);
 
     return this.storage.deleteBlob(workspaceId, hash);
+  }
+}
+
+registerEnumType(PublicPageMode, {
+  name: 'PublicPageMode',
+  description: 'The mode which the public page default in',
+});
+
+@ObjectType()
+class WorkspacePage implements Partial<PrismaWorkspacePage> {
+  @Field(() => String, { name: 'id' })
+  pageId!: string;
+
+  @Field()
+  workspaceId!: string;
+
+  @Field(() => PublicPageMode)
+  mode!: PublicPageMode;
+
+  @Field()
+  public!: boolean;
+}
+
+@UseGuards(CloudThrottlerGuard)
+@Auth()
+@Resolver(() => WorkspaceType)
+export class PagePermissionResolver {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly permission: PermissionService
+  ) {}
+
+  /**
+   * @deprecated
+   */
+  @ResolveField(() => [String], {
+    description: 'Shared pages of workspace',
+    complexity: 2,
+    deprecationReason: 'use WorkspaceType.publicPages',
+  })
+  async sharedPages(@Parent() workspace: WorkspaceType) {
+    const data = await this.prisma.workspacePage.findMany({
+      where: {
+        workspaceId: workspace.id,
+        public: true,
+      },
+    });
+
+    return data.map(row => row.pageId);
+  }
+
+  @ResolveField(() => [WorkspacePage], {
+    description: 'Public pages of a workspace',
+    complexity: 2,
+  })
+  async publicPages(@Parent() workspace: WorkspaceType) {
+    return this.prisma.workspacePage.findMany({
+      where: {
+        workspaceId: workspace.id,
+        public: true,
+      },
+    });
+  }
+
+  /**
+   * @deprecated
+   */
+  @Mutation(() => Boolean, {
+    name: 'sharePage',
+    deprecationReason: 'renamed to publicPage',
+  })
+  async deprecatedSharePage(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string,
+    @Args('pageId') pageId: string
+  ) {
+    await this.publishPage(user, workspaceId, pageId, PublicPageMode.Page);
+    return true;
+  }
+
+  @Mutation(() => WorkspacePage)
+  async publishPage(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string,
+    @Args('pageId') pageId: string,
+    @Args({
+      name: 'mode',
+      type: () => PublicPageMode,
+      nullable: true,
+      defaultValue: PublicPageMode.Page,
+    })
+    mode: PublicPageMode
+  ) {
+    const docId = new DocID(pageId, workspaceId);
+
+    if (docId.isWorkspace) {
+      throw new ForbiddenException('Expect page not to be workspace');
+    }
+
+    await this.permission.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
+
+    return this.permission.publishPage(docId.workspace, docId.guid, mode);
+  }
+
+  /**
+   * @deprecated
+   */
+  @Mutation(() => Boolean, {
+    name: 'revokePage',
+    deprecationReason: 'use revokePublicPage',
+  })
+  async deprecatedRevokePage(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string,
+    @Args('pageId') pageId: string
+  ) {
+    await this.revokePublicPage(user, workspaceId, pageId);
+    return true;
+  }
+
+  @Mutation(() => WorkspacePage)
+  async revokePublicPage(
+    @CurrentUser() user: UserType,
+    @Args('workspaceId') workspaceId: string,
+    @Args('pageId') pageId: string
+  ) {
+    const docId = new DocID(pageId, workspaceId);
+
+    if (docId.isWorkspace) {
+      throw new ForbiddenException('Expect page not to be workspace');
+    }
+
+    await this.permission.checkWorkspace(
+      docId.workspace,
+      user.id,
+      Permission.Admin
+    );
+
+    return this.permission.revokePublicPage(docId.workspace, docId.guid);
   }
 }

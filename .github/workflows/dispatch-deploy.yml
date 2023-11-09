@@ -1,0 +1,30 @@
+name: Dispatch Deploy by tag
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
+
+jobs:
+  dispatch-deploy-by-tag:
+    runs-on: ubuntu-latest
+    name: Setup deploy environment
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: 'workspaces focus @affine/monorepo'
+          hard-link-nm: false
+          electron-install: false
+          build-infra: false
+          build-plugins: false
+      - name: Setup output value
+        id: flavor
+        run: |
+          node -e "const env = require('semver').parse('${{ github.ref_name }}').prerelease[0] ?? 'stable'; console.log(`flavor=${env}`)" >> "$GITHUB_OUTPUT"
+      - name: dispatch deploy
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: deploy.yml
+          inputs: '{ "flavor": "${{ steps.flavor.outputs.flavor }}" }'

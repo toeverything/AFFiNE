@@ -41,11 +41,11 @@ export function registerAffineSettingsCommands({
     })
   );
 
-  // color schemes
+  // color modes
   unsubs.push(
     registerAffineCommand({
-      id: 'affine:change-color-scheme-to-auto',
-      label: `${t['com.affine.cmdk.affine.color-scheme.to']()} ${t[
+      id: 'affine:change-color-mode-to-auto',
+      label: `${t['com.affine.cmdk.affine.color-mode.to']()} ${t[
         'com.affine.themeSettings.system'
       ]()}`,
       category: 'affine:settings',
@@ -58,8 +58,8 @@ export function registerAffineSettingsCommands({
   );
   unsubs.push(
     registerAffineCommand({
-      id: 'affine:change-color-scheme-to-dark',
-      label: `${t['com.affine.cmdk.affine.color-scheme.to']()} ${t[
+      id: 'affine:change-color-mode-to-dark',
+      label: `${t['com.affine.cmdk.affine.color-mode.to']()} ${t[
         'com.affine.themeSettings.dark'
       ]()}`,
       category: 'affine:settings',
@@ -73,8 +73,8 @@ export function registerAffineSettingsCommands({
 
   unsubs.push(
     registerAffineCommand({
-      id: 'affine:change-color-scheme-to-light',
-      label: `${t['com.affine.cmdk.affine.color-scheme.to']()} ${t[
+      id: 'affine:change-color-mode-to-light',
+      label: `${t['com.affine.cmdk.affine.color-mode.to']()} ${t[
         'com.affine.themeSettings.light'
       ]()}`,
       category: 'affine:settings',

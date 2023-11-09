@@ -52,6 +52,12 @@ export enum Permission {
   Write = 'Write',
 }
 
+/** The mode which the public page default in */
+export enum PublicPageMode {
+  Edgeless = 'Edgeless',
+  Page = 'Page',
+}
+
 export enum SubscriptionPlan {
   Enterprise = 'Enterprise',
   Free = 'Free',
@@ -359,6 +365,13 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type GetInvoicesCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetInvoicesCountQuery = {
+  __typename?: 'Query';
+  currentUser: { __typename?: 'UserType'; invoiceCount: number } | null;
+};
+
 export type InvoicesQueryVariables = Exact<{
   take: Scalars['Int']['input'];
   skip: Scalars['Int']['input'];
@@ -608,15 +621,6 @@ export type AcceptInviteByInviteIdMutation = {
   acceptInviteById: boolean;
 };
 
-export type AcceptInviteByWorkspaceIdMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type AcceptInviteByWorkspaceIdMutation = {
-  __typename?: 'Mutation';
-  acceptInvite: boolean;
-};
-
 export type Queries =
   | {
       name: 'checkBlobSizesQuery';
@@ -692,6 +696,11 @@ export type Queries =
       name: 'getWorkspacesQuery';
       variables: GetWorkspacesQueryVariables;
       response: GetWorkspacesQuery;
+    }
+  | {
+      name: 'getInvoicesCountQuery';
+      variables: GetInvoicesCountQueryVariables;
+      response: GetInvoicesCountQuery;
     }
   | {
       name: 'invoicesQuery';
@@ -844,9 +853,4 @@ export type Mutations =
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
-    }
-  | {
-      name: 'acceptInviteByWorkspaceIdMutation';
-      variables: AcceptInviteByWorkspaceIdMutationVariables;
-      response: AcceptInviteByWorkspaceIdMutation;
     };

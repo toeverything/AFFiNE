@@ -121,7 +121,7 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
       <SortableContext items={optimisticList}>
         {optimisticList.map(item => (
           <Suspense fallback={<WorkspaceCardSkeleton />} key={item.id}>
-            <SortableWorkspaceItem {...props} item={item} key={item.id} />
+            <SortableWorkspaceItem key={item.id} {...props} item={item} />
           </Suspense>
         ))}
       </SortableContext>

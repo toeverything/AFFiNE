@@ -60,7 +60,7 @@ const FakePrisma = {
       return { id: this.id, blob: Buffer.from([0, 0]) };
     },
   },
-  get userWorkspacePermission() {
+  get workspaceUserPermission() {
     return {
       id: randomUUID(),
       prisma: this,
@@ -79,7 +79,7 @@ const FakePrisma = {
       async findFirstOrThrow() {
         return { id: this.id, user: this.prisma.fakeUser };
       },
-      async userWorkspacePermission() {
+      async workspaceUserPermission() {
         return {
           id: randomUUID(),
           createdAt: new Date(),

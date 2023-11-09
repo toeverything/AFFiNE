@@ -1,16 +1,16 @@
+import { Pagination } from '@affine/component/member-components';
 import {
   SettingHeader,
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
 import {
-  cancelSubscriptionMutation,
   createCustomerPortalMutation,
+  getInvoicesCountQuery,
   type InvoicesQuery,
   invoicesQuery,
   InvoiceStatus,
   pricesQuery,
-  resumeSubscriptionMutation,
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
@@ -19,9 +19,10 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { Skeleton } from '@mui/material';
 import { Button, IconButton } from '@toeverything/components/button';
+import { Loading } from '@toeverything/components/loading';
 import { useSetAtom } from 'jotai';
-import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
@@ -30,7 +31,8 @@ import {
   type SubscriptionMutator,
   useUserSubscription,
 } from '../../../../../hooks/use-subscription';
-import { DowngradeModal } from '../plans/modals';
+import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
+import { CancelAction, ResumeAction } from '../plans/actions';
 import * as styles from './style.css';
 
 enum DescriptionI18NKey {
@@ -38,6 +40,8 @@ enum DescriptionI18NKey {
   Monthly = 'com.affine.payment.billing-setting.current-plan.description.monthly',
   Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
 }
+
+const INVOICE_PAGE_SIZE = 12;
 
 const getMessageKey = (
   plan: SubscriptionPlan,
@@ -63,46 +67,31 @@ export const BillingSettings = () => {
         title={t['com.affine.payment.billing-setting.title']()}
         subtitle={t['com.affine.payment.billing-setting.subtitle']()}
       />
-      {/* TODO: loading fallback */}
-      <Suspense>
-        <SettingWrapper
-          title={t['com.affine.payment.billing-setting.information']()}
-        >
-          <SubscriptionSettings />
-        </SettingWrapper>
-      </Suspense>
-      {/* TODO: loading fallback */}
-      <Suspense>
-        <SettingWrapper
-          title={t['com.affine.payment.billing-setting.history']()}
-        >
-          <BillingHistory />
-        </SettingWrapper>
-      </Suspense>
+      <SWRErrorBoundary FallbackComponent={SubscriptionSettingSkeleton}>
+        <Suspense fallback={<SubscriptionSettingSkeleton />}>
+          <SettingWrapper
+            title={t['com.affine.payment.billing-setting.information']()}
+          >
+            <SubscriptionSettings />
+          </SettingWrapper>
+        </Suspense>
+      </SWRErrorBoundary>
+      <SWRErrorBoundary FallbackComponent={BillingHistorySkeleton}>
+        <Suspense fallback={<BillingHistorySkeleton />}>
+          <SettingWrapper
+            title={t['com.affine.payment.billing-setting.history']()}
+          >
+            <BillingHistory />
+          </SettingWrapper>
+        </Suspense>
+      </SWRErrorBoundary>
     </>
   );
 };
 
 const SubscriptionSettings = () => {
   const [subscription, mutateSubscription] = useUserSubscription();
-  const { isMutating, trigger } = useMutation({
-    mutation: cancelSubscriptionMutation,
-  });
   const [openCancelModal, setOpenCancelModal] = useState(false);
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
-  const cancel = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          mutateSubscription(data.cancelSubscription);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, mutateSubscription]);
 
   const { data: pricesQueryResult } = useQuery({
     query: pricesQuery,
@@ -209,27 +198,28 @@ const SubscriptionSettings = () => {
               <ResumeSubscription onSubscriptionUpdate={mutateSubscription} />
             </SettingRow>
           ) : (
-            <SettingRow
-              style={{ cursor: 'pointer' }}
-              onClick={() => (isMutating ? null : setOpenCancelModal(true))}
-              className="dangerous-setting"
-              name={t[
-                'com.affine.payment.billing-setting.cancel-subscription'
-              ]()}
-              desc={t[
-                'com.affine.payment.billing-setting.cancel-subscription.description'
-              ]({
-                cancelDate: new Date(subscription.end).toLocaleDateString(),
-              })}
+            <CancelAction
+              open={openCancelModal}
+              onOpenChange={setOpenCancelModal}
+              onSubscriptionUpdate={mutateSubscription}
             >
-              <CancelSubscription loading={isMutating} />
-            </SettingRow>
+              <SettingRow
+                style={{ cursor: 'pointer' }}
+                onClick={() => setOpenCancelModal(true)}
+                className="dangerous-setting"
+                name={t[
+                  'com.affine.payment.billing-setting.cancel-subscription'
+                ]()}
+                desc={t[
+                  'com.affine.payment.billing-setting.cancel-subscription.description'
+                ]({
+                  cancelDate: new Date(subscription.end).toLocaleDateString(),
+                })}
+              >
+                <CancelSubscription />
+              </SettingRow>
+            </CancelAction>
           )}
-          <DowngradeModal
-            open={openCancelModal}
-            onCancel={() => (isMutating ? null : cancel())}
-            onOpenChange={setOpenCancelModal}
-          />
         </>
       )}
     </div>
@@ -280,7 +270,7 @@ const PaymentMethodUpdater = () => {
       loading={isMutating}
       disabled={isMutating}
     >
-      {t['com.affine.payment.billing-setting.upgrade']()}
+      {t['com.affine.payment.billing-setting.update']()}
     </Button>
   );
 };
@@ -291,33 +281,18 @@ const ResumeSubscription = ({
   onSubscriptionUpdate: SubscriptionMutator;
 }) => {
   const t = useAFFiNEI18N();
-  const { isMutating, trigger } = useMutation({
-    mutation: resumeSubscriptionMutation,
-  });
-
-  // allow replay request on network error until component unmount
-  const idempotencyKey = useMemo(() => nanoid(), []);
-
-  const resume = useCallback(() => {
-    trigger(
-      { idempotencyKey },
-      {
-        onSuccess: data => {
-          onSubscriptionUpdate(data.resumeSubscription);
-        },
-      }
-    );
-  }, [trigger, idempotencyKey, onSubscriptionUpdate]);
+  const [open, setOpen] = useState(false);
 
   return (
-    <Button
-      className={styles.button}
-      onClick={resume}
-      loading={isMutating}
-      disabled={isMutating}
+    <ResumeAction
+      open={open}
+      onOpenChange={setOpen}
+      onSubscriptionUpdate={onSubscriptionUpdate}
     >
-      {t['com.affine.payment.billing-setting.resume-subscription']()}
-    </Button>
+      <Button className={styles.button} onClick={() => setOpen(true)}>
+        {t['com.affine.payment.billing-setting.resume-subscription']()}
+      </Button>
+    </ResumeAction>
   );
 };
 
@@ -334,27 +309,40 @@ const CancelSubscription = ({ loading }: { loading?: boolean }) => {
 
 const BillingHistory = () => {
   const t = useAFFiNEI18N();
+  const { data: invoicesCountQueryResult } = useQuery({
+    query: getInvoicesCountQuery,
+  });
+
+  const [skip, setSkip] = useState(0);
+
   const { data: invoicesQueryResult } = useQuery({
     query: invoicesQuery,
-    variables: {
-      skip: 0,
-      take: 12,
-    },
+    variables: { skip, take: INVOICE_PAGE_SIZE },
   });
 
   const invoices = invoicesQueryResult.currentUser?.invoices ?? [];
+  const invoiceCount = invoicesCountQueryResult.currentUser?.invoiceCount ?? 0;
 
   return (
-    <div className={styles.billingHistory}>
-      {invoices.length === 0 ? (
-        <p className={styles.noInvoice}>
-          {t['com.affine.payment.billing-setting.no-invoice']()}
-        </p>
-      ) : (
-        // TODO: pagination
-        invoices.map(invoice => (
-          <InvoiceLine key={invoice.id} invoice={invoice} />
-        ))
+    <div className={styles.history}>
+      <div className={styles.historyContent}>
+        {invoices.length === 0 ? (
+          <p className={styles.noInvoice}>
+            {t['com.affine.payment.billing-setting.no-invoice']()}
+          </p>
+        ) : (
+          invoices.map(invoice => (
+            <InvoiceLine key={invoice.id} invoice={invoice} />
+          ))
+        )}
+      </div>
+
+      {invoiceCount > INVOICE_PAGE_SIZE && (
+        <Pagination
+          totalCount={invoiceCount}
+          countPerPage={INVOICE_PAGE_SIZE}
+          onPageChange={skip => setSkip(skip)}
+        />
       )}
     </div>
   );
@@ -388,5 +376,30 @@ const InvoiceLine = ({
         {t['com.affine.payment.billing-setting.view-invoice']()}
       </Button>
     </SettingRow>
+  );
+};
+
+const SubscriptionSettingSkeleton = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <SettingWrapper
+      title={t['com.affine.payment.billing-setting.information']()}
+    >
+      <div className={styles.subscriptionSettingSkeleton}>
+        <Skeleton variant="rounded" height="104px" />
+        <Skeleton variant="rounded" height="46px" />
+      </div>
+    </SettingWrapper>
+  );
+};
+
+const BillingHistorySkeleton = () => {
+  const t = useAFFiNEI18N();
+  return (
+    <SettingWrapper title={t['com.affine.payment.billing-setting.history']()}>
+      <div className={styles.billingHistorySkeleton}>
+        <Loading />
+      </div>
+    </SettingWrapper>
   );
 };
