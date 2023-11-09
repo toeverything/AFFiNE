@@ -184,6 +184,8 @@ export interface AppEvents {
   'app:init': () => string[];
   // event if you have access to workspace adapter
   'app:access': () => Promise<boolean>;
+  'service:start': () => void;
+  'service:stop': () => void;
 }
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
