@@ -19,8 +19,8 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   );
   const setPageMode = useSetAtom(setPageModeAtom);
   const createPageAndOpen = useCallback(
-    (id?: string, mode?: 'page' | 'edgeless') => {
-      const page = createPage(id);
+    (mode?: 'page' | 'edgeless') => {
+      const page = createPage();
       initEmptyPage(page).catch(error => {
         toast(`Failed to initialize Page: ${error.message}`);
       });
@@ -30,12 +30,9 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
   );
-  const createEdgelessAndOpen = useCallback(
-    (id?: string) => {
-      return createPageAndOpen(id, 'edgeless');
-    },
-    [createPageAndOpen]
-  );
+  const createEdgelessAndOpen = useCallback(() => {
+    return createPageAndOpen('edgeless');
+  }, [createPageAndOpen]);
   const importFileAndOpen = useCallback(async () => {
     const { showImportModal } = await import('@blocksuite/blocks');
     const onSuccess = (pageIds: string[], isWorkspaceFile: boolean) => {
