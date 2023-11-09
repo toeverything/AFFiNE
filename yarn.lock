@@ -25990,8 +25990,8 @@ __metadata:
   linkType: hard
 
 "macos-alias@npm:macos-alias-building@latest":
-  version: 0.2.13
-  resolution: "macos-alias-building@npm:0.2.13"
+  version: 0.2.14
+  resolution: "macos-alias-building@npm:0.2.14"
   conditions: os=darwin
   languageName: node
   linkType: hard

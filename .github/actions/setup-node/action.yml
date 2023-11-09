@@ -32,6 +32,10 @@ inputs:
   nmHoistingLimits:
     description: 'Set nmHoistingLimits in .yarnrc.yml'
     required: false
+  enableScripts:
+    description: 'Set enableScripts in .yarnrc.yml'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -53,6 +57,11 @@ runs:
       if: ${{ inputs.nmHoistingLimits }}
       shell: bash
       run: yarn config set nmHoistingLimits ${{ inputs.nmHoistingLimits }}
+
+    - name: Set enableScripts
+      if: ${{ inputs.enableScripts == 'false' }}
+      shell: bash
+      run: yarn config set enableScripts false
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}

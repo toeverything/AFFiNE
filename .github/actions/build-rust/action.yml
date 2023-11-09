@@ -19,6 +19,8 @@ runs:
       with:
         toolchain: stable
         targets: ${{ inputs.target }}
+      env:
+        CARGO_INCREMENTAL: '1'
 
     - name: Cache cargo
       uses: actions/cache@v3
