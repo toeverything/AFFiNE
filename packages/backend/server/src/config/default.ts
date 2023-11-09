@@ -117,11 +117,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     get deploy() {
       return !this.node.dev && !this.node.test;
     },
-    get featureFlags() {
-      return {
-        earlyAccessPreview:
-          this.node.prod && (this.affine.beta || this.affine.canary),
-      };
+    featureFlags: {
+      earlyAccessPreview: false,
     },
     get https() {
       return !this.node.dev;
