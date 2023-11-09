@@ -80,11 +80,11 @@ export const AuthPage = (): ReactElement | null => {
   );
 
   const onSetPassword = useCallback(
-    (password: string) => {
-      changePassword({
+    async (password: string) => {
+      await changePassword({
         token: searchParams.get('token') || '',
         newPassword: password,
-      }).catch(console.error);
+      });
     },
     [changePassword, searchParams]
   );
