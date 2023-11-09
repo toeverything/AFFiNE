@@ -25,14 +25,19 @@ export function useBlockSuitePagePreview(page: Page | null): Atom<string> {
   } else if (weakMap.has(page)) {
     return weakMap.get(page) as Atom<string>;
   } else {
-    const baseAtom = atom<string>(getPagePreviewText(page));
+    const baseAtom = atom<string>('');
     baseAtom.onMount = set => {
-      const disposable = page.slots.yUpdated.on(() => {
-        set(getPagePreviewText(page));
-      });
+      const disposables = [
+        page.slots.ready.on(() => {
+          set(getPagePreviewText(page));
+        }),
+        page.slots.yUpdated.on(() => {
+          set(getPagePreviewText(page));
+        }),
+      ];
       set(getPagePreviewText(page));
       return () => {
-        disposable.dispose();
+        disposables.forEach(disposable => disposable.dispose());
       };
     };
     weakMap.set(page, baseAtom);

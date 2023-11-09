@@ -19,13 +19,19 @@ const getPageReferencesAtom = (page: Page | null) => {
   }
 
   if (!weakMap.has(page)) {
-    const baseAtom = atom<string[]>(getPageReferences(page));
+    const baseAtom = atom<string[]>([]);
     baseAtom.onMount = set => {
-      const dispose = page.slots.yUpdated.on(() => {
-        set(getPageReferences(page));
-      });
+      const disposables = [
+        page.slots.ready.on(() => {
+          set(getPageReferences(page));
+        }),
+        page.slots.yUpdated.on(() => {
+          set(getPageReferences(page));
+        }),
+      ];
+      set(getPageReferences(page));
       return () => {
-        dispose.dispose();
+        disposables.forEach(disposable => disposable.dispose());
       };
     };
     weakMap.set(page, baseAtom);
