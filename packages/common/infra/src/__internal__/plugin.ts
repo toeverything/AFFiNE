@@ -7,11 +7,11 @@ import type { z } from 'zod';
 import type { packageJsonOutputSchema } from '../type.js';
 
 export const builtinPluginPaths = new Set([
-  '/plugins/copilot',
+  // '/plugins/copilot',
   '/plugins/hello-world',
   '/plugins/image-preview',
   '/plugins/vue-hello-world',
-  '/plugins/outline',
+  // '/plugins/outline',
 ]);
 
 const pluginCleanupMap = new Map<string, Set<() => void>>();
