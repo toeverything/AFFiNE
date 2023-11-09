@@ -766,6 +766,7 @@
   "com.affine.payment.upgrade-success-page.title": "Upgrade Successful!",
   "com.affine.payment.upgrade-success-page.text": "Congratulations! Your AFFiNE account has been successfully upgraded to a Pro account.",
   "com.affine.payment.upgrade-success-page.support": "If you have any questions, please contact our <1> customer support</1>.",
+  "com.affine.payment.subscription.exist": "You already have a subscription.",
   "com.affine.other-page.nav.official-website": "Official Website",
   "com.affine.other-page.nav.affine-community": "AFFiNE Community",
   "com.affine.other-page.nav.blog": "Blog",
