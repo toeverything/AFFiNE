@@ -26,6 +26,23 @@ export const entry = (context: PluginContext) => {
     };
   });
 
+  context.register('formatBar', div => {
+    const root = createRoot(div);
+
+    root.render(
+      createElement(
+        context.utils.PluginProvider,
+        {},
+        createElement(HeaderButton, {
+          Provider: context.utils.PluginProvider,
+        })
+      )
+    );
+    return () => {
+      root.unmount();
+    };
+  });
+
   return () => {
     console.log('unregister');
   };

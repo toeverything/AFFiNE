@@ -1,11 +1,11 @@
 import { currentPageIdAtom } from '@affine/sdk/entry';
 import {} from '@blocksuite/blocks';
-import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import { useAtomValue } from 'jotai';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 
+import { useEditor } from './hooks';
 import { getSelectedTextContent, sendToSlack, toast } from './utils';
 
 type AppProps = {
@@ -16,24 +16,14 @@ export const App: React.FC<AppProps> = props => {
   const { unload } = props;
   const currentPageId = useAtomValue(currentPageIdAtom);
   assertExists(currentPageId);
-  const [editor, setEditor] = useState<EditorContainer>();
   const [selectedText, setSelectedText] = useState<string[]>([]);
+  const [editor] = useEditor(unload);
 
   useEffect(() => {
-    if (!editor || !editor.isConnected) {
-      const editorContainer = document.querySelector(
-        'editor-container'
-      ) as EditorContainer;
-
-      if (editorContainer) {
-        setEditor(
-          document.querySelector('editor-container') as EditorContainer
-        );
-      } else {
-        unload();
-      }
+    if (editor && editor.root.value) {
+      setSelectedText(getSelectedTextContent(editor.root.value));
     }
-  }, [editor, setEditor, unload]);
+  }, [editor]);
 
   useEffect(() => {
     if (editor && editor.root.value) {

@@ -47,6 +47,7 @@ export type ExpectedLayout =
     }
   | 'editor';
 
+export declare const contentLayoutAtom: Atom<ExpectedLayout>;
 export declare const pushLayoutAtom: WritableAtom<
   null,
   | [
