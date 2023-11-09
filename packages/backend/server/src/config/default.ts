@@ -91,6 +91,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       ENABLE_LOCAL_EMAIL: ['auth.localEmail', 'boolean'],
       STRIPE_API_KEY: 'payment.stripe.keys.APIKey',
       STRIPE_WEBHOOK_KEY: 'payment.stripe.keys.webhookKey',
+      FEATURES_EARLY_ACCESS_PREVIEW: [
+        'featureFlags.earlyAccessPreview',
+        'boolean',
+      ],
     } satisfies AFFiNEConfig['ENV_MAP'],
     affineEnv: 'dev',
     get affine() {
