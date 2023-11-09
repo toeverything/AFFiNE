@@ -78,7 +78,7 @@ export const useAuth = () => {
         {
           email: email,
           callbackUrl: subscriptionData
-            ? subscriptionData.redirectUrl
+            ? subscriptionData.getRedirectUrl(false)
             : '/auth/signIn',
           redirect: false,
         },
@@ -119,7 +119,7 @@ export const useAuth = () => {
         {
           email: email,
           callbackUrl: subscriptionData
-            ? subscriptionData.redirectUrl
+            ? subscriptionData.getRedirectUrl(true)
             : '/auth/signUp',
           redirect: false,
         },

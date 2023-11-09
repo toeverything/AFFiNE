@@ -1,19 +1,46 @@
+import { SignUpPage } from '@affine/component/auth-components';
 import { AffineShapeIcon } from '@affine/component/page-list';
 import type { SubscriptionRecurring } from '@affine/graphql';
-import { checkoutMutation, subscriptionQuery } from '@affine/graphql';
+import {
+  changePasswordMutation,
+  checkoutMutation,
+  subscriptionQuery,
+} from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
 import { nanoid } from 'nanoid';
-import { type FC, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
 
+import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../hooks/use-navigate-helper';
 import * as styles from './subscription-redirect.css';
 import { useSubscriptionSearch } from './use-subscription';
+
+const usePaymentRedirect = () => {
+  const searchData = useSubscriptionSearch();
+  if (!searchData?.recurring) {
+    throw new Error('Invalid recurring data.');
+  }
+
+  const recurring = searchData.recurring as SubscriptionRecurring;
+  const idempotencyKey = useMemo(() => nanoid(), []);
+  const { trigger: checkoutSubscription } = useMutation({
+    mutation: checkoutMutation,
+  });
+
+  return useCallback(() => {
+    checkoutSubscription({ recurring, idempotencyKey })
+      .then(({ checkout }) => {
+        window.open(checkout, '_self', 'norefferer');
+      })
+      .catch(e => console.error(e));
+  }, [recurring, idempotencyKey, checkoutSubscription]);
+};
 
 const CenterLoading = () => {
   return (
@@ -51,54 +78,65 @@ const SubscriptionExisting = () => {
   );
 };
 
-const SubscriptionRedirectInner: FC = () => {
-  const subscriptionData = useSubscriptionSearch();
-  const idempotencyKey = useMemo(() => nanoid(), []);
-  const { data } = useQuery({
-    query: subscriptionQuery,
-  });
-  const { trigger: checkoutSubscription } = useMutation({
-    mutation: checkoutMutation,
-  });
-
+const SubscriptionRedirection = ({ redirect }: { redirect: () => void }) => {
   useEffect(() => {
-    if (!subscriptionData) {
-      throw new Error('No subscription data found');
-    }
-
-    if (data.currentUser?.subscription) {
-      return;
-    }
-
-    // This component will be render multiple times, use timeout to avoid multiple effect.
     const timeoutId = setTimeout(() => {
-      const recurring = subscriptionData.recurring as SubscriptionRecurring;
-      checkoutSubscription({ recurring, idempotencyKey }).then(
-        ({ checkout }) => {
-          window.open(checkout, '_self', 'norefferer');
-        }
-      );
+      redirect();
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
     };
+  }, [redirect]);
 
-    // Just run this once, do not react to changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  return <CenterLoading />;
+};
 
-  if (data.currentUser?.subscription) {
+const SubscriptionRedirectWithData = () => {
+  const t = useAFFiNEI18N();
+  const user = useCurrentUser();
+  const searchData = useSubscriptionSearch();
+  const openPaymentUrl = usePaymentRedirect();
+
+  const { trigger: changePassword } = useMutation({
+    mutation: changePasswordMutation,
+  });
+  const { data: subscriptionData } = useQuery({
+    query: subscriptionQuery,
+  });
+
+  const onSetPassword = useCallback(
+    async (password: string) => {
+      await changePassword({
+        token: searchData?.passwordToken ?? '',
+        newPassword: password,
+      });
+    },
+    [changePassword, searchData]
+  );
+
+  if (searchData?.withSignUp) {
+    return (
+      <SignUpPage
+        user={user}
+        onSetPassword={onSetPassword}
+        onOpenAffine={openPaymentUrl}
+        openButtonText={t['com.affine.payment.subscription.go-to-subscribe']()}
+      />
+    );
+  }
+
+  if (subscriptionData.currentUser?.subscription) {
     return <SubscriptionExisting />;
   }
 
-  return <CenterLoading />;
+  return <SubscriptionRedirection redirect={openPaymentUrl} />;
 };
 
 export const SubscriptionRedirect = () => {
   return (
     <Suspense fallback={<CenterLoading />}>
-      <SubscriptionRedirectInner />
+      <SubscriptionRedirectWithData />
     </Suspense>
   );
 };
