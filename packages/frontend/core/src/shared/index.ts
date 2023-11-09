@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
@@ -26,3 +27,6 @@ export const pathGenerator = {
 } satisfies {
   [Path in WorkspaceSubPath]: (workspaceId: string) => string;
 };
+
+export const performanceLogger = new DebugLogger('performance');
+export const performanceRenderLogger = performanceLogger.namespace('render');

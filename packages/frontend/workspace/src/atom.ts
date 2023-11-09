@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { BlockHub } from '@blocksuite/blocks';
@@ -11,6 +12,8 @@ import { type Atom, atom } from 'jotai/vanilla';
 import { z } from 'zod';
 
 import { getOrCreateWorkspace } from './manager';
+
+const performanceJotaiLogger = new DebugLogger('performance:jotai');
 
 const rootWorkspaceMetadataV1Schema = z.object({
   id: z.string(),
@@ -80,6 +83,8 @@ type FetchMetadata = (
  * @internal
  */
 const fetchMetadata: FetchMetadata = async (get, { signal }) => {
+  performanceJotaiLogger.info('fetch metadata start');
+
   const WorkspaceAdapters = get(workspaceAdaptersAtom);
   assertExists(WorkspaceAdapters, 'workspace adapter should be defined');
   const metadata: RootWorkspaceMetadata[] = [];
@@ -120,6 +125,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
           once: true,
         });
       });
+      performanceJotaiLogger.info('migration done');
     }
 
     metadata.push(...loadFromLocalStorage());
@@ -131,11 +137,15 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
     );
 
     for (const Adapter of Adapters) {
+      performanceJotaiLogger.info('%s adapter', Adapter.flavour);
+
       const { CRUD, flavour: currentFlavour } = Adapter;
       if (
         Adapter.Events['app:access'] &&
         !(await Adapter.Events['app:access']())
       ) {
+        performanceJotaiLogger.info('%s app:access', Adapter.flavour);
+
         // skip the adapter if the user doesn't have access to it
         const removed = metadata.filter(
           meta => meta.flavour === currentFlavour
@@ -148,6 +158,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
       }
       try {
         const item = await CRUD.list();
+        performanceJotaiLogger.info('%s CRUD list', Adapter.flavour);
         // remove the metadata that is not in the list
         //  because we treat the workspace adapter as the source of truth
         {
@@ -179,6 +190,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
       } catch (e) {
         console.error('list data error:', e);
       }
+      performanceJotaiLogger.info('%s service:start', Adapter.flavour);
       Adapter.Events['service:start']?.();
     }
   }
@@ -195,7 +207,7 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
     }
   });
   const result = Array.from(metadataMap.values());
-  console.info('metadata', result);
+  performanceJotaiLogger.info('fetch metadata done', result);
   return result;
 };
 

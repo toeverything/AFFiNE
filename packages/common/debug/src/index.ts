@@ -58,4 +58,9 @@ export class DebugLogger {
     this._debug.log = console[level].bind(console);
     this._debug(`[${level.toUpperCase()}] ${message}`, ...args);
   }
+
+  namespace(extra: string) {
+    const currentNamespace = this._debug.namespace;
+    return new DebugLogger(`${currentNamespace}:${extra}`);
+  }
 }
