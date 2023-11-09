@@ -68,8 +68,8 @@ const createHelmCommand = ({ isDryRun }) => {
         ]
       : [];
   const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
-  const graphqlReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
-  const syncReplicaCount = isProduction ? 6 : isBeta ? 3 : 2;
+  const graphqlReplicaCount = isProduction ? 10 : isBeta ? 10 : 2;
+  const syncReplicaCount = isProduction ? 10 : isBeta ? 10 : 2;
   const namespace = isProduction ? 'production' : isBeta ? 'beta' : 'dev';
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const host = DEPLOY_HOST || CANARY_DEPLOY_HOST;
@@ -101,6 +101,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string graphql.app.payment.stripe.apiKey="${STRIPE_API_KEY}"`,
     `--set-string graphql.app.payment.stripe.webhookKey="${STRIPE_WEBHOOK_KEY}"`,
     `--set        graphql.app.experimental.enableJwstCodec=true`,
+    `--set        graphql.app.features.earlyAccessPreview=false`,
     `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${imageTag}"`,
     ...serviceAnnotations,

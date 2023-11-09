@@ -75,6 +75,8 @@ spec:
             value: "{{ .Values.app.objectStorage.r2.enabled }}"
           - name: ENABLE_CAPTCHA
             value: "{{ .Values.app.captcha.enabled }}"
+          - name: FEATURES_EARLY_ACCESS_PREVIEW
+            value: "{{ .Values.app.features.earlyAccessPreview }}"
           - name: OAUTH_EMAIL_SENDER
             valueFrom:
               secretKeyRef:
