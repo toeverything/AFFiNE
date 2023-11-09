@@ -10,7 +10,6 @@ import {
   WorkspaceFlavour,
 } from '@affine/env/workspace';
 import { CRUD as CloudCRUD } from '@affine/workspace/affine/crud';
-import { startSync, stopSync } from '@affine/workspace/affine/sync';
 
 import { UI as CloudUI } from './cloud/ui';
 import { LocalAdapter } from './local';
@@ -41,8 +40,6 @@ export const WorkspaceAdapters = {
           return false;
         }
       },
-      'service:start': startSync,
-      'service:stop': stopSync,
     } as Partial<AppEvents>,
     CRUD: CloudCRUD,
     UI: CloudUI,

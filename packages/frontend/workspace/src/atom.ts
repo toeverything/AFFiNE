@@ -143,7 +143,6 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
         removed.forEach(meta => {
           metadata.splice(metadata.indexOf(meta), 1);
         });
-        Adapter.Events['service:stop']?.();
         continue;
       }
       try {
@@ -179,7 +178,6 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
       } catch (e) {
         console.error('list data error:', e);
       }
-      Adapter.Events['service:start']?.();
     }
   }
   const metadataMap = new Map(metadata.map(x => [x.id, x]));
