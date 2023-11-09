@@ -184,6 +184,7 @@ const PageListFloatingToolbar = ({
         onClick={handleMultiDelete}
         icon={<DeleteIcon />}
         type="danger"
+        data-testid="page-list-toolbar-delete"
       />
     </FloatingToolbar>
   );
