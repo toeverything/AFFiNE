@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 import type { BlobStorage } from '@blocksuite/store';
 
-import { isSvgBuffer } from './util';
+import { bufferToBlob } from './util';
 
 export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
   const apis = window.apis;
@@ -11,11 +11,7 @@ export const createSQLiteStorage = (workspaceId: string): BlobStorage => {
       get: async (key: string) => {
         const buffer = await apis.db.getBlob(workspaceId, key);
         if (buffer) {
-          const isSVG = isSvgBuffer(buffer);
-          // for svg blob, we need to explicitly set the type to image/svg+xml
-          return isSVG
-            ? new Blob([buffer], { type: 'image/svg+xml' })
-            : new Blob([buffer]);
+          return bufferToBlob(buffer);
         }
         return null;
       },

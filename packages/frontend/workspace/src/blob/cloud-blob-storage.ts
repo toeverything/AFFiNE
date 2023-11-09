@@ -9,7 +9,7 @@ import { fetcher } from '@affine/workspace/affine/gql';
 import type { BlobStorage } from '@blocksuite/store';
 
 import { predefinedStaticFiles } from './local-static-storage';
-import { isSvgBuffer } from './util';
+import { bufferToBlob } from './util';
 
 export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
   return {
@@ -28,14 +28,10 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
           }
           return res.arrayBuffer();
         });
-        if (!buffer) {
-          return null;
+        if (buffer) {
+          return bufferToBlob(buffer);
         }
-        const isSVG = isSvgBuffer(new Uint8Array(buffer));
-        // for svg blob, we need to explicitly set the type to image/svg+xml
-        return isSVG
-          ? new Blob([buffer], { type: 'image/svg+xml' })
-          : new Blob([buffer]);
+        return null;
       },
       set: async (key, value) => {
         const {
