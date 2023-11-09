@@ -4,13 +4,9 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { createAffinePublicProviders } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
-import {
-  createIndexeddbStorage,
-  Generator,
-  Schema,
-  Workspace,
-} from '@blocksuite/store';
+import { createIndexeddbStorage, Schema, Workspace } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
+import { nanoid } from 'nanoid';
 import type { Doc } from 'yjs';
 import type { Transaction } from 'yjs';
 
@@ -94,7 +90,6 @@ export function getOrCreateWorkspace(
   if (INTERNAL_BLOCKSUITE_HASH_MAP.has(id)) {
     return INTERNAL_BLOCKSUITE_HASH_MAP.get(id) as Workspace;
   }
-  const idGenerator = Generator.NanoID;
 
   const blobStorages: StoreOptions['blobStorages'] = [];
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
@@ -135,7 +130,7 @@ export function getOrCreateWorkspace(
     isSSR: !isBrowser,
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: blobStorages,
-    idGenerator,
+    idGenerator: () => nanoid(),
     schema: globalBlockSuiteSchema,
   });
   createMonitor(workspace.doc);

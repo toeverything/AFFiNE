@@ -33,7 +33,6 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { loadPage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { nanoid } from 'nanoid';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -198,12 +197,8 @@ export const WorkspaceLayoutInner = ({
   }, [currentWorkspace.blockSuiteWorkspace.doc]);
 
   const handleCreatePage = useCallback(() => {
-    const id = nanoid();
-    pageHelper.createPage(id);
-    const page = currentWorkspace.blockSuiteWorkspace.getPage(id);
-    assertExists(page);
-    return page;
-  }, [currentWorkspace.blockSuiteWorkspace, pageHelper]);
+    return pageHelper.createPage();
+  }, [pageHelper]);
 
   const [, setOpenQuickSearchModalAtom] = useAtom(openQuickSearchModalAtom);
   const handleOpenQuickSearchModal = useCallback(() => {
