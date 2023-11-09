@@ -80,11 +80,11 @@ jobs:
       # For windows, we need a separate approach
       matrix:
         spec:
-          - runner: macos-latest-xlarge
+          - runner: macos-latest
             platform: darwin
             arch: x64
             target: x86_64-apple-darwin
-          - runner: macos-latest-xlarge
+          - runner: macos-latest
             platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
@@ -109,6 +109,7 @@ jobs:
           hard-link-nm: false
           build-plugins: false
           nmHoistingLimits: workspaces
+          enableScripts: false
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
