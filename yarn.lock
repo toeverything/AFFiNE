@@ -7234,6 +7234,76 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@napi-rs/xattr-android-arm-eabi@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-android-arm-eabi@npm:1.0.1"
+  conditions: os=android & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-android-arm64@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-android-arm64@npm:1.0.1"
+  conditions: os=android & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-darwin-arm64@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-darwin-arm64@npm:1.0.1"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-darwin-x64@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-darwin-x64@npm:1.0.1"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-freebsd-x64@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-freebsd-x64@npm:1.0.1"
+  conditions: os=freebsd & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-linux-arm-gnueabihf@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-linux-arm-gnueabihf@npm:1.0.1"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-linux-arm64-gnu@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-linux-arm64-gnu@npm:1.0.1"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-linux-arm64-musl@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-linux-arm64-musl@npm:1.0.1"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-linux-x64-gnu@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-linux-x64-gnu@npm:1.0.1"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/xattr-linux-x64-musl@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr-linux-x64-musl@npm:1.0.1"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
 "@ndelangen/get-tarball@npm:^3.0.7":
   version: 3.0.9
   resolution: "@ndelangen/get-tarball@npm:3.0.9"
@@ -12609,14 +12679,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^0.7.20":
-  version: 0.7.20
-  resolution: "@toeverything/theme@npm:0.7.20"
-  checksum: 58f6817fbcc6784cf568f48b19a4525400b34d17038663fb4522b70df0903d4a5843d5d16a9a72efb50aaac85d81cf93536c4ddbf6c2bf619d4def7254b9461f
-  languageName: node
-  linkType: hard
-
-"@toeverything/theme@npm:^0.7.21":
+"@toeverything/theme@npm:^0.7.20, @toeverything/theme@npm:^0.7.21":
   version: 0.7.23
   resolution: "@toeverything/theme@npm:0.7.23"
   checksum: 1576abae43677fff5c9a88aea5c5755db7e07cb397daf3eb3bdfd5629350b066d8ddc1b9922b0c773774a7fed465c45e1bfebe6b809c6fa609d75017f40743ab
@@ -12924,21 +12987,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/debug@npm:^4.0.0":
+"@types/debug@npm:^4.0.0, @types/debug@npm:^4.1.7, @types/debug@npm:^4.1.9":
   version: 4.1.10
   resolution: "@types/debug@npm:4.1.10"
   dependencies:
     "@types/ms": "npm:*"
   checksum: 938f79c5b610f851da9c67ecd8641a09b33ce9cb38fe4c9f4d20ee743d6bccb5d8e9a833a4cd23e0684a316622af67a0634fa706baea5a01f5219961d1976314
-  languageName: node
-  linkType: hard
-
-"@types/debug@npm:^4.1.7, @types/debug@npm:^4.1.9":
-  version: 4.1.9
-  resolution: "@types/debug@npm:4.1.9"
-  dependencies:
-    "@types/ms": "npm:*"
-  checksum: e88ee8b19d106f33eb0d3bc58bacff9702e98d821fd1ebd1de8942e6b97419e19a1ccf39370f1764a1dc66f79fd4619f3412e1be6eeb9f0b76412f5ffe4ead93
   languageName: node
   linkType: hard
 
@@ -13410,7 +13464,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0":
   version: 20.8.6
   resolution: "@types/node@npm:20.8.6"
   dependencies:
@@ -13423,13 +13477,6 @@ __metadata:
   version: 20.5.1
   resolution: "@types/node@npm:20.5.1"
   checksum: e91034ba7eda82171dff73d3b30f584941400a5611b45d73a4d8159dc1fc309d4f1a423fbe84fd22d1ba7833383ee299c81ace6fab035c17affd0f4f0cbe7a89
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:>=8.1.0":
-  version: 20.6.2
-  resolution: "@types/node@npm:20.6.2"
-  checksum: 4b150698cf90c211d4f2f021618f06c33a337d74e9a0ce10ec2e7123f02aacc231eff62118101f56de75f7be309c2da6eb0edb8388d501d4195c50bb919c7a05
   languageName: node
   linkType: hard
 
@@ -21297,12 +21344,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-xattr@npm:^0.3.0":
-  version: 0.3.1
-  resolution: "fs-xattr@npm:0.3.1"
+"fs-xattr@npm:@napi-rs/xattr@latest":
+  version: 1.0.1
+  resolution: "@napi-rs/xattr@npm:1.0.1"
   dependencies:
-    node-gyp: "npm:latest"
-  conditions: "!os=win32"
+    "@napi-rs/xattr-android-arm-eabi": "npm:1.0.1"
+    "@napi-rs/xattr-android-arm64": "npm:1.0.1"
+    "@napi-rs/xattr-darwin-arm64": "npm:1.0.1"
+    "@napi-rs/xattr-darwin-x64": "npm:1.0.1"
+    "@napi-rs/xattr-freebsd-x64": "npm:1.0.1"
+    "@napi-rs/xattr-linux-arm-gnueabihf": "npm:1.0.1"
+    "@napi-rs/xattr-linux-arm64-gnu": "npm:1.0.1"
+    "@napi-rs/xattr-linux-arm64-musl": "npm:1.0.1"
+    "@napi-rs/xattr-linux-x64-gnu": "npm:1.0.1"
+    "@napi-rs/xattr-linux-x64-musl": "npm:1.0.1"
+  dependenciesMeta:
+    "@napi-rs/xattr-android-arm-eabi":
+      optional: true
+    "@napi-rs/xattr-android-arm64":
+      optional: true
+    "@napi-rs/xattr-darwin-arm64":
+      optional: true
+    "@napi-rs/xattr-darwin-x64":
+      optional: true
+    "@napi-rs/xattr-freebsd-x64":
+      optional: true
+    "@napi-rs/xattr-linux-arm-gnueabihf":
+      optional: true
+    "@napi-rs/xattr-linux-arm64-gnu":
+      optional: true
+    "@napi-rs/xattr-linux-arm64-musl":
+      optional: true
+    "@napi-rs/xattr-linux-x64-gnu":
+      optional: true
+    "@napi-rs/xattr-linux-x64-musl":
+      optional: true
+  checksum: 912d51ce40cb21a40e9f8be684c4be44df1b4776fd095cea523bc20cafde72c78789678ea2282c68e1b20f1cee5c88c4da7fdaba1af3c90e513b6429c0af7bac
   languageName: node
   linkType: hard
 
@@ -25912,12 +25989,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"macos-alias@npm:~0.2.5":
-  version: 0.2.11
-  resolution: "macos-alias@npm:0.2.11"
-  dependencies:
-    nan: "npm:^2.4.0"
-    node-gyp: "npm:latest"
+"macos-alias@npm:macos-alias-building@latest":
+  version: 0.2.13
+  resolution: "macos-alias-building@npm:0.2.13"
   conditions: os=darwin
   languageName: node
   linkType: hard
@@ -27399,15 +27473,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nan@npm:^2.4.0":
-  version: 2.18.0
-  resolution: "nan@npm:2.18.0"
-  dependencies:
-    node-gyp: "npm:latest"
-  checksum: 5520e22c64e2b5b495b1d765d6334c989b848bbe1502fec89c5857cabcc7f9f0474563377259e7574bff1c8a041d3b90e9ffa1f5e15502ffddee7b2550cc26a0
-  languageName: node
-  linkType: hard
-
 "nanoid@npm:^3.3.3, nanoid@npm:^3.3.6":
   version: 3.3.6
   resolution: "nanoid@npm:3.3.6"
@@ -27417,16 +27482,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^5.0.1":
-  version: 5.0.2
-  resolution: "nanoid@npm:5.0.2"
-  bin:
-    nanoid: bin/nanoid.js
-  checksum: fa6908c2c6a7a9e91e02b98cb0b9b829454d390a63f83c1798f0c504d07b536d99cad3e975e5014b176534e67e234ff66bccd4610bf3ffb2cf0d6d932a73f3a8
-  languageName: node
-  linkType: hard
-
-"nanoid@npm:^5.0.3":
+"nanoid@npm:^5.0.1, nanoid@npm:^5.0.3":
   version: 5.0.3
   resolution: "nanoid@npm:5.0.3"
   bin:
@@ -34042,22 +34098,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"unified@npm:^11.0.0":
-  version: 11.0.3
-  resolution: "unified@npm:11.0.3"
-  dependencies:
-    "@types/unist": "npm:^3.0.0"
-    bail: "npm:^2.0.0"
-    devlop: "npm:^1.0.0"
-    extend: "npm:^3.0.0"
-    is-plain-obj: "npm:^4.0.0"
-    trough: "npm:^2.0.0"
-    vfile: "npm:^6.0.0"
-  checksum: a8483c7c43b2634929d9f3c84e70a444caef8908618616644fa81361f01ada8c8e1aef60001637c1909aa2332bc78dfda77460457f31650dc78acdc049f1fdae
-  languageName: node
-  linkType: hard
-
-"unified@npm:^11.0.4":
+"unified@npm:^11.0.0, unified@npm:^11.0.4":
   version: 11.0.4
   resolution: "unified@npm:11.0.4"
   dependencies:
