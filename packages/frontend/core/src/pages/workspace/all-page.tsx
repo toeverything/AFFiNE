@@ -40,6 +40,7 @@ import { WorkspaceHeader } from '../../components/workspace-header';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
+import { performanceRenderLogger } from '../../shared';
 import * as styles from './all-page.css';
 import { EmptyPageList } from './page-list-empty';
 import { useFilteredPageMetas } from './pages';
@@ -302,5 +303,7 @@ export const AllPage = () => {
 };
 
 export const Component = () => {
+  performanceRenderLogger.info('AllPage');
+
   return <AllPage />;
 };

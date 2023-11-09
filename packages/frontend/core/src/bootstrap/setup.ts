@@ -23,6 +23,9 @@ import { nanoid } from 'nanoid';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
+import { performanceLogger } from '../shared';
+
+const performanceSetupLogger = performanceLogger.namespace('setup');
 
 async function tryMigration() {
   const value = localStorage.getItem('jotai-workspaces');
@@ -148,6 +151,7 @@ export function createFirstAppData(store: ReturnType<typeof createStore>) {
 }
 
 export async function setup(store: ReturnType<typeof createStore>) {
+  performanceSetupLogger.info('start');
   store.set(
     workspaceAdaptersAtom,
     WorkspaceAdapters as Record<
@@ -156,11 +160,15 @@ export async function setup(store: ReturnType<typeof createStore>) {
     >
   );
 
-  console.log('setup global');
+  performanceSetupLogger.info('setup global');
   setupGlobal();
 
+  performanceSetupLogger.info('try migration');
   await tryMigration();
+
+  performanceSetupLogger.info('get root workspace meta');
   // do not read `rootWorkspacesMetadataAtom` before migration
   await store.get(rootWorkspacesMetadataAtom);
-  console.log('setup done');
+
+  performanceSetupLogger.info('done');
 }

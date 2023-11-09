@@ -29,6 +29,7 @@ import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { performanceRenderLogger } from '../../shared';
 
 const DetailPageImpl = (): ReactElement => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
@@ -145,5 +146,7 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const Component = () => {
+  performanceRenderLogger.info('DetailPage');
+
   return <DetailPage />;
 };
