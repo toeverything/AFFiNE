@@ -286,10 +286,7 @@ test.describe('sign out', () => {
   });
 });
 
-test.only('can sync svg between different browsers', async ({
-  page,
-  browser,
-}) => {
+test('can sync svg between different browsers', async ({ page, browser }) => {
   await page.reload();
   await waitForEditorLoad(page);
   await createLocalWorkspace(
