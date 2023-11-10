@@ -13,5 +13,5 @@
     "@blocksuite/store": "0.0.0-20231110042432-4fdac4dc-nightly",
     "@playwright/test": "^1.39.0"
   },
-  "version": "0.10.0"
+  "version": "0.10.0-beta.0"
 }
