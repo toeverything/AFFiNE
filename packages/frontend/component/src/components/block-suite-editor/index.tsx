@@ -51,16 +51,16 @@ const useBlockElementById = (
 ) => {
   const [blockElement, setBlockElement] = useState<BlockElement | null>(null);
   useEffect(() => {
-    if (!blockId || !container) {
+    if (!blockId) {
       return;
     }
     let canceled = false;
     const start = Date.now();
     function run() {
-      if (canceled) {
+      if (canceled || !container) {
         return;
       }
-      const element = document.querySelector(
+      const element = container.querySelector(
         `[data-block-id="${blockId}"]`
       ) as BlockElement | null;
       if (element) {
@@ -118,7 +118,7 @@ const BlockSuiteEditorImpl = ({
       });
       disposes.push(() => disposeModeSwitch?.dispose());
       if (onLoadEditor) {
-        disposes.push(onLoadEditor?.(editor));
+        disposes.push(onLoadEditor(editor));
       }
       return () => {
         disposes.forEach(dispose => dispose());
