@@ -9,6 +9,7 @@ import {
   Modal,
 } from '@toeverything/components/modal';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type {
   LoadDBFileResult,
   SelectDBFileLocationResult,
@@ -330,14 +331,13 @@ export const CreateWorkspaceModal = ({
     ]
   );
 
-  const onConfirmName = useCallback(
-    (name: string) => {
+  const onConfirmName = useAsyncCallback(
+    async (name: string) => {
       setWorkspaceName(name);
       // this will be the last step for web for now
       // fix me later
-      createLocalWorkspace(name).then(id => {
-        onCreate(id);
-      });
+      const id = await createLocalWorkspace(name);
+      onCreate(id);
     },
     [createLocalWorkspace, onCreate]
   );

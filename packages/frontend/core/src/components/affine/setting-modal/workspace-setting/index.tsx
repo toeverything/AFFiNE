@@ -2,6 +2,7 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useSetAtom } from 'jotai';
 import { useAtomValue } from 'jotai';
@@ -65,7 +66,7 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
     workspaces,
   ]);
 
-  const handleDeleteWorkspace = useCallback(async () => {
+  const handleDeleteWorkspace = useAsyncCallback(async () => {
     closeAndJumpOut();
     await deleteWorkspace(workspaceId);
 
@@ -75,7 +76,7 @@ export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
     });
   }, [closeAndJumpOut, deleteWorkspace, pushNotification, t, workspaceId]);
 
-  const handleLeaveWorkspace = useCallback(async () => {
+  const handleLeaveWorkspace = useAsyncCallback(async () => {
     closeAndJumpOut();
     await leaveWorkspace(workspaceId, workspaceName);
 

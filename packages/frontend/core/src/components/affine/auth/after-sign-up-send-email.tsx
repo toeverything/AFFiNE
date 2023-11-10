@@ -6,6 +6,7 @@ import {
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { type FC, useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
@@ -29,7 +30,7 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
     onSignedIn?.();
   }
 
-  const onResendClick = useCallback(async () => {
+  const onResendClick = useAsyncCallback(async () => {
     if (verifyToken) {
       await signUp(email, verifyToken, challenge);
     }

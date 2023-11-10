@@ -14,6 +14,7 @@ import {
   PageIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useSetAtom } from 'jotai';
@@ -92,11 +93,13 @@ export const Component = function CollectionPage() {
 const Placeholder = ({ collection }: { collection: Collection }) => {
   const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
   const { node, open } = useEditCollection(useAllPageListConfig());
-  const openPageEdit = useCallback(() => {
-    open({ ...collection }, 'page').then(updateCollection);
+  const openPageEdit = useAsyncCallback(async () => {
+    const ret = await open({ ...collection }, 'page');
+    await updateCollection(ret);
   }, [open, collection, updateCollection]);
-  const openRuleEdit = useCallback(() => {
-    open({ ...collection }, 'rule').then(updateCollection);
+  const openRuleEdit = useAsyncCallback(async () => {
+    const ret = await open({ ...collection }, 'rule');
+    await updateCollection(ret);
   }, [collection, open, updateCollection]);
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {

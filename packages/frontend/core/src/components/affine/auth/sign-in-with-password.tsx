@@ -6,6 +6,7 @@ import {
 } from '@affine/component/auth-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 import type { FC } from 'react';
@@ -26,7 +27,7 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
-  const onSignIn = useCallback(async () => {
+  const onSignIn = useAsyncCallback(async () => {
     const res = await signInCloud('credentials', {
       redirect: false,
       email,

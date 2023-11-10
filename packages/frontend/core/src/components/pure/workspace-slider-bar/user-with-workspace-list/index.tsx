@@ -25,7 +25,7 @@ const SignInItem = () => {
 
   const t = useAFFiNEI18N();
 
-  const onClickSignIn = useCallback(async () => {
+  const onClickSignIn = useCallback(() => {
     if (!runtimeConfig.enableCloud) {
       setDisableCloudOpen(true);
     } else {
@@ -76,7 +76,7 @@ export const UserWithWorkspaceList = ({
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
-  const onAddWorkspace = useCallback(async () => {
+  const onAddWorkspace = useCallback(() => {
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);

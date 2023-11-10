@@ -1,5 +1,6 @@
 import { toast } from '@affine/component';
 import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -33,7 +34,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const createEdgelessAndOpen = useCallback(() => {
     return createPageAndOpen('edgeless');
   }, [createPageAndOpen]);
-  const importFileAndOpen = useCallback(async () => {
+  const importFileAndOpen = useAsyncCallback(async () => {
     const { showImportModal } = await import('@blocksuite/blocks');
     const onSuccess = (pageIds: string[], isWorkspaceFile: boolean) => {
       toast(

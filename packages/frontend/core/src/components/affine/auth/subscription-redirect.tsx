@@ -10,6 +10,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
 
@@ -33,12 +34,12 @@ const usePaymentRedirect = () => {
     mutation: checkoutMutation,
   });
 
-  return useCallback(() => {
-    checkoutSubscription({ recurring, idempotencyKey })
-      .then(({ checkout }) => {
-        window.open(checkout, '_self', 'norefferer');
-      })
-      .catch(e => console.error(e));
+  return useAsyncCallback(async () => {
+    const { checkout } = await checkoutSubscription({
+      recurring,
+      idempotencyKey,
+    });
+    window.open(checkout, '_self', 'norefferer');
   }, [recurring, idempotencyKey, checkoutSubscription]);
 };
 
