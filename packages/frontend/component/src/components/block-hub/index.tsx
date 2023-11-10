@@ -1,16 +1,10 @@
-import type { BlockHub } from '@blocksuite/blocks';
-import type { Atom } from 'jotai';
+import { rootBlockHubAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
-import type { HTMLAttributes, ReactElement } from 'react';
 import { useEffect, useRef } from 'react';
 
-export interface BlockHubProps extends HTMLAttributes<HTMLDivElement> {
-  blockHubAtom: Atom<Readonly<BlockHub> | null>;
-}
-
-export const BlockHubWrapper = (props: BlockHubProps): ReactElement => {
-  const blockHub = useAtomValue(props.blockHubAtom);
+export const RootBlockHub = () => {
   const ref = useRef<HTMLDivElement>(null);
+  const blockHub = useAtomValue(rootBlockHubAtom);
   useEffect(() => {
     if (ref.current) {
       const div = ref.current;
