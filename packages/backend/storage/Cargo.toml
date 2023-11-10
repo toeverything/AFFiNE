@@ -8,9 +8,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 chrono = "0.4"
-jwst-codec = { git = "https://github.com/toeverything/OctoBase.git", rev = "ad51b2c" }
-jwst-core = { git = "https://github.com/toeverything/OctoBase.git", rev = "ad51b2c" }
-jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", rev = "ad51b2c" }
+jwst-codec = { git = "https://github.com/toeverything/OctoBase.git", rev = "aad9e5b" }
+jwst-core = { git = "https://github.com/toeverything/OctoBase.git", rev = "aad9e5b" }
+jwst-storage = { git = "https://github.com/toeverything/OctoBase.git", rev = "aad9e5b" }
 napi = { version = "2", default-features = false, features = [
   "napi5",
   "async",
