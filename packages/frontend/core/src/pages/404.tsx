@@ -1,4 +1,5 @@
 import { NotFoundPage } from '@affine/component/not-found-page';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 import type { ReactElement } from 'react';
@@ -22,7 +23,7 @@ export const Component = (): ReactElement => {
     setOpen(true);
   }, [setOpen]);
 
-  const onConfirmSignOut = useCallback(async () => {
+  const onConfirmSignOut = useAsyncCallback(async () => {
     setOpen(false);
     await signOutCloud({
       callbackUrl: '/signIn',

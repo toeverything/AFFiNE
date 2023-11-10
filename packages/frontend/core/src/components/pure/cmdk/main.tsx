@@ -2,6 +2,7 @@ import { Command } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { useAtom } from 'jotai';
@@ -55,6 +56,19 @@ const QuickSearchGroup = ({
   const t = useAFFiNEI18N();
   const i18nkey = categoryToI18nKey[category];
   const [query, setQuery] = useAtom(cmdkQueryAtom);
+
+  const onCommendSelect = useAsyncCallback(
+    async (command: CMDKCommand) => {
+      try {
+        await command.run();
+      } finally {
+        setQuery('');
+        onOpenChange?.(false);
+      }
+    },
+    [setQuery, onOpenChange]
+  );
+
   return (
     <Command.Group key={category} heading={t[i18nkey]()}>
       {commands.map(command => {
@@ -67,11 +81,7 @@ const QuickSearchGroup = ({
         return (
           <Command.Item
             key={command.id}
-            onSelect={() => {
-              command.run();
-              setQuery('');
-              onOpenChange?.(false);
-            }}
+            onSelect={() => onCommendSelect(command)}
             value={command.value}
             data-is-danger={
               command.id === 'editor:page-move-to-trash' ||

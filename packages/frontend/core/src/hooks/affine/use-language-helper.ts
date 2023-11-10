@@ -1,5 +1,6 @@
 import { LOCALES, useI18N } from '@affine/i18n';
-import { useCallback, useMemo } from 'react';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useMemo } from 'react';
 
 export function useLanguageHelper() {
   const i18n = useI18N();
@@ -16,9 +17,9 @@ export function useLanguageHelper() {
       })),
     []
   );
-  const onLanguageChange = useCallback(
-    (event: string) => {
-      i18n.changeLanguage(event);
+  const onLanguageChange = useAsyncCallback(
+    async (event: string) => {
+      await i18n.changeLanguage(event);
     },
     [i18n]
   );

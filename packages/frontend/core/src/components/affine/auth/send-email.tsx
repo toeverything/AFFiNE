@@ -14,6 +14,7 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
@@ -146,7 +147,7 @@ export const SendEmail = ({
   const buttonContent = useButtonContent(emailType);
   const { loading, sendEmail } = useSendEmail(emailType);
 
-  const onSendEmail = useCallback(async () => {
+  const onSendEmail = useAsyncCallback(async () => {
     // TODO: add error handler
     await sendEmail(email);
 

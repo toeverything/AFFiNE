@@ -15,6 +15,7 @@ import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -364,7 +365,7 @@ const Upgrade = ({
   }, [onSubscriptionUpdate]);
 
   const [, openPaymentDisableModal] = useAtom(openPaymentDisableAtom);
-  const upgrade = useCallback(() => {
+  const upgrade = useAsyncCallback(async () => {
     if (!runtimeConfig.enablePayment) {
       openPaymentDisableModal(true);
       return;
@@ -373,7 +374,7 @@ const Upgrade = ({
     if (newTabRef.current) {
       newTabRef.current.focus();
     } else {
-      trigger(
+      await trigger(
         { recurring, idempotencyKey },
         {
           onSuccess: data => {
@@ -439,8 +440,8 @@ const ChangeRecurring = ({
     mutation: updateSubscriptionMutation,
   });
 
-  const change = useCallback(() => {
-    trigger(
+  const change = useAsyncCallback(async () => {
+    await trigger(
       { recurring: to, idempotencyKey },
       {
         onSuccess: data => {
@@ -492,7 +493,7 @@ const ChangeRecurring = ({
 const SignUpAction = ({ children }: PropsWithChildren) => {
   const setOpen = useSetAtom(authAtom);
 
-  const onClickSignIn = useCallback(async () => {
+  const onClickSignIn = useCallback(() => {
     setOpen(state => ({
       ...state,
       openModal: true,

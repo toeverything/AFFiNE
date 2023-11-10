@@ -147,36 +147,49 @@ export const pageCollectionBaseAtom =
 
       return new Observable<BaseCollectionsDataType>(subscriber => {
         const group = new DisposableGroup();
-        currentWorkspacePromise.then(async currentWorkspace => {
-          const workspaceSetting = getWorkspaceSetting(currentWorkspace);
-          migrateCollectionsFromIdbData(currentWorkspace).then(collections => {
-            if (collections.length) {
-              workspaceSetting.addCollection(...collections);
-            }
-          });
-          migrateCollectionsFromUserData(currentWorkspace).then(collections => {
-            if (collections.length) {
-              workspaceSetting.addCollection(...collections);
-            }
-          });
-          subscriber.next({
-            loading: false,
-            collections: workspaceSetting.collections,
-          });
-          if (group.disposed) {
-            return;
-          }
-          const fn = () => {
+        currentWorkspacePromise
+          .then(async currentWorkspace => {
+            const workspaceSetting = getWorkspaceSetting(currentWorkspace);
+            migrateCollectionsFromIdbData(currentWorkspace)
+              .then(collections => {
+                if (collections.length) {
+                  workspaceSetting.addCollection(...collections);
+                }
+              })
+              .catch(error => {
+                console.error(error);
+              });
+            migrateCollectionsFromUserData(currentWorkspace)
+              .then(collections => {
+                if (collections.length) {
+                  workspaceSetting.addCollection(...collections);
+                }
+              })
+              .catch(error => {
+                console.error(error);
+              });
             subscriber.next({
               loading: false,
               collections: workspaceSetting.collections,
             });
-          };
-          workspaceSetting.collectionsYArray.observe(fn);
-          group.add(() => {
-            workspaceSetting.collectionsYArray.unobserve(fn);
+            if (group.disposed) {
+              return;
+            }
+            const fn = () => {
+              subscriber.next({
+                loading: false,
+                collections: workspaceSetting.collections,
+              });
+            };
+            workspaceSetting.collectionsYArray.observe(fn);
+            group.add(() => {
+              workspaceSetting.collectionsYArray.unobserve(fn);
+            });
+          })
+          .catch(error => {
+            subscriber.error(error);
           });
-        });
+
         return () => {
           group.dispose();
         };

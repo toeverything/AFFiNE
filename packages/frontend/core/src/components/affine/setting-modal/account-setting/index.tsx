@@ -16,6 +16,7 @@ import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { Avatar } from '@toeverything/components/avatar';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { validateAndReduceImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
@@ -50,7 +51,7 @@ export const UserAvatar = () => {
     mutation: removeAvatarMutation,
   });
 
-  const handleUpdateUserAvatar = useCallback(
+  const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
       try {
         const reducedFile = await validateAndReduceImage(file);
