@@ -16,6 +16,8 @@ import type { ErrorInfo, ReactElement, ReactNode } from 'react';
 import type React from 'react';
 import { Component } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+
+import { SessionFetchErrorRightAfterLoginOrSignUp } from '../../unexpected-application-state/errors';
 export type AffineErrorBoundaryProps = React.PropsWithChildren;
 
 type AffineError =
@@ -23,7 +25,8 @@ type AffineError =
   | Unreachable
   | WorkspaceNotFoundError
   | PageNotFoundError
-  | Error;
+  | Error
+  | SessionFetchErrorRightAfterLoginOrSignUp;
 
 interface AffineErrorBoundaryState {
   error: AffineError | null;
@@ -87,6 +90,18 @@ export class AffineErrorBoundary extends Component<
               <span>
                 Cannot find page {error.pageId} in workspace{' '}
                 {error.workspace.id}
+              </span>
+            </>
+          </>
+        );
+      } else if (error instanceof SessionFetchErrorRightAfterLoginOrSignUp) {
+        errorDetail = (
+          <>
+            <h1>Sorry.. there was an error</h1>
+            <>
+              <span> Fetching session failed </span>
+              <span onClick={error.refetchSession}>
+                click here to refetch session
               </span>
             </>
           </>

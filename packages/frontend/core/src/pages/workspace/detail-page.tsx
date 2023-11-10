@@ -25,6 +25,7 @@ import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
+import { AffineErrorBoundary } from '../../components/affine/affine-error-eoundary';
 import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
@@ -148,5 +149,9 @@ export const loader: LoaderFunction = async args => {
 export const Component = () => {
   performanceRenderLogger.info('DetailPage');
 
-  return <DetailPage />;
+  return (
+    <AffineErrorBoundary>
+      <DetailPage />
+    </AffineErrorBoundary>
+  );
 };
