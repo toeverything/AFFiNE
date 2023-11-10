@@ -42,6 +42,13 @@ export const createStaticStorage = (): BlobStorage => {
   return {
     crud: {
       get: async (key: string) => {
+        const isStaticResource =
+          predefinedStaticFiles.includes(key) || key.startsWith('/static/');
+
+        if (!isStaticResource) {
+          return null;
+        }
+
         const path = key.startsWith('/static/') ? key : `/static/${key}`;
         const response = await fetch(path);
 
