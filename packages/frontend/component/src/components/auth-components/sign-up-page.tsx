@@ -1,8 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
+import { pushNotificationAtom } from '../notification-center';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';
 type User = {
@@ -14,18 +16,33 @@ type User = {
 
 export const SignUpPage: FC<{
   user: User;
-  onSetPassword: (password: string) => void;
+  onSetPassword: (password: string) => Promise<void>;
+  openButtonText?: string;
   onOpenAffine: () => void;
-}> = ({ user: { email }, onSetPassword: propsOnSetPassword, onOpenAffine }) => {
+}> = ({
+  user: { email },
+  onSetPassword: propsOnSetPassword,
+  onOpenAffine,
+  openButtonText,
+}) => {
   const t = useAFFiNEI18N();
   const [hasSetUp, setHasSetUp] = useState(false);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const onSetPassword = useCallback(
     (passWord: string) => {
-      propsOnSetPassword(passWord);
-      setHasSetUp(true);
+      propsOnSetPassword(passWord)
+        .then(() => setHasSetUp(true))
+        .catch(e =>
+          pushNotification({
+            title: t['com.affine.auth.password.set-failed'](),
+            message: String(e),
+            key: Date.now().toString(),
+            type: 'error',
+          })
+        );
     },
-    [propsOnSetPassword]
+    [propsOnSetPassword, pushNotification, t]
   );
   const onLater = useCallback(() => {
     setHasSetUp(true);
@@ -51,7 +68,7 @@ export const SignUpPage: FC<{
     >
       {hasSetUp ? (
         <Button type="primary" size="large" onClick={onOpenAffine}>
-          {t['com.affine.auth.open.affine']()}
+          {openButtonText ?? t['com.affine.auth.open.affine']()}
         </Button>
       ) : (
         <SetPassword

@@ -119,19 +119,18 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
     [id, setCollapseState]
   );
 
-  const selectionState = useAtomValue(selectionStateAtom);
+  const [selectionState, setSelectionActive] = useAtom(selectionStateAtom);
   const selectedItems = useMemo(() => {
     const selectedPageIds = selectionState.selectedPageIds ?? [];
     return items.filter(item => selectedPageIds.includes(item.id));
   }, [items, selectionState.selectedPageIds]);
 
-  const allSelected = useMemo(() => {
-    return items.every(
-      item => selectionState.selectedPageIds?.includes(item.id)
-    );
-  }, [items, selectionState.selectedPageIds]);
+  const allSelected = selectedItems.length === items.length;
 
   const onSelectAll = useCallback(() => {
+    // also enable selection active
+    setSelectionActive(true);
+
     const nonCurrentGroupIds =
       selectionState.selectedPageIds?.filter(
         id => !items.map(item => item.id).includes(id)
@@ -142,12 +141,18 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
       : [...nonCurrentGroupIds, ...items.map(item => item.id)];
 
     selectionState.onSelectedPageIdsChange?.(newSelectedPageIds);
-  }, [items, selectionState, allSelected]);
+  }, [setSelectionActive, selectionState, allSelected, items]);
 
   const t = useAFFiNEI18N();
 
   return label ? (
-    <div data-testid="page-list-group-header" className={styles.header}>
+    <div
+      data-testid="page-list-group-header"
+      className={styles.header}
+      data-group-id={id}
+      data-group-items-count={items.length}
+      data-group-selected-items-count={selectedItems.length}
+    >
       <div
         role="button"
         onClick={onExpandedClicked}
@@ -166,15 +171,13 @@ export const PageGroupHeader = ({ id, items, label }: PageGroupProps) => {
         </div>
       ) : null}
       <div className={styles.spacer} />
-      {selectionState.selectionActive ? (
-        <button className={styles.selectAllButton} onClick={onSelectAll}>
-          {t[
-            allSelected
-              ? 'com.affine.page.group-header.clear'
-              : 'com.affine.page.group-header.select-all'
-          ]()}
-        </button>
-      ) : null}
+      <button className={styles.selectAllButton} onClick={onSelectAll}>
+        {t[
+          allSelected
+            ? 'com.affine.page.group-header.clear'
+            : 'com.affine.page.group-header.select-all'
+        ]()}
+      </button>
     </div>
   ) : null;
 };

@@ -118,6 +118,7 @@ jobs:
           extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop
           playwright-install: true
           hard-link-nm: false
+          enableScripts: false
 
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust

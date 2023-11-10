@@ -58,6 +58,8 @@ app:
       secretName: 'stripe'
       apiKey: ''
       webhookKey: ''
+  features:
+    earlyAccessPreview: false
 
 serviceAccount:
   create: true

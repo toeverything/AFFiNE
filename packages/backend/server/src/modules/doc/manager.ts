@@ -201,6 +201,9 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       defer(async () => {
         const seq = await this.getUpdateSeq(workspaceId, guid);
         await this.db.update.create({
+          select: {
+            seq: true,
+          },
           data: {
             workspaceId,
             id: guid,
@@ -388,10 +391,13 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     const state = Buffer.from(encodeStateVector(doc));
 
     if (isEmptyBuffer(blob)) {
-      return null;
+      return;
     }
 
-    return this.db.snapshot.upsert({
+    await this.db.snapshot.upsert({
+      select: {
+        seq: true,
+      },
       where: {
         id_workspaceId: {
           id: guid,

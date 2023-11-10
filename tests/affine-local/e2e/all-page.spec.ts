@@ -194,3 +194,124 @@ test('allow creation of filters by tags', async ({ page }) => {
   await selectTag(page, 'B');
   expect(await getPagesCount(page)).toBe(pageCount + 1);
 });
+
+test('enable selection and use ESC to disable selection', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+
+  // there should be no checkbox in the page list by default
+  expect(
+    await page
+      .locator('[data-testid="page-list-item"] [data-testid="affine-checkbox"]')
+      .count()
+  ).toBe(0);
+
+  // by clicking [data-testid="page-list-header-selection-checkbox"], checkboxes should appear
+  await page
+    .locator('[data-testid="page-list-header-selection-checkbox"]')
+    .click();
+
+  // there should be checkboxes in the page list now
+  expect(
+    await page
+      .locator('[data-testid="page-list-item"] [data-testid="affine-checkbox"]')
+      .count()
+  ).toBeGreaterThan(0);
+
+  // by ESC, checkboxes should NOT disappear (because it is too early)
+  await page.keyboard.press('Escape');
+
+  expect(
+    await page
+      .locator('[data-testid="page-list-item"] [data-testid="affine-checkbox"]')
+      .count()
+  ).toBeGreaterThan(0);
+
+  // wait for 300ms
+  await page.waitForTimeout(300);
+
+  // esc again, checkboxes should disappear
+  await page.keyboard.press('Escape');
+
+  expect(
+    await page
+      .locator('[data-testid="page-list-item"] [data-testid="affine-checkbox"]')
+      .count()
+  ).toBe(0);
+});
+
+test('select two pages and delete', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+
+  const pageCount = await getPagesCount(page);
+
+  // by clicking [data-testid="page-list-header-selection-checkbox"], checkboxes should appear
+  await page
+    .locator('[data-testid="page-list-header-selection-checkbox"]')
+    .click();
+
+  // select the first two pages
+  await page
+    .locator('[data-testid="page-list-item"] [data-testid="affine-checkbox"]')
+    .nth(0)
+    .click();
+
+  await page
+    .locator('[data-testid="page-list-item"] [data-testid="affine-checkbox"]')
+    .nth(1)
+    .click();
+
+  // the floating popover should appear
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
+    '2 selected'
+  );
+
+  // click delete button
+  await page.locator('[data-testid="page-list-toolbar-delete"]').click();
+
+  // the confirm dialog should appear
+  await expect(page.getByText('Delete 2 pages?')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete' }).click();
+
+  // check the page count again
+  await page.waitForTimeout(300);
+
+  expect(await getPagesCount(page)).toBe(pageCount - 2);
+});
+
+test('select a group of items by clicking "Select All" in group header', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickSideBarAllPageButton(page);
+  await waitForAllPagesLoad(page);
+
+  // Select All will appear when hovering the header
+  await page.hover('[data-testid="page-list-group-header"]');
+
+  // click Select All
+  await page.getByRole('button', { name: 'Select All' }).click();
+
+  const selectedItemCount = await page
+    .locator('[data-testid="page-list-group-header"]')
+    .getAttribute('data-group-selected-items-count');
+
+  const selectedGroupItemTotalCount = await page
+    .locator('[data-testid="page-list-group-header"]')
+    .getAttribute('data-group-items-count');
+
+  expect(selectedItemCount).toBe(selectedGroupItemTotalCount);
+
+  // check the selected count is equal to the one displayed in the floating toolbar
+  await expect(page.locator('[data-testid="floating-toolbar"]')).toHaveText(
+    `${selectedItemCount} selected`
+  );
+});

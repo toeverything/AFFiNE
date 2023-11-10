@@ -91,6 +91,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       ENABLE_LOCAL_EMAIL: ['auth.localEmail', 'boolean'],
       STRIPE_API_KEY: 'payment.stripe.keys.APIKey',
       STRIPE_WEBHOOK_KEY: 'payment.stripe.keys.webhookKey',
+      FEATURES_EARLY_ACCESS_PREVIEW: [
+        'featureFlags.earlyAccessPreview',
+        'boolean',
+      ],
     } satisfies AFFiNEConfig['ENV_MAP'],
     affineEnv: 'dev',
     get affine() {
@@ -113,11 +117,8 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     get deploy() {
       return !this.node.dev && !this.node.test;
     },
-    get featureFlags() {
-      return {
-        earlyAccessPreview:
-          this.node.prod && (this.affine.beta || this.affine.canary),
-      };
+    featureFlags: {
+      earlyAccessPreview: false,
     },
     get https() {
       return !this.node.dev;

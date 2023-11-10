@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import {
   createIndexedDBDatasource,
@@ -12,6 +13,7 @@ import { createCloudBlobStorage } from '../blob/cloud-blob-storage';
 import { createAffineDataSource } from '.';
 import { CRUD } from './crud';
 
+const performanceLogger = new DebugLogger('performance:sync');
 let abortController: AbortController | undefined;
 
 const downloadRootFromIndexedDB = async (
@@ -29,9 +31,13 @@ const downloadRootFromIndexedDB = async (
 };
 
 export async function startSync() {
+  performanceLogger.info('start');
+
   abortController = new AbortController();
   const signal = abortController.signal;
   const workspaces = await CRUD.list();
+  performanceLogger.info('CRUD list');
+
   const syncDocPromises = workspaces.map(workspace =>
     downloadRootFromIndexedDB(
       workspace.id,
@@ -40,6 +46,8 @@ export async function startSync() {
     )
   );
   await Promise.all(syncDocPromises);
+  performanceLogger.info('all sync promise');
+
   const syncPromises = workspaces.map(workspace => {
     const remoteDataSource = createAffineDataSource(
       workspace.id,
@@ -104,6 +112,7 @@ export async function startSync() {
     });
   });
   await Promise.all([...syncPromises, ...syncBlobPromises]);
+  performanceLogger.info('sync done');
 }
 
 export async function stopSync() {

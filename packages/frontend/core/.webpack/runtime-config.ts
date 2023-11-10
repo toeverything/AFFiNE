@@ -17,6 +17,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
     stable: {
       enablePlugin: true,
+      builtinPlugins: ['/plugins/image-preview'],
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
@@ -52,6 +53,13 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     // canary will be aggressive and enable all features
     canary: {
       enablePlugin: true,
+      builtinPlugins: [
+        '/plugins/copilot',
+        '/plugins/hello-world',
+        '/plugins/image-preview',
+        '/plugins/vue-hello-world',
+        '/plugins/outline',
+      ],
       enableTestProperties: true,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
@@ -83,6 +91,13 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const currentBuildPreset = buildPreset[currentBuild];
 
   const environmentPreset = {
+    builtinPlugins: [
+      '/plugins/copilot',
+      '/plugins/hello-world',
+      '/plugins/image-preview',
+      '/plugins/vue-hello-world',
+      '/plugins/outline',
+    ],
     enablePlugin: process.env.ENABLE_PLUGIN
       ? process.env.ENABLE_PLUGIN === 'true'
       : currentBuildPreset.enablePlugin,
