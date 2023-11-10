@@ -6,6 +6,7 @@ import {
   enableCloudWorkspaceFromShareButton,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
+import { dropFile } from '@affine-test/kit/utils/drop-file';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
@@ -283,4 +284,56 @@ test.describe('sign out', () => {
     await expect(signInButton).toBeVisible();
     expect(page.url()).toBe(currentUrl);
   });
+});
+
+test('can sync svg between different browsers', async ({ page, browser }) => {
+  await page.reload();
+  await waitForEditorLoad(page);
+  await createLocalWorkspace(
+    {
+      name: 'test',
+    },
+    page
+  );
+  await enableCloudWorkspace(page);
+  await clickNewPageButton(page);
+  await waitForEditorLoad(page);
+
+  // drop an svg file
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+    <rect x="0" y="0" width="200" height="200" fill="red" />
+  </svg>`;
+
+  await dropFile(page, 'affine-paragraph', svg, 'test.svg', 'image/svg+xml');
+
+  {
+    const context = await browser.newContext();
+    const page2 = await context.newPage();
+    await loginUser(page2, user.email);
+    await page2.goto(page.url());
+
+    // the user should see the svg
+    // get the image src under "affine-image img"
+    const src = await page2.locator('affine-image img').getAttribute('src');
+
+    expect(src).not.toBeNull();
+
+    // fetch the src resource in the browser
+    const svg2 = await page2.evaluate(async src => {
+      async function blobToString(blob: Blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsText(blob);
+        });
+      }
+
+      const blob = fetch(src!).then(res => res.blob());
+      return blobToString(await blob);
+    }, src);
+
+    // turn the blob into string and check if it contains the svg
+    expect(svg2).toContain(svg);
+  }
 });

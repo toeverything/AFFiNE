@@ -1,5 +1,7 @@
 import type { BlobStorage } from '@blocksuite/store';
 
+import { bufferToBlob } from './util';
+
 export const predefinedStaticFiles = [
   '029uztLz2CzJezK7UUhrbGiWUdZ0J7NVs_qR6RDsvb8=',
   '047ebf2c9a5c7c9d8521c2ea5e6140ff7732ef9e28a9f944e9bf3ca4',
@@ -40,17 +42,21 @@ export const createStaticStorage = (): BlobStorage => {
   return {
     crud: {
       get: async (key: string) => {
-        if (key.startsWith('/static/')) {
-          const response = await fetch(key);
-          if (response.ok) {
-            return response.blob();
-          }
-        } else if (predefinedStaticFiles.includes(key)) {
-          const response = await fetch(`/static/${key}`);
-          if (response.ok) {
-            return response.blob();
-          }
+        const isStaticResource =
+          predefinedStaticFiles.includes(key) || key.startsWith('/static/');
+
+        if (!isStaticResource) {
+          return null;
         }
+
+        const path = key.startsWith('/static/') ? key : `/static/${key}`;
+        const response = await fetch(path);
+
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          return bufferToBlob(buffer);
+        }
+
         return null;
       },
       set: async (key: string) => {
