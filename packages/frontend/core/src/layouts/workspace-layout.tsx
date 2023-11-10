@@ -2,7 +2,7 @@ import {
   AppSidebarFallback,
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
-import { BlockHubWrapper } from '@affine/component/block-hub';
+import { RootBlockHub } from '@affine/component/block-hub';
 import {
   type DraggableTitleCellData,
   PageListDragOverlay,
@@ -13,10 +13,7 @@ import {
   WorkspaceFallback,
 } from '@affine/component/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  rootBlockHubAtom,
-  rootWorkspacesMetadataAtom,
-} from '@affine/workspace/atom';
+import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -294,7 +291,7 @@ export const WorkspaceLayoutInner = ({
             >
               {incompatible ? <WorkspaceUpgrade /> : children}
               <ToolContainer inTrashPage={inTrashPage}>
-                <BlockHubWrapper blockHubAtom={rootBlockHubAtom} />
+                <RootBlockHub />
                 <HelpIsland showList={pageId ? undefined : showList} />
               </ToolContainer>
             </MainContainer>

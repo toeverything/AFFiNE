@@ -1,8 +1,9 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
-import type { LayoutNode } from '@affine/sdk//entry';
+import type { LayoutNode } from '@affine/sdk/entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
+import type { BlockHub } from '@blocksuite/blocks';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
@@ -40,8 +41,9 @@ import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
 
-function useRouterHash() {
-  return useLocation().hash.substring(1);
+declare global {
+  // eslint-disable-next-line no-var
+  var currentEditor: EditorContainer | undefined;
 }
 
 export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
@@ -50,17 +52,43 @@ export interface PageDetailEditorProps {
   isPublic?: boolean;
   workspace: Workspace;
   pageId: string;
-  onInit: (
-    page: Page,
-    editor: Readonly<EditorContainer>
-  ) => Promise<void> | void;
   onLoad?: OnLoadEditor;
+}
+
+function useRouterHash() {
+  return useLocation().hash.substring(1);
+}
+
+function useCreateAndSetRootBlockHub(
+  editor?: EditorContainer,
+  showBlockHub?: boolean
+) {
+  const setBlockHub = useSetAtom(rootBlockHubAtom);
+  useEffect(() => {
+    let canceled = false;
+    let blockHub: BlockHub | undefined;
+    if (editor && showBlockHub) {
+      editor
+        .createBlockHub()
+        .then(bh => {
+          if (canceled) {
+            return;
+          }
+          blockHub = bh;
+          setBlockHub(blockHub);
+        })
+        .catch(console.error);
+    }
+    return () => {
+      canceled = true;
+      blockHub?.remove();
+    };
+  }, [editor, showBlockHub, setBlockHub]);
 }
 
 const EditorWrapper = memo(function EditorWrapper({
   workspace,
   pageId,
-  onInit,
   onLoad,
   isPublic,
 }: PageDetailEditorProps) {
@@ -79,7 +107,6 @@ const EditorWrapper = memo(function EditorWrapper({
   const pageSetting = useAtomValue(pageSettingAtom);
   const currentMode = pageSetting?.mode ?? 'page';
 
-  const setBlockHub = useSetAtom(rootBlockHubAtom);
   const { appSettings } = useAppSettingHelper();
 
   assertExists(meta);
@@ -91,29 +118,6 @@ const EditorWrapper = memo(function EditorWrapper({
     return fontStyle.value;
   }, [appSettings.fontStyle]);
 
-  const [loading, setLoading] = useState(true);
-  const blockId = useRouterHash();
-  const blockElement = useMemo(() => {
-    if (!blockId || loading) {
-      return null;
-    }
-    return document.querySelector(`[data-block-id="${blockId}"]`);
-  }, [blockId, loading]);
-
-  useEffect(() => {
-    if (blockElement) {
-      setTimeout(
-        () =>
-          blockElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center',
-          }),
-        0
-      );
-    }
-  }, [blockElement]);
-
   const setEditorMode = useCallback(
     (mode: 'page' | 'edgeless') => {
       if (mode === 'edgeless') {
@@ -123,6 +127,56 @@ const EditorWrapper = memo(function EditorWrapper({
       }
     },
     [switchToEdgelessMode, switchToPageMode, pageId]
+  );
+
+  const [editor, setEditor] = useState<EditorContainer>();
+  const blockId = useRouterHash();
+
+  useCreateAndSetRootBlockHub(editor, !meta.trash);
+
+  const onLoadEditor = useCallback(
+    (editor: EditorContainer) => {
+      // debug current detail editor
+      globalThis.currentEditor = editor;
+      setEditor(editor);
+      const disposableGroup = new DisposableGroup();
+      disposableGroup.add(
+        page.slots.blockUpdated.once(() => {
+          page.workspace.setPageMeta(page.id, {
+            updatedDate: Date.now(),
+          });
+        })
+      );
+      localStorage.setItem('last_page_id', page.id);
+      if (onLoad) {
+        disposableGroup.add(onLoad(page, editor));
+      }
+      const rootStore = getCurrentStore();
+      const editorItems = rootStore.get(pluginEditorAtom);
+      let disposes: (() => void)[] = [];
+      const renderTimeout = window.setTimeout(() => {
+        disposes = Object.entries(editorItems).map(([id, editorItem]) => {
+          const div = document.createElement('div');
+          div.setAttribute('plugin-id', id);
+          const cleanup = editorItem(div, editor);
+          assertExists(parent);
+          document.body.appendChild(div);
+          return () => {
+            cleanup();
+            document.body.removeChild(div);
+          };
+        });
+      });
+
+      return () => {
+        disposableGroup.dispose();
+        clearTimeout(renderTimeout);
+        window.setTimeout(() => {
+          disposes.forEach(dispose => dispose());
+        });
+      };
+    },
+    [onLoad, page]
   );
 
   return (
@@ -140,55 +194,8 @@ const EditorWrapper = memo(function EditorWrapper({
         mode={isPublic ? 'page' : currentMode}
         page={page}
         onModeChange={setEditorMode}
-        onInit={useCallback(
-          (page: Page, editor: Readonly<EditorContainer>) => {
-            onInit(page, editor);
-          },
-          [onInit]
-        )}
-        setBlockHub={setBlockHub}
-        onLoad={useCallback(
-          (page: Page, editor: EditorContainer) => {
-            const disposableGroup = new DisposableGroup();
-            disposableGroup.add(
-              page.slots.blockUpdated.once(() => {
-                page.workspace.setPageMeta(page.id, {
-                  updatedDate: Date.now(),
-                });
-              })
-            );
-            localStorage.setItem('last_page_id', page.id);
-            if (onLoad) {
-              disposableGroup.add(onLoad(page, editor));
-            }
-            const rootStore = getCurrentStore();
-            const editorItems = rootStore.get(pluginEditorAtom);
-            let disposes: (() => void)[] = [];
-            const renderTimeout = window.setTimeout(() => {
-              disposes = Object.entries(editorItems).map(([id, editorItem]) => {
-                const div = document.createElement('div');
-                div.setAttribute('plugin-id', id);
-                const cleanup = editorItem(div, editor);
-                assertExists(parent);
-                document.body.appendChild(div);
-                return () => {
-                  cleanup();
-                  document.body.removeChild(div);
-                };
-              });
-            });
-
-            return () => {
-              disposableGroup.dispose();
-              clearTimeout(renderTimeout);
-              window.setTimeout(() => {
-                disposes.forEach(dispose => dispose());
-              });
-              setLoading(false);
-            };
-          },
-          [onLoad]
-        )}
+        defaultSelectedBlockId={blockId}
+        onLoadEditor={onLoadEditor}
       />
       {meta.trash && <TrashButtonGroup />}
       <Bookmark page={page} />
