@@ -37,7 +37,7 @@ interface ExportHandlerOptions {
 
 async function exportHandler({ page, type }: ExportHandlerOptions) {
   if (type === 'pdf' && environment.isDesktop && page.meta.mode === 'page') {
-    window.apis?.export.savePDFFileAs(
+    await window.apis?.export.savePDFFileAs(
       (page.root as PageBlockModel).title.toString()
     );
   } else {
