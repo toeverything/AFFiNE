@@ -18,7 +18,7 @@
     "@affine/sdk": "workspace:*",
     "@blocksuite/icons": "2.1.35",
     "@toeverything/components": "^0.0.46",
-    "@toeverything/theme": "^0.7.20",
+    "@toeverything/theme": "^0.7.24",
     "clsx": "^2.0.0",
     "foxact": "^0.2.20",
     "react-error-boundary": "^4.0.11",
