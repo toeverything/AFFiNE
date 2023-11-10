@@ -3,6 +3,7 @@ import '@affine/component/theme/theme.css';
 import '@toeverything/components/style.css';
 
 import { AffineContext } from '@affine/component/context';
+import { GlobalLoading } from '@affine/component/global-loading';
 import { NotificationCenter } from '@affine/component/notification-center';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { CacheProvider } from '@emotion/react';
@@ -62,6 +63,7 @@ export const App = memo(function App() {
       <AffineContext store={getCurrentStore()}>
         <CloudSessionProvider>
           <DebugProvider>
+            <GlobalLoading />
             {runtimeConfig.enableNotificationCenter && <NotificationCenter />}
             <RouterProvider
               fallbackElement={<WorkspaceFallback key="RouterFallback" />}
