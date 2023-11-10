@@ -24,7 +24,7 @@ import {
   PreconditionStrategy,
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
-import groupBy from 'lodash/groupBy';
+import { groupBy } from 'lodash-es';
 import { useCallback, useMemo } from 'react';
 
 import {

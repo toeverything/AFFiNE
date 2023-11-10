@@ -18,8 +18,9 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { IconButton } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
@@ -80,9 +81,9 @@ const CollectionRenderer = ({
     () => new Set(collection.allowList),
     [collection.allowList]
   );
-  const removeFromAllowList = useCallback(
-    (id: string) => {
-      return setting.updateCollection({
+  const removeFromAllowList = useAsyncCallback(
+    async (id: string) => {
+      await setting.updateCollection({
         ...collection,
         allowList: collection.allowList?.filter(v => v != id),
       });

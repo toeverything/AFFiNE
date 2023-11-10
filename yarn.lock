@@ -178,7 +178,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/cmdk@workspace:packages/common/cmdk":
+"@affine/cmdk@workspace:*, @affine/cmdk@workspace:packages/common/cmdk":
   version: 0.0.0-use.local
   resolution: "@affine/cmdk@workspace:packages/common/cmdk"
   dependencies:
@@ -242,7 +242,6 @@ __metadata:
     jotai-effect: "npm:^0.2.2"
     jotai-scope: "npm:^0.4.0"
     lit: "npm:^3.0.2"
-    lodash: "npm:^4.17.21"
     lodash-es: "npm:^4.17.21"
     lottie-react: "npm:^2.4.0"
     lottie-web: "npm:^5.12.2"
@@ -304,6 +303,7 @@ __metadata:
   resolution: "@affine/core@workspace:packages/frontend/core"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
+    "@affine/cmdk": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
@@ -319,6 +319,7 @@ __metadata:
     "@blocksuite/icons": "npm:2.1.35"
     "@blocksuite/lit": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
     "@blocksuite/store": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
+    "@blocksuite/virgo": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
     "@dnd-kit/core": "npm:^6.0.8"
     "@dnd-kit/sortable": "npm:^7.0.2"
     "@emotion/cache": "npm:^11.11.0"
@@ -329,24 +330,37 @@ __metadata:
     "@mui/material": "npm:^5.14.14"
     "@perfsee/webpack": "npm:^1.8.4"
     "@pmmmwh/react-refresh-webpack-plugin": "npm:^0.5.11"
+    "@radix-ui/react-collapsible": "npm:^1.0.3"
+    "@radix-ui/react-dialog": "npm:^1.0.4"
+    "@radix-ui/react-scroll-area": "npm:^1.0.5"
     "@radix-ui/react-select": "npm:^2.0.0"
     "@react-hookz/web": "npm:^23.1.0"
     "@sentry/webpack-plugin": "npm:^2.8.0"
     "@svgr/webpack": "npm:^8.1.0"
     "@swc/core": "npm:^1.3.93"
+    "@testing-library/react": "npm:^14.0.0"
     "@toeverything/components": "npm:^0.0.46"
+    "@toeverything/theme": "npm:^0.7.20"
     "@types/bytes": "npm:^3.1.3"
     "@types/lodash-es": "npm:^4.17.9"
+    "@types/uuid": "npm:^9.0.5"
     "@types/webpack-env": "npm:^1.18.2"
+    "@vanilla-extract/css": "npm:^1.13.0"
+    "@vanilla-extract/dynamic": "npm:^2.0.3"
     async-call-rpc: "npm:^6.3.1"
     bytes: "npm:^3.1.2"
+    clsx: "npm:^2.0.0"
     copy-webpack-plugin: "npm:^11.0.0"
     css-loader: "npm:^6.8.1"
     css-spring: "npm:^4.1.0"
     cssnano: "npm:^6.0.1"
+    dayjs: "npm:^1.11.10"
     express: "npm:^4.18.2"
+    fake-indexeddb: "npm:^5.0.0"
+    foxact: "npm:^0.2.20"
     graphql: "npm:^16.8.1"
     html-webpack-plugin: "npm:^5.5.3"
+    idb: "npm:^7.1.1"
     intl-segmenter-polyfill-rs: "npm:^0.1.6"
     jotai: "npm:^2.4.3"
     jotai-devtools: "npm:^0.7.0"
@@ -355,12 +369,14 @@ __metadata:
     lottie-web: "npm:^5.12.2"
     mime-types: "npm:^2.1.35"
     mini-css-extract-plugin: "npm:^2.7.6"
+    nanoid: "npm:^5.0.1"
     next-auth: "npm:^4.23.2"
     next-themes: "npm:^0.2.1"
     postcss-loader: "npm:^7.3.3"
     raw-loader: "npm:^4.0.2"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
+    react-error-boundary: "npm:^4.0.11"
     react-is: "npm:18.2.0"
     react-resizable-panels: "npm:^0.0.55"
     react-router-dom: "npm:^6.16.0"
@@ -372,7 +388,9 @@ __metadata:
     swc-plugin-coverage-instrument: "npm:^0.0.20"
     swr: "npm:2.2.4"
     thread-loader: "npm:^4.0.2"
+    uuid: "npm:^9.0.1"
     valtio: "npm:^1.11.2"
+    vitest: "npm:0.34.6"
     webpack: "npm:^5.89.0"
     webpack-cli: "npm:^5.1.4"
     webpack-dev-server: "npm:^4.15.1"
@@ -482,6 +500,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:^4.0.1"
     "@types/lodash-es": "npm:^4.17.9"
     graphql: "npm:^16.8.1"
+    lodash: "npm:^4.17.21"
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.1"
     prettier: "npm:^3.0.3"
@@ -12679,7 +12698,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^0.7.21, @toeverything/theme@npm:^0.7.24":
+"@toeverything/theme@npm:^0.7.20, @toeverything/theme@npm:^0.7.21, @toeverything/theme@npm:^0.7.24":
   version: 0.7.24
   resolution: "@toeverything/theme@npm:0.7.24"
   checksum: faa97dad2a411e895090497ff6cbb83836e9be963e608cbc7f3421c4a933d86393551250fa015d4b9060778f0abb0e122a41d12a70e6f7fb7c9eadc2324a6035

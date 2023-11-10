@@ -1,6 +1,6 @@
 import { type SubscriptionQuery, subscriptionQuery } from '@affine/graphql';
 import { useQuery } from '@affine/workspace/affine/gql';
-import { useCallback } from 'react';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 
 export type Subscription = NonNullable<
   NonNullable<SubscriptionQuery['currentUser']>['subscription']
@@ -16,9 +16,9 @@ export const useUserSubscription = () => {
     query: subscriptionQuery,
   });
 
-  const set: SubscriptionMutator = useCallback(
-    (update?: Partial<Subscription>) => {
-      mutate(prev => {
+  const set: SubscriptionMutator = useAsyncCallback(
+    async (update?: Partial<Subscription>) => {
+      await mutate(prev => {
         if (!update || !prev?.currentUser?.subscription) {
           return;
         }

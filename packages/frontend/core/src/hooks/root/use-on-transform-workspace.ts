@@ -7,10 +7,10 @@ import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback } from 'react';
 
 import { openSettingModalAtom } from '../../atoms';
 import { useNavigateHelper } from '../use-navigate-helper';
@@ -24,7 +24,7 @@ export function useOnTransformWorkspace() {
   const currentPageId = useAtomValue(currentPageIdAtom);
   const pushNotification = useSetAtom(pushNotificationAtom);
 
-  return useCallback(
+  return useAsyncCallback(
     async <From extends WorkspaceFlavour, To extends WorkspaceFlavour>(
       from: From,
       to: To,
