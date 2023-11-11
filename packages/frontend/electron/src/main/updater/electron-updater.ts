@@ -10,6 +10,9 @@ import { updaterSubjects } from './event';
 const mode = process.env.NODE_ENV;
 const isDev = mode === 'development';
 
+// skip auto update in dev mode & internal
+const disabled = buildType === 'internal' || isDev;
+
 export const quitAndInstall = async () => {
   autoUpdater.quitAndInstall();
 };
@@ -17,7 +20,7 @@ export const quitAndInstall = async () => {
 let lastCheckTime = 0;
 export const checkForUpdates = async (force = true) => {
   // check every 30 minutes (1800 seconds) at most
-  if (force || lastCheckTime + 1000 * 1800 < Date.now()) {
+  if (!disabled && (force || lastCheckTime + 1000 * 1800 < Date.now())) {
     lastCheckTime = Date.now();
     return await autoUpdater.checkForUpdates();
   }
@@ -25,8 +28,7 @@ export const checkForUpdates = async (force = true) => {
 };
 
 export const registerUpdater = async () => {
-  // skip auto update in dev mode & internal
-  if (buildType === 'internal' || isDev) {
+  if (disabled) {
     return;
   }
 
@@ -43,7 +45,6 @@ export const registerUpdater = async () => {
     channel: buildType,
     // hack for custom provider
     provider: 'custom' as 'github',
-    // @ts-expect-error - just ignore for now
     repo: buildType !== 'internal' ? 'AFFiNE' : 'AFFiNE-Releases',
     owner: 'toeverything',
     releaseType: buildType === 'stable' ? 'release' : 'prerelease',
