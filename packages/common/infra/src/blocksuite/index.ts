@@ -602,6 +602,7 @@ export async function forceUpgradePages(
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
   const oldVersions = versions.toJSON();
+  guidCompatibilityFix(rootDoc);
   spaces.forEach((space: Doc) => {
     try {
       schema.upgradePage(0, oldVersions, space);
@@ -623,6 +624,7 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
+  guidCompatibilityFix(rootDoc);
   spaces.forEach((space: Doc) => {
     schema.upgradePage(
       0,
@@ -652,6 +654,32 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
     );
   }
   return true;
+}
+
+// patch root doc's space guid compatibility issue
+//
+// in version 0.10, page id in spaces no longer has prefix "space:"
+// The data flow for fetching a doc's updates is:
+// - page id in `meta.pages` -> find `${page-id}` in `doc.spaces` -> `doc` -> `doc.guid`
+// if `doc` is not found in `doc.spaces`, a new doc will be created and its `doc.guid` is the same with its pageId
+// - because of guid logic change, the doc that previously prefixed with "space:" will not be found in `doc.spaces`
+// - when fetching the rows of this doc using the doc id === page id,
+//   it will return empty since there is no updates associated with the page id
+export function guidCompatibilityFix(rootDoc: YDoc) {
+  let changed = false;
+  const prefix = 'space:';
+  const spaces = rootDoc.getMap('spaces') as YMap<YDoc>;
+  for (const [pageId, doc] of spaces.entries()) {
+    if (pageId.startsWith(prefix)) {
+      const newId = pageId.slice(prefix.length);
+      spaces.set(newId, doc);
+      // should also remove the old entry
+      spaces.delete(pageId);
+      changed = true;
+      console.debug(`fixed space id ${pageId} -> ${newId}`);
+    }
+  }
+  return changed;
 }
 
 export enum WorkspaceVersion {
