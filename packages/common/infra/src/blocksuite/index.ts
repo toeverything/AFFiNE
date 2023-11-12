@@ -675,11 +675,14 @@ export function guidCompatibilityFix(rootDoc: YDoc) {
         const newDoc = new YDoc();
         // clone the original doc. yjs is not happy to use the same doc instance
         applyUpdate(newDoc, encodeStateAsUpdate(doc));
+        newDoc.guid = doc.guid;
         spaces.set(newPageId, newDoc);
         // should remove the old doc, otherwise we will do it again in the next run
         spaces.delete(pageId);
         changed = true;
-        console.debug(`fixed space id ${pageId} -> ${newPageId}`);
+        console.debug(
+          `fixed space id ${pageId} -> ${newPageId}, doc id: ${doc.guid}`
+        );
       }
     });
   });
