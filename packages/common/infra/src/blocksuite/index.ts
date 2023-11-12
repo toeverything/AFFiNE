@@ -2,7 +2,7 @@ import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
 import type { Doc } from 'yjs';
-import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
+import { Array as YArray, Doc as YDoc, Map as YMap, transact } from 'yjs';
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.waitForLoaded();
@@ -667,17 +667,22 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
 //   it will return empty since there is no updates associated with the page id
 export function guidCompatibilityFix(rootDoc: YDoc) {
   let changed = false;
-  const spaces = rootDoc.getMap('spaces') as YMap<YDoc>;
-  for (const [pageId, doc] of spaces.entries()) {
-    if (pageId.includes(':')) {
-      const newId = pageId.split(':').at(-1) ?? pageId;
-      spaces.set(newId, doc);
-      // should also remove the old entry
-      spaces.delete(pageId);
-      changed = true;
-      console.debug(`fixed space id ${pageId} -> ${newId}`);
-    }
-  }
+  transact(rootDoc, () => {
+    const spaces = rootDoc.getMap('spaces') as YMap<YDoc>;
+    spaces.forEach((doc: YDoc, pageId: string) => {
+      if (pageId.includes(':')) {
+        const newPageId = pageId.split(':').at(-1) ?? pageId;
+        const newDoc = new YDoc();
+        // clone the original doc. yjs is not happy to use the same doc instance
+        applyUpdate(newDoc, encodeStateAsUpdate(doc));
+        spaces.set(newPageId, newDoc);
+        // should remove the old doc, otherwise we will do it again in the next run
+        spaces.delete(pageId);
+        changed = true;
+        console.debug(`fixed space id ${pageId} -> ${newPageId}`);
+      }
+    });
+  });
   return changed;
 }
 
