@@ -82,7 +82,7 @@ export const toast = (
     background: var(--affine-tooltip);
     box-shadow: var(--affine-float-button-shadow);
     border-radius: 10px;
-    transition: all 230ms cubic-bezier(0.21, 1.02, 0.73, 1);
+    transition: all 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
     opacity: 0;
   `;
 
@@ -108,8 +108,8 @@ export const toast = (
   ];
 
   const options = {
-    duration: 230,
-    easing: 'cubic-bezier(0.21, 1.02, 0.73, 1)',
+    duration: 300,
+    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
     fill: 'forwards' as const,
   } satisfies KeyframeAnimationOptions;
 
