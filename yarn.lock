@@ -427,7 +427,7 @@ __metadata:
     builder-util-runtime: "npm:^9.2.1"
     cross-env: "npm:^7.0.3"
     electron: "npm:^27.0.0"
-    electron-log: "npm:^5.0.0-rc.1"
+    electron-log: "npm:^5.0.0"
     electron-squirrel-startup: "npm:1.0.0"
     electron-updater: "npm:^6.1.5"
     electron-window-state: "npm:^5.0.3"
@@ -19145,10 +19145,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron-log@npm:^5.0.0-rc.1":
-  version: 5.0.0-rc.1
-  resolution: "electron-log@npm:5.0.0-rc.1"
-  checksum: f4ec437197ec5801a325e062c19f182a14eba960ee683034bfea5854efe452cfa91985b7f7ab159599c8264fde869f7101d4e82303231865a6b7c8e621815f87
+"electron-log@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "electron-log@npm:5.0.0"
+  checksum: 23b14119a5753be24880e7466ee80ae1386f9df4123ed59bc8f4426a814c728875b07de13bf0729cba7202888fcd6230375e2b5302cee0d0c5f25584d9db3334
   languageName: node
   linkType: hard
 
