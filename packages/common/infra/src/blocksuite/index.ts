@@ -667,11 +667,10 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
 //   it will return empty since there is no updates associated with the page id
 export function guidCompatibilityFix(rootDoc: YDoc) {
   let changed = false;
-  const prefix = 'space:';
   const spaces = rootDoc.getMap('spaces') as YMap<YDoc>;
   for (const [pageId, doc] of spaces.entries()) {
-    if (pageId.startsWith(prefix)) {
-      const newId = pageId.slice(prefix.length);
+    if (pageId.includes(':')) {
+      const newId = pageId.split(':').at(-1) ?? pageId;
       spaces.set(newId, doc);
       // should also remove the old entry
       spaces.delete(pageId);
