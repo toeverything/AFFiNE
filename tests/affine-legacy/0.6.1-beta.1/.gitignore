@@ -1,0 +1,4 @@
+static
+fixtures/*.ydoc
+test-results
+*.zip
