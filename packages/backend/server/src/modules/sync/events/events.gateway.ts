@@ -50,6 +50,8 @@ type EventResponse<Data = any> =
 @WebSocketGateway({
   cors: process.env.NODE_ENV !== 'production',
   transports: ['websocket'],
+  // see: https://socket.io/docs/v4/server-options/#maxhttpbuffersize
+  maxHttpBufferSize: 1e8, // 100 MB
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   protected logger = new Logger(EventsGateway.name);

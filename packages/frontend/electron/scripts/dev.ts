@@ -54,7 +54,6 @@ function spawnOrReloadElectron() {
     if (code && code !== 0) {
       console.log(`Electron exited with code ${code}`);
     }
-    process.exit(code ?? 0);
   });
 }
 
