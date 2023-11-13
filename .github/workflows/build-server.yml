@@ -176,7 +176,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
-      - name: Run init-db script
+      - name: Init database
         run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine

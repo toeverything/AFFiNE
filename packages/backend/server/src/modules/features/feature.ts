@@ -45,6 +45,7 @@ export class FeatureManagementService {
     return this.feature.listFeatureUsers(FeatureType.Feature_EarlyAccess);
   }
 
+  /// check early access by email
   async canEarlyAccess(email: string) {
     if (
       this.config.featureFlags.earlyAccessPreview &&

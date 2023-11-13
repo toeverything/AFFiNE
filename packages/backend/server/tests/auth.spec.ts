@@ -4,6 +4,11 @@ import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 
 import { ConfigModule } from '../src/config';
+import {
+  collectMigrations,
+  RevertCommand,
+  RunCommand,
+} from '../src/data/commands/run';
 import { GqlModule } from '../src/graphql.module';
 import { AuthModule } from '../src/modules/auth';
 import { AuthResolver } from '../src/modules/auth/resolver';
@@ -40,10 +45,19 @@ test.beforeEach(async () => {
       GqlModule,
       AuthModule,
       RateLimiterModule,
+      RevertCommand,
+      RunCommand,
     ],
   }).compile();
   authService = module.get(AuthService);
   authResolver = module.get(AuthResolver);
+
+  // init features
+  const run = module.get(RunCommand);
+  const revert = module.get(RevertCommand);
+  const migrations = await collectMigrations();
+  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
+  await run.run();
 });
 
 test.afterEach.always(async () => {

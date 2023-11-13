@@ -22,13 +22,12 @@ model User {
 
   accounts             Account[]
   sessions             Session[]
-  features             UserFeatureGates[]
+  features             UserFeatures[]
   customer             UserStripeCustomer?
   subscription         UserSubscription?
   invoices             UserInvoice[]
   workspacePermissions WorkspaceUserPermission[]
   pagePermissions      WorkspacePageUserPermission[]
-  UserQuotaGates       UserQuotaGates[]
 
   @@map("users")
 }

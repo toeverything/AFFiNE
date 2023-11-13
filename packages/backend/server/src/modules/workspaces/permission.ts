@@ -27,7 +27,7 @@ export class PermissionService {
   }
 
   async getOwnedWorkspaces(userId: string) {
-    return this.prisma.userWorkspacePermission
+    return this.prisma.workspaceUserPermission
       .findMany({
         where: {
           userId,

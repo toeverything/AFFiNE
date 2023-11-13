@@ -12,6 +12,7 @@ import {
   Mutation,
   ObjectType,
   Query,
+  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';

@@ -40,10 +40,6 @@ export enum InvoiceStatus {
   Void = 'Void',
 }
 
-export enum NewFeaturesKind {
-  EarlyAccess = 'EarlyAccess',
-}
-
 /** User permission in workspace */
 export enum Permission {
   Admin = 'Admin',

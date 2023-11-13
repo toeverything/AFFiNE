@@ -43,9 +43,9 @@ switch (SERVER_FLAVOR) {
       GqlModule,
       WorkspaceModule,
       UsersModule,
+      QuotaModule,
       DocModule.forRoot(),
-      PaymentModule,
-      QuotaModule
+      PaymentModule
     );
     break;
   case 'allinone':

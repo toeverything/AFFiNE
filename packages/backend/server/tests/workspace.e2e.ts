@@ -7,6 +7,11 @@ import request from 'supertest';
 
 import { AppModule } from '../src/app';
 import {
+  collectMigrations,
+  RevertCommand,
+  RunCommand,
+} from '../src/data/commands/run';
+import {
   acceptInviteById,
   createWorkspace,
   currentUser,
@@ -34,6 +39,7 @@ test.beforeEach(async t => {
   await client.$disconnect();
   const module = await Test.createTestingModule({
     imports: [AppModule],
+    providers: [RevertCommand, RunCommand],
   }).compile();
   const app = module.createNestApplication();
   app.use(
@@ -45,6 +51,13 @@ test.beforeEach(async t => {
   await app.init();
   t.context.client = client;
   t.context.app = app;
+
+  // init features
+  const run = module.get(RunCommand);
+  const revert = module.get(RevertCommand);
+  const migrations = await collectMigrations();
+  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
+  await run.run();
 });
 
 test.afterEach.always(async t => {

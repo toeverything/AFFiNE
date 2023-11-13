@@ -9,6 +9,11 @@ import ava, { type TestFn } from 'ava';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';
+import {
+  collectMigrations,
+  RevertCommand,
+  RunCommand,
+} from '../src/data/commands/run';
 import { MailService } from '../src/modules/auth/mailer';
 import { AuthService } from '../src/modules/auth/service';
 import {
@@ -39,6 +44,7 @@ test.beforeEach(async t => {
   await client.$disconnect();
   const module = await Test.createTestingModule({
     imports: [AppModule],
+    providers: [RevertCommand, RunCommand],
   }).compile();
   const app = module.createNestApplication();
   app.use(
@@ -51,9 +57,17 @@ test.beforeEach(async t => {
 
   const auth = module.get(AuthService);
   const mail = module.get(MailService);
+
   t.context.app = app;
   t.context.auth = auth;
   t.context.mail = mail;
+
+  // init features
+  const run = module.get(RunCommand);
+  const revert = module.get(RevertCommand);
+  const migrations = await collectMigrations();
+  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
+  await run.run();
 });
 
 test.afterEach.always(async t => {

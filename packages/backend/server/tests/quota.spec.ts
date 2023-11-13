@@ -5,6 +5,11 @@ import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
+import {
+  collectMigrations,
+  RevertCommand,
+  RunCommand,
+} from '../src/data/commands/run';
 import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
@@ -52,15 +57,26 @@ test.beforeEach(async t => {
       QuotaModule,
       MetricsModule,
       RateLimiterModule,
+      RevertCommand,
+      RunCommand,
     ],
   }).compile();
+
   const quota = module.get(QuotaService);
   const storageQuota = module.get(QuotaManagementService);
   const auth = module.get(AuthService);
+
   t.context.app = module;
   t.context.quota = quota;
   t.context.storageQuota = storageQuota;
   t.context.auth = auth;
+
+  // init features
+  const run = module.get(RunCommand);
+  const revert = module.get(RevertCommand);
+  const migrations = await collectMigrations();
+  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
+  await run.run();
 });
 
 test.afterEach.always(async t => {

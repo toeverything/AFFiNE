@@ -5,6 +5,11 @@ import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
+import {
+  collectMigrations,
+  RevertCommand,
+  RunCommand,
+} from '../src/data/commands/run';
 import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
@@ -43,21 +48,35 @@ test.beforeEach(async t => {
         },
         host: 'example.org',
         https: true,
+        featureFlags: {
+          earlyAccessPreview: true,
+        },
       }),
       PrismaModule,
       AuthModule,
       FeatureModule,
       MetricsModule,
       RateLimiterModule,
+      RevertCommand,
+      RunCommand,
     ],
   }).compile();
+
   const quota = module.get(FeatureService);
   const storageQuota = module.get(FeatureManagementService);
   const auth = module.get(AuthService);
+
   t.context.app = module;
   t.context.feature = quota;
   t.context.early_access = storageQuota;
   t.context.auth = auth;
+
+  // init features
+  const run = module.get(RunCommand);
+  const revert = module.get(RevertCommand);
+  const migrations = await collectMigrations();
+  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
+  await run.run();
 });
 
 test.afterEach.always(async t => {
@@ -92,11 +111,11 @@ test('should be able to check early access', async t => {
   const { auth, feature, early_access } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
-  const f1 = await early_access.canEarlyAccess(u1.id);
+  const f1 = await early_access.canEarlyAccess(u1.email);
   t.false(f1, 'should not have early access');
 
   await early_access.addEarlyAccess(u1.id);
-  const f2 = await early_access.canEarlyAccess(u1.id);
+  const f2 = await early_access.canEarlyAccess(u1.email);
   t.true(f2, 'should have early access');
 
   const f3 = await feature.listFeatureUsers(FeatureType.Feature_EarlyAccess);
@@ -108,18 +127,18 @@ test('should be able revert quota', async t => {
   const { auth, feature, early_access } = t.context;
   const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
 
-  const f1 = await early_access.canEarlyAccess(u1.id);
+  const f1 = await early_access.canEarlyAccess(u1.email);
   t.false(f1, 'should not have early access');
 
   await early_access.addEarlyAccess(u1.id);
-  const f2 = await early_access.canEarlyAccess(u1.id);
+  const f2 = await early_access.canEarlyAccess(u1.email);
   t.true(f2, 'should have early access');
   const q1 = await early_access.listEarlyAccess();
   t.is(q1.length, 1, 'should have one user');
   t.is(q1[0].id, u1.id, 'should be the same user');
 
   await early_access.removeEarlyAccess(u1.id);
-  const f3 = await early_access.canEarlyAccess(u1.id);
+  const f3 = await early_access.canEarlyAccess(u1.email);
   t.false(f3, 'should not have early access');
   const q2 = await early_access.listEarlyAccess();
   t.is(q2.length, 0, 'should have no user');
