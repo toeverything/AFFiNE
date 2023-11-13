@@ -5,7 +5,7 @@ import {
 } from '@affine/native';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
 
-import { migrateToLatest } from '../db/migration';
+import { applyGuidCompatibilityFix, migrateToLatest } from '../db/migration';
 import { logger } from '../logger';
 
 /**
@@ -29,6 +29,7 @@ export abstract class BaseSQLiteAdapter {
       if (maxVersion !== WorkspaceVersion.Surface) {
         await migrateToLatest(this.path, WorkspaceVersion.Surface);
       }
+      await applyGuidCompatibilityFix(this.db);
       logger.info(`[SQLiteAdapter:${this.role}]`, 'connected:', this.path);
     }
     return this.db;
