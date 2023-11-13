@@ -19,6 +19,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@affine-legacy/0.6.1-beta.1@workspace:tests/affine-legacy/0.6.1-beta.1":
+  version: 0.0.0-use.local
+  resolution: "@affine-legacy/0.6.1-beta.1@workspace:tests/affine-legacy/0.6.1-beta.1"
+  dependencies:
+    "@affine-test/fixtures": "workspace:*"
+    "@affine-test/kit": "workspace:*"
+    "@blocksuite/block-std": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
+    "@blocksuite/blocks": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
+    "@blocksuite/global": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
+    "@blocksuite/store": "npm:0.0.0-20231110042432-4fdac4dc-nightly"
+    "@playwright/test": "npm:^1.39.0"
+    express: "npm:^4.18.2"
+    http-proxy-middleware: "npm:^3.0.0-beta.1"
+    serve: "npm:^14.2.1"
+  languageName: unknown
+  linkType: soft
+
 "@affine-legacy/0.7.0-canary.18@workspace:tests/affine-legacy/0.7.0-canary.18":
   version: 0.0.0-use.local
   resolution: "@affine-legacy/0.7.0-canary.18@workspace:tests/affine-legacy/0.7.0-canary.18"
