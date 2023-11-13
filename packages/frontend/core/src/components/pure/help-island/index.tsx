@@ -1,4 +1,3 @@
-import { MuiFade } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { Tooltip } from '@toeverything/components/tooltip';
@@ -122,21 +121,20 @@ export const HelpIsland = ({
         )}
       </StyledAnimateWrapper>
 
-      <Tooltip
-        content={t['com.affine.helpIsland.helpAndFeedback']()}
-        side="left"
-      >
-        <MuiFade in={!spread} data-testid="faq-icon">
-          <StyledTriggerWrapper>
-            <HelpIcon />
-          </StyledTriggerWrapper>
-        </MuiFade>
-      </Tooltip>
-      <MuiFade in={spread}>
+      {spread ? (
         <StyledTriggerWrapper spread>
           <CloseIcon />
         </StyledTriggerWrapper>
-      </MuiFade>
+      ) : (
+        <Tooltip
+          content={t['com.affine.helpIsland.helpAndFeedback']()}
+          side="left"
+        >
+          <StyledTriggerWrapper data-testid="faq-icon">
+            <HelpIcon />
+          </StyledTriggerWrapper>
+        </Tooltip>
+      )}
     </StyledIsland>
   );
 };
