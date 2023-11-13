@@ -76,12 +76,25 @@ describe('useBlockSuitePagePreview', () => {
       page.getBlockByFlavour('affine:note')[0].id
     );
     const hook = renderHook(() => useAtomValue(useBlockSuitePagePreview(page)));
-    expect(hook.result.current).toBe('\nHello, world!');
+    expect(hook.result.current).toBe('Hello, world!');
     page.transact(() => {
       page.getBlockById(id)!.text!.insert('Test', 0);
     });
     await new Promise(resolve => setTimeout(resolve, 100));
     hook.rerender();
-    expect(hook.result.current).toBe('\nTestHello, world!');
+    expect(hook.result.current).toBe('TestHello, world!');
+
+    // Insert before
+    page.addBlock(
+      'affine:paragraph',
+      {
+        text: new page.Text('First block!'),
+      },
+      page.getBlockByFlavour('affine:note')[0].id,
+      0
+    );
+    await new Promise(resolve => setTimeout(resolve, 100));
+    hook.rerender();
+    expect(hook.result.current).toBe('First block! TestHello, world!');
   });
 });
