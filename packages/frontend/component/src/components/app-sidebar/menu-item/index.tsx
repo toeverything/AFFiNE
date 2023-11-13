@@ -1,9 +1,9 @@
-import { ArrowDownSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import React from 'react';
 import type { LinkProps } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
+import { ArrowRightSidebarIcon } from './icons';
 import * as styles from './index.css';
 
 export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -64,7 +64,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
                 data-testid="fav-collapsed-button"
                 className={styles.collapsedIconContainer}
               >
-                <ArrowDownSmallIcon
+                <ArrowRightSidebarIcon
                   className={styles.collapsedIcon}
                   data-collapsed={collapsed !== false}
                 />

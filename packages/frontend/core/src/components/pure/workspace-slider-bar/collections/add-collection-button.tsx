@@ -4,7 +4,6 @@ import {
   useEditCollectionName,
 } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { PlusIcon } from '@blocksuite/icons';
 import { IconButton } from '@toeverything/components/button';
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
@@ -12,6 +11,7 @@ import { useCallback } from 'react';
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
+import { PlusSidebarIcon } from '../../../root-app-sidebar/icons';
 
 export const AddCollectionButton = () => {
   const setting = useCollectionManager(collectionsCRUDAtom);
@@ -43,7 +43,7 @@ export const AddCollectionButton = () => {
         onClick={handleClick}
         size="small"
       >
-        <PlusIcon />
+        <PlusSidebarIcon />
       </IconButton>
       {node}
     </>

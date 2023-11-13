@@ -1,10 +1,10 @@
-import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
+import { PlusSidebarIcon } from '../../../root-app-sidebar/icons';
 
 type AddFavouriteButtonProps = {
   workspace: Workspace;
@@ -25,7 +25,7 @@ export const AddFavouriteButton = ({ workspace }: AddFavouriteButtonProps) => {
       onClick={handleAddFavorite}
       size="small"
     >
-      <PlusIcon />
+      <PlusSidebarIcon />
     </IconButton>
   );
 };
