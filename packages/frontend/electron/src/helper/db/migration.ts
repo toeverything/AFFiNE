@@ -6,6 +6,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema } from '@blocksuite/store';
 import {
   forceUpgradePages,
+  guidCompatibilityFix,
   migrateToSubdoc,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
@@ -119,3 +120,21 @@ async function replaceRows(
     })
   );
 }
+
+export const applyGuidCompatibilityFix = async (db: SqliteConnection) => {
+  const oldRows = await db.getUpdates(undefined);
+
+  const rootDoc = new YDoc();
+  oldRows.forEach(row => applyUpdate(rootDoc, row.data));
+
+  // see comments of guidCompatibilityFix
+  guidCompatibilityFix(rootDoc);
+
+  // todo: backup?
+  await db.replaceUpdates(undefined, [
+    {
+      docId: undefined,
+      data: encodeStateAsUpdate(rootDoc),
+    },
+  ]);
+};
