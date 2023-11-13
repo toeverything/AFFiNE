@@ -121,7 +121,7 @@ test('v3 to v4, surface migration', async ({ page }) => {
   }
 });
 
-test.only('v0 to v4, subdoc migration', async ({ page }) => {
+test('v0 to v4, subdoc migration', async ({ page }) => {
   await open404PageToInitData(page, '0.6.1-beta.1');
 
   await page.goto(coreUrl);
