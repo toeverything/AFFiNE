@@ -8,7 +8,13 @@ import {
 import { Snapshot, Update } from '@prisma/client';
 import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
-import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
+import {
+  applyUpdate,
+  Doc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  transact,
+} from 'yjs';
 
 import { Config } from '../../config';
 import { Metrics } from '../../metrics/metrics';
@@ -84,16 +90,18 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       const next = () => {
         const updates = chunks.shift();
         if (updates?.length) {
-          updates.forEach(u => {
-            try {
-              applyUpdate(doc, u);
-            } catch (e) {
-              this.logger.error(
-                `Failed to apply update: ${updates
-                  .map(u => u.toString('hex'))
-                  .join('\n')}`
-              );
-            }
+          transact(doc, () => {
+            updates.forEach(u => {
+              try {
+                applyUpdate(doc, u);
+              } catch (e) {
+                this.logger.error(
+                  `Failed to apply update: ${updates
+                    .map(u => u.toString('hex'))
+                    .join('\n')}`
+                );
+              }
+            });
           });
 
           // avoid applying too many updates in single round which will take the whole cpu time like dead lock
