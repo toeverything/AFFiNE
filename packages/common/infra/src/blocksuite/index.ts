@@ -604,7 +604,8 @@ export async function forceUpgradePages(
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
-  const oldVersions = versions?.toJSON() ?? {};
+  const oldVersions = versions.toJSON();
+  guidCompatibilityFix(rootDoc);
   spaces.forEach((space: Doc) => {
     try {
       schema.upgradePage(0, oldVersions, space);
