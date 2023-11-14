@@ -137,7 +137,10 @@ export class AuthResolver {
   ) {
     // we only create user account after user sign in with email link
     const id = await this.session.get(token);
-    if (!id || id !== user.id || !user.emailVerified) {
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Please verify the email first');
+    }
+    if (!id || id !== user.id) {
       throw new ForbiddenException('Invalid token');
     }
 
