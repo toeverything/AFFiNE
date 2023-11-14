@@ -1,4 +1,3 @@
-import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
@@ -6,6 +5,7 @@ import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { Skeleton } from '../../ui/skeleton';
 import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,

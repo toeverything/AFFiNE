@@ -1,7 +1,6 @@
 import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
-import { Skeleton } from '@mui/material';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
 import type { CSSProperties, ReactElement } from 'react';
@@ -17,6 +16,7 @@ import {
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import { Skeleton } from '../../ui/skeleton';
 import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,

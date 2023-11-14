@@ -1,5 +1,4 @@
-import { Skeleton } from '@mui/material';
-
+import { Skeleton } from '../../ui/skeleton';
 import { SettingHeader } from './setting-header';
 import { SettingRow } from './setting-row';
 import { SettingWrapper } from './wrapper';
