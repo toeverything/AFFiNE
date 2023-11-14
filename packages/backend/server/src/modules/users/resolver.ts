@@ -267,7 +267,7 @@ export class UserResolver {
     },
   })
   @Query(() => [UserType])
-  async listEarlyAccess(@CurrentUser() user: UserType): Promise<UserType[]> {
+  async earlyAccessUsers(@CurrentUser() user: UserType): Promise<UserType[]> {
     if (!this.feature.isStaff(user.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
