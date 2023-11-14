@@ -1,4 +1,3 @@
-export * from './components/list-skeleton';
 export * from './styles';
 export * from './ui/button';
 export * from './ui/checkbox';
@@ -10,6 +9,7 @@ export * from './ui/lottie/delete-icon';
 export * from './ui/mui';
 export * from './ui/scrollbar';
 export * from './ui/shared/container';
+export * from './ui/skeleton';
 export * from './ui/switch';
 export * from './ui/table';
 export * from './ui/toast';
