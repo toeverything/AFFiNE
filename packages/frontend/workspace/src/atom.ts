@@ -140,12 +140,10 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
       performanceJotaiLogger.info('%s adapter', Adapter.flavour);
 
       const { CRUD, flavour: currentFlavour } = Adapter;
-      if (
-        Adapter.Events['app:access'] &&
-        !(await Adapter.Events['app:access']())
-      ) {
-        performanceJotaiLogger.info('%s app:access', Adapter.flavour);
-
+      const appAccessFn = Adapter.Events['app:access'];
+      const canAccess = appAccessFn && !(await appAccessFn());
+      performanceJotaiLogger.info('%s app:access', Adapter.flavour);
+      if (canAccess) {
         // skip the adapter if the user doesn't have access to it
         const removed = metadata.filter(
           meta => meta.flavour === currentFlavour
