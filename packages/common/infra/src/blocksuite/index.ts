@@ -598,12 +598,13 @@ export async function forceUpgradePages(
   options: Omit<UpgradeOptions, 'createWorkspace'>
 ): Promise<boolean> {
   const rootDoc = await options.getCurrentRootDoc();
+  guidCompatibilityFix(rootDoc);
+
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
-  const oldVersions = versions.toJSON();
-  guidCompatibilityFix(rootDoc);
+  const oldVersions = versions?.toJSON() ?? {};
   spaces.forEach((space: Doc) => {
     try {
       schema.upgradePage(0, oldVersions, space);
