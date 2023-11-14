@@ -132,6 +132,7 @@ jobs:
           hard-link-nm: false
           build-plugins: false
           nmHoistingLimits: workspaces
+          enableScripts: false
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
