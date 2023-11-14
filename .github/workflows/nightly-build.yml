@@ -115,6 +115,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
+        if: ${{ matrix.spec.platform == 'darwin' }}
         uses: ./.github/actions/setup-node
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo
@@ -122,6 +123,15 @@ jobs:
           build-plugins: false
           nmHoistingLimits: workspaces
           enableScripts: false
+      - name: Setup Node.js
+        timeout-minutes: 10
+        if: ${{ matrix.spec.platform != 'darwin' }}
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          build-plugins: false
+          nmHoistingLimits: workspaces
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
         with:
