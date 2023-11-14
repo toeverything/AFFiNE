@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   Args,
+  Context,
   Field,
   ID,
   Int,
@@ -267,10 +268,15 @@ export class UserResolver {
     },
   })
   @Query(() => [UserType])
-  async earlyAccessUsers(@CurrentUser() user: UserType): Promise<UserType[]> {
+  async earlyAccessUsers(
+    @Context() ctx: { isAdminQuery: boolean },
+    @CurrentUser() user: UserType
+  ): Promise<UserType[]> {
     if (!this.feature.isStaff(user.email)) {
       throw new ForbiddenException('You are not allowed to do this');
     }
+    // allow query other user's subscription
+    ctx.isAdminQuery = true;
     return this.feature.listEarlyAccess();
   }
 }
