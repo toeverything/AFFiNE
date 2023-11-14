@@ -1,18 +1,17 @@
-import { isBrowser, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import { Tooltip } from '@toeverything/components/tooltip';
-import clsx from 'clsx';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { startTransition, useCallback, useState } from 'react';
-
-import * as styles from './index.css';
 import {
-  changelogCheckedAtom,
+  currentChangelogUnreadAtom,
   downloadProgressAtom,
   updateAvailableAtom,
   updateReadyAtom,
-} from './index.jotai';
+  useAppUpdater,
+} from '@toeverything/hooks/use-app-updater';
+import clsx from 'clsx';
+import { useAtomValue } from 'jotai';
+
+import * as styles from './index.css';
 
 export interface AddPageButtonPureProps {
   onClickUpdate: () => void;
@@ -28,26 +27,6 @@ export interface AddPageButtonPureProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
-const currentVersionAtom = atom(async () => {
-  if (!isBrowser) {
-    return null;
-  }
-  const currentVersion = await window.apis?.updater.currentVersion();
-  return currentVersion;
-});
-
-const currentChangelogUnreadAtom = atom(async get => {
-  if (!isBrowser) {
-    return false;
-  }
-  const mapping = get(changelogCheckedAtom);
-  const currentVersion = await get(currentVersionAtom);
-  if (currentVersion) {
-    return !mapping[currentVersion];
-  }
-  return false;
-});
 
 export function AppUpdaterButtonPure({
   updateReady,
@@ -198,59 +177,16 @@ export function AppUpdaterButton({
   const currentChangelogUnread = useAtomValue(currentChangelogUnreadAtom);
   const updateReady = useAtomValue(updateReadyAtom);
   const updateAvailable = useAtomValue(updateAvailableAtom);
-  const currentVersion = useAtomValue(currentVersionAtom);
   const downloadProgress = useAtomValue(downloadProgressAtom);
-  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
-  const [appQuitting, setAppQuitting] = useState(false);
+  const { quitAndInstall, dismissCurrentChangelog, appQuitting } =
+    useAppUpdater();
 
-  const onDismissCurrentChangelog = useCallback(() => {
-    if (!currentVersion) {
-      return;
-    }
-    startTransition(() =>
-      setChangelogCheckAtom(mapping => {
-        return {
-          ...mapping,
-          [currentVersion]: true,
-        };
-      })
-    );
-  }, [currentVersion, setChangelogCheckAtom]);
-  const onClickUpdate = useCallback(() => {
-    if (updateReady) {
-      setAppQuitting(true);
-      window.apis?.updater.quitAndInstall().catch(err => {
-        // TODO: add error toast here
-        console.error(err);
-      });
-    } else if (updateAvailable) {
-      if (updateAvailable.allowAutoUpdate) {
-        // wait for download to finish
-      } else {
-        window.open(
-          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-          '_blank'
-        );
-      }
-    } else if (currentChangelogUnread) {
-      window.open(runtimeConfig.changelogUrl, '_blank');
-      onDismissCurrentChangelog();
-    } else {
-      throw new Unreachable();
-    }
-  }, [
-    currentChangelogUnread,
-    currentVersion,
-    onDismissCurrentChangelog,
-    updateAvailable,
-    updateReady,
-  ]);
   return (
     <AppUpdaterButtonPure
       appQuitting={appQuitting}
       updateReady={!!updateReady}
-      onClickUpdate={onClickUpdate}
-      onDismissCurrentChangelog={onDismissCurrentChangelog}
+      onClickUpdate={quitAndInstall}
+      onDismissCurrentChangelog={dismissCurrentChangelog}
       currentChangelogUnread={currentChangelogUnread}
       updateAvailable={updateAvailable}
       downloadProgress={downloadProgress}
@@ -259,5 +195,3 @@ export function AppUpdaterButton({
     />
   );
 }
-
-export * from './index.jotai';

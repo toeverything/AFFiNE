@@ -1,7 +1,15 @@
 import { app } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
-import { checkForUpdates, quitAndInstall } from './electron-updater';
+import {
+  checkForUpdates,
+  downloadUpdate,
+  getAllowAutoCheckUpdate,
+  getAllowAutoDownloadUpdate,
+  quitAndInstall,
+  setAllowAutoCheckUpdate,
+  setAllowAutoDownloadUpdate,
+} from './electron-updater';
 
 export const updaterHandlers = {
   currentVersion: async () => {
@@ -9,6 +17,27 @@ export const updaterHandlers = {
   },
   quitAndInstall: async () => {
     return quitAndInstall();
+  },
+  downloadUpdate: async () => {
+    return downloadUpdate();
+  },
+  autoCheckUpdate: async () => {
+    return getAllowAutoCheckUpdate();
+  },
+  autoDownloadUpdate: async () => {
+    return getAllowAutoDownloadUpdate();
+  },
+  enableAutoCheckUpdate: async () => {
+    return setAllowAutoCheckUpdate(true);
+  },
+  disableAutoCheckUpdate: async () => {
+    return setAllowAutoCheckUpdate(false);
+  },
+  enableAutoDownloadUpdate: async () => {
+    return setAllowAutoDownloadUpdate(true);
+  },
+  disableAutoDownloadUpdate: async () => {
+    return setAllowAutoDownloadUpdate(false);
   },
   checkForUpdatesAndNotify: async () => {
     const res = await checkForUpdates(true);

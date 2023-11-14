@@ -193,6 +193,13 @@ export interface UpdateMeta {
 export type UpdaterHandlers = {
   currentVersion: () => Promise<string>;
   quitAndInstall: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  autoCheckUpdate: () => Promise<boolean>;
+  autoDownloadUpdate: () => Promise<boolean>;
+  enableAutoCheckUpdate: () => Promise<void>;
+  disableAutoCheckUpdate: () => Promise<void>;
+  enableAutoDownloadUpdate: () => Promise<void>;
+  disableAutoDownloadUpdate: () => Promise<void>;
   checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 
