@@ -1,5 +1,4 @@
-import { displayFlex, styled, textEllipsis } from '@affine/component';
-import { Link } from '@mui/material';
+import { displayFlex, styled } from '@affine/component';
 import { baseTheme } from '@toeverything/theme';
 
 export const StyledSliderBarInnerWrapper = styled('div')(() => {
@@ -13,30 +12,6 @@ export const StyledSliderBarInnerWrapper = styled('div')(() => {
   };
 });
 
-export const StyledLink = styled(Link)(() => {
-  return {
-    flexGrow: 1,
-    textAlign: 'left',
-    color: 'inherit',
-    ...displayFlex('flex-start', 'center'),
-    ':visited': {
-      color: 'inherit',
-    },
-    overflow: 'hidden',
-    div: {
-      wordBreak: 'break-all',
-      wordWrap: 'break-word',
-      whiteSpace: 'nowrap',
-      ...textEllipsis(1),
-    },
-    userDrag: 'none',
-    userSelect: 'none',
-    appRegion: 'no-drag',
-    WebkitUserSelect: 'none',
-    WebkitUserDrag: 'none',
-    WebkitAppRegion: 'no-drag',
-  };
-});
 export const StyledNewPageButton = styled('button')(() => {
   return {
     width: '100%',
