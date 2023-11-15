@@ -10,10 +10,17 @@ const logger = new DebugLogger('affine:cloud');
 
 const hashMap = new Map<string, ArrayBuffer>();
 
+type DocPublishMode = 'edgeless' | 'page';
+
+export type CloudDoc = {
+  arrayBuffer: ArrayBuffer;
+  publishMode: DocPublishMode;
+};
+
 export async function downloadBinaryFromCloud(
   rootGuid: string,
   pageGuid: string
-): Promise<boolean | ArrayBuffer> {
+): Promise<CloudDoc | boolean> {
   if (hashMap.has(`${rootGuid}/${pageGuid}`)) {
     return true;
   }
@@ -25,17 +32,22 @@ export async function downloadBinaryFromCloud(
     }
   );
   if (response.ok) {
+    const publishMode = (response.headers.get('publish-mode') ||
+      'page') as DocPublishMode;
     const arrayBuffer = await response.arrayBuffer();
     hashMap.set(`${rootGuid}/${pageGuid}`, arrayBuffer);
-    return arrayBuffer;
+
+    // return both arrayBuffer and publish mode
+    return { arrayBuffer, publishMode };
   }
   return false;
 }
 
 async function downloadBinary(rootGuid: string, doc: Doc) {
-  const buffer = await downloadBinaryFromCloud(rootGuid, doc.guid);
-  if (typeof buffer !== 'boolean') {
-    Y.applyUpdate(doc, new Uint8Array(buffer), 'affine-cloud');
+  const response = await downloadBinaryFromCloud(rootGuid, doc.guid);
+  if (typeof response !== 'boolean') {
+    const { arrayBuffer } = response;
+    Y.applyUpdate(doc, new Uint8Array(arrayBuffer), 'affine-cloud');
   }
 }
 

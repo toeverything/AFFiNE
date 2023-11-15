@@ -1,0 +1,7 @@
+mutation revokePublicPage($workspaceId: String!, $pageId: String!) {
+  revokePublicPage(workspaceId: $workspaceId, pageId: $pageId) {
+    id
+    mode
+    public
+  }
+}

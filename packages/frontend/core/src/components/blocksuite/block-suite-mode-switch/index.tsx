@@ -6,6 +6,7 @@ import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';
 
+import type { PageMode } from '../../../atoms';
 import { currentModeAtom } from '../../../atoms/mode';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import type { BlockSuiteWorkspace } from '../../../shared';
@@ -18,6 +19,8 @@ export type EditorModeSwitchProps = {
   blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
   style?: CSSProperties;
+  isPublic?: boolean;
+  publicMode?: PageMode;
 };
 const TooltipContent = () => {
   const t = useAFFiNEI18N();
@@ -34,6 +37,8 @@ export const EditorModeSwitch = ({
   style,
   blockSuiteWorkspace,
   pageId,
+  isPublic,
+  publicMode,
 }: EditorModeSwitchProps) => {
   const t = useAFFiNEI18N();
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
@@ -47,7 +52,7 @@ export const EditorModeSwitch = ({
   const currentMode = useAtomValue(currentModeAtom);
 
   useEffect(() => {
-    if (trash) {
+    if (trash || isPublic) {
       return;
     }
     const keydown = (e: KeyboardEvent) => {
@@ -64,41 +69,58 @@ export const EditorModeSwitch = ({
     document.addEventListener('keydown', keydown, { capture: true });
     return () =>
       document.removeEventListener('keydown', keydown, { capture: true });
-  }, [currentMode, pageId, t, togglePageMode, trash]);
+  }, [currentMode, isPublic, pageId, t, togglePageMode, trash]);
 
   const onSwitchToPageMode = useCallback(() => {
-    if (currentMode === 'page') {
+    if (currentMode === 'page' || isPublic) {
       return;
     }
     switchToPageMode(pageId);
     toast(t['com.affine.toastMessage.pageMode']());
-  }, [currentMode, pageId, switchToPageMode, t]);
+  }, [currentMode, isPublic, pageId, switchToPageMode, t]);
+
   const onSwitchToEdgelessMode = useCallback(() => {
-    if (currentMode === 'edgeless') {
+    if (currentMode === 'edgeless' || isPublic) {
       return;
     }
     switchToEdgelessMode(pageId);
     toast(t['com.affine.toastMessage.edgelessMode']());
-  }, [currentMode, pageId, switchToEdgelessMode, t]);
+  }, [currentMode, isPublic, pageId, switchToEdgelessMode, t]);
+
+  const shouldHide = useCallback(
+    (mode: PageMode) =>
+      (trash && currentMode !== mode) || (isPublic && publicMode !== mode),
+    [currentMode, isPublic, publicMode, trash]
+  );
+
+  const shouldActive = useCallback(
+    (mode: PageMode) => (isPublic ? false : currentMode === mode),
+    [currentMode, isPublic]
+  );
 
   return (
-    <Tooltip content={<TooltipContent />}>
+    <Tooltip
+      content={<TooltipContent />}
+      options={{
+        hidden: isPublic || trash,
+      }}
+    >
       <StyledEditorModeSwitch
         style={style}
         switchLeft={currentMode === 'page'}
-        showAlone={trash}
+        showAlone={trash || isPublic}
       >
         <PageSwitchItem
           data-testid="switch-page-mode-button"
-          active={currentMode === 'page'}
-          hide={trash && currentMode !== 'page'}
+          active={shouldActive('page')}
+          hide={shouldHide('page')}
           trash={trash}
           onClick={onSwitchToPageMode}
         />
         <EdgelessSwitchItem
           data-testid="switch-edgeless-mode-button"
-          active={currentMode === 'edgeless'}
-          hide={trash && currentMode !== 'edgeless'}
+          active={shouldActive('edgeless')}
+          hide={shouldHide('edgeless')}
           trash={trash}
           onClick={onSwitchToEdgelessMode}
         />
