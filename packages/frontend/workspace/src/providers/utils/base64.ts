@@ -1,20 +1,3 @@
-import type { Doc as YDoc } from 'yjs';
-
-export type SubdocEvent = {
-  loaded: Set<YDoc>;
-  removed: Set<YDoc>;
-  added: Set<YDoc>;
-};
-
-export type UpdateHandler = (update: Uint8Array, origin: unknown) => void;
-export type SubdocsHandler = (event: SubdocEvent) => void;
-export type DestroyHandler = () => void;
-
-export type AwarenessChanges = Record<
-  'added' | 'updated' | 'removed',
-  number[]
->;
-
 export function uint8ArrayToBase64(array: Uint8Array): Promise<string> {
   return new Promise<string>(resolve => {
     // Create a blob from the Uint8Array

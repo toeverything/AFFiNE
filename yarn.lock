@@ -900,6 +900,7 @@ __metadata:
     "@types/ws": "npm:^8.5.7"
     async-call-rpc: "npm:^6.3.1"
     fake-indexeddb: "npm:^5.0.0"
+    idb: "npm:^7.1.1"
     is-svg: "npm:^5.0.0"
     jotai: "npm:^2.4.3"
     js-base64: "npm:^3.7.5"
@@ -921,6 +922,7 @@ __metadata:
     zod: "npm:^3.22.4"
   peerDependencies:
     "@blocksuite/blocks": "*"
+    "@blocksuite/global": "*"
     "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft

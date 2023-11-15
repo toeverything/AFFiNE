@@ -268,7 +268,6 @@ export const rootWorkspacesMetadataAtom = atom<
       }
 
       if (newWorkspaceId) {
-        set(currentPageIdAtom, null);
         set(currentWorkspaceIdAtom, newWorkspaceId);
       }
       return metadata;

@@ -9,9 +9,11 @@ import {
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { expect, type Page } from '@playwright/test';
 
-const openQuickSearchByShortcut = async (page: Page) => {
+const openQuickSearchByShortcut = async (page: Page, checkVisible = true) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
-  await page.waitForTimeout(1000);
+  if (checkVisible) {
+    expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
+  }
 };
 
 const keyboardDownAndSelect = async (page: Page, label: string) => {
@@ -188,7 +190,7 @@ test('Navigate to the 404 page and try to open quick search', async ({
   await page.goto('http://localhost:8080/404');
   const notFoundTip = page.locator('button >> text=Back to My Content');
   await expect(notFoundTip).toBeVisible();
-  await openQuickSearchByShortcut(page);
+  await openQuickSearchByShortcut(page, false);
   const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible({ visible: false });
 });
@@ -215,6 +217,7 @@ test('Autofocus input after select', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
+  await page.waitForTimeout(500); // wait for new page loaded
   await openQuickSearchByShortcut(page);
   await page.keyboard.press('ArrowUp');
   const locator = page.locator('[cmdk-input]');
@@ -251,8 +254,9 @@ test('assert the recent browse pages are on the recent list', async ({
   await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('sgtokidoki');
-    expect(await title.innerText()).toBe('sgtokidoki');
+    await title.click();
+    await title.pressSequentially('sgtokidoki', { delay: 100 });
+    await expect(title).toHaveText('sgtokidoki');
   }
 
   // create second page
@@ -262,8 +266,9 @@ test('assert the recent browse pages are on the recent list', async ({
   await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('theliquidhorse');
-    expect(await title.innerText()).toBe('theliquidhorse');
+    await title.click();
+    await title.pressSequentially('theliquidhorse', { delay: 100 });
+    await expect(title).toHaveText('theliquidhorse');
   }
   await page.waitForTimeout(200);
 
@@ -273,8 +278,9 @@ test('assert the recent browse pages are on the recent list', async ({
   await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('battlekot');
-    expect(await title.innerText()).toBe('battlekot');
+    await title.click();
+    await title.pressSequentially('battlekot', { delay: 100 });
+    await expect(title).toHaveText('battlekot');
   }
 
   await openQuickSearchByShortcut(page);
@@ -283,9 +289,9 @@ test('assert the recent browse pages are on the recent list', async ({
     const quickSearchItems = page.locator(
       '[cmdk-item] [data-testid="cmdk-label"]'
     );
-    expect(await quickSearchItems.nth(0).textContent()).toBe('battlekot');
-    expect(await quickSearchItems.nth(1).textContent()).toBe('theliquidhorse');
-    expect(await quickSearchItems.nth(2).textContent()).toBe('sgtokidoki');
+    await expect(quickSearchItems.nth(0)).toHaveText('battlekot');
+    await expect(quickSearchItems.nth(1)).toHaveText('theliquidhorse');
+    await expect(quickSearchItems.nth(2)).toHaveText('sgtokidoki');
   }
 
   // create forth page, and check does the recent page list only contains three pages
@@ -299,8 +305,9 @@ test('assert the recent browse pages are on the recent list', async ({
   await waitForEditorLoad(page);
   {
     const title = getBlockSuiteEditorTitle(page);
-    await title.pressSequentially('affine is the best');
-    expect(await title.innerText()).toBe('affine is the best');
+    await title.click();
+    await title.pressSequentially('affine is the best', { delay: 100 });
+    await expect(title).toHaveText('affine is the best', { timeout: 500 });
   }
   await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
@@ -308,9 +315,7 @@ test('assert the recent browse pages are on the recent list', async ({
     const quickSearchItems = page.locator(
       '[cmdk-item] [data-testid="cmdk-label"]'
     );
-    expect(await quickSearchItems.nth(0).textContent()).toBe(
-      'affine is the best'
-    );
+    await expect(quickSearchItems.nth(0)).toHaveText('affine is the best');
   }
 });
 

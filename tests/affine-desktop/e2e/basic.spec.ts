@@ -62,43 +62,38 @@ test('app sidebar router forward/back', async ({ page }) => {
     });
   }
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test3');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test3'
+    );
   }
 
   await page.click('[data-testid="app-sidebar-arrow-button-back"]');
   await page.click('[data-testid="app-sidebar-arrow-button-back"]');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test1');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test1'
+    );
   }
   await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
   await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test3');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test3'
+    );
   }
   await historyShortcut(page, 'goBack');
   await historyShortcut(page, 'goBack');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test1');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test1'
+    );
   }
   await historyShortcut(page, 'goForward');
   await historyShortcut(page, 'goForward');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test3');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test3'
+    );
   }
 });
 // }

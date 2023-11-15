@@ -1,4 +1,6 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+
+import { waitForEditorLoad } from './page-logic';
 
 interface CreateWorkspaceParams {
   name: string;
@@ -31,6 +33,10 @@ export async function createLocalWorkspace(
   await page.getByRole('button', { name: 'Create' }).click({
     delay: 500,
   });
+
+  await waitForEditorLoad(page);
+
+  await expect(page.getByTestId('workspace-name')).toHaveText(params.name);
 
   // if (isDesktop) {
   //   await page.getByTestId('create-workspace-continue-button').click();

@@ -9,16 +9,10 @@ import {
   getWorkspaceQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { createAffineDataSource } from '@affine/workspace/affine/index';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { migrateLocalBlobStorage } from '@toeverything/infra/blocksuite';
-import {
-  createIndexedDBProvider,
-  DEFAULT_DB_NAME,
-} from '@toeverything/y-indexeddb';
 import { getSession } from 'next-auth/react';
 import { proxy } from 'valtio/vanilla';
-import { syncDataSourceFromDoc } from 'y-provider';
 
 import { getOrCreateWorkspace } from '../manager';
 import { fetcher } from './gql';
@@ -77,21 +71,6 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       })
     );
 
-    const datasource = createAffineDataSource(
-      createWorkspace.id,
-      newBlockSuiteWorkspace.doc,
-      newBlockSuiteWorkspace.awarenessStore.awareness
-    );
-
-    const disconnect = datasource.onDocUpdate(() => {});
-    await syncDataSourceFromDoc(upstreamWorkspace.doc, datasource);
-    disconnect();
-
-    const provider = createIndexedDBProvider(
-      newBlockSuiteWorkspace.doc,
-      DEFAULT_DB_NAME
-    );
-    provider.connect();
     migrateLocalBlobStorage(upstreamWorkspace.id, createWorkspace.id)
       .then(() => deleteLocalBlobStorage(upstreamWorkspace.id))
       .catch(e => {
