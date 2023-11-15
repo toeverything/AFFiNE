@@ -43,7 +43,6 @@ const handleEnter = ({
   selectedOption: keyof ShortcutMap;
   callback: () => void;
 }) => {
-  console.log({ page, selectedOption });
   if (selectedOption === 'dismiss') {
     return callback();
   }
