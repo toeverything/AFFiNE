@@ -670,8 +670,17 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
 export function guidCompatibilityFix(rootDoc: YDoc) {
   let changed = false;
   transact(rootDoc, () => {
+    const meta = rootDoc.getMap('meta') as YMap<unknown>;
+    const pages = meta.get('pages') as YArray<YMap<unknown>>;
+    pages?.forEach(page => {
+      const pageId = page.get('id') as string | undefined;
+      if (pageId?.includes(':')) {
+        // remove the prefix "space:" from page id
+        page.set('id', pageId.split(':').at(-1));
+      }
+    });
     const spaces = rootDoc.getMap('spaces') as YMap<YDoc>;
-    spaces.forEach((doc: YDoc, pageId: string) => {
+    spaces?.forEach((doc: YDoc, pageId: string) => {
       if (pageId.includes(':')) {
         const newPageId = pageId.split(':').at(-1) ?? pageId;
         const newDoc = new YDoc();
