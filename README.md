@@ -220,10 +220,10 @@ See [LICENSE] for details.
 [update page]: https://affine.pro/blog?tag=Release%20Note
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
-[contributor license agreement]: https://github.com/toeverything/affine/edit/master/.github/CLA.md
+[contributor license agreement]: https://github.com/toeverything/affine/edit/canary/.github/CLA.md
 [rust-version-icon]: https://img.shields.io/badge/Rust-1.71.0-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
-[codecov]: https://codecov.io/gh/toeverything/affine/branch/master/graphs/badge.svg?branch=master
+[codecov]: https://codecov.io/gh/toeverything/affine/branch/canary/graphs/badge.svg?branch=canary
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
 [react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=packages%2Ffrontend%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)

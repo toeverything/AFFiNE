@@ -2,13 +2,13 @@ name: Languages Sync
 
 on:
   push:
-    branches: ['master']
+    branches: ['canary']
     paths:
       - 'packages/frontend/i18n/**'
       - '.github/workflows/languages-sync.yml'
       - '!.github/actions/setup-node/action.yml'
   pull_request_target:
-    branches: ['master']
+    branches: ['canary']
     paths:
       - 'packages/frontend/i18n/**'
       - '.github/workflows/languages-sync.yml'
@@ -23,13 +23,13 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Check Language Key
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/canary'
         run: yarn workspace @affine/i18n run sync-languages:check
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}
 
       - name: Sync Languages
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/canary'
         run: yarn workspace @affine/i18n run sync-languages
         env:
           TOLGEE_API_KEY: ${{ secrets.TOLGEE_API_KEY }}

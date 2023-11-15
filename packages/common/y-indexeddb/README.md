@@ -35,4 +35,4 @@ downloadBinary(yDoc.guid).then(blob => {
 
 ## LICENSE
 
-[MIT](https://github.com/toeverything/AFFiNE/blob/master/LICENSE-MIT)
+[MIT](https://github.com/toeverything/AFFiNE/blob/canary/LICENSE-MIT)

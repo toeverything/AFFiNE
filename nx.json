@@ -11,7 +11,7 @@
     }
   },
   "affected": {
-    "defaultBase": "master"
+    "defaultBase": "canary"
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
