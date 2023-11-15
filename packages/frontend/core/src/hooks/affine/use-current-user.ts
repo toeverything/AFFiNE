@@ -50,6 +50,7 @@ function updateSessionReducer(prevState: Session, action: UpdateSessionAction) {
  */
 export function useCurrentUser(): CheckedUser {
   const { data, update } = useSession();
+
   const [session, dispatcher] = useReducer(
     updateSessionReducer,
     data,
