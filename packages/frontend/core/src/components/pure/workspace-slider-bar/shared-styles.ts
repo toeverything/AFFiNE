@@ -1,4 +1,4 @@
-import { alpha, displayFlex, styled, textEllipsis } from '@affine/component';
+import { displayFlex, styled } from '@affine/component';
 
 export const StyledListItem = styled('div')<{
   active?: boolean;
@@ -66,59 +66,6 @@ export const StyledCollapseButton = styled('button')<{
     ':focus-visible': {
       outline: '-webkit-focus-ring-color auto 1px',
     },
-  };
-});
-
-export const StyledCollapseItem = styled('div')<{
-  disable?: boolean;
-  active?: boolean;
-  isOver?: boolean;
-  textWrap?: boolean;
-}>(({ disable = false, active = false, isOver, textWrap = false }) => {
-  return {
-    width: '100%',
-    lineHeight: '1.5',
-    minHeight: '32px',
-    borderRadius: '8px',
-    ...displayFlex('flex-start', 'center'),
-    paddingRight: '2px',
-    position: 'relative',
-    color: disable
-      ? 'var(--affine-text-disable-color)'
-      : active
-      ? 'var(--affine-primary-color)'
-      : 'var(--affine-text-primary-color)',
-    cursor: disable ? 'not-allowed' : 'pointer',
-    background: isOver ? alpha('var(--affine-primary-color)', 0.06) : '',
-    userSelect: 'none',
-    ...(textWrap
-      ? {
-          wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
-        }
-      : {}),
-    span: {
-      flexGrow: '1',
-      textAlign: 'left',
-      ...textEllipsis(1),
-    },
-    '> svg': {
-      fontSize: '20px',
-      marginRight: '8px',
-      flexShrink: '0',
-      color: active
-        ? 'var(--affine-primary-color)'
-        : 'var(--affine-icon-color)',
-    },
-
-    ':hover': disable
-      ? {}
-      : {
-          backgroundColor: 'var(--affine-hover-color)',
-          '.operation-button': {
-            visibility: 'visible',
-          },
-        },
   };
 });
 
