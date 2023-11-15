@@ -38,7 +38,6 @@
     "test": "vitest --run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "notify": "node scripts/notify.mjs",
     "circular": "madge --circular --ts-config ./tsconfig.json ./packages/frontend/core/src/pages/**/*.tsx ./packages/frontend/core/src/index.tsx ./packages/frontend/electron/src/*/index.ts",
     "typecheck": "tsc -b tsconfig.json --diagnostics",
     "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install"

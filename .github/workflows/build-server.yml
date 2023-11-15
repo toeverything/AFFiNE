@@ -3,7 +3,7 @@ name: Build(Server) & Test
 on:
   push:
     branches:
-      - master
+      - canary
       - v[0-9]+.[0-9]+.x-staging
       - v[0-9]+.[0-9]+.x
     paths-ignore:
@@ -15,7 +15,7 @@ on:
   pull_request:
   merge_group:
     branches:
-      - master
+      - canary
       - v[0-9]+.[0-9]+.x-staging
       - v[0-9]+.[0-9]+.x
     paths-ignore:
