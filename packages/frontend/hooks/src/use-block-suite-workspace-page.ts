@@ -85,7 +85,7 @@ export function loadPage(page: Page, priority = 0) {
         logger.debug('page loaded', page.id);
         // we do not know how long it takes to load a page here
         // so that we just use 300ms timeout as the default page processing time
-        await awaitForTimeout(1000);
+        await awaitForTimeout(300);
       } else {
         // do nothing if it is already loaded
       }

@@ -18,6 +18,7 @@ interface TagItemProps {
   tag: Tag;
   idx: number;
   mode: 'sticky' | 'list-item';
+  style?: React.CSSProperties;
 }
 
 // hack: map var(--affine-tag-xxx) colors to var(--affine-palette-line-xxx)
@@ -37,13 +38,14 @@ const tagColorMap = (color: string) => {
   return mapping[color] || color;
 };
 
-const TagItem = ({ tag, idx, mode }: TagItemProps) => {
+const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
   return (
     <div
       data-testid="page-tag"
       className={mode === 'sticky' ? styles.tagSticky : styles.tagListItem}
       data-idx={idx}
       title={tag.value}
+      style={style}
     >
       <div
         className={styles.tagIndicator}
@@ -101,8 +103,30 @@ export const PageTags = ({
 
   const tagsNormal = useMemo(() => {
     const nTags = maxItems ? tags.slice(0, maxItems) : tags;
+
+    // sort tags by length
+    nTags.sort((a, b) => a.value.length - b.value.length);
+
+    const tagRightCharLength = nTags.reduceRight<number[]>(
+      (acc, tag) => {
+        const curr = acc[0] + Math.min(tag.value.length, 10);
+        return [curr, ...acc];
+      },
+      [0]
+    );
+
+    tagRightCharLength.shift();
+
     return nTags.map((tag, idx) => (
-      <TagItem key={tag.id} tag={tag} idx={idx} mode="sticky" />
+      <TagItem
+        key={tag.id}
+        tag={tag}
+        idx={idx}
+        mode="sticky"
+        style={{
+          right: `calc(${tagRightCharLength[idx]}em)`,
+        }}
+      />
     ));
   }, [maxItems, tags]);
   return (

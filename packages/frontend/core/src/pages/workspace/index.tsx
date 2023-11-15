@@ -6,6 +6,7 @@ import {
   currentWorkspaceIdAtom,
   getCurrentStore,
 } from '@toeverything/infra/atom';
+import { guidCompatibilityFix } from '@toeverything/infra/blocksuite';
 import type { ReactElement } from 'react';
 import {
   type LoaderFunction,
@@ -43,6 +44,7 @@ export const loader: LoaderFunction = async args => {
 
     const workspace = await rootStore.get(workspaceAtom);
     return (() => {
+      guidCompatibilityFix(workspace.doc);
       const blockVersions = workspace.meta.blockVersions;
       if (!blockVersions) {
         return true;

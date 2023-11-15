@@ -8,6 +8,10 @@
   /*transition: all 0.1s;*/
 }
 
+:root {
+  --noise-background: url(./noise.png);
+}
+
 html,
 body,
 h1,
