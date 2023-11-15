@@ -3,7 +3,7 @@ name: Deploy Cloudflare Worker
 on:
   push:
     branches:
-      - master
+      - canary
     paths:
       - tools/workers/**
 

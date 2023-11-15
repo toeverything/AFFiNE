@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - master
+      - canary
 
 env:
   BUILD_TYPE: stable
@@ -89,7 +89,7 @@ jobs:
           if-no-files-found: error
 
   build-docker:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/canary'
     name: Build Docker
     runs-on: ubuntu-latest
     needs:

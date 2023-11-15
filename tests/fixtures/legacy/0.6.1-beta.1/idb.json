@@ -1,0 +1,530 @@
+[
+  {
+    "name": "affine-local",
+    "version": 1,
+    "stores": [
+      {
+        "name": "milestone",
+        "keyPath": "id",
+        "values": []
+      },
+      {
+        "name": "workspace",
+        "keyPath": "id",
+        "values": [
+          {
+            "id": "sdI1qQamsV",
+            "updates": [
+              {
+                "timestamp": 1699853753756,
+                "update": "__BINARY__1"
+              },
+              {
+                "timestamp": 1699853753757,
+                "update": "__BINARY__2"
+              },
+              {
+                "timestamp": 1699853753757,
+                "update": "__BINARY__3"
+              },
+              {
+                "timestamp": 1699853753757,
+                "update": "__BINARY__4"
+              },
+              {
+                "timestamp": 1699853753757,
+                "update": "__BINARY__5"
+              },
+              {
+                "timestamp": 1699853753757,
+                "update": "__BINARY__6"
+              },
+              {
+                "timestamp": 1699853753758,
+                "update": "__BINARY__7"
+              },
+              {
+                "timestamp": 1699853753758,
+                "update": "__BINARY__8"
+              },
+              {
+                "timestamp": 1699853753758,
+                "update": "__BINARY__9"
+              },
+              {
+                "timestamp": 1699853753759,
+                "update": "__BINARY__10"
+              },
+              {
+                "timestamp": 1699853753760,
+                "update": "__BINARY__11"
+              },
+              {
+                "timestamp": 1699853753760,
+                "update": "__BINARY__12"
+              },
+              {
+                "timestamp": 1699853753761,
+                "update": "__BINARY__13"
+              },
+              {
+                "timestamp": 1699853753762,
+                "update": "__BINARY__14"
+              },
+              {
+                "timestamp": 1699853753767,
+                "update": "__BINARY__15"
+              },
+              {
+                "timestamp": 1699853753768,
+                "update": "__BINARY__16"
+              },
+              {
+                "timestamp": 1699853753770,
+                "update": "__BINARY__17"
+              },
+              {
+                "timestamp": 1699853753770,
+                "update": "__BINARY__18"
+              },
+              {
+                "timestamp": 1699853753771,
+                "update": "__BINARY__19"
+              },
+              {
+                "timestamp": 1699853753772,
+                "update": "__BINARY__20"
+              },
+              {
+                "timestamp": 1699853753773,
+                "update": "__BINARY__21"
+              },
+              {
+                "timestamp": 1699853753774,
+                "update": "__BINARY__22"
+              },
+              {
+                "timestamp": 1699853753775,
+                "update": "__BINARY__23"
+              },
+              {
+                "timestamp": 1699853753776,
+                "update": "__BINARY__24"
+              },
+              {
+                "timestamp": 1699853753777,
+                "update": "__BINARY__25"
+              },
+              {
+                "timestamp": 1699853753778,
+                "update": "__BINARY__26"
+              },
+              {
+                "timestamp": 1699853753778,
+                "update": "__BINARY__27"
+              },
+              {
+                "timestamp": 1699853753779,
+                "update": "__BINARY__28"
+              },
+              {
+                "timestamp": 1699853753780,
+                "update": "__BINARY__29"
+              },
+              {
+                "timestamp": 1699853753781,
+                "update": "__BINARY__30"
+              },
+              {
+                "timestamp": 1699853753782,
+                "update": "__BINARY__31"
+              },
+              {
+                "timestamp": 1699853753783,
+                "update": "__BINARY__32"
+              },
+              {
+                "timestamp": 1699853753783,
+                "update": "__BINARY__33"
+              },
+              {
+                "timestamp": 1699853753784,
+                "update": "__BINARY__34"
+              },
+              {
+                "timestamp": 1699853753785,
+                "update": "__BINARY__35"
+              },
+              {
+                "timestamp": 1699853753786,
+                "update": "__BINARY__36"
+              },
+              {
+                "timestamp": 1699853753787,
+                "update": "__BINARY__37"
+              },
+              {
+                "timestamp": 1699853753787,
+                "update": "__BINARY__38"
+              },
+              {
+                "timestamp": 1699853753788,
+                "update": "__BINARY__39"
+              },
+              {
+                "timestamp": 1699853753789,
+                "update": "__BINARY__40"
+              },
+              {
+                "timestamp": 1699853753790,
+                "update": "__BINARY__41"
+              },
+              {
+                "timestamp": 1699853753791,
+                "update": "__BINARY__42"
+              },
+              {
+                "timestamp": 1699853753792,
+                "update": "__BINARY__43"
+              },
+              {
+                "timestamp": 1699853753793,
+                "update": "__BINARY__44"
+              },
+              {
+                "timestamp": 1699853753794,
+                "update": "__BINARY__45"
+              },
+              {
+                "timestamp": 1699853753794,
+                "update": "__BINARY__46"
+              },
+              {
+                "timestamp": 1699853753795,
+                "update": "__BINARY__47"
+              },
+              {
+                "timestamp": 1699853753796,
+                "update": "__BINARY__48"
+              },
+              {
+                "timestamp": 1699853753797,
+                "update": "__BINARY__49"
+              },
+              {
+                "timestamp": 1699853753798,
+                "update": "__BINARY__50"
+              },
+              {
+                "timestamp": 1699853753799,
+                "update": "__BINARY__51"
+              },
+              {
+                "timestamp": 1699853753800,
+                "update": "__BINARY__52"
+              },
+              {
+                "timestamp": 1699853753801,
+                "update": "__BINARY__53"
+              },
+              {
+                "timestamp": 1699853753802,
+                "update": "__BINARY__54"
+              },
+              {
+                "timestamp": 1699853753802,
+                "update": "__BINARY__55"
+              },
+              {
+                "timestamp": 1699853753803,
+                "update": "__BINARY__56"
+              },
+              {
+                "timestamp": 1699853753804,
+                "update": "__BINARY__57"
+              },
+              {
+                "timestamp": 1699853753805,
+                "update": "__BINARY__58"
+              },
+              {
+                "timestamp": 1699853753806,
+                "update": "__BINARY__59"
+              },
+              {
+                "timestamp": 1699853753807,
+                "update": "__BINARY__60"
+              },
+              {
+                "timestamp": 1699853753807,
+                "update": "__BINARY__61"
+              },
+              {
+                "timestamp": 1699853753808,
+                "update": "__BINARY__62"
+              },
+              {
+                "timestamp": 1699853753809,
+                "update": "__BINARY__63"
+              },
+              {
+                "timestamp": 1699853753810,
+                "update": "__BINARY__64"
+              },
+              {
+                "timestamp": 1699853753811,
+                "update": "__BINARY__65"
+              },
+              {
+                "timestamp": 1699853753811,
+                "update": "__BINARY__66"
+              },
+              {
+                "timestamp": 1699853753812,
+                "update": "__BINARY__67"
+              },
+              {
+                "timestamp": 1699853753813,
+                "update": "__BINARY__68"
+              },
+              {
+                "timestamp": 1699853753814,
+                "update": "__BINARY__69"
+              },
+              {
+                "timestamp": 1699853753815,
+                "update": "__BINARY__70"
+              },
+              {
+                "timestamp": 1699853753816,
+                "update": "__BINARY__71"
+              },
+              {
+                "timestamp": 1699853753817,
+                "update": "__BINARY__72"
+              },
+              {
+                "timestamp": 1699853753818,
+                "update": "__BINARY__73"
+              },
+              {
+                "timestamp": 1699853753818,
+                "update": "__BINARY__74"
+              },
+              {
+                "timestamp": 1699853753819,
+                "update": "__BINARY__75"
+              },
+              {
+                "timestamp": 1699853753820,
+                "update": "__BINARY__76"
+              },
+              {
+                "timestamp": 1699853754053,
+                "update": "__BINARY__77"
+              },
+              {
+                "timestamp": 1699853755314,
+                "update": "__BINARY__78"
+              },
+              {
+                "timestamp": 1699853755516,
+                "update": "__BINARY__79"
+              },
+              {
+                "timestamp": 1699853755920,
+                "update": "__BINARY__80"
+              },
+              {
+                "timestamp": 1699853755921,
+                "update": "__BINARY__81"
+              },
+              {
+                "timestamp": 1699853755922,
+                "update": "__BINARY__82"
+              },
+              {
+                "timestamp": 1699853755923,
+                "update": "__BINARY__83"
+              },
+              {
+                "timestamp": 1699853755924,
+                "update": "__BINARY__84"
+              },
+              {
+                "timestamp": 1699853755925,
+                "update": "__BINARY__85"
+              },
+              {
+                "timestamp": 1699853755926,
+                "update": "__BINARY__86"
+              },
+              {
+                "timestamp": 1699853755930,
+                "update": "__BINARY__87"
+              },
+              {
+                "timestamp": 1699853755932,
+                "update": "__BINARY__88"
+              },
+              {
+                "timestamp": 1699853755933,
+                "update": "__BINARY__89"
+              },
+              {
+                "timestamp": 1699853755934,
+                "update": "__BINARY__90"
+              },
+              {
+                "timestamp": 1699853755935,
+                "update": "__BINARY__91"
+              },
+              {
+                "timestamp": 1699853756122,
+                "update": "__BINARY__92"
+              },
+              {
+                "timestamp": 1699853756123,
+                "update": "__BINARY__93"
+              },
+              {
+                "timestamp": 1699853756124,
+                "update": "__BINARY__94"
+              },
+              {
+                "timestamp": 1699853756125,
+                "update": "__BINARY__95"
+              },
+              {
+                "timestamp": 1699853756129,
+                "update": "__BINARY__96"
+              },
+              {
+                "timestamp": 1699853756130,
+                "update": "__BINARY__97"
+              },
+              {
+                "timestamp": 1699853756131,
+                "update": "__BINARY__98"
+              },
+              {
+                "timestamp": 1699853756132,
+                "update": "__BINARY__99"
+              },
+              {
+                "timestamp": 1699853756134,
+                "update": "__BINARY__100"
+              },
+              {
+                "timestamp": 1699853756135,
+                "update": "__BINARY__101"
+              },
+              {
+                "timestamp": 1699853756146,
+                "update": "__BINARY__102"
+              },
+              {
+                "timestamp": 1699853756154,
+                "update": "__BINARY__103"
+              },
+              {
+                "timestamp": 1699853756155,
+                "update": "__BINARY__104"
+              },
+              {
+                "timestamp": 1699853756158,
+                "update": "__BINARY__105"
+              },
+              {
+                "timestamp": 1699853756161,
+                "update": "__BINARY__106"
+              },
+              {
+                "timestamp": 1699853756162,
+                "update": "__BINARY__107"
+              },
+              {
+                "timestamp": 1699853756163,
+                "update": "__BINARY__108"
+              },
+              {
+                "timestamp": 1699853756164,
+                "update": "__BINARY__109"
+              },
+              {
+                "timestamp": 1699853756165,
+                "update": "__BINARY__110"
+              },
+              {
+                "timestamp": 1699853756212,
+                "update": "__BINARY__111"
+              },
+              {
+                "timestamp": 1699853756266,
+                "update": "__BINARY__112"
+              },
+              {
+                "timestamp": 1699853756321,
+                "update": "__BINARY__113"
+              },
+              {
+                "timestamp": 1699853756375,
+                "update": "__BINARY__114"
+              },
+              {
+                "timestamp": 1699853756435,
+                "update": "__BINARY__115"
+              },
+              {
+                "timestamp": 1699853756490,
+                "update": "__BINARY__116"
+              },
+              {
+                "timestamp": 1699853756546,
+                "update": "__BINARY__117"
+              },
+              {
+                "timestamp": 1699853756607,
+                "update": "__BINARY__118"
+              },
+              {
+                "timestamp": 1699853756672,
+                "update": "__BINARY__119"
+              },
+              {
+                "timestamp": 1699853756734,
+                "update": "__BINARY__120"
+              },
+              {
+                "timestamp": 1699853756806,
+                "update": "__BINARY__121"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-view",
+    "version": 1,
+    "stores": [
+      {
+        "name": "view",
+        "keyPath": "id",
+        "values": []
+      }
+    ]
+  },
+  {
+    "name": "sdI1qQamsV_blob",
+    "version": 1,
+    "stores": [
+      {
+        "name": "blob",
+        "keyPath": null,
+        "values": []
+      }
+    ]
+  }
+]

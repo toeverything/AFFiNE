@@ -320,15 +320,18 @@ query getWorkspacePublicById($id: String!) {
 }`,
 };
 
-export const getWorkspaceSharedPagesQuery = {
-  id: 'getWorkspaceSharedPagesQuery' as const,
-  operationName: 'getWorkspaceSharedPages',
+export const getWorkspacePublicPagesQuery = {
+  id: 'getWorkspacePublicPagesQuery' as const,
+  operationName: 'getWorkspacePublicPages',
   definitionName: 'workspace',
   containsFile: false,
   query: `
-query getWorkspaceSharedPages($workspaceId: String!) {
+query getWorkspacePublicPages($workspaceId: String!) {
   workspace(id: $workspaceId) {
-    sharedPages
+    publicPages {
+      id
+      mode
+    }
   }
 }`,
 };
@@ -428,6 +431,20 @@ query prices {
 }`,
 };
 
+export const publishPageMutation = {
+  id: 'publishPageMutation' as const,
+  operationName: 'publishPage',
+  definitionName: 'publishPage',
+  containsFile: false,
+  query: `
+mutation publishPage($workspaceId: String!, $pageId: String!, $mode: PublicPageMode = Page) {
+  publishPage(workspaceId: $workspaceId, pageId: $pageId, mode: $mode) {
+    id
+    mode
+  }
+}`,
+};
+
 export const removeAvatarMutation = {
   id: 'removeAvatarMutation' as const,
   operationName: 'removeAvatar',
@@ -469,14 +486,18 @@ mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
 }`,
 };
 
-export const revokePageMutation = {
-  id: 'revokePageMutation' as const,
-  operationName: 'revokePage',
-  definitionName: 'revokePage',
+export const revokePublicPageMutation = {
+  id: 'revokePublicPageMutation' as const,
+  operationName: 'revokePublicPage',
+  definitionName: 'revokePublicPage',
   containsFile: false,
   query: `
-mutation revokePage($workspaceId: String!, $pageId: String!) {
-  revokePage(workspaceId: $workspaceId, pageId: $pageId)
+mutation revokePublicPage($workspaceId: String!, $pageId: String!) {
+  revokePublicPage(workspaceId: $workspaceId, pageId: $pageId) {
+    id
+    mode
+    public
+  }
 }`,
 };
 
@@ -534,17 +555,6 @@ mutation setWorkspacePublicById($id: ID!, $public: Boolean!) {
   updateWorkspace(input: {id: $id, public: $public}) {
     id
   }
-}`,
-};
-
-export const sharePageMutation = {
-  id: 'sharePageMutation' as const,
-  operationName: 'sharePage',
-  definitionName: 'sharePage',
-  containsFile: false,
-  query: `
-mutation sharePage($workspaceId: String!, $pageId: String!) {
-  sharePage(workspaceId: $workspaceId, pageId: $pageId)
 }`,
 };
 

@@ -1,7 +1,6 @@
+import { toast } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useCallback, useMemo } from 'react';
-
-import { toast } from '../../ui/toast';
 
 type UrlType = 'share' | 'workspace';
 
@@ -16,7 +15,14 @@ export const generateUrl = ({
   pageId,
   urlType,
 }: UseSharingUrl) => {
-  return `${runtimeConfig.serverUrlPrefix}/${urlType}/${workspaceId}/${pageId}`;
+  // to generate a private url like https://affine.app/workspace/123/456
+  // to generate a public url like https://affine.app/share/123/456
+  // or https://affine.app/share/123/456?mode=edgeless
+
+  const url = new URL(
+    `${runtimeConfig.serverUrlPrefix}/${urlType}/${workspaceId}/${pageId}`
+  );
+  return url.toString();
 };
 
 export const useSharingUrl = ({
@@ -27,7 +33,7 @@ export const useSharingUrl = ({
   const t = useAFFiNEI18N();
   const sharingUrl = useMemo(
     () => generateUrl({ workspaceId, pageId, urlType }),
-    [urlType, workspaceId, pageId]
+    [workspaceId, pageId, urlType]
   );
 
   const onClickCopyLink = useCallback(() => {

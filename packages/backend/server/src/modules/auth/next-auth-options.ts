@@ -23,6 +23,8 @@ import {
 
 export const NextAuthOptionsProvide = Symbol('NextAuthOptions');
 
+const TrustedProviders = ['google'];
+
 export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
   provide: NextAuthOptionsProvide,
   useFactory(
@@ -50,6 +52,23 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         userData.avatarUrl = data.image;
       }
       return createUser(userData);
+    };
+    // linkAccount exists in the adapter
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const linkAccount = prismaAdapter.linkAccount!.bind(prismaAdapter);
+    prismaAdapter.linkAccount = async account => {
+      // google account must be a verified email
+      if (TrustedProviders.includes(account.provider)) {
+        await prisma.user.update({
+          where: {
+            id: account.userId,
+          },
+          data: {
+            emailVerified: new Date(),
+          },
+        });
+      }
+      return linkAccount(account) as Promise<void>;
     };
     // getUser exists in the adapter
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

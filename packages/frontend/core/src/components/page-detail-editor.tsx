@@ -31,7 +31,7 @@ import {
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
 
-import { pageSettingFamily } from '../atoms';
+import { type PageMode, pageSettingFamily } from '../atoms';
 import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
@@ -50,6 +50,7 @@ export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;
+  publishMode?: PageMode;
   workspace: Workspace;
   pageId: string;
   onLoad?: OnLoadEditor;
@@ -91,6 +92,7 @@ const EditorWrapper = memo(function EditorWrapper({
   pageId,
   onLoad,
   isPublic,
+  publishMode,
 }: PageDetailEditorProps) {
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
@@ -105,7 +107,16 @@ const EditorWrapper = memo(function EditorWrapper({
 
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
-  const currentMode = pageSetting?.mode ?? 'page';
+
+  const mode = useMemo(() => {
+    const currentMode = pageSetting.mode;
+    const shareMode = publishMode || currentMode;
+
+    if (isPublic) {
+      return shareMode;
+    }
+    return currentMode;
+  }, [isPublic, publishMode, pageSetting.mode]);
 
   const { appSettings } = useAppSettingHelper();
 
@@ -120,13 +131,16 @@ const EditorWrapper = memo(function EditorWrapper({
 
   const setEditorMode = useCallback(
     (mode: 'page' | 'edgeless') => {
+      if (isPublic) {
+        return;
+      }
       if (mode === 'edgeless') {
         switchToEdgelessMode(pageId);
       } else {
         switchToPageMode(pageId);
       }
     },
-    [switchToEdgelessMode, switchToPageMode, pageId]
+    [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
   const [editor, setEditor] = useState<EditorContainer>();
@@ -191,7 +205,7 @@ const EditorWrapper = memo(function EditorWrapper({
             '--affine-font-family': value,
           } as CSSProperties
         }
-        mode={isPublic ? 'page' : currentMode}
+        mode={mode}
         page={page}
         onModeChange={setEditorMode}
         defaultSelectedBlockId={blockId}

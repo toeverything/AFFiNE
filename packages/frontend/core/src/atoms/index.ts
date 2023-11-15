@@ -40,7 +40,7 @@ export const authAtom = atom<AuthAtom>({
 
 export const openDisableCloudAlertModalAtom = atom(false);
 
-type PageMode = 'page' | 'edgeless';
+export type PageMode = 'page' | 'edgeless';
 type PageLocalSetting = {
   mode: PageMode;
 };
