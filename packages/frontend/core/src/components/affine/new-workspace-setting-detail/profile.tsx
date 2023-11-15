@@ -77,8 +77,8 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
   );
 
   const handleUploadAvatar = useCallback(
-    async (file: File) => {
-      await update(file)
+    (file: File) => {
+      update(file)
         .then(() => {
           pushNotification({
             title: 'Update workspace avatar success',

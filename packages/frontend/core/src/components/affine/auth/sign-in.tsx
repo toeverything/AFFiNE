@@ -9,6 +9,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { GraphQLError } from 'graphql';
 import { type FC, useState } from 'react';
 import { useCallback } from 'react';
@@ -52,7 +53,7 @@ export const SignIn: FC<AuthPanelProps> = ({
     onSignedIn?.();
   }
 
-  const onContinue = useCallback(async () => {
+  const onContinue = useAsyncCallback(async () => {
     if (!validateEmail(email)) {
       setIsValidEmail(false);
       return;

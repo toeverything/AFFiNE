@@ -1,17 +1,17 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
-import { isDesktop } from '@affine/env/constant';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { SaveDBFileResult } from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import type { Doc } from 'yjs';
 import { encodeStateAsUpdate } from 'yjs';
 
 async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
-  if (window.apis && isDesktop) {
+  if (window.apis && environment.isDesktop) {
     const bs = workspace.blockSuiteWorkspace.blob;
     const blobsInDb = await window.apis.db.getBlobKeys(workspace.id);
     const blobsInStorage = await bs.list();
@@ -32,7 +32,7 @@ async function syncBlobsToSqliteDb(workspace: AffineOfficialWorkspace) {
 }
 
 async function syncDocsToSqliteDb(workspace: AffineOfficialWorkspace) {
-  if (window.apis && isDesktop) {
+  if (window.apis && environment.isDesktop) {
     const workspaceId = workspace.blockSuiteWorkspace.doc.guid;
     const syncDoc = async (doc: Doc) => {
       await window.apis.db.applyDocUpdate(
@@ -56,7 +56,7 @@ export const ExportPanel = ({ workspace }: ExportPanelProps) => {
   const t = useAFFiNEI18N();
   const [syncing, setSyncing] = useState(false);
   const pushNotification = useSetAtom(pushNotificationAtom);
-  const onExport = useCallback(async () => {
+  const onExport = useAsyncCallback(async () => {
     if (syncing) {
       return;
     }

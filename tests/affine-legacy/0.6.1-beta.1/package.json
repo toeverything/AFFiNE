@@ -1,0 +1,22 @@
+{
+  "name": "@affine-legacy/0.6.1-beta.1",
+  "description": "AFFiNE 0.6.1-beta.1 static output",
+  "scripts": {
+    "unzip": "wget -O static.zip https://github.com/toeverything/AFFiNE/releases/download/v0.6.1-beta.1/web-static.zip && unzip static.zip -d static",
+    "start": "yarn exec serve -s static -l 8081",
+    "e2e": "yarn playwright test"
+  },
+  "devDependencies": {
+    "@affine-test/fixtures": "workspace:*",
+    "@affine-test/kit": "workspace:*",
+    "@blocksuite/block-std": "0.0.0-20231110042432-4fdac4dc-nightly",
+    "@blocksuite/blocks": "0.0.0-20231110042432-4fdac4dc-nightly",
+    "@blocksuite/global": "0.0.0-20231110042432-4fdac4dc-nightly",
+    "@blocksuite/store": "0.0.0-20231110042432-4fdac4dc-nightly",
+    "@playwright/test": "^1.39.0",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^3.0.0-beta.1",
+    "serve": "^14.2.1"
+  },
+  "version": "0.10.0"
+}

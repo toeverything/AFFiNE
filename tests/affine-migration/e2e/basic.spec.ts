@@ -120,3 +120,41 @@ test('v3 to v4, surface migration', async ({ page }) => {
     expect(workspace.version).toBe(4);
   }
 });
+
+test('v0 to v4, subdoc migration', async ({ page }) => {
+  await open404PageToInitData(page, '0.6.1-beta.1');
+
+  await page.goto(coreUrl);
+  await page.waitForTimeout(5000);
+
+  // go to all page
+  await clickSideBarAllPageButton(page);
+
+  // find if page name with "hello" exists and click it
+  await page
+    .locator('[data-testid="page-list-item-title-text"]:has-text("hello")')
+    .click();
+
+  await waitForEditorLoad(page);
+
+  // check if content is correct
+  expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
+  expect(await page.locator('v-line').nth(1).textContent()).toBe(
+    'TEST CONTENT'
+  );
+
+  // check edgeless mode is correct
+  await clickEdgelessModeButton(page);
+  await expect(page.locator('edgeless-toolbar')).toBeVisible();
+  await expect(page.locator('affine-edgeless-page')).toBeVisible();
+
+  const changedLocalStorageData = await page.evaluate(() =>
+    window.readAffineLocalStorage()
+  );
+  const workspaces = JSON.parse(
+    changedLocalStorageData['jotai-workspaces']
+  ) as any[];
+  for (const workspace of workspaces) {
+    expect(workspace.version).toBe(4);
+  }
+});

@@ -22,6 +22,7 @@ import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Skeleton } from '@mui/material';
 import { Button, IconButton } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
@@ -255,8 +256,8 @@ const PaymentMethodUpdater = () => {
   });
   const t = useAFFiNEI18N();
 
-  const update = useCallback(() => {
-    trigger(null, {
+  const update = useAsyncCallback(async () => {
+    await trigger(null, {
       onSuccess: data => {
         window.open(data.createCustomerPortal, '_blank', 'noopener noreferrer');
       },

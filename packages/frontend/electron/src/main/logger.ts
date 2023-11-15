@@ -1,4 +1,5 @@
 import { shell } from 'electron';
+import { app } from 'electron';
 import log from 'electron-log';
 
 export const logger = log.scope('main');
@@ -12,3 +13,7 @@ export async function revealLogFile() {
   const filePath = getLogFilePath();
   return await shell.openPath(filePath);
 }
+
+app.on('before-quit', () => {
+  log.transports.console.level = false;
+});

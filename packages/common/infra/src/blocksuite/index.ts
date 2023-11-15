@@ -2,7 +2,7 @@ import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import { createIndexeddbStorage } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
 import type { Doc } from 'yjs';
-import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
+import { Array as YArray, Doc as YDoc, Map as YMap, transact } from 'yjs';
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.waitForLoaded();
@@ -537,6 +537,7 @@ function migrateBlocks(
     const originalBlocks = oldDoc.getMap(spaceId) as YMap<unknown>;
     const subdoc = new YDoc();
     spaces.set(newId, subdoc);
+    subdoc.guid = id;
     const blocks = subdoc.getMap('blocks');
     Array.from(originalBlocks.entries()).forEach(([key, value]) => {
       const blockData = value.clone();
@@ -597,11 +598,13 @@ export async function forceUpgradePages(
   options: Omit<UpgradeOptions, 'createWorkspace'>
 ): Promise<boolean> {
   const rootDoc = await options.getCurrentRootDoc();
+  guidCompatibilityFix(rootDoc);
+
   const spaces = rootDoc.getMap('spaces') as YMap<any>;
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
-  const oldVersions = versions.toJSON();
+  const oldVersions = versions?.toJSON() ?? {};
   spaces.forEach((space: Doc) => {
     try {
       schema.upgradePage(0, oldVersions, space);
@@ -623,6 +626,7 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
   const schema = options.getSchema();
+  guidCompatibilityFix(rootDoc);
   spaces.forEach((space: Doc) => {
     schema.upgradePage(
       0,
@@ -652,6 +656,39 @@ async function upgradeV2ToV3(options: UpgradeOptions): Promise<boolean> {
     );
   }
   return true;
+}
+
+// patch root doc's space guid compatibility issue
+//
+// in version 0.10, page id in spaces no longer has prefix "space:"
+// The data flow for fetching a doc's updates is:
+// - page id in `meta.pages` -> find `${page-id}` in `doc.spaces` -> `doc` -> `doc.guid`
+// if `doc` is not found in `doc.spaces`, a new doc will be created and its `doc.guid` is the same with its pageId
+// - because of guid logic change, the doc that previously prefixed with "space:" will not be found in `doc.spaces`
+// - when fetching the rows of this doc using the doc id === page id,
+//   it will return empty since there is no updates associated with the page id
+export function guidCompatibilityFix(rootDoc: YDoc) {
+  let changed = false;
+  transact(rootDoc, () => {
+    const spaces = rootDoc.getMap('spaces') as YMap<YDoc>;
+    spaces.forEach((doc: YDoc, pageId: string) => {
+      if (pageId.includes(':')) {
+        const newPageId = pageId.split(':').at(-1) ?? pageId;
+        const newDoc = new YDoc();
+        // clone the original doc. yjs is not happy to use the same doc instance
+        applyUpdate(newDoc, encodeStateAsUpdate(doc));
+        newDoc.guid = doc.guid;
+        spaces.set(newPageId, newDoc);
+        // should remove the old doc, otherwise we will do it again in the next run
+        spaces.delete(pageId);
+        changed = true;
+        console.debug(
+          `fixed space id ${pageId} -> ${newPageId}, doc id: ${doc.guid}`
+        );
+      }
+    });
+  });
+  return changed;
 }
 
 export enum WorkspaceVersion {

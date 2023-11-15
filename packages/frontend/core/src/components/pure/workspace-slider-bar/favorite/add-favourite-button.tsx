@@ -1,8 +1,8 @@
 import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
 import { IconButton } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useCallback } from 'react';
 
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 
@@ -13,7 +13,7 @@ type AddFavouriteButtonProps = {
 export const AddFavouriteButton = ({ workspace }: AddFavouriteButtonProps) => {
   const { createPage } = usePageHelper(workspace);
   const { setPageMeta } = usePageMetaHelper(workspace);
-  const handleAddFavorite = useCallback(async () => {
+  const handleAddFavorite = useAsyncCallback(async () => {
     const page = createPage();
     await page.waitForLoaded();
     setPageMeta(page.id, { favorite: true });

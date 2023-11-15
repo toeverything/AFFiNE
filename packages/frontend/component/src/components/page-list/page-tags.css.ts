@@ -64,14 +64,6 @@ export const innerBackdrop = style({
   },
 });
 
-const range = (start: number, end: number) => {
-  const result = [];
-  for (let i = start; i < end; i++) {
-    result.push(i);
-  }
-  return result;
-};
-
 export const tag = style({
   height: '20px',
   display: 'flex',
@@ -94,14 +86,6 @@ export const tagSticky = style([
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     left: 0,
-    selectors: range(0, 20).reduce((selectors, i) => {
-      return {
-        ...selectors,
-        [`&:nth-last-child(${i + 1})`]: {
-          right: `${i * 48}px`,
-        },
-      };
-    }, {}),
   },
 ]);
 

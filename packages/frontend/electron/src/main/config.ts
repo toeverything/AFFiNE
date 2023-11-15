@@ -24,7 +24,7 @@ export const mode = process.env.NODE_ENV;
 export const isDev = mode === 'development';
 
 const API_URL_MAPPING = {
-  stable: `https://app.affine.pro`,
+  stable: `https://insider.affine.pro`, // Let insider be stable environment temporarily.
   beta: `https://insider.affine.pro`,
   canary: `https://affine.fail`,
   internal: `https://insider.affine.pro`,

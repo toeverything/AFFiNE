@@ -86,11 +86,11 @@ jobs:
       # For windows, we need a separate approach
       matrix:
         spec:
-          - runner: macos-latest-xlarge
+          - runner: macos-latest
             platform: darwin
             arch: x64
             target: x86_64-apple-darwin
-          - runner: macos-latest-xlarge
+          - runner: macos-latest
             platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
@@ -115,6 +115,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         timeout-minutes: 10
+        if: ${{ matrix.spec.platform == 'darwin' }}
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo
+          hard-link-nm: false
+          build-plugins: false
+          nmHoistingLimits: workspaces
+          enableScripts: false
+      - name: Setup Node.js
+        timeout-minutes: 10
+        if: ${{ matrix.spec.platform != 'darwin' }}
         uses: ./.github/actions/setup-node
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo

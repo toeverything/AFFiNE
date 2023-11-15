@@ -117,8 +117,8 @@ export function useRegisterBlocksuiteEditorCommands(
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to PDF'](),
-        run() {
-          exportHandler('pdf');
+        async run() {
+          await exportHandler('pdf');
         },
       })
     );
@@ -130,8 +130,8 @@ export function useRegisterBlocksuiteEditorCommands(
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to HTML'](),
-        run() {
-          exportHandler('html');
+        async run() {
+          await exportHandler('html');
         },
       })
     );
@@ -143,8 +143,8 @@ export function useRegisterBlocksuiteEditorCommands(
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to PNG'](),
-        run() {
-          exportHandler('png');
+        async run() {
+          await exportHandler('png');
         },
       })
     );
@@ -156,8 +156,8 @@ export function useRegisterBlocksuiteEditorCommands(
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to Markdown'](),
-        run() {
-          exportHandler('markdown');
+        async run() {
+          await exportHandler('markdown');
         },
       })
     );
