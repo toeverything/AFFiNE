@@ -1,4 +1,3 @@
-import { useMediaQuery, useTheme } from '@mui/material';
 import clsx from 'clsx';
 import {
   type BaseSyntheticEvent,
@@ -7,12 +6,6 @@ import {
 } from 'react';
 
 import * as styles from './page-list.css';
-
-export const useIsSmallDevices = () => {
-  const theme = useTheme();
-  const isSmallDevices = useMediaQuery(theme.breakpoints.down(900));
-  return isSmallDevices;
-};
 
 export function isToday(date: Date): boolean {
   const today = new Date();
