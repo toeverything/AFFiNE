@@ -24,7 +24,7 @@ import {
   PreconditionStrategy,
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
-import { groupBy } from 'lodash-es';
+import { escape, groupBy } from 'lodash-es';
 import { useCallback, useMemo } from 'react';
 
 import {
@@ -168,6 +168,7 @@ export const pageToCommand = (
   const commandLabel = label || {
     title: title,
   };
+  const escapedTitle = escape(title);
 
   return {
     id: page.id,
@@ -175,8 +176,13 @@ export const pageToCommand = (
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
     value:
-      title + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
-    originalValue: title,
+      escapedTitle +
+      valueWrapperStart +
+      page.id +
+      '.' +
+      category +
+      valueWrapperEnd,
+    originalValue: escapedTitle,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
