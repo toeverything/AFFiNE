@@ -1,9 +1,6 @@
 import { toast } from '@affine/component';
-import {
-  PublicLinkDisableModal,
-  StyledDisableButton,
-} from '@affine/component/share-menu';
-import { ShareMenu } from '@affine/component/share-menu';
+import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
+import { ShareMenu } from '@affine/core/components/affine/share-page-modal/share-menu';
 import type {
   AffineCloudWorkspace,
   LocalWorkspace,
@@ -23,20 +20,6 @@ export default {
     chromatic: { disableSnapshot: true },
   },
 } satisfies Meta;
-
-const sharePageMap = new Map<string, boolean>([]);
-// todo: use a real hook
-const useIsSharedPage = (
-  _workspaceId: string,
-  pageId: string
-): [isSharePage: boolean, setIsSharePage: (enable: boolean) => void] => {
-  const [isShared, setIsShared] = useState(sharePageMap.get(pageId) ?? false);
-  const togglePagePublic = (enable: boolean) => {
-    setIsShared(enable);
-    sharePageMap.set(pageId, enable);
-  };
-  return [isShared, togglePagePublic];
-};
 
 async function initPage(page: Page) {
   await page.waitForLoaded();
@@ -88,11 +71,8 @@ export const Basic: StoryFn = () => {
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
-      useIsSharedPage={useIsSharedPage}
       workspace={localWorkspace}
       onEnableAffineCloud={unimplemented}
-      togglePagePublic={unimplemented}
-      exportHandler={unimplemented}
     />
   );
 };
@@ -119,11 +99,8 @@ export const AffineBasic: StoryFn = () => {
   return (
     <ShareMenu
       currentPage={blockSuiteWorkspace.getPage('page0') as Page}
-      useIsSharedPage={useIsSharedPage}
       workspace={affineWorkspace}
       onEnableAffineCloud={unimplemented}
-      togglePagePublic={unimplemented}
-      exportHandler={unimplemented}
     />
   );
 };
@@ -133,9 +110,7 @@ export const DisableModal: StoryFn = () => {
   use(promise);
   return (
     <>
-      <StyledDisableButton onClick={() => setOpen(!open)}>
-        Disable Public Link
-      </StyledDisableButton>
+      <div onClick={() => setOpen(!open)}>Disable Public Link</div>
       <PublicLinkDisableModal
         open={open}
         onConfirm={() => {

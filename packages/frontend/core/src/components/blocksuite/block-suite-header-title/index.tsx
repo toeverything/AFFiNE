@@ -1,5 +1,4 @@
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -13,6 +12,7 @@ import {
   useState,
 } from 'react';
 
+import type { PageMode } from '../../../atoms';
 import { EditorModeSwitch } from '../block-suite-mode-switch';
 import { PageMenu } from './operation-menu';
 import * as styles from './styles.css';
@@ -20,6 +20,8 @@ import * as styles from './styles.css';
 export interface BlockSuiteHeaderTitleProps {
   workspace: AffineOfficialWorkspace;
   pageId: string;
+  isPublic?: boolean;
+  publicMode?: PageMode;
 }
 
 const EditableTitle = ({
@@ -54,6 +56,8 @@ const StableTitle = ({
   workspace,
   pageId,
   onRename,
+  isPublic,
+  publicMode,
 }: BlockSuiteHeaderTitleProps & {
   onRename?: () => void;
 }) => {
@@ -64,11 +68,19 @@ const StableTitle = ({
 
   const title = pageMeta?.title;
 
+  const handleRename = useCallback(() => {
+    if (!isPublic && onRename) {
+      onRename();
+    }
+  }, [isPublic, onRename]);
+
   return (
     <div className={styles.headerTitleContainer}>
       <EditorModeSwitch
         blockSuiteWorkspace={workspace.blockSuiteWorkspace}
         pageId={pageId}
+        isPublic={isPublic}
+        publicMode={publicMode}
         style={{
           marginRight: '12px',
         }}
@@ -76,11 +88,11 @@ const StableTitle = ({
       <span
         data-testid="title-edit-button"
         className={styles.titleEditButton}
-        onDoubleClick={onRename}
+        onDoubleClick={handleRename}
       >
         {title || 'Untitled'}
       </span>
-      <PageMenu rename={onRename} pageId={pageId} />
+      {isPublic ? null : <PageMenu rename={onRename} pageId={pageId} />}
     </div>
   );
 };
@@ -139,7 +151,7 @@ const BlockSuiteTitleWithRename = (props: BlockSuiteHeaderTitleProps) => {
 };
 
 export const BlockSuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
-  if (props.workspace.flavour === WorkspaceFlavour.AFFINE_PUBLIC) {
+  if (props.isPublic) {
     return <StableTitle {...props} />;
   }
   return <BlockSuiteTitleWithRename {...props} />;

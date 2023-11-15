@@ -1,3 +1,0 @@
-mutation sharePage($workspaceId: String!, $pageId: String!) {
-  sharePage(workspaceId: $workspaceId, pageId: $pageId)
-}

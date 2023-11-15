@@ -1,3 +1,0 @@
-mutation revokePage($workspaceId: String!, $pageId: String!) {
-  revokePage(workspaceId: $workspaceId, pageId: $pageId)
-}

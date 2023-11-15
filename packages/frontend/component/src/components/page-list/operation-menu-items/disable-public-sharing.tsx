@@ -6,7 +6,7 @@ import {
   type MenuItemProps,
 } from '@toeverything/components/menu';
 
-import { PublicLinkDisableModal } from '../../share-menu';
+import { PublicLinkDisableModal } from '../../disable-public-link';
 
 export const DisablePublicSharing = (props: MenuItemProps) => {
   const t = useAFFiNEI18N();

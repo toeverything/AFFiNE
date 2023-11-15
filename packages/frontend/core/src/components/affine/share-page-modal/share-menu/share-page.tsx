@@ -1,16 +1,23 @@
+import {
+  Input,
+  RadioButton,
+  RadioButtonGroup,
+  Switch,
+  toast,
+} from '@affine/component';
+import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
-import { useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useMemo, useState } from 'react';
 import { useCallback } from 'react';
 
-import { RadioButton, RadioButtonGroup } from '../../ui/button';
-import Input from '../../ui/input';
-import { Switch } from '../../ui/switch';
-import { toast } from '../../ui/toast';
-import { PublicLinkDisableModal } from './disable-public-link';
+import type { PageMode } from '../../../../atoms';
+import { currentModeAtom } from '../../../../atoms/mode';
+import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 import { useSharingUrl } from './use-share-url';
@@ -63,10 +70,29 @@ export const LocalSharePage = (props: ShareMenuProps) => {
 export const AffineSharePage = (props: ShareMenuProps) => {
   const {
     workspace: { id: workspaceId },
-    currentPage: { id: pageId },
+    currentPage,
   } = props;
-  const [isPublic, setIsPublic] = props.useIsSharedPage(workspaceId, pageId);
+  const pageId = currentPage.id;
   const [showDisable, setShowDisable] = useState(false);
+  const {
+    isSharedPage,
+    enableShare,
+    changeShare,
+    currentShareMode,
+    disableShare,
+  } = useIsSharedPage(workspaceId, currentPage.spaceDoc.guid);
+  const currentPageMode = useAtomValue(currentModeAtom);
+
+  const defaultMode = useMemo(() => {
+    if (isSharedPage) {
+      // if it's a shared page, use the share mode
+      return currentShareMode;
+    }
+    // default to current page mode
+    return currentPageMode;
+  }, [currentPageMode, currentShareMode, isSharedPage]);
+  const [mode, setMode] = useState<PageMode>(defaultMode);
+
   const { sharingUrl, onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId,
@@ -75,16 +101,26 @@ export const AffineSharePage = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
 
   const onClickCreateLink = useCallback(() => {
-    setIsPublic(true);
-  }, [setIsPublic]);
+    enableShare(mode);
+  }, [enableShare, mode]);
 
   const onDisablePublic = useCallback(() => {
-    setIsPublic(false);
+    disableShare();
     toast('Successfully disabled', {
       portal: document.body,
     });
     setShowDisable(false);
-  }, [setIsPublic]);
+  }, [disableShare]);
+
+  const onShareModeChange = useCallback(
+    (value: PageMode) => {
+      setMode(value);
+      if (isSharedPage) {
+        changeShare(value);
+      }
+    },
+    [changeShare, isSharedPage]
+  );
 
   return (
     <>
@@ -103,10 +139,12 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             fontSize: 'var(--affine-font-xs)',
             lineHeight: '20px',
           }}
-          value={isPublic ? sharingUrl : `${runtimeConfig.serverUrlPrefix}/...`}
+          value={
+            isSharedPage ? sharingUrl : `${runtimeConfig.serverUrlPrefix}/...`
+          }
           readOnly
         />
-        {isPublic ? (
+        {isSharedPage ? (
           <Button
             onClick={onClickCopyLink}
             data-testid="share-menu-copy-link-button"
@@ -125,36 +163,35 @@ export const AffineSharePage = (props: ShareMenuProps) => {
           </Button>
         )}
       </div>
-      {runtimeConfig.enableEnhanceShareMode ? (
-        <div className={styles.rowContainerStyle}>
-          <div className={styles.subTitleStyle}>
-            {t['com.affine.share-menu.ShareMode']()}
-          </div>
-          <div>
-            <RadioButtonGroup
-              className={styles.radioButtonGroup}
-              defaultValue={'page'}
-              onValueChange={() => {}}
-            >
-              <RadioButton
-                className={styles.radioButton}
-                value={'page'}
-                spanStyle={styles.spanStyle}
-              >
-                {t['com.affine.pageMode.page']()}
-              </RadioButton>
-              <RadioButton
-                className={styles.radioButton}
-                value={'edgeless'}
-                spanStyle={styles.spanStyle}
-              >
-                {t['com.affine.pageMode.edgeless']()}
-              </RadioButton>
-            </RadioButtonGroup>
-          </div>
+      <div className={styles.rowContainerStyle}>
+        <div className={styles.subTitleStyle}>
+          {t['com.affine.share-menu.ShareMode']()}
         </div>
-      ) : null}
-      {isPublic ? (
+        <div>
+          <RadioButtonGroup
+            className={styles.radioButtonGroup}
+            defaultValue={defaultMode}
+            value={mode}
+            onValueChange={onShareModeChange}
+          >
+            <RadioButton
+              className={styles.radioButton}
+              value={'page'}
+              spanStyle={styles.spanStyle}
+            >
+              {t['com.affine.pageMode.page']()}
+            </RadioButton>
+            <RadioButton
+              className={styles.radioButton}
+              value={'edgeless'}
+              spanStyle={styles.spanStyle}
+            >
+              {t['com.affine.pageMode.edgeless']()}
+            </RadioButton>
+          </RadioButtonGroup>
+        </div>
+      </div>
+      {isSharedPage ? (
         <>
           {runtimeConfig.enableEnhanceShareMode && (
             <>
