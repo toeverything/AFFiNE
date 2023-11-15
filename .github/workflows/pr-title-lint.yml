@@ -7,7 +7,7 @@ on:
       - edited
       - synchronize
     branches:
-      - master
+      - canary
 
 permissions:
   contents: read
