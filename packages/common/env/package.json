@@ -27,5 +27,5 @@
   "dependencies": {
     "lit": "^3.0.2"
   },
-  "version": "0.10.1"
+  "version": "0.10.1-beta.0"
 }
