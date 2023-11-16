@@ -51,8 +51,12 @@ runs:
           export CC_x86_64_unknown_linux_gnu=x86_64-unknown-linux-gnu-gcc
           export RUSTFLAGS="-C debuginfo=1"
           yarn workspace ${{ inputs.package }} nx build ${{ inputs.package }} --target ${{ inputs.target }}
-          chmod -R 777 node_modules/.cache
-          chmod -R 777 target
+          if [ -d "node_modules/.cache" ]; then
+            chmod -R 777 node_modules/.cache
+          fi
+          if [ -d "target" ]; then
+            chmod -R 777 target;
+          fi
 
     - name: Build
       if: ${{ inputs.target == 'aarch64-unknown-linux-gnu' }}
@@ -63,5 +67,9 @@ runs:
         run: |
           export RUSTFLAGS="-C debuginfo=1"
           yarn workspace ${{ inputs.package }} nx build ${{ inputs.package }} --target ${{ inputs.target }}
-          chmod -R 777 node_modules/.cache
-          chmod -R 777 target
+          if [ -d "node_modules/.cache" ]; then
+            chmod -R 777 node_modules/.cache
+          fi
+          if [ -d "target" ]; then
+            chmod -R 777 target;
+          fi
