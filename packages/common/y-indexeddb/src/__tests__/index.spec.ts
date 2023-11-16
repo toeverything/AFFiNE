@@ -68,6 +68,7 @@ beforeEach(() => {
     isSSR: true,
     schema,
   });
+  vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
 });
 
 afterEach(() => {
