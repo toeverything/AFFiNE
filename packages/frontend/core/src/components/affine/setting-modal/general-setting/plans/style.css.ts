@@ -9,7 +9,7 @@ export const recurringRadioGroup = style({
 
 export const radioButtonDiscount = style({
   marginLeft: '4px',
-  color: 'var(--affine-primary-color)',
+  color: 'var(--affine-brand-color)',
   fontWeight: 400,
 });
 export const radioButtonText = style({
@@ -46,23 +46,41 @@ export const planCard = style({
   },
 });
 
-export const currentPlanCard = style([
+export const proPlanCard = style([
   planCard,
   {
-    borderWidth: '2px',
-    borderColor: 'var(--affine-primary-color)',
+    borderWidth: '1px',
+    borderColor: 'var(--affine-brand-color)',
     boxShadow: 'var(--affine-shadow-2)',
+    position: 'relative',
+    '::after': {
+      content: '',
+      position: 'absolute',
+      inset: '-1px',
+      borderRadius: 'inherit',
+      boxShadow: '0px 0px 0px 2px var(--affine-brand-color)',
+      opacity: 0.3,
+      zIndex: 1,
+      pointerEvents: 'none',
+    },
   },
 ]);
 
+export const proPlanTitle = style({
+  backgroundColor: 'var(--affine-brand-color)',
+  color: 'var(--affine-white)',
+  padding: '0px 6px',
+  borderRadius: '4px',
+  height: '24px',
+  display: 'inline-block',
+});
+
 export const discountLabel = style({
-  color: 'var(--affine-primary-color)',
+  color: 'var(--affine-text-emphasis-color)',
   marginLeft: '8px',
   lineHeight: '20px',
   fontSize: 'var(--affine-font-xs)',
   fontWeight: 500,
-  padding: '0 4px',
-  backgroundColor: 'var(--affine-blue-50)',
   borderRadius: '4px',
   display: 'inline-block',
   height: '100%',
