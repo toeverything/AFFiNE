@@ -92,10 +92,10 @@ export const RulesMode = ({
           values={{
             highlight: t['com.affine.editCollection.rules.tips.highlight'](),
           }}
-        >
-          Pages that meet the rules will be added to the current collection{' '}
-          <span className={styles.rulesTitleHighlight}>highlight</span>.
-        </Trans>
+          components={{
+            2: <span className={styles.rulesTitleHighlight} />,
+          }}
+        />
       </div>
       <div className={styles.rulesContainer}>
         <div className={styles.rulesContainerLeft}>
