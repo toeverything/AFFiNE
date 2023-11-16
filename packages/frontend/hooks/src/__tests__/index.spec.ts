@@ -9,7 +9,7 @@ import type { Page } from '@blocksuite/store';
 import { Schema, Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { beforeEach } from 'vitest';
 
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
@@ -22,6 +22,7 @@ const schema = new Schema();
 schema.register(AffineSchemas).register(__unstableSchemas);
 
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
   blockSuiteWorkspace = new BlockSuiteWorkspace({ id: 'test', schema });
   const initPage = async (page: Page) => {
     await page.waitForLoaded();
