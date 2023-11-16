@@ -9,7 +9,7 @@ import type {
 } from '@affine/env/workspace';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema, Workspace } from '@blocksuite/store';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
   createIndexedDBBackgroundProvider,
@@ -19,6 +19,10 @@ import {
 const schema = new Schema();
 
 schema.register(AffineSchemas).register(__unstableSchemas);
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
+});
 
 afterEach(() => {
   globalThis.localStorage.clear();
