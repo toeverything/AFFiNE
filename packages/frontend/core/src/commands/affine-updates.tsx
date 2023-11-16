@@ -1,6 +1,6 @@
-import { updateReadyAtom } from '@affine/component/app-sidebar/app-updater-button';
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ResetIcon } from '@blocksuite/icons';
+import { updateReadyAtom } from '@toeverything/hooks/use-app-updater';
 import { registerAffineCommand } from '@toeverything/infra/command';
 import type { createStore } from 'jotai';
 

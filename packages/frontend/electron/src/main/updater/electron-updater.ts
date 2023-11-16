@@ -18,13 +18,53 @@ export const quitAndInstall = async () => {
 };
 
 let lastCheckTime = 0;
-export const checkForUpdates = async (force = true) => {
-  // check every 30 minutes (1800 seconds) at most
-  if (!disabled && (force || lastCheckTime + 1000 * 1800 < Date.now())) {
+
+let allowAutoCheckUpdate = true;
+let allowAutoDownloadUpdate = true;
+let downloading = false;
+
+export const checkForUpdates = async (force = false) => {
+  if (disabled) {
+    return;
+  }
+
+  if (
+    force ||
+    (allowAutoCheckUpdate && lastCheckTime + 1000 * 1800 < Date.now())
+  ) {
     lastCheckTime = Date.now();
     return await autoUpdater.checkForUpdates();
   }
-  return void 0;
+  return;
+};
+
+export const downloadUpdate = async () => {
+  if (disabled) {
+    return;
+  }
+  downloading = true;
+  autoUpdater.downloadUpdate().catch(e => {
+    downloading = false;
+    logger.error('Failed to download update', e);
+  });
+  logger.info('Update available, downloading...');
+  return;
+};
+
+export const setAllowAutoCheckUpdate = (allow: boolean) => {
+  allowAutoCheckUpdate = allow;
+};
+
+export const setAllowAutoDownloadUpdate = (allow: boolean) => {
+  allowAutoDownloadUpdate = allow;
+};
+
+export const getAllowAutoCheckUpdate = () => {
+  return allowAutoCheckUpdate;
+};
+
+export const getAllowAutoDownloadUpdate = () => {
+  return allowAutoDownloadUpdate;
 };
 
 export const registerUpdater = async () => {
@@ -60,10 +100,9 @@ export const registerUpdater = async () => {
   autoUpdater.on('checking-for-update', () => {
     logger.info('Checking for update');
   });
-  let downloading = false;
   autoUpdater.on('update-available', info => {
     logger.info('Update available', info);
-    if (allowAutoUpdate && !downloading) {
+    if (allowAutoDownloadUpdate && allowAutoUpdate && !downloading) {
       downloading = true;
       autoUpdater?.downloadUpdate().catch(e => {
         downloading = false;

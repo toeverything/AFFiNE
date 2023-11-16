@@ -12432,6 +12432,7 @@ __metadata:
     lodash.debounce: "npm:^4.0.8"
     p-queue: "npm:^7.4.1"
     react: "npm:18.2.0"
+    rxjs: "npm:^7.8.1"
     swr: "npm:2.2.4"
     uuid: "npm:^9.0.1"
     vitest: "npm:0.34.6"
