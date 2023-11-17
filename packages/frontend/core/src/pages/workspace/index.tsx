@@ -7,12 +7,14 @@ import {
   getCurrentStore,
 } from '@toeverything/infra/atom';
 import { guidCompatibilityFix } from '@toeverything/infra/blocksuite';
-import type { ReactElement } from 'react';
+import { useSetAtom } from 'jotai';
+import { type ReactElement, useEffect } from 'react';
 import {
   type LoaderFunction,
   Outlet,
   redirect,
   useLoaderData,
+  useParams,
 } from 'react-router-dom';
 
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
@@ -24,6 +26,12 @@ export const loader: LoaderFunction = async args => {
   workspaceLoaderLogger.info('start');
 
   const rootStore = getCurrentStore();
+
+  if (args.params.workspaceId) {
+    localStorage.setItem('last_workspace_id', args.params.workspaceId);
+    rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
+  }
+
   const meta = await rootStore.get(rootWorkspacesMetadataAtom);
   workspaceLoaderLogger.info('meta loaded');
 
@@ -31,10 +39,7 @@ export const loader: LoaderFunction = async args => {
   if (!currentMetadata) {
     return redirect('/404');
   }
-  if (args.params.workspaceId) {
-    localStorage.setItem('last_workspace_id', args.params.workspaceId);
-    rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
-  }
+
   if (!args.params.pageId) {
     rootStore.set(currentPageIdAtom, null);
   }
@@ -43,6 +48,10 @@ export const loader: LoaderFunction = async args => {
     workspaceLoaderLogger.info('get cloud workspace atom');
 
     const workspace = await rootStore.get(workspaceAtom);
+    if (!workspace.doc.isLoaded) {
+      await workspace.doc.whenLoaded;
+    }
+    workspaceLoaderLogger.info('workspace loaded');
     return (() => {
       guidCompatibilityFix(workspace.doc);
       const blockVersions = workspace.meta.blockVersions;
@@ -64,6 +73,17 @@ export const loader: LoaderFunction = async args => {
 
 export const Component = (): ReactElement => {
   performanceRenderLogger.info('WorkspaceLayout');
+
+  const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
+
+  const params = useParams();
+
+  useEffect(() => {
+    if (params.workspaceId) {
+      localStorage.setItem('last_workspace_id', params.workspaceId);
+      setCurrentWorkspaceId(params.workspaceId);
+    }
+  }, [params, setCurrentWorkspaceId]);
 
   const incompatible = useLoaderData();
   return (

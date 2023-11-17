@@ -15,7 +15,6 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -27,7 +26,6 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { loadPage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
@@ -116,30 +114,6 @@ export const CurrentWorkspaceContext = ({
 type WorkspaceLayoutProps = {
   incompatible?: boolean;
 };
-
-// fix https://github.com/toeverything/AFFiNE/issues/4825
-function useLoadWorkspacePages() {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-
-  useEffect(() => {
-    if (currentWorkspace) {
-      const timer = setTimeout(() => {
-        const pageIds = pageMetas.map(meta => meta.id);
-        const pages = pageIds
-          .map(id => currentWorkspace.blockSuiteWorkspace.getPage(id))
-          .filter((p): p is Page => !!p);
-        pages.forEach(page => {
-          loadPage(page, -10).catch(e => console.error(e));
-        });
-      }, 10 * 1000); // load pages after 10s
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-    return;
-  }, [currentWorkspace, pageMetas]);
-}
 
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
@@ -254,8 +228,6 @@ export const WorkspaceLayoutInner = ({
   ).find(meta => meta.id === pageId);
   const inTrashPage = pageMeta?.trash ?? false;
   const setMainContainer = useSetAtom(mainContainerAtom);
-
-  useLoadWorkspacePages();
 
   return (
     <>

@@ -1,13 +1,7 @@
-import type {
-  AffineSocketIOProvider,
-  LocalIndexedDBBackgroundProvider,
-  SQLiteProvider,
-} from '@affine/env/workspace';
-import { assertExists } from '@blocksuite/global/utils';
 import { forceUpgradePages } from '@toeverything/infra/blocksuite';
-import { useCallback, useMemo, useState } from 'react';
-import { syncDataSourceFromDoc, syncDocFromDataSource } from 'y-provider';
+import { useCallback, useState } from 'react';
 
+import { useCurrentSyncEngine } from '../../hooks/current/use-current-sync-engine';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 
 export type UpgradeState = 'pending' | 'upgrading' | 'done' | 'error';
@@ -17,56 +11,20 @@ export function useUpgradeWorkspace() {
   const [error, setError] = useState<Error | null>(null);
 
   const [workspace] = useCurrentWorkspace();
-  const providers = workspace.blockSuiteWorkspace.providers;
-  const remoteProvider: AffineSocketIOProvider | undefined = useMemo(() => {
-    return providers.find(
-      (provider): provider is AffineSocketIOProvider =>
-        provider.flavour === 'affine-socket-io'
-    );
-  }, [providers]);
-  const localProvider = useMemo(() => {
-    const sqliteProvider = providers.find(
-      (provider): provider is SQLiteProvider => provider.flavour === 'sqlite'
-    );
-    const indexedDbProvider = providers.find(
-      (provider): provider is LocalIndexedDBBackgroundProvider =>
-        provider.flavour === 'local-indexeddb-background'
-    );
-    const provider = sqliteProvider || indexedDbProvider;
-    assertExists(provider, 'no local provider');
-    return provider;
-  }, [providers]);
+  const syncEngine = useCurrentSyncEngine();
 
   const upgradeWorkspace = useCallback(() => {
     setState('upgrading');
     setError(null);
 
     (async () => {
-      await syncDocFromDataSource(
-        workspace.blockSuiteWorkspace.doc,
-        localProvider.datasource
-      );
-      if (remoteProvider) {
-        await syncDocFromDataSource(
-          workspace.blockSuiteWorkspace.doc,
-          remoteProvider.datasource
-        );
-      }
-
+      await syncEngine?.waitForSynced();
       await forceUpgradePages({
         getCurrentRootDoc: async () => workspace.blockSuiteWorkspace.doc,
         getSchema: () => workspace.blockSuiteWorkspace.schema,
       });
-      await syncDataSourceFromDoc(
-        workspace.blockSuiteWorkspace.doc,
-        localProvider.datasource
-      );
-      if (remoteProvider) {
-        await syncDataSourceFromDoc(
-          workspace.blockSuiteWorkspace.doc,
-          remoteProvider.datasource
-        );
-      }
+
+      await syncEngine?.waitForSynced();
 
       setState('done');
     })().catch((e: any) => {
@@ -75,10 +33,9 @@ export function useUpgradeWorkspace() {
       setState('error');
     });
   }, [
-    localProvider.datasource,
-    remoteProvider,
     workspace.blockSuiteWorkspace.doc,
     workspace.blockSuiteWorkspace.schema,
+    syncEngine,
   ]);
 
   return [state, error, upgradeWorkspace] as const;

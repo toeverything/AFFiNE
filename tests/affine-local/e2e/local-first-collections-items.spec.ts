@@ -5,7 +5,10 @@ import {
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
+import {
+  clickSideBarAllPageButton,
+  clickSideBarCurrentWorkspaceBanner,
+} from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
@@ -76,6 +79,7 @@ test('Show collections items in sidebar', async ({ page }) => {
     skipInitialPage: true,
   });
   expect(await items.count()).toBe(1);
+  await clickSideBarAllPageButton(page);
   await createLocalWorkspace(
     {
       name: 'Test 1',

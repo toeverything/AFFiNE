@@ -1,160 +1,128 @@
-import { DebugLogger } from '@affine/debug';
-import type {
-  AffineSocketIOProvider,
-  LocalIndexedDBBackgroundProvider,
-  LocalIndexedDBDownloadProvider,
-} from '@affine/env/workspace';
-import { assertExists } from '@blocksuite/global/utils';
+/**
+ * The `Provider` is responsible for sync `Y.Doc` with the local database and the Affine Cloud, serving as the source of
+ * Affine's local-first collaborative magic.
+ *
+ * When Affine boot, the `Provider` is tasked with reading content from the local database and loading it into the
+ * workspace, continuously storing any changes made by the user into the local database.
+ *
+ * When using Affine Cloud, the `Provider` also handles sync content with the Cloud.
+ *
+ * Additionally, the `Provider` is responsible for implementing a local-first capability, allowing users to edit offline
+ * with changes stored in the local database and sync with the Cloud when the network is restored.
+ */
+
 import type { DocProviderCreator } from '@blocksuite/store';
-import { Workspace } from '@blocksuite/store';
-import { createBroadcastChannelProvider } from '@blocksuite/store/providers/broadcast-channel';
+
 import {
-  createIndexedDBDatasource,
-  createIndexedDBProvider as create,
-} from '@toeverything/y-indexeddb';
-import { createLazyProvider } from 'y-provider';
-import { encodeStateVector } from 'yjs';
+  createAffineAwarenessProvider,
+  createBroadcastChannelAwarenessProvider,
+} from './awareness';
+import { createAffineStorage } from './storage/affine';
+import { createIndexedDBStorage } from './storage/indexeddb';
+import { createSQLiteStorage } from './storage/sqlite';
+import { SyncEngine } from './sync';
 
-import { createAffineDataSource } from '../affine';
-import {
-  createCloudDownloadProvider,
-  createMergeCloudSnapshotProvider,
-  downloadBinaryFromCloud,
-} from './cloud';
-import {
-  createSQLiteDBDownloadProvider,
-  createSQLiteProvider,
-} from './sqlite-providers';
-
-const Y = Workspace.Y;
-const logger = new DebugLogger('indexeddb-provider');
-
-const createAffineSocketIOProvider: DocProviderCreator = (
-  id,
-  doc,
-  { awareness }
-): AffineSocketIOProvider => {
-  const dataSource = createAffineDataSource(id, doc, awareness);
-  const lazyProvider = createLazyProvider(doc, dataSource, {
-    origin: 'affine-socket-io',
-  });
-
-  Object.assign(lazyProvider, { flavour: 'affine-socket-io' });
-
-  return lazyProvider as unknown as AffineSocketIOProvider;
-};
-
-const createIndexedDBBackgroundProvider: DocProviderCreator = (
-  id,
-  blockSuiteWorkspace
-): LocalIndexedDBBackgroundProvider => {
-  const indexeddbProvider = create(blockSuiteWorkspace);
-
-  let connected = false;
-  return {
-    flavour: 'local-indexeddb-background',
-    datasource: indexeddbProvider.datasource,
-    passive: true,
-    get status() {
-      return indexeddbProvider.status;
-    },
-    subscribeStatusChange: indexeddbProvider.subscribeStatusChange,
-    get connected() {
-      return connected;
-    },
-    cleanup: () => {
-      indexeddbProvider.cleanup().catch(console.error);
-    },
-    connect: () => {
-      logger.info('connect indexeddb provider', id);
-      indexeddbProvider.connect();
-    },
-    disconnect: () => {
-      assertExists(indexeddbProvider);
-      logger.info('disconnect indexeddb provider', id);
-      indexeddbProvider.disconnect();
-      connected = false;
-    },
-  };
-};
-
-const indexedDBDownloadOrigin = 'indexeddb-download-provider';
-
-const createIndexedDBDownloadProvider: DocProviderCreator = (
-  id,
-  doc
-): LocalIndexedDBDownloadProvider => {
-  const datasource = createIndexedDBDatasource({});
-  let _resolve: () => void;
-  let _reject: (error: unknown) => void;
-  const promise = new Promise<void>((resolve, reject) => {
-    _resolve = resolve;
-    _reject = reject;
-  });
-
-  return {
-    flavour: 'local-indexeddb',
-    active: true,
-    get whenReady() {
-      return promise;
-    },
-    cleanup: () => {
-      // todo: cleanup data
-    },
-    sync: () => {
-      logger.info('sync indexeddb provider', id);
-      datasource
-        .queryDocState(doc.guid, {
-          stateVector: encodeStateVector(doc),
-        })
-        .then(docState => {
-          if (docState) {
-            Y.applyUpdate(doc, docState.missing, indexedDBDownloadOrigin);
-          }
-          _resolve();
-        })
-        .catch(_reject);
-    },
-  };
-};
-
-export {
-  createAffineSocketIOProvider,
-  createBroadcastChannelProvider,
-  createIndexedDBBackgroundProvider,
-  createIndexedDBDownloadProvider,
-  createSQLiteDBDownloadProvider,
-  createSQLiteProvider,
-  downloadBinaryFromCloud,
-};
+export * from './sync';
 
 export const createLocalProviders = (): DocProviderCreator[] => {
-  const providers = [
-    createIndexedDBBackgroundProvider,
-    createIndexedDBDownloadProvider,
-  ] as DocProviderCreator[];
+  return [
+    (_, doc, { awareness }) => {
+      const engine = new SyncEngine(
+        doc,
+        environment.isDesktop
+          ? createSQLiteStorage(doc.guid)
+          : createIndexedDBStorage(doc.guid),
+        []
+      );
 
-  if (runtimeConfig.enableBroadcastChannelProvider) {
-    providers.push(createBroadcastChannelProvider);
-  }
+      const awarenessProviders = [
+        createBroadcastChannelAwarenessProvider(doc.guid, awareness),
+      ];
 
-  if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-    providers.push(createSQLiteProvider, createSQLiteDBDownloadProvider);
-  }
+      let connected = false;
 
-  return providers;
+      return {
+        flavour: '_',
+        passive: true,
+        active: true,
+        sync() {
+          if (!connected) {
+            engine.start();
+
+            for (const provider of awarenessProviders) {
+              provider.connect();
+            }
+            connected = true;
+          }
+        },
+        get whenReady() {
+          return engine.waitForLoadedRootDoc();
+        },
+        connect() {
+          // TODO: actually connect
+        },
+        disconnect() {
+          // TODO: actually disconnect
+        },
+        get connected() {
+          return connected;
+        },
+        engine,
+      };
+    },
+  ];
 };
 
 export const createAffineProviders = (): DocProviderCreator[] => {
-  return (
-    [
-      ...createLocalProviders(),
-      runtimeConfig.enableCloud && createAffineSocketIOProvider,
-      runtimeConfig.enableCloud && createMergeCloudSnapshotProvider,
-    ] as DocProviderCreator[]
-  ).filter(v => Boolean(v));
+  return [
+    (_, doc, { awareness }) => {
+      const engine = new SyncEngine(
+        doc,
+        environment.isDesktop
+          ? createSQLiteStorage(doc.guid)
+          : createIndexedDBStorage(doc.guid),
+        [createAffineStorage(doc.guid)]
+      );
+
+      const awarenessProviders = [
+        createBroadcastChannelAwarenessProvider(doc.guid, awareness),
+        createAffineAwarenessProvider(doc.guid, awareness),
+      ];
+
+      let connected = false;
+
+      return {
+        flavour: '_',
+        passive: true,
+        active: true,
+        sync() {
+          if (!connected) {
+            engine.start();
+
+            for (const provider of awarenessProviders) {
+              provider.connect();
+            }
+            connected = true;
+          }
+        },
+        get whenReady() {
+          return engine.waitForLoadedRootDoc();
+        },
+        connect() {
+          // TODO: actually connect
+        },
+        disconnect() {
+          // TODO: actually disconnect
+        },
+        get connected() {
+          return connected;
+        },
+        engine,
+      };
+    },
+  ];
 };
 
 export const createAffinePublicProviders = (): DocProviderCreator[] => {
-  return [createCloudDownloadProvider];
+  return [];
 };

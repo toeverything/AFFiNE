@@ -4,15 +4,13 @@
   "exports": {
     "./atom": "./src/atom.ts",
     "./manager": "./src/manager/index.ts",
-    "./type": "./src/type.ts",
-    "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
-    "./affine": "./src/affine/index.ts",
     "./affine/*": "./src/affine/*.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
+    "@blocksuite/global": "*",
     "@blocksuite/store": "*"
   },
   "dependencies": {
@@ -23,6 +21,7 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
+    "idb": "^7.1.1",
     "is-svg": "^5.0.0",
     "jotai": "^2.4.3",
     "js-base64": "^3.7.5",
