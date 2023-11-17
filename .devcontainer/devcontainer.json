@@ -4,17 +4,11 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  // Features to add to the dev container. More info: https://containers.dev/features.
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "18",
-      "nvmVersion": "0.39"
+      "version": "18"
     },
-    "ghcr.io/devcontainers/features/rust:1": {
-      "version": "1.70",
-      "profile": "default"
-    },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/rust:1": {}
   },
   // Configure tool-specific properties.
   "customizations": {
@@ -26,13 +20,6 @@
       ]
     }
   },
-
-  // Command to run once the repo contents are available
-  "updateContentCommand": "sh ./.devcontainer/build.sh",
-
-  // Command to run once container has started
-  "postStartCommand": "./node_modules/.bin/nx reset"
-
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [],
+  "updateContentCommand": "bash ./.devcontainer/build.sh",
+  "postCreateCommand": "bash ./.devcontainer/setup-user.sh"
 }

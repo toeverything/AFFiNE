@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # This is a script used by the devcontainer to build the project
 
 #Enable yarn
@@ -9,14 +8,5 @@ corepack prepare yarn@stable --activate
 # install dependencies
 yarn install
 
-### Build Native Dependencies
-yarn workspace @affine/native build
-
-### Build Server Dependencies
-yarn workspace @affine/storage build
-
-### Build Infra
-yarn run build:infra
-
-### Build Plugins
-yarn run build:plugins
+# Create database
+yarn workspace @affine/server prisma db push
