@@ -195,6 +195,13 @@ For feature request, please see [community.affine.pro](https://community.affine.
 
 ## Building
 
+### Codespaces
+
+From the GitHub repo main page, click the green "Code" button and select "Create codespace on master". This will open a new Codespace with the (supposedly auto-forked
+AFFiNE repo cloned, built, and ready to go.
+
+### Local
+
 See [BUILDING.md] for instructions on how to build AFFiNE from source code.
 
 ## Contributing
