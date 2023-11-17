@@ -62,14 +62,18 @@ export function useCurrentUser(): CheckedUser {
         throw new SessionFetchErrorRightAfterLoginOrSignUp(
           'First session should not be null',
           () => {
-            getSession().then(session => {
-              if (session) {
-                dispatcher({
-                  type: 'update',
-                  payload: session,
-                });
-              }
-            });
+            getSession()
+              .then(session => {
+                if (session) {
+                  dispatcher({
+                    type: 'update',
+                    payload: session,
+                  });
+                }
+              })
+              .catch(err => {
+                console.error(err);
+              });
           }
         );
       }
