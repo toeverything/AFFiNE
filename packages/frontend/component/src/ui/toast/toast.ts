@@ -76,12 +76,12 @@ const createAndShowNewToast = (
     text-align: center;
     font-family: var(--affine-font-family);
     font-size: var(--affine-font-sm);
-    padding: 6px 12px;
+    padding: 10px 16px;
     margin: 0;
     color: var(--affine-white);
     background: var(--affine-tooltip);
     box-shadow: var(--affine-float-button-shadow);
-    border-radius: 10px;
+    border-radius: 8px;
     opacity: 0;
     transform: translateY(100%);
     transition:
