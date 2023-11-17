@@ -13,3 +13,4 @@ export * from './set-password-page';
 export * from './sign-in-page-container';
 export * from './sign-in-success-page';
 export * from './sign-up-page';
+export type { User } from './type';

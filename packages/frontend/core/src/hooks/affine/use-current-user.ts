@@ -1,44 +1,107 @@
-import type { DefaultSession } from 'next-auth';
+import { type User } from '@affine/component/auth-components';
+import type { DefaultSession, Session } from 'next-auth';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useSession } from 'next-auth/react';
-export type CheckedUser = {
-  id: string;
-  name: string;
-  email: string;
-  image: string;
+import { getSession, useSession } from 'next-auth/react';
+import { useEffect, useReducer } from 'react';
+
+import { SessionFetchErrorRightAfterLoginOrSignUp } from '../../unexpected-application-state/errors';
+
+export type CheckedUser = User & {
   hasPassword: boolean;
   update: ReturnType<typeof useSession>['update'];
 };
 
-// FIXME: Should this namespace be here?
 declare module 'next-auth' {
   interface Session {
     user: {
+      name: string;
+      email: string;
       id: string;
       hasPassword: boolean;
-    } & DefaultSession['user'];
+    } & Omit<NonNullable<DefaultSession['user']>, 'name' | 'email'>;
+  }
+}
+
+type UpdateSessionAction =
+  | {
+      type: 'update';
+      payload: Session;
+    }
+  | {
+      type: 'fetchError';
+      payload: null;
+    };
+
+function updateSessionReducer(prevState: Session, action: UpdateSessionAction) {
+  const { type, payload } = action;
+  switch (type) {
+    case 'update':
+      return payload;
+    case 'fetchError':
+      return prevState;
   }
 }
 
 /**
  * This hook checks if the user is logged in.
- * If not, it will throw an error.
+ * If so, the user object will be cached and returned.
+ * If not, and there is no cache, it will throw an error.
+ * If network error or API response error, it will use the cached value.
  */
 export function useCurrentUser(): CheckedUser {
-  const { data: session, status, update } = useSession();
-  // If you are seeing this error, it means that you are not logged in.
-  //  This should be prohibited in the development environment, please re-write your component logic.
-  if (status === 'unauthenticated') {
-    throw new Error('session.status should be authenticated');
-  }
+  const { data, update } = useSession();
 
-  const user = session?.user;
+  const [session, dispatcher] = useReducer(
+    updateSessionReducer,
+    data,
+    firstSession => {
+      if (!firstSession) {
+        // barely possible.
+        // login succeed but the session request failed then.
+        // also need a error boundary to handle this error.
+        throw new SessionFetchErrorRightAfterLoginOrSignUp(
+          'First session should not be null',
+          () => {
+            getSession()
+              .then(session => {
+                if (session) {
+                  dispatcher({
+                    type: 'update',
+                    payload: session,
+                  });
+                }
+              })
+              .catch(err => {
+                console.error(err);
+              });
+          }
+        );
+      }
+      return firstSession;
+    }
+  );
+
+  useEffect(() => {
+    if (data) {
+      dispatcher({
+        type: 'update',
+        payload: data,
+      });
+    } else {
+      dispatcher({
+        type: 'fetchError',
+        payload: null,
+      });
+    }
+  }, [data, update]);
+
+  const user = session.user;
 
   return {
-    id: user?.id ?? 'REPLACE_ME_DEFAULT_ID',
-    name: user?.name ?? 'REPLACE_ME_DEFAULT_NAME',
-    email: user?.email ?? 'REPLACE_ME_DEFAULT_EMAIL',
-    image: user?.image ?? 'REPLACE_ME_DEFAULT_URL',
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    image: user.image,
     hasPassword: user?.hasPassword ?? false,
     update,
   };

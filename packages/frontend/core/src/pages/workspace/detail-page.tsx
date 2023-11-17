@@ -23,6 +23,7 @@ import { getUIAdapter } from '../../adapters/workspace';
 import { setPageModeAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
+import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentSyncEngineStatus } from '../../hooks/current/use-current-sync-engine';
@@ -214,5 +215,9 @@ export const Component = () => {
     }
   }, [params, setContentLayout, setCurrentPageId, setCurrentWorkspaceId]);
 
-  return <DetailPage />;
+  return (
+    <AffineErrorBoundary>
+      <DetailPage />
+    </AffineErrorBoundary>
+  );
 };

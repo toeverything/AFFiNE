@@ -114,7 +114,10 @@ export const createConfiguration: (
         buildFlags.mode === 'production'
           ? 'js/chunk.[name]-[contenthash:8].js'
           : 'js/chunk.[name].js',
-      assetModuleFilename: 'assets/[name]-[contenthash:8][ext][query]',
+      assetModuleFilename:
+        buildFlags.mode === 'production'
+          ? 'assets/[name]-[contenthash:8][ext][query]'
+          : '[name][ext]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
@@ -292,7 +295,7 @@ export const createConfiguration: (
                   },
                 },
               ],
-              exclude: [/node_modules/],
+              exclude: [/node_modules/, /\.assets\.svg$/],
             },
             {
               test: /\.(png|jpg|gif|svg|webp|mp4)$/,
