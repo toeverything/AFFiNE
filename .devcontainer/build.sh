@@ -12,11 +12,11 @@ yarn install
 ### Build Native Dependencies
 yarn workspace @affine/native build
 
+### Build Server Dependencies
+yarn workspace @affine/storage build
+
 ### Build Infra
 yarn run build:infra
 
 ### Build Plugins
 yarn run build:plugins
-
-### Build Server Dependencies
-yarn workspace @affine/storage build
