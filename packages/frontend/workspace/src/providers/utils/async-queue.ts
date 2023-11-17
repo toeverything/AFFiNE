@@ -55,4 +55,8 @@ export class AsyncQueue<T> {
       this._queue.splice(index, 1);
     }
   }
+
+  clear() {
+    this._queue = [];
+  }
 }
