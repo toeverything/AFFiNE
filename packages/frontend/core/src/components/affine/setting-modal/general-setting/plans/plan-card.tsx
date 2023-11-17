@@ -134,16 +134,19 @@ export const PlanCard = (props: PlanCardProps) => {
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
 
   const isCurrent = loggedIn && detail.plan === currentPlan;
+  const isPro = detail.plan === SubscriptionPlan.Pro;
 
   return (
     <div
       data-current={isCurrent}
       key={detail.plan}
-      className={isCurrent ? styles.currentPlanCard : styles.planCard}
+      className={isPro ? styles.proPlanCard : styles.planCard}
     >
       <div className={styles.planTitle}>
         <p>
-          {detail.plan}{' '}
+          <span className={isCurrent ? styles.proPlanTitle : ''}>
+            {detail.plan}
+          </span>{' '}
           {'discount' in detail &&
             recurring === SubscriptionRecurring.Yearly && (
               <span className={styles.discountLabel}>

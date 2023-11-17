@@ -13,6 +13,10 @@ export const scrollArea = style({
   overflowX: 'auto',
   scrollSnapType: 'x mandatory',
   paddingBottom: '21px',
+
+  /** Avoid box-shadow clipping */
+  paddingTop: '21px',
+  marginTop: '-21px',
 });
 
 export const scrollBar = style({
