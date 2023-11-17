@@ -135,9 +135,12 @@ export function useIsSharedPage(
             ]({
               preMode:
                 publishMode === PublicPageMode.Edgeless
-                  ? PublicPageMode.Page
-                  : PublicPageMode.Edgeless,
-              currentMode: publishMode,
+                  ? t['Page']()
+                  : t['Edgeless'](),
+              currentMode:
+                publishMode === PublicPageMode.Edgeless
+                  ? t['Edgeless']()
+                  : t['Page'](),
             }),
             type: 'success',
             theme: 'default',

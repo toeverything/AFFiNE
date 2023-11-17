@@ -128,6 +128,7 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
 }
 
 export const PlanCard = (props: PlanCardProps) => {
+  const t = useAFFiNEI18N();
   const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
@@ -162,7 +163,9 @@ export const PlanCard = (props: PlanCardProps) => {
                     ? detail.price
                     : detail.yearlyPrice}
                 </span>
-                <span className={styles.planPriceDesc}>per month</span>
+                <span className={styles.planPriceDesc}>
+                  {t['com.affine.payment.price-description.per-month']()}
+                </span>
               </>
             )}
           </p>
