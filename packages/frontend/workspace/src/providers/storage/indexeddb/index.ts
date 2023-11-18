@@ -13,6 +13,12 @@ export const dbVersion = 1;
 export const DEFAULT_DB_NAME = 'affine-local';
 
 export function mergeUpdates(updates: Uint8Array[]) {
+  if (updates.length === 0) {
+    return new Uint8Array();
+  }
+  if (updates.length === 1) {
+    return updates[0];
+  }
   const doc = new Doc();
   doc.transact(() => {
     updates.forEach(update => {
