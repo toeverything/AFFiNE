@@ -5,7 +5,7 @@ import {
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema } from '@affine/workspace/manager';
-import { SyncEngineStatus } from '@affine/workspace/providers';
+import { SyncEngineStep } from '@affine/workspace/providers';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
@@ -144,7 +144,7 @@ export const DetailPage = (): ReactElement => {
 
   // if sync engine has been synced and the page is null, wait 1s and jump to 404 page.
   useEffect(() => {
-    if (currentSyncEngineStatus === SyncEngineStatus.Synced && !page) {
+    if (currentSyncEngineStatus?.step === SyncEngineStep.Synced && !page) {
       const timeout = setTimeout(() => {
         navigate.jumpTo404();
       }, 1000);

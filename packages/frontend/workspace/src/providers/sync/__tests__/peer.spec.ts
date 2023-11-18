@@ -15,7 +15,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
 });
 
-describe('sync', () => {
+describe('SyncPeer', () => {
   test('basic - indexeddb', async () => {
     let prev: any;
     {
