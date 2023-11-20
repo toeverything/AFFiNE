@@ -129,6 +129,7 @@ globalStyle(`${root} [cmdk-list]`, {
   height: 'min(330px, calc(var(--cmdk-list-height) + 8px))',
   padding: '0 0 8px 6px',
   scrollbarGutter: 'stable',
+  scrollPaddingBlock: '12px',
 });
 
 globalStyle(`${root} [cmdk-list]:not([data-opening])`, {
