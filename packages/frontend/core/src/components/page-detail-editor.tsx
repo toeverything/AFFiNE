@@ -56,6 +56,12 @@ export interface PageDetailEditorProps {
   onLoad?: OnLoadEditor;
 }
 
+// get url sel search param
+function useUrlSel() {
+  const url = new URL(window.location.href);
+  return url.searchParams.get('sel');
+}
+
 function useRouterHash() {
   return useLocation().hash.substring(1);
 }
@@ -145,6 +151,7 @@ const EditorWrapper = memo(function EditorWrapper({
 
   const [editor, setEditor] = useState<EditorContainer>();
   const blockId = useRouterHash();
+  const selection = useUrlSel();
 
   useCreateAndSetRootBlockHub(editor, !meta.trash);
 
@@ -210,6 +217,7 @@ const EditorWrapper = memo(function EditorWrapper({
         onModeChange={setEditorMode}
         defaultSelectedBlockId={blockId}
         onLoadEditor={onLoadEditor}
+        selection={selection}
       />
       {meta.trash && <TrashButtonGroup />}
       <Bookmark page={page} />

@@ -59,6 +59,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         '/plugins/image-preview',
         '/plugins/vue-hello-world',
         '/plugins/outline',
+        '/plugins/share-selection',
       ],
       enableTestProperties: true,
       enableBroadcastChannelProvider: true,
@@ -97,6 +98,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       '/plugins/image-preview',
       '/plugins/vue-hello-world',
       '/plugins/outline',
+      '/plugins/share-selection',
     ],
     enablePlugin: process.env.ENABLE_PLUGIN
       ? process.env.ENABLE_PLUGIN === 'true'

@@ -36,6 +36,7 @@ export type EditorProps = {
   onLoadEditor?: (editor: EditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
+  selection?: string | null;
 };
 
 export type ErrorBoundaryProps = {
@@ -85,6 +86,7 @@ const BlockSuiteEditorImpl = ({
   onLoadEditor,
   onModeChange,
   style,
+  selection,
 }: EditorProps): ReactElement => {
   if (!page.loaded) {
     use(page.waitForLoaded());
@@ -166,6 +168,35 @@ const BlockSuiteEditorImpl = ({
       });
     }
   }, [editor, blockElement]);
+
+  useEffect(() => {
+    if (selection) {
+      requestIdleCallback(() => {
+        const selectionJson = JSON.parse(selection);
+        const selectionManager = editor.root.value?.selection;
+        if (!selectionJson || selectionJson.length === 0 || !selectionManager) return;
+  
+        const firstSelection = selectionJson[0];
+        let firstBlockPath;
+        if (firstSelection.type === 'text') {
+          firstBlockPath = firstSelection.from.path;
+        } else {
+          firstBlockPath = firstSelection.path;
+        }
+        if (!firstBlockPath) return;
+
+        const firstBlockElement = editor.root.value?.view.viewFromPath('block', firstBlockPath);
+        if (!firstBlockElement) return;
+
+        firstBlockElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center',
+        });
+        selectionManager.fromJSON(selectionJson);
+      })
+    }
+  }, [editor, selection]);
 
   // issue: https://github.com/toeverything/AFFiNE/issues/2004
   return (
