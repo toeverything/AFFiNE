@@ -1,8 +1,8 @@
-import { isBrowser, Unreachable } from '@affine/env/constant';
+import { isBrowser } from '@affine/env/constant';
 import type { UpdateMeta } from '@toeverything/infra/type';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
-import { startTransition, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Observable } from 'rxjs';
 
 function rpcToObservable<
@@ -114,28 +114,10 @@ export const isAutoCheckUpdateAtom = atom(async () => {
 });
 
 export const useAppUpdater = () => {
-  const currentChangelogUnread = useAtomValue(currentChangelogUnreadAtom);
   const [appQuitting, setAppQuitting] = useState(false);
-  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
   const updateReady = useAtomValue(updateReadyAtom);
-  const updateAvailable = useAtomValue(updateAvailableAtom);
-  const currentVersion = useAtomValue(currentVersionAtom);
   const setUpdateAvailableState = useSetAtom(updateAvailableStateAtom);
   const setIsCheckingForUpdates = useSetAtom(isCheckingForUpdatesAtom);
-
-  const dismissCurrentChangelog = useCallback(() => {
-    if (!currentVersion) {
-      return;
-    }
-    startTransition(() =>
-      setChangelogCheckAtom(mapping => {
-        return {
-          ...mapping,
-          [currentVersion]: true,
-        };
-      })
-    );
-  }, [currentVersion, setChangelogCheckAtom]);
 
   const quitAndInstall = useCallback(() => {
     if (updateReady) {
@@ -144,28 +126,8 @@ export const useAppUpdater = () => {
         // TODO: add error toast here
         console.error(err);
       });
-    } else if (updateAvailable) {
-      if (updateAvailable.allowAutoUpdate) {
-        // wait for download to finish
-      } else {
-        window.open(
-          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-          '_blank'
-        );
-      }
-    } else if (currentChangelogUnread) {
-      window.open(runtimeConfig.changelogUrl, '_blank');
-      dismissCurrentChangelog();
-    } else {
-      throw new Unreachable();
     }
-  }, [
-    currentChangelogUnread,
-    currentVersion,
-    dismissCurrentChangelog,
-    updateAvailable,
-    updateReady,
-  ]);
+  }, [updateReady]);
 
   const checkForUpdates = useCallback(async () => {
     setIsCheckingForUpdates(true);
@@ -222,7 +184,6 @@ export const useAppUpdater = () => {
   }, []);
 
   return {
-    dismissCurrentChangelog,
     quitAndInstall,
     appQuitting,
     checkForUpdates,

@@ -1,15 +1,19 @@
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
 import { Tooltip } from '@toeverything/components/tooltip';
 import {
+  changelogCheckedAtom,
   currentChangelogUnreadAtom,
+  currentVersionAtom,
   downloadProgressAtom,
   updateAvailableAtom,
   updateReadyAtom,
   useAppUpdater,
 } from '@toeverything/hooks/use-app-updater';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { startTransition, useCallback } from 'react';
 
 import * as styles from './index.css';
 
@@ -178,14 +182,56 @@ export function AppUpdaterButton({
   const updateReady = useAtomValue(updateReadyAtom);
   const updateAvailable = useAtomValue(updateAvailableAtom);
   const downloadProgress = useAtomValue(downloadProgressAtom);
-  const { quitAndInstall, dismissCurrentChangelog, appQuitting } =
-    useAppUpdater();
+  const currentVersion = useAtomValue(currentVersionAtom);
+  const { quitAndInstall, appQuitting } = useAppUpdater();
+  const setChangelogCheckAtom = useSetAtom(changelogCheckedAtom);
+
+  const dismissCurrentChangelog = useCallback(() => {
+    if (!currentVersion) {
+      return;
+    }
+    startTransition(() =>
+      setChangelogCheckAtom(mapping => {
+        return {
+          ...mapping,
+          [currentVersion]: true,
+        };
+      })
+    );
+  }, [currentVersion, setChangelogCheckAtom]);
+
+  const handleClickUpdate = useCallback(() => {
+    if (updateReady) {
+      quitAndInstall();
+    } else if (updateAvailable) {
+      if (updateAvailable.allowAutoUpdate) {
+        // wait for download to finish
+      } else {
+        window.open(
+          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
+          '_blank'
+        );
+      }
+    } else if (currentChangelogUnread) {
+      window.open(runtimeConfig.changelogUrl, '_blank');
+      dismissCurrentChangelog();
+    } else {
+      throw new Unreachable();
+    }
+  }, [
+    updateReady,
+    quitAndInstall,
+    updateAvailable,
+    currentChangelogUnread,
+    dismissCurrentChangelog,
+    currentVersion,
+  ]);
 
   return (
     <AppUpdaterButtonPure
       appQuitting={appQuitting}
       updateReady={!!updateReady}
-      onClickUpdate={quitAndInstall}
+      onClickUpdate={handleClickUpdate}
       onDismissCurrentChangelog={dismissCurrentChangelog}
       currentChangelogUnread={currentChangelogUnread}
       updateAvailable={updateAvailable}
