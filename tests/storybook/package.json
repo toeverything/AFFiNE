@@ -9,7 +9,6 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/i18n": "workspace:*",
-    "@mui/material": "^5.14.14",
     "@storybook/addon-actions": "^7.4.6",
     "@storybook/addon-essentials": "^7.4.6",
     "@storybook/addon-interactions": "^7.4.6",

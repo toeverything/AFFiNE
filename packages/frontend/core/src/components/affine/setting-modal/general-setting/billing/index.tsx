@@ -1,3 +1,4 @@
+import { Skeleton } from '@affine/component';
 import { Pagination } from '@affine/component/member-components';
 import {
   SettingHeader,
@@ -19,7 +20,6 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { Skeleton } from '@mui/material';
 import { Button, IconButton } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';

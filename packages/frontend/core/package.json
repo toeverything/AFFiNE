@@ -40,7 +40,6 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@marsidev/react-turnstile": "^0.3.1",
-    "@mui/material": "^5.14.14",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-dialog": "^1.0.4",
     "@radix-ui/react-scroll-area": "^1.0.5",

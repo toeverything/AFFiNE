@@ -2,8 +2,6 @@ import { lightCssVariables } from '@toeverything/theme';
 import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { globalStyle, style } from '@vanilla-extract/css';
 
-import { breakpoints } from '../../styles/mui-theme';
-
 export const appStyle = style({
   width: '100%',
   position: 'relative',
@@ -134,10 +132,10 @@ export const toolStyle = style({
   flexDirection: 'column',
   gap: '12px',
   '@media': {
-    [breakpoints.down('md', true)]: {
+    'screen and (max-width: 960px)': {
       right: 'calc((100vw - 640px) * 3 / 19 + 14px)',
     },
-    [breakpoints.down('sm', true)]: {
+    'screen and (max-width: 640px)': {
       right: '5px',
       bottom: '5px',
     },
@@ -149,10 +147,10 @@ export const toolStyle = style({
     '&[data-in-trash-page="true"]': {
       bottom: '70px',
       '@media': {
-        [breakpoints.down('md', true)]: {
+        'screen and (max-width: 960px)': {
           bottom: '80px',
         },
-        [breakpoints.down('sm', true)]: {
+        'screen and (max-width: 640px)': {
           bottom: '85px',
         },
         print: {
