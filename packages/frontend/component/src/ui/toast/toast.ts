@@ -30,15 +30,15 @@ const htmlToElement = <T extends ChildNode>(html: string | TemplateResult) => {
 const createToastContainer = (portal?: HTMLElement) => {
   portal = portal || document.body;
   const styles = css`
-    position: absolute;
+    width: 100%;
+    position: fixed;
     z-index: 9999;
-    top: 16px;
-    left: 16px;
-    right: 16px;
     bottom: 78px;
+    left: 50%;
+    transform: translateX(-50%);
     pointer-events: none;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: center;
   `;
   const template = html`<div
@@ -55,6 +55,65 @@ export type ToastOptions = {
   portal?: HTMLElement;
 };
 
+const animateToastOut = (toastElement: HTMLDivElement) => {
+  toastElement.style.opacity = '0';
+  setTimeout(() => toastElement.remove(), 300); // Match transition duration
+};
+
+const createAndShowNewToast = (
+  message: string,
+  duration: number,
+  portal?: HTMLElement
+) => {
+  if (!ToastContainer || (portal && !portal.contains(ToastContainer))) {
+    ToastContainer = createToastContainer(portal);
+  }
+
+  const toastStyles = css`
+    position: absolute;
+    bottom: 0;
+    max-width: 480px;
+    text-align: center;
+    font-family: var(--affine-font-family);
+    font-size: var(--affine-font-sm);
+    padding: 10px 16px;
+    margin: 0;
+    color: var(--affine-white);
+    background: var(--affine-tooltip);
+    box-shadow: var(--affine-float-button-shadow);
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(100%);
+    transition:
+      transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+      opacity 0.3s ease;
+  `;
+
+  const toastTemplate = html`<div
+    style="${toastStyles}"
+    data-testid="affine-toast"
+  >
+    ${message}
+  </div>`;
+  const toastElement = htmlToElement<HTMLDivElement>(toastTemplate);
+  // message is not trusted
+  toastElement.textContent = message;
+  ToastContainer.appendChild(toastElement);
+  logger.debug(`toast with message: "${message}"`);
+  window.dispatchEvent(
+    new CustomEvent('affine-toast:emit', { detail: message })
+  );
+
+  setTimeout(() => {
+    toastElement.style.opacity = '1';
+    toastElement.style.transform = 'translateY(0)';
+  }, 100);
+
+  setTimeout(() => {
+    animateToastOut(toastElement);
+  }, duration);
+};
+
 /**
  * @example
  * ```ts
@@ -63,80 +122,21 @@ export type ToastOptions = {
  */
 export const toast = (
   message: string,
-  { duration = 2500, portal }: ToastOptions = {
-    duration: 2500,
-  }
+  { duration = 3000, portal }: ToastOptions = {}
 ) => {
-  if (!ToastContainer || (portal && !portal.contains(ToastContainer))) {
-    ToastContainer = createToastContainer(portal);
+  if (ToastContainer && ToastContainer.children.length >= 2) {
+    // If there are already two toasts, remove the oldest one immediately
+    const oldestToast = ToastContainer.children[0] as HTMLDivElement;
+    oldestToast.remove();
   }
 
-  const styles = css`
-    max-width: 480px;
-    text-align: center;
-    font-family: var(--affine-font-family);
-    font-size: var(--affine-font-sm);
-    padding: 6px 12px;
-    margin: 10px 0 0 0;
-    color: var(--affine-white);
-    background: var(--affine-tooltip);
-    box-shadow: var(--affine-float-button-shadow);
-    border-radius: 10px;
-    transition: all 230ms cubic-bezier(0.21, 1.02, 0.73, 1);
-    opacity: 0;
-  `;
+  // If there is one toast already, start its disappearing animation
+  if (ToastContainer && ToastContainer.children.length === 1) {
+    const currentToast = ToastContainer.children[0] as HTMLDivElement;
+    animateToastOut(currentToast);
+  }
 
-  const template = html`<div
-    style="${styles}"
-    data-testid="affine-toast"
-  ></div>`;
-  const element = htmlToElement<HTMLDivElement>(template);
-  // message is not trusted
-  element.textContent = message;
-  ToastContainer.appendChild(element);
-
-  logger.debug(`toast with message: "${message}"`);
-  window.dispatchEvent(
-    new CustomEvent('affine-toast:emit', { detail: message })
-  );
-
-  const fadeIn = [
-    {
-      opacity: 0,
-    },
-    { opacity: 1 },
-  ];
-
-  const options = {
-    duration: 230,
-    easing: 'cubic-bezier(0.21, 1.02, 0.73, 1)',
-    fill: 'forwards' as const,
-  } satisfies KeyframeAnimationOptions;
-
-  element.animate(fadeIn, options);
-
-  setTimeout(() => {
-    const animation = element.animate(
-      // fade out
-      fadeIn.reverse(),
-      options
-    );
-    animation.finished
-      .then(() => {
-        element.style.maxHeight = '0';
-        element.style.margin = '0';
-        element.style.padding = '0';
-        // wait for transition
-        // ToastContainer = null;
-        element.addEventListener('transitionend', () => {
-          element.remove();
-        });
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, duration);
-  return element;
+  createAndShowNewToast(message, duration, portal);
 };
 
 export default toast;
