@@ -167,25 +167,25 @@ export const useAppUpdater = () => {
     updateReady,
   ]);
 
-  const checkForUpdates = useCallback(() => {
+  const checkForUpdates = useCallback(async () => {
     setIsCheckingForUpdates(true);
-
-    window.apis?.updater
-      .checkForUpdatesAndNotify()
-      .then(updateInfo => {
-        setIsCheckingForUpdates(false);
-        if (updateInfo) {
-          const updateMeta: UpdateMeta = {
-            version: updateInfo.version,
-            allowAutoUpdate: false,
-          };
-          setUpdateAvailableState(updateMeta);
-        }
-      })
-      .catch(err => {
-        setIsCheckingForUpdates(false);
-        console.error('Error checking for updates:', err);
-      });
+    try {
+      const updateInfo = await window.apis?.updater.checkForUpdatesAndNotify();
+      setIsCheckingForUpdates(false);
+      if (updateInfo) {
+        const updateMeta: UpdateMeta = {
+          version: updateInfo.version,
+          allowAutoUpdate: false,
+        };
+        setUpdateAvailableState(updateMeta);
+        return updateInfo.version;
+      }
+      return false;
+    } catch (err) {
+      setIsCheckingForUpdates(false);
+      console.error('Error checking for updates:', err);
+      return null;
+    }
   }, [setIsCheckingForUpdates, setUpdateAvailableState]);
 
   const downloadUpdate = useCallback(() => {

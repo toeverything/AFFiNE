@@ -4,37 +4,22 @@ import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import {
-  downloadProgressAtom,
-  isCheckingForUpdatesAtom,
-  updateAvailableAtom,
-  updateReadyAtom,
-  useAppUpdater,
-} from '@toeverything/hooks/use-app-updater';
-import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
-import { useCallback, useMemo } from 'react';
+import { useAppUpdater } from '@toeverything/hooks/use-app-updater';
+import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
-import { Loading } from '../../../../pure/workspace-slider-bar/workspace-card/loading-icon';
+import { appIconMap, appNames } from '../../../../../pages/open-app';
 import { relatedLinks } from './config';
 import * as styles from './style.css';
+import { UpdateCheckSection } from './update-check-section';
 
 export const AboutAffine = () => {
   const t = useAFFiNEI18N();
   const { appSettings, updateSettings } = useAppSettingHelper();
-  const {
-    checkForUpdates,
-    downloadUpdate,
-    toggleAutoCheck,
-    toggleAutoDownload,
-    quitAndInstall,
-  } = useAppUpdater();
-  const isCheckingForUpdates = useAtomValue(isCheckingForUpdatesAtom);
-  const updateAvailable = useAtomValue(updateAvailableAtom);
-  const updateReady = useAtomValue(updateReadyAtom);
-  const downloadProgress = useAtomValue(downloadProgressAtom);
+  const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
+  const channel = runtimeConfig.appBuildType;
+  const appIcon = appIconMap[channel];
+  const appName = appNames[channel];
 
   const onSwitchAutoCheck = useCallback(
     (checked: boolean) => {
@@ -52,68 +37,6 @@ export const AboutAffine = () => {
     [toggleAutoDownload, updateSettings]
   );
 
-  const handleClick = useCallback(() => {
-    if (updateAvailable && downloadProgress === null) {
-      return downloadUpdate();
-    }
-    if (updateReady) {
-      return quitAndInstall();
-    }
-    checkForUpdates();
-  }, [
-    checkForUpdates,
-    downloadProgress,
-    downloadUpdate,
-    quitAndInstall,
-    updateAvailable,
-    updateReady,
-  ]);
-
-  const checkUpdateButtonLabel = useMemo(() => {
-    if (updateAvailable && downloadProgress === null) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.button.download']();
-    }
-    if (updateReady) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.button.restart']();
-    }
-    return t['com.affine.aboutAFFiNE.checkUpdate.button.check']();
-  }, [downloadProgress, t, updateAvailable, updateReady]);
-
-  const checkUpdateSubtitleLabel = useMemo(() => {
-    if (updateAvailable && downloadProgress === null) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.update-available']({
-        version: updateAvailable.version,
-      });
-    } else if (isCheckingForUpdates) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.checking']();
-    } else if (updateAvailable && downloadProgress !== null) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.downloading']();
-    } else if (updateReady) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.restart']();
-    } else {
-      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.check']();
-    }
-  }, [downloadProgress, isCheckingForUpdates, t, updateAvailable, updateReady]);
-
-  const checkUpdateSubtitle = useMemo(() => {
-    return (
-      <span
-        className={clsx(styles.checkUpdateDesc, {
-          active: updateReady || (updateAvailable && downloadProgress === null),
-        })}
-      >
-        {isCheckingForUpdates ? <Loading size={14} /> : null}
-        {checkUpdateSubtitleLabel}
-      </span>
-    );
-  }, [
-    checkUpdateSubtitleLabel,
-    downloadProgress,
-    isCheckingForUpdates,
-    updateAvailable,
-    updateReady,
-  ]);
-
   return (
     <>
       <SettingHeader
@@ -123,27 +46,19 @@ export const AboutAffine = () => {
       />
       <SettingWrapper title={t['com.affine.aboutAFFiNE.version.title']()}>
         <SettingRow
-          name={t['com.affine.aboutAFFiNE.version.app']()}
+          name={appName}
           desc={runtimeConfig.appVersion}
-        />
+          className={styles.appImageRow}
+        >
+          <img src={appIcon} alt={appName} width={56} height={56} />
+        </SettingRow>
         <SettingRow
           name={t['com.affine.aboutAFFiNE.version.editor.title']()}
           desc={runtimeConfig.editorVersion}
         />
         {environment.isDesktop ? (
           <>
-            <SettingRow
-              name={t['com.affine.aboutAFFiNE.checkUpdate.title']()}
-              desc={checkUpdateSubtitle}
-            >
-              <Button
-                data-testid="check-update-button"
-                onClick={handleClick}
-                disabled={false}
-              >
-                {checkUpdateButtonLabel}
-              </Button>
-            </SettingRow>
+            <UpdateCheckSection />
             <SettingRow
               name={t['com.affine.aboutAFFiNE.autoCheckUpdate.title']()}
               desc={t['com.affine.aboutAFFiNE.autoCheckUpdate.description']()}

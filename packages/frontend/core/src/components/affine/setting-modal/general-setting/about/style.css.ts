@@ -54,9 +54,26 @@ export const checkUpdateDesc = style({
     '&.active': {
       color: 'var(--affine-text-emphasis-color)',
     },
+    '&.error': {
+      color: 'var(--affine-error-color)',
+    },
   },
 });
 
 globalStyle(`${checkUpdateDesc} svg`, {
   marginRight: '4px',
+});
+
+export const appImageRow = style({
+  flexDirection: 'row-reverse',
+  selectors: {
+    '&.two-col': {
+      justifyContent: 'flex-end',
+    },
+  },
+});
+
+globalStyle(`${appImageRow} .right-col`, {
+  paddingLeft: '0',
+  paddingRight: '20px',
 });

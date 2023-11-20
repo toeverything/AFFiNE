@@ -37,14 +37,14 @@ const schemaToChanel = {
   'affine-dev': 'canary', // dev does not have a dedicated app. use canary as the placeholder.
 } as Record<Schema, Channel>;
 
-const appIconMap = {
+export const appIconMap = {
   stable: '/imgs/app-icon-stable.ico',
   canary: '/imgs/app-icon-canary.ico',
   beta: '/imgs/app-icon-beta.ico',
   internal: '/imgs/app-icon-internal.ico',
 } satisfies Record<Channel, string>;
 
-const appNames = {
+export const appNames = {
   stable: 'AFFiNE',
   canary: 'AFFiNE Canary',
   beta: 'AFFiNE Beta',
