@@ -4,7 +4,7 @@ import { isEqual } from '@blocksuite/global/utils';
 import type { Doc } from 'yjs';
 import { applyUpdate, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
-import type { Storage } from '../storage';
+import { mergeUpdates, type Storage } from '../storage';
 import { AsyncQueue } from '../utils/async-queue';
 import { throwIfAborted } from '../utils/throw-if-aborted';
 import { MANUALLY_STOP } from './engine';
@@ -154,7 +154,7 @@ export class SyncPeer {
     connectedDocs: Map<string, Doc>;
     pushUpdatesQueue: AsyncQueue<{
       docId: string;
-      data: Uint8Array;
+      data: Uint8Array[];
     }>;
     pushingUpdate: boolean;
     pullUpdatesQueue: AsyncQueue<{
@@ -262,14 +262,16 @@ export class SyncPeer {
             this.state.pushingUpdate = true;
             this.reportSyncStatus();
 
+            const merged = mergeUpdates(data);
+
             // don't push empty data or Uint8Array([0, 0])
             if (
               !(
-                data.byteLength === 0 ||
-                (data.byteLength === 2 && data[0] === 0 && data[1] === 0)
+                merged.byteLength === 0 ||
+                (merged.byteLength === 2 && merged[0] === 0 && merged[1] === 0)
               )
             ) {
-              await this.storage.push(docId, data);
+              await this.storage.push(docId, merged);
             }
 
             this.state.pushingUpdate = false;
@@ -298,7 +300,7 @@ export class SyncPeer {
     // diff root doc and in-storage, save updates to pendingUpdates
     this.state.pushUpdatesQueue.push({
       docId: doc.guid,
-      data: encodeStateAsUpdate(doc, inStorageState),
+      data: [encodeStateAsUpdate(doc, inStorageState)],
     });
 
     this.state.connectedDocs.set(doc.guid, doc);
@@ -324,10 +326,19 @@ export class SyncPeer {
     if (origin === this.name) {
       return;
     }
-    this.state.pushUpdatesQueue.push({
-      docId: doc.guid,
-      data: update,
-    });
+
+    const exist = this.state.pushUpdatesQueue.find(
+      ({ docId }) => docId === doc.guid
+    );
+    if (exist) {
+      exist.data.push(update);
+    } else {
+      this.state.pushUpdatesQueue.push({
+        docId: doc.guid,
+        data: [update],
+      });
+    }
+
     this.reportSyncStatus();
   };
 
