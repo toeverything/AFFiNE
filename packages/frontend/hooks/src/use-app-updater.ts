@@ -92,32 +92,16 @@ export const currentChangelogUnreadAtom = atom(async get => {
 });
 
 export const isCheckingForUpdatesAtom = atom(false);
-
-export const isAutoDownloadUpdateAtom = atom(async () => {
-  try {
-    const res = await window.apis?.updater.autoDownloadUpdate();
-    return res;
-  } catch (err) {
-    console.error(err);
-    return true;
-  }
-});
-
-export const isAutoCheckUpdateAtom = atom(async () => {
-  try {
-    const res = await window.apis?.updater.autoCheckUpdate();
-    return res;
-  } catch (err) {
-    console.error(err);
-    return true;
-  }
-});
+export const isAutoDownloadUpdateAtom = atom(true);
+export const isAutoCheckUpdateAtom = atom(true);
 
 export const useAppUpdater = () => {
   const [appQuitting, setAppQuitting] = useState(false);
   const updateReady = useAtomValue(updateReadyAtom);
   const setUpdateAvailableState = useSetAtom(updateAvailableStateAtom);
   const setIsCheckingForUpdates = useSetAtom(isCheckingForUpdatesAtom);
+  const setIsAutoCheckUpdate = useSetAtom(isAutoCheckUpdateAtom);
+  const setIsAutoDownloadUpdate = useSetAtom(isAutoDownloadUpdateAtom);
 
   const quitAndInstall = useCallback(() => {
     if (updateReady) {
@@ -159,29 +143,41 @@ export const useAppUpdater = () => {
       });
   }, []);
 
-  const toggleAutoDownload = useCallback((enable: boolean) => {
-    if (enable) {
-      window.apis?.updater.enableAutoDownloadUpdate().catch(err => {
-        console.error('Error enabling auto update:', err);
-      });
-    } else {
-      window.apis?.updater.disableAutoDownloadUpdate().catch(err => {
-        console.error('Error disabling auto update:', err);
-      });
-    }
-  }, []);
+  const toggleAutoDownload = useCallback(
+    (enable: boolean) => {
+      window.apis?.updater
+        .setConfig([
+          {
+            autoDownloadUpdate: enable,
+          },
+        ])
+        .then(() => {
+          setIsAutoDownloadUpdate(enable);
+        })
+        .catch(err => {
+          console.error('Error setting auto download:', err);
+        });
+    },
+    [setIsAutoDownloadUpdate]
+  );
 
-  const toggleAutoCheck = useCallback((enable: boolean) => {
-    if (enable) {
-      window.apis?.updater.enableAutoCheckUpdate().catch(err => {
-        console.error('Error enabling auto update:', err);
-      });
-    } else {
-      window.apis?.updater.disableAutoCheckUpdate().catch(err => {
-        console.error('Error disabling auto update:', err);
-      });
-    }
-  }, []);
+  const toggleAutoCheck = useCallback(
+    (enable: boolean) => {
+      window.apis?.updater
+        .setConfig([
+          {
+            autoCheckUpdate: enable,
+          },
+        ])
+        .then(() => {
+          setIsAutoCheckUpdate(enable);
+        })
+        .catch(err => {
+          console.error('Error setting auto check:', err);
+        });
+    },
+    [setIsAutoCheckUpdate]
+  );
 
   return {
     quitAndInstall,
