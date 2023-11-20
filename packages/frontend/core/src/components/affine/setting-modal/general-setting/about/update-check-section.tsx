@@ -30,42 +30,38 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
   const downloadProgress = useAtomValue(downloadProgressAtom);
 
   const buttonLabel = useMemo(() => {
-    return (
-      [
-        !!updateAvailable &&
-          downloadProgress === null &&
-          t['com.affine.aboutAFFiNE.checkUpdate.button.download'](),
-        !!updateReady &&
-          t['com.affine.aboutAFFiNE.checkUpdate.button.restart'](),
-        (checkUpdateStatus === CheckUpdateStatus.LATEST ||
-          checkUpdateStatus === CheckUpdateStatus.ERROR) &&
-          t['com.affine.aboutAFFiNE.checkUpdate.button.retry'](),
-      ].find(Boolean) || t['com.affine.aboutAFFiNE.checkUpdate.button.check']()
-    );
+    if (updateAvailable && downloadProgress === null) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.button.download']();
+    }
+    if (updateReady) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.button.restart']();
+    }
+    if (
+      checkUpdateStatus === CheckUpdateStatus.LATEST ||
+      checkUpdateStatus === CheckUpdateStatus.ERROR
+    ) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.button.retry']();
+    }
+    return t['com.affine.aboutAFFiNE.checkUpdate.button.check']();
   }, [checkUpdateStatus, downloadProgress, t, updateAvailable, updateReady]);
 
   const subtitleLabel = useMemo(() => {
-    return (
-      [
-        !!updateAvailable &&
-          downloadProgress === null &&
-          t['com.affine.aboutAFFiNE.checkUpdate.subtitle.update-available']({
-            version: updateAvailable.version,
-          }),
-        isCheckingForUpdates &&
-          t['com.affine.aboutAFFiNE.checkUpdate.subtitle.checking'](),
-        !!updateAvailable &&
-          downloadProgress !== null &&
-          t['com.affine.aboutAFFiNE.checkUpdate.subtitle.downloading'](),
-        !!updateReady &&
-          t['com.affine.aboutAFFiNE.checkUpdate.subtitle.restart'](),
-        checkUpdateStatus === CheckUpdateStatus.ERROR &&
-          t['com.affine.aboutAFFiNE.checkUpdate.subtitle.error'](),
-        checkUpdateStatus === CheckUpdateStatus.LATEST &&
-          t['com.affine.aboutAFFiNE.checkUpdate.subtitle.latest'](),
-      ].find(Boolean) ||
-      t['com.affine.aboutAFFiNE.checkUpdate.subtitle.check']()
-    );
+    if (updateAvailable && downloadProgress === null) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.update-available']({
+        version: updateAvailable.version,
+      });
+    } else if (isCheckingForUpdates) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.checking']();
+    } else if (updateAvailable && downloadProgress !== null) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.downloading']();
+    } else if (updateReady) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.restart']();
+    } else if (checkUpdateStatus === CheckUpdateStatus.ERROR) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.error']();
+    } else if (checkUpdateStatus === CheckUpdateStatus.LATEST) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.latest']();
+    }
+    return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.check']();
   }, [
     checkUpdateStatus,
     downloadProgress,
