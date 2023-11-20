@@ -38,6 +38,12 @@ export const runtimeFlagsSchema = z.object({
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),
   editorVersion: z.string(),
+  appBuildType: z.union([
+    z.literal('stable'),
+    z.literal('beta'),
+    z.literal('internal'),
+    z.literal('canary'),
+  ]),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;

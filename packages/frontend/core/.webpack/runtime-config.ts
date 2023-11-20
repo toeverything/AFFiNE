@@ -37,6 +37,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
+      appBuildType: buildFlags.channel,
     },
     get beta() {
       return {
@@ -79,6 +80,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
+      appBuildType: buildFlags.channel,
     },
   };
 
