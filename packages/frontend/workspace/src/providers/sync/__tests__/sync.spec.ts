@@ -2,14 +2,18 @@ import 'fake-indexeddb/auto';
 
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema, Workspace } from '@blocksuite/store';
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { createIndexedDBStorage } from '../../storage';
-import { SyncPeer } from '../';
+import { SyncPeer, SyncPeerStep } from '../';
 
 const schema = new Schema();
 
 schema.register(AffineSchemas).register(__unstableSchemas);
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
+});
 
 describe('sync', () => {
   test('basic - indexeddb', async () => {
@@ -30,7 +34,7 @@ describe('sync', () => {
       const page = workspace.createPage({
         id: 'page0',
       });
-      await page.waitForLoaded();
+      await page.load();
       const pageBlockId = page.addBlock('affine:page', {
         title: new page.Text(''),
       });
@@ -58,5 +62,33 @@ describe('sync', () => {
       });
       syncPeer.stop();
     }
+  });
+
+  test('status', async () => {
+    const workspace = new Workspace({
+      id: 'test - status',
+      isSSR: true,
+      schema,
+    });
+
+    const syncPeer = new SyncPeer(
+      workspace.doc,
+      createIndexedDBStorage(workspace.doc.guid)
+    );
+    expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingRootDoc);
+    await syncPeer.waitForSynced();
+    expect(syncPeer.status.step).toBe(SyncPeerStep.Synced);
+
+    const page = workspace.createPage({
+      id: 'page0',
+    });
+    expect(syncPeer.status.step).toBe(SyncPeerStep.LoadingSubDoc);
+    await page.load();
+    await syncPeer.waitForSynced();
+    page.addBlock('affine:page', {
+      title: new page.Text(''),
+    });
+    expect(syncPeer.status.step).toBe(SyncPeerStep.Syncing);
+    syncPeer.stop();
   });
 });

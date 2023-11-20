@@ -3,7 +3,7 @@ import { Slot } from '@blocksuite/global/utils';
 import type { Doc } from 'yjs';
 
 import type { Storage } from '../storage';
-import { SyncPeer, SyncPeerStatus } from './peer';
+import { SyncPeer, SyncPeerStep } from './peer';
 
 export const MANUALLY_STOP = 'manually-stop';
 
@@ -149,25 +149,25 @@ export class SyncEngine {
   updateSyncingState(peers: SyncPeer[]) {
     let status = SyncEngineStatus.Synced;
     for (const peer of peers) {
-      if (peer.status !== SyncPeerStatus.Synced) {
+      if (peer.status.step !== SyncPeerStep.Synced) {
         status = SyncEngineStatus.Syncing;
         break;
       }
     }
     for (const peer of peers) {
-      if (peer.status === SyncPeerStatus.LoadingSubDoc) {
+      if (peer.status.step === SyncPeerStep.LoadingSubDoc) {
         status = SyncEngineStatus.LoadingSubDoc;
         break;
       }
     }
     for (const peer of peers) {
-      if (peer.status === SyncPeerStatus.LoadingRootDoc) {
+      if (peer.status.step === SyncPeerStep.LoadingRootDoc) {
         status = SyncEngineStatus.LoadingRootDoc;
         break;
       }
     }
     for (const peer of peers) {
-      if (peer.status === SyncPeerStatus.Retrying) {
+      if (peer.status.step === SyncPeerStep.Retrying) {
         status = SyncEngineStatus.Retrying;
         break;
       }
