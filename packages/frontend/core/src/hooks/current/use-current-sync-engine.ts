@@ -31,3 +31,31 @@ export function useCurrentSyncEngineStatus(): SyncEngineStatus | undefined {
 
   return status;
 }
+
+/**
+ *
+ * @returns true if there are unsaved changes in the current workspace
+ */
+export function useHaveUnsavedChanges(): boolean {
+  const syncEngine = useCurrentSyncEngine();
+  const [haveUnsavedChanges, setHaveUnsavedChanges] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (syncEngine) {
+      setHaveUnsavedChanges(
+        !!syncEngine.status.local &&
+          syncEngine.status.local.pendingPushUpdates > 0
+      );
+      return syncEngine.onStatusChange.on(status => {
+        setHaveUnsavedChanges(
+          !!status.local && status.local.pendingPushUpdates > 0
+        );
+      }).dispose;
+    } else {
+      setHaveUnsavedChanges(false);
+    }
+    return;
+  }, [syncEngine]);
+
+  return haveUnsavedChanges;
+}

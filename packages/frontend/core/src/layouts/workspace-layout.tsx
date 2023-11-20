@@ -48,6 +48,7 @@ import {
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
+import { useHaveUnsavedChanges } from '../hooks/current/use-current-sync-engine';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
@@ -145,6 +146,26 @@ export const WorkspaceLayoutInner = ({
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const t = useAFFiNEI18N();
+  const haveUnsavedChanges = useHaveUnsavedChanges();
+
+  useEffect(() => {
+    if (haveUnsavedChanges) {
+      const saveAlert = (event: BeforeUnloadEvent) => {
+        event.preventDefault();
+        return (event.returnValue = t['com.affine.exitWithoutSave.notice']());
+      };
+
+      window.addEventListener('beforeunload', saveAlert, {
+        capture: true,
+      });
+      return () => {
+        window.removeEventListener('beforeunload', saveAlert, {
+          capture: true,
+        });
+      };
+    }
+    return;
+  }, [t, haveUnsavedChanges]);
 
   useRegisterWorkspaceCommands();
 
