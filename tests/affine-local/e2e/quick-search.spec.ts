@@ -406,3 +406,25 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   const selectionElement = page.locator('affine-block-selection');
   await expect(selectionElement).toBeVisible();
 });
+
+test('Create a new page with special characters in the title and search for this page', async ({
+  page,
+}) => {
+  const specialTitle = '"test123456"';
+
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+
+  await clickNewPageButton(page);
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill(specialTitle);
+  await openQuickSearchByShortcut(page);
+
+  await page.keyboard.insertText(specialTitle);
+  await page.waitForTimeout(300);
+
+  await assertResultList(page, [specialTitle, specialTitle]);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  await assertTitle(page, specialTitle);
+});
