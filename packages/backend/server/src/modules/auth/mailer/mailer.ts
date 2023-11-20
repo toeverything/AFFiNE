@@ -26,6 +26,17 @@ export const MAILER: FactoryProvider<
         },
       });
     }
+  // Create a transport for sendgrid 
+    if(config.auth.email.server == 'smtp.sendgrid.net'){
+      return createTransport({
+        host: config.auth.email.server,
+        port: 587,
+        auth : {
+          user: config.auth.email.login,
+          pass: config.auth.email.password
+        }
+      });
+    }
     return createTransport({
       service: 'gmail',
       auth: {
