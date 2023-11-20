@@ -43,15 +43,12 @@ export const loader: LoaderFunction = async args => {
   if (!args.params.pageId) {
     rootStore.set(currentPageIdAtom, null);
   }
-  if (currentMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentMetadata.id);
-    workspaceLoaderLogger.info('get cloud workspace atom');
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentMetadata.id);
+  workspaceLoaderLogger.info('get cloud workspace atom');
 
-    const workspace = await rootStore.get(workspaceAtom);
-    if (!workspace.doc.isLoaded) {
-      await workspace.doc.whenLoaded;
-    }
-    workspaceLoaderLogger.info('workspace loaded');
+  const workspace = await rootStore.get(workspaceAtom);
+  workspaceLoaderLogger.info('workspace loaded');
+  if (currentMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
     return (() => {
       guidCompatibilityFix(workspace.doc);
       const blockVersions = workspace.meta.blockVersions;
@@ -66,8 +63,6 @@ export const loader: LoaderFunction = async args => {
       return false;
     })();
   }
-
-  workspaceLoaderLogger.info('done');
   return null;
 };
 

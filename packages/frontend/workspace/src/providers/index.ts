@@ -59,7 +59,14 @@ export const createLocalProviders = (): DocProviderCreator[] => {
           return engine.waitForLoadedRootDoc();
         },
         connect() {
-          // TODO: actually connect
+          if (!connected) {
+            engine.start();
+
+            for (const provider of awarenessProviders) {
+              provider.connect();
+            }
+            connected = true;
+          }
         },
         disconnect() {
           // TODO: actually disconnect
@@ -109,7 +116,14 @@ export const createAffineProviders = (): DocProviderCreator[] => {
           return engine.waitForLoadedRootDoc();
         },
         connect() {
-          // TODO: actually connect
+          if (!connected) {
+            engine.start();
+
+            for (const provider of awarenessProviders) {
+              provider.connect();
+            }
+            connected = true;
+          }
         },
         disconnect() {
           // TODO: actually disconnect
