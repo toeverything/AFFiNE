@@ -421,9 +421,10 @@ test('Create a new page with special characters in the title and search for this
   await openQuickSearchByShortcut(page);
 
   await page.keyboard.insertText(specialTitle);
-  await page.waitForTimeout(300);
 
-  await assertResultList(page, [specialTitle, specialTitle]);
+  await expect(() =>
+    assertResultList(page, [specialTitle, specialTitle])
+  ).toPass();
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
   await assertTitle(page, specialTitle);
