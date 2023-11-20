@@ -15,7 +15,9 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
   return {
     crud: {
       get: async key => {
-        const suffix = predefinedStaticFiles.includes(key)
+        const suffix = key.startsWith('/')
+          ? key
+          : predefinedStaticFiles.includes(key)
           ? `/static/${key}`
           : `/api/workspaces/${workspaceId}/blobs/${key}`;
 
