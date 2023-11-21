@@ -31,21 +31,12 @@ const config: UpdaterConfig = {
   autoDownloadUpdate: true,
 };
 
-export const getConfig = async (): Promise<UpdaterConfig> => {
+export const getConfig = (): UpdaterConfig => {
   return { ...config };
 };
 
-export const setConfig = async (
-  newConfig: Partial<UpdaterConfig> = {}
-): Promise<void> => {
-  config.autoCheckUpdate =
-    newConfig.autoCheckUpdate !== undefined
-      ? newConfig.autoCheckUpdate
-      : config.autoCheckUpdate;
-  config.autoDownloadUpdate =
-    newConfig.autoDownloadUpdate !== undefined
-      ? newConfig.autoDownloadUpdate
-      : config.autoDownloadUpdate;
+export const setConfig = (newConfig: Partial<UpdaterConfig> = {}): void => {
+  Object.assign(config, newConfig);
 };
 
 export const checkForUpdates = async (force = false) => {

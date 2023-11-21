@@ -43,12 +43,14 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       return {
         ...this.stable,
         serverUrlPrefix: 'https://insider.affine.pro',
+        appBuildType: 'beta' as const,
       };
     },
     get internal() {
       return {
         ...this.stable,
         serverUrlPrefix: 'https://insider.affine.pro',
+        appBuildType: 'internal' as const,
       };
     },
     // canary will be aggressive and enable all features

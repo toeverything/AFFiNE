@@ -21,13 +21,13 @@ export const updaterHandlers = {
     return downloadUpdate();
   },
   getConfig: async (): Promise<UpdaterConfig> => {
-    return await getConfig();
+    return getConfig();
   },
   setConfig: async (
     _e: IpcMainInvokeEvent,
     newConfig: Partial<UpdaterConfig>
   ): Promise<void> => {
-    await setConfig(newConfig);
+    return setConfig(newConfig);
   },
   checkForUpdatesAndNotify: async () => {
     const res = await checkForUpdates(true);

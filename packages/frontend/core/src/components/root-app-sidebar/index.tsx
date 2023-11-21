@@ -165,7 +165,8 @@ export const RootAppSidebar = ({
 
     if (isAutoCheck !== autoCheckUpdate) {
       toggleAutoCheck(autoCheckUpdate);
-    } else if (isAutoDownload !== autoDownloadUpdate) {
+    }
+    if (isAutoDownload !== autoDownloadUpdate) {
       toggleAutoDownload(autoDownloadUpdate);
     }
   }, [
