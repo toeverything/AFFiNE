@@ -27,7 +27,7 @@
     "@blocksuite/editor": "0.0.0-20231116023037-31273bb7-nightly",
     "@blocksuite/global": "0.0.0-20231116023037-31273bb7-nightly",
     "@blocksuite/store": "0.0.0-20231116023037-31273bb7-nightly",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
