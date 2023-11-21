@@ -81,6 +81,7 @@ enum SubscriptionPlan {
   Pro
   Team
   Enterprise
+  SelfHosted
 }
 
 type UserSubscription {
