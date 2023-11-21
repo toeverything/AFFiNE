@@ -4,9 +4,9 @@ import {
 } from '@affine/component/page-list';
 import type { Filter } from '@affine/env/filter';
 import type { PageMeta } from '@blocksuite/store';
-import { Modal } from '@toeverything/components/modal';
 import { type MouseEvent, useCallback, useState } from 'react';
 
+import { Modal } from '../../../../ui/modal';
 import { SelectPage } from './select-page';
 export const useSelectPage = ({
   allPageListConfig,

@@ -6,9 +6,9 @@ import {
   NewIcon,
   NotionIcon,
 } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 
+import { IconButton } from '../../ui/button';
+import { Tooltip } from '../../ui/tooltip';
 import { BlockCard } from '../card/block-card';
 import {
   importPageBodyStyle,

@@ -1,3 +1,5 @@
+import { Button } from '@affine/component/ui/button';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import type {
   Subscription,
   SubscriptionMutator,
@@ -13,8 +15,6 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';

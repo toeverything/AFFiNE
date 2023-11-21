@@ -1,6 +1,6 @@
 import { AffineShapeIcon } from '@affine/component/page-list'; // TODO: import from page-list temporarily, need to defined common svg icon/images management.
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import { useCallback, useMemo } from 'react';
 

@@ -1,9 +1,9 @@
 import { FlexWrapper, toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { Button } from '@affine/component/ui/button';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';

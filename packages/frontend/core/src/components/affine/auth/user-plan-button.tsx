@@ -1,6 +1,6 @@
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import Tooltip from '@toeverything/components/tooltip';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 import { withErrorBoundary } from 'react-error-boundary';

@@ -1,8 +1,8 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
+import { Button } from '@affine/component/ui/button';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { SaveDBFileResult } from '@toeverything/infra/type';
 import { useSetAtom } from 'jotai';

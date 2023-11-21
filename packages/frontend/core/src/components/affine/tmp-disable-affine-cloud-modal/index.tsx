@@ -1,7 +1,7 @@
 import { Empty } from '@affine/component';
+import { Modal, type ModalProps } from '@affine/component/ui/modal';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Modal, type ModalProps } from '@toeverything/components/modal';
 import { useCallback } from 'react';
 
 import {

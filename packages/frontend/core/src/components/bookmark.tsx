@@ -1,8 +1,8 @@
+import { Menu, MenuItem } from '@affine/component/ui/menu';
 import type { SerializedBlock } from '@blocksuite/blocks';
 import type { BaseBlockModel } from '@blocksuite/store';
 import type { Page } from '@blocksuite/store';
 import type { VEditor } from '@blocksuite/virgo';
-import { Menu, MenuItem } from '@toeverything/components/menu';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 

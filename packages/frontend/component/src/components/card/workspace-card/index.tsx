@@ -2,16 +2,16 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Divider } from '@toeverything/components/divider';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { useAtomValue } from 'jotai/react';
 import { useCallback } from 'react';
 
+import { Avatar } from '../../../ui/avatar';
+import { Divider } from '../../../ui/divider';
 import { Skeleton } from '../../../ui/skeleton';
+import { Tooltip } from '../../../ui/tooltip';
 import {
   StyledCard,
   StyledIconContainer,

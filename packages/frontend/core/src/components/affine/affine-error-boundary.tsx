@@ -1,3 +1,4 @@
+import { Button } from '@affine/component/ui/button';
 import type {
   QueryParamError,
   Unreachable,
@@ -5,7 +6,6 @@ import type {
 } from '@affine/env/constant';
 import { PageNotFoundError } from '@affine/env/constant';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { Button } from '@toeverything/components/button';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,

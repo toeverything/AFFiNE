@@ -1,7 +1,7 @@
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
+import { Modal, type ModalProps } from '@affine/component/ui/modal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ContactWithUsIcon } from '@blocksuite/icons';
-import { Modal, type ModalProps } from '@toeverything/components/modal';
 import { debounce } from 'lodash-es';
 import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
 

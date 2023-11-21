@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./theme/*": "./src/theme/*",
+    "./ui/*": "./src/ui/*/index.ts",
     "./*": "./src/components/*/index.tsx"
   },
   "peerDependencies": {

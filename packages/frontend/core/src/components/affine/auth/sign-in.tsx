@@ -3,12 +3,12 @@ import {
   CountDownRender,
   ModalHeader,
 } from '@affine/component/auth-components';
+import { Button } from '@affine/component/ui/button';
 import { type GetUserQuery, getUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { ArrowDownBigIcon, GoogleDuotoneIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { GraphQLError } from 'graphql';
 import { type FC, useState } from 'react';

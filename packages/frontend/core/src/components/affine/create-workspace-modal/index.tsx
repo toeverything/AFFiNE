@@ -1,14 +1,14 @@
 import { Input, toast } from '@affine/component';
-import { DebugLogger } from '@affine/debug';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { HelpIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
+import { Button } from '@affine/component/ui/button';
 import {
   ConfirmModal,
   type ConfirmModalProps,
   Modal,
-} from '@toeverything/components/modal';
-import { Tooltip } from '@toeverything/components/tooltip';
+} from '@affine/component/ui/modal';
+import { Tooltip } from '@affine/component/ui/tooltip';
+import { DebugLogger } from '@affine/debug';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { HelpIcon } from '@blocksuite/icons';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type {
   LoadDBFileResult,

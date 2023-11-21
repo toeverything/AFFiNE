@@ -4,9 +4,9 @@ import {
   CountDownRender,
   ModalHeader,
 } from '@affine/component/auth-components';
+import { Button } from '@affine/component/ui/button';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import React, { useCallback } from 'react';
 

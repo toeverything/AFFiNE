@@ -1,8 +1,8 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ConfirmModal,
   type ConfirmModalProps,
-} from '@toeverything/components/modal';
+} from '@affine/component/ui/modal';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

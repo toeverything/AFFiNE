@@ -1,11 +1,11 @@
 import { isBrowser, Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
-import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import { startTransition, useCallback, useState } from 'react';
 
+import { Tooltip } from '../../../ui/tooltip';
 import * as styles from './index.css';
 import {
   changelogCheckedAtom,
