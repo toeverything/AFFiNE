@@ -15,6 +15,7 @@ import {
   pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
 import { contentLayoutAtom, getCurrentStore } from '@toeverything/infra/atom';
+import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
@@ -32,7 +33,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
 
 import { type PageMode, pageSettingFamily } from '../atoms';
-import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';

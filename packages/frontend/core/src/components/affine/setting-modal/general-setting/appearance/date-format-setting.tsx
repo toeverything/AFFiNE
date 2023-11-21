@@ -1,11 +1,8 @@
 import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
+import { dateFormatOptions, type DateFormats } from '@toeverything/infra/atom';
 import dayjs from 'dayjs';
 import { useCallback } from 'react';
 
-import {
-  dateFormatOptions,
-  type DateFormats,
-} from '../../../../../atoms/settings';
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 
 interface DateFormatMenuContentProps {

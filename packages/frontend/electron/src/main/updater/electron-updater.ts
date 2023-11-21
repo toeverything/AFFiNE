@@ -17,9 +17,9 @@ export const quitAndInstall = async () => {
   autoUpdater.quitAndInstall();
 };
 
-let lastCheckTime = 0;
-
 let downloading = false;
+let configured = false;
+let checkingUpdate = false;
 
 export type UpdaterConfig = {
   autoCheckUpdate: boolean;
@@ -36,26 +36,35 @@ export const getConfig = (): UpdaterConfig => {
 };
 
 export const setConfig = (newConfig: Partial<UpdaterConfig> = {}): void => {
+  configured = true;
+
   Object.assign(config, newConfig);
+
+  logger.info('Updater configured!', config);
+
+  // if config.autoCheckUpdate is true, trigger a check
+  if (config.autoCheckUpdate) {
+    checkForUpdates().catch(err => {
+      logger.error('Error checking for updates', err);
+    });
+  }
 };
 
-export const checkForUpdates = async (force = false) => {
-  if (disabled) {
+export const checkForUpdates = async () => {
+  if (disabled || checkingUpdate) {
     return;
   }
-
-  if (
-    force ||
-    (config.autoCheckUpdate && lastCheckTime + 1000 * 1800 < Date.now())
-  ) {
-    lastCheckTime = Date.now();
-    return await autoUpdater.checkForUpdates();
+  checkingUpdate = true;
+  try {
+    const info = await autoUpdater.checkForUpdates();
+    return info;
+  } finally {
+    checkingUpdate = false;
   }
-  return;
 };
 
 export const downloadUpdate = async () => {
-  if (disabled) {
+  if (disabled || downloading) {
     return;
   }
   downloading = true;
@@ -96,19 +105,16 @@ export const registerUpdater = async () => {
 
   autoUpdater.setFeedURL(feedUrl);
 
-  // register events for checkForUpdatesAndNotify
+  // register events for checkForUpdates
   autoUpdater.on('checking-for-update', () => {
     logger.info('Checking for update');
   });
   autoUpdater.on('update-available', info => {
     logger.info('Update available', info);
-    if (config.autoDownloadUpdate && allowAutoUpdate && !downloading) {
-      downloading = true;
-      autoUpdater?.downloadUpdate().catch(e => {
-        downloading = false;
-        logger.error('Failed to download update', e);
+    if (config.autoDownloadUpdate && allowAutoUpdate) {
+      downloadUpdate().catch(err => {
+        console.error(err);
       });
-      logger.info('Update available, downloading...', info);
     }
     updaterSubjects.updateAvailable.next({
       version: info.version,
@@ -137,9 +143,20 @@ export const registerUpdater = async () => {
   });
   autoUpdater.forceDevUpdateConfig = isDev;
 
+  // check update whenever the window is activated
+  let lastCheckTime = 0;
   app.on('activate', () => {
-    checkForUpdates(false).catch(err => {
-      console.error(err);
+    (async () => {
+      if (
+        configured &&
+        config.autoCheckUpdate &&
+        lastCheckTime + 1000 * 1800 < Date.now()
+      ) {
+        lastCheckTime = Date.now();
+        await checkForUpdates();
+      }
+    })().catch(err => {
+      logger.error('Error checking for updates', err);
     });
   });
 };

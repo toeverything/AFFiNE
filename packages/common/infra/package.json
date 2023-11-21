@@ -54,11 +54,12 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
+    "@affine/env": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/blocks": "0.0.0-20231116023037-31273bb7-nightly",
     "@blocksuite/global": "0.0.0-20231116023037-31273bb7-nightly",
     "@blocksuite/store": "0.0.0-20231116023037-31273bb7-nightly",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "jotai-effect": "^0.2.2",
     "tinykeys": "^2.1.0",
     "zod": "^3.22.4"

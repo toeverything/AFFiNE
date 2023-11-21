@@ -1,5 +1,8 @@
+import { setupGlobal } from '@affine/env/global';
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
+
+setupGlobal();
 
 export type DateFormats =
   | 'MM/dd/YYYY'
@@ -69,9 +72,10 @@ export const appSettingAtom = atom<
   void
 >(
   get => get(appSettingBaseAtom),
-  (get, set, apply) => {
-    const prev = get(appSettingBaseAtom);
-    const next = typeof apply === 'function' ? apply(prev) : apply;
-    set(appSettingBaseAtom, { ...prev, ...next });
+  (_get, set, apply) => {
+    set(appSettingBaseAtom, prev => {
+      const next = typeof apply === 'function' ? apply(prev) : apply;
+      return { ...prev, ...next };
+    });
   }
 );

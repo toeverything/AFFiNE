@@ -29,8 +29,8 @@ export const updaterHandlers = {
   ): Promise<void> => {
     return setConfig(newConfig);
   },
-  checkForUpdatesAndNotify: async () => {
-    const res = await checkForUpdates(true);
+  checkForUpdates: async () => {
+    const res = await checkForUpdates();
     if (res) {
       const { updateInfo } = res;
       return {

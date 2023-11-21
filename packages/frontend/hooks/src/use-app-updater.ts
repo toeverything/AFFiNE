@@ -1,7 +1,9 @@
 import { isBrowser } from '@affine/env/constant';
+import { appSettingAtom } from '@toeverything/infra/atom';
 import type { UpdateMeta } from '@toeverything/infra/type';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
+import { atomEffect } from 'jotai-effect';
 import { useCallback, useState } from 'react';
 import { Observable } from 'rxjs';
 
@@ -47,16 +49,9 @@ export const updateReadyAtom = atomWithObservable(() => {
   });
 });
 
-export const updateAvailableStateAtom = atom<UpdateMeta | null>(null);
-
-export const updateAvailableAtom = atomWithObservable(get => {
-  return rpcToObservable(get(updateAvailableStateAtom), {
+export const updateAvailableAtom = atomWithObservable(() => {
+  return rpcToObservable(null as UpdateMeta | null, {
     event: window.events?.updater.onUpdateAvailable,
-    onSubscribe: () => {
-      window.apis?.updater.checkForUpdatesAndNotify().catch(err => {
-        console.error(err);
-      });
-    },
   });
 });
 
@@ -70,6 +65,8 @@ export const changelogCheckedAtom = atomWithStorage<Record<string, boolean>>(
   'affine:client-changelog-checked',
   {}
 );
+
+export const checkingForUpdatesAtom = atom(false);
 
 export const currentVersionAtom = atom(async () => {
   if (!isBrowser) {
@@ -91,17 +88,31 @@ export const currentChangelogUnreadAtom = atom(async get => {
   return false;
 });
 
-export const isCheckingForUpdatesAtom = atom(false);
-export const isAutoDownloadUpdateAtom = atom(true);
-export const isAutoCheckUpdateAtom = atom(true);
+// todo: rethinking where to place this atom effect
+const appSettingEffect = atomEffect(get => {
+  const settings = get(appSettingAtom);
+  // some values in settings should be synced into electron side
+  if (environment.isDesktop) {
+    window.apis?.updater
+      .setConfig({
+        autoCheckUpdate: settings.autoCheckUpdate,
+        autoDownloadUpdate: settings.autoDownloadUpdate,
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }
+});
 
 export const useAppUpdater = () => {
+  useAtom(appSettingEffect);
   const [appQuitting, setAppQuitting] = useState(false);
   const updateReady = useAtomValue(updateReadyAtom);
-  const setUpdateAvailableState = useSetAtom(updateAvailableStateAtom);
-  const setIsCheckingForUpdates = useSetAtom(isCheckingForUpdatesAtom);
-  const setIsAutoCheckUpdate = useSetAtom(isAutoCheckUpdateAtom);
-  const setIsAutoDownloadUpdate = useSetAtom(isAutoDownloadUpdateAtom);
+  const setSetting = useSetAtom(appSettingAtom);
+
+  const [checkingForUpdates, setCheckingForUpdates] = useAtom(
+    checkingForUpdatesAtom
+  );
 
   const quitAndInstall = useCallback(() => {
     if (updateReady) {
@@ -114,65 +125,43 @@ export const useAppUpdater = () => {
   }, [updateReady]);
 
   const checkForUpdates = useCallback(async () => {
-    setIsCheckingForUpdates(true);
+    if (checkingForUpdates) {
+      return;
+    }
+    setCheckingForUpdates(true);
     try {
-      const updateInfo = await window.apis?.updater.checkForUpdatesAndNotify();
-      setIsCheckingForUpdates(false);
-      if (updateInfo) {
-        const updateMeta: UpdateMeta = {
-          version: updateInfo.version,
-          allowAutoUpdate: false,
-        };
-        setUpdateAvailableState(updateMeta);
-        return updateInfo.version;
-      }
-      return false;
+      const updateInfo = await window.apis?.updater.checkForUpdates();
+      return updateInfo?.version ?? false;
     } catch (err) {
-      setIsCheckingForUpdates(false);
       console.error('Error checking for updates:', err);
       return null;
+    } finally {
+      setCheckingForUpdates(false);
     }
-  }, [setIsCheckingForUpdates, setUpdateAvailableState]);
+  }, [checkingForUpdates, setCheckingForUpdates]);
 
   const downloadUpdate = useCallback(() => {
-    window.apis?.updater
-      .downloadUpdate()
-      .then(() => {})
-      .catch(err => {
-        console.error('Error downloading update:', err);
-      });
+    window.apis?.updater.downloadUpdate().catch(err => {
+      console.error('Error downloading update:', err);
+    });
   }, []);
 
   const toggleAutoDownload = useCallback(
     (enable: boolean) => {
-      window.apis?.updater
-        .setConfig({
-          autoDownloadUpdate: enable,
-        })
-        .then(() => {
-          setIsAutoDownloadUpdate(enable);
-        })
-        .catch(err => {
-          console.error('Error setting auto download:', err);
-        });
+      setSetting({
+        autoDownloadUpdate: enable,
+      });
     },
-    [setIsAutoDownloadUpdate]
+    [setSetting]
   );
 
   const toggleAutoCheck = useCallback(
     (enable: boolean) => {
-      window.apis?.updater
-        .setConfig({
-          autoCheckUpdate: enable,
-        })
-        .then(() => {
-          setIsAutoCheckUpdate(enable);
-        })
-        .catch(err => {
-          console.error('Error setting auto check:', err);
-        });
+      setSetting({
+        autoCheckUpdate: enable,
+      });
     },
-    [setIsAutoCheckUpdate]
+    [setSetting]
   );
 
   return {

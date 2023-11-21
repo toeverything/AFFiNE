@@ -3,8 +3,8 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import {
+  checkingForUpdatesAtom,
   downloadProgressAtom,
-  isCheckingForUpdatesAtom,
   updateAvailableAtom,
   updateReadyAtom,
   useAppUpdater,
@@ -25,7 +25,7 @@ enum CheckUpdateStatus {
 
 const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
   const t = useAFFiNEI18N();
-  const isCheckingForUpdates = useAtomValue(isCheckingForUpdatesAtom);
+  const checkingForUpdates = useAtomValue(checkingForUpdatesAtom);
   const updateAvailable = useAtomValue(updateAvailableAtom);
   const updateReady = useAtomValue(updateReadyAtom);
   const downloadProgress = useAtomValue(downloadProgressAtom);
@@ -51,7 +51,7 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.update-available']({
         version: updateAvailable.version,
       });
-    } else if (isCheckingForUpdates) {
+    } else if (checkingForUpdates) {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.checking']();
     } else if (updateAvailable && downloadProgress !== null) {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.downloading']();
@@ -66,7 +66,7 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
   }, [
     checkUpdateStatus,
     downloadProgress,
-    isCheckingForUpdates,
+    checkingForUpdates,
     t,
     updateAvailable,
     updateReady,
@@ -83,14 +83,14 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
           error: checkUpdateStatus === CheckUpdateStatus.ERROR,
         })}
       >
-        {isCheckingForUpdates ? <Loading size={14} /> : null}
+        {checkingForUpdates ? <Loading size={14} /> : null}
         {subtitleLabel}
       </span>
     );
   }, [
     checkUpdateStatus,
     downloadProgress,
-    isCheckingForUpdates,
+    checkingForUpdates,
     subtitleLabel,
     updateAvailable,
     updateReady,

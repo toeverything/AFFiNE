@@ -201,7 +201,7 @@ export type UpdaterHandlers = {
   downloadUpdate: () => Promise<void>;
   getConfig: () => Promise<UpdaterConfig>;
   setConfig: (newConfig: Partial<UpdaterConfig>) => Promise<void>;
-  checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
+  checkForUpdates: () => Promise<{ version: string } | null>;
 };
 
 export type WorkspaceHandlers = {

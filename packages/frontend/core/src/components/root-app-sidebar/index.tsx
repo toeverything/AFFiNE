@@ -19,11 +19,6 @@ import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import {
-  isAutoCheckUpdateAtom,
-  isAutoDownloadUpdateAtom,
-  useAppUpdater,
-} from '@toeverything/hooks/use-app-updater';
 import { useAtom, useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo } from 'react';
@@ -106,10 +101,6 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const { appSettings } = useAppSettingHelper();
-  const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
-  const { autoCheckUpdate, autoDownloadUpdate } = appSettings;
-  const isAutoDownload = useAtomValue(isAutoDownloadUpdateAtom);
-  const isAutoCheck = useAtomValue(isAutoCheckUpdateAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
@@ -157,26 +148,6 @@ export const RootAppSidebar = ({
       });
     }
   }, [sidebarOpen]);
-
-  useEffect(() => {
-    if (!environment.isDesktop) {
-      return;
-    }
-
-    if (isAutoCheck !== autoCheckUpdate) {
-      toggleAutoCheck(autoCheckUpdate);
-    }
-    if (isAutoDownload !== autoDownloadUpdate) {
-      toggleAutoDownload(autoDownloadUpdate);
-    }
-  }, [
-    autoCheckUpdate,
-    autoDownloadUpdate,
-    isAutoCheck,
-    isAutoDownload,
-    toggleAutoCheck,
-    toggleAutoDownload,
-  ]);
 
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {

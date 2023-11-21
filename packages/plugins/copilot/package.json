@@ -30,7 +30,7 @@
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^6.0.0",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },

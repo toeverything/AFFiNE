@@ -1,5 +1,6 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
+import { appSettingAtom } from '@toeverything/infra/atom';
 import {
   PreconditionStrategy,
   registerAffineCommand,
@@ -8,7 +9,6 @@ import { type createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
 import { openQuickSearchModalAtom } from '../atoms';
-import { appSettingAtom } from '../atoms/settings';
 import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
 
 export function registerAffineSettingsCommands({
