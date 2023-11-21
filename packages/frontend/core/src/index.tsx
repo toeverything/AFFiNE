@@ -1,3 +1,6 @@
+import './polyfill/ses-lockdown';
+import './polyfill/intl-segmenter';
+
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -36,4 +39,6 @@ async function main() {
   );
 }
 
-await main();
+main().catch(err => {
+  console.error('Failed to bootstrap app', err);
+});
