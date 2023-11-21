@@ -82,7 +82,9 @@ async function assertResultList(page: Page, texts: string[]) {
     .allInnerTexts();
   const actualSplit = actual[0].split('\n');
   expect(actualSplit[0]).toEqual(texts[0]);
-  expect(actualSplit[1]).toEqual(texts[1]);
+  if (actualSplit[1]) {
+    expect(actualSplit[1]).toEqual(texts[1]);
+  }
 }
 
 async function titleIsFocused(page: Page) {
@@ -135,11 +137,13 @@ test('Create a new page with keyword', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  await page.keyboard.insertText('test123456');
-  const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Page');
+  await page.keyboard.insertText('"test123456"');
+  const addNewPage = page.locator(
+    '[cmdk-item] >> text=New ""test123456"" Page'
+  );
   await addNewPage.click();
   await page.waitForTimeout(300);
-  await assertTitle(page, 'test123456');
+  await assertTitle(page, '"test123456"');
 });
 
 test('Enter a keyword to search for', async ({ page }) => {

@@ -24,7 +24,7 @@ import {
   PreconditionStrategy,
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
-import { escape, groupBy } from 'lodash-es';
+import { groupBy } from 'lodash-es';
 import { useCallback, useMemo } from 'react';
 
 import {
@@ -42,6 +42,10 @@ import type { CMDKCommand, CommandContext } from './types';
 interface SearchResultsValue {
   space: string;
   content: string;
+}
+
+export function removeDoubleQuotes(str?: string): string | undefined {
+  return str?.replace(/"/g, '');
 }
 
 export const cmdkQueryAtom = atom('');
@@ -168,7 +172,6 @@ export const pageToCommand = (
   const commandLabel = label || {
     title: title,
   };
-  const escapedTitle = escape(title);
 
   return {
     id: page.id,
@@ -176,13 +179,8 @@ export const pageToCommand = (
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
     value:
-      escapedTitle +
-      valueWrapperStart +
-      page.id +
-      '.' +
-      category +
-      valueWrapperEnd,
-    originalValue: escapedTitle,
+      title + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+    originalValue: title,
     category: category,
     run: () => {
       if (!currentWorkspaceId) {
@@ -429,7 +427,10 @@ export const customCommandFilter = (value: string, search: string) => {
     label = label.replace(contentMatchedWithoutSubtitle, '');
   }
 
-  const originalScore = commandScore(label, search);
+  // use to remove double quotes from a string until this issue is fixed
+  // https://github.com/pacocoursey/cmdk/issues/189
+  const escapedSearch = removeDoubleQuotes(search) || '';
+  const originalScore = commandScore(label, escapedSearch);
 
   // hack to make the page title result always before the content result
   // if the command has matched the title but not the subtitle,

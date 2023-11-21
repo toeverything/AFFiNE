@@ -12,6 +12,7 @@ import {
   cmdkQueryAtom,
   cmdkValueAtom,
   customCommandFilter,
+  removeDoubleQuotes,
   useCMDKCommandGroups,
 } from './data';
 import { HighlightLabel } from './highlight';
@@ -78,11 +79,15 @@ const QuickSearchGroup = ({
                 title: command.label,
               }
             : command.label;
+
+        // use to remove double quotes from a string until this issue is fixed
+        // https://github.com/pacocoursey/cmdk/issues/189
+        const escapeValue = removeDoubleQuotes(command.value);
         return (
           <Command.Item
             key={command.id}
             onSelect={() => onCommendSelect(command)}
-            value={command.value}
+            value={escapeValue}
             data-is-danger={
               command.id === 'editor:page-move-to-trash' ||
               command.id === 'editor:edgeless-move-to-trash'
