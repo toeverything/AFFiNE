@@ -449,6 +449,7 @@ __metadata:
     "@electron-forge/maker-dmg": "npm:^6.4.2"
     "@electron-forge/maker-squirrel": "npm:^6.4.2"
     "@electron-forge/maker-zip": "npm:^6.4.2"
+    "@electron-forge/plugin-auto-unpack-natives": "npm:^6.4.2"
     "@electron-forge/shared-types": "npm:^6.4.2"
     "@electron/remote": "npm:2.0.12"
     "@reforged/maker-appimage": "npm:^3.3.1"
@@ -457,7 +458,7 @@ __metadata:
     async-call-rpc: "npm:^6.3.1"
     builder-util-runtime: "npm:^9.2.1"
     cross-env: "npm:^7.0.3"
-    electron: "npm:^27.0.0"
+    electron: "npm:^27.1.0"
     electron-log: "npm:^5.0.0"
     electron-squirrel-startup: "npm:1.0.0"
     electron-updater: "npm:^6.1.5"
@@ -4198,6 +4199,16 @@ __metadata:
     fs-extra: "npm:^10.0.0"
     got: "npm:^11.8.5"
   checksum: 0a8d85ed20e5e335e0a6a885e1febcb0b667b2a756bc68b82acef6e3dec830e52c26cdd7bba754bc7f06f5ae79573bc01ddf45762a37dc5d5dcd91ecdf132bcc
+  languageName: node
+  linkType: hard
+
+"@electron-forge/plugin-auto-unpack-natives@npm:^6.4.2":
+  version: 6.4.2
+  resolution: "@electron-forge/plugin-auto-unpack-natives@npm:6.4.2"
+  dependencies:
+    "@electron-forge/plugin-base": "npm:6.4.2"
+    "@electron-forge/shared-types": "npm:6.4.2"
+  checksum: 3f541292d2ba4cebf1bc56c7e9b9d38e71a2f57f522753130c4c20d1cff8f2978ed4842f2993ddfed83db4054b2ea87d4a40d588583804b9591796e26e3e7a20
   languageName: node
   linkType: hard
 
@@ -19060,16 +19071,16 @@ __metadata:
   languageName: node
   linkType: soft
 
-"electron@npm:^27.0.0":
-  version: 27.0.0
-  resolution: "electron@npm:27.0.0"
+"electron@npm:^27.0.0, electron@npm:^27.1.0":
+  version: 27.1.0
+  resolution: "electron@npm:27.1.0"
   dependencies:
     "@electron/get": "npm:^2.0.0"
     "@types/node": "npm:^18.11.18"
     extract-zip: "npm:^2.0.1"
   bin:
     electron: cli.js
-  checksum: 486057738b20ec65a7ac9b30d615f94311a6b8ea900f94d1c6668c4e48bb6c9371a9131ee4349a3247031c292f97b8aa85448ec8e95b6998200a28bafe4aa6c2
+  checksum: 8eed880bbda6efd55041cc855b93f632897139557761a913dd56c68a9e24bcb1c222a0b335f70e3df97e9692997f659d62600276bbf3714b374d841fed75bab4
   languageName: node
   linkType: hard
 
