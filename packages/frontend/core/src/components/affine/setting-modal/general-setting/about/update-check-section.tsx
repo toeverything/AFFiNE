@@ -1,6 +1,7 @@
 import { SettingRow } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import {
   downloadProgressAtom,
   isCheckingForUpdatesAtom,
@@ -110,7 +111,7 @@ export const UpdateCheckSection = () => {
 
   const { buttonLabel, subtitle } = useUpdateStatusLabels(checkUpdateStatus);
 
-  const asyncCheckForUpdates = useCallback(async () => {
+  const asyncCheckForUpdates = useAsyncCallback(async () => {
     let statusCheck = CheckUpdateStatus.UNCHECK;
     try {
       const status = await checkForUpdates();
@@ -137,7 +138,7 @@ export const UpdateCheckSection = () => {
     if (updateReady) {
       return quitAndInstall();
     }
-    asyncCheckForUpdates().catch(e => console.error(e));
+    asyncCheckForUpdates();
   }, [
     asyncCheckForUpdates,
     downloadProgress,

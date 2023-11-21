@@ -146,11 +146,9 @@ export const useAppUpdater = () => {
   const toggleAutoDownload = useCallback(
     (enable: boolean) => {
       window.apis?.updater
-        .setConfig([
-          {
-            autoDownloadUpdate: enable,
-          },
-        ])
+        .setConfig({
+          autoDownloadUpdate: enable,
+        })
         .then(() => {
           setIsAutoDownloadUpdate(enable);
         })
@@ -164,11 +162,9 @@ export const useAppUpdater = () => {
   const toggleAutoCheck = useCallback(
     (enable: boolean) => {
       window.apis?.updater
-        .setConfig([
-          {
-            autoCheckUpdate: enable,
-          },
-        ])
+        .setConfig({
+          autoCheckUpdate: enable,
+        })
         .then(() => {
           setIsAutoCheckUpdate(enable);
         })

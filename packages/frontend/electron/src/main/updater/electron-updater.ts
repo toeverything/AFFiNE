@@ -19,9 +19,34 @@ export const quitAndInstall = async () => {
 
 let lastCheckTime = 0;
 
-let allowAutoCheckUpdate = true;
-let allowAutoDownloadUpdate = true;
 let downloading = false;
+
+export type UpdaterConfig = {
+  autoCheckUpdate: boolean;
+  autoDownloadUpdate: boolean;
+};
+
+const config: UpdaterConfig = {
+  autoCheckUpdate: true,
+  autoDownloadUpdate: true,
+};
+
+export const getConfig = async (): Promise<UpdaterConfig> => {
+  return { ...config };
+};
+
+export const setConfig = async (
+  newConfig: Partial<UpdaterConfig> = {}
+): Promise<void> => {
+  config.autoCheckUpdate =
+    newConfig.autoCheckUpdate !== undefined
+      ? newConfig.autoCheckUpdate
+      : config.autoCheckUpdate;
+  config.autoDownloadUpdate =
+    newConfig.autoDownloadUpdate !== undefined
+      ? newConfig.autoDownloadUpdate
+      : config.autoDownloadUpdate;
+};
 
 export const checkForUpdates = async (force = false) => {
   if (disabled) {
@@ -30,7 +55,7 @@ export const checkForUpdates = async (force = false) => {
 
   if (
     force ||
-    (allowAutoCheckUpdate && lastCheckTime + 1000 * 1800 < Date.now())
+    (config.autoCheckUpdate && lastCheckTime + 1000 * 1800 < Date.now())
   ) {
     lastCheckTime = Date.now();
     return await autoUpdater.checkForUpdates();
@@ -49,22 +74,6 @@ export const downloadUpdate = async () => {
   });
   logger.info('Update available, downloading...');
   return;
-};
-
-export const setAllowAutoCheckUpdate = (allow: boolean) => {
-  allowAutoCheckUpdate = allow;
-};
-
-export const setAllowAutoDownloadUpdate = (allow: boolean) => {
-  allowAutoDownloadUpdate = allow;
-};
-
-export const getAllowAutoCheckUpdate = () => {
-  return allowAutoCheckUpdate;
-};
-
-export const getAllowAutoDownloadUpdate = () => {
-  return allowAutoDownloadUpdate;
 };
 
 export const registerUpdater = async () => {
@@ -102,7 +111,7 @@ export const registerUpdater = async () => {
   });
   autoUpdater.on('update-available', info => {
     logger.info('Update available', info);
-    if (allowAutoDownloadUpdate && allowAutoUpdate && !downloading) {
+    if (config.autoDownloadUpdate && allowAutoUpdate && !downloading) {
       downloading = true;
       autoUpdater?.downloadUpdate().catch(e => {
         downloading = false;

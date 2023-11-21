@@ -200,7 +200,7 @@ export type UpdaterHandlers = {
   quitAndInstall: () => Promise<void>;
   downloadUpdate: () => Promise<void>;
   getConfig: () => Promise<UpdaterConfig>;
-  setConfig: ([newConfig]: [Partial<UpdaterConfig>]) => Promise<void>;
+  setConfig: (newConfig: Partial<UpdaterConfig>) => Promise<void>;
   checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 
