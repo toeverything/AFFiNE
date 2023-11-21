@@ -65,4 +65,5 @@ export const newPageButtonLabel = style({
 
 export const headerCreateNewButtonHidden = style({
   opacity: 0,
+  pointerEvents: 'none',
 });
