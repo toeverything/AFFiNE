@@ -10,3 +10,4 @@ import { Metrics } from './metrics';
   controllers: [MetricsController],
 })
 export class MetricsModule {}
+export { Metrics };

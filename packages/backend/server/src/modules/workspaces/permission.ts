@@ -244,18 +244,20 @@ export class PermissionService {
     permission = Permission.Read
   ) {
     // check whether page is public
-    const count = await this.prisma.workspacePage.count({
-      where: {
-        workspaceId: ws,
-        pageId: page,
-        public: true,
-      },
-    });
+    if (permission === Permission.Read) {
+      const count = await this.prisma.workspacePage.count({
+        where: {
+          workspaceId: ws,
+          pageId: page,
+          public: true,
+        },
+      });
 
-    // page is public
-    // accessible
-    if (count > 0) {
-      return true;
+      // page is public
+      // accessible
+      if (count > 0) {
+        return true;
+      }
     }
 
     if (user) {
