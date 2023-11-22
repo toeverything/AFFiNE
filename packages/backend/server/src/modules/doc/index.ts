@@ -1,7 +1,6 @@
 import { DynamicModule } from '@nestjs/common';
 
 import { DocManager } from './manager';
-import { RedisDocManager } from './redis-manager';
 
 export class DocModule {
   /**
@@ -17,9 +16,7 @@ export class DocModule {
         },
         {
           provide: DocManager,
-          useClass: globalThis.AFFiNE.redis.enabled
-            ? RedisDocManager
-            : DocManager,
+          useClass: DocManager,
         },
       ],
       exports: [DocManager],
