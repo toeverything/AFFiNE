@@ -362,6 +362,14 @@ export interface AFFiNEConfig {
        */
       experimentalMergeWithJwstCodec: boolean;
     };
+    history: {
+      /**
+       * How long the buffer time of creating a new history snapshot when doc get updated.
+       *
+       * in {ms}
+       */
+      interval: number;
+    };
   };
 
   payment: {

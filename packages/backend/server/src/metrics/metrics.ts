@@ -25,4 +25,7 @@ export class Metrics implements OnModuleDestroy {
 
   authCounter = metricsCreator.counter('auth');
   authFailCounter = metricsCreator.counter('auth_fail', ['reason']);
+
+  docHistoryCounter = metricsCreator.counter('doc_history_created');
+  docRecoverCounter = metricsCreator.counter('doc_history_recovered');
 }

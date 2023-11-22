@@ -192,6 +192,7 @@ type WorkspaceType {
 
   """Public pages of a workspace"""
   publicPages: [WorkspacePage!]!
+  histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
 }
 
 type InvitationWorkspaceType {
@@ -230,6 +231,12 @@ type WorkspacePage {
 enum PublicPageMode {
   Page
   Edgeless
+}
+
+type DocHistoryType {
+  workspaceId: String!
+  id: String!
+  timestamp: DateTime!
 }
 
 type Query {
@@ -288,6 +295,7 @@ type Mutation {
   publishPage(workspaceId: String!, pageId: String!, mode: PublicPageMode = Page): WorkspacePage!
   revokePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "use revokePublicPage")
   revokePublicPage(workspaceId: String!, pageId: String!): WorkspacePage!
+  recoverDoc(workspaceId: String!, guid: String!, timestamp: DateTime!): DateTime!
 
   """Upload user avatar"""
   uploadAvatar(avatar: Upload!): UserType!

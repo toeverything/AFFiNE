@@ -219,12 +219,12 @@ model Update {
 model SnapshotHistory {
   workspaceId String   @map("workspace_id") @db.VarChar(36)
   id          String   @map("guid") @db.VarChar(36)
-  seq         Int      @db.Integer
+  timestamp   DateTime @db.Timestamptz(6)
   blob        Bytes    @db.ByteA
   state       Bytes?   @db.ByteA
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiredAt   DateTime @map("expired_at") @db.Timestamptz(6)
 
-  @@id([workspaceId, id, seq])
+  @@id([workspaceId, id, timestamp])
   @@map("snapshot_histories")
 }
 

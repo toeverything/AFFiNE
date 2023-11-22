@@ -1,5 +1,6 @@
 import { DynamicModule, Type } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { GqlModule } from '../graphql.module';
 import { AuthModule } from './auth';
@@ -23,6 +24,7 @@ switch (SERVER_FLAVOR) {
     break;
   case 'graphql':
     BusinessModules.push(
+      ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,
@@ -34,6 +36,7 @@ switch (SERVER_FLAVOR) {
   case 'allinone':
   default:
     BusinessModules.push(
+      ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,

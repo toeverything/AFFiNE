@@ -1,5 +1,6 @@
 import { DynamicModule } from '@nestjs/common';
 
+import { DocHistoryManager } from './history';
 import { DocManager } from './manager';
 
 export class DocModule {
@@ -14,12 +15,10 @@ export class DocModule {
           provide: 'DOC_MANAGER_AUTOMATION',
           useValue: automation,
         },
-        {
-          provide: DocManager,
-          useClass: DocManager,
-        },
+        DocManager,
+        DocHistoryManager,
       ],
-      exports: [DocManager],
+      exports: [DocManager, DocHistoryManager],
     };
   }
 
@@ -36,4 +35,4 @@ export class DocModule {
   }
 }
 
-export { DocManager };
+export { DocHistoryManager, DocManager };
