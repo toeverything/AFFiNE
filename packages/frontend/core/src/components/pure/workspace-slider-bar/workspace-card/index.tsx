@@ -5,6 +5,7 @@ import {
 } from '@affine/workspace/providers';
 import {
   CloudWorkspaceIcon,
+  InformationFillDuotoneIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
   UnsyncIcon,
@@ -67,7 +68,11 @@ const UnSyncWorkspaceStatus = () => {
 const LocalWorkspaceStatus = () => {
   return (
     <>
-      <LocalWorkspaceIcon />
+      {!environment.isDesktop ? (
+        <InformationFillDuotoneIcon data-warning-color="true" />
+      ) : (
+        <LocalWorkspaceIcon />
+      )}
       Local
     </>
   );
@@ -109,6 +114,9 @@ const WorkspaceStatus = ({
   const content = useMemo(() => {
     // TODO: add i18n
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
+      if (!environment.isDesktop) {
+        return 'This is a local demo workspace.';
+      }
       return 'Saved locally';
     }
     if (!isOnline) {
