@@ -9,21 +9,25 @@ import {
 } from './payment/service';
 import { UserType } from './users';
 
+const YEAR = 1000 * 60 * 60 * 24 * 30 * 12;
+
 @Resolver(() => UserType)
 export class SelfHostedDummyResolver {
+  private readonly start = new Date();
+  private readonly end = new Date(Number(this.start) + YEAR);
   constructor() {}
 
-  @ResolveField(() => UserSubscriptionType, { nullable: true })
+  @ResolveField(() => UserSubscriptionType)
   async subscription() {
     return {
       stripeSubscriptionId: 'dummy',
       plan: SubscriptionPlan.SelfHosted,
-      recurring: SubscriptionRecurring.Monthly,
+      recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
-      start: new Date(),
-      end: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      start: this.start,
+      end: this.end,
+      createdAt: this.start,
+      updatedAt: this.start,
     };
   }
 }
