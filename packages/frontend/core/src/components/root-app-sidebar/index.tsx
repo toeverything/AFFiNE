@@ -1,6 +1,7 @@
 import { AnimatedDeleteIcon } from '@affine/component';
 import {
   AddPageButton,
+  AppDownloadButton,
   AppSidebar,
   appSidebarOpenAtom,
   AppUpdaterButton,
@@ -266,7 +267,7 @@ export const RootAppSidebar = ({
         )}
       </SidebarScrollableContainer>
       <SidebarContainer>
-        {environment.isDesktop && <AppUpdaterButton />}
+        {environment.isDesktop ? <AppUpdaterButton /> : <AppDownloadButton />}
         <div style={{ height: '4px' }} />
         <AddPageButton onClick={onClickNewPage} />
       </SidebarContainer>
