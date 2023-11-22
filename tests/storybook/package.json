@@ -31,12 +31,12 @@
     "wait-on": "^7.0.1"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-20231122080937-d46dd0bc-nightly",
-    "@blocksuite/blocks": "0.0.0-20231122080937-d46dd0bc-nightly",
-    "@blocksuite/editor": "0.0.0-20231122080937-d46dd0bc-nightly",
-    "@blocksuite/global": "0.0.0-20231122080937-d46dd0bc-nightly",
+    "@blocksuite/block-std": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/blocks": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/editor": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/global": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@blocksuite/icons": "2.1.35",
-    "@blocksuite/store": "0.0.0-20231122080937-d46dd0bc-nightly",
+    "@blocksuite/store": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@dnd-kit/sortable": "^7.0.2",
     "@tomfreudenberg/next-auth-mock": "^0.5.6",
     "chromatic": "^7.4.0",
