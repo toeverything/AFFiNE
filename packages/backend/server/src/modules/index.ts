@@ -11,7 +11,11 @@ import { WorkspaceModule } from './workspaces';
 
 const { SERVER_FLAVOR } = process.env;
 
-const BusinessModules: (Type | DynamicModule)[] = [];
+const BusinessModules: (Type | DynamicModule)[] = [
+  EventEmitterModule.forRoot({
+    global: true,
+  }),
+];
 
 switch (SERVER_FLAVOR) {
   case 'sync':
@@ -19,9 +23,6 @@ switch (SERVER_FLAVOR) {
     break;
   case 'graphql':
     BusinessModules.push(
-      EventEmitterModule.forRoot({
-        global: true,
-      }),
       GqlModule,
       WorkspaceModule,
       UsersModule,
@@ -33,9 +34,6 @@ switch (SERVER_FLAVOR) {
   case 'allinone':
   default:
     BusinessModules.push(
-      EventEmitterModule.forRoot({
-        global: true,
-      }),
       GqlModule,
       WorkspaceModule,
       UsersModule,

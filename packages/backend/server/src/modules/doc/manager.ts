@@ -5,6 +5,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Snapshot, Update } from '@prisma/client';
 import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
@@ -70,7 +71,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     private readonly db: PrismaService,
     private readonly config: Config,
     private readonly metrics: Metrics,
-    private readonly cache: Cache
+    private readonly cache: Cache,
+    private readonly event: EventEmitter2
   ) {}
 
   onModuleInit() {
@@ -411,7 +413,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     workspaceId: string,
     guid: string,
     doc: Doc,
-    seq?: number
+    initialSeq?: number
   ) {
     const blob = Buffer.from(encodeStateAsUpdate(doc));
     const state = Buffer.from(encodeStateVector(doc));
@@ -435,7 +437,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
         workspaceId,
         blob,
         state,
-        seq,
+        seq: initialSeq,
       },
       update: {
         blob,
@@ -479,6 +481,10 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       ...updates.map(u => u.blob)
     );
 
+    if (snapshot) {
+      this.event.emit('doc:manager:snapshot:beforeUpdate', snapshot);
+    }
+
     await this.upsert(workspaceId, id, doc, last.seq);
     this.logger.debug(
       `Squashed ${updates.length} updates for ${id} in workspace ${workspaceId}`
@@ -519,6 +525,9 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       // reset
       if (seq >= MAX_SEQ_NUM) {
         await this.db.snapshot.update({
+          select: {
+            seq: true,
+          },
           where: {
             id_workspaceId: {
               workspaceId,
