@@ -45,7 +45,6 @@
     "@radix-ui/react-scroll-area": "^1.0.5",
     "@radix-ui/react-select": "^2.0.0",
     "@react-hookz/web": "^23.1.0",
-    "@toeverything/components": "^0.0.46",
     "@toeverything/theme": "^0.7.20",
     "@vanilla-extract/css": "^1.13.0",
     "@vanilla-extract/dynamic": "^2.0.3",
