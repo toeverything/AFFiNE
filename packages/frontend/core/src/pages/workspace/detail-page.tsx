@@ -158,7 +158,7 @@ export const DetailPage = (): ReactElement => {
   // wait for page to be loaded
   useEffect(() => {
     if (page) {
-      if (!page.loaded) {
+      if (!page.isEmpty) {
         setPageLoaded(true);
       } else {
         setPageLoaded(false);
