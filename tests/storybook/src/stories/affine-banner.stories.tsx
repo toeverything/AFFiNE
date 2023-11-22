@@ -27,6 +27,9 @@ export const Download: StoryFn = () => {
   return (
     <div>
       <DownloadTips
+        isLoggedIn={false}
+        onLogin={() => {}}
+        onEnableCloud={() => {}}
         onClose={() => {
           setIsClosed(false);
         }}

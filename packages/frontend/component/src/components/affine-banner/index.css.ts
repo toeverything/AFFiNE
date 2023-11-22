@@ -1,13 +1,4 @@
-import { keyframes, style } from '@vanilla-extract/css';
-
-const slideDown = keyframes({
-  '0%': {
-    height: '0px',
-  },
-  '100%': {
-    height: '44px',
-  },
-});
+import { style } from '@vanilla-extract/css';
 
 export const browserWarningStyle = style({
   backgroundColor: 'var(--affine-background-warning-color)',
@@ -36,52 +27,31 @@ export const closeIconStyle = style({
   position: 'relative',
   zIndex: 1,
 });
-export const downloadTipContainerStyle = style({
-  backgroundColor: 'var(--affine-primary-color)',
-  color: 'var(--affine-white)',
+export const downloadTipContainer = style({
+  backgroundColor: 'var(--affine-background-error-color)',
+  color: 'var(--affine-error-color)',
   width: '100%',
-  height: '44px',
-  fontSize: 'var(--affine-font-base)',
+  fontSize: 'var(--affine-font-sm)',
+  fontWeight: '700',
   display: 'flex',
-  justifyContent: 'center',
+  justifyContent: 'space-between',
   alignItems: 'center',
-  position: 'relative',
-  animation: `${slideDown} .3s ease-in-out forwards`,
+  padding: '12px 16px',
+  position: 'sticky',
+  gap: '16px',
+  containerType: 'inline-size',
 });
-export const downloadTipStyle = style({
+
+export const downloadMessage = style({
+  color: 'var(--affine-error-color)',
+  flexGrow: 1,
+  flexShrink: 1,
+});
+
+export const downloadRightItem = style({
   display: 'flex',
-  justifyContent: 'center',
+  flexShrink: 0,
+  justifyContent: 'space-between',
   alignItems: 'center',
-});
-export const downloadTipIconStyle = style({
-  color: 'var(--affine-white)',
-  width: '24px',
-  height: '24px',
-  fontSize: '24px',
-  position: 'relative',
-  zIndex: 1,
-});
-export const downloadCloseButtonStyle = style({
-  color: 'var(--affine-white)',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  position: 'absolute',
-  right: '24px',
-});
-export const downloadMessageStyle = style({
-  color: 'var(--affine-white)',
-  marginLeft: '8px',
-});
-export const linkStyle = style({
-  color: 'var(--affine-white)',
-  textDecoration: 'underline',
-  ':hover': {
-    textDecoration: 'underline',
-  },
-  ':visited': {
-    color: 'var(--affine-white)',
-    textDecoration: 'underline',
-  },
+  gap: '16px',
 });

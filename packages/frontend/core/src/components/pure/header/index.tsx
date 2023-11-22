@@ -10,7 +10,6 @@ import type { ReactNode } from 'react';
 import { forwardRef, useRef } from 'react';
 
 import * as style from './style.css';
-import { TopTip } from './top-tip';
 import { WindowsAppControls } from './windows-app-controls';
 
 interface HeaderPros {
@@ -49,61 +48,58 @@ export const Header = forwardRef<HTMLDivElement, HeaderPros>(function Header(
   const open = useAtomValue(appSidebarOpenAtom);
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
   return (
-    <>
-      <TopTip />
+    <div
+      className={clsx(style.header, bottomBorder && style.bottomBorder)}
+      // data-has-warning={showWarning}
+      data-open={open}
+      data-sidebar-floating={appSidebarFloating}
+      data-testid="header"
+      ref={ref}
+    >
       <div
-        className={clsx(style.header, bottomBorder && style.bottomBorder)}
-        // data-has-warning={showWarning}
-        data-open={open}
-        data-sidebar-floating={appSidebarFloating}
-        data-testid="header"
-        ref={ref}
+        className={clsx(style.headerSideContainer, {
+          block: isTinyScreen,
+        })}
       >
         <div
-          className={clsx(style.headerSideContainer, {
-            block: isTinyScreen,
-          })}
+          className={clsx(
+            style.headerItem,
+            'top-item',
+            !open ? 'top-item-visible' : ''
+          )}
         >
-          <div
-            className={clsx(
-              style.headerItem,
-              'top-item',
-              !open ? 'top-item-visible' : ''
-            )}
-          >
-            <div ref={sidebarSwitchRef}>
-              <SidebarSwitch show={!open} />
-            </div>
-          </div>
-          <div className={clsx(style.headerItem, 'left')}>
-            <div ref={leftSlotRef}>{left}</div>
+          <div ref={sidebarSwitchRef}>
+            <SidebarSwitch show={!open} />
           </div>
         </div>
-        <div
-          className={clsx({
-            [style.headerCenter]: center,
-            'is-window': isWindowsDesktop,
-          })}
-          ref={centerSlotRef}
-        >
-          {center}
-        </div>
-        <div
-          className={clsx(style.headerSideContainer, 'right', {
-            block: isTinyScreen,
-          })}
-        >
-          <div className={clsx(style.headerItem, 'top-item')}>
-            <div ref={windowControlsRef}>
-              {isWindowsDesktop ? <WindowsAppControls /> : null}
-            </div>
-          </div>
-          <div className={clsx(style.headerItem, 'right')}>
-            <div ref={rightSlotRef}>{right}</div>
-          </div>
+        <div className={clsx(style.headerItem, 'left')}>
+          <div ref={leftSlotRef}>{left}</div>
         </div>
       </div>
-    </>
+      <div
+        className={clsx({
+          [style.headerCenter]: center,
+          'is-window': isWindowsDesktop,
+        })}
+        ref={centerSlotRef}
+      >
+        {center}
+      </div>
+      <div
+        className={clsx(style.headerSideContainer, 'right', {
+          block: isTinyScreen,
+        })}
+      >
+        <div className={clsx(style.headerItem, 'top-item')}>
+          <div ref={windowControlsRef}>
+            {isWindowsDesktop ? <WindowsAppControls /> : null}
+          </div>
+        </div>
+        <div className={clsx(style.headerItem, 'right')}>
+          <div ref={rightSlotRef}>{right}</div>
+        </div>
+      </div>
+    </div>
   );
 });
 
