@@ -17,7 +17,7 @@ class CustomAttachmentService extends AttachmentService {
   }
 }
 
-export function getPresets() {
+function getPresets() {
   const pageModePreset = PagePreset.map(preset => {
     if (preset.schema.model.flavour === 'affine:attachment') {
       return {
@@ -42,3 +42,5 @@ export function getPresets() {
     edgelessModePreset,
   };
 }
+
+export const editorPresets = getPresets();

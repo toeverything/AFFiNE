@@ -21,7 +21,7 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
-import { getPresets } from './preset';
+import { editorPresets } from './preset';
 
 interface BlockElement extends Element {
   path: string[];
@@ -104,11 +104,9 @@ const BlockSuiteEditorImpl = ({
 
   if (editor.page !== page) {
     editor.page = page;
+    editor.pagePreset = editorPresets.pageModePreset;
+    editor.edgelessPreset = editorPresets.edgelessModePreset;
   }
-
-  const presets = getPresets();
-  editor.pagePreset = presets.pageModePreset;
-  editor.edgelessPreset = presets.edgelessModePreset;
 
   useLayoutEffect(() => {
     if (editor) {
