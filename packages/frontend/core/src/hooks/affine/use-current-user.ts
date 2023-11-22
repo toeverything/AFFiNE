@@ -60,7 +60,7 @@ export function useCurrentUser(): CheckedUser {
         // login succeed but the session request failed then.
         // also need a error boundary to handle this error.
         throw new SessionFetchErrorRightAfterLoginOrSignUp(
-          'First session should not be null',
+          'Fetching session failed',
           () => {
             getSession()
               .then(session => {

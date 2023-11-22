@@ -15,7 +15,7 @@ export const errorDetailStyle = style({
 });
 
 export const errorTitle = style({
-  fontSize: '36px',
+  fontSize: '32px',
   lineHeight: '44px',
   fontWeight: 700,
 });

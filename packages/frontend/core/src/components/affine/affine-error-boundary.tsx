@@ -20,7 +20,7 @@ import { useLocation, useParams } from 'react-router-dom';
 
 import {
   RecoverableError,
-  SessionFetchErrorRightAfterLoginOrSignUp,
+  type SessionFetchErrorRightAfterLoginOrSignUp,
 } from '../../unexpected-application-state/errors';
 import {
   errorDescription,
@@ -33,7 +33,9 @@ import {
 } from './affine-error-boundary.css';
 import errorBackground from './error-status.assets.svg';
 
-export type AffineErrorBoundaryProps = React.PropsWithChildren;
+export type AffineErrorBoundaryProps = React.PropsWithChildren & {
+  height?: number | string;
+};
 
 type AffineError =
   | QueryParamError
@@ -81,13 +83,17 @@ export class AffineErrorBoundary extends Component<
       if (this.state.error.canRetry()) {
         this.state.error.retry();
         this.setState({
-          error: this.state.error,
+          error: null,
           canRetryRecoveredError: this.state.error.canRetry(),
         });
       } else {
         document.location.reload();
       }
     }
+  };
+
+  private readonly handleRefresh = () => {
+    this.setState({ error: null });
   };
 
   static getDerivedStateFromError(
@@ -121,14 +127,14 @@ export class AffineErrorBoundary extends Component<
             </>
           </>
         );
-      } else if (error instanceof SessionFetchErrorRightAfterLoginOrSignUp) {
+      } else if (error instanceof RecoverableError) {
         const retryButtonDesc = this.state.canRetryRecoveredError
           ? 'Refetch'
           : 'Reload';
         errorDetail = (
           <>
             <h1 className={errorTitle}>Sorry.. there was an error</h1>
-            <span className={errorDescription}> Fetching session failed </span>
+            <span className={errorDescription}> {error.message} </span>
             <span className={errorDescription}>
               If you are still experiencing this issue, please{' '}
               <a
@@ -151,13 +157,22 @@ export class AffineErrorBoundary extends Component<
       } else {
         errorDetail = (
           <>
-            <h1>Sorry.. there was an error</h1>
-            {error.message ?? error.toString()}
+            <h1 className={errorTitle}>Sorry.. there was an error</h1>
+            <code className={errorDescription}>
+              {error.message ?? error.toString()}
+            </code>
+            <Button
+              onClick={this.handleRefresh}
+              className={errorRetryButton}
+              type="primary"
+            >
+              Refresh
+            </Button>
           </>
         );
       }
       return (
-        <div className={errorLayout}>
+        <div className={errorLayout} style={{ height: this.props.height }}>
           <div className={errorDetailStyle}>{errorDetail}</div>
           <span className={errorDivider} />
           <div

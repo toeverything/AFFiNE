@@ -17,6 +17,7 @@ import {
   useParams,
 } from 'react-router-dom';
 
+import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { performanceLogger, performanceRenderLogger } from '../../shared';
 
@@ -82,8 +83,10 @@ export const Component = (): ReactElement => {
 
   const incompatible = useLoaderData();
   return (
-    <WorkspaceLayout incompatible={!!incompatible}>
-      <Outlet />
-    </WorkspaceLayout>
+    <AffineErrorBoundary height="100vh">
+      <WorkspaceLayout incompatible={!!incompatible}>
+        <Outlet />
+      </WorkspaceLayout>
+    </AffineErrorBoundary>
   );
 };
