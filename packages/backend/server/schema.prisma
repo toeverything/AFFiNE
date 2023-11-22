@@ -164,12 +164,14 @@ model VerificationToken {
 }
 
 model Blob {
-  id          Int      @id @default(autoincrement()) @db.Integer
-  hash        String   @db.VarChar
-  workspaceId String   @map("workspace_id") @db.VarChar
-  blob        Bytes    @db.ByteA
+  id          Int       @id @default(autoincrement()) @db.Integer
+  hash        String    @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  blob        Bytes     @db.ByteA
   length      BigInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  // not for keeping, but for snapshot history
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@unique([workspaceId, hash])
   @@map("blobs")
@@ -191,8 +193,8 @@ model OptimizedBlob {
 // the latest snapshot of each doc that we've seen
 // Snapshot + Updates are the latest state of the doc
 model Snapshot {
-  id          String   @default(uuid()) @map("guid") @db.VarChar
   workspaceId String   @map("workspace_id") @db.VarChar
+  id          String   @default(uuid()) @map("guid") @db.VarChar
   blob        Bytes    @db.ByteA
   seq         Int      @default(0) @db.Integer
   state       Bytes?   @db.ByteA
@@ -212,6 +214,18 @@ model Update {
 
   @@id([workspaceId, id, seq])
   @@map("updates")
+}
+
+model SnapshotHistory {
+  workspaceId String   @map("workspace_id") @db.VarChar(36)
+  id          String   @map("guid") @db.VarChar(36)
+  seq         Int      @db.Integer
+  blob        Bytes    @db.ByteA
+  state       Bytes?   @db.ByteA
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@id([workspaceId, id, seq])
+  @@map("snapshot_histories")
 }
 
 model NewFeaturesWaitingList {
