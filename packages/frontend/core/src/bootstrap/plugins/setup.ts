@@ -156,12 +156,8 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     },
     '@blocksuite/global/utils': import('@blocksuite/global/utils'),
     '@toeverything/infra/atom': import('@toeverything/infra/atom'),
-    '@toeverything/components/button': import(
-      '@toeverything/components/button'
-    ),
-    '@toeverything/components/tooltip': import(
-      '@toeverything/components/tooltip'
-    ),
+    '@affine/component/ui/button': import('@affine/component/ui/button'),
+    '@affine/component/ui/tooltip': import('@affine/component/ui/tooltip'),
   });
 
   // pluginName -> module -> importName -> updater[]
