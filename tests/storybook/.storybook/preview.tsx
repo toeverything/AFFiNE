@@ -1,7 +1,6 @@
 import 'ses';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
-import '@toeverything/components/style.css';
 import { createI18n } from '@affine/i18n';
 import MockSessionContext, {
   mockAuthStates,
