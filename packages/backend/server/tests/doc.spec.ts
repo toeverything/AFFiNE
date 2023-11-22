@@ -7,6 +7,7 @@ import { register } from 'prom-client';
 import * as Sinon from 'sinon';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
+import { CacheModule } from '../src/cache';
 import { Config, ConfigModule } from '../src/config';
 import { MetricsModule } from '../src/metrics';
 import { DocManager, DocModule } from '../src/modules/doc';
@@ -18,6 +19,7 @@ const createModule = () => {
     imports: [
       PrismaModule,
       MetricsModule,
+      CacheModule,
       ConfigModule.forRoot(),
       DocModule.forRoot(),
     ],
