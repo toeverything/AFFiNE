@@ -55,5 +55,5 @@
     "@blocksuite/icons": "2.1.34",
     "@blocksuite/store": "*"
   },
-  "version": "0.10.3-canary.1"
+  "version": "0.10.3-canary.2"
 }
