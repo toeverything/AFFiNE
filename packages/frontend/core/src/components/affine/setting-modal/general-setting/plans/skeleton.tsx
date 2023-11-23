@@ -1,4 +1,4 @@
-import { Skeleton } from '@mui/material';
+import { Skeleton } from '@affine/component';
 
 import { PlanLayout } from './layout';
 import * as styles from './skeleton.css';

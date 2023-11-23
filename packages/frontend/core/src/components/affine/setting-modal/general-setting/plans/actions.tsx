@@ -4,9 +4,10 @@ import {
   resumeSubscriptionMutation,
 } from '@affine/graphql';
 import { useMutation } from '@affine/workspace/affine/gql';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 import { ConfirmLoadingModal, DowngradeModal } from './modals';
 
@@ -30,8 +31,8 @@ export const CancelAction = ({
     mutation: cancelSubscriptionMutation,
   });
 
-  const downgrade = useCallback(() => {
-    trigger(
+  const downgrade = useAsyncCallback(async () => {
+    await trigger(
       { idempotencyKey },
       {
         onSuccess: data => {
@@ -78,8 +79,8 @@ export const ResumeAction = ({
     mutation: resumeSubscriptionMutation,
   });
 
-  const resume = useCallback(() => {
-    trigger(
+  const resume = useAsyncCallback(async () => {
+    await trigger(
       { idempotencyKey },
       {
         onSuccess: data => {

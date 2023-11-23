@@ -11,9 +11,10 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { noop } from 'foxact/noop';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { toast } from '../../../utils';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
@@ -52,7 +53,7 @@ const PublishPanelAffine = (props: PublishPanelAffineProps) => {
     );
   }, []);
 
-  const copyUrl = useCallback(async () => {
+  const copyUrl = useAsyncCallback(async () => {
     await navigator.clipboard.writeText(shareUrl);
     toast(t['Copied link to clipboard']());
   }, [shareUrl, t]);

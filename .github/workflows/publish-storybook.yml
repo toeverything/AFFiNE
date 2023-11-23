@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - canary
   pull_request:
     branches:
-      - master
+      - canary
     paths-ignore:
       - README.md
       - .github/**

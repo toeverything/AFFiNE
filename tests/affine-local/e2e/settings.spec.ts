@@ -110,11 +110,11 @@ test('Different workspace should have different name in the setting panel', asyn
   await createLocalWorkspace({ name: 'New Workspace 3' }, page);
   await openSettingModal(page);
   await page.getByTestId('current-workspace-label').click();
-  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
     'New Workspace 3'
   );
   await page.getByText('New Workspace 2').click();
-  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
     'New Workspace 2'
   );
 });

@@ -1,5 +1,6 @@
 import { DynamicModule, Type } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { GqlModule } from '../graphql.module';
 import { AuthModule } from './auth';
@@ -11,7 +12,11 @@ import { WorkspaceModule } from './workspaces';
 
 const { SERVER_FLAVOR } = process.env;
 
-const BusinessModules: (Type | DynamicModule)[] = [];
+const BusinessModules: (Type | DynamicModule)[] = [
+  EventEmitterModule.forRoot({
+    global: true,
+  }),
+];
 
 switch (SERVER_FLAVOR) {
   case 'sync':
@@ -19,9 +24,7 @@ switch (SERVER_FLAVOR) {
     break;
   case 'graphql':
     BusinessModules.push(
-      EventEmitterModule.forRoot({
-        global: true,
-      }),
+      ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,
@@ -33,9 +36,7 @@ switch (SERVER_FLAVOR) {
   case 'allinone':
   default:
     BusinessModules.push(
-      EventEmitterModule.forRoot({
-        global: true,
-      }),
+      ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,

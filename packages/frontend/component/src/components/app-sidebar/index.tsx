@@ -1,11 +1,11 @@
-import { Skeleton } from '@mui/material';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import debounce from 'lodash/debounce';
+import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { Skeleton } from '../../ui/skeleton';
 import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
@@ -159,6 +159,7 @@ export const AppSidebarFallback = (): ReactElement | null => {
 };
 
 export * from './add-page-button';
+export * from './app-download-button';
 export * from './app-updater-button';
 export * from './category-divider';
 export * from './index.css';

@@ -31,11 +31,10 @@
     "react-i18next": "^13.3.0"
   },
   "devDependencies": {
-    "@types/node": "^18.18.5",
     "@types/prettier": "^3.0.0",
     "prettier": "^3.0.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },
-  "version": "0.10.2"
+  "version": "0.10.3-canary.2"
 }

@@ -57,10 +57,10 @@ export function parseEnvValue(value: string | undefined, type?: EnvConfigType) {
   return type === 'int'
     ? int(value)
     : type === 'float'
-    ? float(value)
-    : type === 'boolean'
-    ? boolean(value)
-    : value;
+      ? float(value)
+      : type === 'boolean'
+        ? boolean(value)
+        : value;
 }
 
 /**
@@ -361,6 +361,14 @@ export interface AFFiNEConfig {
        * This is an experimental feature, and aimed to check the correctness of JwstCodec.
        */
       experimentalMergeWithJwstCodec: boolean;
+    };
+    history: {
+      /**
+       * How long the buffer time of creating a new history snapshot when doc get updated.
+       *
+       * in {ms}
+       */
+      interval: number;
     };
   };
 

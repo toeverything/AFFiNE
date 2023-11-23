@@ -193,7 +193,7 @@ export const AFFiNEWorkspaceList = ({
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
-  const onAddWorkspace = useCallback(async () => {
+  const onAddWorkspace = useCallback(() => {
     setOpenCreateWorkspaceModal('add');
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);

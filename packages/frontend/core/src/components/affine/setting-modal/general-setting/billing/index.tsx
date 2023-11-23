@@ -1,3 +1,4 @@
+import { Skeleton } from '@affine/component';
 import { Pagination } from '@affine/component/member-components';
 import {
   SettingHeader,
@@ -19,9 +20,9 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { Skeleton } from '@mui/material';
 import { Button, IconButton } from '@toeverything/components/button';
 import { Loading } from '@toeverything/components/loading';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
@@ -105,10 +106,10 @@ const SubscriptionSettings = () => {
     plan === SubscriptionPlan.Free
       ? '0'
       : price
-      ? recurring === SubscriptionRecurring.Monthly
-        ? String(price.amount / 100)
-        : String(price.yearlyAmount / 100)
-      : '?';
+        ? recurring === SubscriptionRecurring.Monthly
+          ? String(price.amount / 100)
+          : String(price.yearlyAmount / 100)
+        : '?';
 
   const t = useAFFiNEI18N();
 
@@ -255,8 +256,8 @@ const PaymentMethodUpdater = () => {
   });
   const t = useAFFiNEI18N();
 
-  const update = useCallback(() => {
-    trigger(null, {
+  const update = useAsyncCallback(async () => {
+    await trigger(null, {
       onSuccess: data => {
         window.open(data.createCustomerPortal, '_blank', 'noopener noreferrer');
       },

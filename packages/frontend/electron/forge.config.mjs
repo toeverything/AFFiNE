@@ -122,8 +122,10 @@ export default {
         schemes: [productName.toLowerCase()],
       },
     ],
+    asar: true,
   },
   makers,
+  plugins: [{ name: '@electron-forge/plugin-auto-unpack-natives', config: {} }],
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build

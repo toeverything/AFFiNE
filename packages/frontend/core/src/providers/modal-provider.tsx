@@ -1,5 +1,6 @@
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback } from 'react';
@@ -154,13 +155,10 @@ export const SignOutConfirmModal = () => {
   const { jumpToIndex } = useNavigateHelper();
   const [open, setOpen] = useAtom(openSignOutModalAtom);
 
-  const onConfirm = useCallback(async () => {
+  const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
-    signOutCloud()
-      .then(() => {
-        jumpToIndex();
-      })
-      .catch(console.error);
+    await signOutCloud();
+    jumpToIndex();
   }, [jumpToIndex, setOpen]);
 
   return (

@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Outline plugin",
-  "version": "0.10.2",
+  "version": "0.10.3-canary.2",
   "scripts": {
     "dev": "af dev",
     "build": "af build"
@@ -17,12 +17,12 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "2.1.35",
+    "@blocksuite/icons": "2.1.36",
     "@toeverything/components": "^0.0.46"
   },
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   }

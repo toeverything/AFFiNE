@@ -69,6 +69,31 @@ AffineNewPageButton.play = async ({ canvasElement }) => {
 const testTags = [
   {
     color: 'red',
+    id: 'test-tag-id-cccc',
+    value: 'cccccccccccccccc',
+  },
+  {
+    color: 'red',
+    id: 'test-tag-id-a',
+    value: 'a',
+  },
+  {
+    color: 'red',
+    id: 'test-tag-id-b',
+    value: 'b',
+  },
+  {
+    color: 'red',
+    id: 'test-tag-id-c',
+    value: 'c',
+  },
+  {
+    color: 'red',
+    id: 'test-tag-id-d',
+    value: 'd',
+  },
+  {
+    color: 'red',
     id: 'test-tag-id-0',
     value: 'foo',
   },

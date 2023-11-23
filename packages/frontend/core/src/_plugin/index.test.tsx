@@ -1,3 +1,6 @@
+import '../polyfill/ses-lockdown';
+import '../polyfill/intl-segmenter';
+
 import { assertExists } from '@blocksuite/global/utils';
 import {
   getCurrentStore,

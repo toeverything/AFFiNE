@@ -1,4 +1,3 @@
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import {
@@ -6,15 +5,22 @@ import {
   currentWorkspaceIdAtom,
   getCurrentStore,
 } from '@toeverything/infra/atom';
-import { guidCompatibilityFix } from '@toeverything/infra/blocksuite';
-import type { ReactElement } from 'react';
+import type { MigrationPoint } from '@toeverything/infra/blocksuite';
+import {
+  checkWorkspaceCompatibility,
+  guidCompatibilityFix,
+} from '@toeverything/infra/blocksuite';
+import { useSetAtom } from 'jotai';
+import { type ReactElement, useEffect } from 'react';
 import {
   type LoaderFunction,
   Outlet,
   redirect,
   useLoaderData,
+  useParams,
 } from 'react-router-dom';
 
+import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { performanceLogger, performanceRenderLogger } from '../../shared';
 
@@ -24,6 +30,12 @@ export const loader: LoaderFunction = async args => {
   workspaceLoaderLogger.info('start');
 
   const rootStore = getCurrentStore();
+
+  if (args.params.workspaceId) {
+    localStorage.setItem('last_workspace_id', args.params.workspaceId);
+    rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
+  }
+
   const meta = await rootStore.get(rootWorkspacesMetadataAtom);
   workspaceLoaderLogger.info('meta loaded');
 
@@ -31,44 +43,40 @@ export const loader: LoaderFunction = async args => {
   if (!currentMetadata) {
     return redirect('/404');
   }
-  if (args.params.workspaceId) {
-    localStorage.setItem('last_workspace_id', args.params.workspaceId);
-    rootStore.set(currentWorkspaceIdAtom, args.params.workspaceId);
-  }
+
   if (!args.params.pageId) {
     rootStore.set(currentPageIdAtom, null);
   }
-  if (currentMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentMetadata.id);
-    workspaceLoaderLogger.info('get cloud workspace atom');
+  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentMetadata.id);
+  workspaceLoaderLogger.info('get cloud workspace atom');
 
-    const workspace = await rootStore.get(workspaceAtom);
-    return (() => {
-      guidCompatibilityFix(workspace.doc);
-      const blockVersions = workspace.meta.blockVersions;
-      if (!blockVersions) {
-        return true;
-      }
-      for (const [flavour, schema] of workspace.schema.flavourSchemaMap) {
-        if (blockVersions[flavour] !== schema.version) {
-          return true;
-        }
-      }
-      return false;
-    })();
-  }
+  const workspace = await rootStore.get(workspaceAtom);
+  workspaceLoaderLogger.info('workspace loaded');
 
-  workspaceLoaderLogger.info('done');
-  return null;
+  guidCompatibilityFix(workspace.doc);
+  return checkWorkspaceCompatibility(workspace);
 };
 
 export const Component = (): ReactElement => {
   performanceRenderLogger.info('WorkspaceLayout');
 
-  const incompatible = useLoaderData();
+  const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
+
+  const params = useParams();
+
+  useEffect(() => {
+    if (params.workspaceId) {
+      localStorage.setItem('last_workspace_id', params.workspaceId);
+      setCurrentWorkspaceId(params.workspaceId);
+    }
+  }, [params, setCurrentWorkspaceId]);
+
+  const migration = useLoaderData() as MigrationPoint | undefined;
   return (
-    <WorkspaceLayout incompatible={!!incompatible}>
-      <Outlet />
-    </WorkspaceLayout>
+    <AffineErrorBoundary height="100vh">
+      <WorkspaceLayout migration={migration}>
+        <Outlet />
+      </WorkspaceLayout>
+    </AffineErrorBoundary>
   );
 };

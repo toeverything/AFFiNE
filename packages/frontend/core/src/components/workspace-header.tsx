@@ -5,7 +5,7 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { Unreachable } from '@affine/env/constant';
-import type { Collection } from '@affine/env/filter';
+import type { Collection, Filter } from '@affine/env/filter';
 import type {
   WorkspaceFlavour,
   WorkspaceHeaderProps,
@@ -13,6 +13,7 @@ import type {
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon } from '@blocksuite/icons';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai/react';
 import { useCallback } from 'react';
 
@@ -28,6 +29,7 @@ import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
 import { PluginHeader } from './pure/plugin-header';
 import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
+import { TopTip } from './top-tip';
 import * as styles from './workspace-header.css';
 
 const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
@@ -44,6 +46,17 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
     },
     [setting, navigateHelper, workspaceId]
   );
+
+  const onFilterChange = useAsyncCallback(
+    async (filterList: Filter[]) => {
+      await setting.updateCollection({
+        ...setting.currentCollection,
+        filterList,
+      });
+    },
+    [setting]
+  );
+
   if (!setting.isDefault || !setting.currentCollection.filterList.length) {
     return null;
   }
@@ -54,12 +67,7 @@ const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
         <FilterList
           propertiesMeta={currentWorkspace.blockSuiteWorkspace.meta.properties}
           value={setting.currentCollection.filterList}
-          onChange={filterList => {
-            return setting.updateCollection({
-              ...setting.currentCollection,
-              filterList,
-            });
-          }}
+          onChange={onFilterChange}
         />
       </div>
       <div>
@@ -154,23 +162,26 @@ export function WorkspaceHeader({
       <SharePageModal workspace={currentWorkspace} page={currentPage} />
     ) : null;
     return (
-      <Header
-        mainContainerAtom={mainContainerAtom}
-        ref={setAppHeader}
-        center={
-          <BlockSuiteHeaderTitle
-            workspace={currentWorkspace}
-            pageId={currentEntry.pageId}
-          />
-        }
-        right={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {sharePageModal}
-            <PluginHeader />
-          </div>
-        }
-        bottomBorder
-      />
+      <>
+        <Header
+          mainContainerAtom={mainContainerAtom}
+          ref={setAppHeader}
+          center={
+            <BlockSuiteHeaderTitle
+              workspace={currentWorkspace}
+              pageId={currentEntry.pageId}
+            />
+          }
+          right={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {sharePageModal}
+              <PluginHeader />
+            </div>
+          }
+          bottomBorder
+        />
+        <TopTip workspace={currentWorkspace} />
+      </>
     );
   }
 

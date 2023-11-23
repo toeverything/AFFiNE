@@ -11,7 +11,7 @@ The AFFiNE core team gives release authorization. And also have the following re
 
 ## How to make a release?
 
-Before releasing, ensure you have the latest version of the `master` branch.
+Before releasing, ensure you have the latest version of the `canary` branch.
 
 And Read the semver specification to understand how to version your release. https://semver.org
 
@@ -21,13 +21,13 @@ And Read the semver specification to understand how to version your release. htt
 ./scripts/set-version.sh 0.5.4-canary.5
 ```
 
-### 2. Commit changes and push to `master`
+### 2. Commit changes and push to `canary`
 
 ```shell
 git add .
 # vx.y.z-canary.n
 git commit -m "v0.5.4-canary.5"
-git push origin master
+git push origin canary
 ```
 
 ### 3. Create a release action

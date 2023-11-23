@@ -44,11 +44,9 @@ export const StyledWorkspaceStatus = styled('div')(() => {
     svg: {
       color: 'var(--affine-icon-color)',
       fontSize: 'var(--affine-font-base)',
-    },
-    ':hover': {
-      cursor: 'pointer',
-      borderRadius: '4px',
-      background: 'var(--affine-hover-color)',
+      '&[data-warning-color="true"]': {
+        color: 'var(--affine-error-color)',
+      },
     },
   };
 });

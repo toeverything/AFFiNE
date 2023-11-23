@@ -19,7 +19,7 @@ export const EnableAffineCloudModal = ({
   const setAuthAtom = useSetAtom(authAtom);
   const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
 
-  const confirm = useCallback(async () => {
+  const confirm = useCallback(() => {
     return propsOnConfirm?.();
   }, [propsOnConfirm]);
 

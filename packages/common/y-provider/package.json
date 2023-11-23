@@ -1,7 +1,7 @@
 {
   "name": "y-provider",
   "type": "module",
-  "version": "0.10.2",
+  "version": "0.10.3-canary.2",
   "description": "Yjs provider protocol for multi document support",
   "exports": {
     ".": "./src/index.ts"
@@ -24,11 +24,11 @@
     "build": "vite build"
   },
   "devDependencies": {
-    "@blocksuite/store": "0.0.0-20231116023037-31273bb7-nightly",
+    "@blocksuite/store": "0.0.0-20231122113751-6bf81eb3-nightly",
     "vite": "^4.4.11",
     "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",
-    "yjs": "^13.6.8"
+    "yjs": "^13.6.10"
   },
   "peerDependencies": {
     "yjs": "^13"

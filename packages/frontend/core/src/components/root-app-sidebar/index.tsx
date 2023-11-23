@@ -1,6 +1,7 @@
 import { AnimatedDeleteIcon } from '@affine/component';
 import {
   AddPageButton,
+  AppDownloadButton,
   AppSidebar,
   appSidebarOpenAtom,
   AppUpdaterButton,
@@ -18,6 +19,7 @@ import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo } from 'react';
@@ -107,7 +109,7 @@ export const RootAppSidebar = ({
   );
   const generalShortcutsInfo = useGeneralShortcuts();
 
-  const onClickNewPage = useCallback(async () => {
+  const onClickNewPage = useAsyncCallback(async () => {
     const page = createPage();
     await page.waitForLoaded();
     openPage(page.id);
@@ -265,7 +267,7 @@ export const RootAppSidebar = ({
         )}
       </SidebarScrollableContainer>
       <SidebarContainer>
-        {environment.isDesktop && <AppUpdaterButton />}
+        {environment.isDesktop ? <AppUpdaterButton /> : <AppDownloadButton />}
         <div style={{ height: '4px' }} />
         <AddPageButton onClick={onClickNewPage} />
       </SidebarContainer>

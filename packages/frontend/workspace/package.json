@@ -4,15 +4,13 @@
   "exports": {
     "./atom": "./src/atom.ts",
     "./manager": "./src/manager/index.ts",
-    "./type": "./src/type.ts",
-    "./migration": "./src/migration/index.ts",
     "./local/crud": "./src/local/crud.ts",
-    "./affine": "./src/affine/index.ts",
     "./affine/*": "./src/affine/*.ts",
     "./providers": "./src/providers/index.ts"
   },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
+    "@blocksuite/global": "*",
     "@blocksuite/store": "*"
   },
   "dependencies": {
@@ -23,14 +21,16 @@
     "@toeverything/hooks": "workspace:*",
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
+    "idb": "^7.1.1",
+    "idb-keyval": "^6.2.1",
     "is-svg": "^5.0.0",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "js-base64": "^3.7.5",
     "ky": "^1.0.1",
     "lib0": "^0.2.87",
     "lodash-es": "^4.17.21",
-    "nanoid": "^5.0.1",
-    "next-auth": "^4.23.2",
+    "nanoid": "^5.0.3",
+    "next-auth": "^4.24.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "socket.io-client": "^4.7.2",
@@ -38,7 +38,7 @@
     "valtio": "^1.11.2",
     "y-protocols": "^1.0.6",
     "y-provider": "workspace:*",
-    "yjs": "^13.6.8",
+    "yjs": "^13.6.10",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -48,5 +48,5 @@
     "vitest": "0.34.6",
     "ws": "^8.14.2"
   },
-  "version": "0.10.2"
+  "version": "0.10.3-canary.2"
 }

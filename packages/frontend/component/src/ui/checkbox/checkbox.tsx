@@ -51,8 +51,8 @@ export const Checkbox = ({
   const icon = indeterminate
     ? icons.indeterminate
     : checked
-    ? icons.checked
-    : icons.unchecked;
+      ? icons.checked
+      : icons.unchecked;
 
   return (
     <div

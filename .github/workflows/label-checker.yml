@@ -6,7 +6,7 @@ on:
       - labeled
       - unlabeled
     branches:
-      - master
+      - canary
 
 jobs:
   check_labels:

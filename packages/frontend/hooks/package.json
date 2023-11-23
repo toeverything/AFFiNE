@@ -8,7 +8,7 @@
   "dependencies": {
     "foxact": "^0.2.20",
     "image-blob-reduce": "^4.1.0",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "lodash.debounce": "^4.0.8",
     "p-queue": "^7.4.1",
     "react": "18.2.0",
@@ -18,12 +18,12 @@
   "devDependencies": {
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/block-std": "0.0.0-20231116023037-31273bb7-nightly",
-    "@blocksuite/blocks": "0.0.0-20231116023037-31273bb7-nightly",
-    "@blocksuite/editor": "0.0.0-20231116023037-31273bb7-nightly",
-    "@blocksuite/global": "0.0.0-20231116023037-31273bb7-nightly",
-    "@blocksuite/lit": "0.0.0-20231116023037-31273bb7-nightly",
-    "@blocksuite/store": "0.0.0-20231116023037-31273bb7-nightly",
+    "@blocksuite/block-std": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/blocks": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/editor": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/global": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/lit": "0.0.0-20231122113751-6bf81eb3-nightly",
+    "@blocksuite/store": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@testing-library/react": "^14.0.0",
     "@types/image-blob-reduce": "^4.1.3",
     "@types/lodash.debounce": "^4.0.7",
@@ -36,7 +36,6 @@
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
     "@blocksuite/global": "*",
-    "@blocksuite/lit": "*",
     "@blocksuite/store": "*",
     "y-provider": "workspace:*"
   },
@@ -56,9 +55,6 @@
     "@blocksuite/global": {
       "optional": true
     },
-    "@blocksuite/lit": {
-      "optional": true
-    },
     "@blocksuite/store": {
       "optional": true
     },
@@ -66,5 +62,5 @@
       "optional": true
     }
   },
-  "version": "0.10.2"
+  "version": "0.10.3-canary.2"
 }

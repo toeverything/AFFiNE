@@ -200,6 +200,7 @@ export type WorkspaceHandlers = {
   list: () => Promise<[workspaceId: string, meta: WorkspaceMeta][]>;
   delete: (id: string) => Promise<void>;
   getMeta: (id: string) => Promise<WorkspaceMeta>;
+  clone: (id: string, newId: string) => Promise<void>;
 };
 
 export type UnwrapManagerHandlerToServerSide<

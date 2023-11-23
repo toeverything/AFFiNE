@@ -11,16 +11,16 @@ export const StyledIsland = styled('div')<{
     boxShadow: spread
       ? 'var(--affine-menu-shadow)'
       : inEdgelessPage
-      ? 'var(--affine-menu-shadow)'
-      : 'unset',
+        ? 'var(--affine-menu-shadow)'
+        : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
     background: spread
       ? 'var(--affine-background-overlay-panel-color)'
       : 'var(--affine-background-primary-color)',
     ':hover': {
-      background: spread ? null : 'var(--affine-white)',
-      boxShadow: spread ? null : 'var(--affine-menu-shadow)',
+      background: spread ? undefined : 'var(--affine-white)',
+      boxShadow: spread ? undefined : 'var(--affine-menu-shadow)',
     },
     '::after': {
       content: '""',
@@ -73,7 +73,7 @@ export const StyledTriggerWrapper = styled('div')<{
     ...displayFlex('center', 'center'),
     ...positionAbsolute({ left: '4px', bottom: '4px' }),
     ':hover': {
-      backgroundColor: spread ? 'var(--affine-hover-color)' : null,
+      backgroundColor: spread ? 'var(--affine-hover-color)' : undefined,
     },
   };
 });

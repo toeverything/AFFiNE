@@ -18,6 +18,7 @@ import {
   MenuItem,
   MenuSeparator,
 } from '@toeverything/components/menu';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -99,7 +100,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const exportHandler = useExportPage(currentPage);
   const setPageMode = useSetAtom(setPageModeAtom);
 
-  const duplicate = useCallback(async () => {
+  const duplicate = useAsyncCallback(async () => {
     const currentPageMeta = currentPage.meta;
     const newPage = createPage();
     await newPage.waitForLoaded();

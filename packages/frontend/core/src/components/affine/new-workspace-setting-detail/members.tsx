@@ -167,7 +167,9 @@ export const CloudWorkspaceMembersPanel = ({
         })}
         ,
         <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
-          <span className={style.goUpgrade}>go upgrade</span>
+          <span className={style.goUpgrade}>
+            {t['com.affine.payment.member.description.go-upgrade']()}
+          </span>
           <ArrowRightBigIcon className={style.arrowRight} />
         </div>
       </span>

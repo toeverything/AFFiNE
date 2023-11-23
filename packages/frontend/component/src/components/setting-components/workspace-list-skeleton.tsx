@@ -1,12 +1,11 @@
-import { Skeleton } from '@mui/material';
-
 import { FlexWrapper } from '../../ui/layout';
+import { Skeleton } from '../../ui/skeleton';
 
 export const WorkspaceListItemSkeleton = () => {
   return (
     <FlexWrapper
       alignItems="center"
-      style={{ padding: '0 8px', height: 30, marginBottom: 4 }}
+      style={{ padding: '0 24px', height: 30, marginBottom: 4 }}
     >
       <Skeleton
         variant="circular"
@@ -14,7 +13,12 @@ export const WorkspaceListItemSkeleton = () => {
         height={14}
         style={{ marginRight: 10 }}
       />
-      <Skeleton variant="rectangular" height={16} style={{ flexGrow: 1 }} />
+      <Skeleton
+        variant="rectangular"
+        height={16}
+        width={0}
+        style={{ flexGrow: 1 }}
+      />
     </FlexWrapper>
   );
 };

@@ -14,8 +14,8 @@ import {
 } from '@affine/component/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { getBlobEngine } from '@affine/workspace/manager';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -27,8 +27,8 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { loadPage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
+import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -114,36 +114,47 @@ export const CurrentWorkspaceContext = ({
 };
 
 type WorkspaceLayoutProps = {
-  incompatible?: boolean;
+  migration?: MigrationPoint;
 };
 
-// fix https://github.com/toeverything/AFFiNE/issues/4825
-function useLoadWorkspacePages() {
+const useSyncWorkspaceBlob = () => {
+  // temporary solution for sync blob
+
   const [currentWorkspace] = useCurrentWorkspace();
-  const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
+
   useEffect(() => {
-    if (currentWorkspace) {
-      const timer = setTimeout(() => {
-        const pageIds = pageMetas.map(meta => meta.id);
-        const pages = pageIds
-          .map(id => currentWorkspace.blockSuiteWorkspace.getPage(id))
-          .filter((p): p is Page => !!p);
-        pages.forEach(page => {
-          loadPage(page, -10);
+    const blobEngine = getBlobEngine(currentWorkspace.blockSuiteWorkspace);
+    let stopped = false;
+    function sync() {
+      if (stopped) {
+        return;
+      }
+
+      blobEngine
+        ?.sync()
+        .catch(error => {
+          console.error('sync blob error', error);
+        })
+        .finally(() => {
+          // sync every 1 minute
+          setTimeout(sync, 60000);
         });
-      }, 10 * 1000); // load pages after 10s
-      return () => {
-        clearTimeout(timer);
-      };
     }
-    return;
-  }, [currentWorkspace, pageMetas]);
-}
+
+    // after currentWorkspace changed, wait 1 second to start sync
+    setTimeout(sync, 1000);
+
+    return () => {
+      stopped = true;
+    };
+  }, [currentWorkspace]);
+};
 
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
-  incompatible = false,
+  migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) {
+  useSyncWorkspaceBlob();
   return (
     <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
@@ -153,7 +164,7 @@ export const WorkspaceLayout = function WorkspacesSuspense({
           <CurrentWorkspaceModals />
         </Suspense>
         <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner incompatible={incompatible}>
+          <WorkspaceLayoutInner migration={migration}>
             {children}
           </WorkspaceLayoutInner>
         </Suspense>
@@ -164,7 +175,7 @@ export const WorkspaceLayout = function WorkspacesSuspense({
 
 export const WorkspaceLayoutInner = ({
   children,
-  incompatible = false,
+  migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
@@ -254,8 +265,6 @@ export const WorkspaceLayoutInner = ({
   const inTrashPage = pageMeta?.trash ?? false;
   const setMainContainer = useSetAtom(mainContainerAtom);
 
-  useLoadWorkspacePages();
-
   return (
     <>
       {/* This DndContext is used for drag page from all-pages list into a folder in sidebar */}
@@ -289,7 +298,11 @@ export const WorkspaceLayoutInner = ({
               padding={appSettings.clientBorder}
               inTrashPage={inTrashPage}
             >
-              {incompatible ? <WorkspaceUpgrade /> : children}
+              {migration ? (
+                <WorkspaceUpgrade migration={migration} />
+              ) : (
+                children
+              )}
               <ToolContainer inTrashPage={inTrashPage}>
                 <RootBlockHub />
                 <HelpIsland showList={pageId ? undefined : showList} />

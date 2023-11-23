@@ -34,26 +34,21 @@ test('v1 to v4', async ({ page }) => {
 
   await page.goto(coreUrl);
   await clickSideBarAllPageButton(page);
-  await page.getByText('hello').click();
 
-  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
-  const url = page.url();
-  await page.waitForTimeout(5000);
-  await page.goto(url);
-  //#endregion
+  await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
+
+  await expect(page.getByText('Refresh Current Page')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
+
+  await expect(page.getByTestId('page-list-item')).toHaveCount(2);
+  await page
+    .getByTestId('page-list-item-title-text')
+    .getByText('hello')
+    .click();
 
   await waitForEditorLoad(page);
-  expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
-
-  const changedLocalStorageData = await page.evaluate(() =>
-    window.readAffineLocalStorage()
-  );
-  const workspaces = JSON.parse(
-    changedLocalStorageData['jotai-workspaces']
-  ) as any[];
-  for (const workspace of workspaces) {
-    expect(workspace.version).toBe(4);
-  }
+  await expect(page.locator('v-line').nth(0)).toHaveText('hello');
 });
 
 test('v2 to v4, database migration', async ({ page }) => {
@@ -62,63 +57,72 @@ test('v2 to v4, database migration', async ({ page }) => {
     '0.8.0-canary.7'
   );
 
-  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
-  const allPagePath = `${coreUrl}/workspace/${localStorageData.last_workspace_id}/all`;
-  await page.goto(allPagePath);
-  await page.waitForTimeout(5000);
-  //#endregion
-
   const detailPagePath = `${coreUrl}/workspace/${localStorageData.last_workspace_id}/${localStorageData.last_page_id}`;
   await page.goto(detailPagePath);
+
+  await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
+
+  await expect(page.getByText('Refresh Current Page')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
   await waitForEditorLoad(page);
 
   // check page mode is correct
-  expect(await page.locator('v-line').nth(0).textContent()).toBe('hello');
-  expect(await page.locator('affine-database').isVisible()).toBe(true);
+  await expect(page.locator('v-line').nth(0)).toHaveText('hello');
+  await expect(page.locator('affine-database')).toBeVisible();
 
   // check edgeless mode is correct
   await clickEdgelessModeButton(page);
-  await page.waitForTimeout(200);
-  expect(await page.locator('affine-database').isVisible()).toBe(true);
-
-  const changedLocalStorageData = await page.evaluate(() =>
-    window.readAffineLocalStorage()
-  );
-  const workspaces = JSON.parse(
-    changedLocalStorageData['jotai-workspaces']
-  ) as any[];
-  for (const workspace of workspaces) {
-    expect(workspace.version).toBe(4);
-  }
+  await expect(page.locator('affine-database')).toBeVisible();
 });
 
 test('v3 to v4, surface migration', async ({ page }) => {
   const { localStorageData } = await open404PageToInitData(page, '0.8.4');
 
-  //#region fixme(himself65): blocksuite issue, data cannot be loaded to store
-  const allPagePath = `${coreUrl}/workspace/${localStorageData.last_workspace_id}/all`;
-  await page.goto(allPagePath);
-  await page.waitForTimeout(5000);
-  //#endregion
-
   const detailPagePath = `${coreUrl}/workspace/${localStorageData.last_workspace_id}/${localStorageData.last_page_id}`;
   await page.goto(detailPagePath);
+
+  await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
+
+  await expect(page.getByText('Refresh Current Page')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
   await waitForEditorLoad(page);
 
   // check edgeless mode is correct
   await clickEdgelessModeButton(page);
   await expect(page.locator('edgeless-toolbar')).toBeVisible();
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
+});
 
-  const changedLocalStorageData = await page.evaluate(() =>
-    window.readAffineLocalStorage()
-  );
-  const workspaces = JSON.parse(
-    changedLocalStorageData['jotai-workspaces']
-  ) as any[];
-  for (const workspace of workspaces) {
-    expect(workspace.version).toBe(4);
-  }
+test('v0 to v4, subdoc migration', async ({ page }) => {
+  await open404PageToInitData(page, '0.6.1-beta.1');
+
+  await page.goto(coreUrl);
+  await clickSideBarAllPageButton(page);
+
+  await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
+
+  await expect(page.getByText('Refresh Current Page')).toBeVisible();
+  await page.getByTestId('upgrade-workspace-button').click();
+
+  await expect(page.getByTestId('page-list-item')).toHaveCount(2);
+  await page
+    .getByTestId('page-list-item-title-text')
+    .getByText('hello')
+    .click();
+
+  await waitForEditorLoad(page);
+
+  // check page mode is correct
+  await expect(page.locator('v-line').nth(0)).toHaveText('hello');
+  await expect(page.locator('v-line').nth(1)).toHaveText('TEST CONTENT');
+
+  // check edgeless mode is correct
+  await clickEdgelessModeButton(page);
+  await expect(page.locator('edgeless-toolbar')).toBeVisible();
+  await expect(page.locator('affine-edgeless-page')).toBeVisible();
 });
 
 test('v0 to v4, subdoc migration', async ({ page }) => {

@@ -9,16 +9,10 @@ import {
   getWorkspaceQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { createAffineDataSource } from '@affine/workspace/affine/index';
 import { createIndexeddbStorage, Workspace } from '@blocksuite/store';
 import { migrateLocalBlobStorage } from '@toeverything/infra/blocksuite';
-import {
-  createIndexedDBProvider,
-  DEFAULT_DB_NAME,
-} from '@toeverything/y-indexeddb';
 import { getSession } from 'next-auth/react';
 import { proxy } from 'valtio/vanilla';
-import { syncDataSourceFromDoc } from 'y-provider';
 
 import { getOrCreateWorkspace } from '../manager';
 import { fetcher } from './gql';
@@ -59,45 +53,41 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       WorkspaceFlavour.AFFINE_CLOUD
     );
 
-    Y.applyUpdate(
-      newBlockSuiteWorkspace.doc,
-      Y.encodeStateAsUpdate(upstreamWorkspace.doc)
-    );
+    if (environment.isDesktop) {
+      // this will clone all data from existing db to new db file, including docs and blobs
+      await window.apis.workspace.clone(
+        upstreamWorkspace.id,
+        createWorkspace.id
+      );
 
-    await Promise.all(
-      [...upstreamWorkspace.doc.subdocs].map(async subdoc => {
-        subdoc.load();
-        return subdoc.whenLoaded.then(() => {
-          newBlockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
-            if (newSubdoc.guid === subdoc.guid) {
-              Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
-            }
+      // skip apply updates in memory and we will use providers to sync data from db
+    } else {
+      Y.applyUpdate(
+        newBlockSuiteWorkspace.doc,
+        Y.encodeStateAsUpdate(upstreamWorkspace.doc)
+      );
+
+      await Promise.all(
+        [...upstreamWorkspace.doc.subdocs].map(async subdoc => {
+          subdoc.load();
+          return subdoc.whenLoaded.then(() => {
+            newBlockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
+              if (newSubdoc.guid === subdoc.guid) {
+                Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
+              }
+            });
           });
+        })
+      );
+
+      migrateLocalBlobStorage(upstreamWorkspace.id, createWorkspace.id)
+        .then(() => deleteLocalBlobStorage(upstreamWorkspace.id))
+        .catch(e => {
+          console.error('error when moving blob storage:', e);
         });
-      })
-    );
+      // todo(himself65): delete old workspace in the future
+    }
 
-    const datasource = createAffineDataSource(
-      createWorkspace.id,
-      newBlockSuiteWorkspace.doc,
-      newBlockSuiteWorkspace.awarenessStore.awareness
-    );
-
-    const disconnect = datasource.onDocUpdate(() => {});
-    await syncDataSourceFromDoc(upstreamWorkspace.doc, datasource);
-    disconnect();
-
-    const provider = createIndexedDBProvider(
-      newBlockSuiteWorkspace.doc,
-      DEFAULT_DB_NAME
-    );
-    provider.connect();
-    migrateLocalBlobStorage(upstreamWorkspace.id, createWorkspace.id)
-      .then(() => deleteLocalBlobStorage(upstreamWorkspace.id))
-      .catch(e => {
-        console.error('error when moving blob storage:', e);
-      });
-    // todo(himself65): delete old workspace in the future
     return createWorkspace.id;
   },
   delete: async workspace => {

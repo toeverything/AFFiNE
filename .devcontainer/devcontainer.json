@@ -1,0 +1,25 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+  "name": "Debian",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/rust:1": {}
+  },
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-playwright.playwright",
+        "esbenp.prettier-vscode",
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  },
+  "updateContentCommand": "bash ./.devcontainer/build.sh",
+  "postCreateCommand": "bash ./.devcontainer/setup-user.sh"
+}

@@ -49,9 +49,9 @@ runs:
         cache: 'yarn'
 
     - name: Set nmMode
-      if: ${{ inputs.hard-link-nm == 'true' }}
+      if: ${{ inputs.hard-link-nm == 'false' }}
       shell: bash
-      run: yarn config set nmMode hardlinks-local
+      run: yarn config set nmMode classic
 
     - name: Set nmHoistingLimits
       if: ${{ inputs.nmHoistingLimits }}

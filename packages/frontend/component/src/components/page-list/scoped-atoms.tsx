@@ -192,9 +192,9 @@ export const pageGroupsAtom = atom(get => {
       sorter.key === 'createDate' || sorter.key === 'updatedDate'
         ? sorter.key
         : // default sort
-        !sorter.key
-        ? DEFAULT_SORT_KEY
-        : undefined;
+          !sorter.key
+          ? DEFAULT_SORT_KEY
+          : undefined;
   }
   return pagesToPageGroups(sorter.pages, groupBy);
 });

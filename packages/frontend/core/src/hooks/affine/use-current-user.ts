@@ -2,7 +2,7 @@ import { type User } from '@affine/component/auth-components';
 import type { DefaultSession, Session } from 'next-auth';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { getSession, useSession } from 'next-auth/react';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 
 import { SessionFetchErrorRightAfterLoginOrSignUp } from '../../unexpected-application-state/errors';
 
@@ -60,7 +60,7 @@ export function useCurrentUser(): CheckedUser {
         // login succeed but the session request failed then.
         // also need a error boundary to handle this error.
         throw new SessionFetchErrorRightAfterLoginOrSignUp(
-          'First session should not be null',
+          'Fetching session failed',
           () => {
             getSession()
               .then(session => {
@@ -97,12 +97,14 @@ export function useCurrentUser(): CheckedUser {
 
   const user = session.user;
 
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    image: user.image,
-    hasPassword: user?.hasPassword ?? false,
-    update,
-  };
+  return useMemo(() => {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      hasPassword: user?.hasPassword ?? false,
+      update,
+    };
+  }, [user, update]);
 }

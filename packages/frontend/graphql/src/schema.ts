@@ -340,13 +340,20 @@ export type GetWorkspacePublicByIdQuery = {
   workspace: { __typename?: 'WorkspaceType'; public: boolean };
 };
 
-export type GetWorkspaceSharedPagesQueryVariables = Exact<{
+export type GetWorkspacePublicPagesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
 
-export type GetWorkspaceSharedPagesQuery = {
+export type GetWorkspacePublicPagesQuery = {
   __typename?: 'Query';
-  workspace: { __typename?: 'WorkspaceType'; sharedPages: Array<string> };
+  workspace: {
+    __typename?: 'WorkspaceType';
+    publicPages: Array<{
+      __typename?: 'WorkspacePage';
+      id: string;
+      mode: PublicPageMode;
+    }>;
+  };
 };
 
 export type GetWorkspaceQueryVariables = Exact<{
@@ -422,6 +429,21 @@ export type PricesQuery = {
   }>;
 };
 
+export type PublishPageMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+  mode?: InputMaybe<PublicPageMode>;
+}>;
+
+export type PublishPageMutation = {
+  __typename?: 'Mutation';
+  publishPage: {
+    __typename?: 'WorkspacePage';
+    id: string;
+    mode: PublicPageMode;
+  };
+};
+
 export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
 
 export type RemoveAvatarMutation = {
@@ -455,14 +477,19 @@ export type RevokeMemberPermissionMutation = {
   revoke: boolean;
 };
 
-export type RevokePageMutationVariables = Exact<{
+export type RevokePublicPageMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   pageId: Scalars['String']['input'];
 }>;
 
-export type RevokePageMutation = {
+export type RevokePublicPageMutation = {
   __typename?: 'Mutation';
-  revokePage: boolean;
+  revokePublicPage: {
+    __typename?: 'WorkspacePage';
+    id: string;
+    mode: PublicPageMode;
+    public: boolean;
+  };
 };
 
 export type SendChangeEmailMutationVariables = Exact<{
@@ -515,13 +542,6 @@ export type SetWorkspacePublicByIdMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
-
-export type SharePageMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  pageId: Scalars['String']['input'];
-}>;
-
-export type SharePageMutation = { __typename?: 'Mutation'; sharePage: boolean };
 
 export type SignInMutationVariables = Exact<{
   email: Scalars['String']['input'];
@@ -683,9 +703,9 @@ export type Queries =
       response: GetWorkspacePublicByIdQuery;
     }
   | {
-      name: 'getWorkspaceSharedPagesQuery';
-      variables: GetWorkspaceSharedPagesQueryVariables;
-      response: GetWorkspaceSharedPagesQuery;
+      name: 'getWorkspacePublicPagesQuery';
+      variables: GetWorkspacePublicPagesQueryVariables;
+      response: GetWorkspacePublicPagesQuery;
     }
   | {
       name: 'getWorkspaceQuery';
@@ -775,6 +795,11 @@ export type Mutations =
       response: LeaveWorkspaceMutation;
     }
   | {
+      name: 'publishPageMutation';
+      variables: PublishPageMutationVariables;
+      response: PublishPageMutation;
+    }
+  | {
       name: 'removeAvatarMutation';
       variables: RemoveAvatarMutationVariables;
       response: RemoveAvatarMutation;
@@ -790,9 +815,9 @@ export type Mutations =
       response: RevokeMemberPermissionMutation;
     }
   | {
-      name: 'revokePageMutation';
-      variables: RevokePageMutationVariables;
-      response: RevokePageMutation;
+      name: 'revokePublicPageMutation';
+      variables: RevokePublicPageMutationVariables;
+      response: RevokePublicPageMutation;
     }
   | {
       name: 'sendChangeEmailMutation';
@@ -818,11 +843,6 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
-    }
-  | {
-      name: 'sharePageMutation';
-      variables: SharePageMutationVariables;
-      response: SharePageMutation;
     }
   | {
       name: 'signInMutation';

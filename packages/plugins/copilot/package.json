@@ -16,7 +16,7 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/icons": "2.1.35",
+    "@blocksuite/icons": "2.1.36",
     "@toeverything/components": "^0.0.46",
     "@vanilla-extract/css": "^1.13.0",
     "clsx": "^2.0.0",
@@ -30,7 +30,7 @@
   "devDependencies": {
     "@affine/plugin-cli": "workspace:*",
     "@types/marked": "^6.0.0",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
@@ -38,5 +38,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.10.2"
+  "version": "0.10.3-canary.2"
 }

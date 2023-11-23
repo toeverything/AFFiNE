@@ -186,9 +186,6 @@ export const createConfiguration: (
               'global',
               'dist'
             ),
-        '@blocksuite/lit': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'lit', 'src')
-          : join(workspaceRoot, 'node_modules', '@blocksuite', 'lit', 'dist'),
         '@blocksuite/store/providers/broadcast-channel': blocksuiteBaseDir
           ? join(
               blocksuiteBaseDir,

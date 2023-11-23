@@ -3,6 +3,7 @@ import '@toeverything/hooks/use-affine-ipc-renderer';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { refreshRootMetadataAtom } from '@affine/workspace/atom';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { SessionProvider, useSession } from 'next-auth/react';
@@ -24,6 +25,12 @@ const SessionDefence = (props: PropsWithChildren) => {
   const refreshMetadata = useSetAtom(refreshRootMetadataAtom);
   const onceSignedInEvents = useOnceSignedInEvents();
   const t = useAFFiNEI18N();
+
+  const refreshAfterSignedInEvents = useAsyncCallback(async () => {
+    await onceSignedInEvents();
+    refreshMetadata();
+  }, [onceSignedInEvents, refreshMetadata]);
+
   useEffect(() => {
     if (sessionInAtom !== session && session.status === 'authenticated') {
       setSession(session);
@@ -35,11 +42,7 @@ const SessionDefence = (props: PropsWithChildren) => {
         prevSession.current?.status === 'unauthenticated' &&
         session.status === 'authenticated'
       ) {
-        startTransition(() => {
-          onceSignedInEvents().then(() => {
-            refreshMetadata();
-          });
-        });
+        startTransition(() => refreshAfterSignedInEvents());
         pushNotification({
           title: t['com.affine.auth.has.signed'](),
           message: t['com.affine.auth.has.signed.message'](),
@@ -57,9 +60,8 @@ const SessionDefence = (props: PropsWithChildren) => {
     sessionInAtom,
     prevSession,
     setSession,
-    onceSignedInEvents,
     pushNotification,
-    refreshMetadata,
+    refreshAfterSignedInEvents,
     t,
   ]);
   return props.children;

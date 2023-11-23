@@ -1,10 +1,10 @@
-import { MenuItem, PureMenu } from '@affine/component';
-import { MuiClickAwayListener } from '@affine/component';
 import type { SerializedBlock } from '@blocksuite/blocks';
 import type { BaseBlockModel } from '@blocksuite/store';
 import type { Page } from '@blocksuite/store';
 import type { VEditor } from '@blocksuite/virgo';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Menu, MenuItem } from '@toeverything/components/menu';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type ShortcutMap = {
   [key: string]: (e: KeyboardEvent, page: Page) => void;
@@ -121,60 +121,6 @@ export type BookmarkProps = {
 
 export const Bookmark = ({ page }: BookmarkProps) => {
   const [anchor, setAnchor] = useState<Range | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string>(
-    menuOptions[0].id
-  );
-  const shortcutMap = useMemo<ShortcutMap>(
-    () => ({
-      ArrowUp: () => {
-        const curIndex = menuOptions.findIndex(
-          ({ id }) => id === selectedOption
-        );
-        if (menuOptions[curIndex - 1]) {
-          setSelectedOption(menuOptions[curIndex - 1].id);
-        } else if (curIndex === -1) {
-          setSelectedOption(menuOptions[0].id);
-        } else {
-          setSelectedOption(menuOptions[menuOptions.length - 1].id);
-        }
-      },
-      ArrowDown: () => {
-        const curIndex = menuOptions.findIndex(
-          ({ id }) => id === selectedOption
-        );
-        if (curIndex !== -1 && menuOptions[curIndex + 1]) {
-          setSelectedOption(menuOptions[curIndex + 1].id);
-        } else {
-          setSelectedOption(menuOptions[0].id);
-        }
-      },
-      Enter: () =>
-        handleEnter({
-          page,
-          selectedOption,
-          callback: () => {
-            setAnchor(null);
-          },
-        }),
-      Escape: () => {
-        setAnchor(null);
-      },
-    }),
-    [page, selectedOption]
-  );
-  const onKeydown = useCallback(
-    (e: KeyboardEvent) => {
-      const shortcut = shortcutMap[e.key];
-      if (shortcut) {
-        e.stopPropagation();
-        e.preventDefault();
-        shortcut(e, page);
-      } else {
-        setAnchor(null);
-      }
-    },
-    [page, shortcutMap]
-  );
 
   useEffect(() => {
     const disposer = page.slots.pasted.on(pastedBlocks => {
@@ -189,56 +135,35 @@ export const Bookmark = ({ page }: BookmarkProps) => {
     return () => {
       disposer.dispose();
     };
-  }, [onKeydown, page, shortcutMap]);
+  }, [page]);
 
-  useEffect(() => {
-    if (anchor) {
-      document.addEventListener('keydown', onKeydown, { capture: true });
-    } else {
-      // reset status and remove event
-      setSelectedOption(menuOptions[0].id);
-      document.removeEventListener('keydown', onKeydown, { capture: true });
-    }
+  const portalContainer = anchor?.startContainer.parentElement;
 
-    return () => {
-      document.removeEventListener('keydown', onKeydown, { capture: true });
-    };
-  }, [anchor, onKeydown]);
-
-  return anchor ? (
-    <MuiClickAwayListener
-      onClickAway={() => {
-        setAnchor(null);
-        setSelectedOption('');
-      }}
-    >
-      <div>
-        <PureMenu open={!!anchor} anchorEl={anchor} placement="bottom-start">
-          {menuOptions.map(({ id, label }) => {
-            return (
-              <MenuItem
-                key={id}
-                active={selectedOption === id}
-                onClick={() => {
-                  handleEnter({
-                    page,
-                    selectedOption: id,
-                    callback: () => {
-                      setAnchor(null);
-                    },
-                  });
-                }}
-                disableHover={true}
-                onMouseEnter={() => {
-                  setSelectedOption(id);
-                }}
-              >
-                {label}
-              </MenuItem>
-            );
-          })}
-        </PureMenu>
-      </div>
-    </MuiClickAwayListener>
-  ) : null;
+  return anchor && portalContainer
+    ? createPortal(
+        <Menu
+          rootOptions={{
+            defaultOpen: true,
+            onOpenChange: (e: boolean) => !e && setAnchor(null),
+          }}
+          items={menuOptions.map(({ id, label }) => (
+            <MenuItem
+              key={id}
+              onClick={() =>
+                handleEnter({
+                  page,
+                  selectedOption: id,
+                  callback: () => setAnchor(null),
+                })
+              }
+            >
+              {label}
+            </MenuItem>
+          ))}
+        >
+          <span></span>
+        </Menu>,
+        portalContainer
+      )
+    : null;
 };

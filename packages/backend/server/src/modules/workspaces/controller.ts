@@ -12,12 +12,14 @@ import {
 import type { Response } from 'express';
 import format from 'pretty-time';
 
+import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Publicable } from '../auth';
-import { DocManager } from '../doc';
+import { DocHistoryManager, DocManager } from '../doc';
 import { UserType } from '../users';
-import { PermissionService } from './permission';
+import { PermissionService, PublicPageMode } from './permission';
+import { Permission } from './types';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
@@ -26,7 +28,9 @@ export class WorkspacesController {
   constructor(
     @Inject(StorageProvide) private readonly storage: Storage,
     private readonly permission: PermissionService,
-    private readonly docManager: DocManager
+    private readonly docManager: DocManager,
+    private readonly historyManager: DocHistoryManager,
+    private readonly prisma: PrismaService
   ) {}
 
   // get workspace blob
@@ -82,8 +86,62 @@ export class WorkspacesController {
       throw new NotFoundException('Doc not found');
     }
 
+    if (!docId.isWorkspace) {
+      // fetch the publish page mode for publish page
+      const publishPage = await this.prisma.workspacePage.findUnique({
+        where: {
+          workspaceId_pageId: {
+            workspaceId: docId.workspace,
+            pageId: docId.guid,
+          },
+        },
+      });
+      const publishPageMode =
+        publishPage?.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page';
+
+      res.setHeader('publish-mode', publishPageMode);
+    }
+
     res.setHeader('content-type', 'application/octet-stream');
     res.send(update);
     this.logger.debug(`workspaces doc api: ${format(process.hrtime(start))}`);
+  }
+
+  @Get('/:id/docs/:guid/histories/:timestamp')
+  @Auth()
+  async history(
+    @CurrentUser() user: UserType,
+    @Param('id') ws: string,
+    @Param('guid') guid: string,
+    @Param('timestamp') timestamp: string,
+    @Res() res: Response
+  ) {
+    const docId = new DocID(guid, ws);
+    let ts;
+    try {
+      ts = new Date(timestamp);
+    } catch (e) {
+      throw new Error('Invalid timestamp');
+    }
+
+    await this.permission.checkPagePermission(
+      docId.workspace,
+      docId.guid,
+      user.id,
+      Permission.Write
+    );
+
+    const history = await this.historyManager.get(
+      docId.workspace,
+      docId.guid,
+      ts
+    );
+
+    if (history) {
+      res.setHeader('content-type', 'application/octet-stream');
+      res.send(history.blob);
+    } else {
+      throw new NotFoundException('Doc history not found');
+    }
   }
 }

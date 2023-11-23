@@ -1,6 +1,11 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
+  type SyncEngineStatus,
+  SyncEngineStep,
+} from '@affine/workspace/providers';
+import {
   CloudWorkspaceIcon,
+  InformationFillDuotoneIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
   UnsyncIcon,
@@ -9,16 +14,17 @@ import { Avatar } from '@toeverything/components/avatar';
 import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { atom, useSetAtom } from 'jotai';
+import { debounce } from 'lodash-es';
 import {
   forwardRef,
   type HTMLAttributes,
-  type MouseEvent,
   useCallback,
+  useEffect,
   useMemo,
+  useState,
 } from 'react';
 
-import { useDatasourceSync } from '../../../../hooks/use-datasource-sync';
+import { useCurrentSyncEngine } from '../../../../hooks/current/use-current-sync-engine';
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
 import { Loading } from './loading-icon';
@@ -28,8 +34,6 @@ import {
   StyledWorkspaceName,
   StyledWorkspaceStatus,
 } from './styles';
-
-const hoverAtom = atom(false);
 
 // FIXME:
 // 1. Remove mui style
@@ -64,7 +68,11 @@ const UnSyncWorkspaceStatus = () => {
 const LocalWorkspaceStatus = () => {
   return (
     <>
-      <LocalWorkspaceIcon />
+      {!environment.isDesktop ? (
+        <InformationFillDuotoneIcon data-warning-color="true" />
+      ) : (
+        <LocalWorkspaceIcon />
+      )}
       Local
     </>
   );
@@ -86,63 +94,57 @@ const WorkspaceStatus = ({
 }) => {
   const isOnline = useSystemOnline();
 
-  // todo: finish display sync status
-  const [forceSyncStatus, startForceSync] = useDatasourceSync(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const [syncEngineStatus, setSyncEngineStatus] =
+    useState<SyncEngineStatus | null>(null);
 
-  const setIsHovered = useSetAtom(hoverAtom);
+  const syncEngine = useCurrentSyncEngine();
+
+  useEffect(() => {
+    setSyncEngineStatus(syncEngine?.status ?? null);
+    const disposable = syncEngine?.onStatusChange.on(
+      debounce(status => {
+        setSyncEngineStatus(status);
+      }, 500)
+    );
+    return () => {
+      disposable?.dispose();
+    };
+  }, [syncEngine]);
 
   const content = useMemo(() => {
+    // TODO: add i18n
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
+      if (!environment.isDesktop) {
+        return 'This is a local demo workspace.';
+      }
       return 'Saved locally';
     }
     if (!isOnline) {
       return 'Disconnected, please check your network connection';
     }
-    switch (forceSyncStatus.type) {
-      case 'syncing':
-        return 'Syncing with AFFiNE Cloud';
-      case 'error':
-        return 'Sync failed due to server issues, please try again later.';
-      default:
-        return 'Sync with AFFiNE Cloud';
+    if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
+      return 'Syncing with AFFiNE Cloud';
     }
-  }, [currentWorkspace.flavour, forceSyncStatus.type, isOnline]);
+    if (syncEngineStatus.retrying) {
+      return 'Sync disconnected due to unexpected issues, reconnecting.';
+    }
+    return 'Synced with AFFiNE Cloud';
+  }, [currentWorkspace.flavour, isOnline, syncEngineStatus]);
 
   const CloudWorkspaceSyncStatus = useCallback(() => {
-    if (forceSyncStatus.type === 'syncing') {
+    if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
       return SyncingWorkspaceStatus();
-    } else if (forceSyncStatus.type === 'error') {
+    } else if (syncEngineStatus.retrying) {
       return UnSyncWorkspaceStatus();
     } else {
       return CloudWorkspaceStatus();
     }
-  }, [forceSyncStatus.type]);
+  }, [syncEngineStatus]);
 
-  const handleClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
-      e.stopPropagation();
-      if (
-        currentWorkspace.flavour === WorkspaceFlavour.LOCAL ||
-        forceSyncStatus.type === 'syncing'
-      ) {
-        return;
-      }
-      startForceSync();
-    },
-    [currentWorkspace.flavour, forceSyncStatus.type, startForceSync]
-  );
   return (
     <div style={{ display: 'flex' }}>
       <Tooltip content={content}>
-        <StyledWorkspaceStatus
-          onMouseEnter={() => {
-            setIsHovered(true);
-          }}
-          onMouseLeave={() => setIsHovered(false)}
-          onClick={handleClick}
-        >
+        <StyledWorkspaceStatus>
           {currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
             !isOnline ? (
               <OfflineStatus />

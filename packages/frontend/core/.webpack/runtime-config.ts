@@ -129,8 +129,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableCaptcha: process.env.ENABLE_CAPTCHA
       ? process.env.ENABLE_CAPTCHA === 'true'
       : buildFlags.mode === 'development'
-      ? false
-      : currentBuildPreset.enableCaptcha,
+        ? false
+        : currentBuildPreset.enableCaptcha,
     enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
       ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
       : currentBuildPreset.enableEnhanceShareMode,
@@ -140,8 +140,8 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enablePayment: process.env.ENABLE_PAYMENT
       ? process.env.ENABLE_PAYMENT !== 'false'
       : buildFlags.mode === 'development'
-      ? true
-      : currentBuildPreset.enablePayment,
+        ? true
+        : currentBuildPreset.enablePayment,
   };
 
   if (buildFlags.mode === 'development') {

@@ -15,6 +15,7 @@ import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Tooltip } from '@toeverything/components/tooltip';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -127,21 +128,25 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
 }
 
 export const PlanCard = (props: PlanCardProps) => {
+  const t = useAFFiNEI18N();
   const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
 
   const isCurrent = loggedIn && detail.plan === currentPlan;
+  const isPro = detail.plan === SubscriptionPlan.Pro;
 
   return (
     <div
       data-current={isCurrent}
       key={detail.plan}
-      className={isCurrent ? styles.currentPlanCard : styles.planCard}
+      className={isPro ? styles.proPlanCard : styles.planCard}
     >
       <div className={styles.planTitle}>
         <p>
-          {detail.plan}{' '}
+          <span className={isCurrent ? styles.proPlanTitle : ''}>
+            {detail.plan}
+          </span>{' '}
           {'discount' in detail &&
             recurring === SubscriptionRecurring.Yearly && (
               <span className={styles.discountLabel}>
@@ -161,7 +166,9 @@ export const PlanCard = (props: PlanCardProps) => {
                     ? detail.price
                     : detail.yearlyPrice}
                 </span>
-                <span className={styles.planPriceDesc}>per month</span>
+                <span className={styles.planPriceDesc}>
+                  {t['com.affine.payment.price-description.per-month']()}
+                </span>
               </>
             )}
           </p>
@@ -364,7 +371,7 @@ const Upgrade = ({
   }, [onSubscriptionUpdate]);
 
   const [, openPaymentDisableModal] = useAtom(openPaymentDisableAtom);
-  const upgrade = useCallback(() => {
+  const upgrade = useAsyncCallback(async () => {
     if (!runtimeConfig.enablePayment) {
       openPaymentDisableModal(true);
       return;
@@ -373,7 +380,7 @@ const Upgrade = ({
     if (newTabRef.current) {
       newTabRef.current.focus();
     } else {
-      trigger(
+      await trigger(
         { recurring, idempotencyKey },
         {
           onSuccess: data => {
@@ -439,8 +446,8 @@ const ChangeRecurring = ({
     mutation: updateSubscriptionMutation,
   });
 
-  const change = useCallback(() => {
-    trigger(
+  const change = useAsyncCallback(async () => {
+    await trigger(
       { recurring: to, idempotencyKey },
       {
         onSuccess: data => {
@@ -492,7 +499,7 @@ const ChangeRecurring = ({
 const SignUpAction = ({ children }: PropsWithChildren) => {
   const setOpen = useSetAtom(authAtom);
 
-  const onClickSignIn = useCallback(async () => {
+  const onClickSignIn = useCallback(() => {
     setOpen(state => ({
       ...state,
       openModal: true,
