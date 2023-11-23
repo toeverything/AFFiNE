@@ -18,6 +18,7 @@ export function AppDownloadButton({
     setShow(false);
   }, []);
 
+  // TODO: unify this type of literal value.
   const handleClick = useCallback(() => {
     const url = `https://affine.pro/download?channel=stable`;
     open(url, '_blank');

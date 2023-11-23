@@ -27,7 +27,7 @@ export const closeIconStyle = style({
   position: 'relative',
   zIndex: 1,
 });
-export const downloadTipContainer = style({
+export const tipsContainer = style({
   backgroundColor: 'var(--affine-background-error-color)',
   color: 'var(--affine-error-color)',
   width: '100%',
@@ -42,13 +42,13 @@ export const downloadTipContainer = style({
   containerType: 'inline-size',
 });
 
-export const downloadMessage = style({
+export const tipsMessage = style({
   color: 'var(--affine-error-color)',
   flexGrow: 1,
   flexShrink: 1,
 });
 
-export const downloadRightItem = style({
+export const tipsRightItem = style({
   display: 'flex',
   flexShrink: 0,
   justifyContent: 'space-between',

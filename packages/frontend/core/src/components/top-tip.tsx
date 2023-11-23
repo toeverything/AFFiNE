@@ -1,5 +1,5 @@
 import { BrowserWarning } from '@affine/component/affine-banner';
-import { DownloadTips } from '@affine/component/affine-banner';
+import { LocalDemoTips } from '@affine/component/affine-banner';
 import {
   type AffineOfficialWorkspace,
   WorkspaceFlavour,
@@ -7,16 +7,16 @@ import {
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { authAtom } from '../atoms';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useOnTransformWorkspace } from '../hooks/root/use-on-transform-workspace';
 import { EnableAffineCloudModal } from './affine/enable-affine-cloud-modal';
 
-const minimumChromeVersion = 102;
+const minimumChromeVersion = 106;
 
-const shouldShowWarning = () => {
+const shouldShowWarning = (() => {
   if (environment.isDesktop) {
     // even though desktop has compatibility issues,
     //  we don't want to show the warning
@@ -31,20 +31,15 @@ const shouldShowWarning = () => {
   } else {
     return !environment.isMobile;
   }
-};
+})();
 
 const OSWarningMessage = () => {
   const t = useAFFiNEI18N();
-  const [notChrome, setNotChrome] = useState(false);
-  const [notGoodVersion, setNotGoodVersion] = useState(false);
-  useEffect(() => {
-    setNotChrome(environment.isBrowser && !environment.isChrome);
-    setNotGoodVersion(
-      environment.isBrowser &&
-        environment.isChrome &&
-        environment.chromeVersion < minimumChromeVersion
-    );
-  }, []);
+  const notChrome = environment.isBrowser && !environment.isChrome;
+  const notGoodVersion =
+    environment.isBrowser &&
+    environment.isChrome &&
+    environment.chromeVersion < minimumChromeVersion;
 
   if (notChrome) {
     return (
@@ -60,6 +55,7 @@ const OSWarningMessage = () => {
   }
   return null;
 };
+
 export const TopTip = ({
   workspace,
 }: {
@@ -68,8 +64,8 @@ export const TopTip = ({
   const loginStatus = useCurrentLoginStatus();
   const isLoggedIn = loginStatus === 'authenticated';
 
-  const [showWarning, setShowWarning] = useState(false);
-  const [showDownloadTip, setShowDownloadTip] = useState(true);
+  const [showWarning, setShowWarning] = useState(shouldShowWarning);
+  const [showLocalDemoTips, setShowLocalDemoTips] = useState(true);
   const [open, setOpen] = useState(false);
 
   const setAuthModal = useSetAtom(authAtom);
@@ -90,23 +86,19 @@ export const TopTip = ({
     setOpen(false);
   }, [onTransformWorkspace, workspace]);
 
-  useEffect(() => {
-    setShowWarning(shouldShowWarning());
-  }, []);
-
   if (
-    showDownloadTip &&
+    showLocalDemoTips &&
     !environment.isDesktop &&
     workspace.flavour === WorkspaceFlavour.LOCAL
   ) {
     return (
       <>
-        <DownloadTips
+        <LocalDemoTips
           isLoggedIn={isLoggedIn}
           onLogin={onLogin}
           onEnableCloud={() => setOpen(true)}
           onClose={() => {
-            setShowDownloadTip(false);
+            setShowLocalDemoTips(false);
           }}
         />
         <EnableAffineCloudModal

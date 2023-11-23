@@ -1,4 +1,4 @@
-import { BrowserWarning, DownloadTips } from '@affine/component/affine-banner';
+import { BrowserWarning, LocalDemoTips } from '@affine/component/affine-banner';
 import type { StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
@@ -24,11 +24,12 @@ export const Default: StoryFn = () => {
 
 export const Download: StoryFn = () => {
   const [, setIsClosed] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   return (
     <div>
-      <DownloadTips
-        isLoggedIn={false}
-        onLogin={() => {}}
+      <LocalDemoTips
+        isLoggedIn={isLoggedIn}
+        onLogin={() => setIsLoggedIn(true)}
         onEnableCloud={() => {}}
         onClose={() => {
           setIsClosed(false);

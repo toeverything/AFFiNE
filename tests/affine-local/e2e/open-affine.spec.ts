@@ -25,22 +25,20 @@ test('Open last workspace when back to affine', async ({ page }) => {
   expect(currentWorkspaceName).toEqual('New Workspace 2');
 });
 
-test.skip('Download client tip', async ({ page }) => {
+test('Download client tip', async ({ page }) => {
   await openHomePage(page);
-  const downloadClientTipItem = page.locator(
-    '[data-testid=download-client-tip]'
-  );
-  await expect(downloadClientTipItem).toBeVisible();
+  const localDemoTipsItem = page.locator('[data-testid=local-demo-tips]');
+  await expect(localDemoTipsItem).toBeVisible();
   const closeButton = page.locator(
-    '[data-testid=download-client-tip-close-button]'
+    '[data-testid=local-demo-tips-close-button]'
   );
   await closeButton.click();
-  await expect(downloadClientTipItem).not.toBeVisible();
-  await page.goto('http://localhost:8080');
-  const currentDownloadClientTipItem = page.locator(
-    '[data-testid=download-client-tip]'
+  await expect(localDemoTipsItem).not.toBeVisible();
+  await page.reload();
+  const currentLocalDemoTipsItemItem = page.locator(
+    '[data-testid=local-demo-tips]'
   );
-  await expect(currentDownloadClientTipItem).toBeVisible();
+  await expect(currentLocalDemoTipsItemItem).toBeVisible();
 });
 
 test('Check the class name for the scrollbar', async ({ page }) => {

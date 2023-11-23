@@ -4,19 +4,19 @@ import { useCallback } from 'react';
 
 import * as styles from './index.css';
 
-type DownloadTipsProps = {
+type LocalDemoTipsProps = {
   isLoggedIn: boolean;
   onLogin: () => void;
   onEnableCloud: () => void;
   onClose: () => void;
 };
 
-export const DownloadTips = ({
+export const LocalDemoTips = ({
   onClose,
   isLoggedIn,
   onLogin,
   onEnableCloud,
-}: DownloadTipsProps) => {
+}: LocalDemoTipsProps) => {
   const content = isLoggedIn
     ? 'This is a local demo workspace, and the data is stored locally. We recommend enabling AFFiNE Cloud.'
     : 'This is a local demo workspace, and the data is stored locally in the browser. We recommend Enabling AFFiNE Cloud or downloading the client for a better experience.';
@@ -33,19 +33,16 @@ export const DownloadTips = ({
   }, [isLoggedIn, onEnableCloud, onLogin]);
 
   return (
-    <div
-      className={styles.downloadTipContainer}
-      data-testid="download-client-tip"
-    >
-      <div className={styles.downloadMessage}>{content}</div>
+    <div className={styles.tipsContainer} data-testid="local-demo-tips">
+      <div className={styles.tipsMessage}>{content}</div>
 
-      <div className={styles.downloadRightItem}>
+      <div className={styles.tipsRightItem}>
         <div>
           <Button onClick={handleClick}>{buttonLabel}</Button>
         </div>
         <IconButton
           onClick={onClose}
-          data-testid="download-client-tip-close-button"
+          data-testid="local-demo-tips-close-button"
         >
           <CloseIcon />
         </IconButton>
@@ -54,4 +51,4 @@ export const DownloadTips = ({
   );
 };
 
-export default DownloadTips;
+export default LocalDemoTips;
