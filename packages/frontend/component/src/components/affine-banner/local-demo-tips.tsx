@@ -1,5 +1,5 @@
+import { Button, IconButton } from '@affine/component/ui/button';
 import { CloseIcon } from '@blocksuite/icons';
-import { Button, IconButton } from '@toeverything/components/button';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';
