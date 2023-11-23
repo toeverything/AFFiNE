@@ -18,8 +18,8 @@ export const createCloudBlobStorage = (workspaceId: string): BlobStorage => {
         const suffix = key.startsWith('/')
           ? key
           : predefinedStaticFiles.includes(key)
-          ? `/static/${key}`
-          : `/api/workspaces/${workspaceId}/blobs/${key}`;
+            ? `/static/${key}`
+            : `/api/workspaces/${workspaceId}/blobs/${key}`;
 
         return fetchWithTraceReport(
           runtimeConfig.serverUrlPrefix + suffix

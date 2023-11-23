@@ -182,8 +182,8 @@ export class RedisCache implements Cache {
         typeof v === 'string'
           ? v
           : Array.isArray(v)
-          ? (v[0] as string)
-          : undefined
+            ? (v[0] as string)
+            : undefined
       )
       .catch(() => undefined);
   }

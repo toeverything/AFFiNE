@@ -41,8 +41,8 @@ const createHelmCommand = ({ isDryRun }) => {
   const staticIpName = isProduction
     ? 'affine-cluster-production'
     : isBeta
-    ? 'affine-cluster-beta'
-    : 'affine-cluster-dev';
+      ? 'affine-cluster-beta'
+      : 'affine-cluster-dev';
   const redisAndPostgres =
     isProduction || isBeta
       ? [

@@ -8,7 +8,7 @@
   "dependencies": {
     "foxact": "^0.2.20",
     "image-blob-reduce": "^4.1.0",
-    "jotai": "^2.4.3",
+    "jotai": "^2.5.1",
     "lodash.debounce": "^4.0.8",
     "p-queue": "^7.4.1",
     "react": "18.2.0",

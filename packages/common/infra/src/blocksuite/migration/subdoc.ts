@@ -192,7 +192,7 @@ function migrateMeta(
 ) {
   const originalMeta = oldDoc.getMap('space:meta');
   const originalVersions = originalMeta.get('versions') as YMap<number>;
-  const originalPages = originalMeta.get('pages') as YArray<YMap<unknown>>;
+  const originalPages = originalMeta.get('pages') as YArray<YMap<string>>;
   const meta = newDoc.getMap('meta');
   const pages = new YArray();
   const blockVersions = originalVersions.clone();
@@ -239,6 +239,7 @@ function migrateBlocks(
     subdoc.guid = id;
     const blocks = subdoc.getMap('blocks');
     Array.from(originalBlocks.entries()).forEach(([key, value]) => {
+      // @ts-expect-error clone method exists
       const blockData = value.clone();
       blocks.set(key, blockData);
       const flavour = blockData.get('sys:flavour') as string;

@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "idb": "^7.1.1",
-    "nanoid": "^5.0.1",
+    "nanoid": "^5.0.3",
     "y-provider": "workspace:*"
   },
   "devDependencies": {
@@ -44,7 +44,7 @@
     "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",
     "y-indexeddb": "^9.0.11",
-    "yjs": "^13.6.8"
+    "yjs": "^13.6.10"
   },
   "peerDependencies": {
     "yjs": "^13"

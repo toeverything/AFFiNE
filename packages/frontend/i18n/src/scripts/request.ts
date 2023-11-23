@@ -1,3 +1,5 @@
+import type { Request } from 'undici-types';
+
 // cSpell:ignore Tolgee
 const TOLGEE_API_KEY = process.env['TOLGEE_API_KEY'];
 const TOLGEE_API_URL = 'https://i18n.affine.pro';
@@ -15,7 +17,7 @@ const withTolgee = (
     'Content-Type': 'application/json',
   });
 
-  const isRequest = (input: RequestInfo | URL): input is Request => {
+  const isRequest = (input: NodeJS.fetch.RequestInfo): input is Request => {
     return typeof input === 'object' && !('href' in input);
   };
 
@@ -31,6 +33,7 @@ const withTolgee = (
           argArray[0] = {
             ...argArray[0],
             url: `${baseUrl}${argArray[0].url}`,
+            // @ts-expect-error Node.js types incorrectly define RequestInit
             headers,
           };
         }

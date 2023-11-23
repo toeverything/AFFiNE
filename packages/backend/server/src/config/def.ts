@@ -57,10 +57,10 @@ export function parseEnvValue(value: string | undefined, type?: EnvConfigType) {
   return type === 'int'
     ? int(value)
     : type === 'float'
-    ? float(value)
-    : type === 'boolean'
-    ? boolean(value)
-    : value;
+      ? float(value)
+      : type === 'boolean'
+        ? boolean(value)
+        : value;
 }
 
 /**

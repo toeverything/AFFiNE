@@ -2,6 +2,7 @@ import type { i18n, Resource } from 'i18next';
 import i18next from 'i18next';
 import {
   I18nextProvider,
+  type I18nextProviderProps,
   initReactI18next,
   Trans,
   useTranslation as useRootTranslation,
@@ -66,8 +67,9 @@ const standardizeLocale = (language: string) => {
   return fallbackLng;
 };
 
-export const createI18n = () => {
-  const i18n = i18next.createInstance();
+export const createI18n = (): I18nextProviderProps['i18n'] => {
+  // @ts-expect-error ts bug
+  const i18n: I18nextProviderProps['i18n'] = i18next.createInstance();
   i18n
     .use(initReactI18next)
     .init({
