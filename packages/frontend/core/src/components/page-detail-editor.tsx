@@ -289,7 +289,7 @@ const LayoutPanel = memo(function LayoutPanel(
         className={depth === 0 ? editorContainer : undefined}
       >
         <Panel
-          defaultSize={node.splitPercentage}
+          defaultSizePercentage={node.splitPercentage}
           style={{
             maxWidth: node.maxWidth?.[0],
           }}
@@ -304,7 +304,7 @@ const LayoutPanel = memo(function LayoutPanel(
         </Panel>
         <PanelResizeHandle />
         <Panel
-          defaultSize={100 - node.splitPercentage}
+          defaultSizePercentage={100 - node.splitPercentage}
           style={{
             overflow: 'scroll',
             maxWidth: node.maxWidth?.[1],
