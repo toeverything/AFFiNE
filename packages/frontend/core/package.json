@@ -30,6 +30,7 @@
     "@blocksuite/editor": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@blocksuite/global": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@blocksuite/icons": "2.1.36",
+    "@blocksuite/lit": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@blocksuite/store": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@blocksuite/virgo": "0.0.0-20231122113751-6bf81eb3-nightly",
     "@dnd-kit/core": "^6.0.8",
