@@ -119,12 +119,7 @@ export class WorkspacesController {
     const docId = new DocID(guid, ws);
     let ts;
     try {
-      const timeNum = parseInt(timestamp);
-      if (Number.isNaN(timeNum)) {
-        throw new Error('Invalid timestamp');
-      }
-
-      ts = new Date(timeNum);
+      ts = new Date(timestamp);
     } catch (e) {
       throw new Error('Invalid timestamp');
     }
