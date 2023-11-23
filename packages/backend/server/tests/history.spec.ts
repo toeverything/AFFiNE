@@ -74,9 +74,9 @@ test('should create doc history if never created before', async t => {
   t.is(history?.timestamp.getTime(), timestamp.getTime());
 });
 
-test('should not create history is timestamp equals to last record', async t => {
+test('should not create history if timestamp equals to last record', async t => {
   const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({ timestamp });
+  Sinon.stub(manager, 'last').resolves({ timestamp, state: null });
 
   await manager.onDocUpdated({
     ...snapshot,
@@ -93,10 +93,55 @@ test('should not create history is timestamp equals to last record', async t => 
   t.falsy(history);
 });
 
-test('should create history if time diff is larger than interval config', async t => {
+test('should not create history if state equals to last record', async t => {
+  const timestamp = new Date();
+  Sinon.stub(manager, 'last').resolves({
+    timestamp: new Date(timestamp.getTime() - 1),
+    state: snapshot.state,
+  });
+
+  await manager.onDocUpdated({
+    ...snapshot,
+    updatedAt: timestamp,
+  });
+
+  const history = await db.snapshotHistory.findFirst({
+    where: {
+      workspaceId: '1',
+      id: 'doc1',
+    },
+  });
+
+  t.falsy(history);
+});
+
+test('should not create history if time diff is less than interval config', async t => {
+  const timestamp = new Date();
+  Sinon.stub(manager, 'last').resolves({
+    timestamp: new Date(timestamp.getTime() - 1000),
+    state: Buffer.from([0, 1]),
+  });
+
+  await manager.onDocUpdated({
+    ...snapshot,
+    updatedAt: timestamp,
+  });
+
+  const history = await db.snapshotHistory.findFirst({
+    where: {
+      workspaceId: '1',
+      id: 'doc1',
+    },
+  });
+
+  t.falsy(history);
+});
+
+test('should create history if time diff is larger than interval config and state diff', async t => {
   const timestamp = new Date();
   Sinon.stub(manager, 'last').resolves({
     timestamp: new Date(timestamp.getTime() - 1000 * 60 * 20),
+    state: Buffer.from([0, 1]),
   });
 
   await manager.onDocUpdated({
@@ -114,31 +159,11 @@ test('should create history if time diff is larger than interval config', async 
   t.truthy(history);
 });
 
-test('should not create history if time diff is less than interval config', async t => {
-  const timestamp = new Date();
-  Sinon.stub(manager, 'last').resolves({
-    timestamp: new Date(timestamp.getTime() - 1000),
-  });
-
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: timestamp,
-  });
-
-  const history = await db.snapshotHistory.findFirst({
-    where: {
-      workspaceId: '1',
-      id: 'doc1',
-    },
-  });
-
-  t.falsy(history);
-});
-
 test('should create history with force flag even if time diff in small', async t => {
   const timestamp = new Date();
   Sinon.stub(manager, 'last').resolves({
     timestamp: new Date(timestamp.getTime() - 1),
+    state: Buffer.from([0, 1]),
   });
 
   await manager.onDocUpdated(
@@ -309,4 +334,8 @@ test('should be able to cleanup expired history', async t => {
 
   count = await db.snapshotHistory.count();
   t.is(count, 10);
+
+  const example = await db.snapshotHistory.findFirst();
+  t.truthy(example);
+  t.true(example!.expiredAt > new Date());
 });

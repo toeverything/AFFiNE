@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -41,6 +43,14 @@ export class DocHistoryManager {
     }
 
     if (shouldCreateHistory) {
+      // skip the history recording when no actual update on snapshot happended
+      if (last && isDeepStrictEqual(last.state, snapshot.state)) {
+        this.logger.debug(
+          `State matches, skip creating history record for ${snapshot.id} in workspace ${snapshot.workspaceId}`
+        );
+        return;
+      }
+
       await this.db.snapshotHistory
         .create({
           select: {
@@ -129,6 +139,7 @@ export class DocHistoryManager {
       },
       select: {
         timestamp: true,
+        state: true,
       },
       orderBy: {
         timestamp: 'desc',
