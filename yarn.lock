@@ -215,7 +215,7 @@ __metadata:
     "@blocksuite/blocks": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/editor": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/global": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@blocksuite/store": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@dnd-kit/core": "npm:^6.0.8"
     "@dnd-kit/modifiers": "npm:^6.0.1"
@@ -290,7 +290,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@toeverything/components": "npm:^0.0.46"
     "@types/marked": "npm:^6.0.0"
     "@vanilla-extract/css": "npm:^1.13.0"
@@ -328,7 +328,7 @@ __metadata:
     "@blocksuite/blocks": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/editor": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/global": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@blocksuite/store": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/virgo": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@dnd-kit/core": "npm:^6.0.8"
@@ -525,7 +525,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@toeverything/components": "npm:^0.0.46"
   languageName: unknown
   linkType: soft
@@ -550,7 +550,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@toeverything/components": "npm:^0.0.46"
     "@toeverything/theme": "npm:^0.7.24"
     clsx: "npm:^2.0.0"
@@ -651,7 +651,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/plugin-cli": "workspace:*"
     "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@toeverything/components": "npm:^0.0.46"
     jotai: "npm:^2.5.1"
     react: "npm:18.2.0"
@@ -810,7 +810,7 @@ __metadata:
     "@blocksuite/blocks": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/editor": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/global": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
-    "@blocksuite/icons": "npm:2.1.35"
+    "@blocksuite/icons": "npm:2.1.36"
     "@blocksuite/store": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@blocksuite/virgo": "npm:0.0.0-20231122113751-6bf81eb3-nightly"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -4120,13 +4120,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.35, @blocksuite/icons@npm:^2.1.33":
-  version: 2.1.35
-  resolution: "@blocksuite/icons@npm:2.1.35"
+"@blocksuite/icons@npm:2.1.36, @blocksuite/icons@npm:^2.1.33":
+  version: 2.1.36
+  resolution: "@blocksuite/icons@npm:2.1.36"
   peerDependencies:
     "@types/react": ^18.0.25
     react: ^18.2.0
-  checksum: 4a7c1d11ae573b5c2cd3fc0c570892ab3ea1b5108cf6c59759186f56022901ef99a7344d54df45d85d721d6a199c88aa12b22b5791c4357068ea3074318699c8
+  checksum: a5118a2fdc8a4d94ec9cb0a3d0530f520172594572120bb447070975fd6e76ebc59ff5959d071bbef048c7e85344a770cd007e8a87d3404cd3c2a4d9eab394d4
   languageName: node
   linkType: hard
 
