@@ -1,8 +1,10 @@
 import { AffineShapeIcon } from '@affine/component/page-list'; // TODO: import from page-list temporarily, need to defined common svg icon/images management.
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Button } from '@toeverything/components/button';
+import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import { useCallback, useMemo } from 'react';
 
+import { pathGenerator } from '../../shared';
 import * as styles from './upgrade.css';
 import { type UpgradeState, useUpgradeWorkspace } from './upgrade-hooks';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
@@ -32,11 +34,18 @@ function UpgradeIcon({ upgradeState }: { upgradeState: UpgradeState }) {
   );
 }
 
+interface WorkspaceUpgradeProps {
+  migration: MigrationPoint;
+}
+
 /**
  * TODO: Help info is not implemented yet.
  */
-export const WorkspaceUpgrade = function MigrationFallback() {
-  const [upgradeState, , upgradeWorkspace] = useUpgradeWorkspace();
+export const WorkspaceUpgrade = function WorkspaceUpgrade(
+  props: WorkspaceUpgradeProps
+) {
+  const [upgradeState, , upgradeWorkspace, newWorkspaceId] =
+    useUpgradeWorkspace(props.migration);
   const t = useAFFiNEI18N();
 
   const refreshPage = useCallback(() => {
@@ -45,6 +54,12 @@ export const WorkspaceUpgrade = function MigrationFallback() {
 
   const onButtonClick = useMemo(() => {
     if (upgradeState === 'done') {
+      if (newWorkspaceId) {
+        return () => {
+          window.location.replace(pathGenerator.all(newWorkspaceId));
+        };
+      }
+
       return refreshPage;
     }
 
@@ -53,7 +68,7 @@ export const WorkspaceUpgrade = function MigrationFallback() {
     }
 
     return undefined;
-  }, [upgradeState, upgradeWorkspace, refreshPage]);
+  }, [upgradeState, upgradeWorkspace, refreshPage, newWorkspaceId]);
 
   return (
     <div className={styles.layout}>

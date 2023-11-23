@@ -27,6 +27,7 @@ import {
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
+import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -112,12 +113,12 @@ export const CurrentWorkspaceContext = ({
 };
 
 type WorkspaceLayoutProps = {
-  incompatible?: boolean;
+  migration?: MigrationPoint;
 };
 
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
-  incompatible = false,
+  migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) {
   return (
     <AdapterProviderWrapper>
@@ -128,7 +129,7 @@ export const WorkspaceLayout = function WorkspacesSuspense({
           <CurrentWorkspaceModals />
         </Suspense>
         <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner incompatible={incompatible}>
+          <WorkspaceLayoutInner migration={migration}>
             {children}
           </WorkspaceLayoutInner>
         </Suspense>
@@ -139,7 +140,7 @@ export const WorkspaceLayout = function WorkspacesSuspense({
 
 export const WorkspaceLayoutInner = ({
   children,
-  incompatible = false,
+  migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
@@ -262,7 +263,11 @@ export const WorkspaceLayoutInner = ({
               padding={appSettings.clientBorder}
               inTrashPage={inTrashPage}
             >
-              {incompatible ? <WorkspaceUpgrade /> : children}
+              {migration ? (
+                <WorkspaceUpgrade migration={migration} />
+              ) : (
+                children
+              )}
               <ToolContainer inTrashPage={inTrashPage}>
                 <RootBlockHub />
                 <HelpIsland showList={pageId ? undefined : showList} />

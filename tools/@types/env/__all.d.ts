@@ -44,11 +44,6 @@ declare global {
         ): this;
       };
     };
-    $migrationDone: boolean | undefined;
-  }
-
-  interface WindowEventMap {
-    'migration-done': CustomEvent;
   }
 
   // eslint-disable-next-line no-var
