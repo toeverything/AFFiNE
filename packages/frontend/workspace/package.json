@@ -22,6 +22,7 @@
     "@toeverything/y-indexeddb": "workspace:*",
     "async-call-rpc": "^6.3.1",
     "idb": "^7.1.1",
+    "idb-keyval": "^6.2.1",
     "is-svg": "^5.0.0",
     "jotai": "^2.5.1",
     "js-base64": "^3.7.5",

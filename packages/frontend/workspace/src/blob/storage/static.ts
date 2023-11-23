@@ -1,6 +1,4 @@
-import type { BlobStorage } from '@blocksuite/store';
-
-import { bufferToBlob } from './util';
+import type { BlobStorage } from '../engine';
 
 export const predefinedStaticFiles = [
   '029uztLz2CzJezK7UUhrbGiWUdZ0J7NVs_qR6RDsvb8=',
@@ -38,38 +36,36 @@ export const predefinedStaticFiles = [
   'v2yF7lY2L5rtorTtTmYFsoMb9dBPKs5M1y9cUKxcI1M=',
 ];
 
-export const createStaticStorage = (): BlobStorage => {
+export const createStaticBlobStorage = (): BlobStorage => {
   return {
-    crud: {
-      get: async (key: string) => {
-        const isStaticResource =
-          predefinedStaticFiles.includes(key) || key.startsWith('/static/');
+    name: 'static',
+    readonly: true,
+    get: async (key: string) => {
+      const isStaticResource =
+        predefinedStaticFiles.includes(key) || key.startsWith('/static/');
 
-        if (!isStaticResource) {
-          return null;
-        }
+      if (!isStaticResource) {
+        return undefined;
+      }
 
-        const path = key.startsWith('/static/') ? key : `/static/${key}`;
-        const response = await fetch(path);
+      const path = key.startsWith('/static/') ? key : `/static/${key}`;
+      const response = await fetch(path);
 
-        if (response.ok) {
-          const buffer = await response.arrayBuffer();
-          return bufferToBlob(buffer);
-        }
+      if (response.ok) {
+        return await response.blob();
+      }
 
-        return null;
-      },
-      set: async (key: string) => {
-        // ignore
-        return key;
-      },
-      delete: async () => {
-        // ignore
-      },
-      list: async () => {
-        // ignore
-        return [];
-      },
+      return undefined;
+    },
+    set: async () => {
+      // ignore
+    },
+    delete: async () => {
+      // ignore
+    },
+    list: async () => {
+      // ignore
+      return [];
     },
   };
 };

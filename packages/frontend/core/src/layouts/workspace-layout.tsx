@@ -14,6 +14,7 @@ import {
 } from '@affine/component/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { getBlobEngine } from '@affine/workspace/manager';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -116,10 +117,44 @@ type WorkspaceLayoutProps = {
   migration?: MigrationPoint;
 };
 
+const useSyncWorkspaceBlob = () => {
+  // temporary solution for sync blob
+
+  const [currentWorkspace] = useCurrentWorkspace();
+
+  useEffect(() => {
+    const blobEngine = getBlobEngine(currentWorkspace.blockSuiteWorkspace);
+    let stopped = false;
+    function sync() {
+      if (stopped) {
+        return;
+      }
+
+      blobEngine
+        ?.sync()
+        .catch(error => {
+          console.error('sync blob error', error);
+        })
+        .finally(() => {
+          // sync every 1 minute
+          setTimeout(sync, 60000);
+        });
+    }
+
+    // after currentWorkspace changed, wait 1 second to start sync
+    setTimeout(sync, 1000);
+
+    return () => {
+      stopped = true;
+    };
+  }, [currentWorkspace]);
+};
+
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
   migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) {
+  useSyncWorkspaceBlob();
   return (
     <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
