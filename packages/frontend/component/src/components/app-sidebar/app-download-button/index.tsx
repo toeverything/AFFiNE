@@ -30,7 +30,7 @@ export function AppDownloadButton({
   return (
     <button
       style={style}
-      className={clsx([styles.root, className])}
+      className={clsx([styles.root, styles.rootPadding, className])}
       onClick={handleClick}
     >
       <div className={clsx([styles.label])}>
