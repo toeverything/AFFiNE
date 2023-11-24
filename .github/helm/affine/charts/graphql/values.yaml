@@ -72,11 +72,8 @@ podSecurityContext:
   fsGroup: 2000
 
 resources:
-  limits:
-    cpu: '4'
-    memory: 8Gi
   requests:
-    cpu: '2'
+    cpu: '4'
     memory: 4Gi
 
 probe:

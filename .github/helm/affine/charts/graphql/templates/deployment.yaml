@@ -35,6 +35,8 @@ spec:
                 key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
+          - name: NODE_OPTIONS
+            value: "--max-old-space-size=4096"
           - name: NO_COLOR
             value: "1"
           - name: SERVER_FLAVOR
