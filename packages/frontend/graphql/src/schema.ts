@@ -62,6 +62,7 @@ export enum SubscriptionPlan {
   Enterprise = 'Enterprise',
   Free = 'Free',
   Pro = 'Pro',
+  SelfHosted = 'SelfHosted',
   Team = 'Team',
 }
 

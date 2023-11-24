@@ -6,6 +6,7 @@ import { GqlModule } from '../graphql.module';
 import { ServerConfigModule } from './config';
 import { DocModule } from './doc';
 import { PaymentModule } from './payment';
+import { SelfHostedModule } from './self-hosted';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
@@ -25,10 +26,12 @@ switch (SERVER_FLAVOR) {
   case 'selfhosted':
     BusinessModules.push(
       ServerConfigModule,
+      SelfHostedModule,
       ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,
+      SyncModule,
       DocModule.forRoot()
     );
     break;
