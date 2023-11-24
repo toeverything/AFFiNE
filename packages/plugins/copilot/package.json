@@ -38,5 +38,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.10.3-canary.2"
+  "version": "0.10.3-beta.0"
 }
