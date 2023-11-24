@@ -545,6 +545,20 @@ mutation sendVerifyChangeEmail($token: String!, $email: String!, $callbackUrl: S
 }`,
 };
 
+export const serverConfigQuery = {
+  id: 'serverConfigQuery' as const,
+  operationName: 'serverConfig',
+  definitionName: 'serverConfig',
+  containsFile: false,
+  query: `
+query serverConfig {
+  serverConfig {
+    version
+    flavor
+  }
+}`,
+};
+
 export const setWorkspacePublicByIdMutation = {
   id: 'setWorkspacePublicByIdMutation' as const,
   operationName: 'setWorkspacePublicById',

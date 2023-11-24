@@ -533,6 +533,17 @@ export type SendVerifyChangeEmailMutation = {
   sendVerifyChangeEmail: boolean;
 };
 
+export type ServerConfigQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ServerConfigQuery = {
+  __typename?: 'Query';
+  serverConfig: {
+    __typename?: 'ServerConfigType';
+    version: string;
+    flavor: string;
+  };
+};
+
 export type SetWorkspacePublicByIdMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   public: Scalars['Boolean']['input'];
@@ -731,6 +742,11 @@ export type Queries =
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
+    }
+  | {
+      name: 'serverConfigQuery';
+      variables: ServerConfigQueryVariables;
+      response: ServerConfigQuery;
     }
   | {
       name: 'subscriptionQuery';
