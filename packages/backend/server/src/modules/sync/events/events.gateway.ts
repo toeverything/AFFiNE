@@ -28,8 +28,46 @@ import {
   WorkspaceNotFoundError,
 } from './error';
 
+export const GatewayErrorWrapper = (): MethodDecorator => {
+  // @ts-expect-error allow
+  return (
+    _target,
+    _key,
+    desc: TypedPropertyDescriptor<(...args: any[]) => any>
+  ) => {
+    const originalMethod = desc.value;
+    if (!originalMethod) {
+      return desc;
+    }
+
+    desc.value = function (...args: any[]) {
+      let result: any;
+      try {
+        result = originalMethod.apply(this, args);
+      } catch (e) {
+        return {
+          error: new InternalError(e as Error),
+        };
+      }
+
+      if (result instanceof Promise) {
+        return result.catch(e => {
+          return {
+            error: new InternalError(e),
+          };
+        });
+      } else {
+        return result;
+      }
+    };
+
+    return desc;
+  };
+};
+
 const SubscribeMessage = (event: string) =>
   applyDecorators(
+    GatewayErrorWrapper(),
     CallCounter('socket_io_counter', { event }),
     CallTimer('socket_io_timer', { event }),
     RawSubscribeMessage(event)
@@ -233,25 +271,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
     }
 
-    try {
-      const docId = new DocID(guid, workspaceId);
-      client
-        .to(docId.workspace)
-        .emit('server-updates', { workspaceId, guid, updates });
+    const docId = new DocID(guid, workspaceId);
+    client
+      .to(docId.workspace)
+      .emit('server-updates', { workspaceId, guid, updates });
 
-      const buffers = updates.map(update => Buffer.from(update, 'base64'));
+    const buffers = updates.map(update => Buffer.from(update, 'base64'));
 
-      await this.docManager.batchPush(docId.workspace, docId.guid, buffers);
-      return {
-        data: {
-          accepted: true,
-        },
-      };
-    } catch (e) {
-      return {
-        error: new InternalError(e as Error),
-      };
-    }
+    await this.docManager.batchPush(docId.workspace, docId.guid, buffers);
+    return {
+      data: {
+        accepted: true,
+      },
+    };
   }
 
   @Auth()
