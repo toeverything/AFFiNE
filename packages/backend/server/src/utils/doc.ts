@@ -55,7 +55,12 @@ export class DocID {
     let parts = raw.split(':');
 
     if (parts.length > 3) {
-      throw new Error(`Invalid format of Doc ID: ${raw}`);
+      // special adapt case `wsId:space:page:pageId`
+      if (parts[1] === DocVariant.Space && parts[2] === DocVariant.Page) {
+        parts = [workspaceId ?? parts[0], DocVariant.Space, parts[3]];
+      } else {
+        throw new Error(`Invalid format of Doc ID: ${raw}`);
+      }
     } else if (parts.length === 2) {
       // `${variant}:${guid}`
       if (!workspaceId) {

@@ -68,8 +68,8 @@ const createHelmCommand = ({ isDryRun }) => {
         ]
       : [];
   const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
-  const graphqlReplicaCount = isProduction ? 10 : isBeta ? 10 : 2;
-  const syncReplicaCount = isProduction ? 10 : isBeta ? 10 : 2;
+  const graphqlReplicaCount = isProduction ? 10 : isBeta ? 5 : 2;
+  const syncReplicaCount = isProduction ? 10 : isBeta ? 5 : 2;
   const namespace = isProduction ? 'production' : isBeta ? 'beta' : 'dev';
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const host = DEPLOY_HOST || CANARY_DEPLOY_HOST;

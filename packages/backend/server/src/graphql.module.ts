@@ -8,14 +8,13 @@ import { fileURLToPath } from 'url';
 
 import { Config } from './config';
 import { GQLLoggerPlugin } from './graphql/logger-plugin';
-import { Metrics } from './metrics/metrics';
 
 @Global()
 @Module({
   imports: [
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      useFactory: (config: Config, metrics: Metrics) => {
+      useFactory: (config: Config) => {
         return {
           ...config.graphql,
           path: `${config.path}/graphql`,
@@ -31,10 +30,10 @@ import { Metrics } from './metrics/metrics';
             req,
             res,
           }),
-          plugins: [new GQLLoggerPlugin(metrics)],
+          plugins: [new GQLLoggerPlugin()],
         };
       },
-      inject: [Config, Metrics],
+      inject: [Config],
     }),
   ],
 })
