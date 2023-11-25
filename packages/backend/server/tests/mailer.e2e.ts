@@ -12,6 +12,7 @@ import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
 import { GqlModule } from '../src/graphql.module';
+import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
 import { PrismaModule } from '../src/prisma';
@@ -43,6 +44,7 @@ test.beforeEach(async t => {
       PrismaModule,
       GqlModule,
       AuthModule,
+      MetricsModule,
       RateLimiterModule,
     ],
   }).compile();

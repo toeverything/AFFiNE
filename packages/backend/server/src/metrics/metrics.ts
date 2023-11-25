@@ -1,76 +1,31 @@
-import opentelemetry, { Attributes, Observable } from '@opentelemetry/api';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { register } from 'prom-client';
 
-interface AsyncMetric {
-  ob: Observable;
-  get value(): any;
-  get attrs(): Attributes | undefined;
-}
+import { metricsCreator } from './utils';
 
-let _metrics: ReturnType<typeof createBusinessMetrics> | undefined = undefined;
-
-export function getMeter(name = 'business') {
-  return opentelemetry.metrics.getMeter(name);
-}
-
-function createBusinessMetrics() {
-  const meter = getMeter();
-  const asyncMetrics: AsyncMetric[] = [];
-
-  function createGauge(name: string) {
-    let value: any;
-    let attrs: Attributes | undefined;
-    const ob = meter.createObservableGauge(name);
-    asyncMetrics.push({
-      ob,
-      get value() {
-        return value;
-      },
-      get attrs() {
-        return attrs;
-      },
-    });
-
-    return (newValue: any, newAttrs?: Attributes) => {
-      value = newValue;
-      attrs = newAttrs;
-    };
+@Injectable()
+export class Metrics implements OnModuleDestroy {
+  onModuleDestroy(): void {
+    register.clear();
   }
 
-  const metrics = {
-    socketIOConnectionGauge: createGauge('socket_io_connection'),
-
-    gqlRequest: meter.createCounter('gql_request'),
-    gqlError: meter.createCounter('gql_error'),
-    gqlTimer: meter.createHistogram('gql_timer'),
-
-    jwstCodecMerge: meter.createCounter('jwst_codec_merge'),
-    jwstCodecDidnotMatch: meter.createCounter('jwst_codec_didnot_match'),
-    jwstCodecFail: meter.createCounter('jwst_codec_fail'),
-
-    authCounter: meter.createCounter('auth'),
-    authFailCounter: meter.createCounter('auth_fail'),
-
-    docHistoryCounter: meter.createCounter('doc_history_created'),
-    docRecoverCounter: meter.createCounter('doc_history_recovered'),
-  };
-
-  meter.addBatchObservableCallback(
-    result => {
-      asyncMetrics.forEach(metric => {
-        result.observe(metric.ob, metric.value, metric.attrs);
-      });
-    },
-    asyncMetrics.map(({ ob }) => ob)
+  socketIOEventCounter = metricsCreator.counter('socket_io_counter', ['event']);
+  socketIOEventTimer = metricsCreator.timer('socket_io_timer', ['event']);
+  socketIOConnectionGauge = metricsCreator.gauge(
+    'socket_io_connection_counter'
   );
 
-  return metrics;
-}
+  gqlRequest = metricsCreator.counter('gql_request', ['operation']);
+  gqlError = metricsCreator.counter('gql_error', ['operation']);
+  gqlTimer = metricsCreator.timer('gql_timer', ['operation']);
 
-export function registerBusinessMetrics() {
-  if (!_metrics) {
-    _metrics = createBusinessMetrics();
-  }
+  jwstCodecMerge = metricsCreator.counter('jwst_codec_merge');
+  jwstCodecDidnotMatch = metricsCreator.counter('jwst_codec_didnot_match');
+  jwstCodecFail = metricsCreator.counter('jwst_codec_fail');
 
-  return _metrics;
+  authCounter = metricsCreator.counter('auth');
+  authFailCounter = metricsCreator.counter('auth_fail', ['reason']);
+
+  docHistoryCounter = metricsCreator.counter('doc_history_created');
+  docRecoverCounter = metricsCreator.counter('doc_history_recovered');
 }
-export const metrics = registerBusinessMetrics;

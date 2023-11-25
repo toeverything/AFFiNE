@@ -19,7 +19,7 @@ import {
 
 import { Cache } from '../../cache';
 import { Config } from '../../config';
-import { metrics } from '../../metrics/metrics';
+import { Metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
 
@@ -70,6 +70,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     private readonly automation: boolean,
     private readonly db: PrismaService,
     private readonly config: Config,
+    private readonly metrics: Metrics,
     private readonly cache: Cache,
     private readonly event: EventEmitter2
   ) {}
@@ -125,13 +126,13 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       this.config.doc.manager.experimentalMergeWithJwstCodec &&
       updates.length < 100 /* avoid overloading */
     ) {
-      metrics().jwstCodecMerge.add(1);
+      this.metrics.jwstCodecMerge(1, {});
       const yjsResult = Buffer.from(encodeStateAsUpdate(doc));
       let log = false;
       try {
         const jwstResult = jwstMergeUpdates(updates);
         if (!compare(yjsResult, jwstResult)) {
-          metrics().jwstCodecDidnotMatch.add(1);
+          this.metrics.jwstCodecDidnotMatch(1, {});
           this.logger.warn(
             `jwst codec result doesn't match yjs codec result for: ${guid}`
           );
@@ -142,7 +143,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           }
         }
       } catch (e) {
-        metrics().jwstCodecFail.add(1);
+        this.metrics.jwstCodecFail(1, {});
         this.logger.warn(`jwst apply update failed for ${guid}: ${e}`);
         log = true;
       } finally {

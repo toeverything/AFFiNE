@@ -7,12 +7,14 @@ import { Plugin } from '@nestjs/apollo';
 import { Logger } from '@nestjs/common';
 import { Response } from 'express';
 
-import { metrics } from '../metrics/metrics';
+import { Metrics } from '../metrics/metrics';
 import { ReqContext } from '../types';
 
 @Plugin()
 export class GQLLoggerPlugin implements ApolloServerPlugin {
   protected logger = new Logger(GQLLoggerPlugin.name);
+
+  constructor(private readonly metrics: Metrics) {}
 
   requestDidStart(
     reqContext: GraphQLRequestContext<ReqContext>
@@ -20,26 +22,25 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
     const res = reqContext.contextValue.req.res as Response;
     const operation = reqContext.request.operationName;
 
-    metrics().gqlRequest.add(1, { operation });
-    const start = Date.now();
+    this.metrics.gqlRequest(1, { operation });
+    const timer = this.metrics.gqlTimer({ operation });
 
     return Promise.resolve({
       willSendResponse: () => {
-        const costInMilliseconds = Date.now() - start;
+        const costInMilliseconds = timer() * 1000;
         res.setHeader(
           'Server-Timing',
           `gql;dur=${costInMilliseconds};desc="GraphQL"`
         );
-        metrics().gqlTimer.record(costInMilliseconds, { operation });
         return Promise.resolve();
       },
       didEncounterErrors: () => {
-        const costInMilliseconds = Date.now() - start;
+        this.metrics.gqlError(1, { operation });
+        const costInMilliseconds = timer() * 1000;
         res.setHeader(
           'Server-Timing',
           `gql;dur=${costInMilliseconds};desc="GraphQL ${operation}"`
         );
-        metrics().gqlTimer.record(costInMilliseconds, { operation });
         return Promise.resolve();
       },
     });

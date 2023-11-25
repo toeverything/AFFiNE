@@ -6,7 +6,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import type { Snapshot } from '@prisma/client';
 
 import { Config } from '../../config';
-import { metrics } from '../../metrics';
+import { Metrics } from '../../metrics';
 import { PrismaService } from '../../prisma';
 import { SubscriptionStatus } from '../payment/service';
 import { Permission } from '../workspaces/types';
@@ -16,7 +16,8 @@ export class DocHistoryManager {
   private readonly logger = new Logger(DocHistoryManager.name);
   constructor(
     private readonly config: Config,
-    private readonly db: PrismaService
+    private readonly db: PrismaService,
+    private readonly metrics: Metrics
   ) {}
 
   @OnEvent('doc:manager:snapshot:beforeUpdate')
@@ -68,7 +69,7 @@ export class DocHistoryManager {
           // safe to ignore
           // only happens when duplicated history record created in multi processes
         });
-      metrics().docHistoryCounter.add(1, {});
+      this.metrics.docHistoryCounter(1, {});
       this.logger.log(
         `History created for ${snapshot.id} in workspace ${snapshot.workspaceId}.`
       );
@@ -182,7 +183,7 @@ export class DocHistoryManager {
     //  which is not the solution in CRDT.
     //  let user revert in client and update the data in sync system
     //    `await this.db.snapshot.update();`
-    metrics().docRecoverCounter.add(1, {});
+    this.metrics.docRecoverCounter(1, {});
 
     return history.timestamp;
   }

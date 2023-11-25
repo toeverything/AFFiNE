@@ -5,6 +5,7 @@ import test from 'ava';
 
 import { ConfigModule } from '../src/config';
 import { GqlModule } from '../src/graphql.module';
+import { MetricsModule } from '../src/metrics';
 import { AuthModule } from '../src/modules/auth';
 import { AuthResolver } from '../src/modules/auth/resolver';
 import { AuthService } from '../src/modules/auth/service';
@@ -39,6 +40,7 @@ test.beforeEach(async () => {
       PrismaModule,
       GqlModule,
       AuthModule,
+      MetricsModule,
       RateLimiterModule,
     ],
   }).compile();

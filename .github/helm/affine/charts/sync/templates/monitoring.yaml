@@ -1,0 +1,13 @@
+{{- if .Values.global.gke.enabled -}}
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: "{{ .Chart.Name }}-monitoring"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "{{ include "sync.name" . }}"
+  endpoints:
+    - port: {{ .Values.service.port }}
+      interval: 30s
+{{- end }}
