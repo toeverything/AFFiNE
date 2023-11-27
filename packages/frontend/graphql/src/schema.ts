@@ -373,6 +373,25 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type ListHistoryQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageDocId: Scalars['String']['input'];
+  take: InputMaybe<Scalars['Int']['input']>;
+  before: InputMaybe<Scalars['DateTime']['input']>;
+}>;
+
+export type ListHistoryQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    histories: Array<{
+      __typename?: 'DocHistoryType';
+      id: string;
+      timestamp: string;
+    }>;
+  };
+};
+
 export type GetInvoicesCountQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetInvoicesCountQuery = {
@@ -443,6 +462,17 @@ export type PublishPageMutation = {
     id: string;
     mode: PublicPageMode;
   };
+};
+
+export type RecoverDocMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  timestamp: Scalars['DateTime']['input'];
+}>;
+
+export type RecoverDocMutation = {
+  __typename?: 'Mutation';
+  recoverDoc: string;
 };
 
 export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
@@ -730,6 +760,11 @@ export type Queries =
       response: GetWorkspacesQuery;
     }
   | {
+      name: 'listHistoryQuery';
+      variables: ListHistoryQueryVariables;
+      response: ListHistoryQuery;
+    }
+  | {
       name: 'getInvoicesCountQuery';
       variables: GetInvoicesCountQueryVariables;
       response: GetInvoicesCountQuery;
@@ -815,6 +850,11 @@ export type Mutations =
       name: 'publishPageMutation';
       variables: PublishPageMutationVariables;
       response: PublishPageMutation;
+    }
+  | {
+      name: 'recoverDocMutation';
+      variables: RecoverDocMutationVariables;
+      response: RecoverDocMutation;
     }
   | {
       name: 'removeAvatarMutation';

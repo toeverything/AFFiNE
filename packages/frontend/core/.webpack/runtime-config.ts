@@ -33,6 +33,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCaptcha: true,
       enableEnhanceShareMode: false,
       enablePayment: true,
+      enablePageHistory: false,
       serverUrlPrefix: 'https://insider.affine.pro', // Let insider be stable environment temporarily.
       editorFlags,
       appVersion: packageJson.version,
@@ -41,6 +42,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     get beta() {
       return {
         ...this.stable,
+        enablePageHistory: false,
         serverUrlPrefix: 'https://insider.affine.pro',
       };
     },
@@ -75,6 +77,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCaptcha: true,
       enableEnhanceShareMode: false,
       enablePayment: true,
+      enablePageHistory: true,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -142,6 +145,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.enablePayment,
+    enablePageHistory: process.env.ENABLE_PAGE_HISTORY
+      ? process.env.ENABLE_PAGE_HISTORY === 'true'
+      : buildFlags.mode === 'development'
+        ? true
+        : currentBuildPreset.enablePageHistory,
   };
 
   if (buildFlags.mode === 'development') {

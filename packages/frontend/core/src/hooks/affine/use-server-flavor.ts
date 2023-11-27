@@ -12,7 +12,12 @@ const errorHandler: Middleware = useSWRNext => (key, fetcher, config) => {
 export const useServerFlavor = () => {
   const { data: config, error } = useQuery(
     { query: serverConfigQuery },
-    { use: [errorHandler] }
+    {
+      use: [errorHandler],
+      revalidateOnFocus: false,
+      revalidateOnMount: false,
+      revalidateIfStale: false,
+    }
   );
 
   if (error || !config) {
