@@ -12,6 +12,8 @@ import {
 } from '@toeverything/infra/blocksuite';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
+import type { Doc } from 'yjs';
+import { type Array as YArray, Map as YMap } from 'yjs';
 import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { mainRPC } from '../main-rpc';
@@ -128,6 +130,111 @@ export const applyGuidCompatibilityFix = async (db: SqliteConnection) => {
   guidCompatibilityFix(rootDoc);
 
   // todo: backup?
+  await db.replaceUpdates(undefined, [
+    {
+      docId: undefined,
+      data: encodeStateAsUpdate(rootDoc),
+    },
+  ]);
+
+  await fixDanglingSubdocs(db);
+};
+
+export const fixDanglingSubdocs = async (db: SqliteConnection) => {
+  const allRows = await db.getAllUpdates();
+  const rowsByDocId = allRows.reduce((acc, row) => {
+    const docId = row.docId;
+    if (!acc.has(docId)) {
+      acc.set(docId, []);
+    }
+    acc.get(docId)?.push(row);
+    return acc;
+  }, new Map<string | undefined, { data: Uint8Array; docId?: string }[]>());
+  const rootDoc = new YDoc();
+  rowsByDocId.get(undefined)?.forEach(row => applyUpdate(rootDoc, row.data));
+
+  const spaces = rootDoc.getMap<Doc>('spaces');
+
+  const pagesInMeta = rootDoc.getMap('meta').get('pages') as
+    | YArray<YMap<string>>
+    | undefined;
+
+  if (!pagesInMeta) {
+    return;
+  }
+
+  const pageIdsInMeta: string[] =
+    pagesInMeta.toJSON().map(page => page.id) ?? [];
+
+  const docIdsInRows = [...rowsByDocId.keys()].filter(Boolean) as string[];
+
+  const docIdInSpaces = [...spaces.values()].map(doc => doc.guid);
+
+  // find dangling subdocs (exists in rows but not in meta)
+  const danglingPageIds = docIdsInRows.filter(
+    pageId => !docIdInSpaces.includes(pageId) && !pageIdsInMeta.includes(pageId)
+  );
+
+  // remove sub doc in spaces that does not exist in rows
+  for (const pageId of docIdInSpaces) {
+    if (!docIdsInRows.includes(pageId)) {
+      spaces.delete(pageId);
+    }
+  }
+
+  const whitePageInMeta = pagesInMeta
+    .toJSON()
+    .filter(page => !rowsByDocId.get(spaces.get(page.id)?.guid));
+
+  // use intrinsics to fix dangling subdocs
+  for (const danglingPageId of danglingPageIds) {
+    const danglingRows = rowsByDocId.get(danglingPageId);
+    const danglingDoc = new YDoc();
+    danglingRows?.forEach(row => applyUpdate(danglingDoc, row.data));
+    danglingDoc.guid = danglingPageId;
+
+    // check if the same meta exists
+    const danglingDocTitle: string = Object.values(
+      danglingDoc.getMap('blocks').toJSON()
+    ).find(b => b['sys:flavour'])?.['prop:title'];
+
+    console.log(
+      'danglingPageId:danglingDocTitle',
+      danglingPageId,
+      danglingDocTitle
+    );
+
+    const sameMeta = whitePageInMeta.find(p => p.title === danglingDocTitle);
+
+    if (sameMeta) {
+      console.log('borrowed createDate from', sameMeta);
+    }
+
+    // add dangling page to meta
+    pagesInMeta.push([
+      new YMap(
+        Object.entries({
+          id: danglingPageId,
+          title: danglingDocTitle,
+          createDate: sameMeta?.createDate ?? new Date().getTime(),
+          updatedDate: sameMeta?.updatedDate ?? new Date().getTime(),
+        })
+      ),
+    ]);
+    // add dangling doc to spaces
+    spaces.set(danglingPageId, danglingDoc);
+  }
+
+  // get all the pages that in meta but not in rows
+  pagesInMeta
+    .toJSON()
+    .filter(page => !rowsByDocId.get(spaces.get(page.id)?.guid))
+    .forEach(page => {
+      const idx = pagesInMeta.toArray().findIndex(p => p.get('id') === page.id);
+      pagesInMeta.delete(idx);
+      console.log('delete white page', page.id, page.title);
+    });
+
   await db.replaceUpdates(undefined, [
     {
       docId: undefined,
