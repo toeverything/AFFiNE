@@ -5,6 +5,7 @@ import { mergeConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { getRuntimeConfig } from '../../core/.webpack/runtime-config';
 
+//
 export default {
   stories: ['../src/ui/**/*.stories.@(js|jsx|ts|tsx|mdx)'],
   addons: [
