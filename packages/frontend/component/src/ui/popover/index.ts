@@ -1,1 +1,4 @@
+/**
+ * @deprecated
+ */
 export * from './popover';
