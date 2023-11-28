@@ -518,6 +518,7 @@
   "com.affine.cmdk.affine.switch-state.on": "ON",
   "com.affine.cmdk.affine.translucent-ui-on-the-sidebar.to": "Change Translucent UI On The Sidebar to",
   "com.affine.cmdk.affine.whats-new": "What's New",
+  "com.affine.cmdk.affine.editor.reveal-page-history-modal": "Reveal Page History Modal",
   "com.affine.cmdk.placeholder": "Type a command or search anything...",
   "com.affine.collection-bar.action.tooltip.delete": "Delete",
   "com.affine.collection-bar.action.tooltip.edit": "Edit",
@@ -972,5 +973,13 @@
   "system": "System",
   "upgradeBrowser": "Please upgrade to the latest version of Chrome for the best experience.",
   "will be moved to Trash": "{{title}} will be moved to Trash",
-  "will delete member": "will delete member"
+  "will delete member": "will delete member",
+  "com.affine.history.version-history": "Version History",
+  "com.affine.history.view-history-version": "View History Version",
+  "com.affine.history.restore-current-version": "Restore current version",
+  "com.affine.history.back-to-page": "Back to page",
+  "com.affine.history.empty-prompt.title": "Empty",
+  "com.affine.history.empty-prompt.description": "This document is such a spring chicken, it hasn't sprouted a single historical sprig yet!",
+  "com.affine.history.confirm-restore-modal.restore": "Restore",
+  "com.affine.history.confirm-restore-modal.hint": "You are about to restore the current version of the page to the latest version available. This action will overwrite any changes made prior to the latest version."
 }

@@ -1,0 +1,13 @@
+query listHistory(
+  $workspaceId: String!
+  $pageDocId: String!
+  $take: Int
+  $before: DateTime
+) {
+  workspace(id: $workspaceId) {
+    histories(guid: $pageDocId, take: $take, before: $before) {
+      id
+      timestamp
+    }
+  }
+}

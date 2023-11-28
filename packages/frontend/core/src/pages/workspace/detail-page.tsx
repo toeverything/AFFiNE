@@ -24,6 +24,7 @@ import { setPageModeAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
+import { GlobalPageHistoryModal } from '../../components/affine/page-history-modal';
 import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentSyncEngineStatus } from '../../hooks/current/use-current-sync-engine';
@@ -41,7 +42,7 @@ const DetailPageImpl = (): ReactElement => {
   const { setTemporaryFilter } = useCollectionManager(collectionsCRUDAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
-  useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
+  useRegisterBlocksuiteEditorCommands(currentPageId, mode);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       try {
@@ -101,6 +102,8 @@ const DetailPageImpl = (): ReactElement => {
         currentPageId={currentPageId}
         onLoadEditor={onLoad}
       />
+
+      <GlobalPageHistoryModal />
     </>
   );
 };

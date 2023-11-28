@@ -90,7 +90,7 @@ export class DocHistoryManager {
         workspaceId,
         id,
         timestamp: {
-          lte: before,
+          lt: before,
         },
         // only include the ones has not expired
         expiredAt: {

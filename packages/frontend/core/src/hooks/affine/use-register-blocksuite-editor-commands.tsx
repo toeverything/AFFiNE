@@ -1,25 +1,29 @@
 import { toast } from '@affine/component';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import type { Workspace } from '@blocksuite/store';
+import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@toeverything/infra/command';
+import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
+import { pageHistoryModalAtom } from '../../atoms/page-history';
+import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { useExportPage } from './use-export-page';
 import { useTrashModalHelper } from './use-trash-modal-helper';
 
 export function useRegisterBlocksuiteEditorCommands(
-  blockSuiteWorkspace: Workspace,
   pageId: string,
   mode: 'page' | 'edgeless'
 ) {
   const t = useAFFiNEI18N();
+  const [workspace] = useCurrentWorkspace();
+  const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const { getPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
   const currentPage = blockSuiteWorkspace.getPage(pageId);
   assertExists(currentPage);
@@ -27,6 +31,15 @@ export function useRegisterBlocksuiteEditorCommands(
   assertExists(pageMeta);
   const favorite = pageMeta.favorite ?? false;
   const trash = pageMeta.trash ?? false;
+
+  const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
+
+  const openHistoryModal = useCallback(() => {
+    setPageHistoryModalState(() => ({
+      pageId,
+      open: true,
+    }));
+  }, [pageId, setPageHistoryModalState]);
 
   const { togglePageMode, toggleFavorite, restoreFromTrash } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
@@ -40,12 +53,14 @@ export function useRegisterBlocksuiteEditorCommands(
     });
   }, [pageId, pageMeta.title, setTrashModal]);
 
+  const isCloudWorkspace = workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     const preconditionStrategy = () =>
       PreconditionStrategy.InPaperOrEdgeless && !trash;
 
-    //TODO: add back when edgeless presentation is ready
+    // TODO: add back when edgeless presentation is ready
 
     // this is pretty hack and easy to break. need a better way to communicate with blocksuite editor
     // unsubs.push(
@@ -189,6 +204,20 @@ export function useRegisterBlocksuiteEditorCommands(
       })
     );
 
+    if (runtimeConfig.enablePageHistory && isCloudWorkspace) {
+      unsubs.push(
+        registerAffineCommand({
+          id: `editor:${mode}-page-history`,
+          category: `editor:${mode}`,
+          icon: <HistoryIcon />,
+          label: t['com.affine.cmdk.affine.editor.reveal-page-history-modal'](),
+          run() {
+            openHistoryModal();
+          },
+        })
+      );
+    }
+
     return () => {
       unsubs.forEach(unsub => unsub());
     };
@@ -198,11 +227,12 @@ export function useRegisterBlocksuiteEditorCommands(
     onClickDelete,
     exportHandler,
     pageId,
-    pageMeta.title,
     restoreFromTrash,
     t,
     toggleFavorite,
     togglePageMode,
     trash,
+    isCloudWorkspace,
+    openHistoryModal,
   ]);
 }

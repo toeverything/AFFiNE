@@ -4,7 +4,7 @@ import {
 } from '@toeverything/infra/command';
 import { useEffect } from 'react';
 
-export function useRegisterBlocksuiteEditorCommands(
+export function useRegisterBrowserHistoryCommands(
   back: () => unknown,
   forward: () => unknown
 ) {
