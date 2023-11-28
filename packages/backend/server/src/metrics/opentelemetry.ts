@@ -66,7 +66,7 @@ class GCloudOpentelemetryFactor extends OpentelemetryFactor {
   override getMetricReader(): MetricReader {
     return new PeriodicExportingMetricReader({
       exportIntervalMillis: 30000,
-      exportTimeoutMillis: 60000,
+      exportTimeoutMillis: 10000,
       exporter: new MetricExporter(),
     });
   }
