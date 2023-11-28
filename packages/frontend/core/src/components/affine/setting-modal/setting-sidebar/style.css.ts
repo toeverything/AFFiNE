@@ -105,6 +105,11 @@ export const accountButton = style({
   ':hover': {
     background: 'var(--affine-hover-color)',
   },
+  selectors: {
+    '&.active': {
+      background: 'var(--affine-hover-color)',
+    },
+  },
 });
 
 globalStyle(`${accountButton} .avatar`, {
