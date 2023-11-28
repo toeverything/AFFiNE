@@ -2,7 +2,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import reduce from 'image-blob-reduce';
 import { useCallback, useEffect, useState } from 'react';
-import useSWR from 'swr';
+import useSWRImmutable from 'swr/immutable';
 
 // validate and reduce image size and return as file
 export const validateAndReduceImage = async (file: File): Promise<File> => {
@@ -52,7 +52,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
   if (url !== blockSuiteWorkspace.meta.avatar) {
     set(blockSuiteWorkspace.meta.avatar);
   }
-  const { data: avatar, mutate } = useSWR(url, {
+  const { data: avatar, mutate } = useSWRImmutable(url, {
     fetcher: async avatar => {
       assertExists(blockSuiteWorkspace);
       const blobs = blockSuiteWorkspace.blob;
@@ -62,8 +62,7 @@ export function useBlockSuiteWorkspaceAvatarUrl(
       }
       return null;
     },
-    suspense: true,
-    fallbackData: null,
+    suspense: false,
   });
 
   const setAvatar = useCallback(
