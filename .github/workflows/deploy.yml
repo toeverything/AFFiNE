@@ -207,6 +207,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: setup deploy version
+        id: version
+        run: |
+          export APP_VERSION=`node -e "console.log(require('./package.json').version)"`
+          echo $APP_VERSION
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_OUTPUT"
       - name: Deploy to ${{ github.event.inputs.flavor }}
         uses: ./.github/actions/deploy
         with:
@@ -217,6 +223,7 @@ jobs:
           cluster-name: ${{ secrets.GCP_CLUSTER_NAME }}
           cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
         env:
+          APP_VERSION: ${{ steps.version.outputs.APP_VERSION }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
