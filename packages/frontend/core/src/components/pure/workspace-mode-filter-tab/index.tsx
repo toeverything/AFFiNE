@@ -3,6 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtom } from 'jotai';
 
 import { allPageModeSelectAtom } from '../../../atoms';
+import * as styles from './index.css';
 
 export const WorkspaceModeFilterTab = () => {
   const t = useAFFiNEI18N();
@@ -15,16 +16,14 @@ export const WorkspaceModeFilterTab = () => {
   };
 
   return (
-    <RadioButtonGroup
-      width={300}
-      value={value}
-      onValueChange={handleValueChange}
-    >
-      <RadioButton value="all" style={{ textTransform: 'capitalize' }}>
+    <RadioButtonGroup value={value} onValueChange={handleValueChange}>
+      <RadioButton value="all" spanStyle={styles.filterTab}>
         {t['com.affine.pageMode.all']()}
       </RadioButton>
-      <RadioButton value="page">{t['com.affine.pageMode.page']()}</RadioButton>
-      <RadioButton value="edgeless">
+      <RadioButton spanStyle={styles.filterTab} value="page">
+        {t['com.affine.pageMode.page']()}
+      </RadioButton>
+      <RadioButton spanStyle={styles.filterTab} value="edgeless">
         {t['com.affine.pageMode.edgeless']()}
       </RadioButton>
     </RadioButtonGroup>

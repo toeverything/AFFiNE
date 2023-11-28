@@ -5,7 +5,7 @@ import type {
 } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilteredIcon } from '@blocksuite/icons';
+import { FilterIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Menu } from '@toeverything/components/menu';
 import { useCallback, useState } from 'react';
@@ -75,7 +75,7 @@ export const CollectionList = ({
             <Button
               className={styles.filterMenuTrigger}
               type="default"
-              icon={<FilteredIcon />}
+              icon={<FilterIcon />}
               data-testid="create-first-filter"
             >
               {t['com.affine.filter']()}
@@ -99,7 +99,7 @@ export const CollectionList = ({
           <Button
             className={styles.filterMenuTrigger}
             type="default"
-            icon={<FilteredIcon />}
+            icon={<FilterIcon />}
             data-testid="create-first-filter"
           >
             {t['com.affine.filter']()}
