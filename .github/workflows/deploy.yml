@@ -9,7 +9,6 @@ on:
         default: canary
 
 env:
-  BUILD_TYPE: canary
   APP_NAME: affine
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
@@ -17,7 +16,6 @@ jobs:
   build-server:
     name: Build Server
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -48,7 +46,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          BUILD_TYPE_OVERRIDE: ${{ github.event.inputs.flavor }}
+          BUILD_TYPE: ${{ github.event.inputs.flavor }}
           SHOULD_REPORT_TRACE: true
           TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
           CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
@@ -205,7 +203,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to dev
+      - name: Deploy to ${{ github.event.inputs.flavor }}
         uses: ./.github/actions/deploy
         with:
           build-type: ${{ github.event.inputs.flavor }}
