@@ -61,6 +61,7 @@ export const dropdownIcon = style({
 
 export const radioButton = style({
   flexGrow: 1,
+  flex: 1,
   selectors: {
     '&:not(:last-of-type)': {
       marginRight: '4px',
@@ -72,7 +73,8 @@ export const radioButtonContent = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  height: '24px',
+  height: '28px',
+  padding: '4px 8px',
   borderRadius: '8px',
   filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
   whiteSpace: 'nowrap',
