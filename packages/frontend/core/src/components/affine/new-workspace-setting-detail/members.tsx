@@ -29,7 +29,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
 
 import { openSettingModalAtom } from '../../../atoms';
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
@@ -39,7 +38,7 @@ import { useMemberCount } from '../../../hooks/affine/use-member-count';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import { useUserSubscription } from '../../../hooks/use-subscription';
-import { AnyErrorBoundary } from '../any-error-boundary';
+import { AffineErrorBoundary } from '../affine-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
@@ -356,10 +355,10 @@ export const MembersPanel = (props: MembersPanelProps): ReactElement | null => {
     return <MembersPanelLocal />;
   }
   return (
-    <ErrorBoundary FallbackComponent={AnyErrorBoundary}>
+    <AffineErrorBoundary>
       <Suspense>
         <CloudWorkspaceMembersPanel {...props} />
       </Suspense>
-    </ErrorBoundary>
+    </AffineErrorBoundary>
   );
 };
