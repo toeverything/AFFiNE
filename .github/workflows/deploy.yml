@@ -41,7 +41,7 @@ jobs:
       - name: Build Plugins
         run: yarn run build:plugins
       - name: Build Core
-        run: yarn nx build @affine/core
+        run: yarn nx build @affine/core --skip-nx-cache
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

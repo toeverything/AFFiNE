@@ -67,6 +67,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
           SKIP_PLUGIN_BUILD: 'true'
+          SKIP_NX_CACHE: 'true'
 
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
