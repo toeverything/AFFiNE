@@ -5,7 +5,7 @@ export abstract class RecoverableError extends Error {
     return this.ttl > 0;
   }
 
-  abstract retry(): void;
+  abstract retry(): void | Promise<void>;
 }
 
 // the first session request failed after login or signup succeed.
@@ -24,8 +24,6 @@ export class SessionFetchErrorRightAfterLoginOrSignUp extends RecoverableError {
     }
     try {
       this.onRetry();
-    } catch (e) {
-      console.error('Retry error', e);
     } finally {
       this.ttl--;
     }

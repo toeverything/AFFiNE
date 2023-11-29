@@ -7,14 +7,11 @@ import type { CSSProperties, ReactElement } from 'react';
 import {
   memo,
   Suspense,
-  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from 'react';
-import type { FallbackProps } from 'react-error-boundary';
-import { ErrorBoundary } from 'react-error-boundary';
 
 import { Skeleton } from '../../ui/skeleton';
 import {
@@ -77,6 +74,54 @@ const useBlockElementById = (
   return blockElement;
 };
 
+/**
+ * TODO: Define error to unexpected state together in the future.
+ */
+export class NoPageRootError extends Error {
+  constructor(public page: Page) {
+    super('Page root not found when render editor!');
+
+    // Log info to let sentry collect more message
+    const spaceVectors = Array.from(page.doc.spaces.entries()).map(
+      ([pageId, doc]) => `${pageId} > ${doc.guid}`
+    );
+    console.info(
+      'NoPageRootError current data: %s',
+      JSON.stringify({
+        expectPageId: page.id,
+        expectGuid: page.spaceDoc.guid,
+        spaceVectors,
+      })
+    );
+  }
+}
+
+const PAGE_ROOT_KEY = Symbol('PAGE_ROOT');
+function usePageRoot(page: Page) {
+  if (!page.loaded) {
+    use(page.load());
+  }
+
+  if (!page.root) {
+    let root$: Promise<void> | undefined = Reflect.get(page, PAGE_ROOT_KEY);
+    if (!root$) {
+      root$ = new Promise((resolve, reject) => {
+        const disposable = page.slots.rootAdded.once(() => {
+          resolve();
+        });
+        window.setTimeout(() => {
+          disposable.dispose();
+          reject(new NoPageRootError(page));
+        }, 20 * 1000);
+      });
+      Reflect.set(page, PAGE_ROOT_KEY, root$);
+    }
+    use(root$);
+  }
+
+  return page.root;
+}
+
 const BlockSuiteEditorImpl = ({
   mode,
   page,
@@ -86,9 +131,8 @@ const BlockSuiteEditorImpl = ({
   onModeChange,
   style,
 }: EditorProps): ReactElement => {
-  if (!page.loaded) {
-    use(page.waitForLoaded());
-  }
+  usePageRoot(page);
+
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   if (editorRef.current === null) {
@@ -176,27 +220,7 @@ const BlockSuiteEditorImpl = ({
   );
 };
 
-const BlockSuiteErrorFallback = (
-  props: FallbackProps & ErrorBoundaryProps
-): ReactElement => {
-  return (
-    <div>
-      <h1>Sorry.. there was an error</h1>
-      <div>{props.error.message}</div>
-      <button
-        data-testid="error-fallback-reset-button"
-        onClick={() => {
-          props.onReset?.();
-          props.resetErrorBoundary();
-        }}
-      >
-        Try again
-      </button>
-    </div>
-  );
-};
-
-export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
+export const EditorLoading = memo(function EditorLoading() {
   return (
     <div className={blockSuiteEditorStyle}>
       <Skeleton
@@ -210,21 +234,12 @@ export const BlockSuiteFallback = memo(function BlockSuiteFallback() {
 });
 
 export const BlockSuiteEditor = memo(function BlockSuiteEditor(
-  props: EditorProps & ErrorBoundaryProps
+  props: EditorProps
 ): ReactElement {
   return (
-    <ErrorBoundary
-      fallbackRender={useCallback(
-        (fallbackProps: FallbackProps) => (
-          <BlockSuiteErrorFallback {...fallbackProps} onReset={props.onReset} />
-        ),
-        [props.onReset]
-      )}
-    >
-      <Suspense fallback={<BlockSuiteFallback />}>
-        <BlockSuiteEditorImpl key={props.page.id} {...props} />
-      </Suspense>
-    </ErrorBoundary>
+    <Suspense fallback={<EditorLoading />}>
+      <BlockSuiteEditorImpl key={props.page.id} {...props} />
+    </Suspense>
   );
 });
 

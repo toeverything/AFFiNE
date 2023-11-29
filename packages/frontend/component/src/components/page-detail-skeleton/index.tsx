@@ -1,4 +1,4 @@
-import { BlockSuiteFallback } from '../block-suite-editor';
+import { EditorLoading } from '../block-suite-editor';
 import {
   pageDetailSkeletonStyle,
   pageDetailSkeletonTitleStyle,
@@ -8,7 +8,7 @@ export const PageDetailSkeleton = () => {
   return (
     <div className={pageDetailSkeletonStyle}>
       <div className={pageDetailSkeletonTitleStyle} />
-      <BlockSuiteFallback />
+      <EditorLoading />
     </div>
   );
 };

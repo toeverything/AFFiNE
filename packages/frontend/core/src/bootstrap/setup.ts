@@ -6,7 +6,15 @@ import {
   rootWorkspacesMetadataAtom,
   workspaceAdaptersAtom,
 } from '@affine/workspace/atom';
+import * as Sentry from '@sentry/react';
 import type { createStore } from 'jotai/vanilla';
+import { useEffect } from 'react';
+import {
+  createRoutesFromChildren,
+  matchRoutes,
+  useLocation,
+  useNavigationType,
+} from 'react-router-dom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
 import { performanceLogger } from '../shared';
@@ -50,6 +58,28 @@ export async function setup(store: ReturnType<typeof createStore>) {
 
   performanceSetupLogger.info('setup global');
   setupGlobal();
+
+  // https://docs.sentry.io/platforms/javascript/guides/react/#configure
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.BUILD_TYPE ?? 'development',
+    integrations: [
+      new Sentry.BrowserTracing({
+        routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+          useEffect,
+          useLocation,
+          useNavigationType,
+          createRoutesFromChildren,
+          matchRoutes
+        ),
+      }),
+      new Sentry.Replay(),
+    ],
+  });
+  Sentry.setTags({
+    appVersion: runtimeConfig.appVersion,
+    editorVersion: runtimeConfig.editorVersion,
+  });
 
   performanceSetupLogger.info('get root workspace meta');
   // do not read `rootWorkspacesMetadataAtom` before migration
