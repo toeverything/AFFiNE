@@ -33,7 +33,7 @@
     "lint:eslint:fix": "yarn lint:eslint --fix",
     "lint:prettier": "prettier --ignore-unknown --cache --check .",
     "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",
-    "lint:ox": "oxlint --deny-warnings --import-plugin -D correctness -D nursery -D prefer-array-some -A no-undef -A consistent-type-exports -A default -A named -A ban-ts-comment",
+    "lint:ox": "oxlint --deny-warnings --import-plugin -D correctness -D nursery -D prefer-array-some -D no-useless-promise-resolve-reject -A no-undef -A consistent-type-exports -A default -A named -A ban-ts-comment",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "lint:fix": "yarn lint:eslint:fix && yarn lint:prettier:fix",
     "test": "vitest --run",

@@ -255,6 +255,6 @@ export const fetchWithTraceReport = async (
       requestId,
       ...(event ? { event } : {}),
     });
-    return await Promise.reject(err);
+    throw err;
   }
 };

@@ -210,6 +210,7 @@ const config = {
     'unicorn/prefer-dom-node-dataset': 'error',
     'unicorn/prefer-dom-node-append': 'error',
     'unicorn/prefer-array-some': 'error',
+    'unicorn/no-useless-promise-resolve-reject': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',

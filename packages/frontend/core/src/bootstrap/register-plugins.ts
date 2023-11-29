@@ -81,7 +81,7 @@ export async function bootstrapPluginSystem(
           logger.debug(`registering plugin ${pluginName}`);
           logger.debug(`package.json: ${packageJson}`);
           if (!release && !runtimeConfig.enablePlugin) {
-            return Promise.resolve();
+            return;
           }
           const baseURL = url;
           const entryURL = `${baseURL}/${core}`;
@@ -95,7 +95,7 @@ export async function bootstrapPluginSystem(
                   const loadedAssetName = `${pluginName}_${asset}`;
                   // todo(himself65): add assets into shadow dom
                   if (loadedAssets.has(loadedAssetName)) {
-                    return Promise.resolve();
+                    return;
                   }
                   if (asset.endsWith('.css')) {
                     loadedAssets.add(loadedAssetName);
@@ -111,7 +111,7 @@ export async function bootstrapPluginSystem(
                     }
                     return null;
                   } else {
-                    return Promise.resolve();
+                    return;
                   }
                 })
               );
