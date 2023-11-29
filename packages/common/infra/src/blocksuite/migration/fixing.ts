@@ -43,3 +43,63 @@ export function guidCompatibilityFix(rootDoc: YDoc) {
   });
   return changed;
 }
+
+function detectFrameElementExisting(rootDoc: YDoc) {
+  const spaces = rootDoc.getMap('spaces') as YMap<any>;
+  for (const page of spaces.values()) {
+    const blocks = page.getMap('blocks') as YMap<any>;
+    for (const block of blocks.values()) {
+      const flavour = block.get('sys:flavour');
+      if (flavour === 'affine:surface') {
+        const surface = block;
+        const elements = surface.get('prop:elements').get('value') as YMap<any>;
+        for (const element of elements.values()) {
+          if (element.get('type') === 'frame') {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Hard code to fix page version to be compatible with legacy data.
+ * Let e2e to ensure the data version is correct.
+ */
+function fixWorkspacePageVersion(rootDoc: YDoc) {
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+  const pageVersion = meta.get('pageVersion');
+
+  // From page version 1 to 2, blocksuite delete the frame element.
+  // If it dose not exist, we can set it to 2 to avoid too many unnecessary upgrade.
+  const haveLegacyFrameElement = detectFrameElementExisting(rootDoc);
+  if (!haveLegacyFrameElement && pageVersion === 1) {
+    meta.set('pageVersion', 2);
+  }
+}
+
+/**
+ * Hard code to fix workspace version to be compatible with legacy data.
+ * Let e2e to ensure the data version is correct.
+ */
+export function fixWorkspaceVersion(rootDoc: YDoc) {
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+
+  /**
+   * It doesn't matter to upgrade workspace version from 1 or undefined to 2.
+   * Blocksuite just set the value, do nothing else.
+   */
+  const workspaceVersion = meta.get('workspaceVersion');
+  if (typeof workspaceVersion !== 'number' || workspaceVersion < 2) {
+    meta.set('workspaceVersion', 2);
+
+    const pageVersion = meta.get('pageVersion');
+    if (typeof pageVersion !== 'number') {
+      meta.set('pageVersion', 1);
+    }
+  }
+
+  fixWorkspacePageVersion(rootDoc);
+}

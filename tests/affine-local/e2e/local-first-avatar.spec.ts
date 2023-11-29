@@ -21,6 +21,9 @@ test('should create a page with a local first avatar and remove it', async ({
     .getByTestId('create-workspace-input')
     .pressSequentially('Test Workspace 1', { delay: 50 });
   await page.getByTestId('create-workspace-create-button').click();
+  await expect(
+    page.getByTestId('create-workspace-create-button')
+  ).not.toBeAttached();
   await page.getByTestId('workspace-name').click({
     delay: 50,
   });

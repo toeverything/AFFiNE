@@ -8,6 +8,7 @@ import {
 import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import {
   checkWorkspaceCompatibility,
+  fixWorkspaceVersion,
   guidCompatibilityFix,
 } from '@toeverything/infra/blocksuite';
 import { useSetAtom } from 'jotai';
@@ -54,6 +55,7 @@ export const loader: LoaderFunction = async args => {
   workspaceLoaderLogger.info('workspace loaded');
 
   guidCompatibilityFix(workspace.doc);
+  fixWorkspaceVersion(workspace.doc);
   return checkWorkspaceCompatibility(workspace);
 };
 
