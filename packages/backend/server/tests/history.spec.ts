@@ -6,7 +6,6 @@ import test from 'ava';
 import * as Sinon from 'sinon';
 
 import { ConfigModule } from '../src/config';
-import { MetricsModule } from '../src/metrics';
 import { DocHistoryManager } from '../src/modules/doc';
 import { PrismaModule, PrismaService } from '../src/prisma';
 import { flushDB } from './utils';
@@ -20,12 +19,7 @@ let db: PrismaService;
 test.beforeEach(async () => {
   await flushDB();
   m = await Test.createTestingModule({
-    imports: [
-      PrismaModule,
-      MetricsModule,
-      ScheduleModule.forRoot(),
-      ConfigModule.forRoot(),
-    ],
+    imports: [PrismaModule, ScheduleModule.forRoot(), ConfigModule.forRoot()],
     providers: [DocHistoryManager],
   }).compile();
 

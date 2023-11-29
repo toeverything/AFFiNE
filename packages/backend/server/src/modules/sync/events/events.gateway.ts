@@ -11,8 +11,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
-import { Metrics } from '../../../metrics/metrics';
-import { CallCounter, CallTimer } from '../../../metrics/utils';
+import { metrics } from '../../../metrics';
+import { CallTimer } from '../../../metrics/utils';
 import { DocID } from '../../../utils/doc';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
@@ -68,8 +68,7 @@ export const GatewayErrorWrapper = (): MethodDecorator => {
 const SubscribeMessage = (event: string) =>
   applyDecorators(
     GatewayErrorWrapper(),
-    CallCounter('socket_io_counter', { event }),
-    CallTimer('socket_io_timer', { event }),
+    CallTimer('socket_io_event_duration', { event }),
     RawSubscribeMessage(event)
   );
 
@@ -97,7 +96,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly docManager: DocManager,
-    private readonly metric: Metrics,
     private readonly permissions: PermissionService
   ) {}
 
@@ -106,12 +104,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection() {
     this.connectionCount++;
-    this.metric.socketIOConnectionGauge(this.connectionCount, {});
+    metrics().socketIOConnectionGauge(this.connectionCount);
   }
 
   handleDisconnect() {
     this.connectionCount--;
-    this.metric.socketIOConnectionGauge(this.connectionCount, {});
+    metrics().socketIOConnectionGauge(this.connectionCount);
   }
 
   @Auth()
