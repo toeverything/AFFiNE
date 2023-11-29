@@ -96,11 +96,18 @@ export class NoPageRootError extends Error {
   }
 }
 
+/**
+ * TODO: Defined async cache to support suspense, instead of reflect symbol to provider persistent error cache.
+ */
+const PAGE_LOAD_KEY = Symbol('PAGE_LOAD');
 const PAGE_ROOT_KEY = Symbol('PAGE_ROOT');
 function usePageRoot(page: Page) {
-  if (!page.loaded) {
-    use(page.load());
+  let load$ = Reflect.get(page, PAGE_LOAD_KEY);
+  if (!load$) {
+    load$ = page.load();
+    Reflect.set(page, PAGE_LOAD_KEY, load$);
   }
+  use(load$);
 
   if (!page.root) {
     let root$: Promise<void> | undefined = Reflect.get(page, PAGE_ROOT_KEY);
