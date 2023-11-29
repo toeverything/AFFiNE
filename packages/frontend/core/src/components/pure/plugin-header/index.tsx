@@ -30,7 +30,7 @@ export const PluginHeader = () => {
                   pluginsRef.current = pluginsRef.current.filter(
                     name => name !== pluginName
                   );
-                  root.removeChild(div);
+                  div.remove();
                   cleanup();
                 });
               });

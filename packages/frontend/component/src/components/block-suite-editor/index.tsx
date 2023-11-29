@@ -136,7 +136,7 @@ const BlockSuiteEditorImpl = ({
     }
     container.append(editor);
     return () => {
-      container.removeChild(editor);
+      editor.remove();
     };
   }, [editor]);
 

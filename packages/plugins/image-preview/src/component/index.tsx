@@ -233,7 +233,7 @@ const ImagePreviewModalImpl = (
         a.download = block.id ?? 'image';
         document.body.append(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
       }
     },
     [props.pageId, props.workspace]

@@ -177,7 +177,7 @@ const EditorWrapper = memo(function EditorWrapper({
           document.body.append(div);
           return () => {
             cleanup();
-            document.body.removeChild(div);
+            div.remove();
           };
         });
       });
@@ -238,11 +238,11 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
           root.append(div);
           if (abortController.signal.aborted) {
             cleanup();
-            root.removeChild(div);
+            div.remove();
           } else {
             const cl = () => {
               cleanup();
-              root.removeChild(div);
+              div.remove();
             };
             const dispose = addCleanup(pluginName, cl);
             abortController.signal.addEventListener('abort', () => {
