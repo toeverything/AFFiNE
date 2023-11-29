@@ -212,6 +212,7 @@ const config = {
     'unicorn/prefer-dom-node-remove': 'error',
     'unicorn/prefer-array-some': 'error',
     'unicorn/prefer-date-now': 'error',
+    'unicorn/prefer-blob-reading-methods': 'error',
     'unicorn/no-typeof-undefined': 'error',
     'unicorn/no-useless-promise-resolve-reject': 'error',
     'unicorn/no-new-array': 'error',
