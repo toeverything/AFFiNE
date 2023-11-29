@@ -130,7 +130,7 @@ export const SettingModal = ({
                 <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
               </Suspense>
             ) : null}
-            {generalSettingList.find(v => v.key === activeTab) ? (
+            {generalSettingList.some(v => v.key === activeTab) ? (
               <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
             ) : null}
             {activeTab === 'account' && loginStatus === 'authenticated' ? (

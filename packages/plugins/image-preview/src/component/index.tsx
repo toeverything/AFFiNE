@@ -143,7 +143,7 @@ const ImagePreviewModalImpl = (
       if (
         page
           .getPreviousSiblings(block)
-          .findLast(
+          .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
@@ -160,7 +160,7 @@ const ImagePreviewModalImpl = (
       } else if (
         page
           .getNextSiblings(block)
-          .find(
+          .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )

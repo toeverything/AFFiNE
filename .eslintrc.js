@@ -209,6 +209,7 @@ const config = {
     'unicorn/no-useless-fallback-in-spread': 'error',
     'unicorn/prefer-dom-node-dataset': 'error',
     'unicorn/prefer-dom-node-append': 'error',
+    'unicorn/prefer-array-some': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',
