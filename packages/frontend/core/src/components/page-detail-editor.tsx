@@ -174,7 +174,7 @@ const EditorWrapper = memo(function EditorWrapper({
           div.setAttribute('plugin-id', id);
           const cleanup = editorItem(div, editor);
           assertExists(parent);
-          document.body.appendChild(div);
+          document.body.append(div);
           return () => {
             cleanup();
             document.body.removeChild(div);
@@ -235,7 +235,7 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
           }
           const div = document.createElement('div');
           const cleanup = windowItem(div);
-          root.appendChild(div);
+          root.append(div);
           if (abortController.signal.aborted) {
             cleanup();
             root.removeChild(div);

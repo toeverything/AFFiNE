@@ -46,7 +46,7 @@ const createToastContainer = (portal?: HTMLElement) => {
     data-testid="affine-toast-container"
   ></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
-  portal.appendChild(element);
+  portal.append(element);
   return element;
 };
 
@@ -98,7 +98,7 @@ const createAndShowNewToast = (
   const toastElement = htmlToElement<HTMLDivElement>(toastTemplate);
   // message is not trusted
   toastElement.textContent = message;
-  ToastContainer.appendChild(toastElement);
+  ToastContainer.append(toastElement);
   logger.debug(`toast with message: "${message}"`);
   window.dispatchEvent(
     new CustomEvent('affine-toast:emit', { detail: message })

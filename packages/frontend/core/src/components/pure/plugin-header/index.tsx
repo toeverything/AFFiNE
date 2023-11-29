@@ -25,7 +25,7 @@ export const PluginHeader = () => {
               div.setAttribute('plugin-id', pluginName);
               startTransition(() => {
                 const cleanup = create(div);
-                root.appendChild(div);
+                root.append(div);
                 addCleanup(pluginName, () => {
                   pluginsRef.current = pluginsRef.current.filter(
                     name => name !== pluginName

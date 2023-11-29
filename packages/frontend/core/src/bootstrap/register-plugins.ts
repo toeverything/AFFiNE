@@ -106,7 +106,7 @@ export async function bootstrapPluginSystem(
                         const style = document.createElement('style');
                         style.setAttribute('plugin-id', pluginName);
                         style.textContent = text;
-                        document.head.appendChild(style);
+                        document.head.append(style);
                       });
                     }
                     return null;

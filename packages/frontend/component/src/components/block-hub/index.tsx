@@ -12,7 +12,7 @@ export const RootBlockHub = () => {
         if (div.hasChildNodes()) {
           div.removeChild(div.firstChild as ChildNode);
         }
-        div.appendChild(blockHub);
+        div.append(blockHub);
       }
     }
   }, [blockHub]);
