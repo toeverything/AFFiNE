@@ -1,7 +1,7 @@
 import type { EventBasedChannel } from 'async-call-rpc';
 
 export function getTime() {
-  return new Date().getTime();
+  return Date.now();
 }
 
 export const isMacOS = () => {

@@ -85,7 +85,7 @@ export function useBlockSuiteMetaHelper(
 
       setPageMeta(pageId, {
         trash: true,
-        trashDate: +new Date(),
+        trashDate: Date.now(),
         trashRelate: isRoot ? parentMeta?.id : undefined,
       });
       setPageReadonly(pageId, true);
