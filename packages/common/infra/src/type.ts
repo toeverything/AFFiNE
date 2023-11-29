@@ -190,9 +190,17 @@ export interface UpdateMeta {
   allowAutoUpdate: boolean;
 }
 
+export type UpdaterConfig = {
+  autoCheckUpdate: boolean;
+  autoDownloadUpdate: boolean;
+};
+
 export type UpdaterHandlers = {
   currentVersion: () => Promise<string>;
   quitAndInstall: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  getConfig: () => Promise<UpdaterConfig>;
+  setConfig: (newConfig: Partial<UpdaterConfig>) => Promise<void>;
   checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 
