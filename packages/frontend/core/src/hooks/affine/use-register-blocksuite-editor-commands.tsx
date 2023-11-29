@@ -41,7 +41,7 @@ export function useRegisterBlocksuiteEditorCommands(
     }));
   }, [pageId, setPageHistoryModalState]);
 
-  const { togglePageMode, toggleFavorite, restoreFromTrash } =
+  const { togglePageMode, toggleFavorite, restoreFromTrash, duplicate } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const exportHandler = useExportPage(currentPage);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
@@ -121,6 +121,19 @@ export function useRegisterBlocksuiteEditorCommands(
               ? t['com.affine.toastMessage.edgelessMode']()
               : t['com.affine.toastMessage.pageMode']()
           );
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
+        id: `editor:${mode}-duplicate`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['com.affine.header.option.duplicate'](),
+        run() {
+          duplicate(pageId);
         },
       })
     );
@@ -234,5 +247,6 @@ export function useRegisterBlocksuiteEditorCommands(
     trash,
     isCloudWorkspace,
     openHistoryModal,
+    duplicate,
   ]);
 }
