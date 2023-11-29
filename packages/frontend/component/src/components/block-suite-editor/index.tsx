@@ -112,7 +112,7 @@ function usePageRoot(page: Page) {
         window.setTimeout(() => {
           disposable.dispose();
           reject(new NoPageRootError(page));
-        }, 10 * 1000);
+        }, 20 * 1000);
       });
       Reflect.set(page, PAGE_ROOT_KEY, root$);
     }

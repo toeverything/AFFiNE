@@ -13,7 +13,6 @@ export const AnyErrorFallback: FC<FallbackProps> = props => {
       title={t['com.affine.error.unexpected-error.title']()}
       resetError={resetError}
       description={error.message ?? error.toString()}
-      withoutImage
     />
   );
 };
