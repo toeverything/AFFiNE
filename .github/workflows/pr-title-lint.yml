@@ -19,7 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
         with:
-          electron-install: false
-      - run: echo "${{ github.event.pull_request.title }}" | yarn dlx commitlint -g ./.commitlintrc.json
+          cache: 'yarn'
+          node-version-file: '.nvmrc'
+      - name: Install dependencies
+        run: yarn workspaces focus @affine/commitlint-config
+      - run: echo "${{ github.event.pull_request.title }}" | yarn workspace @affine/commitlint-config commitlint -g ./.commitlintrc.json

@@ -204,6 +204,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/commitlint-config@workspace:tools/commitlint":
+  version: 0.0.0-use.local
+  resolution: "@affine/commitlint-config@workspace:tools/commitlint"
+  dependencies:
+    "@commitlint/cli": "npm:^18.4.3"
+    "@commitlint/config-conventional": "npm:^18.4.3"
+    commitlint: "npm:^18.4.3"
+  languageName: unknown
+  linkType: soft
+
 "@affine/component@workspace:*, @affine/component@workspace:packages/frontend/component":
   version: 0.0.0-use.local
   resolution: "@affine/component@workspace:packages/frontend/component"
@@ -17668,6 +17678,18 @@ __metadata:
   version: 9.5.0
   resolution: "commander@npm:9.5.0"
   checksum: 41c49b3d0f94a1fbeb0463c85b13f15aa15a9e0b4d5e10a49c0a1d58d4489b549d62262b052ae0aa6cfda53299bee487bfe337825df15e342114dde543f82906
+  languageName: node
+  linkType: hard
+
+"commitlint@npm:^18.4.3":
+  version: 18.4.3
+  resolution: "commitlint@npm:18.4.3"
+  dependencies:
+    "@commitlint/cli": "npm:^18.4.3"
+    "@commitlint/types": "npm:^18.4.3"
+  bin:
+    commitlint: cli.js
+  checksum: e37da4f1cd218381a7810b2e74a553bd05b01776d76dc3038b6e805ea6640308dfa0372c2a976ab5d8c34577128fe6df945e4718c27732dd0d79b517f066fee5
   languageName: node
   linkType: hard
 
