@@ -1,8 +1,9 @@
 import { Attributes } from '@opentelemetry/api';
 
-import { getMeter } from './metrics';
+import { KnownMetricScopes, metrics } from './metrics';
 
 export const CallTimer = (
+  scope: KnownMetricScopes,
   name: string,
   attrs?: Attributes
 ): MethodDecorator => {
@@ -18,9 +19,11 @@ export const CallTimer = (
     }
 
     desc.value = function (...args: any[]) {
-      const timer = getMeter().createHistogram(name, {
+      const timer = metrics[scope].histogram(name, {
         description: `function call time costs of ${name}`,
+        unit: 'ms',
       });
+
       const start = Date.now();
 
       const end = () => {
@@ -48,6 +51,7 @@ export const CallTimer = (
 };
 
 export const CallCounter = (
+  scope: KnownMetricScopes,
   name: string,
   attrs?: Attributes
 ): MethodDecorator => {
@@ -63,7 +67,7 @@ export const CallCounter = (
     }
 
     desc.value = function (...args: any[]) {
-      const count = getMeter().createCounter(name, {
+      const count = metrics[scope].counter(name, {
         description: `function call counter of ${name}`,
       });
 

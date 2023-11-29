@@ -734,6 +734,7 @@ __metadata:
     "@opentelemetry/instrumentation-ioredis": "npm:^0.35.3"
     "@opentelemetry/instrumentation-nestjs-core": "npm:^0.33.3"
     "@opentelemetry/instrumentation-socket.io": "npm:^0.34.3"
+    "@opentelemetry/resources": "npm:^1.18.1"
     "@opentelemetry/sdk-metrics": "npm:^1.18.1"
     "@opentelemetry/sdk-node": "npm:^0.45.1"
     "@opentelemetry/sdk-trace-node": "npm:^1.18.1"
@@ -9017,7 +9018,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/resources@npm:1.18.1":
+"@opentelemetry/resources@npm:1.18.1, @opentelemetry/resources@npm:^1.18.1":
   version: 1.18.1
   resolution: "@opentelemetry/resources@npm:1.18.1"
   dependencies:
