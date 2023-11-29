@@ -6,7 +6,7 @@ import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
-import { RadioButton, RadioButtonGroup } from '../../../../index';
+import { RadioButton, RadioButtonGroup } from '../../../../ui/button';
 import * as styles from './edit-collection.css';
 import { PagesMode } from './pages-mode';
 import { RulesMode } from './rules-mode';

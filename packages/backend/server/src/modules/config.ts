@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Field, ObjectType, Query } from '@nestjs/graphql';
 
-import { SERVER_FLAVOR } from '../modules';
+export const { SERVER_FLAVOR } = process.env;
 
 @ObjectType()
 export class ServerConfigType {

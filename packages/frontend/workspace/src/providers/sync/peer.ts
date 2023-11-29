@@ -7,7 +7,7 @@ import { applyUpdate, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 import { mergeUpdates, type Storage } from '../storage';
 import { AsyncQueue } from '../utils/async-queue';
 import { throwIfAborted } from '../utils/throw-if-aborted';
-import { MANUALLY_STOP } from './engine';
+import { MANUALLY_STOP } from './consts';
 
 export enum SyncPeerStep {
   Stopped = 0,

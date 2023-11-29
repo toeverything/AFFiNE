@@ -3,15 +3,8 @@ import { Slot } from '@blocksuite/global/utils';
 import type { Doc } from 'yjs';
 
 import type { Storage } from '../storage';
+import { MANUALLY_STOP, SyncEngineStep } from './consts';
 import { SyncPeer, type SyncPeerStatus, SyncPeerStep } from './peer';
-
-export const MANUALLY_STOP = 'manually-stop';
-
-export enum SyncEngineStep {
-  Stopped = 0,
-  Syncing = 1,
-  Synced = 2,
-}
 
 export interface SyncEngineStatus {
   step: SyncEngineStep;
