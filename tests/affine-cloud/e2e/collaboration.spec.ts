@@ -265,7 +265,9 @@ test.describe('collaboration members', () => {
       await addUserToWorkspace(workspaceId, userB.id, 1 /* READ */);
     };
     await Promise.all(
-      new Array(10).fill(1).map(() => createUserAndAddToWorkspace())
+      Array.from({ length: 10 })
+        .fill(1)
+        .map(() => createUserAndAddToWorkspace())
     );
 
     await openSettingModal(page);
