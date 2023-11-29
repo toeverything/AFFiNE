@@ -50,7 +50,7 @@ function boolean(value: string) {
 }
 
 export function parseEnvValue(value: string | undefined, type?: EnvConfigType) {
-  if (typeof value === 'undefined') {
+  if (value === undefined) {
     return;
   }
 

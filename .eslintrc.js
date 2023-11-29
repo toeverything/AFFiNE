@@ -212,6 +212,7 @@ const config = {
     'unicorn/prefer-dom-node-remove': 'error',
     'unicorn/prefer-array-some': 'error',
     'unicorn/prefer-date-now': 'error',
+    'unicorn/no-typeof-undefined': 'error',
     'unicorn/no-useless-promise-resolve-reject': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
