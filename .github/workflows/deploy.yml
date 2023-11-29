@@ -35,7 +35,7 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-
+    environment: ${{ github.event.inputs.flavor }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
