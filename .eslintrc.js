@@ -135,6 +135,7 @@ const config = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/await-thenable': 'error',
+    '@typescript-eslint/require-array-sort-compare': 'error',
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
