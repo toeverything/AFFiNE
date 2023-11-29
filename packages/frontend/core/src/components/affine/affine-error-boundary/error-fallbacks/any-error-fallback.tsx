@@ -10,9 +10,10 @@ export const AnyErrorFallback: FC<FallbackProps> = props => {
 
   return (
     <ErrorDetail
-      title={t['com.affine.notFoundPage.title']()}
+      title={t['com.affine.error.unexpected-error.title']()}
       resetError={resetError}
-      description={<code>{error.message ?? error.toString()}</code>}
+      description={error.message ?? error.toString()}
+      withoutImage
     />
   );
 };

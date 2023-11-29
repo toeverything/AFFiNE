@@ -26,6 +26,7 @@ export interface ErrorDetailProps extends PropsWithChildren {
   buttonText?: string;
   onButtonClick?: () => void | Promise<void>;
   resetError?: () => void;
+  withoutImage?: boolean;
 }
 
 const imageMap = new Map([
@@ -43,6 +44,7 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
     description,
     onButtonClick,
     resetError,
+    withoutImage,
   } = props;
   const descriptions = Array.isArray(description) ? description : [description];
   const [isBtnLoading, setBtnLoading] = useState(false);
@@ -52,9 +54,9 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
     try {
       setBtnLoading(true);
       await onButtonClick?.();
+      resetError?.(); // Only reset when retry success.
     } finally {
       setBtnLoading(false);
-      resetError?.();
     }
   }, [onButtonClick, resetError]);
 
@@ -78,10 +80,12 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
           </Button>
         </div>
       </div>
-      <div
-        className={styles.errorImage}
-        style={{ backgroundImage: `url(${imageMap.get(status)})` }}
-      />
+      {withoutImage ? null : (
+        <div
+          className={styles.errorImage}
+          style={{ backgroundImage: `url(${imageMap.get(status)})` }}
+        />
+      )}
     </div>
   );
 };

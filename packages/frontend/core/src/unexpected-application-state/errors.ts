@@ -24,8 +24,6 @@ export class SessionFetchErrorRightAfterLoginOrSignUp extends RecoverableError {
     }
     try {
       this.onRetry();
-    } catch (e) {
-      console.error('Retry error', e);
     } finally {
       this.ttl--;
     }

@@ -6,7 +6,7 @@ import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../../hooks/use-navigate-helper';
-import { ErrorDetail } from '../error-basic/error-detail';
+import { ErrorDetail, ErrorStatus } from '../error-basic/error-detail';
 import { createErrorFallback } from '../error-basic/fallback-creator';
 
 export const PageNotFoundDetail = createErrorFallback(PageNotFoundError, () => {
@@ -24,6 +24,7 @@ export const PageNotFoundDetail = createErrorFallback(PageNotFoundError, () => {
       description={t['404.hint']()}
       buttonText={t['404.back']()}
       onButtonClick={onBtnClick}
+      status={ErrorStatus.NotFound}
     />
   );
 });

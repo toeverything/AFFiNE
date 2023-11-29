@@ -6,6 +6,7 @@ export const errorLayout = style({
   alignItems: 'center',
   height: '100%',
   width: '100%',
+  gap: '20px',
 });
 
 export const errorDetailStyle = style({
