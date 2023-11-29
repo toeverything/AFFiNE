@@ -45,17 +45,8 @@ export const fetcher = gqlFetcherFactory(
  * ```
  */
 export function useQuery<Query extends GraphQLQuery>(
-  options: QueryOptions<Query>
-): SWRResponse<
-  QueryResponse<Query>,
-  GraphQLError | GraphQLError[],
-  {
-    suspense: true;
-  }
->;
-export function useQuery<Query extends GraphQLQuery>(
   options: QueryOptions<Query>,
-  config: Omit<
+  config?: Omit<
     SWRConfiguration<
       QueryResponse<Query>,
       GraphQLError | GraphQLError[],
@@ -161,16 +152,8 @@ export function useQueryInfinite<Query extends GraphQLQuery>(
  * trigger({ name: 'John Doe' })
  */
 export function useMutation<Mutation extends GraphQLQuery, K extends Key = Key>(
-  options: Omit<MutationOptions<Mutation>, 'variables'>
-): SWRMutationResponse<
-  QueryResponse<Mutation>,
-  GraphQLError | GraphQLError[],
-  K,
-  QueryVariables<Mutation>
->;
-export function useMutation<Mutation extends GraphQLQuery, K extends Key = Key>(
   options: Omit<MutationOptions<Mutation>, 'variables'>,
-  config: Omit<
+  config?: Omit<
     SWRMutationConfiguration<
       QueryResponse<Mutation>,
       GraphQLError | GraphQLError[],
