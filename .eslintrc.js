@@ -214,6 +214,7 @@ const config = {
     'unicorn/prefer-date-now': 'error',
     'unicorn/no-typeof-undefined': 'error',
     'unicorn/no-useless-promise-resolve-reject': 'error',
+    'unicorn/new-for-builtins': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',

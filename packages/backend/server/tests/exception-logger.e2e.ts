@@ -17,7 +17,7 @@ class FakePrisma {
   get workspace() {
     return {
       async findUnique() {
-        throw Error('exception from graphql');
+        throw new Error('exception from graphql');
       },
     };
   }
