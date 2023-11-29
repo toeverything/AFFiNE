@@ -3,5 +3,5 @@
   "exports": {
     "./*": "./*"
   },
-  "version": "0.10.3-beta.2"
+  "version": "0.10.3-beta.4"
 }
