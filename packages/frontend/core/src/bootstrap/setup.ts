@@ -59,27 +59,29 @@ export async function setup(store: ReturnType<typeof createStore>) {
   performanceSetupLogger.info('setup global');
   setupGlobal();
 
-  // https://docs.sentry.io/platforms/javascript/guides/react/#configure
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.BUILD_TYPE ?? 'development',
-    integrations: [
-      new Sentry.BrowserTracing({
-        routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-          useEffect,
-          useLocation,
-          useNavigationType,
-          createRoutesFromChildren,
-          matchRoutes
-        ),
-      }),
-      new Sentry.Replay(),
-    ],
-  });
-  Sentry.setTags({
-    appVersion: runtimeConfig.appVersion,
-    editorVersion: runtimeConfig.editorVersion,
-  });
+  if (window.SENTRY_RELEASE) {
+    // https://docs.sentry.io/platforms/javascript/guides/react/#configure
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.BUILD_TYPE ?? 'development',
+      integrations: [
+        new Sentry.BrowserTracing({
+          routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+            useEffect,
+            useLocation,
+            useNavigationType,
+            createRoutesFromChildren,
+            matchRoutes
+          ),
+        }),
+        new Sentry.Replay(),
+      ],
+    });
+    Sentry.setTags({
+      appVersion: runtimeConfig.appVersion,
+      editorVersion: runtimeConfig.editorVersion,
+    });
+  }
 
   performanceSetupLogger.info('get root workspace meta');
   // do not read `rootWorkspacesMetadataAtom` before migration
