@@ -105,7 +105,7 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
       );
     }
 
-    if (tag == null) {
+    if (tag === null || tag === undefined) {
       throw newError(
         `No published versions on GitHub`,
         'ERR_UPDATER_NO_PUBLISHED_VERSIONS'
@@ -154,7 +154,7 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
     }
 
     const result = parseUpdateInfo(rawData, channelFile, channelFileUrl);
-    if (result.releaseName == null) {
+    if (result.releaseName === null) {
       result.releaseName = latestRelease.elementValueOrEmpty('title');
     }
 

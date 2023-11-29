@@ -179,7 +179,7 @@ export const PlanCard = (props: PlanCardProps) => {
         {detail.benefits.map((content, i) => (
           <div key={i} className={styles.planBenefit}>
             <div className={styles.planBenefitIcon}>
-              {detail.type == 'dynamic' ? (
+              {detail.type === 'dynamic' ? (
                 <BulledListIcon color="var(--affine-processing-color)" />
               ) : (
                 <DoneIcon

@@ -42,7 +42,7 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
 
 function isEmptyBuffer(buf: Buffer): boolean {
   return (
-    buf.length == 0 ||
+    buf.length === 0 ||
     // 0x0000
     (buf.length === 2 && buf[0] === 0 && buf[1] === 0)
   );

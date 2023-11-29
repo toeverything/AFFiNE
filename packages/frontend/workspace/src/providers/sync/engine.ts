@@ -186,13 +186,13 @@ export class SyncEngine {
   }
 
   async waitForSynced(abort?: AbortSignal) {
-    if (this.status.step == SyncEngineStep.Synced) {
+    if (this.status.step === SyncEngineStep.Synced) {
       return;
     } else {
       return Promise.race([
         new Promise<void>(resolve => {
           this.onStatusChange.on(status => {
-            if (status.step == SyncEngineStep.Synced) {
+            if (status.step === SyncEngineStep.Synced) {
               resolve();
             }
           });

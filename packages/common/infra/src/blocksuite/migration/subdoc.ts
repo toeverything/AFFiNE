@@ -50,7 +50,7 @@ function migrateDatabase(data: YMap<unknown>) {
     update: (cell: { id: string; value: unknown }) => void
   ) => {
     Object.values(cells).forEach(row => {
-      if (row[id] != null) {
+      if (row[id] !== null && row[id] !== undefined) {
         update(row[id]);
       }
     });

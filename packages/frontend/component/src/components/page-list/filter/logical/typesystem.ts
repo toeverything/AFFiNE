@@ -195,7 +195,7 @@ export class Typesystem {
   ): boolean {
     if (superType.type === 'typeRef') {
       // TODO both are ref
-      if (context && sub.type != 'typeRef') {
+      if (context && sub.type !== 'typeRef') {
         context[superType.name] = sub;
       }
       // TODO bound

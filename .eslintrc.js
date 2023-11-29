@@ -127,6 +127,7 @@ const config = {
     'no-constant-binary-expression': 'error',
     'no-constructor-return': 'error',
     'no-self-compare': 'error',
+    eqeqeq: ['error', 'always', { null: 'ignore' }],
     'react/prop-types': 'off',
     'react/jsx-no-useless-fragment': 'error',
     '@typescript-eslint/consistent-type-imports': 'error',
