@@ -5,8 +5,8 @@ const logger = new DebugLogger('affine:blob-engine');
 
 export class BlobEngine {
   constructor(
-    private local: BlobStorage,
-    private remotes: BlobStorage[]
+    private readonly local: BlobStorage,
+    private readonly remotes: BlobStorage[]
   ) {}
 
   get storages() {

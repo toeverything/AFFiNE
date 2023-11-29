@@ -270,6 +270,7 @@ const config = {
           },
         ],
         '@typescript-eslint/no-misused-promises': ['error'],
+        '@typescript-eslint/prefer-readonly': 'error',
         'i/no-extraneous-dependencies': ['error'],
         'react-hooks/exhaustive-deps': [
           'warn',

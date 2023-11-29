@@ -13,7 +13,7 @@ const COLLECTIONS_TRASH_KEY = 'collections_trash';
 const SETTING_KEY = 'setting';
 
 export class WorkspaceSetting {
-  constructor(private workspace: Workspace) {}
+  constructor(private readonly workspace: Workspace) {}
 
   get doc() {
     return this.workspace.doc;

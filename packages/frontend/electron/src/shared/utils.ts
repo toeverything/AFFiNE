@@ -22,7 +22,7 @@ interface MessagePortLike {
 }
 
 export class MessageEventChannel implements EventBasedChannel {
-  constructor(private worker: MessagePortLike) {}
+  constructor(private readonly worker: MessagePortLike) {}
 
   on(listener: (data: unknown) => void) {
     const f = (data: unknown) => {

@@ -29,7 +29,7 @@ const hrefRegExp = /\/tag\/([^/]+)$/;
 export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
   constructor(
     options: CustomPublishOptions,
-    private updater: AppUpdater,
+    private readonly updater: AppUpdater,
     runtimeOptions: ProviderRuntimeOptions
   ) {
     super(options as unknown as GithubOptions, 'github.com', runtimeOptions);

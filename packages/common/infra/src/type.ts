@@ -45,8 +45,8 @@ export abstract class HandlerManager<
   Handlers extends Record<string, PrimitiveHandlers>,
 > {
   static instance: HandlerManager<string, Record<string, PrimitiveHandlers>>;
-  private _app: App<Namespace, Handlers>;
-  private _namespace: Namespace;
+  private readonly _app: App<Namespace, Handlers>;
+  private readonly _namespace: Namespace;
   private _handlers: Handlers;
 
   constructor() {

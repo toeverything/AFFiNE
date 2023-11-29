@@ -60,9 +60,9 @@ const MAX_SEQ_NUM = 0x3fffffff; // u31
  */
 @Injectable()
 export class DocManager implements OnModuleInit, OnModuleDestroy {
-  private logger = new Logger(DocManager.name);
+  private readonly logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
-  private seqMap = new Map<string, number>();
+  private readonly seqMap = new Map<string, number>();
   private busy = false;
 
   constructor(

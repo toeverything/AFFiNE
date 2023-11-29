@@ -4,9 +4,11 @@ import { typesystem } from './typesystem';
 type MatcherData<Data, Type extends TType = TType> = { type: Type; data: Data };
 
 export class Matcher<Data, Type extends TType = TType> {
-  private list: MatcherData<Data, Type>[] = [];
+  private readonly list: MatcherData<Data, Type>[] = [];
 
-  constructor(private _match?: (type: Type, target: TType) => boolean) {}
+  constructor(
+    private readonly _match?: (type: Type, target: TType) => boolean
+  ) {}
 
   register(type: Type, data: Data) {
     this.list.push({ type, data });

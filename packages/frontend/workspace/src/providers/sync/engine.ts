@@ -63,9 +63,9 @@ export class SyncEngine {
   private abort = new AbortController();
 
   constructor(
-    private rootDoc: Doc,
-    private local: Storage,
-    private remotes: Storage[]
+    private readonly rootDoc: Doc,
+    private readonly local: Storage,
+    private readonly remotes: Storage[]
   ) {
     this._status = {
       step: SyncEngineStep.Stopped,

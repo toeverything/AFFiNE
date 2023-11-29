@@ -69,8 +69,8 @@ export class SyncPeer {
   logger = new DebugLogger('affine:sync-peer:' + this.name);
 
   constructor(
-    private rootDoc: Doc,
-    private storage: Storage
+    private readonly rootDoc: Doc,
+    private readonly storage: Storage
   ) {
     this.logger.debug('peer start');
 
@@ -150,7 +150,7 @@ export class SyncPeer {
     }
   }
 
-  private state: {
+  private readonly state: {
     connectedDocs: Map<string, Doc>;
     pushUpdatesQueue: AsyncQueue<{
       docId: string;
