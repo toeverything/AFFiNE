@@ -30,7 +30,6 @@ export enum SubscriptionPlan {
   Pro = 'pro',
   Team = 'team',
   Enterprise = 'enterprise',
-  SelfHosted = 'selfhosted',
 }
 
 export function encodeLookupKey(

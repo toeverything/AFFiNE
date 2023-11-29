@@ -52,7 +52,7 @@ class SubscriptionPrice {
 }
 
 @ObjectType('UserSubscription')
-export class UserSubscriptionType implements Partial<UserSubscription> {
+class UserSubscriptionType implements Partial<UserSubscription> {
   @Field({ name: 'id' })
   stripeSubscriptionId!: string;
 

@@ -8,7 +8,6 @@ import {
 import type { ReactElement, SVGProps } from 'react';
 
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
-import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
@@ -37,7 +36,6 @@ export type GeneralSettingList = GeneralSettingListItem[];
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useAFFiNEI18N();
   const status = useCurrentLoginStatus();
-  const isSelfHosted = useSelfHosted();
 
   const settings: GeneralSettingListItem[] = [
     {
@@ -53,6 +51,13 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'shortcuts-panel-trigger',
     },
     {
+      key: 'plans',
+      title: t['com.affine.payment.title'](),
+      icon: UpgradeIcon,
+      testId: 'plans-panel-trigger',
+    },
+
+    {
       key: 'plugins',
       title: 'Plugins',
       icon: PluginIcon,
@@ -66,21 +71,13 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     },
   ];
 
-  if (!isSelfHosted) {
+  if (status === 'authenticated') {
     settings.splice(3, 0, {
-      key: 'plans',
-      title: t['com.affine.payment.title'](),
-      icon: UpgradeIcon,
-      testId: 'plans-panel-trigger',
+      key: 'billing',
+      title: t['com.affine.payment.billing-setting.title'](),
+      icon: PaymentIcon,
+      testId: 'billing-panel-trigger',
     });
-    if (status === 'authenticated') {
-      settings.splice(3, 0, {
-        key: 'billing',
-        title: t['com.affine.payment.billing-setting.title'](),
-        icon: PaymentIcon,
-        testId: 'billing-panel-trigger',
-      });
-    }
   }
 
   return settings;

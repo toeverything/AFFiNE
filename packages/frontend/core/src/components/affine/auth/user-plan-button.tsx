@@ -28,11 +28,6 @@ const UserPlanButtonWithData = () => {
 
   const t = useAFFiNEI18N();
 
-  if (plan === SubscriptionPlan.SelfHosted) {
-    // Self hosted version doesn't have a payment apis.
-    return <div className={styles.userPlanButton}>{plan}</div>;
-  }
-
   return (
     <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
       <div className={styles.userPlanButton} onClick={handleClick}>

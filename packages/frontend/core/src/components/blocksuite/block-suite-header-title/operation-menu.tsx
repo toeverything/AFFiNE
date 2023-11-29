@@ -1,6 +1,5 @@
 import { FlexWrapper } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -9,7 +8,6 @@ import {
   EditIcon,
   FavoritedIcon,
   FavoriteIcon,
-  HistoryIcon,
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
@@ -27,7 +25,7 @@ import {
 } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
@@ -38,7 +36,6 @@ import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helpe
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
-import { PageHistoryModal } from '../../affine/page-history-modal/history-modal';
 import { HeaderDropDownButton } from '../../pure/header-drop-down-button';
 import { usePageHelper } from '../block-suite-page-list/utils';
 
@@ -70,12 +67,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
-
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
-
-  const openHistoryModal = useCallback(() => {
-    setHistoryModalOpen(true);
-  }, []);
 
   const handleOpenTrashModal = useCallback(() => {
     setTrashModal({
@@ -216,23 +207,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Import']()}
       </MenuItem>
-
-      {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-      runtimeConfig.enablePageHistory ? (
-        <MenuItem
-          preFix={
-            <MenuIcon>
-              <HistoryIcon />
-            </MenuIcon>
-          }
-          data-testid="editor-option-menu-history"
-          onSelect={openHistoryModal}
-          style={menuItemStyle}
-        >
-          {t['com.affine.history.view-history-version']()}
-        </MenuItem>
-      ) : null}
-
       <Export exportHandler={exportHandler} />
       <MenuSeparator />
       <MoveToTrash
@@ -254,14 +228,6 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         <HeaderDropDownButton />
       </Menu>
-      {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
-        <PageHistoryModal
-          workspace={workspace.blockSuiteWorkspace}
-          open={historyModalOpen}
-          pageId={pageId}
-          onOpenChange={setHistoryModalOpen}
-        />
-      ) : null}
     </FlexWrapper>
   );
 };

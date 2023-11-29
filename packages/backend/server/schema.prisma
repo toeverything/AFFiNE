@@ -178,15 +178,13 @@ model Blob {
 }
 
 model OptimizedBlob {
-  id          Int       @id @default(autoincrement()) @db.Integer
-  hash        String    @db.VarChar
-  workspaceId String    @map("workspace_id") @db.VarChar
-  params      String    @db.VarChar
-  blob        Bytes     @db.ByteA
+  id          Int      @id @default(autoincrement()) @db.Integer
+  hash        String   @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  params      String   @db.VarChar
+  blob        Bytes    @db.ByteA
   length      BigInt
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  // not for keeping, but for snapshot history
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([workspaceId, hash, params])
   @@map("optimized_blobs")

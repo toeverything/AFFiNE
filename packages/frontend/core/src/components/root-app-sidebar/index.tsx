@@ -30,8 +30,8 @@ import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
-import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import { useRegisterBlocksuiteEditorCommands } from '../../hooks/use-shortcut-commands';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
@@ -169,7 +169,7 @@ export const RootAppSidebar = ({
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
-  useRegisterBrowserHistoryCommands(router.back, router.forward);
+  useRegisterBlocksuiteEditorCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
   return (
     <AppSidebar

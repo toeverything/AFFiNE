@@ -2,8 +2,6 @@ import { type SubscriptionQuery, subscriptionQuery } from '@affine/graphql';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 
-import { useSelfHosted } from './affine/use-server-flavor';
-
 export type Subscription = NonNullable<
   NonNullable<SubscriptionQuery['currentUser']>['subscription']
 >;
@@ -14,7 +12,6 @@ const selector = (data: SubscriptionQuery) =>
   data.currentUser?.subscription ?? null;
 
 export const useUserSubscription = () => {
-  const isSelfHosted = useSelfHosted();
   const { data, mutate } = useQuery({
     query: subscriptionQuery,
   });
@@ -38,10 +35,6 @@ export const useUserSubscription = () => {
     },
     [mutate]
   );
-
-  if (isSelfHosted) {
-    return [selector(data), () => {}] as const;
-  }
 
   return [selector(data), set] as const;
 };

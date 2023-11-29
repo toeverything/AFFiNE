@@ -1,6 +1,0 @@
-query serverConfig {
-  serverConfig {
-    version
-    flavor
-  }
-}
