@@ -76,6 +76,10 @@ export async function setup(store: ReturnType<typeof createStore>) {
       new Sentry.Replay(),
     ],
   });
+  Sentry.setTags({
+    appVersion: runtimeConfig.appVersion,
+    editorVersion: runtimeConfig.editorVersion,
+  });
 
   performanceSetupLogger.info('get root workspace meta');
   // do not read `rootWorkspacesMetadataAtom` before migration

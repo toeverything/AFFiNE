@@ -1,7 +1,7 @@
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { Provider } from 'jotai/react';
 import type { FC } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import * as styles from './affine-error-fallback.css';
 import {
@@ -41,10 +41,6 @@ export interface AffineErrorFallbackProps extends FallbackProps {
 export const AffineErrorFallback: FC<AffineErrorFallbackProps> = props => {
   const { error, resetError, height } = props;
   const Component = useMemo(() => getErrorFallbackComponent(error), [error]);
-
-  useEffect(() => {
-    console.error('Uncaught error:', error);
-  }, [error]);
 
   return (
     <div className={styles.viewport} style={{ height }}>

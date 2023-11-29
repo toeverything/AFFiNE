@@ -22,7 +22,13 @@ export const AffineErrorBoundary: FC<AffineErrorBoundaryProps> = props => {
     [props.height]
   );
 
+  const onError = useCallback((error: Error, componentStack: string) => {
+    console.error('Uncaught error:', error, componentStack);
+  }, []);
+
   return (
-    <ErrorBoundary fallback={fallbackRender}>{props.children}</ErrorBoundary>
+    <ErrorBoundary fallback={fallbackRender} onError={onError}>
+      {props.children}
+    </ErrorBoundary>
   );
 };
