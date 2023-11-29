@@ -97,7 +97,7 @@ export class NoPageRootError extends Error {
 }
 
 const PAGE_ROOT_KEY = Symbol('PAGE_ROOT');
-function loadPageRoot(page: Page) {
+function usePageRoot(page: Page) {
   if (!page.loaded) {
     use(page.load());
   }
@@ -118,6 +118,8 @@ function loadPageRoot(page: Page) {
     }
     use(root$);
   }
+
+  return page.root;
 }
 
 const BlockSuiteEditorImpl = ({
@@ -129,7 +131,7 @@ const BlockSuiteEditorImpl = ({
   onModeChange,
   style,
 }: EditorProps): ReactElement => {
-  loadPageRoot(page);
+  usePageRoot(page);
 
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
