@@ -207,6 +207,7 @@ const config = {
     ],
     'unicorn/no-unnecessary-await': 'error',
     'unicorn/no-useless-fallback-in-spread': 'error',
+    'unicorn/prefer-dom-node-dataset': 'error',
     'sonarjs/no-all-duplicated-branches': 'error',
     'sonarjs/no-element-overwrite': 'error',
     'sonarjs/no-empty-collection': 'error',

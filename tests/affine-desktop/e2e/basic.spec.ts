@@ -114,9 +114,7 @@ test('clientBorder value should disable by default on window', async ({
 test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');
   {
-    const themeMode = await root.evaluate(element =>
-      element.getAttribute('data-theme')
-    );
+    const themeMode = await root.evaluate(element => element.dataset.theme);
     expect(themeMode).toBe('light');
 
     const theme = await electronApp.evaluate(({ nativeTheme }) => {
@@ -131,9 +129,7 @@ test('app theme', async ({ page, electronApp }) => {
     await page.getByTestId('appearance-panel-trigger').click();
     await page.waitForTimeout(50);
     await page.getByTestId('dark-theme-trigger').click();
-    const themeMode = await root.evaluate(element =>
-      element.getAttribute('data-theme')
-    );
+    const themeMode = await root.evaluate(element => element.dataset.theme);
     expect(themeMode).toBe('dark');
     const theme = await electronApp.evaluate(({ nativeTheme }) => {
       return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';

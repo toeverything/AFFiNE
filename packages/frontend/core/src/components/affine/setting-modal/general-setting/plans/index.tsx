@@ -84,8 +84,7 @@ const Settings = () => {
         scrollWrapper.current.getBoundingClientRect().left -
         parseInt(wrapperComputedStyle.paddingLeft)
       : 0;
-    const appeared =
-      scrollWrapper.current.getAttribute('data-appeared') === 'true';
+    const appeared = scrollWrapper.current.dataset.appeared === 'true';
     const animationFrameId = requestAnimationFrame(() => {
       scrollWrapper.current?.scrollTo({
         behavior: appeared ? 'smooth' : 'instant',

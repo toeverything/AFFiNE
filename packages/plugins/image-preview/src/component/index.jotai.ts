@@ -9,7 +9,7 @@ previewBlockIdAtom.onMount = set => {
     if (target?.tagName === 'IMG') {
       const imageBlock = target.closest('affine-image');
       if (imageBlock) {
-        const blockId = imageBlock.getAttribute('data-block-id');
+        const blockId = imageBlock.dataset.blockId;
         if (!blockId) return;
         set(blockId);
       }

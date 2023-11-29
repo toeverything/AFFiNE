@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-dom-node-dataset */
 import { test } from '@affine-test/kit/playwright';
 import {
   changeFilter,
@@ -307,7 +308,6 @@ test('select a group of items by clicking "Select All" in group header', async (
   const selectedGroupItemTotalCount = await page
     .locator('[data-testid="page-list-group-header"]')
     .getAttribute('data-group-items-count');
-
   expect(selectedItemCount).toBe(selectedGroupItemTotalCount);
 
   // check the selected count is equal to the one displayed in the floating toolbar
