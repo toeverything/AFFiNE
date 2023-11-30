@@ -75,7 +75,7 @@ export const Component = (): ReactElement => {
 
   const migration = useLoaderData() as MigrationPoint | undefined;
   return (
-    <AffineErrorBoundary height="100vh">
+    <AffineErrorBoundary key={params.workspaceId} height="100vh">
       <WorkspaceLayout migration={migration}>
         <Outlet />
       </WorkspaceLayout>
