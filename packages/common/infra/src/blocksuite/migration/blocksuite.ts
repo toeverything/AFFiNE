@@ -26,6 +26,13 @@ export async function migratePages(
   });
   schema.upgradeWorkspace(rootDoc);
 
+  // Hard code to upgrade page version to 2.
+  // Let e2e to ensure the data version is correct.
+  const pageVersion = meta.get('pageVersion');
+  if (typeof pageVersion !== 'number' || pageVersion < 2) {
+    meta.set('pageVersion', 2);
+  }
+
   const newVersions = getLatestVersions(schema);
   meta.set('blockVersions', new YMap(Object.entries(newVersions)));
   return Object.entries(oldVersions).some(
