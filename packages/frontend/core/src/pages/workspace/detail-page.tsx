@@ -164,7 +164,8 @@ export const DetailPage = (): ReactElement => {
     });
   }
 
-  return <DetailPageImpl />;
+  // Add a key to force rerender when page changed, to avoid some lifecycle issues.
+  return <DetailPageImpl key={currentPageId} />;
 };
 
 export const loader: LoaderFunction = async () => {

@@ -43,3 +43,25 @@ export function guidCompatibilityFix(rootDoc: YDoc) {
   });
   return changed;
 }
+
+/**
+ * Hard code to fix workspace version to be compatible with legacy data.
+ * Let e2e to ensure the data version is correct.
+ */
+export function fixWorkspaceVersion(rootDoc: YDoc) {
+  const meta = rootDoc.getMap('meta') as YMap<unknown>;
+
+  /**
+   * It doesn't matter to upgrade workspace version from 1 or undefined to 2.
+   * Blocksuite just set the value, do nothing else.
+   */
+  const workspaceVersion = meta.get('workspaceVersion');
+  if (typeof workspaceVersion !== 'number' || workspaceVersion < 2) {
+    meta.set('workspaceVersion', 2);
+
+    const pageVersion = meta.get('pageVersion');
+    if (typeof pageVersion !== 'number') {
+      meta.set('pageVersion', 1);
+    }
+  }
+}

@@ -75,6 +75,7 @@ export async function setup(store: ReturnType<typeof createStore>) {
           ),
         }),
         new Sentry.Replay(),
+        new Sentry.BrowserTracing(),
       ],
     });
     Sentry.setTags({

@@ -20,13 +20,18 @@ export async function migratePages(
   const meta = rootDoc.getMap('meta') as YMap<unknown>;
   const versions = meta.get('blockVersions') as YMap<number>;
   const oldVersions = versions?.toJSON() ?? {};
+
   spaces.forEach((space: YDoc) => {
-    try {
-      schema.upgradePage(0, oldVersions, space);
-    } catch (e) {
-      console.error(`page ${space.guid} upgrade failed`, e);
-    }
+    schema.upgradePage(0, oldVersions, space);
   });
+  schema.upgradeWorkspace(rootDoc);
+
+  // Hard code to upgrade page version to 2.
+  // Let e2e to ensure the data version is correct.
+  const pageVersion = meta.get('pageVersion');
+  if (typeof pageVersion !== 'number' || pageVersion < 2) {
+    meta.set('pageVersion', 2);
+  }
 
   const newVersions = getLatestVersions(schema);
   meta.set('blockVersions', new YMap(Object.entries(newVersions)));

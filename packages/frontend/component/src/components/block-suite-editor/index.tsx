@@ -85,12 +85,14 @@ export class NoPageRootError extends Error {
     const spaceVectors = Array.from(page.doc.spaces.entries()).map(
       ([pageId, doc]) => `${pageId} > ${doc.guid}`
     );
+    const blocks = page.doc.getMap('blocks');
     console.info(
       'NoPageRootError current data: %s',
       JSON.stringify({
         expectPageId: page.id,
         expectGuid: page.spaceDoc.guid,
         spaceVectors,
+        blockSize: blocks.size,
       })
     );
   }

@@ -44,7 +44,7 @@ interface WorkspaceUpgradeProps {
 export const WorkspaceUpgrade = function WorkspaceUpgrade(
   props: WorkspaceUpgradeProps
 ) {
-  const [upgradeState, , upgradeWorkspace, newWorkspaceId] =
+  const [upgradeState, error, upgradeWorkspace, newWorkspaceId] =
     useUpgradeWorkspace(props.migration);
   const t = useAFFiNEI18N();
 
@@ -75,7 +75,7 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade(
       <div className={styles.upgradeBox}>
         <AffineShapeIcon width={180} height={180} />
         <p className={styles.upgradeTips}>
-          {t[UPGRADE_TIPS_KEYS[upgradeState]]()}
+          {error ? error.message : t[UPGRADE_TIPS_KEYS[upgradeState]]()}
         </p>
         <Button
           data-testid="upgrade-workspace-button"
