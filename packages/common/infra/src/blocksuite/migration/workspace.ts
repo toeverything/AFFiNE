@@ -63,11 +63,24 @@ export function checkWorkspaceCompatibility(
     return MigrationPoint.BlockVersion;
   }
 
-  try {
-    workspace.meta.validateVersion(workspace);
-  } catch (e) {
-    console.info('validateVersion error', e);
-    return MigrationPoint.BlockVersion;
+  // TODO: Catch compatibility error from blocksuite to show upgrade page.
+  // Temporarily follow the check logic of blocksuite.
+  if ((workspace.meta.pages?.length ?? 0) <= 1) {
+    try {
+      workspace.meta.validateVersion(workspace);
+    } catch (e) {
+      console.info('validateVersion error', e);
+      return MigrationPoint.BlockVersion;
+    }
+  }
+
+  // From v2, we depend on blocksuite to check and migrate data.
+  const blockVersions = workspace.meta.blockVersions;
+  for (const [flavour, version] of Object.entries(blockVersions ?? {})) {
+    const schema = workspace.schema.flavourSchemaMap.get(flavour);
+    if (schema?.version !== version) {
+      return MigrationPoint.BlockVersion;
+    }
   }
 
   return null;
