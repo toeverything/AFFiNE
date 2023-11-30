@@ -20,7 +20,7 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
     const res = reqContext.contextValue.req.res as Response;
     const operation = reqContext.request.operationName;
 
-    metrics().gqlRequest.add(1, { operation });
+    metrics.gql.counter('query_counter').add(1, { operation });
     const start = Date.now();
 
     return Promise.resolve({
@@ -30,7 +30,9 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
           'Server-Timing',
           `gql;dur=${costInMilliseconds};desc="GraphQL"`
         );
-        metrics().gqlTimer.record(costInMilliseconds, { operation });
+        metrics.gql
+          .histogram('query_duration')
+          .record(costInMilliseconds, { operation });
         return Promise.resolve();
       },
       didEncounterErrors: () => {
@@ -39,7 +41,9 @@ export class GQLLoggerPlugin implements ApolloServerPlugin {
           'Server-Timing',
           `gql;dur=${costInMilliseconds};desc="GraphQL ${operation}"`
         );
-        metrics().gqlTimer.record(costInMilliseconds, { operation });
+        metrics.gql
+          .histogram('query_duration')
+          .record(costInMilliseconds, { operation });
         return Promise.resolve();
       },
     });

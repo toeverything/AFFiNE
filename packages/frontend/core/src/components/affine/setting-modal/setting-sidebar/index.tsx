@@ -38,16 +38,20 @@ import {
 
 export type UserInfoProps = {
   onAccountSettingClick: () => void;
+  active?: boolean;
 };
 
 export const UserInfo = ({
   onAccountSettingClick,
+  active,
 }: UserInfoProps): ReactElement => {
   const user = useCurrentUser();
   return (
     <div
       data-testid="user-info-card"
-      className={accountButton}
+      className={clsx(accountButton, {
+        active: active,
+      })}
       onClick={onAccountSettingClick}
     >
       <Avatar size={28} name={user.name} url={user.image} className="avatar" />
@@ -163,7 +167,10 @@ export const SettingSidebar = ({
 
         {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
           <Suspense>
-            <UserInfo onAccountSettingClick={onAccountSettingClick} />
+            <UserInfo
+              onAccountSettingClick={onAccountSettingClick}
+              active={selectedGeneralKey === 'account'}
+            />
           </Suspense>
         ) : null}
       </div>

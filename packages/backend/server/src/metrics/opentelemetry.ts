@@ -1,5 +1,6 @@
 import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
+import { metrics } from '@opentelemetry/api';
 import {
   CompositePropagator,
   W3CBaggagePropagator,
@@ -16,6 +17,8 @@ import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core'
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import {
   ConsoleMetricExporter,
+  type MeterProvider,
+  MetricProducer,
   MetricReader,
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
@@ -24,10 +27,11 @@ import {
   BatchSpanProcessor,
   ConsoleSpanExporter,
   SpanExporter,
+  TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
 import { PrismaInstrumentation } from '@prisma/instrumentation';
 
-import { registerBusinessMetrics } from './metrics';
+import { PrismaMetricProducer } from './prisma';
 
 abstract class OpentelemetryFactor {
   abstract getMetricReader(): MetricReader;
@@ -44,9 +48,14 @@ abstract class OpentelemetryFactor {
     ];
   }
 
+  getMetricsProducers(): MetricProducer[] {
+    return [new PrismaMetricProducer()];
+  }
+
   create() {
     const traceExporter = this.getSpanExporter();
     return new NodeSDK({
+      sampler: new TraceIdRatioBasedSampler(0.1),
       traceExporter,
       metricReader: this.getMetricReader(),
       spanProcessor: new BatchSpanProcessor(traceExporter),
@@ -67,7 +76,10 @@ class GCloudOpentelemetryFactor extends OpentelemetryFactor {
     return new PeriodicExportingMetricReader({
       exportIntervalMillis: 30000,
       exportTimeoutMillis: 10000,
-      exporter: new MetricExporter(),
+      exporter: new MetricExporter({
+        prefix: 'custom.googleapis.com',
+      }),
+      metricProducers: this.getMetricsProducers(),
     });
   }
 
@@ -78,7 +90,9 @@ class GCloudOpentelemetryFactor extends OpentelemetryFactor {
 
 class LocalOpentelemetryFactor extends OpentelemetryFactor {
   override getMetricReader(): MetricReader {
-    return new PrometheusExporter();
+    return new PrometheusExporter({
+      metricProducers: this.getMetricsProducers(),
+    });
   }
 
   override getSpanExporter(): SpanExporter {
@@ -90,6 +104,7 @@ class DebugOpentelemetryFactor extends OpentelemetryFactor {
   override getMetricReader(): MetricReader {
     return new PeriodicExportingMetricReader({
       exporter: new ConsoleMetricExporter(),
+      metricProducers: this.getMetricsProducers(),
     });
   }
 
@@ -111,9 +126,30 @@ function createSDK() {
   return factor?.create();
 }
 
+let OPENTELEMETRY_STARTED = false;
+
+function ensureStarted() {
+  if (!OPENTELEMETRY_STARTED) {
+    OPENTELEMETRY_STARTED = true;
+    start();
+  }
+}
+
+function getMeterProvider() {
+  ensureStarted();
+  return metrics.getMeterProvider();
+}
+
 function registerCustomMetrics() {
-  const host = new HostMetrics({ name: 'instance-host-metrics' });
-  host.start();
+  const hostMetricsMonitoring = new HostMetrics({
+    name: 'instance-host-metrics',
+    meterProvider: getMeterProvider() as MeterProvider,
+  });
+  hostMetricsMonitoring.start();
+}
+
+export function getMeter(name = 'business') {
+  return getMeterProvider().getMeter(name);
 }
 
 export function start() {
@@ -122,6 +158,5 @@ export function start() {
   if (sdk) {
     sdk.start();
     registerCustomMetrics();
-    registerBusinessMetrics();
   }
 }

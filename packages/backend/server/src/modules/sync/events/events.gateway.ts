@@ -45,6 +45,7 @@ export const GatewayErrorWrapper = (): MethodDecorator => {
       try {
         result = originalMethod.apply(this, args);
       } catch (e) {
+        metrics.socketio.counter('unhandled_errors').add(1);
         return {
           error: new InternalError(e as Error),
         };
@@ -52,6 +53,7 @@ export const GatewayErrorWrapper = (): MethodDecorator => {
 
       if (result instanceof Promise) {
         return result.catch(e => {
+          metrics.socketio.counter('unhandled_errors').add(1);
           return {
             error: new InternalError(e),
           };
@@ -68,7 +70,7 @@ export const GatewayErrorWrapper = (): MethodDecorator => {
 const SubscribeMessage = (event: string) =>
   applyDecorators(
     GatewayErrorWrapper(),
-    CallTimer('socket_io_event_duration', { event }),
+    CallTimer('socketio', 'event_duration', { event }),
     RawSubscribeMessage(event)
   );
 
@@ -104,12 +106,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection() {
     this.connectionCount++;
-    metrics().socketIOConnectionGauge(this.connectionCount);
+    metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
   }
 
   handleDisconnect() {
     this.connectionCount--;
-    metrics().socketIOConnectionGauge(this.connectionCount);
+    metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
   }
 
   @Auth()

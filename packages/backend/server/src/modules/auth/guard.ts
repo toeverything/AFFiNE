@@ -53,8 +53,8 @@ class AuthGuard implements CanActivate {
   constructor(
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,
-    private auth: AuthService,
-    private prisma: PrismaService,
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
     private readonly reflector: Reflector
   ) {}
 

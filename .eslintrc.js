@@ -137,6 +137,7 @@ const config = {
     '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/require-array-sort-compare': 'error',
     '@typescript-eslint/unified-signatures': 'error',
+    '@typescript-eslint/prefer-for-of': 'error',
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
@@ -269,6 +270,7 @@ const config = {
           },
         ],
         '@typescript-eslint/no-misused-promises': ['error'],
+        '@typescript-eslint/prefer-readonly': 'error',
         'i/no-extraneous-dependencies': ['error'],
         'react-hooks/exhaustive-deps': [
           'warn',

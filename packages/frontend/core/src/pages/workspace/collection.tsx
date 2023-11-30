@@ -118,6 +118,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
           alignItems: 'center',
           gap: 8,
           padding: '12px 24px',
+          fontSize: 'var(--affine-font-xs)',
         }}
       >
         <div
@@ -128,7 +129,10 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             color: 'var(--affine-text-secondary-color)',
           }}
         >
-          <ViewLayersIcon style={{ color: 'var(--affine-icon-color)' }} />
+          <ViewLayersIcon
+            style={{ color: 'var(--affine-icon-color)' }}
+            fontSize={14}
+          />
           {t['com.affine.collection.allCollections']()}
           <div>/</div>
         </div>

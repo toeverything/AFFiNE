@@ -45,8 +45,8 @@ export abstract class HandlerManager<
   Handlers extends Record<string, PrimitiveHandlers>,
 > {
   static instance: HandlerManager<string, Record<string, PrimitiveHandlers>>;
-  private _app: App<Namespace, Handlers>;
-  private _namespace: Namespace;
+  private readonly _app: App<Namespace, Handlers>;
+  private readonly _namespace: Namespace;
   private _handlers: Handlers;
 
   constructor() {
@@ -190,9 +190,17 @@ export interface UpdateMeta {
   allowAutoUpdate: boolean;
 }
 
+export type UpdaterConfig = {
+  autoCheckUpdate: boolean;
+  autoDownloadUpdate: boolean;
+};
+
 export type UpdaterHandlers = {
   currentVersion: () => Promise<string>;
   quitAndInstall: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  getConfig: () => Promise<UpdaterConfig>;
+  setConfig: (newConfig: Partial<UpdaterConfig>) => Promise<void>;
   checkForUpdatesAndNotify: () => Promise<{ version: string } | null>;
 };
 

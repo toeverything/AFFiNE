@@ -16,7 +16,7 @@ export class DocID {
   raw: string;
   workspace: string;
   variant: DocVariant;
-  private sub: string | null;
+  private readonly sub: string | null;
 
   static parse(raw: string): DocID | null {
     try {

@@ -38,18 +38,21 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
+      appBuildType: 'stable',
     },
     get beta() {
       return {
         ...this.stable,
         enablePageHistory: false,
         serverUrlPrefix: 'https://insider.affine.pro',
+        appBuildType: 'beta' as const,
       };
     },
     get internal() {
       return {
         ...this.stable,
         serverUrlPrefix: 'https://insider.affine.pro',
+        appBuildType: 'internal' as const,
       };
     },
     // canary will be aggressive and enable all features
@@ -82,6 +85,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/editor'],
+      appBuildType: 'canary',
     },
   };
 

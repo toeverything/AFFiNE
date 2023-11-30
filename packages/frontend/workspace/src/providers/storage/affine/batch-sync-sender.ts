@@ -15,12 +15,12 @@ interface SyncUpdateSender {
  *   - retryable, allow retry when previous sync request failed but with retry flag been set to true
  */
 export class BatchSyncSender {
-  private buffered: Uint8Array[] = [];
+  private readonly buffered: Uint8Array[] = [];
   private job: Promise<void> | null = null;
   private started = true;
 
   constructor(
-    private guid: string,
+    private readonly guid: string,
     private readonly rawSender: SyncUpdateSender
   ) {}
 

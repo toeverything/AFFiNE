@@ -43,3 +43,37 @@ globalStyle(`${communityItem} p`, {
   fontSize: 'var(--affine-font-xs)',
   textAlign: 'center',
 });
+
+export const checkUpdateDesc = style({
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: 'var(--affine-font-xs)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  selectors: {
+    '&.active': {
+      color: 'var(--affine-text-emphasis-color)',
+    },
+    '&.error': {
+      color: 'var(--affine-error-color)',
+    },
+  },
+});
+
+globalStyle(`${checkUpdateDesc} svg`, {
+  marginRight: '4px',
+});
+
+export const appImageRow = style({
+  flexDirection: 'row-reverse',
+  selectors: {
+    '&.two-col': {
+      justifyContent: 'flex-end',
+    },
+  },
+});
+
+globalStyle(`${appImageRow} .right-col`, {
+  paddingLeft: '0',
+  paddingRight: '20px',
+});

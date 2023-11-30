@@ -28,9 +28,9 @@ export const getUtcTimestamp = () => Math.floor(Date.now() / 1000);
 @Injectable()
 export class AuthService {
   constructor(
-    private config: Config,
-    private prisma: PrismaService,
-    private mailer: MailService
+    private readonly config: Config,
+    private readonly prisma: PrismaService,
+    private readonly mailer: MailService
   ) {}
 
   sign(user: UserClaim) {
