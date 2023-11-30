@@ -33,13 +33,14 @@ export const LanguageMenu = () => {
       contentOptions={{
         style: {
           background: 'var(--affine-white)',
+          width: '250px',
         },
         align: 'end',
       }}
     >
       <MenuTrigger
         data-testid="language-menu-button"
-        style={{ textTransform: 'capitalize', fontWeight: 600 }}
+        style={{ textTransform: 'capitalize', fontWeight: 600, width: '250px' }}
         block={true}
       >
         {currentLanguage?.originalName || ''}
