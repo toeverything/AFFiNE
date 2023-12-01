@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { type Map as YMap } from 'yjs';
 
 import { Skeleton } from '../../ui/skeleton';
 import {
@@ -82,17 +83,21 @@ export class NoPageRootError extends Error {
     super('Page root not found when render editor!');
 
     // Log info to let sentry collect more message
-    const spaceVectors = Array.from(page.doc.spaces.entries()).map(
-      ([pageId, doc]) => `${pageId} > ${doc.guid}`
+    const hasExpectSpace = Array.from(page.doc.spaces.values()).some(
+      doc => page.spaceDoc.guid === doc.guid
     );
-    const blocks = page.doc.getMap('blocks');
+    const blocks = page.spaceDoc.getMap('blocks') as YMap<YMap<any>>;
+    const havePageBlock = Array.from(blocks.values()).some(
+      block => block.get('sys:flavour') === 'affine:page'
+    );
     console.info(
       'NoPageRootError current data: %s',
       JSON.stringify({
         expectPageId: page.id,
         expectGuid: page.spaceDoc.guid,
-        spaceVectors,
+        hasExpectSpace,
         blockSize: blocks.size,
+        havePageBlock,
       })
     );
   }

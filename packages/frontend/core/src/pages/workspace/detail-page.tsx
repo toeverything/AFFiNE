@@ -164,8 +164,7 @@ export const DetailPage = (): ReactElement => {
     });
   }
 
-  // Add a key to force rerender when page changed, to avoid some lifecycle issues.
-  return <DetailPageImpl key={currentPageId} />;
+  return <DetailPageImpl />;
 };
 
 export const loader: LoaderFunction = async () => {
@@ -192,8 +191,9 @@ export const Component = () => {
     }
   }, [params, setContentLayout, setCurrentPageId, setCurrentWorkspaceId]);
 
+  // Add a key to force rerender when page changed, to avoid error boundary persisting.
   return (
-    <AffineErrorBoundary>
+    <AffineErrorBoundary key={params.pageId}>
       <DetailPage />
     </AffineErrorBoundary>
   );
