@@ -2,6 +2,14 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ServerConfigType {
+  """server version"""
+  version: String!
+
+  """server flavor"""
+  flavor: String!
+}
+
 type UserType {
   id: ID!
 
@@ -73,6 +81,7 @@ enum SubscriptionPlan {
   Pro
   Team
   Enterprise
+  SelfHosted
 }
 
 type UserSubscription {
@@ -240,6 +249,9 @@ type DocHistoryType {
 }
 
 type Query {
+  """server config"""
+  serverConfig: ServerConfigType!
+
   """Get is owner of workspace"""
   isOwner(workspaceId: String!): Boolean!
 

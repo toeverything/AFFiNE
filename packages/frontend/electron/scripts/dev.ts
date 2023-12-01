@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process';
+import { resolve } from 'node:path';
 
 import type { ChildProcessWithoutNullStreams } from 'child_process';
 import type { BuildContext } from 'esbuild';
 import * as esbuild from 'esbuild';
 
-import { config, electronDir } from './common';
+import { config, electronDir, rootDir } from './common';
 
 // this means we don't spawn electron windows, mainly for testing
 const watchMode = process.argv.includes('--watch');
@@ -29,7 +30,10 @@ function spawnOrReloadElectron() {
     spawnProcess = null;
   }
 
-  spawnProcess = spawn('electron', ['.'], {
+  const ext = process.platform === 'win32' ? '.cmd' : '';
+  const exe = resolve(rootDir, 'node_modules', '.bin', `electron${ext}`);
+
+  spawnProcess = spawn(exe, ['.'], {
     cwd: electronDir,
     env: process.env,
   });

@@ -11,6 +11,7 @@ import * as styles from './share.css';
 export interface StorageProgressProgress {
   max: number;
   value: number;
+  upgradable?: boolean;
   onUpgrade: () => void;
   plan: SubscriptionPlan;
 }
@@ -23,6 +24,7 @@ enum ButtonType {
 export const StorageProgress = ({
   max: upperLimit,
   value,
+  upgradable = true,
   onUpgrade,
   plan,
 }: StorageProgressProgress) => {
@@ -63,22 +65,24 @@ export const StorageProgress = ({
         </div>
       </div>
 
-      <Tooltip
-        options={{ hidden: percent < 100 }}
-        content={t['com.affine.storage.maximum-tips']()}
-      >
-        <span tabIndex={0}>
-          <Button
-            type={buttonType}
-            onClick={onUpgrade}
-            className={styles.storageButton}
-          >
-            {plan === 'Free'
-              ? t['com.affine.storage.upgrade']()
-              : t['com.affine.storage.change-plan']()}
-          </Button>
-        </span>
-      </Tooltip>
+      {upgradable ? (
+        <Tooltip
+          options={{ hidden: percent < 100 }}
+          content={t['com.affine.storage.maximum-tips']()}
+        >
+          <span tabIndex={0}>
+            <Button
+              type={buttonType}
+              onClick={onUpgrade}
+              className={styles.storageButton}
+            >
+              {plan === 'Free'
+                ? t['com.affine.storage.upgrade']()
+                : t['com.affine.storage.change-plan']()}
+            </Button>
+          </span>
+        </Tooltip>
+      ) : null}
     </div>
   );
 };

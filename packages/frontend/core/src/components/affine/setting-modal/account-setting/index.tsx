@@ -35,6 +35,7 @@ import {
   openSignOutModalAtom,
 } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
@@ -167,6 +168,7 @@ export const AvatarAndName = () => {
 
 const StoragePanel = () => {
   const t = useAFFiNEI18N();
+  const isSelfHosted = useSelfHosted();
 
   const { data } = useQuery({
     query: allBlobSizesQuery,
@@ -175,6 +177,7 @@ const StoragePanel = () => {
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
 
+  // TODO(@JimmFly): get limit from user usage query directly after #4720 is merged
   const maxLimit = useMemo(() => {
     return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
   }, [plan]);
@@ -199,6 +202,7 @@ const StoragePanel = () => {
         plan={plan}
         value={data.collectAllBlobSizes.size}
         onUpgrade={onUpgrade}
+        upgradable={!isSelfHosted}
       />
     </SettingRow>
   );

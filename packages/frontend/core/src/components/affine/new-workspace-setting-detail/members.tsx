@@ -50,6 +50,7 @@ enum MemberLimitCount {
 
 const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
+  upgradable: boolean;
   workspace: AffineOfficialWorkspace;
 }
 type OnRevoke = (memberId: string) => void;
@@ -69,6 +70,7 @@ const MembersPanelLocal = () => {
 export const CloudWorkspaceMembersPanel = ({
   workspace,
   isOwner,
+  upgradable,
 }: MembersPanelProps) => {
   const workspaceId = workspace.id;
   const memberCount = useMemberCount(workspaceId);
@@ -164,16 +166,20 @@ export const CloudWorkspaceMembersPanel = ({
           planName: plan,
           memberLimit,
         })}
-        ,
-        <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
-          <span className={style.goUpgrade}>
-            {t['com.affine.payment.member.description.go-upgrade']()}
-          </span>
-          <ArrowRightBigIcon className={style.arrowRight} />
-        </div>
+        {upgradable ? (
+          <>
+            ,
+            <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
+              <span className={style.goUpgrade}>
+                {t['com.affine.payment.member.description.go-upgrade']()}
+              </span>
+              <ArrowRightBigIcon className={style.arrowRight} />
+            </div>
+          </>
+        ) : null}
       </span>
     );
-  }, [handleUpgrade, memberLimit, plan, t]);
+  }, [handleUpgrade, memberLimit, plan, t, upgradable]);
 
   return (
     <>

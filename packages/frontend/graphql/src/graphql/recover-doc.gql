@@ -1,0 +1,7 @@
+mutation recoverDoc(
+  $workspaceId: String!
+  $docId: String!
+  $timestamp: DateTime!
+) {
+  recoverDoc(workspaceId: $workspaceId, guid: $docId, timestamp: $timestamp)
+}
