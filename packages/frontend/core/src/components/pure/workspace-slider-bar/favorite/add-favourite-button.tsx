@@ -48,7 +48,7 @@ export const AddFavouriteButton = ({
         setPageMeta(page.id, { favorite: true });
       }
     },
-    [createPage, setPageMeta]
+    [createPage, setPageMeta, workspace, pageId]
   );
 
   return (
