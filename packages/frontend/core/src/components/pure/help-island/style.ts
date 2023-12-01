@@ -11,8 +11,8 @@ export const StyledIsland = styled('div')<{
     boxShadow: spread
       ? 'var(--affine-menu-shadow)'
       : inEdgelessPage
-      ? 'var(--affine-menu-shadow)'
-      : 'unset',
+        ? 'var(--affine-menu-shadow)'
+        : 'unset',
     padding: '0 4px 44px',
     borderRadius: '10px',
     background: spread

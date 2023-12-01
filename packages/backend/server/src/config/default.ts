@@ -209,6 +209,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         updatePollInterval: 3000,
         experimentalMergeWithJwstCodec: false,
       },
+      history: {
+        interval: 1000 * 60 * 10 /* 10 mins */,
+      },
     },
     payment: {
       stripe: {

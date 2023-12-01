@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use napi::bindgen_prelude::{Buffer, FromNapiValue, ToNapiValue, Uint8Array};
+use napi::bindgen_prelude::{Buffer, Uint8Array};
 use napi_derive::napi;
 use sqlx::{
   migrate::MigrateDatabase,

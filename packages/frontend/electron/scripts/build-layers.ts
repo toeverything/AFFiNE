@@ -11,9 +11,8 @@ async function buildLayers() {
   };
 
   if (process.env.BUILD_TYPE_OVERRIDE) {
-    define[
-      'process.env.BUILD_TYPE_OVERRIDE'
-    ] = `"${process.env.BUILD_TYPE_OVERRIDE}"`;
+    define['process.env.BUILD_TYPE_OVERRIDE'] =
+      `"${process.env.BUILD_TYPE_OVERRIDE}"`;
   }
 
   await esbuild.build({

@@ -32,12 +32,19 @@ export const runtimeFlagsSchema = z.object({
   enableCaptcha: z.boolean(),
   enableEnhanceShareMode: z.boolean(),
   enablePayment: z.boolean(),
+  enablePageHistory: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),
   editorVersion: z.string(),
+  appBuildType: z.union([
+    z.literal('stable'),
+    z.literal('beta'),
+    z.literal('internal'),
+    z.literal('canary'),
+  ]),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;

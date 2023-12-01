@@ -53,30 +53,41 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
       WorkspaceFlavour.AFFINE_CLOUD
     );
 
-    Y.applyUpdate(
-      newBlockSuiteWorkspace.doc,
-      Y.encodeStateAsUpdate(upstreamWorkspace.doc)
-    );
+    if (environment.isDesktop) {
+      // this will clone all data from existing db to new db file, including docs and blobs
+      await window.apis.workspace.clone(
+        upstreamWorkspace.id,
+        createWorkspace.id
+      );
 
-    await Promise.all(
-      [...upstreamWorkspace.doc.subdocs].map(async subdoc => {
-        subdoc.load();
-        return subdoc.whenLoaded.then(() => {
-          newBlockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
-            if (newSubdoc.guid === subdoc.guid) {
-              Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
-            }
+      // skip apply updates in memory and we will use providers to sync data from db
+    } else {
+      Y.applyUpdate(
+        newBlockSuiteWorkspace.doc,
+        Y.encodeStateAsUpdate(upstreamWorkspace.doc)
+      );
+
+      await Promise.all(
+        [...upstreamWorkspace.doc.subdocs].map(async subdoc => {
+          subdoc.load();
+          return subdoc.whenLoaded.then(() => {
+            newBlockSuiteWorkspace.doc.subdocs.forEach(newSubdoc => {
+              if (newSubdoc.guid === subdoc.guid) {
+                Y.applyUpdate(newSubdoc, Y.encodeStateAsUpdate(subdoc));
+              }
+            });
           });
-        });
-      })
-    );
+        })
+      );
 
-    migrateLocalBlobStorage(upstreamWorkspace.id, createWorkspace.id)
-      .then(() => deleteLocalBlobStorage(upstreamWorkspace.id))
-      .catch(e => {
-        console.error('error when moving blob storage:', e);
-      });
-    // todo(himself65): delete old workspace in the future
+      migrateLocalBlobStorage(upstreamWorkspace.id, createWorkspace.id)
+        .then(() => deleteLocalBlobStorage(upstreamWorkspace.id))
+        .catch(e => {
+          console.error('error when moving blob storage:', e);
+        });
+      // todo(himself65): delete old workspace in the future
+    }
+
     return createWorkspace.id;
   },
   delete: async workspace => {

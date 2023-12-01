@@ -1,25 +1,31 @@
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
+import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { setPageModeAtom } from '../../atoms';
 import { currentModeAtom } from '../../atoms/mode';
 import type { BlockSuiteWorkspace } from '../../shared';
 import { getWorkspaceSetting } from '../../utils/workspace-setting';
+import { useNavigateHelper } from '../use-navigate-helper';
 import { useReferenceLinkHelper } from './use-reference-link-helper';
 
 export function useBlockSuiteMetaHelper(
   blockSuiteWorkspace: BlockSuiteWorkspace
 ) {
-  const { setPageMeta, getPageMeta, setPageReadonly } =
+  const { setPageMeta, getPageMeta, setPageReadonly, setPageTitle } =
     usePageMetaHelper(blockSuiteWorkspace);
   const { addReferenceLink } = useReferenceLinkHelper(blockSuiteWorkspace);
   const metas = useBlockSuitePageMeta(blockSuiteWorkspace);
   const setPageMode = useSetAtom(setPageModeAtom);
   const currentMode = useAtomValue(currentModeAtom);
+  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
+  const { openPage } = useNavigateHelper();
 
   const switchToPageMode = useCallback(
     (pageId: string) => {
@@ -79,7 +85,7 @@ export function useBlockSuiteMetaHelper(
 
       setPageMeta(pageId, {
         trash: true,
-        trashDate: +new Date(),
+        trashDate: Date.now(),
         trashRelate: isRoot ? parentMeta?.id : undefined,
       });
       setPageReadonly(pageId, true);
@@ -140,6 +146,40 @@ export function useBlockSuiteMetaHelper(
     [setPageMeta]
   );
 
+  const duplicate = useAsyncCallback(
+    async (pageId: string) => {
+      const currentPageMeta = getPageMeta(pageId);
+      const newPage = createPage();
+      const currentPage = blockSuiteWorkspace.getPage(pageId);
+
+      await newPage.waitForLoaded();
+      if (!currentPageMeta || !currentPage) {
+        return;
+      }
+
+      const update = encodeStateAsUpdate(currentPage.spaceDoc);
+      applyUpdate(newPage.spaceDoc, update);
+
+      setPageMeta(newPage.id, {
+        tags: currentPageMeta.tags,
+        favorite: currentPageMeta.favorite,
+      });
+      setPageMode(newPage.id, currentMode);
+      setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
+      openPage(blockSuiteWorkspace.id, newPage.id);
+    },
+    [
+      blockSuiteWorkspace,
+      createPage,
+      currentMode,
+      getPageMeta,
+      openPage,
+      setPageMeta,
+      setPageMode,
+      setPageTitle,
+    ]
+  );
+
   return {
     switchToPageMode,
     switchToEdgelessMode,
@@ -155,5 +195,7 @@ export function useBlockSuiteMetaHelper(
     removeToTrash,
     restoreFromTrash,
     permanentlyDeletePage,
+
+    duplicate,
   };
 }

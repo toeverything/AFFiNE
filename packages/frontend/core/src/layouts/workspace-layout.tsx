@@ -14,6 +14,7 @@ import {
 } from '@affine/component/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import { getBlobEngine } from '@affine/workspace/manager';
 import { assertExists } from '@blocksuite/global/utils';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
@@ -27,6 +28,7 @@ import {
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
+import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -112,13 +114,47 @@ export const CurrentWorkspaceContext = ({
 };
 
 type WorkspaceLayoutProps = {
-  incompatible?: boolean;
+  migration?: MigrationPoint;
+};
+
+const useSyncWorkspaceBlob = () => {
+  // temporary solution for sync blob
+
+  const [currentWorkspace] = useCurrentWorkspace();
+
+  useEffect(() => {
+    const blobEngine = getBlobEngine(currentWorkspace.blockSuiteWorkspace);
+    let stopped = false;
+    function sync() {
+      if (stopped) {
+        return;
+      }
+
+      blobEngine
+        ?.sync()
+        .catch(error => {
+          console.error('sync blob error', error);
+        })
+        .finally(() => {
+          // sync every 1 minute
+          setTimeout(sync, 60000);
+        });
+    }
+
+    // after currentWorkspace changed, wait 1 second to start sync
+    setTimeout(sync, 1000);
+
+    return () => {
+      stopped = true;
+    };
+  }, [currentWorkspace]);
 };
 
 export const WorkspaceLayout = function WorkspacesSuspense({
   children,
-  incompatible = false,
+  migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) {
+  useSyncWorkspaceBlob();
   return (
     <AdapterProviderWrapper>
       <CurrentWorkspaceContext>
@@ -128,7 +164,7 @@ export const WorkspaceLayout = function WorkspacesSuspense({
           <CurrentWorkspaceModals />
         </Suspense>
         <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner incompatible={incompatible}>
+          <WorkspaceLayoutInner migration={migration}>
             {children}
           </WorkspaceLayoutInner>
         </Suspense>
@@ -139,7 +175,7 @@ export const WorkspaceLayout = function WorkspacesSuspense({
 
 export const WorkspaceLayoutInner = ({
   children,
-  incompatible = false,
+  migration,
 }: PropsWithChildren<WorkspaceLayoutProps>) => {
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
@@ -158,7 +194,8 @@ export const WorkspaceLayoutInner = ({
     const blockVersions = meta.get('blockVersions');
     if (
       !(blockVersions instanceof YMap) &&
-      blockVersions != null &&
+      blockVersions !== null &&
+      blockVersions !== undefined &&
       typeof blockVersions === 'object'
     ) {
       meta.set(
@@ -262,7 +299,11 @@ export const WorkspaceLayoutInner = ({
               padding={appSettings.clientBorder}
               inTrashPage={inTrashPage}
             >
-              {incompatible ? <WorkspaceUpgrade /> : children}
+              {migration ? (
+                <WorkspaceUpgrade migration={migration} />
+              ) : (
+                children
+              )}
               <ToolContainer inTrashPage={inTrashPage}>
                 <RootBlockHub />
                 <HelpIsland showList={pageId ? undefined : showList} />

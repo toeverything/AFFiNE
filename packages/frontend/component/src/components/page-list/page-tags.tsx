@@ -1,8 +1,9 @@
 import type { Tag } from '@affine/env/filter';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
 import { Menu } from '@toeverything/components/menu';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 
 import * as styles from './page-tags.css';
 import { stopPropagation } from './utils';
@@ -42,18 +43,22 @@ const TagItem = ({ tag, idx, mode, style }: TagItemProps) => {
   return (
     <div
       data-testid="page-tag"
-      className={mode === 'sticky' ? styles.tagSticky : styles.tagListItem}
+      className={styles.tag}
       data-idx={idx}
       title={tag.value}
       style={style}
     >
       <div
-        className={styles.tagIndicator}
-        style={{
-          backgroundColor: tagColorMap(tag.color),
-        }}
-      />
-      <div className={styles.tagLabel}>{tag.value}</div>
+        className={mode === 'sticky' ? styles.tagSticky : styles.tagListItem}
+      >
+        <div
+          className={styles.tagIndicator}
+          style={{
+            backgroundColor: tagColorMap(tag.color),
+          }}
+        />
+        <div className={styles.tagLabel}>{tag.value}</div>
+      </div>
     </div>
   );
 };
@@ -69,26 +74,6 @@ export const PageTags = ({
       ? widthOnHover
       : `${widthOnHover}px`
     : 'auto';
-  const tagsContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (tagsContainerRef.current) {
-      const tagsContainer = tagsContainerRef.current;
-      const listener = () => {
-        // on mouseleave, reset scroll position to the hoverExpandDirection
-        tagsContainer.scrollTo({
-          left: hoverExpandDirection === 'left' ? Number.MAX_SAFE_INTEGER : 0,
-          behavior: 'smooth',
-        });
-      };
-      listener();
-      tagsContainerRef.current.addEventListener('mouseleave', listener);
-      return () => {
-        tagsContainer.removeEventListener('mouseleave', listener);
-      };
-    }
-    return;
-  }, [hoverExpandDirection]);
 
   const tagsInPopover = useMemo(() => {
     const lastTags = tags.slice(maxItems);
@@ -107,36 +92,17 @@ export const PageTags = ({
     // sort tags by length
     nTags.sort((a, b) => a.value.length - b.value.length);
 
-    const tagRightCharLength = nTags.reduceRight<number[]>(
-      (acc, tag) => {
-        const curr = acc[0] + Math.min(tag.value.length, 10);
-        return [curr, ...acc];
-      },
-      [0]
-    );
-
-    tagRightCharLength.shift();
-
     return nTags.map((tag, idx) => (
-      <TagItem
-        key={tag.id}
-        tag={tag}
-        idx={idx}
-        mode="sticky"
-        style={{
-          right: `calc(${tagRightCharLength[idx]}em)`,
-        }}
-      />
+      <TagItem key={tag.id} tag={tag} idx={idx} mode="sticky" />
     ));
   }, [maxItems, tags]);
   return (
     <div
       data-testid="page-tags"
       className={styles.root}
-      style={{
-        // @ts-expect-error it's fine
-        '--hover-max-width': sanitizedWidthOnHover,
-      }}
+      style={assignInlineVars({
+        [styles.hoverMaxWidth]: sanitizedWidthOnHover,
+      })}
     >
       <div
         style={{
@@ -146,9 +112,7 @@ export const PageTags = ({
         className={clsx(styles.innerContainer)}
       >
         <div className={styles.innerBackdrop} />
-        <div className={styles.tagsScrollContainer} ref={tagsContainerRef}>
-          {tagsNormal}
-        </div>
+        <div className={styles.tagsScrollContainer}>{tagsNormal}</div>
         {maxItems && tags.length > maxItems ? (
           <Menu
             items={tagsInPopover}

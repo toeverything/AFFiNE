@@ -85,7 +85,7 @@ const CollectionRenderer = ({
     async (id: string) => {
       await setting.updateCollection({
         ...collection,
-        allowList: collection.allowList?.filter(v => v != id),
+        allowList: collection.allowList?.filter(v => v !== id),
       });
     },
     [collection, setting]

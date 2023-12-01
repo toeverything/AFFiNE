@@ -10,9 +10,9 @@ import * as styles from './page-list.css';
 export function isToday(date: Date): boolean {
   const today = new Date();
   return (
-    date.getDate() == today.getDate() &&
-    date.getMonth() == today.getMonth() &&
-    date.getFullYear() == today.getFullYear()
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
   );
 }
 
@@ -162,10 +162,10 @@ export function shallowEqual(objA: any, objB: any) {
   }
 
   // Test for A's keys different from B.
-  for (let i = 0; i < keysA.length; i++) {
+  for (const key of keysA) {
     if (
-      !Object.prototype.hasOwnProperty.call(objB, keysA[i]) ||
-      !Object.is(objA[keysA[i]], objB[keysA[i]])
+      !Object.prototype.hasOwnProperty.call(objB, key) ||
+      !Object.is(objA[key], objB[key])
     ) {
       return false;
     }

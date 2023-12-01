@@ -174,10 +174,10 @@ const EditorWrapper = memo(function EditorWrapper({
           div.setAttribute('plugin-id', id);
           const cleanup = editorItem(div, editor);
           assertExists(parent);
-          document.body.appendChild(div);
+          document.body.append(div);
           return () => {
             cleanup();
-            document.body.removeChild(div);
+            div.remove();
           };
         });
       });
@@ -235,14 +235,14 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
           }
           const div = document.createElement('div');
           const cleanup = windowItem(div);
-          root.appendChild(div);
+          root.append(div);
           if (abortController.signal.aborted) {
             cleanup();
-            root.removeChild(div);
+            div.remove();
           } else {
             const cl = () => {
               cleanup();
-              root.removeChild(div);
+              div.remove();
             };
             const dispose = addCleanup(pluginName, cl);
             abortController.signal.addEventListener('abort', () => {
@@ -289,7 +289,7 @@ const LayoutPanel = memo(function LayoutPanel(
         className={depth === 0 ? editorContainer : undefined}
       >
         <Panel
-          defaultSize={node.splitPercentage}
+          defaultSizePercentage={node.splitPercentage}
           style={{
             maxWidth: node.maxWidth?.[0],
           }}
@@ -304,7 +304,7 @@ const LayoutPanel = memo(function LayoutPanel(
         </Panel>
         <PanelResizeHandle />
         <Panel
-          defaultSize={100 - node.splitPercentage}
+          defaultSizePercentage={100 - node.splitPercentage}
           style={{
             overflow: 'scroll',
             maxWidth: node.maxWidth?.[1],

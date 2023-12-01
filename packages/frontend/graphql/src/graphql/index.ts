@@ -362,6 +362,22 @@ query getWorkspaces {
 }`,
 };
 
+export const listHistoryQuery = {
+  id: 'listHistoryQuery' as const,
+  operationName: 'listHistory',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query listHistory($workspaceId: String!, $pageDocId: String!, $take: Int, $before: DateTime) {
+  workspace(id: $workspaceId) {
+    histories(guid: $pageDocId, take: $take, before: $before) {
+      id
+      timestamp
+    }
+  }
+}`,
+};
+
 export const getInvoicesCountQuery = {
   id: 'getInvoicesCountQuery' as const,
   operationName: 'getInvoicesCount',
@@ -442,6 +458,17 @@ mutation publishPage($workspaceId: String!, $pageId: String!, $mode: PublicPageM
     id
     mode
   }
+}`,
+};
+
+export const recoverDocMutation = {
+  id: 'recoverDocMutation' as const,
+  operationName: 'recoverDoc',
+  definitionName: 'recoverDoc',
+  containsFile: false,
+  query: `
+mutation recoverDoc($workspaceId: String!, $docId: String!, $timestamp: DateTime!) {
+  recoverDoc(workspaceId: $workspaceId, guid: $docId, timestamp: $timestamp)
 }`,
 };
 
@@ -542,6 +569,20 @@ export const sendVerifyChangeEmailMutation = {
   query: `
 mutation sendVerifyChangeEmail($token: String!, $email: String!, $callbackUrl: String!) {
   sendVerifyChangeEmail(token: $token, email: $email, callbackUrl: $callbackUrl)
+}`,
+};
+
+export const serverConfigQuery = {
+  id: 'serverConfigQuery' as const,
+  operationName: 'serverConfig',
+  definitionName: 'serverConfig',
+  containsFile: false,
+  query: `
+query serverConfig {
+  serverConfig {
+    version
+    flavor
+  }
 }`,
 };
 

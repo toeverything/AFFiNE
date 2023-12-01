@@ -48,6 +48,8 @@ export const getPagesCount = async (page: Page) => {
     return 0;
   }
 
+  // locator is not a HTMLElement, so we can't use dataset
+  // eslint-disable-next-line unicorn/prefer-dom-node-dataset
   const count = await locator.getAttribute('data-total-count');
   return count ? parseInt(count) : 0;
 };

@@ -5,7 +5,7 @@ import {
 } from '@affine/component/page-list';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema } from '@affine/workspace/manager';
-import { SyncEngineStatus } from '@affine/workspace/providers';
+import { SyncEngineStep } from '@affine/workspace/providers';
 import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
@@ -24,6 +24,7 @@ import { setPageModeAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { currentModeAtom } from '../../atoms/mode';
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
+import { GlobalPageHistoryModal } from '../../components/affine/page-history-modal';
 import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
 import { useCurrentSyncEngineStatus } from '../../hooks/current/use-current-sync-engine';
@@ -41,7 +42,7 @@ const DetailPageImpl = (): ReactElement => {
   const { setTemporaryFilter } = useCollectionManager(collectionsCRUDAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
-  useRegisterBlocksuiteEditorCommands(blockSuiteWorkspace, currentPageId, mode);
+  useRegisterBlocksuiteEditorCommands(currentPageId, mode);
   const onLoad = useCallback(
     (page: Page, editor: EditorContainer) => {
       try {
@@ -101,6 +102,8 @@ const DetailPageImpl = (): ReactElement => {
         currentPageId={currentPageId}
         onLoadEditor={onLoad}
       />
+
+      <GlobalPageHistoryModal />
     </>
   );
 };
@@ -110,7 +113,6 @@ export const DetailPage = (): ReactElement => {
   const currentSyncEngineStatus = useCurrentSyncEngineStatus();
   const currentPageId = useAtomValue(currentPageIdAtom);
   const [page, setPage] = useState<Page | null>(null);
-  const [pageLoaded, setPageLoaded] = useState<boolean>(false);
 
   // load page by current page id
   useEffect(() => {
@@ -144,7 +146,7 @@ export const DetailPage = (): ReactElement => {
 
   // if sync engine has been synced and the page is null, wait 1s and jump to 404 page.
   useEffect(() => {
-    if (currentSyncEngineStatus === SyncEngineStatus.Synced && !page) {
+    if (currentSyncEngineStatus?.step === SyncEngineStep.Synced && !page) {
       const timeout = setTimeout(() => {
         navigate.jumpTo404();
       }, 1000);
@@ -155,30 +157,7 @@ export const DetailPage = (): ReactElement => {
     return;
   }, [currentSyncEngineStatus, navigate, page]);
 
-  // wait for page to be loaded
-  useEffect(() => {
-    if (page) {
-      if (!page.loaded) {
-        setPageLoaded(true);
-      } else {
-        setPageLoaded(false);
-        // call waitForLoaded to trigger load
-        page
-          .load(() => {})
-          .catch(() => {
-            // do nothing
-          });
-        return page.slots.ready.on(() => {
-          setPageLoaded(true);
-        }).dispose;
-      }
-    } else {
-      setPageLoaded(false);
-    }
-    return;
-  }, [page]);
-
-  if (!currentPageId || !page || !pageLoaded) {
+  if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
 
@@ -215,8 +194,9 @@ export const Component = () => {
     }
   }, [params, setContentLayout, setCurrentPageId, setCurrentWorkspaceId]);
 
+  // Add a key to force rerender when page changed, to avoid error boundary persisting.
   return (
-    <AffineErrorBoundary>
+    <AffineErrorBoundary key={params.pageId}>
       <DetailPage />
     </AffineErrorBoundary>
   );

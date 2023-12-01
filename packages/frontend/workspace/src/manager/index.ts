@@ -3,16 +3,19 @@ import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { createAffinePublicProviders } from '@affine/workspace/providers';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
-import type { DocProviderCreator, StoreOptions } from '@blocksuite/store';
-import { createIndexeddbStorage, Schema, Workspace } from '@blocksuite/store';
+import type { DocProviderCreator } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { INTERNAL_BLOCKSUITE_HASH_MAP } from '@toeverything/infra/__internal__/workspace';
 import { nanoid } from 'nanoid';
 import type { Doc } from 'yjs';
 import type { Transaction } from 'yjs';
 
-import { createCloudBlobStorage } from '../blob/cloud-blob-storage';
-import { createStaticStorage } from '../blob/local-static-storage';
-import { createSQLiteStorage } from '../blob/sqlite-blob-storage';
+import type { BlobEngine } from '../blob';
+import {
+  createAffineCloudBlobEngine,
+  createAffinePublicBlobEngine,
+  createLocalBlobEngine,
+} from '../blob';
 import { createAffineProviders, createLocalProviders } from '../providers';
 
 function setEditorFlags(workspace: Workspace) {
@@ -81,6 +84,12 @@ const createMonitor = (doc: Doc) => {
   });
 };
 
+const workspaceBlobEngineWeakMap = new WeakMap<Workspace, BlobEngine>();
+export function getBlobEngine(workspace: Workspace) {
+  // temporary solution to get blob engine from workspace
+  return workspaceBlobEngineWeakMap.get(workspace);
+}
+
 // if not exist, create a new workspace
 export function getOrCreateWorkspace(
   id: string,
@@ -91,48 +100,47 @@ export function getOrCreateWorkspace(
     return INTERNAL_BLOCKSUITE_HASH_MAP.get(id) as Workspace;
   }
 
-  const blobStorages: StoreOptions['blobStorages'] = [];
+  let blobEngine: BlobEngine;
   if (flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    if (isBrowser) {
-      blobStorages.push(createIndexeddbStorage);
-      blobStorages.push(createCloudBlobStorage);
-      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-        blobStorages.push(createSQLiteStorage);
-      }
-      providerCreators.push(...createAffineProviders());
-
-      // todo(JimmFly): add support for cloud storage
-    }
+    blobEngine = createAffineCloudBlobEngine(id);
+    providerCreators.push(...createAffineProviders());
   } else if (flavour === WorkspaceFlavour.LOCAL) {
-    if (isBrowser) {
-      blobStorages.push(createIndexeddbStorage);
-      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-        blobStorages.push(createSQLiteStorage);
-      }
-    }
+    blobEngine = createLocalBlobEngine(id);
     providerCreators.push(...createLocalProviders());
   } else if (flavour === WorkspaceFlavour.AFFINE_PUBLIC) {
-    if (isBrowser) {
-      blobStorages.push(createIndexeddbStorage);
-      if (environment.isDesktop && runtimeConfig.enableSQLiteProvider) {
-        blobStorages.push(createSQLiteStorage);
-      }
-    }
-    blobStorages.push(createCloudBlobStorage);
+    blobEngine = createAffinePublicBlobEngine(id);
     providerCreators.push(...createAffinePublicProviders());
   } else {
     throw new Error('unsupported flavour');
   }
-  blobStorages.push(createStaticStorage);
 
   const workspace = new Workspace({
     id,
     isSSR: !isBrowser,
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
-    blobStorages: blobStorages,
+    blobStorages: [
+      () => ({
+        crud: {
+          async get(key) {
+            return (await blobEngine.get(key)) ?? null;
+          },
+          async set(key, value) {
+            await blobEngine.set(key, value);
+            return key;
+          },
+          async delete(key) {
+            return blobEngine.delete(key);
+          },
+          async list() {
+            return blobEngine.list();
+          },
+        },
+      }),
+    ],
     idGenerator: () => nanoid(),
     schema: globalBlockSuiteSchema,
   });
+  workspaceBlobEngineWeakMap.set(workspace, blobEngine);
   createMonitor(workspace.doc);
   setEditorFlags(workspace);
   INTERNAL_BLOCKSUITE_HASH_MAP.set(id, workspace);

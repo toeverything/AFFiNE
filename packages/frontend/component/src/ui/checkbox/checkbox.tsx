@@ -51,8 +51,8 @@ export const Checkbox = ({
   const icon = indeterminate
     ? icons.indeterminate
     : checked
-    ? icons.checked
-    : icons.unchecked;
+      ? icons.checked
+      : icons.unchecked;
 
   return (
     <div
@@ -84,7 +84,7 @@ export const playCheckAnimation = async (refElement: Element) => {
     border-radius: 50%;
     font-size: inherit;
   `;
-  refElement.appendChild(sparkingEl);
+  refElement.append(sparkingEl);
 
   await sparkingEl.animate(
     [

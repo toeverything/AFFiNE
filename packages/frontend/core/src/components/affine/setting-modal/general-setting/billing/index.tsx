@@ -106,10 +106,10 @@ const SubscriptionSettings = () => {
     plan === SubscriptionPlan.Free
       ? '0'
       : price
-      ? recurring === SubscriptionRecurring.Monthly
-        ? String(price.amount / 100)
-        : String(price.yearlyAmount / 100)
-      : '?';
+        ? recurring === SubscriptionRecurring.Monthly
+          ? String(price.amount / 100)
+          : String(price.yearlyAmount / 100)
+        : '?';
 
   const t = useAFFiNEI18N();
 

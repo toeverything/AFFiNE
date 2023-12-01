@@ -1,7 +1,11 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { SyncEngineStatus } from '@affine/workspace/providers';
+import {
+  type SyncEngineStatus,
+  SyncEngineStep,
+} from '@affine/workspace/providers';
 import {
   CloudWorkspaceIcon,
+  InformationFillDuotoneIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
   UnsyncIcon,
@@ -64,7 +68,11 @@ const UnSyncWorkspaceStatus = () => {
 const LocalWorkspaceStatus = () => {
   return (
     <>
-      <LocalWorkspaceIcon />
+      {!environment.isDesktop ? (
+        <InformationFillDuotoneIcon data-warning-color="true" />
+      ) : (
+        <LocalWorkspaceIcon />
+      )}
       Local
     </>
   );
@@ -86,14 +94,13 @@ const WorkspaceStatus = ({
 }) => {
   const isOnline = useSystemOnline();
 
-  const [syncEngineStatus, setSyncEngineStatus] = useState<SyncEngineStatus>(
-    SyncEngineStatus.Synced
-  );
+  const [syncEngineStatus, setSyncEngineStatus] =
+    useState<SyncEngineStatus | null>(null);
 
   const syncEngine = useCurrentSyncEngine();
 
   useEffect(() => {
-    setSyncEngineStatus(syncEngine?.status ?? SyncEngineStatus.Synced);
+    setSyncEngineStatus(syncEngine?.status ?? null);
     const disposable = syncEngine?.onStatusChange.on(
       debounce(status => {
         setSyncEngineStatus(status);
@@ -107,31 +114,27 @@ const WorkspaceStatus = ({
   const content = useMemo(() => {
     // TODO: add i18n
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
+      if (!environment.isDesktop) {
+        return 'This is a local demo workspace.';
+      }
       return 'Saved locally';
     }
     if (!isOnline) {
       return 'Disconnected, please check your network connection';
     }
-    switch (syncEngineStatus) {
-      case SyncEngineStatus.Syncing:
-      case SyncEngineStatus.LoadingSubDoc:
-      case SyncEngineStatus.LoadingRootDoc:
-        return 'Syncing with AFFiNE Cloud';
-      case SyncEngineStatus.Retrying:
-        return 'Sync disconnected due to unexpected issues, reconnecting.';
-      default:
-        return 'Synced with AFFiNE Cloud';
+    if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
+      return 'Syncing with AFFiNE Cloud';
     }
-  }, [currentWorkspace.flavour, syncEngineStatus, isOnline]);
+    if (syncEngineStatus.retrying) {
+      return 'Sync disconnected due to unexpected issues, reconnecting.';
+    }
+    return 'Synced with AFFiNE Cloud';
+  }, [currentWorkspace.flavour, isOnline, syncEngineStatus]);
 
   const CloudWorkspaceSyncStatus = useCallback(() => {
-    if (
-      syncEngineStatus === SyncEngineStatus.Syncing ||
-      syncEngineStatus === SyncEngineStatus.LoadingSubDoc ||
-      syncEngineStatus === SyncEngineStatus.LoadingRootDoc
-    ) {
+    if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
       return SyncingWorkspaceStatus();
-    } else if (syncEngineStatus === SyncEngineStatus.Retrying) {
+    } else if (syncEngineStatus.retrying) {
       return UnSyncWorkspaceStatus();
     } else {
       return CloudWorkspaceStatus();

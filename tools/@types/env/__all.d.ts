@@ -44,11 +44,6 @@ declare global {
         ): this;
       };
     };
-    $migrationDone: boolean | undefined;
-  }
-
-  interface WindowEventMap {
-    'migration-done': CustomEvent;
   }
 
   // eslint-disable-next-line no-var
@@ -61,6 +56,11 @@ declare global {
   var runtimeConfig: RuntimeConfig;
   // eslint-disable-next-line no-var
   var $AFFINE_SETUP: boolean | undefined;
+  /**
+   * Inject by https://www.npmjs.com/package/@sentry/webpack-plugin
+   */
+  // eslint-disable-next-line no-var
+  var SENTRY_RELEASE: { id: string } | undefined;
 }
 
 declare module '@blocksuite/store' {

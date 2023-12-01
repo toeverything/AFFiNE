@@ -1,5 +1,6 @@
 import { FlexWrapper } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -8,6 +9,7 @@ import {
   EditIcon,
   FavoritedIcon,
   FavoriteIcon,
+  HistoryIcon,
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
@@ -18,24 +20,17 @@ import {
   MenuItem,
   MenuSeparator,
 } from '@toeverything/components/menu';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
-import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useRef } from 'react';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtomValue } from 'jotai';
+import { useCallback, useRef, useState } from 'react';
 
-import { setPageModeAtom } from '../../../atoms';
 import { currentModeAtom } from '../../../atoms/mode';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '../../../hooks/affine/use-export-page';
 import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
 import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
+import { PageHistoryModal } from '../../affine/page-history-modal/history-modal';
 import { HeaderDropDownButton } from '../../pure/header-drop-down-button';
 import { usePageHelper } from '../block-suite-page-list/utils';
 
@@ -47,7 +42,6 @@ type PageMenuProps = {
 export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
   const ref = useRef(null);
-  const { openPage } = useNavigateHelper();
 
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -61,12 +55,16 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   const currentMode = useAtomValue(currentModeAtom);
   const favorite = pageMeta.favorite ?? false;
 
-  const { setPageMeta, setPageTitle } = usePageMetaHelper(blockSuiteWorkspace);
-  const { togglePageMode, toggleFavorite } =
+  const { togglePageMode, toggleFavorite, duplicate } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
-  const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
+
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+
+  const openHistoryModal = useCallback(() => {
+    setHistoryModalOpen(true);
+  }, []);
 
   const handleOpenTrashModal = useCallback(() => {
     setTrashModal({
@@ -98,34 +96,11 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
   };
 
   const exportHandler = useExportPage(currentPage);
-  const setPageMode = useSetAtom(setPageModeAtom);
 
-  const duplicate = useAsyncCallback(async () => {
-    const currentPageMeta = currentPage.meta;
-    const newPage = createPage();
-    await newPage.waitForLoaded();
+  const handleDuplicate = useCallback(() => {
+    duplicate(pageId);
+  }, [duplicate, pageId]);
 
-    const update = encodeStateAsUpdate(currentPage.spaceDoc);
-    applyUpdate(newPage.spaceDoc, update);
-
-    setPageMeta(newPage.id, {
-      tags: currentPageMeta.tags,
-      favorite: currentPageMeta.favorite,
-    });
-    setPageMode(newPage.id, currentMode);
-    setPageTitle(newPage.id, `${currentPageMeta.title}(1)`);
-    openPage(blockSuiteWorkspace.id, newPage.id);
-  }, [
-    blockSuiteWorkspace.id,
-    createPage,
-    currentMode,
-    currentPage.meta,
-    currentPage.spaceDoc,
-    openPage,
-    setPageMeta,
-    setPageMode,
-    setPageTitle,
-  ]);
   const EditMenu = (
     <>
       <MenuItem
@@ -190,7 +165,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           </MenuIcon>
         }
         data-testid="editor-option-menu-duplicate"
-        onSelect={duplicate}
+        onSelect={handleDuplicate}
         style={menuItemStyle}
       >
         {t['com.affine.header.option.duplicate']()}
@@ -207,6 +182,23 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Import']()}
       </MenuItem>
+
+      {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
+      runtimeConfig.enablePageHistory ? (
+        <MenuItem
+          preFix={
+            <MenuIcon>
+              <HistoryIcon />
+            </MenuIcon>
+          }
+          data-testid="editor-option-menu-history"
+          onSelect={openHistoryModal}
+          style={menuItemStyle}
+        >
+          {t['com.affine.history.view-history-version']()}
+        </MenuItem>
+      ) : null}
+
       <Export exportHandler={exportHandler} />
       <MenuSeparator />
       <MoveToTrash
@@ -228,6 +220,14 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
       >
         <HeaderDropDownButton />
       </Menu>
+      {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
+        <PageHistoryModal
+          workspace={workspace.blockSuiteWorkspace}
+          open={historyModalOpen}
+          pageId={pageId}
+          onOpenChange={setHistoryModalOpen}
+        />
+      ) : null}
     </FlexWrapper>
   );
 };

@@ -4,7 +4,7 @@ import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { createIsolation } from 'jotai-scope';
 
-import { pagesToPageGroups } from './page-group';
+import { pagesToPageGroups } from './pages-to-page-group';
 import type {
   PageListProps,
   PageMetaRecord,
@@ -192,9 +192,9 @@ export const pageGroupsAtom = atom(get => {
       sorter.key === 'createDate' || sorter.key === 'updatedDate'
         ? sorter.key
         : // default sort
-        !sorter.key
-        ? DEFAULT_SORT_KEY
-        : undefined;
+          !sorter.key
+          ? DEFAULT_SORT_KEY
+          : undefined;
   }
   return pagesToPageGroups(sorter.pages, groupBy);
 });

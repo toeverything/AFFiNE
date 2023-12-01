@@ -26,9 +26,11 @@ export const WorkspaceListItemSkeleton = () => {
 export const WorkspaceListSkeleton = () => {
   return (
     <>
-      {new Array(5).fill(0).map((_, index) => {
-        return <WorkspaceListItemSkeleton key={index} />;
-      })}
+      {Array.from({ length: 5 })
+        .fill(0)
+        .map((_, index) => {
+          return <WorkspaceListItemSkeleton key={index} />;
+        })}
     </>
   );
 };

@@ -1,4 +1,6 @@
-import { style } from '@vanilla-extract/css';
+import { createVar, style } from '@vanilla-extract/css';
+
+export const hoverMaxWidth = createVar();
 
 export const root = style({
   position: 'relative',
@@ -15,7 +17,8 @@ export const tagsContainer = style({
 export const tagsScrollContainer = style([
   tagsContainer,
   {
-    overflow: 'auto',
+    overflowX: 'hidden',
+    position: 'relative',
     height: '100%',
     gap: '8px',
   },
@@ -41,7 +44,7 @@ export const innerContainer = style({
   transition: 'all 0.2s 0.3s ease-in-out',
   selectors: {
     [`${root}:hover &`]: {
-      maxWidth: 'var(--hover-max-width)',
+      maxWidth: hoverMaxWidth,
     },
   },
 });
@@ -67,6 +70,16 @@ export const innerBackdrop = style({
 export const tag = style({
   height: '20px',
   display: 'flex',
+  minWidth: 0,
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  ':last-child': {
+    minWidth: 'max-content',
+  },
+});
+
+export const tagInnerWrapper = style({
+  display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '0 8px',
@@ -74,7 +87,7 @@ export const tag = style({
 });
 
 export const tagSticky = style([
-  tag,
+  tagInnerWrapper,
   {
     fontSize: 'var(--affine-font-xs)',
     borderRadius: '10px',
@@ -82,10 +95,8 @@ export const tagSticky = style([
     border: '1px solid var(--affine-border-color)',
     background: 'var(--affine-background-primary-color)',
     maxWidth: '128px',
-    position: 'sticky',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    left: 0,
   },
 ]);
 

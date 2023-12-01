@@ -1,13 +1,6 @@
-import {
-  createEmptyCollection,
-  useEditCollectionName,
-} from '@affine/component/page-list';
-import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { SaveIcon } from '@blocksuite/icons';
 import { Button } from '@toeverything/components/button';
 import { Modal } from '@toeverything/components/modal';
-import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 
 import Input from '../../../ui/input';
@@ -125,42 +118,5 @@ export const CreateCollection = ({
         </Button>
       </div>
     </div>
-  );
-};
-
-interface SaveAsCollectionButtonProps {
-  onConfirm: (collection: Collection) => Promise<void>;
-}
-
-export const SaveAsCollectionButton = ({
-  onConfirm,
-}: SaveAsCollectionButtonProps) => {
-  const t = useAFFiNEI18N();
-  const { open, node } = useEditCollectionName({
-    title: t['com.affine.editCollection.saveCollection'](),
-    showTips: true,
-  });
-  const handleClick = useCallback(() => {
-    open('')
-      .then(name => {
-        return onConfirm(createEmptyCollection(nanoid(), { name }));
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [open, onConfirm]);
-  return (
-    <>
-      <Button
-        onClick={handleClick}
-        data-testid="save-as-collection"
-        icon={<SaveIcon />}
-        size="large"
-        style={{ padding: '7px 8px' }}
-      >
-        {t['com.affine.editCollection.saveCollection']()}
-      </Button>
-      {node}
-    </>
   );
 };

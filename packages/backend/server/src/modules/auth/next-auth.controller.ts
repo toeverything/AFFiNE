@@ -23,7 +23,7 @@ import type { AuthAction, CookieOption, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
 import { Config } from '../../config';
-import { Metrics } from '../../metrics/metrics';
+import { metrics } from '../../metrics';
 import { PrismaService } from '../../prisma/service';
 import { SessionService } from '../../session';
 import { AuthThrottlerGuard, Throttle } from '../../throttler';
@@ -46,7 +46,6 @@ export class NextAuthController {
     private readonly authService: AuthService,
     @Inject(NextAuthOptionsProvide)
     private readonly nextAuthOptions: NextAuthOptions,
-    private readonly metrics: Metrics,
     private readonly session: SessionService
   ) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -90,11 +89,12 @@ export class NextAuthController {
       res.redirect(`/signin${query}`);
       return;
     }
-    this.metrics.authCounter(1, {});
     const [action, providerId] = req.url // start with request url
       .slice(BASE_URL.length) // make relative to baseUrl
       .replace(/\?.*/, '') // remove query part, use only path part
       .split('/') as [AuthAction, string]; // as array of strings;
+
+    metrics.auth.counter('call_counter').add(1, { action, providerId });
 
     const credentialsSignIn =
       req.method === 'POST' && providerId === 'credentials';
@@ -127,7 +127,9 @@ export class NextAuthController {
     const options = this.nextAuthOptions;
     if (req.method === 'POST' && action === 'session') {
       if (typeof req.body !== 'object' || typeof req.body.data !== 'object') {
-        this.metrics.authFailCounter(1, { reason: 'invalid_session_data' });
+        metrics.auth
+          .counter('call_fails_counter')
+          .add(1, { reason: 'invalid_session_data' });
         throw new BadRequestException(`Invalid new session data`);
       }
       const user = await this.updateSession(req, req.body.data);
@@ -210,9 +212,10 @@ export class NextAuthController {
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
       this.logger.log(`Early access redirect headers: ${req.headers}`);
-      this.metrics.authFailCounter(1, {
-        reason: 'no_early_access_permission',
-      });
+      metrics.auth
+        .counter('call_fails_counter')
+        .add(1, { reason: 'no_early_access_permission' });
+
       if (
         !req.headers?.referer ||
         checkUrlOrigin(req.headers.referer, 'https://accounts.google.com')

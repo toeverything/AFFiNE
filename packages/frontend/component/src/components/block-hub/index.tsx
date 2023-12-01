@@ -10,9 +10,9 @@ export const RootBlockHub = () => {
       const div = ref.current;
       if (blockHub) {
         if (div.hasChildNodes()) {
-          div.removeChild(div.firstChild as ChildNode);
+          (div.firstChild as ChildNode).remove();
         }
-        div.appendChild(blockHub);
+        div.append(blockHub);
       }
     }
   }, [blockHub]);

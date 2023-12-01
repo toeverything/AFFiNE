@@ -1,4 +1,3 @@
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import {
@@ -6,7 +5,12 @@ import {
   currentWorkspaceIdAtom,
   getCurrentStore,
 } from '@toeverything/infra/atom';
-import { guidCompatibilityFix } from '@toeverything/infra/blocksuite';
+import type { MigrationPoint } from '@toeverything/infra/blocksuite';
+import {
+  checkWorkspaceCompatibility,
+  fixWorkspaceVersion,
+  guidCompatibilityFix,
+} from '@toeverything/infra/blocksuite';
 import { useSetAtom } from 'jotai';
 import { type ReactElement, useEffect } from 'react';
 import {
@@ -17,6 +21,7 @@ import {
   useParams,
 } from 'react-router-dom';
 
+import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
 import { WorkspaceLayout } from '../../layouts/workspace-layout';
 import { performanceLogger, performanceRenderLogger } from '../../shared';
 
@@ -48,22 +53,10 @@ export const loader: LoaderFunction = async args => {
 
   const workspace = await rootStore.get(workspaceAtom);
   workspaceLoaderLogger.info('workspace loaded');
-  if (currentMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-    return (() => {
-      guidCompatibilityFix(workspace.doc);
-      const blockVersions = workspace.meta.blockVersions;
-      if (!blockVersions) {
-        return true;
-      }
-      for (const [flavour, schema] of workspace.schema.flavourSchemaMap) {
-        if (blockVersions[flavour] !== schema.version) {
-          return true;
-        }
-      }
-      return false;
-    })();
-  }
-  return null;
+
+  guidCompatibilityFix(workspace.doc);
+  fixWorkspaceVersion(workspace.doc);
+  return checkWorkspaceCompatibility(workspace);
 };
 
 export const Component = (): ReactElement => {
@@ -80,10 +73,12 @@ export const Component = (): ReactElement => {
     }
   }, [params, setCurrentWorkspaceId]);
 
-  const incompatible = useLoaderData();
+  const migration = useLoaderData() as MigrationPoint | undefined;
   return (
-    <WorkspaceLayout incompatible={!!incompatible}>
-      <Outlet />
-    </WorkspaceLayout>
+    <AffineErrorBoundary key={params.workspaceId} height="100vh">
+      <WorkspaceLayout migration={migration}>
+        <Outlet />
+      </WorkspaceLayout>
+    </AffineErrorBoundary>
   );
 };

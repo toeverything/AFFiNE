@@ -20,8 +20,8 @@ export type _QueryVariables<Q extends GraphQLQuery> =
   Q['id'] extends Queries['name']
     ? Extract<Queries, { name: Q['id'] }>['variables']
     : Q['id'] extends Mutations['name']
-    ? Extract<Mutations, { name: Q['id'] }>['variables']
-    : undefined;
+      ? Extract<Mutations, { name: Q['id'] }>['variables']
+      : undefined;
 
 export type QueryVariables<Q extends GraphQLQuery> = _QueryVariables<Q> extends
   | never
@@ -255,6 +255,6 @@ export const fetchWithTraceReport = async (
       requestId,
       ...(event ? { event } : {}),
     });
-    return await Promise.reject(err);
+    throw err;
   }
 };

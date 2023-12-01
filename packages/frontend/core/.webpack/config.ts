@@ -186,9 +186,6 @@ export const createConfiguration: (
               'global',
               'dist'
             ),
-        '@blocksuite/lit': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'lit', 'src')
-          : join(workspaceRoot, 'node_modules', '@blocksuite', 'lit', 'dist'),
         '@blocksuite/store/providers/broadcast-channel': blocksuiteBaseDir
           ? join(
               blocksuiteBaseDir,
@@ -354,6 +351,8 @@ export const createConfiguration: (
         'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
           process.env.CAPTCHA_SITE_KEY
         ),
+        'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN),
+        'process.env.BUILD_TYPE': JSON.stringify(process.env.BUILD_TYPE),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({

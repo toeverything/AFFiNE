@@ -56,7 +56,7 @@
           "env": "SENTRY_AUTH_TOKEN"
         },
         {
-          "env": "NEXT_PUBLIC_SENTRY_DSN"
+          "env": "SENTRY_DSN"
         },
         {
           "env": "DISTRIBUTION"

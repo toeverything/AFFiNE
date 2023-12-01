@@ -19,6 +19,7 @@ export const upgradeTips = style({
   fontStyle: 'normal',
   fontWeight: '400',
   lineHeight: '20px',
+  textAlign: 'center',
 });
 
 const rotate = keyframes({

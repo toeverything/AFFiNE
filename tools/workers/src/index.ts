@@ -14,8 +14,8 @@ function isOriginAllowed(
   allowedOrigin: string | RegExp | Array<string | RegExp>
 ): boolean {
   if (Array.isArray(allowedOrigin)) {
-    for (let i = 0; i < allowedOrigin.length; ++i) {
-      if (isOriginAllowed(origin, allowedOrigin[i])) {
+    for (const allowed of allowedOrigin) {
+      if (isOriginAllowed(origin, allowed)) {
         return true;
       }
     }

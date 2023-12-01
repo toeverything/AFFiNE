@@ -130,7 +130,9 @@ export const pageCollectionBaseAtom =
         await userSetting.loaded;
         const view = userSetting.view;
         if (view) {
-          const collections: DeprecatedCollection[] = [...view.values()];
+          const collections: Omit<DeprecatedCollection, 'workspaceId'>[] = [
+            ...view.values(),
+          ];
           //delete collections
           view.clear();
           return collections.map(v => {

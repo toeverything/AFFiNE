@@ -13,10 +13,7 @@ import {
   CRUD,
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
-import {
-  getOrCreateWorkspace,
-  globalBlockSuiteSchema,
-} from '@affine/workspace/manager';
+import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
@@ -47,7 +44,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
       blockSuiteWorkspace.meta.setName(DEFAULT_WORKSPACE_NAME);
       if (runtimeConfig.enablePreloading) {
         buildShowcaseWorkspace(blockSuiteWorkspace, {
-          schema: globalBlockSuiteSchema,
           store: getCurrentStore(),
           atoms: {
             pageMode: setPageModeAtom,

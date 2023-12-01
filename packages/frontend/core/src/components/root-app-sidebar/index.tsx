@@ -1,6 +1,7 @@
 import { AnimatedDeleteIcon } from '@affine/component';
 import {
   AddPageButton,
+  AppDownloadButton,
   AppSidebar,
   appSidebarOpenAtom,
   AppUpdaterButton,
@@ -19,6 +20,11 @@ import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { Menu } from '@toeverything/components/menu';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import {
+  isAutoCheckUpdateAtom,
+  isAutoDownloadUpdateAtom,
+  useAppUpdater,
+} from '@toeverything/hooks/use-app-updater';
 import { useAtom, useAtomValue } from 'jotai';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo } from 'react';
@@ -29,8 +35,8 @@ import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
+import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { useRegisterBlocksuiteEditorCommands } from '../../hooks/use-shortcut-commands';
 import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
@@ -101,6 +107,10 @@ export const RootAppSidebar = ({
 }: RootAppSidebarProps): ReactElement => {
   const currentWorkspaceId = currentWorkspace.id;
   const { appSettings } = useAppSettingHelper();
+  const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
+  const { autoCheckUpdate, autoDownloadUpdate } = appSettings;
+  const isAutoDownload = useAtomValue(isAutoDownloadUpdateAtom);
+  const isAutoCheck = useAtomValue(isAutoCheckUpdateAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const t = useAFFiNEI18N();
   const [openUserWorkspaceList, setOpenUserWorkspaceList] = useAtom(
@@ -149,6 +159,26 @@ export const RootAppSidebar = ({
     }
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    if (!environment.isDesktop) {
+      return;
+    }
+
+    if (isAutoCheck !== autoCheckUpdate) {
+      toggleAutoCheck(autoCheckUpdate);
+    }
+    if (isAutoDownload !== autoDownloadUpdate) {
+      toggleAutoDownload(autoDownloadUpdate);
+    }
+  }, [
+    autoCheckUpdate,
+    autoDownloadUpdate,
+    isAutoCheck,
+    isAutoDownload,
+    toggleAutoCheck,
+    toggleAutoDownload,
+  ]);
+
   const [history, setHistory] = useHistoryAtom();
   const router = useMemo(() => {
     return {
@@ -168,7 +198,7 @@ export const RootAppSidebar = ({
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
   }, [setOpenUserWorkspaceList]);
-  useRegisterBlocksuiteEditorCommands(router.back, router.forward);
+  useRegisterBrowserHistoryCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
   return (
     <AppSidebar
@@ -266,7 +296,7 @@ export const RootAppSidebar = ({
         )}
       </SidebarScrollableContainer>
       <SidebarContainer>
-        {environment.isDesktop && <AppUpdaterButton />}
+        {environment.isDesktop ? <AppUpdaterButton /> : <AppDownloadButton />}
         <div style={{ height: '4px' }} />
         <AddPageButton onClick={onClickNewPage} />
       </SidebarContainer>

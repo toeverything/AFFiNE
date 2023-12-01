@@ -56,6 +56,10 @@ export class AsyncQueue<T> {
     }
   }
 
+  find(predicate: (update: T) => boolean) {
+    return this._queue.find(predicate);
+  }
+
   clear() {
     this._queue = [];
   }

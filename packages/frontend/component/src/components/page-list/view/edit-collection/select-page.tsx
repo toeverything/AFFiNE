@@ -6,13 +6,15 @@ import { Menu } from '@toeverything/components/menu';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
-import { VirtualizedPageList } from '../..';
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
+import { VirtualizedPageList } from '../../virtualized-page-list';
 import { AffineShapeIcon } from '../affine-shape';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
-import { useFilter, useSearch } from './hooks';
+import { useFilter } from './use-filter';
+import { useSearch } from './use-search';
+
 export const SelectPage = ({
   allPageListConfig,
   init,

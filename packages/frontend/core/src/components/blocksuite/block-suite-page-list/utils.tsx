@@ -14,11 +14,14 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageSettings = useAtomValue(pageSettingsAtom);
+
   const isPreferredEdgeless = useCallback(
     (pageId: string) => pageSettings[pageId]?.mode === 'edgeless',
     [pageSettings]
   );
+
   const setPageMode = useSetAtom(setPageModeAtom);
+
   const createPageAndOpen = useCallback(
     (mode?: 'page' | 'edgeless') => {
       const page = createPage();
@@ -31,9 +34,11 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     },
     [blockSuiteWorkspace.id, createPage, openPage, setPageMode]
   );
+
   const createEdgelessAndOpen = useCallback(() => {
     return createPageAndOpen('edgeless');
   }, [createPageAndOpen]);
+
   const importFileAndOpen = useAsyncCallback(async () => {
     const { showImportModal } = await import('@blocksuite/blocks');
     const onSuccess = (pageIds: string[], isWorkspaceFile: boolean) => {
@@ -55,6 +60,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     };
     showImportModal({ workspace: blockSuiteWorkspace, onSuccess });
   }, [blockSuiteWorkspace, openPage, jumpToSubPath]);
+
   return useMemo(() => {
     return {
       createPage: createPageAndOpen,

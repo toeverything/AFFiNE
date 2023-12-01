@@ -1,5 +1,5 @@
 import type { MainEventRegister, WorkspaceMeta } from '../type';
-import { deleteWorkspace, listWorkspaces } from './handlers';
+import { cloneWorkspace, deleteWorkspace, listWorkspaces } from './handlers';
 import { getWorkspaceMeta } from './meta';
 import { workspaceSubjects } from './subjects';
 
@@ -23,4 +23,5 @@ export const workspaceHandlers = {
   getMeta: async (id: string) => {
     return getWorkspaceMeta(id);
   },
+  clone: async (id: string, newId: string) => cloneWorkspace(id, newId),
 };

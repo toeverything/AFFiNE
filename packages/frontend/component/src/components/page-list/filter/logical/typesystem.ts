@@ -92,8 +92,8 @@ export type ValueOfData<T extends DataDefine> = T extends DataDefine<infer R>
 
 export class DataDefine<Data extends DataTypeShape = Record<string, unknown>> {
   constructor(
-    private config: DataDefineConfig<Data>,
-    private dataMap: Map<string, DataDefine>
+    private readonly config: DataDefineConfig<Data>,
+    private readonly dataMap: Map<string, DataDefine>
   ) {}
 
   create(data?: Data): TDataType<Data> {
@@ -195,7 +195,7 @@ export class Typesystem {
   ): boolean {
     if (superType.type === 'typeRef') {
       // TODO both are ref
-      if (context && sub.type != 'typeRef') {
+      if (context && sub.type !== 'typeRef') {
         context[superType.name] = sub;
       }
       // TODO bound

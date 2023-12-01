@@ -12,6 +12,7 @@ export const searchInput = style({
   color: 'var(--affine-text-primary-color)',
   fontSize: 'var(--affine-font-h-5)',
   padding: '21px 24px',
+  marginBottom: '8px',
   width: '100%',
   borderBottom: '1px solid var(--affine-border-color)',
   flexShrink: 0,
@@ -114,13 +115,6 @@ globalStyle(`${root} [cmdk-group][hidden]`, {
   display: 'none',
 });
 
-globalStyle(
-  `${root} [cmdk-group]:not([hidden]):first-of-type [cmdk-group-heading]`,
-  {
-    paddingTop: 16,
-  }
-);
-
 globalStyle(`${root} [cmdk-list]`, {
   maxHeight: 400,
   minHeight: 120,
@@ -187,3 +181,11 @@ globalStyle(
     color: 'var(--affine-error-color)',
   }
 );
+
+export const resultGroupHeader = style({
+  padding: '8px',
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: 'var(--affine-font-xs)',
+  fontWeight: 600,
+  lineHeight: '1.67',
+});

@@ -24,13 +24,13 @@ export function createAffineAwarenessProvider(
   const socket = getIoManager().socket('/');
 
   const awarenessBroadcast = ({
-    workspaceId,
+    workspaceId: wsId,
     awarenessUpdate,
   }: {
     workspaceId: string;
     awarenessUpdate: string;
   }) => {
-    if (workspaceId !== workspaceId) {
+    if (wsId !== workspaceId) {
       return;
     }
     applyAwarenessUpdate(

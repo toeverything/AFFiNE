@@ -33,7 +33,7 @@ function pickAndBind<T extends object, U extends keyof T>(
 
 class HelperProcessManager {
   ready: Promise<void>;
-  #process: UtilityProcess;
+  readonly #process: UtilityProcess;
 
   // a rpc server for the main process -> helper process
   rpc?: _AsyncVersionOf<HelperToMain>;

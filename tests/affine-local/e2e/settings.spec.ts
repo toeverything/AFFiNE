@@ -49,15 +49,11 @@ test('Change theme', async ({ page }) => {
   const root = page.locator('html');
 
   await page.getByTestId('light-theme-trigger').click();
-  const lightMode = await root.evaluate(element =>
-    element.getAttribute('data-theme')
-  );
+  const lightMode = await root.evaluate(element => element.dataset.theme);
   expect(lightMode).toBe('light');
 
   await page.getByTestId('dark-theme-trigger').click();
-  const darkMode = await root.evaluate(element =>
-    element.getAttribute('data-theme')
-  );
+  const darkMode = await root.evaluate(element => element.dataset.theme);
   expect(darkMode).toBe('dark');
 });
 

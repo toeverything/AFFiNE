@@ -496,8 +496,8 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>(
           index + change < 0
             ? items[items.length - 1]
             : index + change === items.length
-            ? items[0]
-            : items[index + change];
+              ? items[0]
+              : items[index + change];
       }
 
       if (newSelected)
@@ -666,10 +666,10 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       forceMount
         ? true
         : context.filter() === false
-        ? true
-        : !state.search
-        ? true
-        : state.filtered.items.get(id) > 0
+          ? true
+          : !state.search
+            ? true
+            : state.filtered.items.get(id) > 0
     );
 
     React.useEffect(() => {
@@ -728,10 +728,10 @@ const Group = React.forwardRef<HTMLDivElement, GroupProps>(
       forceMount
         ? true
         : context.filter() === false
-        ? true
-        : !state.search
-        ? true
-        : state.filtered.groups.has(id)
+          ? true
+          : !state.search
+            ? true
+            : state.filtered.groups.has(id)
     );
 
     useLayoutEffect(() => {
