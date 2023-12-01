@@ -32,7 +32,7 @@ export const AddFavouriteButton = ({
               insert: ' ',
               attributes: {
                 reference: {
-                  type: 'Subpage',
+                  type: 'LinkedPage',
                   pageId: page.id,
                 },
               },
