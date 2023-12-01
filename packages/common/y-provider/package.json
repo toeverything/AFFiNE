@@ -1,7 +1,7 @@
 {
   "name": "y-provider",
   "type": "module",
-  "version": "0.10.3-beta.7",
+  "version": "0.10.3",
   "description": "Yjs provider protocol for multi document support",
   "exports": {
     ".": "./src/index.ts"

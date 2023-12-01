@@ -7,5 +7,5 @@
     "@affine/env": "workspace:*",
     "@toeverything/infra": "workspace:*"
   },
-  "version": "0.10.3-beta.7"
+  "version": "0.10.3"
 }

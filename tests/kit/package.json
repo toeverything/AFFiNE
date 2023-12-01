@@ -2,7 +2,7 @@
   "name": "@affine-test/kit",
   "private": true,
   "type": "module",
-  "version": "0.10.3-beta.7",
+  "version": "0.10.3",
   "exports": {
     "./electron": "./electron.ts",
     "./playwright": "./playwright.ts",

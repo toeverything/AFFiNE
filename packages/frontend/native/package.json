@@ -58,5 +58,5 @@
     "test": "ava",
     "version": "napi version"
   },
-  "version": "0.10.3-beta.7"
+  "version": "0.10.3"
 }
