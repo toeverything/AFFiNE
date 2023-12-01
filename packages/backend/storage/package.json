@@ -1,6 +1,6 @@
 {
   "name": "@affine/storage",
-  "version": "0.10.3-beta.6",
+  "version": "0.10.3-beta.7",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
