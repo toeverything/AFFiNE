@@ -57,9 +57,9 @@ const standardizeLocale = (language: string) => {
   } else if (language.slice(0, 2).toLowerCase() === 'zh') {
     language = 'zh-Hant';
   }
-  if (LOCALES.find(locale => locale.tag === language)) return language;
+  if (LOCALES.some(locale => locale.tag === language)) return language;
   if (
-    LOCALES.find(locale => locale.tag === language.slice(0, 2).toLowerCase())
+    LOCALES.some(locale => locale.tag === language.slice(0, 2).toLowerCase())
   ) {
     return language.slice(0, 2).toLowerCase();
   }

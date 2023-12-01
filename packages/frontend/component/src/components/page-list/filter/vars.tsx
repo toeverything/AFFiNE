@@ -141,7 +141,7 @@ filterMatcher.register(
     name: 'is',
     defaultArgs: () => [true],
     impl: (value, target) => {
-      return value == target;
+      return value === target;
     },
   }
 );
@@ -209,7 +209,7 @@ filterMatcher.register(
     defaultArgs: () => [],
     impl: tags => {
       const safeTags = safeArray(tags);
-      return safeTags.length == 0;
+      return safeTags.length === 0;
     },
   }
 );

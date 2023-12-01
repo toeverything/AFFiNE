@@ -1,11 +1,12 @@
 import { Command } from '@affine/cmdk';
+import { useCommandState } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { Suspense, useLayoutEffect, useMemo, useState } from 'react';
 
 import {
@@ -71,7 +72,7 @@ const QuickSearchGroup = ({
   );
 
   return (
-    <Command.Group key={category} heading={t[i18nkey]()}>
+    <Command.Group key={category} heading={query ? '' : t[i18nkey]()}>
       {commands.map(command => {
         const label =
           typeof command.label === 'string'
@@ -129,18 +130,43 @@ const QuickSearchCommands = ({
 }: {
   onOpenChange?: (open: boolean) => void;
 }) => {
+  const t = useAFFiNEI18N();
   const groups = useCMDKCommandGroups();
 
-  return groups.map(([category, commands]) => {
-    return (
-      <QuickSearchGroup
-        key={category}
-        onOpenChange={onOpenChange}
-        category={category}
-        commands={commands}
-      />
-    );
-  });
+  const query = useAtomValue(cmdkQueryAtom);
+  const resultCount = useCommandState(state => state.filtered.count);
+  const resultGroupHeader = useMemo(() => {
+    if (query) {
+      return (
+        <div className={styles.resultGroupHeader}>
+          {
+            // hack: use resultCount to determine if it is creation or results
+            // because the creation(as 2 results) is always shown at the top when there is no result
+            resultCount === 2
+              ? t['com.affine.cmdk.affine.category.affine.creation']()
+              : t['com.affine.cmdk.affine.category.results']()
+          }
+        </div>
+      );
+    }
+    return null;
+  }, [query, resultCount, t]);
+
+  return (
+    <>
+      {resultGroupHeader}
+      {groups.map(([category, commands]) => {
+        return (
+          <QuickSearchGroup
+            key={category}
+            onOpenChange={onOpenChange}
+            category={category}
+            commands={commands}
+          />
+        );
+      })}
+    </>
+  );
 };
 
 export const CMDKContainer = ({

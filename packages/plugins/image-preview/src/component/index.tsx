@@ -143,7 +143,7 @@ const ImagePreviewModalImpl = (
       if (
         page
           .getPreviousSiblings(block)
-          .findLast(
+          .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
@@ -160,7 +160,7 @@ const ImagePreviewModalImpl = (
       } else if (
         page
           .getNextSiblings(block)
-          .find(
+          .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
@@ -231,9 +231,9 @@ const ImagePreviewModalImpl = (
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = block.id ?? 'image';
-        document.body.appendChild(a);
+        document.body.append(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
       }
     },
     [props.pageId, props.workspace]

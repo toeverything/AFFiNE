@@ -84,7 +84,7 @@ export const playCheckAnimation = async (refElement: Element) => {
     border-radius: 50%;
     font-size: inherit;
   `;
-  refElement.appendChild(sparkingEl);
+  refElement.append(sparkingEl);
 
   await sparkingEl.animate(
     [

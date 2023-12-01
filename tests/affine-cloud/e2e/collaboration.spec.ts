@@ -265,7 +265,9 @@ test.describe('collaboration members', () => {
       await addUserToWorkspace(workspaceId, userB.id, 1 /* READ */);
     };
     await Promise.all(
-      new Array(10).fill(1).map(() => createUserAndAddToWorkspace())
+      Array.from({ length: 10 })
+        .fill(1)
+        .map(() => createUserAndAddToWorkspace())
     );
 
     await openSettingModal(page);
@@ -366,18 +368,10 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
     expect(src).not.toBeNull();
 
     // fetch the src resource in the browser
-    const svg2 = await page2.evaluate(async src => {
-      async function blobToString(blob: Blob) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsText(blob);
-        });
-      }
-
-      const blob = fetch(src!).then(res => res.blob());
-      return blobToString(await blob);
+    const svg2 = await page2.evaluate(src => {
+      return fetch(src!)
+        .then(res => res.blob())
+        .then(blob => blob.text());
     }, src);
 
     // turn the blob into string and check if it contains the svg

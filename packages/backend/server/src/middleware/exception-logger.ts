@@ -14,7 +14,7 @@ const TrivialExceptions = [NotFoundException];
 
 @Catch()
 export class ExceptionLogger implements ExceptionFilter {
-  private logger = new Logger('ExceptionLogger');
+  private readonly logger = new Logger('ExceptionLogger');
 
   catch(exception: Error, host: ArgumentsHost) {
     // with useGlobalFilters, the context is always HTTP

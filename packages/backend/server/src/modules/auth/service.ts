@@ -23,14 +23,14 @@ export type UserClaim = Pick<
   hasPassword?: boolean;
 };
 
-export const getUtcTimestamp = () => Math.floor(new Date().getTime() / 1000);
+export const getUtcTimestamp = () => Math.floor(Date.now() / 1000);
 
 @Injectable()
 export class AuthService {
   constructor(
-    private config: Config,
-    private prisma: PrismaService,
-    private mailer: MailService
+    private readonly config: Config,
+    private readonly prisma: PrismaService,
+    private readonly mailer: MailService
   ) {}
 
   sign(user: UserClaim) {

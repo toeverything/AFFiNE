@@ -3,15 +3,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { GqlModule } from '../graphql.module';
-import { ServerConfigModule } from './config';
+import { SERVER_FLAVOR, ServerConfigModule } from './config';
 import { DocModule } from './doc';
 import { PaymentModule } from './payment';
 import { SelfHostedModule } from './self-hosted';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
-
-const { SERVER_FLAVOR } = process.env;
 
 const BusinessModules: (Type | DynamicModule)[] = [
   EventEmitterModule.forRoot({

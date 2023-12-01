@@ -40,7 +40,7 @@ const Outline = () => {
       ref={useCallback((container: HTMLDivElement | null) => {
         if (container) {
           assertExists(tocPanelRef.current);
-          container.appendChild(tocPanelRef.current);
+          container.append(tocPanelRef.current);
         }
       }, [])}
     />

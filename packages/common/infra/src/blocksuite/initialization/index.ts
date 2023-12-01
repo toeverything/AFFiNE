@@ -3,8 +3,11 @@ import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
 import { nanoid } from 'nanoid';
 
-import { checkWorkspaceCompatibility, MigrationPoint } from '..';
 import { migratePages } from '../migration/blocksuite';
+import {
+  checkWorkspaceCompatibility,
+  MigrationPoint,
+} from '../migration/workspace';
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.load(() => {

@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
 }
 
 export class DebugLogger {
-  private _debug: debug.Debugger;
+  private readonly _debug: debug.Debugger;
 
   constructor(namespace: string) {
     this._debug = debug(namespace);

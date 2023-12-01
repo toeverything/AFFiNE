@@ -7,7 +7,7 @@ import { applyUpdate, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 import { mergeUpdates, type Storage } from '../storage';
 import { AsyncQueue } from '../utils/async-queue';
 import { throwIfAborted } from '../utils/throw-if-aborted';
-import { MANUALLY_STOP } from './engine';
+import { MANUALLY_STOP } from './consts';
 
 export enum SyncPeerStep {
   Stopped = 0,
@@ -69,8 +69,8 @@ export class SyncPeer {
   logger = new DebugLogger('affine:sync-peer:' + this.name);
 
   constructor(
-    private rootDoc: Doc,
-    private storage: Storage
+    private readonly rootDoc: Doc,
+    private readonly storage: Storage
   ) {
     this.logger.debug('peer start');
 
@@ -150,7 +150,7 @@ export class SyncPeer {
     }
   }
 
-  private state: {
+  private readonly state: {
     connectedDocs: Map<string, Doc>;
     pushUpdatesQueue: AsyncQueue<{
       docId: string;

@@ -68,7 +68,11 @@ export class DocHistoryManager {
           // safe to ignore
           // only happens when duplicated history record created in multi processes
         });
-      metrics().docHistoryCounter.add(1, {});
+      metrics.doc
+        .counter('history_created_counter', {
+          description: 'How many times the snapshot history created',
+        })
+        .add(1);
       this.logger.log(
         `History created for ${snapshot.id} in workspace ${snapshot.workspaceId}.`
       );
@@ -182,7 +186,11 @@ export class DocHistoryManager {
     //  which is not the solution in CRDT.
     //  let user revert in client and update the data in sync system
     //    `await this.db.snapshot.update();`
-    metrics().docRecoverCounter.add(1, {});
+    metrics.doc
+      .counter('history_recovered_counter', {
+        description: 'How many times history recovered request happened',
+      })
+      .add(1);
 
     return history.timestamp;
   }

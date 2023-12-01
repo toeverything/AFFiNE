@@ -29,7 +29,7 @@ export const Skeleton = ({
   const style = {
     width,
     height,
-    ...(_style || {}),
+    ..._style,
   };
 
   return (

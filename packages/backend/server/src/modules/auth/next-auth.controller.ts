@@ -89,11 +89,12 @@ export class NextAuthController {
       res.redirect(`/signin${query}`);
       return;
     }
-    metrics().authCounter.add(1);
     const [action, providerId] = req.url // start with request url
       .slice(BASE_URL.length) // make relative to baseUrl
       .replace(/\?.*/, '') // remove query part, use only path part
       .split('/') as [AuthAction, string]; // as array of strings;
+
+    metrics.auth.counter('call_counter').add(1, { action, providerId });
 
     const credentialsSignIn =
       req.method === 'POST' && providerId === 'credentials';
@@ -126,7 +127,9 @@ export class NextAuthController {
     const options = this.nextAuthOptions;
     if (req.method === 'POST' && action === 'session') {
       if (typeof req.body !== 'object' || typeof req.body.data !== 'object') {
-        metrics().authFailCounter.add(1, { reason: 'invalid_session_data' });
+        metrics.auth
+          .counter('call_fails_counter')
+          .add(1, { reason: 'invalid_session_data' });
         throw new BadRequestException(`Invalid new session data`);
       }
       const user = await this.updateSession(req, req.body.data);
@@ -209,9 +212,10 @@ export class NextAuthController {
 
     if (redirect?.endsWith('api/auth/error?error=AccessDenied')) {
       this.logger.log(`Early access redirect headers: ${req.headers}`);
-      metrics().authFailCounter.add(1, {
-        reason: 'no_early_access_permission',
-      });
+      metrics.auth
+        .counter('call_fails_counter')
+        .add(1, { reason: 'no_early_access_permission' });
+
       if (
         !req.headers?.referer ||
         checkUrlOrigin(req.headers.referer, 'https://accounts.google.com')

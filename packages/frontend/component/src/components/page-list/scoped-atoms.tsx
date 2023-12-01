@@ -4,7 +4,7 @@ import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { createIsolation } from 'jotai-scope';
 
-import { pagesToPageGroups } from './page-group';
+import { pagesToPageGroups } from './pages-to-page-group';
 import type {
   PageListProps,
   PageMetaRecord,

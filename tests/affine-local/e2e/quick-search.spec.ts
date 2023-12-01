@@ -65,7 +65,7 @@ async function waitForScrollToFinish(page: Page) {
       let lastScrollTop: number;
       const interval = setInterval(() => {
         const { scrollTop } = document.documentElement;
-        if (scrollTop != lastScrollTop) {
+        if (scrollTop !== lastScrollTop) {
           lastScrollTop = scrollTop;
         } else {
           clearInterval(interval);

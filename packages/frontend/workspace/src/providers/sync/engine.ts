@@ -3,15 +3,8 @@ import { Slot } from '@blocksuite/global/utils';
 import type { Doc } from 'yjs';
 
 import type { Storage } from '../storage';
+import { MANUALLY_STOP, SyncEngineStep } from './consts';
 import { SyncPeer, type SyncPeerStatus, SyncPeerStep } from './peer';
-
-export const MANUALLY_STOP = 'manually-stop';
-
-export enum SyncEngineStep {
-  Stopped = 0,
-  Syncing = 1,
-  Synced = 2,
-}
 
 export interface SyncEngineStatus {
   step: SyncEngineStep;
@@ -70,9 +63,9 @@ export class SyncEngine {
   private abort = new AbortController();
 
   constructor(
-    private rootDoc: Doc,
-    private local: Storage,
-    private remotes: Storage[]
+    private readonly rootDoc: Doc,
+    private readonly local: Storage,
+    private readonly remotes: Storage[]
   ) {
     this._status = {
       step: SyncEngineStep.Stopped,
@@ -193,13 +186,13 @@ export class SyncEngine {
   }
 
   async waitForSynced(abort?: AbortSignal) {
-    if (this.status.step == SyncEngineStep.Synced) {
+    if (this.status.step === SyncEngineStep.Synced) {
       return;
     } else {
       return Promise.race([
         new Promise<void>(resolve => {
           this.onStatusChange.on(status => {
-            if (status.step == SyncEngineStep.Synced) {
+            if (status.step === SyncEngineStep.Synced) {
               resolve();
             }
           });

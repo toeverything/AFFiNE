@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-dom-node-dataset */
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,

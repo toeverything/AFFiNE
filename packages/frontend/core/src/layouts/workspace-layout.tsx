@@ -194,7 +194,8 @@ export const WorkspaceLayoutInner = ({
     const blockVersions = meta.get('blockVersions');
     if (
       !(blockVersions instanceof YMap) &&
-      blockVersions != null &&
+      blockVersions !== null &&
+      blockVersions !== undefined &&
       typeof blockVersions === 'object'
     ) {
       meta.set(

@@ -14,9 +14,7 @@ test('default white', async ({ browser }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   const root = page.locator('html');
-  const themeMode = await root.evaluate(element =>
-    element.getAttribute('data-theme')
-  );
+  const themeMode = await root.evaluate(element => element.dataset.theme);
   expect(themeMode).toBe('light');
   await page.screenshot({
     path: resolve(testResultDir, 'affine-light-theme.png'),
@@ -25,9 +23,7 @@ test('default white', async ({ browser }) => {
   await page.getByTestId('appearance-panel-trigger').click();
   await page.waitForTimeout(50);
   await page.getByTestId('dark-theme-trigger').click();
-  const darkMode = await root.evaluate(element =>
-    element.getAttribute('data-theme')
-  );
+  const darkMode = await root.evaluate(element => element.dataset.theme);
   expect(darkMode).toBe('dark');
   await page.screenshot({
     path: resolve(testResultDir, 'affine-dark-theme.png'),

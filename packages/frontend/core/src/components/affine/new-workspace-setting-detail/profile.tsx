@@ -96,6 +96,8 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
     [pushNotification, update]
   );
 
+  const canAdjustAvatar = workspaceAvatar && isOwner;
+
   return (
     <div className={style.profileWrapper}>
       <Upload
@@ -110,11 +112,15 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
           name={name}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
-          onRemove={
-            workspaceAvatar && isOwner ? handleRemoveUserAvatar : undefined
+          onRemove={canAdjustAvatar ? handleRemoveUserAvatar : undefined}
+          avatarTooltipOptions={
+            canAdjustAvatar
+              ? { content: t['Click to replace photo']() }
+              : undefined
           }
-          avatarTooltipOptions={{ content: t['Click to replace photo']() }}
-          removeTooltipOptions={{ content: t['Remove photo']() }}
+          removeTooltipOptions={
+            canAdjustAvatar ? { content: t['Remove photo']() } : undefined
+          }
           data-testid="workspace-setting-avatar"
           removeButtonProps={{
             ['data-testid' as string]: 'workspace-setting-remove-avatar-button',

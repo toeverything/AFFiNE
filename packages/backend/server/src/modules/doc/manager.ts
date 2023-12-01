@@ -42,7 +42,7 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
 
 function isEmptyBuffer(buf: Buffer): boolean {
   return (
-    buf.length == 0 ||
+    buf.length === 0 ||
     // 0x0000
     (buf.length === 2 && buf[0] === 0 && buf[1] === 0)
   );
@@ -60,9 +60,9 @@ const MAX_SEQ_NUM = 0x3fffffff; // u31
  */
 @Injectable()
 export class DocManager implements OnModuleInit, OnModuleDestroy {
-  private logger = new Logger(DocManager.name);
+  private readonly logger = new Logger(DocManager.name);
   private job: NodeJS.Timeout | null = null;
-  private seqMap = new Map<string, number>();
+  private readonly seqMap = new Map<string, number>();
   private busy = false;
 
   constructor(
@@ -125,13 +125,13 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       this.config.doc.manager.experimentalMergeWithJwstCodec &&
       updates.length < 100 /* avoid overloading */
     ) {
-      metrics().jwstCodecMerge.add(1);
+      metrics.jwst.counter('codec_merge_counter').add(1);
       const yjsResult = Buffer.from(encodeStateAsUpdate(doc));
       let log = false;
       try {
         const jwstResult = jwstMergeUpdates(updates);
         if (!compare(yjsResult, jwstResult)) {
-          metrics().jwstCodecDidnotMatch.add(1);
+          metrics.jwst.counter('codec_not_match').add(1);
           this.logger.warn(
             `jwst codec result doesn't match yjs codec result for: ${guid}`
           );
@@ -142,7 +142,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
           }
         }
       } catch (e) {
-        metrics().jwstCodecFail.add(1);
+        metrics.jwst.counter('codec_fails_counter').add(1);
         this.logger.warn(`jwst apply update failed for ${guid}: ${e}`);
         log = true;
       } finally {

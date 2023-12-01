@@ -183,26 +183,30 @@ test('should correctly list all history records', async t => {
 
   // insert expired data
   await db.snapshotHistory.createMany({
-    data: new Array(10).fill(0).map((_, i) => ({
-      workspaceId: snapshot.workspaceId,
-      id: snapshot.id,
-      blob: snapshot.blob,
-      state: snapshot.state,
-      timestamp: new Date(timestamp - 10 - i),
-      expiredAt: new Date(timestamp - 1),
-    })),
+    data: Array.from({ length: 10 })
+      .fill(0)
+      .map((_, i) => ({
+        workspaceId: snapshot.workspaceId,
+        id: snapshot.id,
+        blob: snapshot.blob,
+        state: snapshot.state,
+        timestamp: new Date(timestamp - 10 - i),
+        expiredAt: new Date(timestamp - 1),
+      })),
   });
 
   // insert available data
   await db.snapshotHistory.createMany({
-    data: new Array(10).fill(0).map((_, i) => ({
-      workspaceId: snapshot.workspaceId,
-      id: snapshot.id,
-      blob: snapshot.blob,
-      state: snapshot.state,
-      timestamp: new Date(timestamp + i),
-      expiredAt: new Date(timestamp + 1000),
-    })),
+    data: Array.from({ length: 10 })
+      .fill(0)
+      .map((_, i) => ({
+        workspaceId: snapshot.workspaceId,
+        id: snapshot.id,
+        blob: snapshot.blob,
+        state: snapshot.state,
+        timestamp: new Date(timestamp + i),
+        expiredAt: new Date(timestamp + 1000),
+      })),
   });
 
   const list = await manager.list(
@@ -243,14 +247,16 @@ test('should be able to get last history record', async t => {
 
   // insert available data
   await db.snapshotHistory.createMany({
-    data: new Array(10).fill(0).map((_, i) => ({
-      workspaceId: snapshot.workspaceId,
-      id: snapshot.id,
-      blob: snapshot.blob,
-      state: snapshot.state,
-      timestamp: new Date(timestamp + i),
-      expiredAt: new Date(timestamp + 1000),
-    })),
+    data: Array.from({ length: 10 })
+      .fill(0)
+      .map((_, i) => ({
+        workspaceId: snapshot.workspaceId,
+        id: snapshot.id,
+        blob: snapshot.blob,
+        state: snapshot.state,
+        timestamp: new Date(timestamp + i),
+        expiredAt: new Date(timestamp + 1000),
+      })),
   });
 
   const history = await manager.last(snapshot.workspaceId, snapshot.id);
@@ -299,26 +305,30 @@ test('should be able to cleanup expired history', async t => {
 
   // insert expired data
   await db.snapshotHistory.createMany({
-    data: new Array(10).fill(0).map((_, i) => ({
-      workspaceId: snapshot.workspaceId,
-      id: snapshot.id,
-      blob: snapshot.blob,
-      state: snapshot.state,
-      timestamp: new Date(timestamp - 10 - i),
-      expiredAt: new Date(timestamp - 1),
-    })),
+    data: Array.from({ length: 10 })
+      .fill(0)
+      .map((_, i) => ({
+        workspaceId: snapshot.workspaceId,
+        id: snapshot.id,
+        blob: snapshot.blob,
+        state: snapshot.state,
+        timestamp: new Date(timestamp - 10 - i),
+        expiredAt: new Date(timestamp - 1),
+      })),
   });
 
   // insert available data
   await db.snapshotHistory.createMany({
-    data: new Array(10).fill(0).map((_, i) => ({
-      workspaceId: snapshot.workspaceId,
-      id: snapshot.id,
-      blob: snapshot.blob,
-      state: snapshot.state,
-      timestamp: new Date(timestamp + i),
-      expiredAt: new Date(timestamp + 1000),
-    })),
+    data: Array.from({ length: 10 })
+      .fill(0)
+      .map((_, i) => ({
+        workspaceId: snapshot.workspaceId,
+        id: snapshot.id,
+        blob: snapshot.blob,
+        state: snapshot.state,
+        timestamp: new Date(timestamp + i),
+        expiredAt: new Date(timestamp + 1000),
+      })),
   });
 
   let count = await db.snapshotHistory.count();

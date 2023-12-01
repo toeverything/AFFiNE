@@ -14,5 +14,6 @@
  *
  */
 
+export * from './consts';
 export * from './engine';
 export * from './peer';

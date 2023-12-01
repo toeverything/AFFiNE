@@ -34,7 +34,7 @@ export class WorkspacesController {
   //
   // NOTE: because graphql can't represent a File, so we have to use REST API to get blob
   @Get('/:id/blobs/:name')
-  @CallTimer('doc_controller', { method: 'get_blob' })
+  @CallTimer('controllers', 'workspace_get_blob')
   async blob(
     @Param('id') workspaceId: string,
     @Param('name') name: string,
@@ -59,7 +59,7 @@ export class WorkspacesController {
   @Get('/:id/docs/:guid')
   @Auth()
   @Publicable()
-  @CallTimer('doc_controller', { method: 'get_doc' })
+  @CallTimer('controllers', 'workspace_get_doc')
   async doc(
     @CurrentUser() user: UserType | undefined,
     @Param('id') ws: string,
@@ -106,7 +106,7 @@ export class WorkspacesController {
 
   @Get('/:id/docs/:guid/histories/:timestamp')
   @Auth()
-  @CallTimer('doc_controller', { method: 'get_history' })
+  @CallTimer('controllers', 'workspace_get_history')
   async history(
     @CurrentUser() user: UserType,
     @Param('id') ws: string,

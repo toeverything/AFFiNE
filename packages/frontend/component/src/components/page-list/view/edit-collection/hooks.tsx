@@ -1,12 +1,7 @@
-import {
-  type AllPageListConfig,
-  filterPageByRules,
-} from '@affine/component/page-list';
-import type { Filter } from '@affine/env/filter';
-import type { PageMeta } from '@blocksuite/store';
 import { Modal } from '@toeverything/components/modal';
-import { type MouseEvent, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import type { AllPageListConfig } from './edit-collection';
 import { SelectPage } from './select-page';
 export const useSelectPage = ({
   allPageListConfig,
@@ -58,49 +53,5 @@ export const useSelectPage = ({
           },
         });
       }),
-  };
-};
-export const useFilter = (list: PageMeta[]) => {
-  const [filters, changeFilters] = useState<Filter[]>([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const clickFilter = useCallback(
-    (e: MouseEvent) => {
-      if (showFilter || filters.length !== 0) {
-        e.stopPropagation();
-        e.preventDefault();
-        setShowFilter(!showFilter);
-      }
-    },
-    [filters.length, showFilter]
-  );
-  const onCreateFilter = useCallback(
-    (filter: Filter) => {
-      changeFilters([...filters, filter]);
-      setShowFilter(true);
-    },
-    [filters]
-  );
-  return {
-    showFilter,
-    filters,
-    updateFilters: changeFilters,
-    clickFilter,
-    createFilter: onCreateFilter,
-    filteredList: list.filter(v => {
-      if (v.trash) {
-        return false;
-      }
-      return filterPageByRules(filters, [], v);
-    }),
-  };
-};
-export const useSearch = (list: PageMeta[]) => {
-  const [value, onChange] = useState('');
-  return {
-    searchText: value,
-    updateSearchText: onChange,
-    searchedList: value
-      ? list.filter(v => v.title.toLowerCase().includes(value.toLowerCase()))
-      : list,
   };
 };

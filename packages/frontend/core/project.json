@@ -26,6 +26,9 @@
           "env": "BUILD_TYPE"
         },
         {
+          "env": "BUILD_TYPE_OVERRIDE"
+        },
+        {
           "env": "PERFSEE_TOKEN"
         },
         {
@@ -48,6 +51,24 @@
         },
         {
           "env": "DISABLE_DEV_OVERLAY"
+        },
+        {
+          "env": "CAPTCHA_SITE_KEY"
+        },
+        {
+          "env": "SHOULD_REPORT_TRACE"
+        },
+        {
+          "env": "TRACE_REPORT_ENDPOINT"
+        },
+        {
+          "env": "R2_ACCOUNT_ID"
+        },
+        {
+          "env": "R2_ACCESS_KEY_ID"
+        },
+        {
+          "env": "R2_SECRET_ACCESS_KEY"
         }
       ],
       "options": {
