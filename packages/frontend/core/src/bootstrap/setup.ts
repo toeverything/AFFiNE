@@ -59,7 +59,7 @@ export async function setup(store: ReturnType<typeof createStore>) {
   performanceSetupLogger.info('setup global');
   setupGlobal();
 
-  if (window.SENTRY_RELEASE) {
+  if (window.SENTRY_RELEASE || environment.isDebug) {
     // https://docs.sentry.io/platforms/javascript/guides/react/#configure
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
@@ -75,8 +75,10 @@ export async function setup(store: ReturnType<typeof createStore>) {
           ),
         }),
         new Sentry.Replay(),
-        new Sentry.BrowserTracing(),
       ],
+      // Set tracesSampleRate to 1.0 to capture 100%
+      // of transactions for performance monitoring.
+      tracesSampleRate: 1.0,
     });
     Sentry.setTags({
       appVersion: runtimeConfig.appVersion,
