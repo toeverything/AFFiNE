@@ -58,15 +58,25 @@ export function checkWorkspaceCompatibility(
     return MigrationPoint.SubDoc;
   }
 
-  // Sometimes, blocksuite will not write blockVersions to meta.
-  // Just fix it when user open the workspace.
-  const blockVersions = workspace.meta.blockVersions;
-  if (!blockVersions) {
+  const hasVersion = workspace.meta.hasVersion;
+  if (!hasVersion) {
     return MigrationPoint.BlockVersion;
   }
 
+  // TODO: Catch compatibility error from blocksuite to show upgrade page.
+  // Temporarily follow the check logic of blocksuite.
+  if ((workspace.meta.pages?.length ?? 0) <= 1) {
+    try {
+      workspace.meta.validateVersion(workspace);
+    } catch (e) {
+      console.info('validateVersion error', e);
+      return MigrationPoint.BlockVersion;
+    }
+  }
+
   // From v2, we depend on blocksuite to check and migrate data.
-  for (const [flavour, version] of Object.entries(blockVersions)) {
+  const blockVersions = workspace.meta.blockVersions;
+  for (const [flavour, version] of Object.entries(blockVersions ?? {})) {
     const schema = workspace.schema.flavourSchemaMap.get(flavour);
     if (schema?.version !== version) {
       return MigrationPoint.BlockVersion;

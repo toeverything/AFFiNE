@@ -6,6 +6,7 @@ export const errorLayout = style({
   alignItems: 'center',
   height: '100%',
   width: '100%',
+  gap: '20px',
 });
 
 export const errorDetailStyle = style({
@@ -24,15 +25,15 @@ export const errorImage = style({
   height: '178px',
   maxWidth: '400px',
   flexGrow: 1,
+  backgroundSize: 'cover',
 });
 
 export const errorDescription = style({
   marginTop: '24px',
 });
 
-export const errorRetryButton = style({
+export const errorFooter = style({
   marginTop: '24px',
-  width: '94px',
 });
 
 export const errorDivider = style({

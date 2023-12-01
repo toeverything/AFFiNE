@@ -351,6 +351,8 @@ export const createConfiguration: (
         'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
           process.env.CAPTCHA_SITE_KEY
         ),
+        'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN),
+        'process.env.BUILD_TYPE': JSON.stringify(process.env.BUILD_TYPE),
         runtimeConfig: JSON.stringify(runtimeConfig),
       }),
       new CopyPlugin({

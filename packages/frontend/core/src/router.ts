@@ -1,5 +1,6 @@
+import * as Sentry from '@sentry/react';
 import type { RouteObject } from 'react-router-dom';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter as reactRouterCreateBrowserRouter } from 'react-router-dom';
 
 export const routes = [
   {
@@ -70,6 +71,9 @@ export const routes = [
   },
 ] satisfies [RouteObject, ...RouteObject[]];
 
+const createBrowserRouter = Sentry.wrapCreateBrowserRouter(
+  reactRouterCreateBrowserRouter
+);
 export const router = createBrowserRouter(routes, {
   future: {
     v7_normalizeFormMethod: true,

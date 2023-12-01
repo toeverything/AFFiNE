@@ -1,7 +1,7 @@
 import { Scrollable } from '@affine/component';
 import {
   BlockSuiteEditor,
-  BlockSuiteFallback,
+  EditorLoading,
 } from '@affine/component/block-suite-editor';
 import type { PageMode } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -147,7 +147,7 @@ const HistoryEditorPreview = ({
           onModeChange={onModeChange}
         />
       ) : (
-        <BlockSuiteFallback />
+        <EditorLoading />
       )}
     </div>
   );
@@ -410,7 +410,7 @@ export const PageHistoryModal = ({
 
   return (
     <ModalContainer onOpenChange={onOpenChange} open={open}>
-      <Suspense fallback={<BlockSuiteFallback />}>
+      <Suspense fallback={<EditorLoading />}>
         <PageHistoryManager
           onClose={onClose}
           pageId={pageId}

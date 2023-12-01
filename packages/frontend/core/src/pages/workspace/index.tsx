@@ -8,6 +8,7 @@ import {
 import type { MigrationPoint } from '@toeverything/infra/blocksuite';
 import {
   checkWorkspaceCompatibility,
+  fixWorkspaceVersion,
   guidCompatibilityFix,
 } from '@toeverything/infra/blocksuite';
 import { useSetAtom } from 'jotai';
@@ -54,6 +55,7 @@ export const loader: LoaderFunction = async args => {
   workspaceLoaderLogger.info('workspace loaded');
 
   guidCompatibilityFix(workspace.doc);
+  fixWorkspaceVersion(workspace.doc);
   return checkWorkspaceCompatibility(workspace);
 };
 
@@ -73,7 +75,7 @@ export const Component = (): ReactElement => {
 
   const migration = useLoaderData() as MigrationPoint | undefined;
   return (
-    <AffineErrorBoundary height="100vh">
+    <AffineErrorBoundary key={params.workspaceId} height="100vh">
       <WorkspaceLayout migration={migration}>
         <Outlet />
       </WorkspaceLayout>

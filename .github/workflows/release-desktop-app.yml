@@ -40,6 +40,7 @@ env:
 jobs:
   before-make:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.build-type || (github.ref_type == 'tag' && contains(github.ref, 'canary') && 'canary') }}
     outputs:
       RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
     steps:
@@ -65,6 +66,7 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
           SKIP_PLUGIN_BUILD: 'true'
           SKIP_NX_CACHE: 'true'

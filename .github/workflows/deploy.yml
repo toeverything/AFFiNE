@@ -33,7 +33,7 @@ jobs:
   build-core:
     name: Build @affine/core
     runs-on: ubuntu-latest
-
+    environment: ${{ github.event.inputs.flavor }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -50,6 +50,10 @@ jobs:
           SHOULD_REPORT_TRACE: true
           TRACE_REPORT_ENDPOINT: ${{ secrets.TRACE_REPORT_ENDPOINT }}
           CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       - name: Upload core artifact
         uses: actions/upload-artifact@v3
         with:

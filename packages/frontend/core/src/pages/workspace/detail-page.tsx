@@ -113,7 +113,6 @@ export const DetailPage = (): ReactElement => {
   const currentSyncEngineStatus = useCurrentSyncEngineStatus();
   const currentPageId = useAtomValue(currentPageIdAtom);
   const [page, setPage] = useState<Page | null>(null);
-  const [pageLoaded, setPageLoaded] = useState<boolean>(false);
 
   // load page by current page id
   useEffect(() => {
@@ -158,30 +157,7 @@ export const DetailPage = (): ReactElement => {
     return;
   }, [currentSyncEngineStatus, navigate, page]);
 
-  // wait for page to be loaded
-  useEffect(() => {
-    if (page) {
-      if (!page.isEmpty) {
-        setPageLoaded(true);
-      } else {
-        setPageLoaded(false);
-        // call waitForLoaded to trigger load
-        page
-          .load(() => {})
-          .catch(() => {
-            // do nothing
-          });
-        return page.slots.ready.on(() => {
-          setPageLoaded(true);
-        }).dispose;
-      }
-    } else {
-      setPageLoaded(false);
-    }
-    return;
-  }, [page]);
-
-  if (!currentPageId || !page || !pageLoaded) {
+  if (!currentPageId || !page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
   }
 
@@ -218,8 +194,9 @@ export const Component = () => {
     }
   }, [params, setContentLayout, setCurrentPageId, setCurrentWorkspaceId]);
 
+  // Add a key to force rerender when page changed, to avoid error boundary persisting.
   return (
-    <AffineErrorBoundary>
+    <AffineErrorBoundary key={params.pageId}>
       <DetailPage />
     </AffineErrorBoundary>
   );

@@ -4,6 +4,10 @@ import type { createStore, WritableAtom } from 'jotai/vanilla';
 import { nanoid } from 'nanoid';
 
 import { migratePages } from '../migration/blocksuite';
+import {
+  checkWorkspaceCompatibility,
+  MigrationPoint,
+} from '../migration/workspace';
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.load(() => {
@@ -244,46 +248,48 @@ export async function buildShowcaseWorkspace(
       {} as Record<string, string>
     );
   });
-  await Promise.all(
-    data.map(async ([id, promise, newId]) => {
-      const { default: template } = await promise;
-      let json = JSON.stringify(template);
-      Object.entries(idMap).forEach(([oldId, newId]) => {
-        json = json.replaceAll(oldId, newId);
-      });
-      json = JSON.parse(json);
-      await workspace
-        .importPageSnapshot(structuredClone(json), newId)
-        .catch(error => {
-          console.error('error importing page', id, error);
-        });
-      const page = workspace.getPage(newId);
-      assertExists(page);
-      await page.load();
-      workspace.schema.upgradePage(
-        0,
-        {
-          'affine:note': 1,
-          'affine:bookmark': 1,
-          'affine:database': 2,
-          'affine:divider': 1,
-          'affine:image': 1,
-          'affine:list': 1,
-          'affine:code': 1,
-          'affine:page': 2,
-          'affine:paragraph': 1,
-          'affine:surface': 3,
-        },
-        page.spaceDoc
-      );
 
-      // The showcase building will create multiple pages once, and may skip the version writing.
-      // https://github.com/toeverything/blocksuite/blob/master/packages/store/src/workspace/page.ts#L662
-      if (!workspace.meta.blockVersions) {
-        await migratePages(workspace.doc, workspace.schema);
-      }
-    })
-  );
+  // Import page one by one to prevent workspace meta race condition problem.
+  for (const [id, promise, newId] of data) {
+    const { default: template } = await promise;
+    let json = JSON.stringify(template);
+    Object.entries(idMap).forEach(([oldId, newId]) => {
+      json = json.replaceAll(oldId, newId);
+    });
+    json = JSON.parse(json);
+    await workspace
+      .importPageSnapshot(structuredClone(json), newId)
+      .catch(error => {
+        console.error('error importing page', id, error);
+      });
+    const page = workspace.getPage(newId);
+    assertExists(page);
+    await page.load();
+    workspace.schema.upgradePage(
+      0,
+      {
+        'affine:note': 1,
+        'affine:bookmark': 1,
+        'affine:database': 2,
+        'affine:divider': 1,
+        'affine:image': 1,
+        'affine:list': 1,
+        'affine:code': 1,
+        'affine:page': 2,
+        'affine:paragraph': 1,
+        'affine:surface': 3,
+      },
+      page.spaceDoc
+    );
+  }
+
+  // The showcase building will create multiple pages once, and may skip the version writing.
+  // https://github.com/toeverything/blocksuite/blob/master/packages/store/src/workspace/page.ts#L662
+  const compatibilityResult = checkWorkspaceCompatibility(workspace);
+  if (compatibilityResult === MigrationPoint.BlockVersion) {
+    await migratePages(workspace.doc, workspace.schema);
+  }
+
   Object.entries(pageMetas).forEach(([oldId, meta]) => {
     const newId = idMap[oldId];
     workspace.setPageMeta(newId, meta);
