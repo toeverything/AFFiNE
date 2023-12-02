@@ -14,7 +14,7 @@ export const EmptyPageList = ({
 }: {
   type: 'all' | 'trash' | 'shared' | 'public';
   blockSuiteWorkspace: Workspace;
-  heading: ReactNode;
+  heading?: ReactNode;
 }) => {
   const { createPage } = usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
