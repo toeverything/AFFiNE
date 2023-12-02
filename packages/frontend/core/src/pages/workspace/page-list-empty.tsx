@@ -59,7 +59,7 @@ export const EmptyPageList = ({
 
   return (
     <div className={styles.pageListEmptyStyle}>
-      <div>{heading}</div>
+     {heading && (<div>{heading}</div>)} 
       <Empty
         title={t['com.affine.emptyDesc']()}
         description={getEmptyDescription()}
