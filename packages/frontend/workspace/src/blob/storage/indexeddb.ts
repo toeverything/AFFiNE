@@ -1,6 +1,7 @@
 import { createStore, del, get, keys, set } from 'idb-keyval';
 
 import type { BlobStorage } from '../engine';
+import { bufferToBlob } from '../util';
 
 export const createIndexeddbBlobStorage = (
   workspaceId: string
@@ -13,7 +14,7 @@ export const createIndexeddbBlobStorage = (
     get: async (key: string) => {
       const res = await get<ArrayBuffer>(key, db);
       if (res) {
-        return new Blob([res], { type: await get(key, mimeTypeDb) });
+        return bufferToBlob(res);
       }
       return undefined;
     },
