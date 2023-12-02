@@ -11,7 +11,7 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { restoreOrCreateWindow } from './main-window';
+import { getOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
 
@@ -56,7 +56,7 @@ app.on('window-all-closed', () => {
  * @see https://www.electronjs.org/docs/v14-x-y/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  restoreOrCreateWindow().catch(e =>
+  getOrCreateWindow().catch(e =>
     console.error('Failed to restore or create window:', e)
   );
 });
@@ -72,7 +72,7 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(ensureHelperProcess)
-  .then(restoreOrCreateWindow)
+  .then(getOrCreateWindow)
   .then(createApplicationMenu)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
