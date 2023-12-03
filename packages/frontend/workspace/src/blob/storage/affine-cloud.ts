@@ -8,6 +8,7 @@ import {
 import { fetcher } from '@affine/workspace/affine/gql';
 
 import type { BlobStorage } from '../engine';
+import { bufferToBlob } from '../util';
 
 export const createAffineCloudBlobStorage = (
   workspaceId: string
@@ -26,7 +27,7 @@ export const createAffineCloudBlobStorage = (
             // status not in the range 200-299
             return undefined;
           }
-          return await res.blob();
+          return bufferToBlob(await res.arrayBuffer());
         }
       );
     },

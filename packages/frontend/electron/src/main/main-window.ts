@@ -148,16 +148,11 @@ let browserWindow$: Promise<BrowserWindow> | undefined;
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
-export async function restoreOrCreateWindow() {
+export async function getOrCreateWindow() {
   if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
     browserWindow$ = createWindow();
   }
   const mainWindow = await browserWindow$;
-
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
-    logger.info('restore main window');
-  }
   return mainWindow;
 }
 
@@ -188,7 +183,11 @@ export async function setCookie(
   arg0: CookiesSetDetails | string,
   arg1?: string
 ) {
-  const window = await restoreOrCreateWindow();
+  const window = await browserWindow$;
+  if (!window) {
+    // do nothing if window is not ready
+    return;
+  }
   const details =
     typeof arg1 === 'string' && typeof arg0 === 'string'
       ? parseCookie(arg0, arg1)
@@ -204,12 +203,20 @@ export async function setCookie(
 }
 
 export async function removeCookie(url: string, name: string): Promise<void> {
-  const window = await restoreOrCreateWindow();
+  const window = await browserWindow$;
+  if (!window) {
+    // do nothing if window is not ready
+    return;
+  }
   await window.webContents.session.cookies.remove(url, name);
 }
 
 export async function getCookie(url?: string, name?: string) {
-  const window = await restoreOrCreateWindow();
+  const window = await browserWindow$;
+  if (!window) {
+    // do nothing if window is not ready
+    return;
+  }
   const cookies = await window.webContents.session.cookies.get({
     url,
     name,
