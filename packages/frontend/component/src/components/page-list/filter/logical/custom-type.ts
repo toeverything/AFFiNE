@@ -19,3 +19,7 @@ export const tTag = typesystem.defineData<{ tags: Tag[] }>({
   name: 'Tag',
   supers: [],
 });
+
+export const tDateRange = typesystem.defineData(
+  DataHelper.create<{ value: number }>('DateRange')
+);
