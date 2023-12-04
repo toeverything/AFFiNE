@@ -6,7 +6,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 import { register } from 'prom-client';
 import * as Sinon from 'sinon';
-import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  decodeStateVector,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+} from 'yjs';
 
 import { CacheModule } from '../src/cache';
 import { Config, ConfigModule } from '../src/config';
@@ -282,4 +287,74 @@ test('should throw if meet max retry times', async t => {
     { message: 'Failed to push update' }
   );
   t.is(stub.callCount, 5);
+});
+
+test('should not update snapshot if state is outdated', async t => {
+  const db = m.get(PrismaService);
+  const manager = m.get(DocManager);
+
+  await db.snapshot.create({
+    data: {
+      id: '2',
+      workspaceId: '2',
+      blob: Buffer.from([0, 0]),
+      seq: 1,
+    },
+  });
+  const doc = new YDoc();
+  const text = doc.getText('content');
+  const updates: Buffer[] = [];
+
+  doc.on('update', update => {
+    updates.push(Buffer.from(update));
+  });
+
+  text.insert(0, 'hello');
+  text.insert(5, 'world');
+  text.insert(5, ' ');
+
+  await Promise.all(updates.map(update => manager.push('2', '2', update)));
+
+  const updateWith3Records = await manager.getUpdates('2', '2');
+  text.insert(11, '!');
+  await manager.push('2', '2', updates[3]);
+  const updateWith4Records = await manager.getUpdates('2', '2');
+
+  // Simulation:
+  //   Node A get 3 updates and squash them at time 1, will finish at time 10
+  //   Node B get 4 updates and squash them at time 3, will finish at time 8
+  //   Node B finish the squash first, and update the snapshot
+  //   Node A finish the squash later, and update the snapshot to an outdated state
+  // Time: ---------------------->
+  //    A:   ^get           ^upsert
+  //    B:      ^get    ^upsert
+  //
+  // We should avoid such situation
+  // @ts-expect-error private
+  await manager.squash(updateWith4Records, null);
+  // @ts-expect-error private
+  await manager.squash(updateWith3Records, null);
+
+  const result = await db.snapshot.findUnique({
+    where: {
+      id_workspaceId: {
+        id: '2',
+        workspaceId: '2',
+      },
+    },
+  });
+
+  if (!result) {
+    t.fail('snapshot not found');
+    return;
+  }
+
+  const state = decodeStateVector(result.state!);
+  t.is(state.get(doc.clientID), 12);
+
+  const d = new YDoc();
+  applyUpdate(d, result.blob!);
+
+  const dtext = d.getText('content');
+  t.is(dtext.toString(), 'hello world!');
 });
