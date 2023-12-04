@@ -1,7 +1,7 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useCallback, useState } from 'react';
 
+import { Button } from '../../ui/button';
 import { AuthInput } from './auth-input';
 import { AuthPageContainer } from './auth-page-container';
 import { emailRegex } from './utils';

@@ -1,3 +1,6 @@
+import { Button } from '@affine/component/ui/button';
+import { Divider } from '@affine/component/ui/divider';
+import { Menu } from '@affine/component/ui/menu';
 import {
   type AffineCloudWorkspace,
   type AffineOfficialWorkspace,
@@ -8,9 +11,6 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { WebIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { Button } from '@toeverything/components/button';
-import { Divider } from '@toeverything/components/divider';
-import { Menu } from '@toeverything/components/menu';
 
 import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';
 import * as styles from './index.css';

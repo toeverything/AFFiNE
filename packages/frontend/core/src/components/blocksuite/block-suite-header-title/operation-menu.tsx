@@ -1,5 +1,11 @@
 import { FlexWrapper } from '@affine/component';
 import { Export, MoveToTrash } from '@affine/component/page-list';
+import {
+  Menu,
+  MenuIcon,
+  MenuItem,
+  MenuSeparator,
+} from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -14,12 +20,6 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  MenuSeparator,
-} from '@toeverything/components/menu';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useCallback, useRef, useState } from 'react';

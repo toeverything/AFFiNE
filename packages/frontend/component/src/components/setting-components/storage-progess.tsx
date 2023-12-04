@@ -1,11 +1,11 @@
 import { SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import bytes from 'bytes';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
+import { Button } from '../../ui/button';
+import { Tooltip } from '../../ui/tooltip';
 import * as styles from './share.css';
 
 export interface StorageProgressProgress {

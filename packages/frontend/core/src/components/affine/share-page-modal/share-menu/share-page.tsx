@@ -6,11 +6,11 @@ import {
   toast,
 } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
+import { Button } from '@affine/component/ui/button';
+import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import { useAtomValue } from 'jotai';
 import { useMemo, useState } from 'react';
 import { useCallback } from 'react';

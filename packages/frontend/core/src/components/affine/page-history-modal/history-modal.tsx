@@ -3,12 +3,12 @@ import {
   BlockSuiteEditor,
   EditorLoading,
 } from '@affine/component/block-suite-editor';
+import { Button } from '@affine/component/ui/button';
+import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import type { PageMode } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { Button } from '@toeverything/components/button';
-import { ConfirmModal, Modal } from '@toeverything/components/modal';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import {

@@ -7,13 +7,13 @@ import {
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
-import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
-import { ConfirmModal } from '@toeverything/components/modal';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { IconButton } from '../../ui/button';
+import { Menu, MenuIcon, MenuItem } from '../../ui/menu';
+import { ConfirmModal } from '../../ui/modal';
+import { Tooltip } from '../../ui/tooltip';
 import { FavoriteTag } from './components/favorite-tag';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import * as styles from './page-list.css';

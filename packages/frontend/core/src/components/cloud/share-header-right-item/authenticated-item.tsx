@@ -1,5 +1,5 @@
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
 import { useMembers } from '../../../hooks/affine/use-members';

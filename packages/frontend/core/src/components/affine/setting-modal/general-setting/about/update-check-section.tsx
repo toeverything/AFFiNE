@@ -1,6 +1,6 @@
 import { SettingRow } from '@affine/component/setting-components';
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import {
   downloadProgressAtom,

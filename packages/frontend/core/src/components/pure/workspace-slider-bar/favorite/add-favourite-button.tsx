@@ -1,6 +1,6 @@
+import { IconButton } from '@affine/component/ui/button';
 import { PlusIcon } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
-import { IconButton } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 

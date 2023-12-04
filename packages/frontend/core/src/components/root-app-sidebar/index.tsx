@@ -13,12 +13,12 @@ import {
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
 import { MoveToTrash } from '@affine/component/page-list';
+import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { Menu } from '@toeverything/components/menu';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import {
   isAutoCheckUpdateAtom,

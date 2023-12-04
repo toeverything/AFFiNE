@@ -1,3 +1,5 @@
+import { Avatar } from '@affine/component/ui/avatar';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   type SyncEngineStatus,
@@ -10,8 +12,6 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { debounce } from 'lodash-es';

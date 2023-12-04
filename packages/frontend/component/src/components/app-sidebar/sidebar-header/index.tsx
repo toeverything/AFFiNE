@@ -1,10 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
+import { IconButton } from '../../../ui/button';
+import { Tooltip } from '../../../ui/tooltip';
 import type { History } from '..';
 import {
   navHeaderButton,

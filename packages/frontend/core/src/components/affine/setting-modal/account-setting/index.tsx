@@ -5,6 +5,8 @@ import {
   SettingRow,
   StorageProgress,
 } from '@affine/component/setting-components';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Button } from '@affine/component/ui/button';
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
@@ -14,8 +16,6 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { validateAndReduceImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import bytes from 'bytes';

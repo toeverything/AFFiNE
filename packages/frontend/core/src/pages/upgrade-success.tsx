@@ -1,8 +1,8 @@
 import { Empty } from '@affine/component';
+import { Button } from '@affine/component/ui/button';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
 import { useCallback } from 'react';
 
 import { useNavigateHelper } from '../hooks/use-navigate-helper';

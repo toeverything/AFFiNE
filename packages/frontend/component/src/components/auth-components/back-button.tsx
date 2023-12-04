@@ -1,7 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons';
-import { Button, type ButtonProps } from '@toeverything/components/button';
 import { type FC } from 'react';
+
+import { Button, type ButtonProps } from '../../ui/button';
 
 export const BackButton: FC<ButtonProps> = props => {
   const t = useAFFiNEI18N();
