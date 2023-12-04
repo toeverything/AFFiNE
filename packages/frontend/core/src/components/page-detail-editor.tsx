@@ -36,7 +36,6 @@ import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
@@ -212,7 +211,6 @@ const EditorWrapper = memo(function EditorWrapper({
         onLoadEditor={onLoadEditor}
       />
       {meta.trash && <TrashButtonGroup />}
-      <Bookmark page={page} />
     </>
   );
 });

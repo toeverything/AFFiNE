@@ -21,7 +21,7 @@ describe('SyncPeer', () => {
     {
       const workspace = new Workspace({
         id: 'test',
-        isSSR: true,
+
         schema,
       });
 
@@ -49,7 +49,7 @@ describe('SyncPeer', () => {
     {
       const workspace = new Workspace({
         id: 'test',
-        isSSR: true,
+
         schema,
       });
       const syncPeer = new SyncPeer(
@@ -67,7 +67,7 @@ describe('SyncPeer', () => {
   test('status', async () => {
     const workspace = new Workspace({
       id: 'test - status',
-      isSSR: true,
+
       schema,
     });
 

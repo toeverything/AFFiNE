@@ -6,11 +6,9 @@ const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
 const editorFlags: BlockSuiteFeatureFlags = {
-  enable_block_hub: true,
-  enable_toggle_block: false,
-  enable_bookmark_operation: false,
-  enable_note_index: false,
-  enable_set_remote_flag: false,
+  enable_transformer_clipboard: false,
+  enable_expand_database_block: false,
+  enable_bultin_ledits: false,
 };
 
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
