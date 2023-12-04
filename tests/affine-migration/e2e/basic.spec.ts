@@ -89,6 +89,8 @@ test('v3 to v4, surface migration', async ({ page }) => {
   await page.getByTestId('upgrade-workspace-button').click();
   await waitForEditorLoad(page);
 
+  await page.waitForTimeout(500);
+
   // check edgeless mode is correct
   await clickEdgelessModeButton(page);
   await expect(page.locator('edgeless-toolbar')).toBeVisible();

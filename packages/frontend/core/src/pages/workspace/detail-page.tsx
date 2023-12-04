@@ -27,7 +27,10 @@ import { AffineErrorBoundary } from '../../components/affine/affine-error-bounda
 import { GlobalPageHistoryModal } from '../../components/affine/page-history-modal';
 import { WorkspaceHeader } from '../../components/workspace-header';
 import { useRegisterBlocksuiteEditorCommands } from '../../hooks/affine/use-register-blocksuite-editor-commands';
-import { useCurrentSyncEngineStatus } from '../../hooks/current/use-current-sync-engine';
+import {
+  useCurrentSyncEngine,
+  useCurrentSyncEngineStatus,
+} from '../../hooks/current/use-current-sync-engine';
 import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { performanceRenderLogger } from '../../shared';
@@ -111,8 +114,17 @@ const DetailPageImpl = (): ReactElement => {
 export const DetailPage = (): ReactElement => {
   const [currentWorkspace] = useCurrentWorkspace();
   const currentSyncEngineStatus = useCurrentSyncEngineStatus();
+  const currentSyncEngine = useCurrentSyncEngine();
   const currentPageId = useAtomValue(currentPageIdAtom);
   const [page, setPage] = useState<Page | null>(null);
+
+  // set sync engine priority target
+  useEffect(() => {
+    if (!currentPageId) {
+      return;
+    }
+    currentSyncEngine?.setPriorityRule(id => id.endsWith(currentPageId));
+  }, [currentPageId, currentSyncEngine, currentWorkspace]);
 
   // load page by current page id
   useEffect(() => {
