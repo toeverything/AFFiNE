@@ -8,6 +8,9 @@
     "./ui/*": "./src/ui/*/index.ts",
     "./*": "./src/components/*/index.tsx"
   },
+  "scripts": {
+    "dev": "storybook dev -p 6006"
+  },
   "peerDependencies": {
     "@blocksuite/blocks": "*",
     "@blocksuite/editor": "*",
@@ -74,7 +77,18 @@
     "@blocksuite/icons": "2.1.36",
     "@blocksuite/lit": "0.0.0-20231124123613-7c06e95d-nightly",
     "@blocksuite/store": "0.0.0-20231124123613-7c06e95d-nightly",
+    "@storybook/addon-actions": "^7.5.3",
+    "@storybook/addon-essentials": "^7.5.3",
+    "@storybook/addon-interactions": "^7.5.3",
+    "@storybook/addon-links": "^7.5.3",
+    "@storybook/addon-mdx-gfm": "^7.5.3",
+    "@storybook/addon-storysource": "^7.5.3",
+    "@storybook/blocks": "^7.5.3",
+    "@storybook/builder-vite": "^7.5.3",
     "@storybook/jest": "^0.2.3",
+    "@storybook/react": "^7.5.3",
+    "@storybook/react-vite": "^7.5.3",
+    "@storybook/test-runner": "^0.15.2",
     "@storybook/testing-library": "^0.2.2",
     "@testing-library/react": "^14.0.0",
     "@types/bytes": "^3.1.3",
@@ -84,6 +98,8 @@
     "@types/react-dom": "^18.2.13",
     "@vanilla-extract/css": "^1.13.0",
     "fake-indexeddb": "^5.0.0",
+    "storybook": "^7.5.3",
+    "storybook-dark-mode": "^3.0.1",
     "typescript": "^5.3.2",
     "vite": "^4.4.11",
     "vitest": "0.34.6",

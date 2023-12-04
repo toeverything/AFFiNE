@@ -11,19 +11,18 @@ export type DividerProps = PropsWithChildren &
     dividerColor?: string;
   };
 
-const defaultProps = {
-  orientation: 'horizontal',
-  size: 'default',
-};
-
 export const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  (props, ref) => {
-    const { orientation, className, size, dividerColor, style, ...otherProps } =
-      {
-        ...defaultProps,
-        ...props,
-      };
-
+  (
+    {
+      orientation = 'horizontal',
+      size = 'default',
+      dividerColor = 'var(--affine-border-color)',
+      style,
+      className,
+      ...otherProps
+    },
+    ref
+  ) => {
     return (
       <div
         ref={ref}
