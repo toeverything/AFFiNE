@@ -321,7 +321,7 @@ __metadata:
     "@types/marked": "npm:^6.0.0"
     "@vanilla-extract/css": "npm:^1.13.0"
     clsx: "npm:^2.0.0"
-    idb: "npm:^7.1.1"
+    idb: "npm:^8.0.0"
     jotai: "npm:^2.5.1"
     langchain: "npm:^0.0.166"
     marked: "npm:^9.1.2"
@@ -398,7 +398,7 @@ __metadata:
     foxact: "npm:^0.2.20"
     graphql: "npm:^16.8.1"
     html-webpack-plugin: "npm:^5.5.3"
-    idb: "npm:^7.1.1"
+    idb: "npm:^8.0.0"
     intl-segmenter-polyfill-rs: "npm:^0.1.6"
     jotai: "npm:^2.5.1"
     jotai-devtools: "npm:^0.7.0"
@@ -921,7 +921,7 @@ __metadata:
     "@types/ws": "npm:^8.5.7"
     async-call-rpc: "npm:^6.3.1"
     fake-indexeddb: "npm:^5.0.0"
-    idb: "npm:^7.1.1"
+    idb: "npm:^8.0.0"
     idb-keyval: "npm:^6.2.1"
     is-svg: "npm:^5.0.0"
     jotai: "npm:^2.5.1"
@@ -13291,7 +13291,7 @@ __metadata:
     "@blocksuite/blocks": "npm:0.0.0-20231130092516-0f858b95-nightly"
     "@blocksuite/store": "npm:0.0.0-20231130092516-0f858b95-nightly"
     fake-indexeddb: "npm:^5.0.0"
-    idb: "npm:^7.1.1"
+    idb: "npm:^8.0.0"
     nanoid: "npm:^5.0.3"
     vite: "npm:^4.4.11"
     vite-plugin-dts: "npm:3.6.0"
@@ -23154,10 +23154,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"idb@npm:^7.1.1":
-  version: 7.1.1
-  resolution: "idb@npm:7.1.1"
-  checksum: 8e33eaebf21055129864acb89932e0739b8c96788e559df24c253ce114d8c6deb977a3b30ea47a9bb8a2ae8a55964861c3df65f360d95745e341cee40d5c17f4
+"idb@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "idb@npm:8.0.0"
+  checksum: 6ff47b46ead4bf02ac3a9145bb2f48bac707b950cf33282a72eec8efcda610ffb0a09aab6eea58450f6c87373060bf50998d307085830a302e9e231eee6cd37d
   languageName: node
   linkType: hard
 

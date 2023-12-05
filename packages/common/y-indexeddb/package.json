@@ -32,7 +32,7 @@
     }
   },
   "dependencies": {
-    "idb": "^7.1.1",
+    "idb": "^8.0.0",
     "nanoid": "^5.0.3",
     "y-provider": "workspace:*"
   },
