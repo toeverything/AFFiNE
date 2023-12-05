@@ -2,8 +2,6 @@ import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
 import type { LayoutNode } from '@affine/sdk/entry';
-import { rootBlockHubAtom } from '@affine/workspace/atom';
-import type { BlockHub } from '@blocksuite/blocks';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { EditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
@@ -16,7 +14,7 @@ import {
 } from '@toeverything/infra/__internal__/plugin';
 import { contentLayoutAtom, getCurrentStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import {
   memo,
@@ -57,33 +55,6 @@ export interface PageDetailEditorProps {
 
 function useRouterHash() {
   return useLocation().hash.substring(1);
-}
-
-function useCreateAndSetRootBlockHub(
-  editor?: EditorContainer,
-  showBlockHub?: boolean
-) {
-  const setBlockHub = useSetAtom(rootBlockHubAtom);
-  useEffect(() => {
-    let canceled = false;
-    let blockHub: BlockHub | undefined;
-    if (editor && showBlockHub) {
-      editor
-        .createBlockHub()
-        .then(bh => {
-          if (canceled) {
-            return;
-          }
-          blockHub = bh;
-          setBlockHub(blockHub);
-        })
-        .catch(console.error);
-    }
-    return () => {
-      canceled = true;
-      blockHub?.remove();
-    };
-  }, [editor, showBlockHub, setBlockHub]);
 }
 
 const EditorWrapper = memo(function EditorWrapper({
@@ -142,10 +113,8 @@ const EditorWrapper = memo(function EditorWrapper({
     [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
-  const [editor, setEditor] = useState<EditorContainer>();
+  const [, setEditor] = useState<EditorContainer>();
   const blockId = useRouterHash();
-
-  useCreateAndSetRootBlockHub(editor, !meta.trash);
 
   const onLoadEditor = useCallback(
     (editor: EditorContainer) => {
