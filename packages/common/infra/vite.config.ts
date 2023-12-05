@@ -18,6 +18,7 @@ export default defineConfig({
         type: resolve(root, 'src/type.ts'),
         'core/event-emitter': resolve(root, 'src/core/event-emitter.ts'),
         'preload/electron': resolve(root, 'src/preload/electron.ts'),
+        'app-config-storage': resolve(root, 'src/app-config-storage.ts'),
         '__internal__/workspace': resolve(
           root,
           'src/__internal__/workspace.ts'

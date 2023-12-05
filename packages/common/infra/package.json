@@ -40,6 +40,11 @@
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
     },
+    "./app-config-storage": {
+      "type": "./dist/src/app-config-storage.d.ts",
+      "import": "./dist/app-config-storage.js",
+      "require": "./dist/app-config-storage.cjs"
+    },
     "./__internal__/*": {
       "type": "./dist/src/__internal__/*.d.ts",
       "import": "./dist/__internal__/*.js",
