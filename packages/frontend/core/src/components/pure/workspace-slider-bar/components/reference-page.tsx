@@ -1,7 +1,7 @@
 import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import { type PageMeta, type Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai/react';
@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
+import { AddFavouriteButton } from '../favorite/add-favourite-button';
 import * as styles from '../favorite/styles.css';
 interface ReferencePageProps {
   workspace: Workspace;
@@ -54,6 +55,7 @@ export const ReferencePage = ({
         icon={icon}
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
+        postfix={<AddFavouriteButton workspace={workspace} pageId={pageId} />}
       >
         <span className={styles.label} data-untitled={untitled}>
           {metaMapping[pageId]?.title || t['Untitled']()}
