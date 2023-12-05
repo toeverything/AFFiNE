@@ -107,6 +107,7 @@ test.describe('basic', () => {
     await page.reload();
     await waitForEditorLoad(page);
     await clickEdgelessModeButton(page);
+    await expect(page.locator('.edgeless-toolbar-container')).toBeVisible();
     await expect(page.locator('affine-edgeless-page')).toBeVisible({
       timeout: 1000,
     });
