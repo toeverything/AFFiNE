@@ -34,6 +34,7 @@
     },
     {
       "matchPackagePatterns": ["^@blocksuite"],
+      "excludePackageNames": ["@blocksuite/icons"],
       "followTag": "nightly"
     }
   ],
