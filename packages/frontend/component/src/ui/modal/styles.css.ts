@@ -11,6 +11,15 @@ export const modalOverlay = style({
   zIndex: 'var(--affine-z-index-modal)',
 });
 
+export const modalContentWrapper = style({
+  position: 'fixed',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 'var(--affine-z-index-modal)',
+});
+
 export const modalContent = style({
   vars: {
     [widthVar]: '',
@@ -25,17 +34,13 @@ export const modalContent = style({
   fontWeight: '400',
   lineHeight: '1.6',
   padding: '20px 24px',
+  position: 'relative',
   backgroundColor: 'var(--affine-background-overlay-panel-color)',
   boxShadow: 'var(--affine-popover-shadow)',
   borderRadius: '12px',
   maxHeight: 'calc(100vh - 32px)',
   // :focus-visible will set outline
   outline: 'none',
-  position: 'fixed',
-  zIndex: 'var(--affine-z-index-modal)',
-  top: ' 50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
 });
 
 export const closeButton = style({
