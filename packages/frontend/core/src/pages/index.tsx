@@ -8,6 +8,7 @@ import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
+import { appConfigStorage } from '../hooks/use-app-config-storage';
 
 const AllWorkspaceModals = lazy(() =>
   import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
@@ -18,6 +19,10 @@ const AllWorkspaceModals = lazy(() =>
 const logger = new DebugLogger('index-page');
 
 export const loader: LoaderFunction = async () => {
+  if (!environment.isDesktop && appConfigStorage.get('onBoarding')) {
+    return redirect('/onboarding');
+  }
+
   const rootStore = getCurrentStore();
   const { createFirstAppData } = await import('../bootstrap/setup');
   createFirstAppData(rootStore);

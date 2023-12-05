@@ -66,6 +66,10 @@ export const routes = [
     lazy: () => import('./pages/desktop-signin'),
   },
   {
+    path: '/onboarding',
+    lazy: () => import('./pages/onboarding'),
+  },
+  {
     path: '*',
     lazy: () => import('./pages/404'),
   },
