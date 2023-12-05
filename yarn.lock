@@ -754,7 +754,7 @@ __metadata:
     "@opentelemetry/instrumentation": "npm:^0.45.1"
     "@opentelemetry/instrumentation-graphql": "npm:^0.36.0"
     "@opentelemetry/instrumentation-http": "npm:^0.45.1"
-    "@opentelemetry/instrumentation-ioredis": "npm:^0.35.3"
+    "@opentelemetry/instrumentation-ioredis": "npm:^0.36.0"
     "@opentelemetry/instrumentation-nestjs-core": "npm:^0.33.3"
     "@opentelemetry/instrumentation-socket.io": "npm:^0.34.3"
     "@opentelemetry/resources": "npm:^1.18.1"
@@ -8881,9 +8881,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-ioredis@npm:^0.35.3":
-  version: 0.35.3
-  resolution: "@opentelemetry/instrumentation-ioredis@npm:0.35.3"
+"@opentelemetry/instrumentation-ioredis@npm:^0.36.0":
+  version: 0.36.0
+  resolution: "@opentelemetry/instrumentation-ioredis@npm:0.36.0"
   dependencies:
     "@opentelemetry/instrumentation": "npm:^0.45.1"
     "@opentelemetry/redis-common": "npm:^0.36.1"
@@ -8891,7 +8891,7 @@ __metadata:
     "@types/ioredis4": "npm:@types/ioredis@^4.28.10"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 25cb843ef0315751cae577fa6cf275d0eaae1d7bffa2c723e25ad140e9a505cfef0297db12069b5ed685e6907392e3b048c016691e48a9c49a66001ff16cd9b8
+  checksum: c9f07ad9d51eb5aabadb3b190b6810ad28ab58a15ec371ca6e910739ae922c86658bc90127b466c038858f3dd206f6a5e2f51a025d10f92a7f28ee81055b6390
   languageName: node
   linkType: hard
 

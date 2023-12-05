@@ -45,7 +45,7 @@
     "@opentelemetry/instrumentation": "^0.45.1",
     "@opentelemetry/instrumentation-graphql": "^0.36.0",
     "@opentelemetry/instrumentation-http": "^0.45.1",
-    "@opentelemetry/instrumentation-ioredis": "^0.35.3",
+    "@opentelemetry/instrumentation-ioredis": "^0.36.0",
     "@opentelemetry/instrumentation-nestjs-core": "^0.33.3",
     "@opentelemetry/instrumentation-socket.io": "^0.34.3",
     "@opentelemetry/resources": "^1.18.1",
