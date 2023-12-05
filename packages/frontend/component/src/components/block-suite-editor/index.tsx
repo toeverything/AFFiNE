@@ -1,4 +1,4 @@
-import { EditorContainer } from '@blocksuite/editor';
+import { EditorContainer } from '@blocksuite/presets';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import clsx from 'clsx';

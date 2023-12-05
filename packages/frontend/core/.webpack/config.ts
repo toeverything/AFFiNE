@@ -168,7 +168,7 @@ export const createConfiguration: (
               'blocks',
               'dist'
             ),
-        '@blocksuite/editor': blocksuiteBaseDir
+        '@blocksuite/presets': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'editor', 'src')
           : join(
               workspaceRoot,

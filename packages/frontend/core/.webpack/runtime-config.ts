@@ -35,7 +35,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       serverUrlPrefix: 'https://insider.affine.pro', // Let insider be stable environment temporarily.
       editorFlags,
       appVersion: packageJson.version,
-      editorVersion: packageJson.dependencies['@blocksuite/editor'],
+      editorVersion: packageJson.dependencies['@blocksuite/presets'],
       appBuildType: 'stable',
     },
     get beta() {
@@ -82,7 +82,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
-      editorVersion: packageJson.dependencies['@blocksuite/editor'],
+      editorVersion: packageJson.dependencies['@blocksuite/presets'],
       appBuildType: 'canary',
     },
   };

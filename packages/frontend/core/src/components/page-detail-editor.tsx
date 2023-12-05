@@ -4,7 +4,7 @@ import { PageNotFoundError } from '@affine/env/constant';
 import type { LayoutNode } from '@affine/sdk/entry';
 import { rootBlockHubAtom } from '@affine/workspace/atom';
 import type { BlockHub } from '@blocksuite/blocks';
-import type { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/presets';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';

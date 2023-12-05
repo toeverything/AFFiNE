@@ -6,7 +6,7 @@ import {
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import { SyncEngineStep } from '@affine/workspace/providers';
-import type { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/presets';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import {
