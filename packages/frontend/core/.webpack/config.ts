@@ -169,12 +169,12 @@ export const createConfiguration: (
               'dist'
             ),
         '@blocksuite/presets': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'editor', 'src')
+          ? join(blocksuiteBaseDir, 'packages', 'presets', 'src')
           : join(
               workspaceRoot,
               'node_modules',
               '@blocksuite',
-              'editor',
+              'presets',
               'dist'
             ),
         '@blocksuite/global': blocksuiteBaseDir
