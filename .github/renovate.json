@@ -33,6 +33,10 @@
       "groupName": "prisma"
     },
     {
+      "matchPackagePatterns": ["^@electron-forge"],
+      "groupName": "electron-forge"
+    },
+    {
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
       "followTag": "nightly"
