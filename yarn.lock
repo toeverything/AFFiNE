@@ -229,7 +229,7 @@ __metadata:
     "@blocksuite/lit": "npm:0.0.0-20231130092516-0f858b95-nightly"
     "@blocksuite/store": "npm:0.0.0-20231130092516-0f858b95-nightly"
     "@dnd-kit/core": "npm:^6.0.8"
-    "@dnd-kit/modifiers": "npm:^6.0.1"
+    "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
     "@emotion/cache": "npm:^11.11.0"
     "@emotion/react": "npm:^11.11.1"
@@ -4560,16 +4560,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dnd-kit/modifiers@npm:^6.0.1":
-  version: 6.0.1
-  resolution: "@dnd-kit/modifiers@npm:6.0.1"
+"@dnd-kit/modifiers@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "@dnd-kit/modifiers@npm:7.0.0"
   dependencies:
-    "@dnd-kit/utilities": "npm:^3.2.1"
+    "@dnd-kit/utilities": "npm:^3.2.2"
     tslib: "npm:^2.0.0"
   peerDependencies:
-    "@dnd-kit/core": ^6.0.6
+    "@dnd-kit/core": ^6.1.0
     react: ">=16.8.0"
-  checksum: fd9b444a6777494bf631fab1fa902172066509c7b060dad2ef53f893590c8a70da9b50c4e5bdba551fe614ff4828cf9f51c8d94f922ff4f275175994f25d0ea2
+  checksum: 9ee0b7b86c23c15f6820d76ec398724597abc9d9e31cf58836e7f0b9935e33f9136a60ee9600eb27818447623f07786d4fed3f1d685d9cc6d860d8f6c5354ae3
   languageName: node
   linkType: hard
 
@@ -4586,7 +4586,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dnd-kit/utilities@npm:^3.2.1, @dnd-kit/utilities@npm:^3.2.2":
+"@dnd-kit/utilities@npm:^3.2.2":
   version: 3.2.2
   resolution: "@dnd-kit/utilities@npm:3.2.2"
   dependencies:
