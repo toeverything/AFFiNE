@@ -1,9 +1,9 @@
+import { Button } from '@affine/component/ui/button';
 import { type GetCurrentUserQuery, getCurrentUserQuery } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { fetcher } from '@affine/workspace/affine/gql';
 import { Logo1Icon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
 import { useCallback, useMemo } from 'react';
 import {
   type LoaderFunction,

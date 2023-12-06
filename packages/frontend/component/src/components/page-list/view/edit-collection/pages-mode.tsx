@@ -2,10 +2,10 @@ import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { Menu } from '@toeverything/components/menu';
 import clsx from 'clsx';
 import { type ReactNode, useCallback } from 'react';
 
+import { Menu } from '../../../../ui/menu';
 import { FilterList } from '../../filter/filter-list';
 import { VariableSelect } from '../../filter/vars';
 import { VirtualizedPageList } from '../../virtualized-page-list';

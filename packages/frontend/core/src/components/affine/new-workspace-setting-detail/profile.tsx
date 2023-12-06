@@ -1,10 +1,10 @@
 import { FlexWrapper, Input, Wrapper } from '@affine/component';
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Button } from '@affine/component/ui/button';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CameraIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useSetAtom } from 'jotai';

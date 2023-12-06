@@ -6,6 +6,7 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { Button } from '@affine/component/ui/button';
 import {
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
@@ -13,7 +14,6 @@ import {
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';

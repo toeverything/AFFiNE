@@ -1,4 +1,3 @@
-import { isBrowser } from '@affine/env/constant';
 import type { BlockSuiteFeatureFlags } from '@affine/env/global';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { createAffinePublicProviders } from '@affine/workspace/providers';
@@ -25,10 +24,6 @@ function setEditorFlags(workspace: Workspace) {
       value
     );
   });
-  workspace.awarenessStore.setFlag(
-    'enable_bookmark_operation',
-    environment.isDesktop
-  );
 }
 
 type UpdateCallback = (
@@ -116,7 +111,6 @@ export function getOrCreateWorkspace(
 
   const workspace = new Workspace({
     id,
-    isSSR: !isBrowser,
     providerCreators: typeof window === 'undefined' ? [] : providerCreators,
     blobStorages: [
       () => ({

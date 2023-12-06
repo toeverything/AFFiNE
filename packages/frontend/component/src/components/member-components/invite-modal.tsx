@@ -1,8 +1,8 @@
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ConfirmModal } from '@toeverything/components/modal';
 import { useCallback, useEffect, useState } from 'react';
 
+import { ConfirmModal } from '../../ui/modal';
 import { AuthInput } from '..//auth-components';
 import { emailRegex } from '..//auth-components/utils';
 

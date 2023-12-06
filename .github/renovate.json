@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "group:allNonMajor",
+    ":preserveSemverRanges",
+    ":disablePeerDependencies"
+  ],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["napi", "napi-build", "napi-derive"],
+      "groupName": "napi-rs"
+    },
+    {
+      "matchPackagePatterns": ["^eslint", "^@typescript-eslint"],
+      "groupName": "linter"
+    },
+    {
+      "matchPackagePatterns": ["^@nestjs"],
+      "groupName": "nestjs"
+    },
+    {
+      "matchPackagePatterns": ["^@opentelemetry"],
+      "groupName": "opentelemetry"
+    },
+    {
+      "matchPackageNames": [
+        "@prisma/client",
+        "@prisma/instrumentation",
+        "prisma"
+      ],
+      "groupName": "prisma"
+    },
+    {
+      "matchPackagePatterns": ["^@electron-forge"],
+      "groupName": "electron-forge"
+    },
+    {
+      "matchPackagePatterns": ["^@blocksuite"],
+      "excludePackageNames": ["@blocksuite/icons"],
+      "followTag": "nightly"
+    }
+  ],
+  "commitMessagePrefix": "chore: ",
+  "commitMessageAction": "bump up",
+  "commitMessageTopic": "{{depName}} version",
+  "ignoreDeps": [],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "extends": ["schedule:weekly"]
+  }
+}

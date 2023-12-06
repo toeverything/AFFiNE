@@ -1,4 +1,5 @@
 import { ScrollableContainer } from '@affine/component';
+import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
 import type {
   AffineCloudWorkspace,
@@ -10,7 +11,6 @@ import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { Divider } from '@toeverything/components/divider';
 import {
   currentPageIdAtom,
   currentWorkspaceIdAtom,

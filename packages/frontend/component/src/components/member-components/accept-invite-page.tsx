@@ -1,9 +1,9 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { type GetInviteInfoQuery } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button } from '@toeverything/components/button';
 
+import { Avatar } from '../../ui/avatar';
+import { Button } from '../../ui/button';
 import { FlexWrapper } from '../../ui/layout';
 import * as styles from './styles.css';
 export const AcceptInvitePage = ({

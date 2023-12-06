@@ -1,5 +1,6 @@
-import { Modal } from '@toeverything/components/modal';
 import type { FC, PropsWithChildren } from 'react';
+
+import { Modal } from '../../ui/modal';
 
 export type AuthModalProps = {
   open: boolean;

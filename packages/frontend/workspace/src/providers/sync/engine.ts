@@ -3,6 +3,7 @@ import { Slot } from '@blocksuite/global/utils';
 import type { Doc } from 'yjs';
 
 import type { Storage } from '../storage';
+import { SharedPriorityTarget } from '../utils/async-queue';
 import { MANUALLY_STOP, SyncEngineStep } from './consts';
 import { SyncPeer, type SyncPeerStatus, SyncPeerStep } from './peer';
 
@@ -55,6 +56,8 @@ export class SyncEngine {
     this._status = s;
     this.onStatusChange.emit(s);
   }
+
+  priorityTarget = new SharedPriorityTarget();
 
   get status() {
     return this._status;
@@ -110,7 +113,11 @@ export class SyncEngine {
     const cleanUp: (() => void)[] = [];
     try {
       // Step 1: start local sync peer
-      state.localPeer = new SyncPeer(this.rootDoc, this.local);
+      state.localPeer = new SyncPeer(
+        this.rootDoc,
+        this.local,
+        this.priorityTarget
+      );
 
       cleanUp.push(
         state.localPeer.onStatusChange.on(() => {
@@ -126,7 +133,7 @@ export class SyncEngine {
 
       // Step 3: start remote sync peer
       state.remotePeers = this.remotes.map(remote => {
-        const peer = new SyncPeer(this.rootDoc, remote);
+        const peer = new SyncPeer(this.rootDoc, remote, this.priorityTarget);
         cleanUp.push(
           peer.onStatusChange.on(() => {
             if (!signal.aborted)
@@ -236,5 +243,9 @@ export class SyncEngine {
         }),
       ]);
     }
+  }
+
+  setPriorityRule(target: ((id: string) => boolean) | null) {
+    this.priorityTarget.priorityRule = target;
   }
 }

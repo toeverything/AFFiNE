@@ -2,7 +2,6 @@ import {
   AppSidebarFallback,
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
-import { RootBlockHub } from '@affine/component/block-hub';
 import {
   type DraggableTitleCellData,
   PageListDragOverlay,
@@ -305,7 +304,6 @@ export const WorkspaceLayoutInner = ({
                 children
               )}
               <ToolContainer inTrashPage={inTrashPage}>
-                <RootBlockHub />
                 <HelpIsland showList={pageId ? undefined : showList} />
               </ToolContainer>
             </MainContainer>

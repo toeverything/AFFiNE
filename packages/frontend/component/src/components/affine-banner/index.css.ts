@@ -40,6 +40,11 @@ export const tipsContainer = style({
   position: 'sticky',
   gap: '16px',
   containerType: 'inline-size',
+  '@media': {
+    'screen and (max-width: 520px)': {
+      flexWrap: 'wrap',
+    },
+  },
 });
 
 export const tipsMessage = style({
@@ -54,4 +59,9 @@ export const tipsRightItem = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   gap: '16px',
+  '@media': {
+    'screen and (max-width: 520px)': {
+      width: '100%',
+    },
+  },
 });

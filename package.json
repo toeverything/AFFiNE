@@ -50,6 +50,9 @@
     ],
     "*.toml": [
       "taplo format"
+    ],
+    "*.rs": [
+      "cargo fmt --"
     ]
   },
   "devDependencies": {

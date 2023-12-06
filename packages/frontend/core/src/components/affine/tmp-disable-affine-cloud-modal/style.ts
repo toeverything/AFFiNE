@@ -1,5 +1,5 @@
 import { displayFlex, styled } from '@affine/component';
-import { Button } from '@toeverything/components/button';
+import { Button } from '@affine/component/ui/button';
 
 export const Header = styled('div')({
   height: '44px',

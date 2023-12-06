@@ -1,7 +1,8 @@
+import { Button } from '@affine/component/ui/button';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useTheme } from 'next-themes';
 import {
   type FC,
   type PropsWithChildren,
@@ -10,7 +11,8 @@ import {
 } from 'react';
 
 import imageUrlFor404 from '../error-assets/404-status.assets.svg';
-import imageUrlFor500 from '../error-assets/500-status.assets.svg';
+import imageUrlForDark500 from '../error-assets/dark-500-status.assets.svg';
+import imageUrlForLight500 from '../error-assets/light-500-status.assets.svg';
 import * as styles from './error-detail.css';
 
 export enum ErrorStatus {
@@ -30,8 +32,20 @@ export interface ErrorDetailProps extends PropsWithChildren {
 }
 
 const imageMap = new Map([
-  [ErrorStatus.NotFound, imageUrlFor404],
-  [ErrorStatus.Unexpected, imageUrlFor500],
+  [
+    ErrorStatus.NotFound,
+    {
+      light: imageUrlFor404, // TODO: Ask designer for dark/light mode image.
+      dark: imageUrlFor404,
+    },
+  ],
+  [
+    ErrorStatus.Unexpected,
+    {
+      light: imageUrlForLight500, // TODO: Split assets lib and use image hook to handle light and dark.
+      dark: imageUrlForDark500,
+    },
+  ],
 ]);
 
 /**
@@ -49,6 +63,7 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
   const descriptions = Array.isArray(description) ? description : [description];
   const [isBtnLoading, setBtnLoading] = useState(false);
   const t = useAFFiNEI18N();
+  const { resolvedTheme } = useTheme();
 
   const onBtnClick = useAsyncCallback(async () => {
     try {
@@ -83,7 +98,11 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
       {withoutImage ? null : (
         <div
           className={styles.errorImage}
-          style={{ backgroundImage: `url(${imageMap.get(status)})` }}
+          style={{
+            backgroundImage: `url(${imageMap.get(status)?.[
+              resolvedTheme as 'light' | 'dark'
+            ]})`,
+          }}
         />
       )}
     </div>

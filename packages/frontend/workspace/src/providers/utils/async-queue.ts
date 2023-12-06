@@ -12,8 +12,11 @@ export class AsyncQueue<T> {
     return this._queue.length;
   }
 
-  async next(abort?: AbortSignal): Promise<T> {
-    const update = this._queue.shift();
+  async next(
+    abort?: AbortSignal,
+    dequeue: (arr: T[]) => T | undefined = a => a.shift()
+  ): Promise<T> {
+    const update = dequeue(this._queue);
     if (update) {
       return update;
     } else {
@@ -35,7 +38,7 @@ export class AsyncQueue<T> {
         }),
       ]);
 
-      return this.next(abort);
+      return this.next(abort, dequeue);
     }
   }
 
@@ -63,4 +66,36 @@ export class AsyncQueue<T> {
   clear() {
     this._queue = [];
   }
+}
+
+export class PriorityAsyncQueue<
+  T extends { id: string },
+> extends AsyncQueue<T> {
+  constructor(
+    init: T[] = [],
+    public readonly priorityTarget: SharedPriorityTarget = new SharedPriorityTarget()
+  ) {
+    super(init);
+  }
+
+  override next(abort?: AbortSignal | undefined): Promise<T> {
+    return super.next(abort, arr => {
+      if (this.priorityTarget.priorityRule !== null) {
+        const index = arr.findIndex(
+          update => this.priorityTarget.priorityRule?.(update.id)
+        );
+        if (index !== -1) {
+          return arr.splice(index, 1)[0];
+        }
+      }
+      return arr.shift();
+    });
+  }
+}
+
+/**
+ * Shared priority target can be shared by multiple queues.
+ */
+export class SharedPriorityTarget {
+  public priorityRule: ((id: string) => boolean) | null = null;
 }

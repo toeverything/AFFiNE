@@ -1,5 +1,7 @@
 import { FlexWrapper, Input, Switch } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { Button } from '@affine/component/ui/button';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { Unreachable } from '@affine/env/constant';
 import type {
   AffineCloudWorkspace,
@@ -9,8 +11,6 @@ import type {
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { noop } from 'foxact/noop';

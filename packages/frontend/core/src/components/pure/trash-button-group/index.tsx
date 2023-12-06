@@ -1,10 +1,10 @@
+import { Button } from '@affine/component/ui/button';
+import { ConfirmModal } from '@affine/component/ui/modal';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon, ResetIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { ConfirmModal } from '@toeverything/components/modal';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';

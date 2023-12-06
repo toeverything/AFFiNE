@@ -25,7 +25,7 @@ describe('SyncEngine', () => {
     {
       const workspace = new Workspace({
         id: 'test',
-        isSSR: true,
+
         schema,
       });
 
@@ -57,7 +57,7 @@ describe('SyncEngine', () => {
     {
       const workspace = new Workspace({
         id: 'test',
-        isSSR: true,
+
         schema,
       });
       const syncEngine = new SyncEngine(
@@ -76,7 +76,7 @@ describe('SyncEngine', () => {
     {
       const workspace = new Workspace({
         id: 'test',
-        isSSR: true,
+
         schema,
       });
       const syncEngine = new SyncEngine(
@@ -95,7 +95,7 @@ describe('SyncEngine', () => {
     {
       const workspace = new Workspace({
         id: 'test',
-        isSSR: true,
+
         schema,
       });
       const syncEngine = new SyncEngine(

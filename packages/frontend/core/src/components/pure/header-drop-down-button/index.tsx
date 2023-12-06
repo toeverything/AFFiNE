@@ -1,8 +1,5 @@
+import { IconButton, type IconButtonProps } from '@affine/component/ui/button';
 import { ArrowDownSmallIcon } from '@blocksuite/icons';
-import {
-  IconButton,
-  type IconButtonProps,
-} from '@toeverything/components/button';
 import { forwardRef } from 'react';
 
 import { headerMenuTrigger } from './styles.css';

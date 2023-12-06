@@ -40,13 +40,8 @@ export const CRUD: WorkspaceCRUD<WorkspaceFlavour.AFFINE_CLOUD> = {
     }
     const { createWorkspace } = await fetcher({
       query: createWorkspaceMutation,
-      variables: {
-        init: new File(
-          [Y.encodeStateAsUpdate(upstreamWorkspace.doc)],
-          'initBinary.yDoc'
-        ),
-      },
     });
+
     createdWorkspaces.push(upstreamWorkspace.id);
     const newBlockSuiteWorkspace = getOrCreateWorkspace(
       createWorkspace.id,

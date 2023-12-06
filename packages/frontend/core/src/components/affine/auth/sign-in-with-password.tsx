@@ -4,8 +4,8 @@ import {
   BackButton,
   ModalHeader,
 } from '@affine/component/auth-components';
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';

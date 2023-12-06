@@ -1,6 +1,6 @@
+import { Button } from '@affine/component/ui/button';
 import { CMDKContainer, CMDKModal } from '@affine/core/components/pure/cmdk';
 import type { Meta, StoryFn } from '@storybook/react';
-import { Button } from '@toeverything/components/button';
 import { useState } from 'react';
 
 export default {

@@ -1,5 +1,4 @@
 import { DynamicModule, Type } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { GqlModule } from '../graphql.module';
@@ -11,11 +10,7 @@ import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
 
-const BusinessModules: (Type | DynamicModule)[] = [
-  EventEmitterModule.forRoot({
-    global: true,
-  }),
-];
+const BusinessModules: (Type | DynamicModule)[] = [];
 
 switch (SERVER_FLAVOR) {
   case 'sync':

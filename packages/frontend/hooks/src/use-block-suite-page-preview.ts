@@ -60,7 +60,7 @@ export function useBlockSuitePagePreview(page: Page | null): Atom<string> {
         page.slots.ready.on(() => {
           set(getPagePreviewText(page));
         }),
-        page.slots.yUpdated.on(() => {
+        page.slots.blockUpdated.on(() => {
           set(getPagePreviewText(page));
         }),
       ];

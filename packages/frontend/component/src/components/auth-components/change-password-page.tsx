@@ -1,9 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useState } from 'react';
 
+import { Button } from '../../ui/button';
 import { pushNotificationAtom } from '../notification-center';
 import { AuthPageContainer } from './auth-page-container';
 import { SetPassword } from './set-password';

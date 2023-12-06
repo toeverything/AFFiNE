@@ -1,7 +1,6 @@
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
-import { Tooltip } from '@toeverything/components/tooltip';
 import {
   changelogCheckedAtom,
   currentChangelogUnreadAtom,
@@ -15,6 +14,7 @@ import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { startTransition, useCallback } from 'react';
 
+import { Tooltip } from '../../../ui/tooltip';
 import * as styles from './index.css';
 
 export interface AddPageButtonPureProps {
