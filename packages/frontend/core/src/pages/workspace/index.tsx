@@ -45,9 +45,13 @@ export const loader: LoaderFunction = async args => {
     return redirect('/404');
   }
 
-  if (!args.params.pageId) {
+  if (args.params.pageId) {
+    localStorage.setItem('last_page_id', args.params.pageId);
+    rootStore.set(currentPageIdAtom, args.params.pageId);
+  } else {
     rootStore.set(currentPageIdAtom, null);
   }
+
   const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentMetadata.id);
   workspaceLoaderLogger.info('get cloud workspace atom');
 
