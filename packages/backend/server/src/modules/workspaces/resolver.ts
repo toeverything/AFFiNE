@@ -308,22 +308,11 @@ export class WorkspaceResolver {
   })
   async createWorkspace(
     @CurrentUser() user: UserType,
-    @Args({ name: 'init', type: () => GraphQLUpload })
-    update: FileUpload
+    // we no longer support init workspace with a preload file
+    // use sync system to uploading them once created
+    @Args({ name: 'init', type: () => GraphQLUpload, nullable: true })
+    init: FileUpload | null
   ) {
-    // convert stream to buffer
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const stream = update.createReadStream();
-      const chunks: Uint8Array[] = [];
-      stream.on('data', chunk => {
-        chunks.push(chunk);
-      });
-      stream.on('error', reject);
-      stream.on('end', () => {
-        resolve(Buffer.concat(chunks));
-      });
-    });
-
     const workspace = await this.prisma.workspace.create({
       data: {
         public: false,
@@ -341,14 +330,31 @@ export class WorkspaceResolver {
       },
     });
 
-    if (buffer.length) {
-      await this.prisma.snapshot.create({
-        data: {
-          id: workspace.id,
-          workspaceId: workspace.id,
-          blob: buffer,
-        },
+    if (init) {
+      // convert stream to buffer
+      const buffer = await new Promise<Buffer>(resolve => {
+        const stream = init.createReadStream();
+        const chunks: Uint8Array[] = [];
+        stream.on('data', chunk => {
+          chunks.push(chunk);
+        });
+        stream.on('error', () => {
+          resolve(Buffer.from([]));
+        });
+        stream.on('end', () => {
+          resolve(Buffer.concat(chunks));
+        });
       });
+
+      if (buffer.length) {
+        await this.prisma.snapshot.create({
+          data: {
+            id: workspace.id,
+            workspaceId: workspace.id,
+            blob: buffer,
+          },
+        });
+      }
     }
 
     return workspace;

@@ -36,6 +36,9 @@ inputs:
     description: 'Set enableScripts in .yarnrc.yml'
     required: false
     default: 'true'
+  full-cache:
+    description: 'Full installation cache'
+    required: false
 
 runs:
   using: 'composite'
@@ -46,7 +49,6 @@ runs:
         node-version-file: '.nvmrc'
         registry-url: https://npm.pkg.github.com
         scope: '@toeverything'
-        cache: 'yarn'
 
     - name: Set nmMode
       if: ${{ inputs.hard-link-nm == 'false' }}
@@ -62,6 +64,29 @@ runs:
       if: ${{ inputs.enableScripts == 'false' }}
       shell: bash
       run: yarn config set enableScripts false
+
+    - name: Set yarn global cache path
+      shell: bash
+      id: yarn-cache
+      run: node -e "const p = $(yarn config cacheFolder --json).effective; console.log('yarn_global_cache=' + p)" >> $GITHUB_OUTPUT
+
+    - name: Cache non-full yarn cache
+      uses: actions/cache@v3
+      if: ${{ inputs.full-cache != 'true' }}
+      with:
+        path: |
+          node_modules
+          ${{ steps.yarn-cache.outputs.yarn_global_cache }}
+        key: node_modules-cache-${{ github.job }}-${{ runner.os }}
+
+    - name: Cache full yarn cache
+      uses: actions/cache@v3
+      if: ${{ inputs.full-cache == 'true' }}
+      with:
+        path: |
+          node_modules
+          ${{ steps.yarn-cache.outputs.yarn_global_cache }}
+        key: node_modules-cache-full-${{ runner.os }}
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}
@@ -102,8 +127,8 @@ runs:
       id: playwright-cache
       if: ${{ inputs.playwright-install == 'true' }}
       with:
-        path: '~/.cache/ms-playwright'
-        key: '${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}'
+        path: ${{ github.workspace }}/node_modules/.cache/ms-playwright
+        key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}'
         # As a fallback, if the Playwright version has changed, try use the
         # most recently cached version. There's a good chance that at least one
         # of the browser binary versions haven't been updated, so Playwright can
@@ -113,7 +138,7 @@ runs:
         # date cache, but still let Playwright decide if it needs to download
         # new binaries or not.
         restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-playwright-
+          ${{ runner.os }}-playwright-
 
     # If the Playwright browser binaries weren't able to be restored, we tell
     # playwright to install everything for us.
@@ -121,6 +146,8 @@ runs:
       shell: bash
       if: inputs.playwright-install == 'true'
       run: yarn playwright install --with-deps chromium
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
 
     - name: Get installed Electron version
       id: electron-version
@@ -134,16 +161,16 @@ runs:
       if: ${{ inputs.electron-install == 'true' }}
       with:
         path: 'node_modules/.cache/electron'
-        key: '${{ runner.os }}-{{ runner.arch }}-electron-${{ steps.electron-version.outputs.version }}'
+        key: '${{ runner.os }}-electron-${{ steps.electron-version.outputs.version }}'
         restore-keys: |
-          ${{ runner.os }}-{{ runner.arch }}-electron-
+          ${{ runner.os }}-electron-
 
     - name: Install Electron binary
       shell: bash
       if: inputs.electron-install == 'true'
       run: node ./node_modules/electron/install.js
       env:
-        ELECTRON_OVERRIDE_DIST_PATH: ./node_modules/.cache/electron
+        electron_config_cache: ./node_modules/.cache/electron
 
     - name: Build Infra
       shell: bash

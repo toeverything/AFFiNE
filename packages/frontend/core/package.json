@@ -13,7 +13,7 @@
     "./router": "./src/router.ts",
     "./bootstrap/setup": "./src/bootstrap/setup.ts",
     "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts",
-    "./components/pure/*": "./src/components/pure/*/index.tsx"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
@@ -58,7 +58,7 @@
     "dayjs": "^1.11.10",
     "foxact": "^0.2.20",
     "graphql": "^16.8.1",
-    "idb": "^7.1.1",
+    "idb": "^8.0.0",
     "intl-segmenter-polyfill-rs": "^0.1.6",
     "jotai": "^2.5.1",
     "jotai-devtools": "^0.7.0",

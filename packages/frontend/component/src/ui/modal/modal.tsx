@@ -67,42 +67,46 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
           className={clsx(styles.modalOverlay, overlayClassName)}
           {...otherOverlayOptions}
         />
-        <Dialog.Content
-          className={clsx(styles.modalContent, contentClassName)}
-          style={{
-            ...assignInlineVars({
-              [styles.widthVar]: getVar(width, '50vw'),
-              [styles.heightVar]: getVar(height, 'unset'),
-              [styles.minHeightVar]: getVar(minHeight, '26px'),
-            }),
-            ...contentStyle,
-          }}
-          {...otherContentOptions}
-          ref={ref}
-        >
-          {withoutCloseButton ? null : (
-            <Dialog.Close asChild>
-              <IconButton
-                className={styles.closeButton}
-                aria-label="Close"
-                type="plain"
-                {...closeButtonOptions}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Dialog.Close>
-          )}
-          {title ? (
-            <Dialog.Title className={styles.modalHeader}>{title}</Dialog.Title>
-          ) : null}
-          {description ? (
-            <Dialog.Description className={styles.modalDescription}>
-              {description}
-            </Dialog.Description>
-          ) : null}
+        <div className={styles.modalContentWrapper}>
+          <Dialog.Content
+            className={clsx(styles.modalContent, contentClassName)}
+            style={{
+              ...assignInlineVars({
+                [styles.widthVar]: getVar(width, '50vw'),
+                [styles.heightVar]: getVar(height, 'unset'),
+                [styles.minHeightVar]: getVar(minHeight, '26px'),
+              }),
+              ...contentStyle,
+            }}
+            {...otherContentOptions}
+            ref={ref}
+          >
+            {withoutCloseButton ? null : (
+              <Dialog.Close asChild>
+                <IconButton
+                  className={styles.closeButton}
+                  aria-label="Close"
+                  type="plain"
+                  {...closeButtonOptions}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Dialog.Close>
+            )}
+            {title ? (
+              <Dialog.Title className={styles.modalHeader}>
+                {title}
+              </Dialog.Title>
+            ) : null}
+            {description ? (
+              <Dialog.Description className={styles.modalDescription}>
+                {description}
+              </Dialog.Description>
+            ) : null}
 
-          {children}
-        </Dialog.Content>
+            {children}
+          </Dialog.Content>
+        </div>
       </Dialog.Portal>
     </Dialog.Root>
   )

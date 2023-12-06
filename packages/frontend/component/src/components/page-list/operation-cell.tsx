@@ -66,6 +66,7 @@ export const OperationCell = ({
       </MenuItem>
       {!environment.isDesktop && (
         <Link
+          className={styles.clearLinkStyle}
           onClick={stopPropagationWithoutPrevent}
           to={link}
           target={'_blank'}

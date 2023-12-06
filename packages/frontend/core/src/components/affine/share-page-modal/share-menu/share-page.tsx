@@ -80,7 +80,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     changeShare,
     currentShareMode,
     disableShare,
-  } = useIsSharedPage(workspaceId, currentPage.spaceDoc.guid);
+  } = useIsSharedPage(workspaceId, currentPage.id);
   const currentPageMode = useAtomValue(currentModeAtom);
 
   const defaultMode = useMemo(() => {

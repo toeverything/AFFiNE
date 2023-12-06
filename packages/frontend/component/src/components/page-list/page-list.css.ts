@@ -120,3 +120,14 @@ export const favoriteCell = style({
     },
   },
 });
+
+export const clearLinkStyle = style({
+  color: 'inherit',
+  textDecoration: 'none',
+  ':visited': {
+    color: 'inherit',
+  },
+  ':active': {
+    color: 'inherit',
+  },
+});
