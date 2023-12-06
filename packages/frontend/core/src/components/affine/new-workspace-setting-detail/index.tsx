@@ -7,6 +7,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useMemo } from 'react';
 
+import { useSelfHosted } from '../../../hooks/affine/use-server-flavor';
 import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { ExportPanel } from './export';
@@ -20,6 +21,7 @@ import type { WorkspaceSettingDetailProps } from './types';
 export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
   const { workspaceId } = props;
   const t = useAFFiNEI18N();
+  const isSelfHosted = useSelfHosted();
   const workspace = useWorkspace(workspaceId);
   const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
 
@@ -56,7 +58,11 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.brand.affineCloud']()}>
         <PublishPanel workspace={workspace} {...props} />
-        <MembersPanel workspace={workspace} {...props} />
+        <MembersPanel
+          workspace={workspace}
+          upgradable={!isSelfHosted}
+          {...props}
+        />
       </SettingWrapper>
       {storageAndExportSetting}
       <SettingWrapper>

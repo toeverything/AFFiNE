@@ -2,10 +2,8 @@ import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
 import type { LayoutNode } from '@affine/sdk/entry';
-import { rootBlockHubAtom } from '@affine/workspace/atom';
-import type { BlockHub } from '@blocksuite/blocks';
-import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
+import type { EditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
@@ -16,7 +14,7 @@ import {
 } from '@toeverything/infra/__internal__/plugin';
 import { contentLayoutAtom, getCurrentStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import {
   memo,
@@ -36,7 +34,6 @@ import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
 import { editorContainer, pluginContainer } from './page-detail-editor.css';
 import { TrashButtonGroup } from './pure/trash-button-group';
@@ -58,33 +55,6 @@ export interface PageDetailEditorProps {
 
 function useRouterHash() {
   return useLocation().hash.substring(1);
-}
-
-function useCreateAndSetRootBlockHub(
-  editor?: EditorContainer,
-  showBlockHub?: boolean
-) {
-  const setBlockHub = useSetAtom(rootBlockHubAtom);
-  useEffect(() => {
-    let canceled = false;
-    let blockHub: BlockHub | undefined;
-    if (editor && showBlockHub) {
-      editor
-        .createBlockHub()
-        .then(bh => {
-          if (canceled) {
-            return;
-          }
-          blockHub = bh;
-          setBlockHub(blockHub);
-        })
-        .catch(console.error);
-    }
-    return () => {
-      canceled = true;
-      blockHub?.remove();
-    };
-  }, [editor, showBlockHub, setBlockHub]);
 }
 
 const EditorWrapper = memo(function EditorWrapper({
@@ -143,10 +113,8 @@ const EditorWrapper = memo(function EditorWrapper({
     [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
-  const [editor, setEditor] = useState<EditorContainer>();
+  const [, setEditor] = useState<EditorContainer>();
   const blockId = useRouterHash();
-
-  useCreateAndSetRootBlockHub(editor, !meta.trash);
 
   const onLoadEditor = useCallback(
     (editor: EditorContainer) => {
@@ -174,10 +142,10 @@ const EditorWrapper = memo(function EditorWrapper({
           div.setAttribute('plugin-id', id);
           const cleanup = editorItem(div, editor);
           assertExists(parent);
-          document.body.appendChild(div);
+          document.body.append(div);
           return () => {
             cleanup();
-            document.body.removeChild(div);
+            div.remove();
           };
         });
       });
@@ -212,7 +180,6 @@ const EditorWrapper = memo(function EditorWrapper({
         onLoadEditor={onLoadEditor}
       />
       {meta.trash && <TrashButtonGroup />}
-      <Bookmark page={page} />
     </>
   );
 });
@@ -235,14 +202,14 @@ const PluginContentAdapter = memo<PluginContentAdapterProps>(
           }
           const div = document.createElement('div');
           const cleanup = windowItem(div);
-          root.appendChild(div);
+          root.append(div);
           if (abortController.signal.aborted) {
             cleanup();
-            root.removeChild(div);
+            div.remove();
           } else {
             const cl = () => {
               cleanup();
-              root.removeChild(div);
+              div.remove();
             };
             const dispose = addCleanup(pluginName, cl);
             abortController.signal.addEventListener('abort', () => {
@@ -289,7 +256,7 @@ const LayoutPanel = memo(function LayoutPanel(
         className={depth === 0 ? editorContainer : undefined}
       >
         <Panel
-          defaultSize={node.splitPercentage}
+          defaultSizePercentage={node.splitPercentage}
           style={{
             maxWidth: node.maxWidth?.[0],
           }}
@@ -304,7 +271,7 @@ const LayoutPanel = memo(function LayoutPanel(
         </Panel>
         <PanelResizeHandle />
         <Panel
-          defaultSize={100 - node.splitPercentage}
+          defaultSizePercentage={100 - node.splitPercentage}
           style={{
             overflow: 'scroll',
             maxWidth: node.maxWidth?.[1],

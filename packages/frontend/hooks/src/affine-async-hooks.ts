@@ -5,8 +5,10 @@ export type AsyncErrorHandler = (error: Error) => void;
 /**
  * App should provide a global error handler for async callback in the root.
  */
-export const AsyncCallbackContext = React.createContext<AsyncErrorHandler>(e =>
-  console.error(e)
+export const AsyncCallbackContext = React.createContext<AsyncErrorHandler>(
+  e => {
+    console.error(e);
+  }
 );
 
 /**

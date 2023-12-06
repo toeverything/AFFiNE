@@ -2,13 +2,13 @@ import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
 } from '@affine/component/setting-components';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
@@ -38,16 +38,20 @@ import {
 
 export type UserInfoProps = {
   onAccountSettingClick: () => void;
+  active?: boolean;
 };
 
 export const UserInfo = ({
   onAccountSettingClick,
+  active,
 }: UserInfoProps): ReactElement => {
   const user = useCurrentUser();
   return (
     <div
       data-testid="user-info-card"
-      className={accountButton}
+      className={clsx(accountButton, {
+        active: active,
+      })}
       onClick={onAccountSettingClick}
     >
       <Avatar size={28} name={user.name} url={user.image} className="avatar" />
@@ -163,7 +167,10 @@ export const SettingSidebar = ({
 
         {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
           <Suspense>
-            <UserInfo onAccountSettingClick={onAccountSettingClick} />
+            <UserInfo
+              onAccountSettingClick={onAccountSettingClick}
+              active={selectedGeneralKey === 'account'}
+            />
           </Suspense>
         ) : null}
       </div>

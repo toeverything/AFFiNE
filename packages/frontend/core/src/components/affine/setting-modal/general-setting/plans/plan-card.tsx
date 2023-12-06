@@ -1,3 +1,5 @@
+import { Button } from '@affine/component/ui/button';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import type {
   Subscription,
   SubscriptionMutator,
@@ -13,8 +15,6 @@ import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
@@ -128,21 +128,25 @@ export function getPlanDetail(t: ReturnType<typeof useAFFiNEI18N>) {
 }
 
 export const PlanCard = (props: PlanCardProps) => {
+  const t = useAFFiNEI18N();
   const { detail, subscription, recurring } = props;
   const loggedIn = useCurrentLoginStatus() === 'authenticated';
   const currentPlan = subscription?.plan ?? SubscriptionPlan.Free;
 
   const isCurrent = loggedIn && detail.plan === currentPlan;
+  const isPro = detail.plan === SubscriptionPlan.Pro;
 
   return (
     <div
       data-current={isCurrent}
       key={detail.plan}
-      className={isCurrent ? styles.currentPlanCard : styles.planCard}
+      className={isPro ? styles.proPlanCard : styles.planCard}
     >
       <div className={styles.planTitle}>
         <p>
-          {detail.plan}{' '}
+          <span className={isCurrent ? styles.proPlanTitle : ''}>
+            {detail.plan}
+          </span>{' '}
           {'discount' in detail &&
             recurring === SubscriptionRecurring.Yearly && (
               <span className={styles.discountLabel}>
@@ -162,7 +166,9 @@ export const PlanCard = (props: PlanCardProps) => {
                     ? detail.price
                     : detail.yearlyPrice}
                 </span>
-                <span className={styles.planPriceDesc}>per month</span>
+                <span className={styles.planPriceDesc}>
+                  {t['com.affine.payment.price-description.per-month']()}
+                </span>
               </>
             )}
           </p>
@@ -173,7 +179,7 @@ export const PlanCard = (props: PlanCardProps) => {
         {detail.benefits.map((content, i) => (
           <div key={i} className={styles.planBenefit}>
             <div className={styles.planBenefitIcon}>
-              {detail.type == 'dynamic' ? (
+              {detail.type === 'dynamic' ? (
                 <BulledListIcon color="var(--affine-processing-color)" />
               ) : (
                 <DoneIcon

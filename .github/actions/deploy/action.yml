@@ -26,7 +26,7 @@ runs:
         echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
     - uses: azure/setup-helm@v3
     - id: auth
-      uses: google-github-actions/auth@v1
+      uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: 'projects/${{ inputs.gcp-project-number }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
         service_account: '${{ inputs.service-account }}'

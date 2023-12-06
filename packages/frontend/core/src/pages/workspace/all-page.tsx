@@ -295,6 +295,7 @@ export const AllPage = () => {
       ) : (
         <EmptyPageList
           type="all"
+          heading={<PageListHeader />}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       )}

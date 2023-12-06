@@ -1,5 +1,5 @@
 import { FlexWrapper, Input } from '@affine/component';
-import { Button } from '@toeverything/components/button';
+import { Button } from '@affine/component/ui/button';
 import { useAtom } from 'jotai';
 import { type ReactElement, useCallback } from 'react';
 

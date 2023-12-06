@@ -1,4 +1,11 @@
 import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
+import { IconButton } from '@affine/component/ui/button';
+import {
+  Menu,
+  MenuIcon,
+  MenuItem,
+  type MenuItemProps,
+} from '@affine/component/ui/menu';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeleteIcon,
@@ -9,13 +16,6 @@ import {
 } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { IconButton } from '@toeverything/components/button';
-import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@toeverything/components/menu';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai/index';
 import type { ReactElement } from 'react';

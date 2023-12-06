@@ -5,12 +5,12 @@ import type {
 } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { FilteredIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Menu } from '@toeverything/components/menu';
+import { FilterIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 
+import { Button } from '../../../ui/button';
 import { FlexWrapper } from '../../../ui/layout';
+import { Menu } from '../../../ui/menu';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
@@ -75,7 +75,7 @@ export const CollectionList = ({
             <Button
               className={styles.filterMenuTrigger}
               type="default"
-              icon={<FilteredIcon />}
+              icon={<FilterIcon />}
               data-testid="create-first-filter"
             >
               {t['com.affine.filter']()}
@@ -99,7 +99,7 @@ export const CollectionList = ({
           <Button
             className={styles.filterMenuTrigger}
             type="default"
-            icon={<FilteredIcon />}
+            icon={<FilterIcon />}
             data-testid="create-first-filter"
           >
             {t['com.affine.filter']()}

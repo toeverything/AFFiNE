@@ -1,6 +1,6 @@
+import { Avatar } from '@affine/component/ui/avatar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloudWorkspaceIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 
 import { useCurrentLoginStatus } from '../../hooks/affine/use-current-login-status';

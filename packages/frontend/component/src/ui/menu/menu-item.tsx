@@ -1,44 +1,33 @@
-import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
-import { forwardRef } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
-import {
-  StyledContent,
-  StyledEndIconWrapper,
-  StyledMenuItem,
-  StyledStartIconWrapper,
-} from './styles';
+import type { MenuItemProps } from './menu.types';
+import { useMenuItem } from './use-menu-item';
 
-export type IconMenuProps = PropsWithChildren<{
-  icon?: ReactElement;
-  endIcon?: ReactElement;
-  iconSize?: number;
-  disabled?: boolean;
-  active?: boolean;
-  disableHover?: boolean;
-  userFocused?: boolean;
-  gap?: string;
-  fontSize?: string;
-}> &
-  HTMLAttributes<HTMLButtonElement>;
+export const MenuItem = ({
+  children: propsChildren,
+  type = 'default',
+  className: propsClassName,
+  preFix,
+  endFix,
+  checked,
+  selected,
+  block,
+  ...otherProps
+}: MenuItemProps) => {
+  const { className, children } = useMenuItem({
+    children: propsChildren,
+    className: propsClassName,
+    type,
+    preFix,
+    endFix,
+    checked,
+    selected,
+    block,
+  });
 
-export const MenuItem = forwardRef<HTMLButtonElement, IconMenuProps>(
-  ({ endIcon, icon, children, gap, fontSize, iconSize, ...props }, ref) => {
-    return (
-      <StyledMenuItem ref={ref} {...props}>
-        {icon && (
-          <StyledStartIconWrapper iconSize={iconSize} gap={gap}>
-            {icon}
-          </StyledStartIconWrapper>
-        )}
-        <StyledContent fontSize={fontSize}>{children}</StyledContent>
-        {endIcon && (
-          <StyledEndIconWrapper iconSize={iconSize} gap={gap}>
-            {endIcon}
-          </StyledEndIconWrapper>
-        )}
-      </StyledMenuItem>
-    );
-  }
-);
-MenuItem.displayName = 'MenuItem';
-export default MenuItem;
+  return (
+    <DropdownMenu.Item className={className} {...otherProps}>
+      {children}
+    </DropdownMenu.Item>
+  );
+};

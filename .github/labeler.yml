@@ -1,62 +1,115 @@
 docs:
-  - 'docs/**/*'
-  - '**/README.md'
-  - 'packages/frontend/templates/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**/*'
+          - '**/README.md'
+          - 'packages/frontend/templates/**/*'
 
 test:
-  - 'tests/**/*'
-  - '**/tests/**/*'
-  - '**/__tests__/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**/*'
+          - '**/tests/**/*'
+          - '**/__tests__/**/*'
 
 mod:dev:
-  - 'scripts/**/*'
-  - 'tools/cli/**/*'
-  - 'packages/common/debug/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/**/*'
+          - 'tools/cli/**/*'
+          - 'packages/common/debug/**/*'
 
 mod:plugin:
-  - 'packages/plugins/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/plugins/**/*'
 
 plugin:copilot:
-  - 'packages/plugins/copilot/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/plugins/copilot/**/*'
 
 mod:infra:
-  - 'packages/common/infra/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/common/infra/**/*'
 
 mod:sdk:
-  - 'packages/common/sdk/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/common/sdk/**/*'
 
 mod:plugin-cli:
-  - 'tools/plugin-cli/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tools/plugin-cli/**/*'
 
-mod:workspace: 'packages/frontend/workspace/**/*'
+mod:workspace:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/workspace/**/*'
 
-mod:i18n: 'packages/frontend/i18n/**/*'
+mod:i18n:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/i18n/**/*'
 
-mod:env: 'packages/common/env/**/*'
+mod:env:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/common/env/**/*'
 
-mod:hooks: 'packages/frontend/hooks/**/*'
+mod:hooks:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/hooks/**/*'
 
-mod:component: 'packages/frontend/component/**/*'
+mod:component:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/component/**/*'
 
-mod:storage: 'packages/backend/storage/**/*'
+mod:storage:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/backend/storage/**/*'
 
-mod:native: 'packages/frontend/native/**/*'
+mod:native:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/native/**/*'
 
 mod:store:
-  - '**/atoms/**/*'
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/atoms/**/*'
 
 rust:
-  - '**/*.rs'
-  - '**/Cargo.toml'
-  - '**/Cargo.lock'
-  - '**/rust-toolchain'
-  - '**/rust-toolchain.toml'
-  - '**/rustfmt.toml'
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.rs'
+          - '**/Cargo.toml'
+          - '**/Cargo.lock'
+          - '**/rust-toolchain'
+          - '**/rust-toolchain.toml'
+          - '**/rustfmt.toml'
 
-package:y-indexeddb: 'packages/common/y-indexeddb/**/*'
+package:y-indexeddb:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/common/y-indexeddb/**/*'
 
-app:core: 'packages/frontend/core/**/*'
+app:core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/core/**/*'
 
-app:electron: 'packages/frontend/electron/**/*'
+app:electron:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/electron/**/*'
 
-app:server: 'packages/backend/server/**/*'
+app:server:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/backend/server/**/*'

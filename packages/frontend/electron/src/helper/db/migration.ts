@@ -77,10 +77,7 @@ export const migrateToLatest = async (
     );
   };
   await downloadBinary(rootDoc, true);
-  const result = await forceUpgradePages({
-    getSchema: () => schema,
-    getCurrentRootDoc: () => Promise.resolve(rootDoc),
-  });
+  const result = await forceUpgradePages(rootDoc, schema);
   equal(result, true, 'migrateWorkspace should return boolean value');
   const uploadBinary = async (doc: YDoc, isRoot: boolean) => {
     await connection.replaceUpdates(doc.guid, [

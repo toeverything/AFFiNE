@@ -1,4 +1,4 @@
-import type { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import type {
   ActiveDocProvider,

@@ -1,4 +1,4 @@
-import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
+import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import dayjs from 'dayjs';
 import { useCallback } from 'react';
 

@@ -1,6 +1,5 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
-import '@toeverything/components/style.css';
 
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';

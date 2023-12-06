@@ -32,6 +32,8 @@ export const titleInput = style({
       borderRadius: '8px',
       height: '32px',
       padding: '6px 8px',
+      borderColor: 'var(--affine-primary-color)',
+      boxShadow: 'var(--affine-active-shadow)',
     },
   },
 });

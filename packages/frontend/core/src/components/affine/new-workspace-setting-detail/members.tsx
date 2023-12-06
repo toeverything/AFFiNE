@@ -8,16 +8,16 @@ import {
 } from '@affine/component/member-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Button, IconButton } from '@affine/component/ui/button';
+import { Loading } from '@affine/component/ui/loading';
+import { Menu, MenuItem } from '@affine/component/ui/menu';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission, SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon, MoreVerticalIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button, IconButton } from '@toeverything/components/button';
-import { Loading } from '@toeverything/components/loading';
-import { Menu, MenuItem } from '@toeverything/components/menu';
-import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
 import type { ReactElement } from 'react';
@@ -29,7 +29,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
 
 import { openSettingModalAtom } from '../../../atoms';
 import type { CheckedUser } from '../../../hooks/affine/use-current-user';
@@ -39,7 +38,7 @@ import { useMemberCount } from '../../../hooks/affine/use-member-count';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
 import { useUserSubscription } from '../../../hooks/use-subscription';
-import { AnyErrorBoundary } from '../any-error-boundary';
+import { AffineErrorBoundary } from '../affine-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
@@ -51,6 +50,7 @@ enum MemberLimitCount {
 
 const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
+  upgradable: boolean;
   workspace: AffineOfficialWorkspace;
 }
 type OnRevoke = (memberId: string) => void;
@@ -70,6 +70,7 @@ const MembersPanelLocal = () => {
 export const CloudWorkspaceMembersPanel = ({
   workspace,
   isOwner,
+  upgradable,
 }: MembersPanelProps) => {
   const workspaceId = workspace.id;
   const memberCount = useMemberCount(workspaceId);
@@ -165,14 +166,20 @@ export const CloudWorkspaceMembersPanel = ({
           planName: plan,
           memberLimit,
         })}
-        ,
-        <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
-          <span className={style.goUpgrade}>go upgrade</span>
-          <ArrowRightBigIcon className={style.arrowRight} />
-        </div>
+        {upgradable ? (
+          <>
+            ,
+            <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
+              <span className={style.goUpgrade}>
+                {t['com.affine.payment.member.description.go-upgrade']()}
+              </span>
+              <ArrowRightBigIcon className={style.arrowRight} />
+            </div>
+          </>
+        ) : null}
       </span>
     );
-  }, [handleUpgrade, memberLimit, plan, t]);
+  }, [handleUpgrade, memberLimit, plan, t, upgradable]);
 
   return (
     <>
@@ -354,10 +361,10 @@ export const MembersPanel = (props: MembersPanelProps): ReactElement | null => {
     return <MembersPanelLocal />;
   }
   return (
-    <ErrorBoundary FallbackComponent={AnyErrorBoundary}>
+    <AffineErrorBoundary>
       <Suspense>
         <CloudWorkspaceMembersPanel {...props} />
       </Suspense>
-    </ErrorBoundary>
+    </AffineErrorBoundary>
   );
 };

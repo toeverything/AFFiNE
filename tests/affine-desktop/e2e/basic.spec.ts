@@ -62,43 +62,38 @@ test('app sidebar router forward/back', async ({ page }) => {
     });
   }
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test3');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test3'
+    );
   }
 
   await page.click('[data-testid="app-sidebar-arrow-button-back"]');
   await page.click('[data-testid="app-sidebar-arrow-button-back"]');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test1');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test1'
+    );
   }
   await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
   await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test3');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test3'
+    );
   }
   await historyShortcut(page, 'goBack');
   await historyShortcut(page, 'goBack');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test1');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test1'
+    );
   }
   await historyShortcut(page, 'goForward');
   await historyShortcut(page, 'goForward');
   {
-    const title = (await page
-      .locator('.affine-doc-page-block-title')
-      .textContent()) as string;
-    expect(title.trim()).toBe('test3');
+    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
+      'test3'
+    );
   }
 });
 // }
@@ -119,9 +114,7 @@ test('clientBorder value should disable by default on window', async ({
 test('app theme', async ({ page, electronApp }) => {
   const root = page.locator('html');
   {
-    const themeMode = await root.evaluate(element =>
-      element.getAttribute('data-theme')
-    );
+    const themeMode = await root.evaluate(element => element.dataset.theme);
     expect(themeMode).toBe('light');
 
     const theme = await electronApp.evaluate(({ nativeTheme }) => {
@@ -136,9 +129,7 @@ test('app theme', async ({ page, electronApp }) => {
     await page.getByTestId('appearance-panel-trigger').click();
     await page.waitForTimeout(50);
     await page.getByTestId('dark-theme-trigger').click();
-    const themeMode = await root.evaluate(element =>
-      element.getAttribute('data-theme')
-    );
+    const themeMode = await root.evaluate(element => element.dataset.theme);
     expect(themeMode).toBe('dark');
     const theme = await electronApp.evaluate(({ nativeTheme }) => {
       return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';

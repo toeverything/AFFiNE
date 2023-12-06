@@ -130,7 +130,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
 test('Add new favorite page via sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await page.getByTestId('slider-bar-add-favorite-button').click();
+  await page.getByTestId('slider-bar-add-favorite-button').first().click();
   await waitForEditorLoad(page);
 
   // enter random page title

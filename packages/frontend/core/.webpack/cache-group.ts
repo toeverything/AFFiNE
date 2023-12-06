@@ -20,12 +20,6 @@ export const productionCacheGroups = {
     priority: Number.MAX_SAFE_INTEGER,
     chunks: 'async' as const,
   },
-  mui: {
-    name: `npm-mui`,
-    test: testPackageName(/[\\/]node_modules[\\/](mui|@mui)[\\/]/),
-    priority: 200,
-    enforce: true,
-  },
   blocksuite: {
     name: `npm-blocksuite`,
     test: testPackageName(/[\\/]node_modules[\\/](@blocksuite)[\\/]/),

@@ -6,12 +6,9 @@ import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const blockSuiteFeatureFlags = z.object({
-  enable_set_remote_flag: z.boolean(),
-  enable_block_hub: z.boolean(),
-
-  enable_toggle_block: z.boolean(),
-  enable_bookmark_operation: z.boolean(),
-  enable_note_index: z.boolean(),
+  enable_transformer_clipboard: z.boolean(),
+  enable_expand_database_block: z.boolean(),
+  enable_bultin_ledits: z.boolean(),
 });
 
 export const runtimeFlagsSchema = z.object({
@@ -21,6 +18,7 @@ export const runtimeFlagsSchema = z.object({
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
+  downloadUrl: z.string(),
   // see: tools/workers
   imageProxyUrl: z.string(),
   enablePreloading: z.boolean(),
@@ -32,12 +30,19 @@ export const runtimeFlagsSchema = z.object({
   enableCaptcha: z.boolean(),
   enableEnhanceShareMode: z.boolean(),
   enablePayment: z.boolean(),
+  enablePageHistory: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
   editorFlags: blockSuiteFeatureFlags,
   appVersion: z.string(),
   editorVersion: z.string(),
+  appBuildType: z.union([
+    z.literal('stable'),
+    z.literal('beta'),
+    z.literal('internal'),
+    z.literal('canary'),
+  ]),
 });
 
 export type BlockSuiteFeatureFlags = z.infer<typeof blockSuiteFeatureFlags>;

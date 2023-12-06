@@ -49,15 +49,11 @@ test('Change theme', async ({ page }) => {
   const root = page.locator('html');
 
   await page.getByTestId('light-theme-trigger').click();
-  const lightMode = await root.evaluate(element =>
-    element.getAttribute('data-theme')
-  );
+  const lightMode = await root.evaluate(element => element.dataset.theme);
   expect(lightMode).toBe('light');
 
   await page.getByTestId('dark-theme-trigger').click();
-  const darkMode = await root.evaluate(element =>
-    element.getAttribute('data-theme')
-  );
+  const darkMode = await root.evaluate(element => element.dataset.theme);
   expect(darkMode).toBe('dark');
 });
 
@@ -110,11 +106,11 @@ test('Different workspace should have different name in the setting panel', asyn
   await createLocalWorkspace({ name: 'New Workspace 3' }, page);
   await openSettingModal(page);
   await page.getByTestId('current-workspace-label').click();
-  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
     'New Workspace 3'
   );
   await page.getByText('New Workspace 2').click();
-  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
     'New Workspace 2'
   );
 });

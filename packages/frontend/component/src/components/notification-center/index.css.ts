@@ -60,9 +60,9 @@ export const notificationStyle = style({
       opacity: 1,
       height: 'var(--front-toast-height)',
       vars: {
-        '--scale': 'var(--toasts-before)* 0.05 + 1',
+        '--scale': 'calc(1 - var(--toasts-before)* 0.05)',
         '--y':
-          'translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)))',
+          'translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(var(--scale))',
       },
     },
     '&[data-mounted=true][data-expanded=true]': {

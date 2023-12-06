@@ -1,7 +1,14 @@
-import { app } from 'electron';
+import { app, type IpcMainInvokeEvent } from 'electron';
 
 import type { NamespaceHandlers } from '../type';
-import { checkForUpdates, quitAndInstall } from './electron-updater';
+import {
+  checkForUpdates,
+  downloadUpdate,
+  getConfig,
+  quitAndInstall,
+  setConfig,
+  type UpdaterConfig,
+} from './electron-updater';
 
 export const updaterHandlers = {
   currentVersion: async () => {
@@ -9,6 +16,18 @@ export const updaterHandlers = {
   },
   quitAndInstall: async () => {
     return quitAndInstall();
+  },
+  downloadUpdate: async () => {
+    return downloadUpdate();
+  },
+  getConfig: async (): Promise<UpdaterConfig> => {
+    return getConfig();
+  },
+  setConfig: async (
+    _e: IpcMainInvokeEvent,
+    newConfig: Partial<UpdaterConfig>
+  ): Promise<void> => {
+    return setConfig(newConfig);
   },
   checkForUpdatesAndNotify: async () => {
     const res = await checkForUpdates(true);

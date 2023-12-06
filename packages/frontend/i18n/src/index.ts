@@ -2,6 +2,7 @@ import type { i18n, Resource } from 'i18next';
 import i18next from 'i18next';
 import {
   I18nextProvider,
+  type I18nextProviderProps,
   initReactI18next,
   Trans,
   useTranslation as useRootTranslation,
@@ -56,9 +57,9 @@ const standardizeLocale = (language: string) => {
   } else if (language.slice(0, 2).toLowerCase() === 'zh') {
     language = 'zh-Hant';
   }
-  if (LOCALES.find(locale => locale.tag === language)) return language;
+  if (LOCALES.some(locale => locale.tag === language)) return language;
   if (
-    LOCALES.find(locale => locale.tag === language.slice(0, 2).toLowerCase())
+    LOCALES.some(locale => locale.tag === language.slice(0, 2).toLowerCase())
   ) {
     return language.slice(0, 2).toLowerCase();
   }
@@ -66,8 +67,9 @@ const standardizeLocale = (language: string) => {
   return fallbackLng;
 };
 
-export const createI18n = () => {
-  const i18n = i18next.createInstance();
+export const createI18n = (): I18nextProviderProps['i18n'] => {
+  // @ts-expect-error ts bug
+  const i18n: I18nextProviderProps['i18n'] = i18next.createInstance();
   i18n
     .use(initReactI18next)
     .init({

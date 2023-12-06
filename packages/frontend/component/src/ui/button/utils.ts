@@ -1,9 +1,6 @@
-import type { Theme } from '@mui/material';
-
 import type { ButtonProps } from './interface';
 
 export const getButtonColors = (
-  _theme: Theme,
   type: ButtonProps['type'],
   disabled: boolean,
   extend?: {

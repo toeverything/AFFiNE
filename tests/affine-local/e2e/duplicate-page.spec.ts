@@ -18,5 +18,5 @@ test('Duplicate page should work', async ({ page }) => {
   const duplicateButton = page.getByTestId('editor-option-menu-duplicate');
   await duplicateButton.click({ delay: 100 });
   const title2 = getBlockSuiteEditorTitle(page);
-  expect(await title2.innerText()).toBe('test(1)');
+  await expect(title2).toHaveText('test(1)', { timeout: 1000 });
 });

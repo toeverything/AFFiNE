@@ -8,3 +8,8 @@ declare module '*.md' {
   const text: string;
   export default text;
 }
+
+declare module '*.assets.svg' {
+  const url: string;
+  export default url;
+}

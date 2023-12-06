@@ -1,12 +1,12 @@
 import { Input } from '@affine/component';
+import {
+  ConfirmModal,
+  type ConfirmModalProps,
+} from '@affine/component/ui/modal';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-} from '@toeverything/components/modal';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useCallback, useState } from 'react';
 

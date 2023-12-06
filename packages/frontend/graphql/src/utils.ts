@@ -3,7 +3,7 @@ export const TRACE_ID_BYTES = 16;
 export const TRACE_VERSION = '00';
 export const TRACE_FLAG = '01';
 
-const BytesBuffer = Array(32);
+const BytesBuffer = Array.from<number>({ length: 32 });
 
 type TraceSpan = {
   name: string;
@@ -54,7 +54,7 @@ export class TraceReporter {
 
   private spansCache = new Array<TraceSpan>();
   private reportIntervalId: number | undefined | NodeJS.Timeout;
-  private reportInterval = 60_000;
+  private readonly reportInterval = 60_000;
 
   private static instance: TraceReporter;
 
@@ -175,7 +175,7 @@ export class TraceReporter {
     };
   }
 
-  private initTraceReport = () => {
+  private readonly initTraceReport = () => {
     if (!this.reportIntervalId && TraceReporter.shouldReportTrace) {
       if (typeof window !== 'undefined') {
         this.reportIntervalId = window.setInterval(
@@ -191,7 +191,7 @@ export class TraceReporter {
     }
   };
 
-  private reportHandler = () => {
+  private readonly reportHandler = () => {
     if (this.spansCache.length <= 0) {
       clearInterval(this.reportIntervalId);
       this.reportIntervalId = undefined;

@@ -4,14 +4,39 @@ import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
+import { useAppUpdater } from '@toeverything/hooks/use-app-updater';
+import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
+import { appIconMap, appNames } from '../../../../../pages/open-app';
 import { relatedLinks } from './config';
-import { communityItem, communityWrapper, link } from './style.css';
+import * as styles from './style.css';
+import { UpdateCheckSection } from './update-check-section';
 
 export const AboutAffine = () => {
   const t = useAFFiNEI18N();
   const { appSettings, updateSettings } = useAppSettingHelper();
+  const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
+  const channel = runtimeConfig.appBuildType;
+  const appIcon = appIconMap[channel];
+  const appName = appNames[channel];
+
+  const onSwitchAutoCheck = useCallback(
+    (checked: boolean) => {
+      toggleAutoCheck(checked);
+      updateSettings('autoCheckUpdate', checked);
+    },
+    [toggleAutoCheck, updateSettings]
+  );
+
+  const onSwitchAutoDownload = useCallback(
+    (checked: boolean) => {
+      toggleAutoDownload(checked);
+      updateSettings('autoDownloadUpdate', checked);
+    },
+    [toggleAutoDownload, updateSettings]
+  );
+
   return (
     <>
       <SettingHeader
@@ -21,26 +46,26 @@ export const AboutAffine = () => {
       />
       <SettingWrapper title={t['com.affine.aboutAFFiNE.version.title']()}>
         <SettingRow
-          name={t['com.affine.aboutAFFiNE.version.app']()}
+          name={appName}
           desc={runtimeConfig.appVersion}
-        />
+          className={styles.appImageRow}
+        >
+          <img src={appIcon} alt={appName} width={56} height={56} />
+        </SettingRow>
         <SettingRow
           name={t['com.affine.aboutAFFiNE.version.editor.title']()}
           desc={runtimeConfig.editorVersion}
         />
-        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
+        {environment.isDesktop ? (
           <>
-            <SettingRow
-              name={t['com.affine.aboutAFFiNE.checkUpdate.title']()}
-              desc={t['com.affine.aboutAFFiNE.checkUpdate.description']()}
-            />
+            <UpdateCheckSection />
             <SettingRow
               name={t['com.affine.aboutAFFiNE.autoCheckUpdate.title']()}
               desc={t['com.affine.aboutAFFiNE.autoCheckUpdate.description']()}
             >
               <Switch
                 checked={appSettings.autoCheckUpdate}
-                onChange={checked => updateSettings('autoCheckUpdate', checked)}
+                onChange={onSwitchAutoCheck}
               />
             </SettingRow>
             <SettingRow
@@ -50,8 +75,8 @@ export const AboutAffine = () => {
               ]()}
             >
               <Switch
-                checked={appSettings.autoCheckUpdate}
-                onChange={checked => updateSettings('autoCheckUpdate', checked)}
+                checked={appSettings.autoDownloadUpdate}
+                onChange={onSwitchAutoDownload}
               />
             </SettingRow>
             <SettingRow
@@ -69,7 +94,7 @@ export const AboutAffine = () => {
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.aboutAFFiNE.contact.title']()}>
         <a
-          className={link}
+          className={styles.link}
           rel="noreferrer"
           href="https://affine.pro"
           target="_blank"
@@ -78,7 +103,7 @@ export const AboutAffine = () => {
           <OpenInNewIcon className="icon" />
         </a>
         <a
-          className={link}
+          className={styles.link}
           rel="noreferrer"
           href="https://community.affine.pro"
           target="_blank"
@@ -88,11 +113,11 @@ export const AboutAffine = () => {
         </a>
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.aboutAFFiNE.community.title']()}>
-        <div className={communityWrapper}>
+        <div className={styles.communityWrapper}>
           {relatedLinks.map(({ icon, title, link }) => {
             return (
               <div
-                className={communityItem}
+                className={styles.communityItem}
                 onClick={() => {
                   window.open(link, '_blank');
                 }}
@@ -107,7 +132,7 @@ export const AboutAffine = () => {
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.aboutAFFiNE.legal.title']()}>
         <a
-          className={link}
+          className={styles.link}
           rel="noreferrer"
           href="https://affine.pro/privacy"
           target="_blank"
@@ -116,7 +141,7 @@ export const AboutAffine = () => {
           <OpenInNewIcon className="icon" />
         </a>
         <a
-          className={link}
+          className={styles.link}
           rel="noreferrer"
           href="https://affine.pro/terms"
           target="_blank"

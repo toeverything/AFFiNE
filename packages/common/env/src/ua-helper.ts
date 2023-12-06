@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 
 export class UaHelper {
-  private uaMap;
+  private readonly uaMap;
   public isLinux = false;
   public isMacOs = false;
   public isSafari = false;

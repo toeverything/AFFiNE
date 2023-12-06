@@ -1,4 +1,4 @@
-import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
+import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { memo, type ReactElement } from 'react';
 
 import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
@@ -33,13 +33,14 @@ export const LanguageMenu = () => {
       contentOptions={{
         style: {
           background: 'var(--affine-white)',
+          width: '250px',
         },
         align: 'end',
       }}
     >
       <MenuTrigger
         data-testid="language-menu-button"
-        style={{ textTransform: 'capitalize', fontWeight: 600 }}
+        style={{ textTransform: 'capitalize', fontWeight: 600, width: '250px' }}
         block={true}
       >
         {currentLanguage?.originalName || ''}

@@ -6,9 +6,9 @@ import {
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
-import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
 import { type ReactNode, useMemo } from 'react';
 
+import { MenuIcon, MenuItem, MenuSub } from '../../../ui/menu';
 import { transitionStyle } from './index.css';
 
 interface ExportMenuItemProps<T> {

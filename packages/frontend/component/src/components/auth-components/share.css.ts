@@ -151,14 +151,25 @@ export const authPageContainer = style({
   justifyContent: 'center',
   alignItems: 'center',
   fontSize: 'var(--affine-font-base)',
+  '@media': {
+    'screen and (max-width: 1024px)': {
+      flexDirection: 'column',
+      padding: '100px 20px',
+      justifyContent: 'flex-start',
+    },
+  },
 });
 globalStyle(`${authPageContainer} .wrapper`, {
   display: 'flex',
   alignItems: 'center',
+  '@media': {
+    'screen and (max-width: 1024px)': {
+      flexDirection: 'column',
+    },
+  },
 });
 globalStyle(`${authPageContainer} .content`, {
   maxWidth: '700px',
-  minWidth: '550px',
 });
 
 globalStyle(`${authPageContainer} .title`, {
@@ -177,4 +188,13 @@ globalStyle(`${authPageContainer} a`, {
 export const signInPageContainer = style({
   width: '400px',
   margin: '205px auto 0',
+});
+
+export const input = style({
+  width: '330px',
+  '@media': {
+    'screen and (max-width: 520px)': {
+      width: '100%',
+    },
+  },
 });

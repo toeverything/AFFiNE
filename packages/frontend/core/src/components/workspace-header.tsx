@@ -29,6 +29,7 @@ import { filterContainerStyle } from './filter-container.css';
 import { Header } from './pure/header';
 import { PluginHeader } from './pure/plugin-header';
 import { WorkspaceModeFilterTab } from './pure/workspace-mode-filter-tab';
+import { TopTip } from './top-tip';
 import * as styles from './workspace-header.css';
 
 const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
@@ -161,23 +162,26 @@ export function WorkspaceHeader({
       <SharePageModal workspace={currentWorkspace} page={currentPage} />
     ) : null;
     return (
-      <Header
-        mainContainerAtom={mainContainerAtom}
-        ref={setAppHeader}
-        center={
-          <BlockSuiteHeaderTitle
-            workspace={currentWorkspace}
-            pageId={currentEntry.pageId}
-          />
-        }
-        right={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {sharePageModal}
-            <PluginHeader />
-          </div>
-        }
-        bottomBorder
-      />
+      <>
+        <Header
+          mainContainerAtom={mainContainerAtom}
+          ref={setAppHeader}
+          center={
+            <BlockSuiteHeaderTitle
+              workspace={currentWorkspace}
+              pageId={currentEntry.pageId}
+            />
+          }
+          right={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {sharePageModal}
+              <PluginHeader />
+            </div>
+          }
+          bottomBorder
+        />
+        <TopTip workspace={currentWorkspace} />
+      </>
     );
   }
 

@@ -1,3 +1,5 @@
+import { Button, IconButton } from '@affine/component/ui/button';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -11,8 +13,6 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
-import { Button, IconButton } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import { useAtom } from 'jotai';
@@ -143,7 +143,7 @@ const ImagePreviewModalImpl = (
       if (
         page
           .getPreviousSiblings(block)
-          .findLast(
+          .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
@@ -160,7 +160,7 @@ const ImagePreviewModalImpl = (
       } else if (
         page
           .getNextSiblings(block)
-          .find(
+          .some(
             (block): block is ImageBlockModel =>
               block.flavour === 'affine:image'
           )
@@ -231,9 +231,9 @@ const ImagePreviewModalImpl = (
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = block.id ?? 'image';
-        document.body.appendChild(a);
+        document.body.append(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
       }
     },
     [props.pageId, props.workspace]

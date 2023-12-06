@@ -5,8 +5,8 @@ import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';
 export class UserSetting {
   constructor(
-    private workspace: Workspace,
-    private userId: string
+    private readonly workspace: Workspace,
+    private readonly userId: string
   ) {}
 
   get setting(): YDoc {

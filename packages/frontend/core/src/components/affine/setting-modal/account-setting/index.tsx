@@ -5,6 +5,8 @@ import {
   SettingRow,
   StorageProgress,
 } from '@affine/component/setting-components';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Button } from '@affine/component/ui/button';
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
@@ -14,8 +16,6 @@ import {
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { validateAndReduceImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import bytes from 'bytes';
@@ -35,6 +35,7 @@ import {
   openSignOutModalAtom,
 } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
+import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
@@ -167,6 +168,7 @@ export const AvatarAndName = () => {
 
 const StoragePanel = () => {
   const t = useAFFiNEI18N();
+  const isSelfHosted = useSelfHosted();
 
   const { data } = useQuery({
     query: allBlobSizesQuery,
@@ -175,6 +177,7 @@ const StoragePanel = () => {
   const [subscription] = useUserSubscription();
   const plan = subscription?.plan ?? SubscriptionPlan.Free;
 
+  // TODO(@JimmFly): get limit from user usage query directly after #4720 is merged
   const maxLimit = useMemo(() => {
     return bytes.parse(plan === SubscriptionPlan.Free ? '10GB' : '100GB');
   }, [plan]);
@@ -199,6 +202,7 @@ const StoragePanel = () => {
         plan={plan}
         value={data.collectAllBlobSizes.size}
         onUpgrade={onUpgrade}
+        upgradable={!isSelfHosted}
       />
     </SettingRow>
   );

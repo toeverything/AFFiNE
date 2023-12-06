@@ -8,7 +8,9 @@ import type { WorkspaceMeta } from '../type';
 import {
   getDeletedWorkspacesBasePath,
   getWorkspaceBasePath,
+  getWorkspaceDBPath,
   getWorkspaceMeta,
+  getWorkspaceMetaPath,
   getWorkspacesBasePath,
 } from './meta';
 import { workspaceSubjects } from './subjects';
@@ -50,6 +52,34 @@ export async function deleteWorkspace(id: string) {
     });
   } catch (error) {
     logger.error('deleteWorkspace', error);
+  }
+}
+
+export async function cloneWorkspace(id: string, newId: string) {
+  const dbPath = await getWorkspaceDBPath(id);
+  const newBasePath = await getWorkspaceBasePath(newId);
+  const newDbPath = await getWorkspaceDBPath(newId);
+  const metaPath = await getWorkspaceMetaPath(newId);
+  // check if new workspace dir exists
+  if (
+    await fs
+      .access(newBasePath)
+      .then(() => true)
+      .catch(() => false)
+  ) {
+    throw new Error(`workspace ${newId} already exists`);
+  }
+
+  try {
+    await fs.ensureDir(newBasePath);
+    const meta = {
+      id: newId,
+      mainDBPath: newDbPath,
+    };
+    await fs.writeJSON(metaPath, meta);
+    await fs.copy(dbPath, newDbPath);
+  } catch (error) {
+    logger.error('cloneWorkspace', error);
   }
 }
 

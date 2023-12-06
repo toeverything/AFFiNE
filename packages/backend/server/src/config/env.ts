@@ -10,7 +10,7 @@ export function applyEnvToConfig(rawConfig: AFFiNEConfig) {
         ? [config, process.env[env]]
         : [config[0], parseEnvValue(process.env[env], config[1])];
 
-    if (typeof value !== 'undefined') {
+    if (value !== undefined) {
       set(rawConfig, path, value);
     }
   }

@@ -1,11 +1,12 @@
-import {
-  type AllPageListConfig,
-  CreateCollectionModal,
-  EditCollectionModal,
-  type EditCollectionMode,
-} from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useCallback, useState } from 'react';
+
+import { CreateCollectionModal } from './create-collection';
+import {
+  type AllPageListConfig,
+  EditCollectionModal,
+  type EditCollectionMode,
+} from './edit-collection/edit-collection';
 
 export const useEditCollection = (config: AllPageListConfig) => {
   const [data, setData] = useState<{

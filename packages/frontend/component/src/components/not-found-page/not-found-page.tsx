@@ -1,9 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SignOutIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button, IconButton } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 
+import { Avatar } from '../../ui/avatar';
+import { Button, IconButton } from '../../ui/button';
+import { Tooltip } from '../../ui/tooltip';
 import { NotFoundPattern } from './not-found-pattern';
 import {
   largeButtonEffect,

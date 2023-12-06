@@ -1,10 +1,10 @@
 import { FlexWrapper, Input, Wrapper } from '@affine/component';
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Button } from '@affine/component/ui/button';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CameraIcon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Button } from '@toeverything/components/button';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { useSetAtom } from 'jotai';
@@ -96,6 +96,8 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
     [pushNotification, update]
   );
 
+  const canAdjustAvatar = workspaceAvatar && isOwner;
+
   return (
     <div className={style.profileWrapper}>
       <Upload
@@ -110,11 +112,15 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
           name={name}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
-          onRemove={
-            workspaceAvatar && isOwner ? handleRemoveUserAvatar : undefined
+          onRemove={canAdjustAvatar ? handleRemoveUserAvatar : undefined}
+          avatarTooltipOptions={
+            canAdjustAvatar
+              ? { content: t['Click to replace photo']() }
+              : undefined
           }
-          avatarTooltipOptions={{ content: t['Click to replace photo']() }}
-          removeTooltipOptions={{ content: t['Remove photo']() }}
+          removeTooltipOptions={
+            canAdjustAvatar ? { content: t['Remove photo']() } : undefined
+          }
           data-testid="workspace-setting-avatar"
           removeButtonProps={{
             ['data-testid' as string]: 'workspace-setting-remove-avatar-button',

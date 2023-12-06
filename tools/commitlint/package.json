@@ -1,0 +1,10 @@
+{
+  "name": "@affine/commitlint-config",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "commitlint": "^18.4.3"
+  }
+}

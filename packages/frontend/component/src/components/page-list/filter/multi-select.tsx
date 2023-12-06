@@ -1,7 +1,7 @@
-import { Menu, MenuItem } from '@toeverything/components/menu';
 import type { MouseEvent } from 'react';
 import { useMemo } from 'react';
 
+import { Menu, MenuItem } from '../../../ui/menu';
 import * as styles from './multi-select.css';
 
 export const MultiSelect = ({

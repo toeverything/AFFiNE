@@ -1,8 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-} from '@toeverything/components/modal';
+
+import { ConfirmModal, type ConfirmModalProps } from '../../ui/modal';
 
 export const PublicLinkDisableModal = (props: ConfirmModalProps) => {
   const t = useAFFiNEI18N();

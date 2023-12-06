@@ -2,7 +2,7 @@ import { Empty } from '@affine/component';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@blocksuite/store';
-import { useCallback } from 'react';
+import { type ReactNode, useCallback } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import * as styles from './page-list-empty.css';
@@ -10,9 +10,11 @@ import * as styles from './page-list-empty.css';
 export const EmptyPageList = ({
   type,
   blockSuiteWorkspace,
+  heading,
 }: {
   type: 'all' | 'trash' | 'shared' | 'public';
   blockSuiteWorkspace: Workspace;
+  heading?: ReactNode;
 }) => {
   const { createPage } = usePageHelper(blockSuiteWorkspace);
   const t = useAFFiNEI18N();
@@ -56,6 +58,7 @@ export const EmptyPageList = ({
 
   return (
     <div className={styles.pageListEmptyStyle}>
+      {heading && <div>{heading}</div>}
       <Empty
         title={t['com.affine.emptyDesc']()}
         description={getEmptyDescription()}

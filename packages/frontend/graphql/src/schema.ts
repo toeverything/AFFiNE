@@ -62,6 +62,7 @@ export enum SubscriptionPlan {
   Enterprise = 'Enterprise',
   Free = 'Free',
   Pro = 'Pro',
+  SelfHosted = 'SelfHosted',
   Team = 'Team',
 }
 
@@ -198,9 +199,7 @@ export type CreateCustomerPortalMutation = {
   createCustomerPortal: string;
 };
 
-export type CreateWorkspaceMutationVariables = Exact<{
-  init: Scalars['Upload']['input'];
-}>;
+export type CreateWorkspaceMutationVariables = Exact<{ [key: string]: never }>;
 
 export type CreateWorkspaceMutation = {
   __typename?: 'Mutation';
@@ -372,6 +371,25 @@ export type GetWorkspacesQuery = {
   workspaces: Array<{ __typename?: 'WorkspaceType'; id: string }>;
 };
 
+export type ListHistoryQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageDocId: Scalars['String']['input'];
+  take: InputMaybe<Scalars['Int']['input']>;
+  before: InputMaybe<Scalars['DateTime']['input']>;
+}>;
+
+export type ListHistoryQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    histories: Array<{
+      __typename?: 'DocHistoryType';
+      id: string;
+      timestamp: string;
+    }>;
+  };
+};
+
 export type GetInvoicesCountQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetInvoicesCountQuery = {
@@ -442,6 +460,17 @@ export type PublishPageMutation = {
     id: string;
     mode: PublicPageMode;
   };
+};
+
+export type RecoverDocMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  timestamp: Scalars['DateTime']['input'];
+}>;
+
+export type RecoverDocMutation = {
+  __typename?: 'Mutation';
+  recoverDoc: string;
 };
 
 export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
@@ -531,6 +560,17 @@ export type SendVerifyChangeEmailMutationVariables = Exact<{
 export type SendVerifyChangeEmailMutation = {
   __typename?: 'Mutation';
   sendVerifyChangeEmail: boolean;
+};
+
+export type ServerConfigQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ServerConfigQuery = {
+  __typename?: 'Query';
+  serverConfig: {
+    __typename?: 'ServerConfigType';
+    version: string;
+    flavor: string;
+  };
 };
 
 export type SetWorkspacePublicByIdMutationVariables = Exact<{
@@ -718,6 +758,11 @@ export type Queries =
       response: GetWorkspacesQuery;
     }
   | {
+      name: 'listHistoryQuery';
+      variables: ListHistoryQueryVariables;
+      response: ListHistoryQuery;
+    }
+  | {
       name: 'getInvoicesCountQuery';
       variables: GetInvoicesCountQueryVariables;
       response: GetInvoicesCountQuery;
@@ -731,6 +776,11 @@ export type Queries =
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
+    }
+  | {
+      name: 'serverConfigQuery';
+      variables: ServerConfigQueryVariables;
+      response: ServerConfigQuery;
     }
   | {
       name: 'subscriptionQuery';
@@ -798,6 +848,11 @@ export type Mutations =
       name: 'publishPageMutation';
       variables: PublishPageMutationVariables;
       response: PublishPageMutation;
+    }
+  | {
+      name: 'recoverDocMutation';
+      variables: RecoverDocMutationVariables;
+      response: RecoverDocMutation;
     }
   | {
       name: 'removeAvatarMutation';

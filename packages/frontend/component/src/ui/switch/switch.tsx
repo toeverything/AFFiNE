@@ -9,7 +9,7 @@ import {
 
 import * as styles from './index.css';
 
-type SwitchProps = Omit<HTMLAttributes<HTMLLabelElement>, 'onChange'> & {
+export type SwitchProps = Omit<HTMLAttributes<HTMLLabelElement>, 'onChange'> & {
   checked?: boolean;
   onChange?: (checked: boolean) => void;
   children?: ReactNode;

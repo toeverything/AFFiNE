@@ -1,7 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { BlockHub } from '@blocksuite/blocks';
 import { assertEquals, assertExists } from '@blocksuite/global/utils';
 import {
   currentPageIdAtom,
@@ -74,15 +73,12 @@ const rootWorkspacesMetadataPrimitiveAtom = atom<Promise<
 
 type Getter = <Value>(atom: Atom<Value>) => Value;
 
-type FetchMetadata = (
-  get: Getter,
-  options: { signal: AbortSignal }
-) => Promise<RootWorkspaceMetadata[]>;
+type FetchMetadata = (get: Getter) => Promise<RootWorkspaceMetadata[]>;
 
 /**
  * @internal
  */
-const fetchMetadata: FetchMetadata = async (get, { signal }) => {
+const fetchMetadata: FetchMetadata = async get => {
   performanceJotaiLogger.info('fetch metadata start');
 
   const WorkspaceAdapters = get(workspaceAdaptersAtom);
@@ -111,23 +107,6 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
       }
       return [];
     };
-
-    const maybeMetadata = loadFromLocalStorage();
-
-    // migration step, only data in `METADATA_STORAGE_KEY` will be migrated
-    if (
-      maybeMetadata.some(meta => !('version' in meta)) &&
-      !window.$migrationDone
-    ) {
-      await new Promise<void>((resolve, reject) => {
-        signal.addEventListener('abort', () => reject(), { once: true });
-        window.addEventListener('migration-done', () => resolve(), {
-          once: true,
-        });
-      });
-      performanceJotaiLogger.info('migration done');
-    }
-
     metadata.push(...loadFromLocalStorage());
   }
   // step 2: fetch from adapters
@@ -211,14 +190,14 @@ const fetchMetadata: FetchMetadata = async (get, { signal }) => {
 
 const rootWorkspacesMetadataPromiseAtom = atom<
   Promise<RootWorkspaceMetadata[]>
->(async (get, { signal }) => {
+>(async get => {
   const primitiveMetadata = get(rootWorkspacesMetadataPrimitiveAtom);
   assertEquals(
     primitiveMetadata,
     null,
     'rootWorkspacesMetadataPrimitiveAtom should be null'
   );
-  return fetchMetadata(get, { signal });
+  return fetchMetadata(get);
 });
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
@@ -268,7 +247,6 @@ export const rootWorkspacesMetadataAtom = atom<
       }
 
       if (newWorkspaceId) {
-        set(currentPageIdAtom, null);
         set(currentWorkspaceIdAtom, newWorkspaceId);
       }
       return metadata;
@@ -277,14 +255,7 @@ export const rootWorkspacesMetadataAtom = atom<
 );
 
 export const refreshRootMetadataAtom = atom(null, (get, set) => {
-  const abortController = new AbortController();
-  set(
-    rootWorkspacesMetadataPrimitiveAtom,
-    fetchMetadata(get, { signal: abortController.signal })
-  );
+  set(rootWorkspacesMetadataPrimitiveAtom, fetchMetadata(get));
 });
 
-// blocksuite atoms,
-// each app should have only one block-hub in the same time
-export const rootBlockHubAtom = atom<Readonly<BlockHub> | null>(null);
 //#endregion

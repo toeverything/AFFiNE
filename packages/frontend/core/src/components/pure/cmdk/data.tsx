@@ -44,6 +44,10 @@ interface SearchResultsValue {
   content: string;
 }
 
+export function removeDoubleQuotes(str?: string): string | undefined {
+  return str?.replace(/"/g, '');
+}
+
 export const cmdkQueryAtom = atom('');
 export const cmdkValueAtom = atom('');
 
@@ -423,7 +427,10 @@ export const customCommandFilter = (value: string, search: string) => {
     label = label.replace(contentMatchedWithoutSubtitle, '');
   }
 
-  const originalScore = commandScore(label, search);
+  // use to remove double quotes from a string until this issue is fixed
+  // https://github.com/pacocoursey/cmdk/issues/189
+  const escapedSearch = removeDoubleQuotes(search) || '';
+  const originalScore = commandScore(label, escapedSearch);
 
   // hack to make the page title result always before the content result
   // if the command has matched the title but not the subtitle,

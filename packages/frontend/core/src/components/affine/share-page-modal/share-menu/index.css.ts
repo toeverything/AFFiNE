@@ -112,9 +112,6 @@ export const radioButton = style({
     },
   },
 });
-export const spanStyle = style({
-  padding: '4px 20px',
-});
 
 export const disableSharePage = style({
   color: 'var(--affine-error-color)',

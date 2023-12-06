@@ -1,8 +1,8 @@
+import { Divider } from '@affine/component/ui/divider';
+import { MenuItem } from '@affine/component/ui/menu';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
-import { Divider } from '@toeverything/components/divider';
-import { MenuItem } from '@toeverything/components/menu';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';

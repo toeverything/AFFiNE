@@ -1,9 +1,9 @@
 import { MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import type { CloudDoc } from '@affine/workspace/affine/download';
+import { downloadBinaryFromCloud } from '@affine/workspace/affine/download';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
-import { downloadBinaryFromCloud } from '@affine/workspace/providers';
-import type { CloudDoc } from '@affine/workspace/providers/cloud';
 import { assertExists } from '@blocksuite/global/utils';
 import type { Page } from '@blocksuite/store';
 import { noop } from 'foxact/noop';
@@ -30,7 +30,7 @@ type LoaderData = {
 };
 
 function assertDownloadResponse(
-  value: CloudDoc | boolean
+  value: CloudDoc | null
 ): asserts value is CloudDoc {
   if (
     !value ||

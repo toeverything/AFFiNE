@@ -1,2 +1,2 @@
 export * from './browser-warning';
-export * from './download-client';
+export * from './local-demo-tips';

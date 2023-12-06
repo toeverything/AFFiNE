@@ -70,3 +70,13 @@ test('fix', t => {
   t.is(id.workspace, 'ws');
   t.is(id.toString(), 'ws:space:sub');
 });
+
+test('special case: `wsId:space:page:pageId`', t => {
+  const id = new DocID('ws:space:page:page');
+  t.is(id.workspace, 'ws');
+  t.is(id.guid, 'page');
+
+  t.throws(() => new DocID('ws:s:p:page'));
+  t.throws(() => new DocID('ws:space:b:page'));
+  t.throws(() => new DocID('ws:s:page:page'));
+});

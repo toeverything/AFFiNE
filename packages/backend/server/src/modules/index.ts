@@ -1,15 +1,14 @@
 import { DynamicModule, Type } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { GqlModule } from '../graphql.module';
-import { AuthModule } from './auth';
+import { SERVER_FLAVOR, ServerConfigModule } from './config';
 import { DocModule } from './doc';
 import { PaymentModule } from './payment';
+import { SelfHostedModule } from './self-hosted';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
-
-const { SERVER_FLAVOR } = process.env;
 
 const BusinessModules: (Type | DynamicModule)[] = [];
 
@@ -17,15 +16,25 @@ switch (SERVER_FLAVOR) {
   case 'sync':
     BusinessModules.push(SyncModule, DocModule.forSync());
     break;
-  case 'graphql':
+  case 'selfhosted':
     BusinessModules.push(
-      EventEmitterModule.forRoot({
-        global: true,
-      }),
+      ServerConfigModule,
+      SelfHostedModule,
+      ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,
-      AuthModule,
+      SyncModule,
+      DocModule.forRoot()
+    );
+    break;
+  case 'graphql':
+    BusinessModules.push(
+      ServerConfigModule,
+      ScheduleModule.forRoot(),
+      GqlModule,
+      WorkspaceModule,
+      UsersModule,
       DocModule.forRoot(),
       PaymentModule
     );
@@ -33,13 +42,11 @@ switch (SERVER_FLAVOR) {
   case 'allinone':
   default:
     BusinessModules.push(
-      EventEmitterModule.forRoot({
-        global: true,
-      }),
+      ServerConfigModule,
+      ScheduleModule.forRoot(),
       GqlModule,
       WorkspaceModule,
       UsersModule,
-      AuthModule,
       SyncModule,
       DocModule.forRoot(),
       PaymentModule
@@ -47,4 +54,4 @@ switch (SERVER_FLAVOR) {
     break;
 }
 
-export { BusinessModules };
+export { BusinessModules, SERVER_FLAVOR };

@@ -65,9 +65,7 @@ test.afterEach.always(async t => {
 
 test('should get blob size limit', async t => {
   const { resolver } = t.context;
-  fakeUserService.getStorageQuotaById.returns(
-    Promise.resolve(100 * 1024 * 1024 * 1024)
-  );
+  fakeUserService.getStorageQuotaById.resolves(100 * 1024 * 1024 * 1024);
   const res = await resolver.checkBlobSize(new FakePrisma().fakeUser, '', 100);
   t.not(res, false);
   // @ts-expect-error
