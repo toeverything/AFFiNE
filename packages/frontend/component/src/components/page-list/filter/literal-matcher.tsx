@@ -1,6 +1,6 @@
 import type { LiteralValue, Tag } from '@affine/env/filter';
 import dayjs from 'dayjs';
-import type { ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { Menu, MenuItem } from '@toeverything/components/menu';
 import { Input } from '@affine/component';
 
@@ -30,10 +30,8 @@ literalMatcher.register(tDateRange.create(), {
         <div>
           <Input
             type="number"
-            onChange={(e) => {
               // Handle the input change and update the value accordingly
-              onChange(parseInt(e.target.value, 10));
-            }}
+              onChange={useCallback((value: string) => onChange(value), [onChange])}
           />
           {[1, 2, 3, 7, 14, 30].map((i) => (
             <MenuItem
@@ -50,7 +48,7 @@ literalMatcher.register(tDateRange.create(), {
       }
     >
       <div>
-        <span>{value}</span> days
+        <span>{value as string}</span> days
       </div>
     </Menu>
   ),
