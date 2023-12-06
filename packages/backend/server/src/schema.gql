@@ -292,7 +292,7 @@ type Mutation {
   sendVerifyChangeEmail(token: String!, email: String!, callbackUrl: String!): Boolean!
 
   """Create a new workspace"""
-  createWorkspace(init: Upload!): WorkspaceType!
+  createWorkspace(init: Upload): WorkspaceType!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
