@@ -18,6 +18,7 @@ export const runtimeFlagsSchema = z.object({
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
+  downloadUrl: z.string(),
   // see: tools/workers
   imageProxyUrl: z.string(),
   enablePreloading: z.boolean(),

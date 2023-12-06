@@ -19,7 +19,6 @@ export const SetPassword: FC<{
     <>
       <Wrapper marginTop={30} marginBottom={42}>
         <PasswordInput
-          width={320}
           onPass={useCallback(password => {
             setPasswordPass(true);
             passwordRef.current = password;
