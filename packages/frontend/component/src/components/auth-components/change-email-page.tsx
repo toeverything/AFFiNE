@@ -44,7 +44,6 @@ export const ChangeEmailPage = ({
     >
       <>
         <AuthInput
-          width={320}
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
           value={email}
