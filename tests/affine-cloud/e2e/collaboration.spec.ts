@@ -6,7 +6,6 @@ import {
   enableCloudWorkspaceFromShareButton,
   loginUser,
 } from '@affine-test/kit/utils/cloud';
-import { dropFile } from '@affine-test/kit/utils/drop-file';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import {
   clickNewPageButton,
@@ -17,6 +16,7 @@ import { clickUserInfoCard } from '@affine-test/kit/utils/setting';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
+import { resolve } from 'path';
 
 let user: {
   id: string;
@@ -226,12 +226,45 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   await clickNewPageButton(page);
   await waitForEditorLoad(page);
 
-  // drop an svg file
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-    <rect x="0" y="0" width="200" height="200" fill="red" />
-  </svg>`;
+  // upload local svg
 
-  await dropFile(page, 'affine-paragraph', svg, 'test.svg', 'image/svg+xml');
+  const slashMenu = page.locator(`.slash-menu`);
+  const image = page.locator('affine-image');
+
+  page.evaluate(async () => {
+    window.showOpenFilePicker = undefined;
+  });
+
+  const title = getBlockSuiteEditorTitle(page);
+  await title.pressSequentially('TEST TITLE', {
+    delay: 50,
+  });
+  await page.keyboard.press('Enter', { delay: 50 });
+  await page.waitForTimeout(100);
+  await page.keyboard.type('/', { delay: 50 });
+  await expect(slashMenu).toBeVisible();
+  await page.keyboard.type('image', { delay: 100 });
+  await expect(slashMenu).toBeVisible();
+  await page.keyboard.press('Enter', { delay: 50 });
+  await page.setInputFiles(
+    "input[type='file']",
+    resolve(__dirname, 'logo.svg')
+  );
+  await expect(image).toBeVisible();
+
+  // the user should see the svg
+  // get the image src under "affine-image img"
+  const src1 = await page.locator('affine-image img').getAttribute('src');
+  expect(src1).not.toBeNull();
+
+  // fetch the actual src1 resource in the browser
+  const svg1 = await page.evaluate(
+    src =>
+      fetch(src!)
+        .then(res => res.blob())
+        .then(blob => blob.text()),
+    src1
+  );
 
   {
     const context = await browser.newContext();
@@ -239,20 +272,20 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
     await loginUser(page2, user.email);
     await page2.goto(page.url());
 
-    // the user should see the svg
+    // second user should see the svg
     // get the image src under "affine-image img"
-    const src = await page2.locator('affine-image img').getAttribute('src');
+    const src2 = await page2.locator('affine-image img').getAttribute('src');
+    expect(src2).not.toBeNull();
 
-    expect(src).not.toBeNull();
+    // fetch the actual src2 resource in the browser
+    const svg2 = await page2.evaluate(
+      src =>
+        fetch(src!)
+          .then(res => res.blob())
+          .then(blob => blob.text()),
+      src2
+    );
 
-    // fetch the src resource in the browser
-    const svg2 = await page2.evaluate(src => {
-      return fetch(src!)
-        .then(res => res.blob())
-        .then(blob => blob.text());
-    }, src);
-
-    // turn the blob into string and check if it contains the svg
-    expect(svg2).toContain(svg);
+    expect(svg2).toEqual(svg1);
   }
 });

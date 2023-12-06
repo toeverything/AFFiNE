@@ -6,7 +6,7 @@ import type {
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
   fullyParallel: !process.env.CI,
-  timeout: process.env.CI ? 120_000 : 30_000,
+  timeout: 120_000,
   use: {
     baseURL: 'http://localhost:8081/',
     browserName:

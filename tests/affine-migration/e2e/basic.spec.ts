@@ -93,7 +93,7 @@ test('v3 to v4, surface migration', async ({ page }) => {
 
   // check edgeless mode is correct
   await clickEdgelessModeButton(page);
-  await expect(page.locator('edgeless-toolbar')).toBeVisible();
+  await expect(page.locator('.edgeless-toolbar-container')).toBeVisible();
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
 });
 
@@ -123,6 +123,6 @@ test('v0 to v4, subdoc migration', async ({ page }) => {
 
   // check edgeless mode is correct
   await clickEdgelessModeButton(page);
-  await expect(page.locator('edgeless-toolbar')).toBeVisible();
+  await expect(page.locator('.edgeless-toolbar-container')).toBeVisible();
   await expect(page.locator('affine-edgeless-page')).toBeVisible();
 });
