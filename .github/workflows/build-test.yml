@@ -1,0 +1,599 @@
+name: Build & Test
+
+on:
+  push:
+    branches:
+      - canary
+      - v[0-9]+.[0-9]+.x-staging
+      - v[0-9]+.[0-9]+.x
+    paths-ignore:
+      - README.md
+  pull_request:
+
+env:
+  DEBUG: napi:*
+  BUILD_TYPE: canary
+  APP_NAME: affine
+  AFFINE_ENV: dev
+  COVERAGE: true
+  MACOSX_DEPLOYMENT_TARGET: '10.13'
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/node_modules/.cache/ms-playwright
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript']
+        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          # If you wish to specify custom queries, you can do so here or in a config file.
+          # By default, queries listed here will override any specified in a config file.
+          # Prefix the list here with "+" to use these queries and those in the config file.
+
+          # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+          # queries: security-extended,security-and-quality
+
+      # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
+      # If this step fails, then you should remove it and run the build manually (see below)
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      # ℹ️ Command-line programs to run using the OS shell.
+      # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+
+      #   If the Autobuild fails above, remove it and uncomment the following three lines.
+      #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
+
+      # - run: |
+      #   echo "Run, Build Application using script"
+      #   ./location_of_script_within_repo/buildscript.sh
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run oxlint
+        # oxlint is fast, so wrong code will fail quickly
+        run: yarn dlx $(node -e "console.log(require('./package.json').scripts['lint:ox'])")
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+      - name: Run i18n codegen
+        run: yarn i18n-codegen gen
+      - name: Run ESLint
+        run: yarn lint:eslint --max-warnings=0
+      - name: Run Prettier
+        # Set nmMode in `actions/setup-node` will modify the .yarnrc.yml
+        run: |
+          git checkout .yarnrc.yml
+          yarn lint:prettier
+      - name: Run Type Check
+        run: yarn typecheck
+
+  check-yarn-binary:
+    name: Check yarn binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run check
+        run: |
+          yarn set version $(node -e "console.log(require('./package.json').packageManager.split('@')[1])")
+          git diff --exit-code
+
+  e2e-plugin-test:
+    name: E2E Plugin Test
+    runs-on: ubuntu-latest
+    env:
+      DISTRIBUTION: browser
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+          full-cache: true
+      - name: Run playwright tests
+        run: yarn e2e --forbid-only
+        working-directory: tests/affine-plugin
+        env:
+          COVERAGE: true
+      - name: Collect code coverage report
+        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
+
+      - name: Upload e2e test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/lcov.info
+          flags: e2e-plugin-test
+          name: affine
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-plugin
+          path: ./test-results
+          if-no-files-found: ignore
+
+  e2e-test:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    env:
+      DISTRIBUTION: browser
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+          full-cache: true
+
+      - name: Run playwright tests
+        run: yarn workspace @affine-test/affine-local e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-${{ matrix.shard }}
+          path: ./test-results
+          if-no-files-found: ignore
+
+  e2e-migration-test:
+    name: E2E Migration Test
+    runs-on: ubuntu-latest
+    env:
+      DISTRIBUTION: browser
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+          full-cache: true
+
+      - name: Run playwright tests
+        run: yarn workspace @affine-test/affine-migration e2e --forbid-only
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-migration
+          path: ./tests/affine-migration/test-results
+          if-no-files-found: ignore
+
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    needs:
+      - build-native
+    env:
+      DISTRIBUTION: browser
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+
+      - name: Download affine.linux-x64-gnu.node
+        uses: actions/download-artifact@v3
+        with:
+          name: affine.linux-x64-gnu.node
+          path: ./packages/frontend/native
+
+      - name: Unit Test
+        run: yarn nx test:coverage @affine/monorepo
+
+      - name: Upload unit test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./.coverage/store/lcov.info
+          flags: unittest
+          name: affine
+          fail_ci_if_error: false
+
+  build-native:
+    name: Build AFFiNE native (${{ matrix.spec.target }})
+    runs-on: ${{ matrix.spec.os }}
+    env:
+      CARGO_PROFILE_RELEASE_DEBUG: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/native
+          electron-install: false
+          build-infra: false
+          build-plugins: false
+      - name: Setup filename
+        id: filename
+        shell: bash
+        run: |
+          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.spec.target }}
+          package: '@affine/native'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Upload ${{ steps.filename.outputs.filename }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.filename.outputs.filename }}
+          path: ./packages/frontend/native/${{ steps.filename.outputs.filename }}
+          if-no-files-found: error
+
+  build-storage:
+    name: Build Storage
+    runs-on: ubuntu-latest
+    env:
+      CARGO_PROFILE_RELEASE_DEBUG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/storage
+          electron-install: false
+          build-infra: false
+          build-plugins: false
+      - name: Build Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: 'x86_64-unknown-linux-gnu'
+          package: '@affine/storage'
+          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      - name: Upload storage.node
+        uses: actions/upload-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/backend/storage/storage.node
+          if-no-files-found: error
+
+  build-core:
+    name: Build @affine/core
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          build-plugins: false
+          full-cache: true
+      - name: Build Core
+        # always skip cache because its fast, and cache configuration is always changing
+        run: yarn nx build @affine/core --skip-nx-cache
+      - name: zip core
+        run: tar -czf dist.tar.gz --directory=packages/frontend/core/dist .
+      - name: Upload core artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: core
+          path: dist.tar.gz
+          if-no-files-found: error
+
+  server-test:
+    name: Server Test
+    runs-on: ubuntu-latest
+    needs: build-storage
+    env:
+      DISTRIBUTION: browser
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+
+      - name: Initialize database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+        env:
+          PGPASSWORD: affine
+
+      - name: Generate prisma client
+        run: |
+          yarn workspace @affine/server exec prisma generate
+          yarn workspace @affine/server exec prisma db push
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+
+      - name: Run init-db script
+        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+
+      - name: Run server tests
+        run: yarn workspace @affine/server test:coverage
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: false
+
+  server-e2e-test:
+    name: ${{ matrix.tests.name }}
+    runs-on: ubuntu-latest
+    env:
+      DISTRIBUTION: browser
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+    strategy:
+      fail-fast: false
+      matrix:
+        tests:
+          - name: 'Server E2E Test 1/3'
+            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only --shard=1/3
+          - name: 'Server E2E Test 2/3'
+            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only --shard=2/3
+          - name: 'Server E2E Test 3/3'
+            script: yarn workspace @affine-test/affine-cloud e2e --forbid-only --shard=3/3
+          - name: 'Server Desktop E2E Test'
+            script: |
+              yarn workspace @affine/electron build:dev
+              xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop-cloud e2e
+    needs:
+      - build-storage
+      - build-native
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          hard-link-nm: false
+
+      - name: Initialize database
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+        env:
+          PGPASSWORD: affine
+
+      - name: Generate prisma client
+        run: |
+          yarn workspace @affine/server exec prisma generate
+          yarn workspace @affine/server exec prisma db push
+        env:
+          DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+
+      - name: Run init-db script
+        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
+      - name: Download storage.node
+        uses: actions/download-artifact@v3
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+
+      - name: Download affine.linux-x64-gnu.node
+        uses: actions/download-artifact@v3
+        with:
+          name: affine.linux-x64-gnu.node
+          path: ./packages/frontend/native
+
+      - name: ${{ matrix.tests.name }}
+        run: |
+          ${{ matrix.tests.script }}
+        env:
+          DEV_SERVER_URL: http://localhost:8080
+          ENABLE_LOCAL_EMAIL: true
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-server
+          path: ./tests/affine-cloud/test-results
+          if-no-files-found: ignore
+
+  desktop-test:
+    name: Desktop Test (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
+    runs-on: ${{ matrix.spec.os }}
+    strategy:
+      fail-fast: false
+      # all combinations: macos-latest x64, macos-latest arm64, windows-latest x64, ubuntu-latest x64
+      matrix:
+        spec:
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: x64,
+              target: x86_64-apple-darwin,
+              test: true,
+            }
+          - {
+              os: macos-latest,
+              platform: macos,
+              arch: arm64,
+              target: aarch64-apple-darwin,
+              test: false,
+            }
+          - {
+              os: ubuntu-latest,
+              platform: linux,
+              arch: x64,
+              target: x86_64-unknown-linux-gnu,
+              test: true,
+            }
+          - {
+              os: windows-latest,
+              platform: windows,
+              arch: x64,
+              target: x86_64-pc-windows-msvc,
+              test: true,
+            }
+    needs:
+      - build-core
+      - build-native
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        timeout-minutes: 10
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop
+          playwright-install: true
+          hard-link-nm: false
+          enableScripts: false
+
+      - name: Setup filename
+        id: filename
+        shell: bash
+        run: |
+          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
+
+      - name: Download ${{ steps.filename.outputs.filename }}
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ steps.filename.outputs.filename }}
+          path: ./packages/frontend/native
+
+      - name: Run unit tests
+        if: ${{ matrix.spec.test }}
+        shell: bash
+        run: yarn vitest
+        working-directory: packages/frontend/electron
+
+      - name: Download core artifact
+        uses: ./.github/actions/download-core
+        with:
+          path: packages/frontend/electron/resources/web-static
+
+      - name: Build Desktop Layers
+        run: yarn workspace @affine/electron build
+
+      - name: Run desktop tests
+        if: ${{ matrix.spec.test && matrix.spec.os == 'ubuntu-latest' }}
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop e2e
+
+      - name: Run desktop tests
+        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
+        run: yarn workspace @affine-test/affine-desktop e2e
+
+      - name: Make bundle
+        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        env:
+          SKIP_BUNDLE: true
+          SKIP_WEB_BUILD: true
+          HOIST_NODE_MODULES: 1
+        run: yarn workspace @affine/electron package --platform=darwin --arch=arm64
+
+      - name: Output check
+        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+        run: |
+          yarn workspace @affine/electron ts-node ./scripts/macos-arm64-output-check.ts
+
+      - name: Upload test results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
+          path: ./test-results
+          if-no-files-found: ignore
