@@ -56,7 +56,7 @@ app.on('window-all-closed', () => {
  * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  launch();
+  launch().catch(e => console.error('Failed to restore or create window:', e));
 });
 
 setupDeepLink(app);

@@ -1,13 +1,9 @@
-import assert from 'node:assert';
-
 import { BrowserWindow, type CookiesSetDetails, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
 import { mainWindowOrigin } from './constants';
-import { eventEmitter } from './emitter';
-import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 import { uiSubjects } from './ui/subject';
@@ -18,7 +14,7 @@ const IS_DEV: boolean =
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
 
-async function createWindow() {
+async function createWindow(additionalArguments: string[]) {
   logger.info('create window');
   const mainWindowState = electronWindowState({
     defaultWidth: 1000,
@@ -26,11 +22,6 @@ async function createWindow() {
   });
 
   const helperProcessManager = await ensureHelperProcess();
-  const helperExposedMeta = await helperProcessManager.rpc?.getMeta();
-
-  assert(helperExposedMeta, 'helperExposedMeta should be defined');
-
-  const mainExposedMeta = getExposedMeta();
 
   const browserWindow = new BrowserWindow({
     titleBarStyle: isMacOS()
@@ -56,10 +47,7 @@ async function createWindow() {
       spellcheck: false, // FIXME: enable?
       preload: join(__dirname, './preload.js'),
       // serialize exposed meta that to be used in preload
-      additionalArguments: [
-        `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
-        `--helper-exposed-meta=` + JSON.stringify(helperExposedMeta),
-      ],
+      additionalArguments: additionalArguments,
     },
   });
 
@@ -148,12 +136,19 @@ let browserWindow$: Promise<BrowserWindow> | undefined;
 /**
  * Restore existing BrowserWindow or Create new BrowserWindow
  */
-export async function getOrCreateWindow() {
+export async function initMainWindow(additionalArguments: string[]) {
   if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
-    browserWindow$ = createWindow();
+    browserWindow$ = createWindow(additionalArguments);
   }
   const mainWindow = await browserWindow$;
   return mainWindow;
+}
+
+export async function getMainWindow() {
+  if (!browserWindow$) return;
+  const window = await browserWindow$;
+  if (window.isDestroyed()) return;
+  return window;
 }
 
 export async function handleOpenUrlInHiddenWindow(url: string) {
@@ -223,7 +218,3 @@ export async function getCookie(url?: string, name?: string) {
   });
   return cookies;
 }
-
-eventEmitter.on('window:main:open', () => {
-  getOrCreateWindow().catch(logger.error);
-});

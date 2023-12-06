@@ -3,9 +3,10 @@ import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
-import { eventEmitter } from '../emitter';
 import { logger } from '../logger';
+import { getOnboardingWindow } from '../onboarding';
 import type { NamespaceHandlers } from '../type';
+import { launch } from '../windows-manager/launcher';
 import { launchStage } from '../windows-manager/stage';
 import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
@@ -57,9 +58,9 @@ export const uiHandlers = {
       launchStage.value = 'main';
       persistentConfig.patch('onBoarding', false);
     }
-    // TODO: use eventEmitter to avoid circular dependency temporarily
-    eventEmitter.emit('window:main:open'); // see ../main-window.ts
-    eventEmitter.emit('window:onboarding:close'); // see ../onboarding.ts
+    const onboardingWindow = await getOnboardingWindow();
+    onboardingWindow?.close();
+    await launch();
   },
   getBookmarkDataByLink: async (_, link: string) => {
     if (
