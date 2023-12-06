@@ -3,11 +3,11 @@ import path from 'node:path';
 import { type App, type BrowserWindow, ipcMain } from 'electron';
 
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
+import { mainWindowOrigin } from './constants';
 import { logger } from './logger';
 import {
   getMainWindow,
   handleOpenUrlInHiddenWindow,
-  mainWindowOrigin,
   removeCookie,
   setCookie,
 } from './main-window';

@@ -2,9 +2,12 @@ import { app, nativeTheme } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
+import { persistentConfig } from '../config-storage/persist';
+import { eventEmitter } from '../emitter';
 import { logger } from '../logger';
 import { getMainWindow } from '../main-window';
 import type { NamespaceHandlers } from '../type';
+import { launchStage } from '../windows-manager/stage';
 import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
 
@@ -45,6 +48,15 @@ export const uiHandlers = {
   },
   getChallengeResponse: async (_, challenge: string) => {
     return getChallengeResponse(challenge);
+  },
+  handleOpenMainApp: async () => {
+    if (launchStage.value === 'onboarding') {
+      launchStage.value = 'main';
+      persistentConfig.patch('onBoarding', false);
+    }
+    // TODO: use eventEmitter to avoid circular dependency temporarily
+    eventEmitter.emit('window:main:open'); // see ../main-window.ts
+    eventEmitter.emit('window:onboarding:close'); // see ../onboarding.ts
   },
   getBookmarkDataByLink: async (_, link: string) => {
     if (

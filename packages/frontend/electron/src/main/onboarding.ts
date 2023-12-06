@@ -2,10 +2,11 @@ import { assert } from 'console';
 import { BrowserWindow } from 'electron';
 import { join } from 'path';
 
+import { mainWindowOrigin } from './constants';
+import { eventEmitter } from './emitter';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { mainWindowOrigin } from './main-window';
 
 async function createOnboardingWindow() {
   logger.info('creating onboarding window');
@@ -60,3 +61,16 @@ export async function getOrCreateOnboardingWindow() {
 
   return onBoardingWindow$;
 }
+
+export async function getOnboardingWindow() {
+  if (!onBoardingWindow$) return;
+  const window = await onBoardingWindow$;
+  if (window.isDestroyed()) return;
+  return window;
+}
+
+eventEmitter.on('window:onboarding:close', () => {
+  getOnboardingWindow()
+    .then(w => w?.destroy())
+    .catch(logger.error);
+});

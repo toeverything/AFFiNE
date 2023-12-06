@@ -19,6 +19,7 @@ import {
 } from 'react-router-dom';
 
 import { WorkspaceAdapters } from '../adapters/workspace';
+import { appConfigProxy } from '../hooks/use-app-config-storage';
 import { performanceLogger } from '../shared';
 
 const performanceSetupLogger = performanceLogger.namespace('setup');
@@ -91,6 +92,9 @@ export async function setup(store: ReturnType<typeof createStore>) {
   performanceSetupLogger.info('get root workspace meta');
   // do not read `rootWorkspacesMetadataAtom` before migration
   await store.get(rootWorkspacesMetadataAtom);
+
+  // load persistent config for electron
+  environment.isDesktop && (await appConfigProxy.getSync());
 
   performanceSetupLogger.info('done');
 }

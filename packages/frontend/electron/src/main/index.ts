@@ -2,7 +2,7 @@ import './security-restrictions';
 
 import path from 'node:path';
 
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, overrideSession } from './config';
@@ -11,16 +11,9 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { initMainWindow as initMainWindow } from './main-window';
-import { getOrCreateOnboardingWindow } from './onboarding';
-import { persistentConfig } from './persist';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
-
-type LaunchStage = 'main' | 'onboarding';
-const launchStage: { value: LaunchStage } = {
-  value: persistentConfig.get('onBoarding') ? 'onboarding' : 'main',
-};
+import { launch } from './windows-manager/launcher';
 
 app.enableSandbox();
 
@@ -62,39 +55,9 @@ app.on('window-all-closed', () => {
 /**
  * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
-app.on('activate', () => {
-  initMainWindow().catch(e =>
-    console.error('Failed to restore or create window:', e)
-  );
-  launch();
-});
-
-// TODO: manage handlers
-ipcMain.on('open-app', () => {
-  if (launchStage.value === 'onboarding') {
-    launchStage.value = 'main';
-    persistentConfig.patch('onBoarding', false);
-    getOrCreateOnboardingWindow()
-      .then(w => w.destroy())
-      .catch(console.error);
-  }
-
-  launch();
-});
+app.on('activate', launch);
 
 setupDeepLink(app);
-
-function launch() {
-  const stage = launchStage.value;
-  if (stage === 'main')
-    initMainWindow().catch(e => {
-      console.error('Failed to restore or create window:', e);
-    });
-  if (stage === 'onboarding')
-    getOrCreateOnboardingWindow().catch(e => {
-      console.error('Failed to restore or create onboarding window:', e);
-    });
-}
 
 /**
  * Create app window when background process will be ready
