@@ -13,7 +13,7 @@
     "./router": "./src/router.ts",
     "./bootstrap/setup": "./src/bootstrap/setup.ts",
     "./bootstrap/register-plugins": "./src/bootstrap/register-plugins.ts",
-    "./components/pure/*": "./src/components/pure/*/index.tsx"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",

@@ -1,5 +1,6 @@
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { useCurrentSyncEngine } from '@affine/core/hooks/current/use-current-sync-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   type SyncEngineStatus,
@@ -24,7 +25,6 @@ import {
   useState,
 } from 'react';
 
-import { useCurrentSyncEngine } from '../../../../hooks/current/use-current-sync-engine';
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
 import { Loading } from './loading-icon';
