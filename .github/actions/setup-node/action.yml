@@ -70,21 +70,40 @@ runs:
       id: yarn-cache
       run: node -e "const p = $(yarn config cacheFolder --json).effective; console.log('yarn_global_cache=' + p)" >> $GITHUB_OUTPUT
 
-    - name: Cache non-full yarn cache
+    - name: Cache non-full yarn cache on Linux
       uses: actions/cache@v3
-      if: ${{ inputs.full-cache != 'true' }}
+      if: ${{ inputs.full-cache != 'true' && runner.os == 'Linux' }}
       with:
         path: |
           node_modules
           ${{ steps.yarn-cache.outputs.yarn_global_cache }}
         key: node_modules-cache-${{ github.job }}-${{ runner.os }}
 
-    - name: Cache full yarn cache
+    # The network performance on macOS is very poor
+    # and the decompression performance on Windows is very terrible
+    # so we reduce the number of cached files on non-Linux systems by remove node_modules from cache path.
+    - name: Cache non-full yarn cache on non-Linux
       uses: actions/cache@v3
-      if: ${{ inputs.full-cache == 'true' }}
+      if: ${{ inputs.full-cache != 'true' && runner.os != 'Linux' }}
+      with:
+        path: |
+          ${{ steps.yarn-cache.outputs.yarn_global_cache }}
+        key: node_modules-cache-${{ github.job }}-${{ runner.os }}
+
+    - name: Cache full yarn cache on Linux
+      uses: actions/cache@v3
+      if: ${{ inputs.full-cache == 'true' && runner.os == 'Linux' }}
       with:
         path: |
           node_modules
+          ${{ steps.yarn-cache.outputs.yarn_global_cache }}
+        key: node_modules-cache-full-${{ runner.os }}
+
+    - name: Cache full yarn cache on non-Linux
+      uses: actions/cache@v3
+      if: ${{ inputs.full-cache == 'true' && runner.os != 'Linux' }}
+      with:
+        path: |
           ${{ steps.yarn-cache.outputs.yarn_global_cache }}
         key: node_modules-cache-full-${{ runner.os }}
 
