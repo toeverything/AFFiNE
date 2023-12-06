@@ -22,7 +22,9 @@ export const Component = () => {
 
   const openApp = () => {
     if (environment.isDesktop) {
-      window.affine.ipcRenderer.send('open-app');
+      window.apis.ui.handleOpenMainApp().catch(err => {
+        console.log('failed to open main app', err);
+      });
     } else {
       jumpToIndex(RouteLogic.REPLACE);
       setOnboarding(false);

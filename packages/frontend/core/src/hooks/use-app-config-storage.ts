@@ -8,44 +8,33 @@ import { type Dispatch, useEffect, useState } from 'react';
 /**
  * Helper class to get/set app config from main process
  */
-class AppConfigPost {
+class AppConfigProxy {
   value: AppConfigSchema = defaultAppConfig;
 
   async getSync(): Promise<AppConfigSchema> {
-    const config = await window.affine.ipcRenderer.invoke(
-      'app-config-storage:get'
-    );
-    this.value = config;
-    return config;
+    return (this.value = await window.apis.configStorage.get());
   }
 
   async setSync(): Promise<void> {
-    await window.affine.ipcRenderer.invoke(
-      'app-config-storage:set',
-      this.value
-    );
+    await window.apis.configStorage.set(this.value);
   }
 
   get(): AppConfigSchema {
-    this.getSync().catch(console.error);
     return this.value;
   }
 
   set(data: AppConfigSchema) {
     this.value = data;
-    this.setSync()
-      .then(() => this.getSync())
-      .catch(console.error);
+    this.setSync().catch(console.error);
   }
 }
-const appConfigPost = new AppConfigPost();
-environment.isDesktop && (await appConfigPost.getSync());
+export const appConfigProxy = new AppConfigProxy();
 
 const storage = environment.isDesktop
   ? new AppConfigStorage({
       config: defaultAppConfig,
-      get: () => appConfigPost.get(),
-      set: v => appConfigPost.set(v),
+      get: () => appConfigProxy.get(),
+      set: v => appConfigProxy.set(v),
     })
   : new AppConfigStorage({
       config: defaultAppConfig,

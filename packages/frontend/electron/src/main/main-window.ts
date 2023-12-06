@@ -5,18 +5,18 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
+import { mainWindowOrigin } from './constants';
+import { eventEmitter } from './emitter';
 import { getExposedMeta } from './exposed';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { uiSubjects } from './ui';
+import { uiSubjects } from './ui/subject';
 import { parseCookie } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
-
-export const mainWindowOrigin = process.env.DEV_SERVER_URL || 'file://.';
 
 async function createWindow() {
   logger.info('create window');
@@ -223,3 +223,7 @@ export async function getCookie(url?: string, name?: string) {
   });
   return cookies;
 }
+
+eventEmitter.on('window:main:open', () => {
+  getOrCreateWindow().catch(logger.error);
+});
