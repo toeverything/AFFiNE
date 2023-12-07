@@ -11,14 +11,14 @@
   "homepage": "https://github.com/toeverything/AFFiNE",
   "scripts": {
     "start": "electron .",
-    "dev": "DEV_SERVER_URL=http://localhost:8080 yarn ts-node ./scripts/dev.ts",
-    "dev:prod": "yarn ts-node scripts/dev.ts",
-    "build": "NODE_ENV=production ts-node scripts/build-layers.ts",
-    "build:dev": "NODE_ENV=development ts-node scripts/build-layers.ts",
-    "generate-assets": "ts-node scripts/generate-assets.ts",
-    "package": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge package",
-    "make": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" electron-forge make",
-    "make-squirrel": "yarn ts-node scripts/make-squirrel.ts"
+    "dev": "DEV_SERVER_URL=http://localhost:8080 node --loader ts-node/esm/transpile-only ./scripts/dev.ts",
+    "dev:prod": "yarn node --loader ts-node/esm/transpile-only scripts/dev.ts",
+    "build": "NODE_ENV=production node --loader ts-node/esm/transpile-only scripts/build-layers.ts",
+    "build:dev": "NODE_ENV=development node --loader ts-node/esm/transpile-only scripts/build-layers.ts",
+    "generate-assets": "node --loader ts-node/esm/transpile-only scripts/generate-assets.ts",
+    "package": "cross-env NODE_OPTIONS=\"--loader ts-node/esm/transpile-only\" electron-forge package",
+    "make": "cross-env NODE_OPTIONS=\"--loader ts-node/esm/transpile-only\" electron-forge make",
+    "make-squirrel": "node --loader ts-node/esm/transpile-only scripts/make-squirrel.ts"
   },
   "main": "./dist/main.js",
   "devDependencies": {

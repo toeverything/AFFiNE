@@ -2,7 +2,6 @@
   "compilerOptions": {
     "verbatimModuleSyntax": true,
     // Classification follows https://www.typescriptlang.org/tsconfig
-
     // Type Checking
     "strict": true,
     "exactOptionalPropertyTypes": false,
@@ -16,7 +15,6 @@
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
     "useUnknownInCatchVariables": true,
-
     // Modules
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -28,16 +26,13 @@
     "sourceMap": true,
     // skip type emit for @internal types
     // "stripInternal": true,
-
     // JavaScript Support
     "allowJs": false,
     "checkJs": false,
-
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
-
     // Language and Environment
     "jsx": "preserve",
     "jsxImportSource": "@emotion/react",
@@ -46,11 +41,9 @@
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-
     // Projects
     "composite": true,
     "incremental": true,
-
     // Completeness
     "skipLibCheck": true, // skip all type checks for .d.ts files
     "paths": {
@@ -81,7 +74,6 @@
       "@affine/native": ["./packages/frontend/native/index.d.ts"],
       "@affine/native/*": ["./packages/frontend/native/*"],
       "@affine/storage": ["./packages/backend/storage/index.d.ts"],
-
       // Development only
       "@affine/electron/*": ["./packages/frontend/electron/src/*"]
     }
