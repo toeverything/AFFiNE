@@ -1,7 +1,7 @@
 import type { ComplexStyleRule } from '@vanilla-extract/css';
 import { style } from '@vanilla-extract/css';
 
-export const header = style({
+export const header = style((() => ({
   display: 'flex',
   justifyContent: 'space-between',
   position: 'relative',
@@ -11,7 +11,8 @@ export const header = style({
   zIndex: 2,
   selectors: {
     '&[data-sidebar-floating="false"]': {
-      WebkitAppRegion: 'drag',
+      // avoid set this property in web, it will case side effect
+      WebkitAppRegion: environment.isDesktop ? 'drag' : undefined,
     },
   },
   '@media': {
@@ -22,7 +23,7 @@ export const header = style({
   ':has([data-popper-placement])': {
     WebkitAppRegion: 'no-drag',
   },
-} as ComplexStyleRule);
+})) as ComplexStyleRule);
 
 export const bottomBorder = style({
   borderBottom: '1px solid var(--affine-border-color)',

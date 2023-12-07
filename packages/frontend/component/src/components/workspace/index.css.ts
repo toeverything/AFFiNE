@@ -48,7 +48,7 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   },
 });
 
-export const mainContainerStyle = style({
+export const mainContainerStyle = style((() => ({
   position: 'relative',
   zIndex: 0, // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
   width: 0,
@@ -85,10 +85,11 @@ export const mainContainerStyle = style({
       width: '100%',
       top: '-8px',
       left: 0,
-      WebkitAppRegion: 'drag',
+      // avoid set this property in web, it will case side effect
+      WebkitAppRegion: environment.isDesktop ? 'drag' : undefined,
     },
   },
-} as ComplexStyleRule);
+})) as ComplexStyleRule);
 
 // These styles override the default styles of the react-resizable-panels
 // as the default styles make the overflow part hidden when printing to PDF.

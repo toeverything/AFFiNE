@@ -66,20 +66,21 @@ export const navStyle = style({
   zIndex: parseInt(baseTheme.zIndexModal),
 });
 
-export const navHeaderStyle = style({
+export const navHeaderStyle = style((() => ({
   flex: '0 0 auto',
   height: '52px',
   padding: '0px 16px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  WebkitAppRegion: 'drag',
+  // avoid set this property in web, it will case side effect
+  WebkitAppRegion: environment.isDesktop ? 'drag' : undefined,
   selectors: {
     '&[data-is-macos-electron="true"]': {
       paddingLeft: '90px',
     },
   },
-} as ComplexStyleRule);
+})) as ComplexStyleRule);
 
 export const navBodyStyle = style({
   flex: '1 1 auto',
