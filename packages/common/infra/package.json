@@ -55,9 +55,9 @@
   },
   "dependencies": {
     "@affine/sdk": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20231205045113-03964196-nightly",
-    "@blocksuite/global": "0.0.0-20231205045113-03964196-nightly",
-    "@blocksuite/store": "0.0.0-20231205045113-03964196-nightly",
+    "@blocksuite/blocks": "0.11.0-nightly-202312061456-a5bf73a",
+    "@blocksuite/global": "0.11.0-nightly-202312061456-a5bf73a",
+    "@blocksuite/store": "0.11.0-nightly-202312061456-a5bf73a",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
     "tinykeys": "^2.1.0",
@@ -66,8 +66,8 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/lit": "0.0.0-20231205045113-03964196-nightly",
-    "@blocksuite/presets": "0.0.0-20231205045113-03964196-nightly",
+    "@blocksuite/lit": "0.11.0-nightly-202312061456-a5bf73a",
+    "@blocksuite/presets": "0.11.0-nightly-202312061456-a5bf73a",
     "@testing-library/react": "^14.0.0",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../frontend/electron/node_modules/electron",
