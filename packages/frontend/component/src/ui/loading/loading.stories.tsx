@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { Loading, type LoadingProps } from '.';
+import { Loading, type LoadingProps } from './loading';
 
 export default {
   title: 'UI/Loading',

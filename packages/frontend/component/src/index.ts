@@ -7,6 +7,7 @@ export * from './ui/divider';
 export * from './ui/empty';
 export * from './ui/input';
 export * from './ui/layout';
+export * from './ui/loading';
 export * from './ui/lottie/collections-icon';
 export * from './ui/lottie/delete-icon';
 export * from './ui/menu';

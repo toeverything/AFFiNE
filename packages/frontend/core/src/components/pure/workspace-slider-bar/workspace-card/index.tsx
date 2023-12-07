@@ -1,4 +1,5 @@
 import { Avatar } from '@affine/component/ui/avatar';
+import { Loading } from '@affine/component/ui/loading';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useCurrentSyncEngine } from '@affine/core/hooks/current/use-current-sync-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -27,7 +28,6 @@ import {
 
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
-import { Loading } from './loading-icon';
 import {
   StyledSelectorContainer,
   StyledSelectorWrapper,
