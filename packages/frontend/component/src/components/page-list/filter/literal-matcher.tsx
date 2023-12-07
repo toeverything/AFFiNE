@@ -1,9 +1,9 @@
 import type { LiteralValue, Tag } from '@affine/env/filter';
 import dayjs from 'dayjs';
-import { useCallback, type ReactNode } from 'react';
-import { Menu, MenuItem } from '@toeverything/components/menu';
-import { Input } from '@affine/component';
+import { type ReactNode } from 'react';
 
+import Input from '../../../ui/input';
+import { Menu, MenuItem } from '../../../ui/menu';
 import { AFFiNEDatePicker } from '../../date-picker';
 import { FilterTag } from './filter-tag-translation';
 import { inputStyle } from './index.css';
@@ -30,10 +30,10 @@ literalMatcher.register(tDateRange.create(), {
         <div>
           <Input
             type="number"
-              // Handle the input change and update the value accordingly
-              onChange={useCallback((value: string) => onChange(value), [onChange])}
+            // Handle the input change and update the value accordingly
+            onChange={i => (i ? onChange(parseInt(i)) : onChange(0))}
           />
-          {[1, 2, 3, 7, 14, 30].map((i) => (
+          {[1, 2, 3, 7, 14, 30].map(i => (
             <MenuItem
               key={i}
               onClick={() => {
@@ -41,14 +41,14 @@ literalMatcher.register(tDateRange.create(), {
                 onChange(i);
               }}
             >
-              {i} days
+              {i} {i > 1 ? 'days' : 'day'}
             </MenuItem>
           ))}
         </div>
       }
     >
       <div>
-        <span>{value as string}</span> days
+        <span>{value.toString()}</span> {(value as number) > 1 ? 'days' : 'day'}
       </div>
     </Menu>
   ),

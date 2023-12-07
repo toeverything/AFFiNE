@@ -167,7 +167,7 @@ filterMatcher.register(
     rt: tBoolean.create(),
   }),
   {
-    name: 'lastNDays',
+    name: 'last',
     defaultArgs: () => [30], // Default to the last 30 days
     impl: (date, n) => {
       if (typeof date !== 'number' || typeof n !== 'number') {
