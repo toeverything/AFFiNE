@@ -23,7 +23,7 @@ export const appStyle = style({
       inset: 0,
       opacity: 'var(--affine-noise-opacity, 0)',
       backgroundRepeat: 'repeat',
-      backgroundSize: '2.5%',
+      backgroundSize: '3%',
       // todo: figure out how to use vanilla-extract webpack plugin to inject img url
       backgroundImage: `var(--noise-background)`,
     },
@@ -32,13 +32,13 @@ export const appStyle = style({
 
 globalStyle(`html[data-theme="light"] ${appStyle}`, {
   vars: {
-    '--affine-noise-opacity': '0.25',
+    '--affine-noise-opacity': '0.35',
   },
 });
 
 globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   vars: {
-    '--affine-noise-opacity': '0.1',
+    '--affine-noise-opacity': '1',
   },
 
   '@media': {
