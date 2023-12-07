@@ -25,6 +25,7 @@ import {
   EventError,
   InternalError,
   NotInWorkspaceError,
+  WorkspaceNotFoundError,
 } from './error';
 
 export const GatewayErrorWrapper = (): MethodDecorator => {
@@ -318,7 +319,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (!doc) {
       return {
-        error: new DocNotFoundError(workspaceId, docId.guid),
+        error: docId.isWorkspace
+          ? new WorkspaceNotFoundError(workspaceId)
+          : new DocNotFoundError(workspaceId, docId.guid),
       };
     }
 

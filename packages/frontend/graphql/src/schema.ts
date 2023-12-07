@@ -199,7 +199,9 @@ export type CreateCustomerPortalMutation = {
   createCustomerPortal: string;
 };
 
-export type CreateWorkspaceMutationVariables = Exact<{ [key: string]: never }>;
+export type CreateWorkspaceMutationVariables = Exact<{
+  init: Scalars['Upload']['input'];
+}>;
 
 export type CreateWorkspaceMutation = {
   __typename?: 'Mutation';
