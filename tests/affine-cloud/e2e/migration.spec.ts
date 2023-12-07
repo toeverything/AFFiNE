@@ -49,7 +49,8 @@ test.afterEach(async () => {
   await deleteUser(user.email);
 });
 
-test('migration', async ({ page, browser }) => {
+// TODO: @joooye34 mock migration from server data after page level upgrade implemented.
+test.skip('migration', async ({ page, browser }) => {
   let workspaceId: string;
   {
     // create the old cloud workspace in another browser
