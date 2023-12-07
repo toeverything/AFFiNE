@@ -38,8 +38,7 @@ export const TrashButtonGroup = () => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [width, setWidth] = useState(0);
-  const hintText =
-    'This page has been moved to the trash, you can either restore or permanently delete it.';
+  const hintText = t['com.affine.trash-page.delete-hint']();
   useEffect(() => {
     const currentRef = wrapperRef.current;
 
