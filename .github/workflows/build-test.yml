@@ -374,7 +374,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
+        run: yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
@@ -464,7 +464,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec ts-node ./scripts/init-db.ts
+        run: yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
@@ -588,7 +588,7 @@ jobs:
       - name: Output check
         if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
         run: |
-          yarn workspace @affine/electron ts-node ./scripts/macos-arm64-output-check.ts
+          yarn workspace @affine/electron exec node --loader ts-node/esm/transpile-only ./scripts/macos-arm64-output-check.ts
 
       - name: Upload test results
         if: ${{ failure() }}
