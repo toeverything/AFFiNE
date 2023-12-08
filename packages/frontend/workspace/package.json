@@ -49,5 +49,5 @@
     "vitest": "0.34.6",
     "ws": "^8.14.2"
   },
-  "version": "0.10.3-canary.2"
+  "version": "0.10.4-canary.2"
 }
