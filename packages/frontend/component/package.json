@@ -101,7 +101,7 @@
     "storybook": "^7.5.3",
     "storybook-dark-mode": "^3.0.1",
     "typescript": "^5.3.2",
-    "vite": "^4.4.11",
+    "vite": "^5.0.6",
     "vitest": "0.34.6",
     "yjs": "^13.6.10"
   },

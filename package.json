@@ -107,7 +107,7 @@
     "string-width": "^7.0.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2",
-    "vite": "^5.0.1",
+    "vite": "^5.0.6",
     "vite-plugin-istanbul": "^5.0.0",
     "vite-plugin-static-copy": "^0.17.1",
     "vite-tsconfig-paths": "^4.2.1",
@@ -117,7 +117,7 @@
   },
   "packageManager": "yarn@4.0.1",
   "resolutions": {
-    "vite": "^4.4.11",
+    "vite": "^5.0.6",
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@latest",
     "array-includes": "npm:@nolyfill/array-includes@latest",
     "array.prototype.flat": "npm:@nolyfill/array.prototype.flat@latest",
