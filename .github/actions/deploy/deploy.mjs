@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 
 const {
+  APP_VERSION,
   BUILD_TYPE,
   DEPLOY_HOST,
   CANARY_DEPLOY_HOST,
@@ -79,6 +80,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set        global.ingress.enabled=true`,
     `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${staticIpName}\\" }\"`,
     `--set-string global.ingress.host="${host}"`,
+    `--set-string global.version="${APP_VERSION}"`,
     ...redisAndPostgres,
     `--set        web.replicaCount=${webReplicaCount}`,
     `--set-string web.image.tag="${imageTag}"`,
@@ -105,7 +107,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set        sync.replicaCount=${syncReplicaCount}`,
     `--set-string sync.image.tag="${imageTag}"`,
     ...serviceAnnotations,
-    `--version "0.0.0-${buildType}.${GIT_SHORT_HASH}" --timeout 10m`,
+    `--timeout 10m`,
     flag,
   ].join(' ');
   return deployCommand;
