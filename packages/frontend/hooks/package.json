@@ -11,7 +11,7 @@
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
     "lodash.debounce": "^4.0.8",
-    "p-queue": "^7.4.1",
+    "p-queue": "^8.0.0",
     "react": "18.2.0",
     "rxjs": "^7.8.1",
     "swr": "2.2.4",
