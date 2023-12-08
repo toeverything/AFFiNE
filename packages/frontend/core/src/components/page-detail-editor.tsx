@@ -8,6 +8,7 @@ import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { pluginEditorAtom } from '@toeverything/infra/__internal__/plugin';
 import { getCurrentStore } from '@toeverything/infra/atom';
+import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
@@ -15,7 +16,6 @@ import { memo, Suspense, useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { type PageMode, pageSettingFamily } from '../atoms';
-import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';

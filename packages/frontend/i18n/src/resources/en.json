@@ -373,6 +373,7 @@
   "com.affine.appUpdater.downloading": "Downloading",
   "com.affine.appUpdater.installUpdate": "Restart to install update",
   "com.affine.appUpdater.openDownloadPage": "Open download page",
+  "com.affine.appUpdater.downloadUpdate": "Download update",
   "com.affine.appUpdater.updateAvailable": "Update available",
   "com.affine.appUpdater.whatsNew": "Discover what's new!",
   "com.affine.appearanceSettings.clientBorder.description": "Customise the appearance of the client.",

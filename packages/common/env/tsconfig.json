@@ -8,9 +8,6 @@
   },
   "references": [
     {
-      "path": "../infra"
-    },
-    {
       "path": "../../../tests/fixtures"
     }
   ]

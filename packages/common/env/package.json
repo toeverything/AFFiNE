@@ -21,8 +21,7 @@
   },
   "peerDependencies": {
     "@affine/templates": "workspace:*",
-    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly",
-    "@toeverything/infra": "workspace:*"
+    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
   },
   "dependencies": {
     "lit": "^3.0.2"

@@ -125,7 +125,7 @@ export function createApplicationMenu() {
         {
           label: 'Check for Updates',
           click: async () => {
-            await checkForUpdates(true);
+            await checkForUpdates();
           },
         },
       ],

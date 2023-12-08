@@ -1,7 +1,6 @@
+import { type AppSetting, appSettingAtom } from '@toeverything/infra/atom';
 import { useAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
-
-import { type AppSetting, appSettingAtom } from '../../atoms/settings';
 
 export function useAppSettingHelper() {
   const [appSettings, setAppSettings] = useAtom(appSettingAtom);
