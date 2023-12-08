@@ -30,7 +30,11 @@ export function ShareHeader({
         />
       }
       right={
-        <ShareHeaderRightItem workspaceId={workspace.id} pageId={pageId} />
+        <ShareHeaderRightItem
+          workspaceId={workspace.id}
+          pageId={pageId}
+          publishMode={publishMode}
+        />
       }
       bottomBorder
     />

@@ -1004,5 +1004,6 @@
   "com.affine.history.empty-prompt.title": "Empty",
   "com.affine.history.empty-prompt.description": "This document is such a spring chicken, it hasn't sprouted a single historical sprig yet!",
   "com.affine.history.confirm-restore-modal.restore": "Restore",
-  "com.affine.history.confirm-restore-modal.hint": "You are about to restore the current version of the page to the latest version available. This action will overwrite any changes made prior to the latest version."
+  "com.affine.history.confirm-restore-modal.hint": "You are about to restore the current version of the page to the latest version available. This action will overwrite any changes made prior to the latest version.",
+  "com.affine.share-page.header.present": "Present"
 }
