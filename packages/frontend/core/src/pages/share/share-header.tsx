@@ -1,13 +1,11 @@
 import type { Workspace } from '@blocksuite/store';
-import { useSetAtom } from 'jotai/react';
 
-import type { PageMode } from '../atoms';
-import { appHeaderAtom, mainContainerAtom } from '../atoms/element';
-import { useWorkspace } from '../hooks/use-workspace';
-import { BlockSuiteHeaderTitle } from './blocksuite/block-suite-header-title';
-import ShareHeaderLeftItem from './cloud/share-header-left-item';
-import ShareHeaderRightItem from './cloud/share-header-right-item';
-import { Header } from './pure/header';
+import type { PageMode } from '../../atoms';
+import { BlockSuiteHeaderTitle } from '../../components/blocksuite/block-suite-header-title';
+import ShareHeaderLeftItem from '../../components/cloud/share-header-left-item';
+import ShareHeaderRightItem from '../../components/cloud/share-header-right-item';
+import { Header } from '../../components/pure/header';
+import { useWorkspace } from '../../hooks/use-workspace';
 
 export function ShareHeader({
   workspace,
@@ -18,14 +16,10 @@ export function ShareHeader({
   pageId: string;
   publishMode: PageMode;
 }) {
-  const setAppHeader = useSetAtom(appHeaderAtom);
-
   const currentWorkspace = useWorkspace(workspace.id);
 
   return (
     <Header
-      mainContainerAtom={mainContainerAtom}
-      ref={setAppHeader}
       left={<ShareHeaderLeftItem />}
       center={
         <BlockSuiteHeaderTitle

@@ -54,13 +54,11 @@ export const mainContainerStyle = style({
   width: 0,
   flex: 1,
   maxWidth: '100%',
-  backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
       margin: '8px',
       borderRadius: '5px',
       overflow: 'hidden',
-      boxShadow: 'var(--affine-shadow-1)',
       '@media': {
         print: {
           overflow: 'visible',
@@ -71,12 +69,6 @@ export const mainContainerStyle = style({
     },
     '&[data-show-padding="true"][data-is-macos="true"]': {
       borderRadius: '6px',
-    },
-    '&[data-in-trash-page="true"]': {
-      marginBottom: '66px',
-    },
-    '&[data-in-trash-page="true"][data-show-padding="true"]': {
-      marginBottom: '66px',
     },
     '&[data-show-padding="true"]:before': {
       content: '""',
@@ -124,7 +116,7 @@ globalStyle(
 );
 
 export const toolStyle = style({
-  position: 'fixed',
+  position: 'absolute',
   right: '30px',
   bottom: '30px',
   zIndex: 'var(--affine-z-index-popover)',
@@ -141,22 +133,6 @@ export const toolStyle = style({
     },
     print: {
       display: 'none',
-    },
-  },
-  selectors: {
-    '&[data-in-trash-page="true"]': {
-      bottom: '70px',
-      '@media': {
-        'screen and (max-width: 960px)': {
-          bottom: '80px',
-        },
-        'screen and (max-width: 640px)': {
-          bottom: '85px',
-        },
-        print: {
-          display: 'none',
-        },
-      },
     },
   },
 });

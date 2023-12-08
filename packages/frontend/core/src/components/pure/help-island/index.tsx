@@ -4,6 +4,7 @@ import { CloseIcon, NewIcon, UserGuideIcon } from '@blocksuite/icons';
 import { useSetAtom } from 'jotai/react';
 import { useAtomValue } from 'jotai/react';
 import { useCallback, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { openOnboardingModalAtom, openSettingModalAtom } from '../../../atoms';
 import { currentModeAtom } from '../../../atoms/mode';
@@ -22,19 +23,16 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
   'shortcuts',
 ];
 const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST, 'guide'];
-export type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
+type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts' | 'guide';
 
-export const HelpIsland = ({
-  showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST,
-}: {
-  showList?: IslandItemNames[];
-}) => {
+const showList = environment.isDesktop ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
+
+export const HelpIsland = () => {
   const mode = useAtomValue(currentModeAtom);
   const setOpenOnboarding = useSetAtom(openOnboardingModalAtom);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
   const [spread, setShowSpread] = useState(false);
   const t = useAFFiNEI18N();
-
   const openSettingModal = useCallback(
     (tab: SettingProps['activeTab']) => {
       setShowSpread(false);
@@ -56,6 +54,8 @@ export const HelpIsland = ({
     [openSettingModal]
   );
 
+  const { pageId } = useParams();
+
   return (
     <StyledIsland
       spread={spread}
@@ -63,7 +63,7 @@ export const HelpIsland = ({
       onClick={() => {
         setShowSpread(!spread);
       }}
-      inEdgelessPage={mode === 'edgeless'}
+      inEdgelessPage={!!pageId && mode === 'edgeless'}
     >
       <StyledAnimateWrapper
         style={{ height: spread ? `${showList.length * 40 + 4}px` : 0 }}

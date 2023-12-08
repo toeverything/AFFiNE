@@ -1,3 +1,5 @@
+import './register-blocksuite-components';
+
 import { setupGlobal } from '@affine/env/global';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import type { WorkspaceFlavour } from '@affine/env/workspace';

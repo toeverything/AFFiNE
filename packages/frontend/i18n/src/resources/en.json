@@ -510,6 +510,7 @@
   "com.affine.cmdk.affine.editor.edgeless.presentation-start": "Start Presentation",
   "com.affine.cmdk.affine.editor.remove-from-favourites": "Remove from Favourites",
   "com.affine.cmdk.affine.editor.restore-from-trash": "Restore from Trash",
+  "com.affine.cmdk.affine.editor.trash-footer-hint": "This page has been moved to the trash, you can either restore or permanently delete it.",
   "com.affine.cmdk.affine.font-style.to": "Change Font Style to",
   "com.affine.cmdk.affine.full-width-layout.to": "Change Full Width Layout to",
   "com.affine.cmdk.affine.getting-started": "Getting Started",

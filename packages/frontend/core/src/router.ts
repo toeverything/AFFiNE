@@ -13,7 +13,7 @@ export const routes = [
     children: [
       {
         path: 'all',
-        lazy: () => import('./pages/workspace/all-page'),
+        lazy: () => import('./pages/workspace/all-page/all-page'),
       },
       {
         path: 'collection/:collectionId',
@@ -25,13 +25,13 @@ export const routes = [
       },
       {
         path: ':pageId',
-        lazy: () => import('./pages/workspace/detail-page'),
+        lazy: () => import('./pages/workspace/detail-page/detail-page'),
       },
     ],
   },
   {
     path: '/share/:workspaceId/:pageId',
-    lazy: () => import('./pages/share/detail-page'),
+    lazy: () => import('./pages/share/share-detail-page'),
   },
   {
     path: '/404',

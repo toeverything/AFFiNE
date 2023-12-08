@@ -6,11 +6,7 @@ import {
   type DraggableTitleCellData,
   PageListDragOverlay,
 } from '@affine/component/page-list';
-import {
-  MainContainer,
-  ToolContainer,
-  WorkspaceFallback,
-} from '@affine/component/workspace';
+import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getBlobEngine } from '@affine/workspace/manager';
@@ -35,12 +31,10 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
-import { mainContainerAtom } from '../atoms/element';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
+import { SyncAwareness } from '../components/affine/awareness';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import type { IslandItemNames } from '../components/pure/help-island';
-import { HelpIsland } from '../components/pure/help-island';
 import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
 import {
   DROPPABLE_SIDEBAR_TRASH,
@@ -89,10 +83,6 @@ export const QuickSearch = () => {
     />
   );
 };
-
-const showList: IslandItemNames[] = environment.isDesktop
-  ? ['whatNew', 'contact', 'guide']
-  : ['whatNew', 'contact'];
 
 export const CurrentWorkspaceContext = ({
   children,
@@ -258,12 +248,6 @@ export const WorkspaceLayoutInner = ({
 
   const { appSettings } = useAppSettingHelper();
   const location = useLocation();
-  const { pageId } = useParams();
-  const pageMeta = useBlockSuitePageMeta(
-    currentWorkspace.blockSuiteWorkspace
-  ).find(meta => meta.id === pageId);
-  const inTrashPage = pageMeta?.trash ?? false;
-  const setMainContainer = useSetAtom(mainContainerAtom);
 
   return (
     <>
@@ -292,26 +276,20 @@ export const WorkspaceLayoutInner = ({
               paths={pathGenerator}
             />
           </Suspense>
-          <Suspense fallback={<MainContainer ref={setMainContainer} />}>
-            <MainContainer
-              ref={setMainContainer}
-              padding={appSettings.clientBorder}
-              inTrashPage={inTrashPage}
-            >
+          <Suspense fallback={<MainContainer />}>
+            <MainContainer padding={appSettings.clientBorder}>
               {migration ? (
                 <WorkspaceUpgrade migration={migration} />
               ) : (
                 children
               )}
-              <ToolContainer inTrashPage={inTrashPage}>
-                <HelpIsland showList={pageId ? undefined : showList} />
-              </ToolContainer>
             </MainContainer>
           </Suspense>
         </AppContainer>
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      <SyncAwareness />
     </>
   );
 };

@@ -1,8 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import {
-  DEFAULT_WORKSPACE_NAME,
-  PageNotFoundError,
-} from '@affine/env/constant';
+import { DEFAULT_WORKSPACE_NAME } from '@affine/env/constant';
 import type { WorkspaceAdapter } from '@affine/env/workspace';
 import {
   LoadPriority,
@@ -14,19 +11,13 @@ import {
   saveWorkspaceToLocalStorage,
 } from '@affine/workspace/local/crud';
 import { getOrCreateWorkspace } from '@affine/workspace/manager';
-import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { buildShowcaseWorkspace } from '@toeverything/infra/blocksuite';
-import { useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 
 import { setPageModeAtom } from '../../atoms';
-import {
-  NewWorkspaceSettingDetail,
-  PageDetailEditor,
-  Provider,
-} from '../shared';
+import { NewWorkspaceSettingDetail, Provider } from '../shared';
 
 const logger = new DebugLogger('use-create-first-workspace');
 
@@ -68,21 +59,6 @@ export const LocalAdapter: WorkspaceAdapter<WorkspaceFlavour.LOCAL> = {
   CRUD,
   UI: {
     Provider,
-    PageDetail: ({ currentWorkspaceId, currentPageId, onLoadEditor }) => {
-      const [workspaceAtom] = getBlockSuiteWorkspaceAtom(currentWorkspaceId);
-      const workspace = useAtomValue(workspaceAtom);
-      const page = workspace.getPage(currentPageId);
-      if (!page) {
-        throw new PageNotFoundError(workspace, currentPageId);
-      }
-      return (
-        <PageDetailEditor
-          pageId={currentPageId}
-          onLoad={onLoadEditor}
-          workspace={workspace}
-        />
-      );
-    },
     NewSettingsDetail: ({
       currentWorkspaceId,
       onTransformWorkspace,

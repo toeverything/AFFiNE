@@ -1,5 +1,6 @@
 import { toast } from '@affine/component';
 import {
+  CollectionList,
   currentCollectionAtom,
   FloatingToolbar,
   NewPageButton as PureNewPageButton,
@@ -8,7 +9,7 @@ import {
   useCollectionManager,
   VirtualizedPageList,
 } from '@affine/component/page-list';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -18,7 +19,7 @@ import {
   PlusIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
+import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -34,16 +35,22 @@ import type { LoaderFunction } from 'react-router-dom';
 import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
 
-import { collectionsCRUDAtom } from '../../atoms/collections';
-import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import { WorkspaceHeader } from '../../components/workspace-header';
-import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
-import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
-import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
-import { performanceRenderLogger } from '../../shared';
+import { collectionsCRUDAtom } from '../../../atoms/collections';
+import { HubIsland } from '../../../components/affine/hub-island';
+import { usePageHelper } from '../../../components/blocksuite/block-suite-page-list/utils';
+import { Header } from '../../../components/pure/header';
+import { WindowsAppControls } from '../../../components/pure/header/windows-app-controls';
+import { WorkspaceModeFilterTab } from '../../../components/pure/workspace-mode-filter-tab';
+import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
+import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
+import { useDeleteCollectionInfo } from '../../../hooks/affine/use-delete-collection-info';
+import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
+import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { performanceRenderLogger } from '../../../shared';
+import { EmptyPageList } from '../page-list-empty';
+import { useFilteredPageMetas } from '../pages';
 import * as styles from './all-page.css';
-import { EmptyPageList } from './page-list-empty';
-import { useFilteredPageMetas } from './pages';
+import { FilterContainer } from './all-page-filter';
 
 export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();
@@ -217,6 +224,50 @@ const NewPageButton = ({
   );
 };
 
+const AllPageHeader = ({
+  workspace,
+  showCreateNew,
+}: {
+  workspace: Workspace;
+  showCreateNew: boolean;
+}) => {
+  const setting = useCollectionManager(collectionsCRUDAtom);
+  const config = useAllPageListConfig();
+  const userInfo = useDeleteCollectionInfo();
+  const isWindowsDesktop = environment.isDesktop && environment.isWindows;
+
+  return (
+    <>
+      <Header
+        left={
+          <CollectionList
+            userInfo={userInfo}
+            allPageListConfig={config}
+            setting={setting}
+            propertiesMeta={workspace.meta.properties}
+          />
+        }
+        right={
+          <div className={styles.headerRightWindows}>
+            <NewPageButton
+              size="small"
+              className={clsx(
+                styles.headerCreateNewButton,
+                !showCreateNew && styles.headerCreateNewButtonHidden
+              )}
+            >
+              <PlusIcon />
+            </NewPageButton>
+            {isWindowsDesktop ? <WindowsAppControls /> : null}
+          </div>
+        }
+        center={<WorkspaceModeFilterTab />}
+      />
+      <FilterContainer workspaceId={workspace.id} />
+    </>
+  );
+};
+
 // even though it is called all page, it is also being used for collection route as well
 export const AllPage = () => {
   const [currentWorkspace] = useCurrentWorkspace();
@@ -250,22 +301,9 @@ export const AllPage = () => {
   return (
     <div className={styles.root}>
       {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
-        <WorkspaceHeader
-          currentWorkspaceId={currentWorkspace.id}
-          currentEntry={{
-            subPath: WorkspaceSubPath.ALL,
-          }}
-          rightSlot={
-            <NewPageButton
-              size="small"
-              className={clsx(
-                styles.headerCreateNewButton,
-                hideHeaderCreateNewPage && styles.headerCreateNewButtonHidden
-              )}
-            >
-              <PlusIcon />
-            </NewPageButton>
-          }
+        <AllPageHeader
+          workspace={currentWorkspace.blockSuiteWorkspace}
+          showCreateNew={!hideHeaderCreateNewPage}
         />
       ) : null}
       {filteredPageMetas.length > 0 ? (
@@ -299,6 +337,7 @@ export const AllPage = () => {
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       )}
+      <HubIsland />
     </div>
   );
 };

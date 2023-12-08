@@ -62,9 +62,6 @@ export const headerCenter = style({
   left: '50%',
   zIndex: 1,
   selectors: {
-    '&.is-window': {
-      maxWidth: '50%',
-    },
     '&.shadow': {
       position: 'static',
       visibility: 'hidden',
@@ -89,9 +86,6 @@ export const headerSideContainer = style({
 
 export const windowAppControlsWrapper = style({
   display: 'flex',
-  marginLeft: '20px',
-  // header padding right
-  transform: 'translateX(16px)',
 });
 
 export const windowAppControl = style({
@@ -118,3 +112,10 @@ export const windowAppControl = style({
     },
   },
 } as ComplexStyleRule);
+
+export const headerDivider = style({
+  height: '20px',
+  width: '1px',
+  background: 'var(--affine-border-color)',
+  margin: '0 12px',
+});

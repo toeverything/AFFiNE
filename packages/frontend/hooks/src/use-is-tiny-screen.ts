@@ -4,24 +4,22 @@ import debounce from 'lodash.debounce';
 import { type RefObject, useEffect, useState } from 'react';
 
 export function useIsTinyScreen({
-  mainContainer,
+  container,
   leftStatic,
   leftSlot,
   centerDom,
-  rightStatic,
   rightSlot,
 }: {
-  mainContainer: HTMLElement | null;
+  container: HTMLElement | null;
   leftStatic: RefObject<HTMLElement>;
   leftSlot: RefObject<HTMLElement>[];
   centerDom: RefObject<HTMLElement>;
-  rightStatic: RefObject<HTMLElement>;
   rightSlot: RefObject<HTMLElement>[];
 }) {
   const [isTinyScreen, setIsTinyScreen] = useState(false);
 
   useEffect(() => {
-    if (!mainContainer) {
+    if (!container) {
       return;
     }
     const handleResize = debounce(() => {
@@ -32,8 +30,6 @@ export function useIsTinyScreen({
       const leftSlotWidth = leftSlot.reduce((accWidth, dom) => {
         return accWidth + (dom.current?.clientWidth || 0);
       }, 0);
-
-      const rightStaticWidth = rightStatic.current?.clientWidth || 0;
 
       const rightSlotWidth = rightSlot.reduce((accWidth, dom) => {
         return accWidth + (dom.current?.clientWidth || 0);
@@ -46,14 +42,13 @@ export function useIsTinyScreen({
         return;
       }
 
-      const containerRect = mainContainer.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
       const centerRect = centerDom.current.getBoundingClientRect();
 
       if (
         leftStaticWidth + leftSlotWidth + containerRect.left >=
           centerRect.left ||
-        containerRect.right - centerRect.right <=
-          rightSlotWidth + rightStaticWidth
+        containerRect.right - centerRect.right <= rightSlotWidth
       ) {
         setIsTinyScreen(true);
       } else {
@@ -67,20 +62,12 @@ export function useIsTinyScreen({
       handleResize();
     });
 
-    resizeObserver.observe(mainContainer);
+    resizeObserver.observe(container);
 
     return () => {
-      resizeObserver.unobserve(mainContainer);
+      resizeObserver.unobserve(container);
     };
-  }, [
-    centerDom,
-    isTinyScreen,
-    leftSlot,
-    leftStatic,
-    mainContainer,
-    rightSlot,
-    rightStatic,
-  ]);
+  }, [centerDom, isTinyScreen, leftSlot, leftStatic, container, rightSlot]);
 
   return isTinyScreen;
 }
