@@ -91,6 +91,7 @@ export const TrashButtonGroup = () => {
             portalOptions={{
               container: restoreRef.current,
             }}
+            side="left"
           >
             <Button
               ref={restoreRef}
@@ -114,6 +115,7 @@ export const TrashButtonGroup = () => {
           <Tooltip
             content={t['com.affine.trashOperation.deletePermanently']()}
             portalOptions={{ container: deleteRef.current }}
+            side="left"
           >
             <Button
               ref={deleteRef}
