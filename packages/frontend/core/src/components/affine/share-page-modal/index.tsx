@@ -14,7 +14,7 @@ type SharePageModalProps = {
   page: Page;
 };
 
-export const SharePageModal = ({ workspace, page }: SharePageModalProps) => {
+export const SharePageButton = ({ workspace, page }: SharePageModalProps) => {
   const onTransformWorkspace = useOnTransformWorkspace();
   const [open, setOpen] = useState(false);
 

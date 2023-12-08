@@ -1,5 +1,3 @@
-import type { EditorContainer } from '@blocksuite/presets';
-import type { Page } from '@blocksuite/store';
 import type {
   ActiveDocProvider,
   PassiveDocProvider,
@@ -134,18 +132,6 @@ type UIBaseProps<_Flavour extends keyof WorkspaceRegistry> = {
   currentWorkspaceId: string;
 };
 
-export type WorkspaceHeaderProps<Flavour extends keyof WorkspaceRegistry> =
-  UIBaseProps<Flavour> & {
-    rightSlot?: ReactNode;
-    currentEntry:
-      | {
-          subPath: WorkspaceSubPath;
-        }
-      | {
-          pageId: string;
-        };
-  };
-
 type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
   UIBaseProps<Flavour> & {
     onDeleteLocalWorkspace: () => void;
@@ -161,18 +147,11 @@ type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
     ) => void;
   };
 
-type PageDetailProps<Flavour extends keyof WorkspaceRegistry> =
-  UIBaseProps<Flavour> & {
-    currentPageId: string;
-    onLoadEditor: (page: Page, editor: EditorContainer) => () => void;
-  };
-
 interface FC<P> {
   (props: P): ReactNode;
 }
 
 export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
-  PageDetail: FC<PageDetailProps<Flavour>>;
   NewSettingsDetail: FC<NewSettingProps<Flavour>>;
   Provider: FC<PropsWithChildren>;
   LoginCard?: FC<object>;

@@ -67,3 +67,10 @@ export const headerCreateNewButtonHidden = style({
   opacity: 0,
   pointerEvents: 'none',
 });
+
+export const headerRightWindows = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  transform: 'translateX(16px)',
+});

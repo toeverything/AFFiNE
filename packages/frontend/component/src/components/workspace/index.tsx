@@ -35,14 +35,13 @@ export const AppContainer = ({
 export interface MainContainerProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   padding?: boolean;
-  inTrashPage?: boolean;
 }
 
 export const MainContainer = forwardRef<
   HTMLDivElement,
   PropsWithChildren<MainContainerProps>
 >(function MainContainer(
-  { className, padding, inTrashPage, children, ...props },
+  { className, padding, children, ...props },
   ref
 ): ReactElement {
   return (
@@ -51,7 +50,6 @@ export const MainContainer = forwardRef<
       className={clsx(mainContainerStyle, className)}
       data-is-macos={environment.isDesktop && environment.isMacOs}
       data-show-padding={!!padding}
-      data-in-trash-page={!!inTrashPage}
       ref={ref}
     >
       {children}
@@ -61,14 +59,8 @@ export const MainContainer = forwardRef<
 
 MainContainer.displayName = 'MainContainer';
 
-export const ToolContainer = (
-  props: PropsWithChildren & { inTrashPage: boolean }
-): ReactElement => {
-  return (
-    <div className={toolStyle} data-in-trash-page={!!props.inTrashPage}>
-      {props.children}
-    </div>
-  );
+export const ToolContainer = (props: PropsWithChildren): ReactElement => {
+  return <div className={toolStyle}>{props.children}</div>;
 };
 
 export const WorkspaceFallback = (): ReactElement => {

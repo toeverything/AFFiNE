@@ -60,7 +60,7 @@ const LocalShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button data-testid="local-share-menu-button" type="plain">
+      <Button data-testid="local-share-menu-button" type="primary">
         {t['com.affine.share-menu.shareButton']()}
       </Button>
     </Menu>
@@ -86,7 +86,7 @@ const CloudShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button data-testid="cloud-share-menu-button" type="plain">
+      <Button data-testid="cloud-share-menu-button" type="primary">
         <div
           style={{
             color: isSharedPage

@@ -1,5 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
+export { root } from './all-page/all-page.css';
+
 export const trashTitle = style({
   display: 'flex',
   alignItems: 'center',

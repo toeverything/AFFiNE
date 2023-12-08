@@ -106,5 +106,6 @@ export function useCurrentUser(): CheckedUser {
       hasPassword: user?.hasPassword ?? false,
       update,
     };
-  }, [user, update]);
+    // spread the user object to make sure the hook will not be re-rendered when user ref changed but the properties not.
+  }, [user.id, user.name, user.email, user.image, user.hasPassword, update]);
 }

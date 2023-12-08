@@ -18,11 +18,11 @@ import {
 } from 'react-router-dom';
 import { applyUpdate } from 'yjs';
 
-import { PageDetailEditor } from '../../adapters/shared';
 import type { PageMode } from '../../atoms';
 import { AppContainer } from '../../components/affine/app-container';
-import { ShareHeader } from '../../components/share-header';
+import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
+import { ShareHeader } from './share-header';
 
 type LoaderData = {
   page: Page;

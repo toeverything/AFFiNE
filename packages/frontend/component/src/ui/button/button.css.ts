@@ -6,6 +6,7 @@ export const button = style({
   alignItems: 'center',
   userSelect: 'none',
   touchAction: 'manipulation',
+  flexShrink: 0,
   outline: '0',
   border: '1px solid',
   padding: '0 18px',

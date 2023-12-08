@@ -30,7 +30,7 @@ import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../shared';
 import { getWorkspaceSetting } from '../../utils/workspace-setting';
-import { AllPage } from './all-page';
+import { AllPage } from './all-page/all-page';
 import * as styles from './collection.css';
 
 export const loader: LoaderFunction = async args => {

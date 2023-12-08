@@ -1,3 +1,4 @@
+import { Loading } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -13,7 +14,6 @@ import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Loading } from '../../../../pure/workspace-slider-bar/workspace-card/loading-icon';
 import * as styles from './style.css';
 
 enum CheckUpdateStatus {

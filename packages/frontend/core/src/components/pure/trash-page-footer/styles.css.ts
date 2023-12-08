@@ -6,12 +6,13 @@ export const group = style({
   justifyContent: 'center',
 });
 export const deleteHintContainer = style({
-  position: 'fixed',
+  position: 'relative',
   zIndex: 2,
   padding: '14px 20px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  flexShrink: 0,
   bottom: '0',
   gap: '16px',
   backgroundColor: 'var(--affine-background-primary-color)',
@@ -32,7 +33,6 @@ export const deleteHintText = style({
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   overflow: 'hidden',
-  cursor: 'pointer',
 });
 export const buttonContainer = style({
   color: 'var(--affine-pure-white)',
