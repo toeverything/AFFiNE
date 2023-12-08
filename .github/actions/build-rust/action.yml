@@ -32,7 +32,9 @@ runs:
     - name: Set CC
       if: ${{ contains(inputs.target, 'linux') && inputs.package != '@affine/native' }}
       shell: bash
-      run: echo "CC=clang" >> "$GITHUB_ENV"
+      run: |
+        echo "CC=clang" >> "$GITHUB_ENV"
+        echo "TARGET_CC=clang" >> "$GITHUB_ENV"
 
     - name: Cache cargo
       uses: actions/cache@v3
@@ -50,3 +52,4 @@ runs:
         yarn workspace ${{ inputs.package }} nx build ${{ inputs.package }} --target ${{ inputs.target }} --use-napi-cross
       env:
         NX_CLOUD_ACCESS_TOKEN: ${{ inputs.nx_token }}
+        DEBUG: 'napi:*'
