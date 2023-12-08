@@ -3,11 +3,6 @@ export type Payload<T> = {
   data: T;
 };
 
-export type ChangePayload<T> = {
-  from: Partial<T>;
-  to: Partial<T>;
-};
-
 export type Join<A extends string, B extends string> = A extends ''
   ? B
   : `${A}.${B}`;
@@ -33,6 +28,6 @@ export type Leaves<T, P extends string = ''> = T extends Payload<any>
 export type Flatten<T> = Leaves<T> extends infer R
   ? {
       // @ts-expect-error yo, ts can't make it
-      [K in R]: PathType<T, K> extends Payload<infer U> ? { data: U } : never;
+      [K in R]: PathType<T, K> extends Payload<infer U> ? U : never;
     }
   : never;

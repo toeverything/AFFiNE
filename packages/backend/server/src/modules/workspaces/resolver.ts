@@ -33,6 +33,7 @@ import type {
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import { EventEmitter } from '../../event';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -146,6 +147,7 @@ export class WorkspaceResolver {
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
     private readonly users: UsersService,
+    private readonly event: EventEmitter,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
@@ -388,18 +390,7 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.$transaction([
-      this.prisma.update.deleteMany({
-        where: {
-          workspaceId: id,
-        },
-      }),
-      this.prisma.snapshot.deleteMany({
-        where: {
-          workspaceId: id,
-        },
-      }),
-    ]);
+    this.event.emit('workspace.deleted', id);
 
     return true;
   }

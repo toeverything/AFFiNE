@@ -5,7 +5,6 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Snapshot, Update } from '@prisma/client';
 import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
@@ -20,6 +19,7 @@ import {
 
 import { Cache } from '../../cache';
 import { Config } from '../../config';
+import { EventEmitter, type EventPayload, OnEvent } from '../../event';
 import { metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
@@ -71,7 +71,7 @@ function isStateNewer(lhs: Buffer, rhs: Buffer): boolean {
   return false;
 }
 
-function isEmptyBuffer(buf: Buffer): boolean {
+export function isEmptyBuffer(buf: Buffer): boolean {
   return (
     buf.length === 0 ||
     // 0x0000
@@ -102,7 +102,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     private readonly db: PrismaService,
     private readonly config: Config,
     private readonly cache: Cache,
-    private readonly event: EventEmitter2
+    private readonly event: EventEmitter
   ) {}
 
   onModuleInit() {
@@ -222,6 +222,33 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       this.job = null;
       this.logger.log('Automation stopped');
     }
+  }
+
+  @OnEvent('workspace.deleted')
+  async onWorkspaceDeleted(workspaceId: string) {
+    await this.db.snapshot.deleteMany({
+      where: {
+        workspaceId,
+      },
+    });
+    await this.db.update.deleteMany({
+      where: {
+        workspaceId,
+      },
+    });
+  }
+
+  @OnEvent('snapshot.deleted')
+  async onSnapshotDeleted({
+    id,
+    workspaceId,
+  }: EventPayload<'snapshot.deleted'>) {
+    await this.db.update.deleteMany({
+      where: {
+        id,
+        workspaceId,
+      },
+    });
   }
 
   /**
@@ -538,8 +565,17 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       ...updates.map(u => u.blob)
     );
 
+    await this.upsert(workspaceId, id, doc, last.seq);
     if (snapshot) {
-      this.event.emit('doc:manager:snapshot:beforeUpdate', snapshot);
+      this.event.emit('snapshot.updated', {
+        id,
+        workspaceId,
+        previous: {
+          blob: snapshot.blob,
+          state: snapshot.state,
+          updatedAt: snapshot.updatedAt,
+        },
+      });
     }
 
     const done = await this.upsert(workspaceId, id, doc, last.seq);

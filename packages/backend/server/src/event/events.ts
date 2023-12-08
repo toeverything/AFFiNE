@@ -1,23 +1,18 @@
-import type { Snapshot, User, Workspace } from '@prisma/client';
+import type { Snapshot, Workspace } from '@prisma/client';
 
-import { ChangePayload, Flatten, Payload } from './types';
+import { Flatten, Payload } from './types';
 
 interface EventDefinitions {
-  user: {
-    created: Payload<User>;
-    updated: Payload<ChangePayload<User>>;
-    deleted: Payload<User['id']>;
-  };
-
   workspace: {
-    created: Payload<Workspace>;
-    updated: Payload<ChangePayload<Workspace>>;
     deleted: Payload<Workspace['id']>;
   };
 
   snapshot: {
-    created: Payload<Snapshot>;
-    updated: Payload<ChangePayload<Snapshot>>;
+    updated: Payload<
+      Pick<Snapshot, 'id' | 'workspaceId'> & {
+        previous: Pick<Snapshot, 'blob' | 'state' | 'updatedAt'>;
+      }
+    >;
     deleted: Payload<Pick<Snapshot, 'id' | 'workspaceId'>>;
   };
 }

@@ -1,7 +1,6 @@
 import { mock } from 'node:test';
 
 import type { INestApplication } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
 import test from 'ava';
 import { register } from 'prom-client';
@@ -15,6 +14,7 @@ import {
 
 import { CacheModule } from '../src/cache';
 import { Config, ConfigModule } from '../src/config';
+import { EventModule } from '../src/event';
 import { DocManager, DocModule } from '../src/modules/doc';
 import { PrismaModule, PrismaService } from '../src/prisma';
 import { flushDB } from './utils';
@@ -24,7 +24,7 @@ const createModule = () => {
     imports: [
       PrismaModule,
       CacheModule,
-      EventEmitterModule.forRoot(),
+      EventModule,
       ConfigModule.forRoot(),
       DocModule.forRoot(),
     ],

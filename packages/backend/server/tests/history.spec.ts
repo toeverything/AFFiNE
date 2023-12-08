@@ -6,6 +6,7 @@ import test from 'ava';
 import * as Sinon from 'sinon';
 
 import { ConfigModule } from '../src/config';
+import type { EventPayload } from '../src/event';
 import { DocHistoryManager } from '../src/modules/doc';
 import { PrismaModule, PrismaService } from '../src/prisma';
 import { flushDB } from './utils';
@@ -41,21 +42,28 @@ test.afterEach(async () => {
 const snapshot: Snapshot = {
   workspaceId: '1',
   id: 'doc1',
-  blob: Buffer.from([0, 0]),
-  state: Buffer.from([0, 0]),
+  blob: Buffer.from([1, 0]),
+  state: Buffer.from([0]),
   seq: 0,
   updatedAt: new Date(),
   createdAt: new Date(),
 };
 
+function getEventData(
+  timestamp: Date = new Date()
+): EventPayload<'snapshot.updated'> {
+  return {
+    workspaceId: snapshot.workspaceId,
+    id: snapshot.id,
+    previous: { ...snapshot, updatedAt: timestamp },
+  };
+}
+
 test('should create doc history if never created before', async t => {
   Sinon.stub(manager, 'last').resolves(null);
 
   const timestamp = new Date();
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: timestamp,
-  });
+  await manager.onDocUpdated(getEventData(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -72,10 +80,7 @@ test('should not create history if timestamp equals to last record', async t => 
   const timestamp = new Date();
   Sinon.stub(manager, 'last').resolves({ timestamp, state: null });
 
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: timestamp,
-  });
+  await manager.onDocUpdated(getEventData(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -94,10 +99,7 @@ test('should not create history if state equals to last record', async t => {
     state: snapshot.state,
   });
 
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: timestamp,
-  });
+  await manager.onDocUpdated(getEventData(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -116,10 +118,7 @@ test('should not create history if time diff is less than interval config', asyn
     state: Buffer.from([0, 1]),
   });
 
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: timestamp,
-  });
+  await manager.onDocUpdated(getEventData(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -138,10 +137,7 @@ test('should create history if time diff is larger than interval config and stat
     state: Buffer.from([0, 1]),
   });
 
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: timestamp,
-  });
+  await manager.onDocUpdated(getEventData(timestamp));
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -160,13 +156,7 @@ test('should create history with force flag even if time diff in small', async t
     state: Buffer.from([0, 1]),
   });
 
-  await manager.onDocUpdated(
-    {
-      ...snapshot,
-      updatedAt: timestamp,
-    },
-    true
-  );
+  await manager.onDocUpdated(getEventData(timestamp), true);
 
   const history = await db.snapshotHistory.findFirst({
     where: {
@@ -224,13 +214,7 @@ test('should correctly list all history records', async t => {
 test('should be able to get history data', async t => {
   const timestamp = new Date();
 
-  await manager.onDocUpdated(
-    {
-      ...snapshot,
-      updatedAt: timestamp,
-    },
-    true
-  );
+  await manager.onDocUpdated(getEventData(timestamp), true);
 
   const history = await manager.get(
     snapshot.workspaceId,
@@ -274,10 +258,7 @@ test('should be able to recover from history', async t => {
     },
   });
   const history1Timestamp = snapshot.updatedAt.getTime() - 10;
-  await manager.onDocUpdated({
-    ...snapshot,
-    updatedAt: new Date(history1Timestamp),
-  });
+  await manager.onDocUpdated(getEventData(new Date(history1Timestamp)));
 
   await manager.recover(
     snapshot.workspaceId,
