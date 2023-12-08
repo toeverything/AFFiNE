@@ -1,4 +1,5 @@
 // @ts-expect-error upstream type is wrong
+import { DebugLogger } from '@affine/debug';
 import { tinykeys } from 'tinykeys';
 
 import {
@@ -7,12 +8,14 @@ import {
   createAffineCommand,
 } from './command';
 
+const commandLogger = new DebugLogger('command:registry');
+
 export const AffineCommandRegistry = new (class {
   readonly commands: Map<string, AffineCommand> = new Map();
 
   register(options: AffineCommandOptions) {
     if (this.commands.has(options.id)) {
-      console.warn(`Command ${options.id} already registered.`);
+      commandLogger.warn(`Command ${options.id} already registered.`);
       return () => {};
     }
     const command = createAffineCommand(options);
@@ -38,17 +41,17 @@ export const AffineCommandRegistry = new (class {
       });
     }
 
-    console.debug(`Registered command ${command.id}`);
+    commandLogger.debug(`Registered command ${command.id}`);
     return () => {
       unsubKb?.();
       this.commands.delete(command.id);
-      console.debug(`Unregistered command ${command.id}`);
+      commandLogger.debug(`Unregistered command ${command.id}`);
     };
   }
 
   get(id: string): AffineCommand | undefined {
     if (!this.commands.has(id)) {
-      console.warn(`Command ${id} not registered.`);
+      commandLogger.warn(`Command ${id} not registered.`);
       return undefined;
     }
     return this.commands.get(id);
