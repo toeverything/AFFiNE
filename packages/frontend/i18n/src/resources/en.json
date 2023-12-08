@@ -608,6 +608,7 @@
   "com.affine.filter": "Filter",
   "com.affine.filter.after": "after",
   "com.affine.filter.before": "before",
+  "com.affine.filter.last": "last",
   "com.affine.filter.contains all": "contains all",
   "com.affine.filter.contains one of": "contains one of",
   "com.affine.filter.does not contains all": "does not contains all",

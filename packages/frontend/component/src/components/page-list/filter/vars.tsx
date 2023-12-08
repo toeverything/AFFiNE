@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import { MenuIcon, MenuItem, MenuSeparator } from '../../../ui/menu';
 import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
-import { tBoolean, tDate, tTag } from './logical/custom-type';
+import { tBoolean, tDate, tDateRange, tTag } from './logical/custom-type';
 import { Matcher } from './logical/matcher';
 import type { TFunction } from './logical/typesystem';
 import {
@@ -157,6 +157,24 @@ filterMatcher.register(
         throw new Error('argument type error');
       }
       return dayjs(date).isAfter(dayjs(target).endOf('day'));
+    },
+  }
+);
+
+filterMatcher.register(
+  tFunction({
+    args: [tDate.create(), tDateRange.create()],
+    rt: tBoolean.create(),
+  }),
+  {
+    name: 'last',
+    defaultArgs: () => [30], // Default to the last 30 days
+    impl: (date, n) => {
+      if (typeof date !== 'number' || typeof n !== 'number') {
+        throw new Error('Argument type error: date and n must be numbers');
+      }
+      const startDate = dayjs().subtract(n, 'day').startOf('day').valueOf();
+      return date > startDate;
     },
   }
 );

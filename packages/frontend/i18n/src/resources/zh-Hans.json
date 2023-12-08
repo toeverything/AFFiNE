@@ -593,6 +593,7 @@
   "com.affine.filter": "筛选",
   "com.affine.filter.after": "晚于",
   "com.affine.filter.before": "早于",
+  "com.affine.filter.last": "最近",
   "com.affine.filter.contains all": "包含以下所有",
   "com.affine.filter.contains one of": "包含以下之一",
   "com.affine.filter.does not contains all": "不包含以下所有",
