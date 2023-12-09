@@ -109,7 +109,7 @@ export const settingPanel = {
   Export: 'export',
   Sync: 'sync',
 } as const;
-export const settingPanelValues = [...Object.values(settingPanel)] as const;
+export const settingPanelValues = Object.values(settingPanel);
 export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 
 // built-in workspaces
