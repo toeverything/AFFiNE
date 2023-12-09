@@ -54,6 +54,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
+    "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@blocksuite/blocks": "0.11.0-nightly-202312070955-2b5bb47",

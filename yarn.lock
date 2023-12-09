@@ -13795,6 +13795,7 @@ __metadata:
   resolution: "@toeverything/infra@workspace:packages/common/infra"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
+    "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@affine/templates": "workspace:*"
