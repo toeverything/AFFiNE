@@ -38,7 +38,7 @@ const storage = environment.isDesktop
     })
   : new AppConfigStorage({
       config: defaultAppConfig,
-      get: () => JSON.parse(localStorage.getItem('app_config') ?? '{}'),
+      get: () => JSON.parse(localStorage.getItem('app_config') ?? 'null'),
       set: config => localStorage.setItem('app_config', JSON.stringify(config)),
     });
 
