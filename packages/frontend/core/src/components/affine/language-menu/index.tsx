@@ -1,4 +1,4 @@
-import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
+import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { memo, type ReactElement } from 'react';
 
 import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';

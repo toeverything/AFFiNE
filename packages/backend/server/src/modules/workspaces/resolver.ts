@@ -33,6 +33,7 @@ import type {
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import { EventEmitter } from '../../event';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -146,6 +147,7 @@ export class WorkspaceResolver {
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
     private readonly users: UsersService,
+    private readonly event: EventEmitter,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
@@ -308,22 +310,11 @@ export class WorkspaceResolver {
   })
   async createWorkspace(
     @CurrentUser() user: UserType,
-    @Args({ name: 'init', type: () => GraphQLUpload })
-    update: FileUpload
+    // we no longer support init workspace with a preload file
+    // use sync system to uploading them once created
+    @Args({ name: 'init', type: () => GraphQLUpload, nullable: true })
+    init: FileUpload | null
   ) {
-    // convert stream to buffer
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const stream = update.createReadStream();
-      const chunks: Uint8Array[] = [];
-      stream.on('data', chunk => {
-        chunks.push(chunk);
-      });
-      stream.on('error', reject);
-      stream.on('end', () => {
-        resolve(Buffer.concat(chunks));
-      });
-    });
-
     const workspace = await this.prisma.workspace.create({
       data: {
         public: false,
@@ -341,14 +332,31 @@ export class WorkspaceResolver {
       },
     });
 
-    if (buffer.length) {
-      await this.prisma.snapshot.create({
-        data: {
-          id: workspace.id,
-          workspaceId: workspace.id,
-          blob: buffer,
-        },
+    if (init) {
+      // convert stream to buffer
+      const buffer = await new Promise<Buffer>(resolve => {
+        const stream = init.createReadStream();
+        const chunks: Uint8Array[] = [];
+        stream.on('data', chunk => {
+          chunks.push(chunk);
+        });
+        stream.on('error', () => {
+          resolve(Buffer.from([]));
+        });
+        stream.on('end', () => {
+          resolve(Buffer.concat(chunks));
+        });
       });
+
+      if (buffer.length) {
+        await this.prisma.snapshot.create({
+          data: {
+            id: workspace.id,
+            workspaceId: workspace.id,
+            blob: buffer,
+          },
+        });
+      }
     }
 
     return workspace;
@@ -382,18 +390,7 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.$transaction([
-      this.prisma.update.deleteMany({
-        where: {
-          workspaceId: id,
-        },
-      }),
-      this.prisma.snapshot.deleteMany({
-        where: {
-          workspaceId: id,
-        },
-      }),
-    ]);
+    this.event.emit('workspace.deleted', id);
 
     return true;
   }

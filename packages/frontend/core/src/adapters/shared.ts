@@ -13,9 +13,3 @@ export const NewWorkspaceSettingDetail = lazy(() =>
     })
   )
 );
-
-export const PageDetailEditor = lazy(() =>
-  import('../components/page-detail-editor').then(({ PageDetailEditor }) => ({
-    default: PageDetailEditor,
-  }))
-);

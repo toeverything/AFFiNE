@@ -231,6 +231,11 @@ jobs:
           node ./packages/frontend/electron/scripts/generate-yml.js
         env:
           RELEASE_VERSION: ${{ needs.set-build-version.outputs.version }}
+      - name: Generate SHA512 checksums
+        run: |
+          sha512sum *-linux-* > SHA512SUMS.txt
+          sha512sum *-macos-* >> SHA512SUMS.txt
+          sha512sum *-windows-* >> SHA512SUMS.txt
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         env:
@@ -241,6 +246,7 @@ jobs:
           tag_name: ${{ needs.set-build-version.outputs.version }}
           prerelease: true
           files: |
+            ./SHA512SUMS.txt
             ./VERSION
             ./*.zip
             ./*.dmg

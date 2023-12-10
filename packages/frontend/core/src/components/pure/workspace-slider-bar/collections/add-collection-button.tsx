@@ -3,9 +3,9 @@ import {
   useCollectionManager,
   useEditCollectionName,
 } from '@affine/component/page-list';
+import { IconButton } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { PlusIcon } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 

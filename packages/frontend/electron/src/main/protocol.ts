@@ -119,8 +119,12 @@ export function registerProtocol() {
       // if sending request to the cloud, attach the session cookie
       if (isNetworkResource(pathname)) {
         const cookie = await getCookie(CLOUD_BASE_URL);
-        const cookieString = cookie.map(c => `${c.name}=${c.value}`).join('; ');
-        details.requestHeaders['cookie'] = cookieString;
+        if (cookie) {
+          const cookieString = cookie
+            .map(c => `${c.name}=${c.value}`)
+            .join('; ');
+          details.requestHeaders['cookie'] = cookieString;
+        }
       }
       callback({
         cancel: false,

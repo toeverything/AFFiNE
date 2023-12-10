@@ -1,11 +1,11 @@
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DialogTrigger } from '@radix-ui/react-dialog';
-import { Button } from '@toeverything/components/button';
+import { Button } from '@affine/component/ui/button';
 import {
   ConfirmModal,
   type ConfirmModalProps,
   Modal,
-} from '@toeverything/components/modal';
+} from '@affine/component/ui/modal';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { DialogTrigger } from '@radix-ui/react-dialog';
 import { type ReactNode, useEffect, useRef } from 'react';
 
 import * as styles from './style.css';

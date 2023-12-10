@@ -11,8 +11,12 @@ globalStyle('html', {
   vars: lightCssVariables,
 });
 
-globalStyle('html[data-theme="dark"]', {
-  vars: darkCssVariables,
+globalStyle('html', {
+  '@media': {
+    '(prefers-color-scheme: dark)': {
+      vars: darkCssVariables,
+    },
+  },
 });
 
 if (process.env.NODE_ENV === 'development') {

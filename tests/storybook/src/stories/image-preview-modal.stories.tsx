@@ -1,4 +1,3 @@
-import { RootBlockHub } from '@affine/component/block-hub';
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -44,21 +43,18 @@ fetch(new URL('@affine-test/fixtures/large-image.png', import.meta.url))
 
 export const Default = () => {
   return (
-    <>
-      <div
-        style={{
-          height: '100vh',
-          width: '100vw',
-          overflow: 'auto',
-        }}
-      >
-        <BlockSuiteEditor mode="page" page={page} />
-        {createPortal(
-          <ImagePreviewModal pageId={page.id} workspace={page.workspace} />,
-          document.body
-        )}
-      </div>
-      <RootBlockHub />
-    </>
+    <div
+      style={{
+        height: '100vh',
+        width: '100vw',
+        overflow: 'auto',
+      }}
+    >
+      <BlockSuiteEditor mode="page" page={page} />
+      {createPortal(
+        <ImagePreviewModal pageId={page.id} workspace={page.workspace} />,
+        document.body
+      )}
+    </div>
   );
 };

@@ -3,4 +3,4 @@ name: affine
 description: AFFiNE cloud chart
 type: application
 version: 0.0.0
-appVersion: '0.7.0-canary.18'
+appVersion: "0.10.3-canary.2"

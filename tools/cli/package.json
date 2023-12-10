@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "dotenv": "^16.3.1",
-    "vite": "^4.4.11"
+    "vite": "^5.0.6"
   },
   "peerDependencies": {
     "ts-node": "*"

@@ -1,5 +1,6 @@
+import { Button, IconButton } from '@affine/component/ui/button';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon } from '@blocksuite/icons';
-import { Button, IconButton } from '@toeverything/components/button';
 import { useCallback } from 'react';
 
 import * as styles from './index.css';
@@ -17,13 +18,10 @@ export const LocalDemoTips = ({
   onLogin,
   onEnableCloud,
 }: LocalDemoTipsProps) => {
-  const content = isLoggedIn
-    ? 'This is a local demo workspace, and the data is stored locally. We recommend enabling AFFiNE Cloud.'
-    : 'This is a local demo workspace, and the data is stored locally in the browser. We recommend Enabling AFFiNE Cloud or downloading the client for a better experience.';
-
+  const t = useAFFiNEI18N();
   const buttonLabel = isLoggedIn
-    ? 'Enable AFFiNE Cloud'
-    : 'Sign in with AFFiNE Cloud';
+    ? t['Enable AFFiNE Cloud']()
+    : t['Sign in and Enable']();
 
   const handleClick = useCallback(() => {
     if (isLoggedIn) {
@@ -34,7 +32,9 @@ export const LocalDemoTips = ({
 
   return (
     <div className={styles.tipsContainer} data-testid="local-demo-tips">
-      <div className={styles.tipsMessage}>{content}</div>
+      <div className={styles.tipsMessage}>
+        {t['com.affine.banner.local-warning']()}
+      </div>
 
       <div className={styles.tipsRightItem}>
         <div>

@@ -8,6 +8,7 @@ export const notFoundPageContainer = style({
   alignItems: 'center',
   justifyContent: 'center',
   width: '100vw',
+  padding: '0 20px',
 });
 
 export const wrapper = style({

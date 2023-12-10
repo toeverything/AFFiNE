@@ -2,13 +2,13 @@ import {
   WorkspaceListItemSkeleton,
   WorkspaceListSkeleton,
 } from '@affine/component/setting-components';
+import { Avatar } from '@affine/component/ui/avatar';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';

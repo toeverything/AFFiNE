@@ -1,9 +1,9 @@
 import { SettingRow } from '@affine/component/setting-components';
+import { ConfirmModal } from '@affine/component/ui/modal';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { ConfirmModal } from '@toeverything/components/modal';
 import { useCallback, useState } from 'react';
 
 import type { WorkspaceSettingDetailProps } from '../types';

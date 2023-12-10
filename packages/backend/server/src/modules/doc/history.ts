@@ -1,15 +1,15 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import type { Snapshot } from '@prisma/client';
 
 import { Config } from '../../config';
+import { type EventPayload, OnEvent } from '../../event';
 import { metrics } from '../../metrics';
 import { PrismaService } from '../../prisma';
 import { SubscriptionStatus } from '../payment/service';
 import { Permission } from '../workspaces/types';
+import { isEmptyBuffer } from './manager';
 
 @Injectable()
 export class DocHistoryManager {
@@ -19,16 +19,38 @@ export class DocHistoryManager {
     private readonly db: PrismaService
   ) {}
 
-  @OnEvent('doc:manager:snapshot:beforeUpdate')
-  async onDocUpdated(snapshot: Snapshot, forceCreate = false) {
-    const last = await this.last(snapshot.workspaceId, snapshot.id);
+  @OnEvent('workspace.deleted')
+  onWorkspaceDeleted(workspaceId: EventPayload<'workspace.deleted'>) {
+    return this.db.snapshotHistory.deleteMany({
+      where: {
+        workspaceId,
+      },
+    });
+  }
+
+  @OnEvent('snapshot.deleted')
+  onSnapshotDeleted({ workspaceId, id }: EventPayload<'snapshot.deleted'>) {
+    return this.db.snapshotHistory.deleteMany({
+      where: {
+        workspaceId,
+        id,
+      },
+    });
+  }
+
+  @OnEvent('snapshot.updated')
+  async onDocUpdated(
+    { workspaceId, id, previous }: EventPayload<'snapshot.updated'>,
+    forceCreate = false
+  ) {
+    const last = await this.last(workspaceId, id);
 
     let shouldCreateHistory = false;
 
     if (!last) {
       // never created
       shouldCreateHistory = true;
-    } else if (last.timestamp === snapshot.updatedAt) {
+    } else if (last.timestamp === previous.updatedAt) {
       // no change
       shouldCreateHistory = false;
     } else if (
@@ -36,16 +58,23 @@ export class DocHistoryManager {
       forceCreate ||
       // last history created before interval in configs
       last.timestamp.getTime() <
-        snapshot.updatedAt.getTime() - this.config.doc.history.interval
+        previous.updatedAt.getTime() - this.config.doc.history.interval
     ) {
       shouldCreateHistory = true;
     }
 
     if (shouldCreateHistory) {
       // skip the history recording when no actual update on snapshot happended
-      if (last && isDeepStrictEqual(last.state, snapshot.state)) {
+      if (last && isDeepStrictEqual(last.state, previous.state)) {
         this.logger.debug(
-          `State matches, skip creating history record for ${snapshot.id} in workspace ${snapshot.workspaceId}`
+          `State matches, skip creating history record for ${id} in workspace ${workspaceId}`
+        );
+        return;
+      }
+
+      if (isEmptyBuffer(previous.blob)) {
+        this.logger.debug(
+          `Doc is empty, skip creating history record for ${id} in workspace ${workspaceId}`
         );
         return;
       }
@@ -56,12 +85,12 @@ export class DocHistoryManager {
             timestamp: true,
           },
           data: {
-            workspaceId: snapshot.workspaceId,
-            id: snapshot.id,
-            timestamp: snapshot.updatedAt,
-            blob: snapshot.blob,
-            state: snapshot.state,
-            expiredAt: await this.getExpiredDateFromNow(snapshot.workspaceId),
+            workspaceId,
+            id,
+            timestamp: previous.updatedAt,
+            blob: previous.blob,
+            state: previous.state,
+            expiredAt: await this.getExpiredDateFromNow(workspaceId),
           },
         })
         .catch(() => {
@@ -73,9 +102,7 @@ export class DocHistoryManager {
           description: 'How many times the snapshot history created',
         })
         .add(1);
-      this.logger.log(
-        `History created for ${snapshot.id} in workspace ${snapshot.workspaceId}.`
-      );
+      this.logger.log(`History created for ${id} in workspace ${workspaceId}.`);
     }
   }
 
@@ -180,7 +207,7 @@ export class DocHistoryManager {
     }
 
     // save old snapshot as one history record
-    await this.onDocUpdated(oldSnapshot, true);
+    await this.onDocUpdated({ workspaceId, id, previous: oldSnapshot }, true);
     // WARN:
     //  we should never do the snapshot updating in recovering,
     //  which is not the solution in CRDT.

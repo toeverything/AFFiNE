@@ -1,6 +1,6 @@
-import { Modal } from '@toeverything/components/modal';
 import { useCallback, useState } from 'react';
 
+import { Modal } from '../../../../ui/modal';
 import type { AllPageListConfig } from './edit-collection';
 import { SelectPage } from './select-page';
 export const useSelectPage = ({

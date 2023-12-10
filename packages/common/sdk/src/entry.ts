@@ -1,5 +1,5 @@
 import type { BaseSelection } from '@blocksuite/block-std';
-import type { EditorContainer } from '@blocksuite/editor';
+import type { EditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import type { Workspace } from '@blocksuite/store';
 import type { Atom, getDefaultStore } from 'jotai/vanilla';

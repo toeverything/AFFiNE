@@ -9,7 +9,7 @@
 }
 
 :root {
-  --noise-background: url(./noise.png);
+  --noise-background: url(./noise.avif);
 }
 
 html,
@@ -174,6 +174,7 @@ legend {
   border: 0;
   font-size: var(--affine-font-base);
   font-family: var(--affine-font-family);
+  font-feature-settings: 'calt' 0;
 }
 
 body {

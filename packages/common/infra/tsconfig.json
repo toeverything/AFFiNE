@@ -12,6 +12,12 @@
       "path": "../sdk"
     },
     {
+      "path": "../env"
+    },
+    {
+      "path": "../debug"
+    },
+    {
       "path": "./tsconfig.node.json"
     }
   ]

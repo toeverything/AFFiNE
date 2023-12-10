@@ -1,5 +1,6 @@
 import './polyfill/ses-lockdown';
 import './polyfill/intl-segmenter';
+import './polyfill/request-idle-callback';
 
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { assertExists } from '@blocksuite/global/utils';

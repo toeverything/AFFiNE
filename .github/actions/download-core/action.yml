@@ -1,0 +1,22 @@
+name: 'Download core artifacts'
+description: 'Download core artifacts and extract to dist'
+inputs:
+  path:
+    description: 'Path to extract'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download tar.gz
+      uses: actions/download-artifact@v3
+      with:
+        name: core
+        path: .
+
+    - name: Extract core artifacts
+      shell: bash
+      run: |
+        mkdir -p ${{ inputs.path }}
+        tar -xvf dist.tar.gz --directory ${{ inputs.path }}
+        rm dist.tar.gz

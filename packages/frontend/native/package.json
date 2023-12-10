@@ -4,7 +4,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
-    "name": "affine",
+    "binaryName": "affine",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
@@ -35,10 +35,10 @@
     }
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.16.5",
+    "@napi-rs/cli": "3.0.0-alpha.15",
     "@types/node": "^20.9.3",
     "@types/uuid": "^9.0.7",
-    "ava": "^5.3.1",
+    "ava": "^6.0.0",
     "cross-env": "^7.0.3",
     "nx": "^17.1.3",
     "nx-cloud": "^16.5.2",
@@ -53,7 +53,7 @@
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release --no-const-enum",
-    "build:debug": "napi build --platform --no-const-enum",
+    "build:debug": "napi build --platform",
     "universal": "napi universal",
     "test": "ava",
     "version": "napi version"

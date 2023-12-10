@@ -1,10 +1,10 @@
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SaveIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
 import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
+import { Button } from '../../../ui/button';
 import { createEmptyCollection } from '../use-collection-manager';
 import { useEditCollectionName } from './use-edit-collection';
 

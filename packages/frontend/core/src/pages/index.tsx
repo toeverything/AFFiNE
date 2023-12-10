@@ -1,6 +1,6 @@
+import { Menu } from '@affine/component/ui/menu';
 import { DebugLogger } from '@affine/debug';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { Menu } from '@toeverything/components/menu';
 import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { lazy } from 'react';

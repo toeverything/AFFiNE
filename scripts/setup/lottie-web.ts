@@ -4,7 +4,7 @@ vi.mock('lottie-web', () => ({
   default: {},
 }));
 
-vi.mock('@blocksuite/editor', () => ({
+vi.mock('@blocksuite/presets', () => ({
   EditorContainer: vi.fn(),
 }));
 

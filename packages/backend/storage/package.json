@@ -16,27 +16,26 @@
     }
   },
   "napi": {
-    "name": "storage",
+    "binaryName": "storage",
     "targets": [
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
       "aarch64-pc-windows-msvc",
       "x86_64-apple-darwin",
       "x86_64-pc-windows-msvc",
-      "x86_64-unknown-linux-gnu",
-      "universal-apple-darwin"
+      "x86_64-unknown-linux-gnu"
     ]
   },
   "scripts": {
     "test": "node --test ./__tests__/**/*.spec.js",
-    "build": "napi build --release --strip",
+    "build": "napi build --release --strip --no-const-enum",
     "build:debug": "napi build",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.16.5",
+    "@napi-rs/cli": "3.0.0-alpha.15",
     "lib0": "^0.2.87",
     "nx": "^17.1.3",
     "nx-cloud": "^16.5.2",

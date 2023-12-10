@@ -54,10 +54,12 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
+    "@affine/debug": "workspace:*",
+    "@affine/env": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/blocks": "0.0.0-20231124123613-7c06e95d-nightly",
-    "@blocksuite/global": "0.0.0-20231124123613-7c06e95d-nightly",
-    "@blocksuite/store": "0.0.0-20231124123613-7c06e95d-nightly",
+    "@blocksuite/blocks": "0.11.0-nightly-202312070955-2b5bb47",
+    "@blocksuite/global": "0.11.0-nightly-202312070955-2b5bb47",
+    "@blocksuite/store": "0.11.0-nightly-202312070955-2b5bb47",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
     "tinykeys": "^2.1.0",
@@ -66,22 +68,22 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/editor": "0.0.0-20231124123613-7c06e95d-nightly",
-    "@blocksuite/lit": "0.0.0-20231124123613-7c06e95d-nightly",
+    "@blocksuite/lit": "0.11.0-nightly-202312070955-2b5bb47",
+    "@blocksuite/presets": "0.11.0-nightly-202312070955-2b5bb47",
     "@testing-library/react": "^14.0.0",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../frontend/electron/node_modules/electron",
     "nanoid": "^5.0.3",
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
-    "vite": "^4.4.11",
+    "vite": "^5.0.6",
     "vite-plugin-dts": "3.6.0",
     "vitest": "0.34.6",
     "yjs": "^13.6.10"
   },
   "peerDependencies": {
     "@affine/templates": "*",
-    "@blocksuite/editor": "*",
+    "@blocksuite/presets": "*",
     "async-call-rpc": "*",
     "electron": "*",
     "react": "*",
@@ -91,7 +93,7 @@
     "@affine/templates": {
       "optional": true
     },
-    "@blocksuite/editor": {
+    "@blocksuite/presets": {
       "optional": true
     },
     "async-call-rpc": {

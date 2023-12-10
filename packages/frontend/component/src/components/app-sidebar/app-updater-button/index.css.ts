@@ -85,12 +85,12 @@ export const installLabel = style({
   flex: 1,
   fontSize: 'var(--affine-font-sm)',
   whiteSpace: 'nowrap',
+  justifyContent: 'space-between',
 });
 
 export const installLabelNormal = style([
   installLabel,
   {
-    justifyContent: 'space-between',
     selectors: {
       [`${root}:hover &, ${root}[data-updating=true] &`]: {
         display: 'none',
@@ -103,6 +103,7 @@ export const installLabelHover = style([
   installLabel,
   {
     display: 'none',
+    justifyContent: 'flex-start',
     selectors: {
       [`${root}:hover &, ${root}[data-updating=true] &`]: {
         display: 'flex',

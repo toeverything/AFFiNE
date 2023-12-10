@@ -1,14 +1,8 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon } from '@blocksuite/icons';
-import {
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@toeverything/components/menu';
-import {
-  ConfirmModal,
-  type ConfirmModalProps,
-} from '@toeverything/components/modal';
+
+import { MenuIcon, MenuItem, type MenuItemProps } from '../../../ui/menu';
+import { ConfirmModal, type ConfirmModalProps } from '../../../ui/modal';
 
 export const MoveToTrash = (props: MenuItemProps) => {
   const t = useAFFiNEI18N();

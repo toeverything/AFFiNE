@@ -2,18 +2,13 @@ import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, EditIcon, FilterIcon } from '@blocksuite/icons';
 import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@toeverything/components/menu';
-import {
   type PropsWithChildren,
   type ReactElement,
   useCallback,
   useMemo,
 } from 'react';
 
+import { Menu, MenuIcon, MenuItem, type MenuItemProps } from '../../../ui/menu';
 import type { useCollectionManager } from '../use-collection-manager';
 import type { AllPageListConfig } from '.';
 import * as styles from './collection-operations.css';

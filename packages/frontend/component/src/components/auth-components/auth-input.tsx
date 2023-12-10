@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import type { FC, HTMLAttributes } from 'react';
 
 import { Input, type InputProps } from '../../ui/input';
-import { authInputWrapper, formHint } from './share.css';
+import * as styles from './share.css';
 export type AuthInputProps = InputProps & {
   label?: string;
   error?: boolean;
@@ -22,13 +22,14 @@ export const AuthInput: FC<AuthInputProps> = ({
 }) => {
   return (
     <div
-      className={clsx(authInputWrapper, className, {
+      className={clsx(styles.authInputWrapper, className, {
         'without-hint': withoutHint,
       })}
       {...otherWrapperProps}
     >
       {label ? <label>{label}</label> : null}
       <Input
+        className={styles.input}
         size="extraLarge"
         status={error ? 'error' : 'default'}
         onKeyDown={e => {
@@ -40,7 +41,7 @@ export const AuthInput: FC<AuthInputProps> = ({
       />
       {error && errorHint && !withoutHint ? (
         <div
-          className={clsx(formHint, {
+          className={clsx(styles.formHint, {
             error: error,
           })}
         >

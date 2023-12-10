@@ -65,7 +65,7 @@ beforeEach(() => {
   id = nanoid();
   workspace = new Workspace({
     id,
-    isSSR: true,
+
     schema,
   });
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
@@ -383,7 +383,7 @@ describe('subDoc', () => {
     {
       const newWorkspace = new Workspace({
         id,
-        isSSR: true,
+
         schema,
       });
       const provider = createIndexedDBProvider(newWorkspace.doc, rootDBName);
@@ -423,7 +423,7 @@ describe('utils', () => {
     expect(update).toBeInstanceOf(Uint8Array);
     const newWorkspace = new Workspace({
       id,
-      isSSR: true,
+
       schema,
     });
     applyUpdate(newWorkspace.doc, update);

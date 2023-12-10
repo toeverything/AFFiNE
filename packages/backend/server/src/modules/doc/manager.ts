@@ -5,12 +5,12 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Snapshot, Update } from '@prisma/client';
 import { chunk } from 'lodash-es';
 import { defer, retry } from 'rxjs';
 import {
   applyUpdate,
+  decodeStateVector,
   Doc,
   encodeStateAsUpdate,
   encodeStateVector,
@@ -19,6 +19,7 @@ import {
 
 import { Cache } from '../../cache';
 import { Config } from '../../config';
+import { EventEmitter, type EventPayload, OnEvent } from '../../event';
 import { metrics } from '../../metrics/metrics';
 import { PrismaService } from '../../prisma';
 import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
@@ -40,7 +41,37 @@ function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   return compare(yBinary, yBinary2, true);
 }
 
-function isEmptyBuffer(buf: Buffer): boolean {
+/**
+ * Detect whether rhs state is newer than lhs state.
+ *
+ * How could we tell a state is newer:
+ *
+ *   i. if the state vector size is larger, it's newer
+ *  ii. if the state vector size is same, compare each client's state
+ */
+function isStateNewer(lhs: Buffer, rhs: Buffer): boolean {
+  const lhsVector = decodeStateVector(lhs);
+  const rhsVector = decodeStateVector(rhs);
+
+  if (lhsVector.size < rhsVector.size) {
+    return true;
+  }
+
+  for (const [client, state] of lhsVector) {
+    const rstate = rhsVector.get(client);
+    if (!rstate) {
+      return false;
+    }
+
+    if (state < rstate) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isEmptyBuffer(buf: Buffer): boolean {
   return (
     buf.length === 0 ||
     // 0x0000
@@ -71,7 +102,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     private readonly db: PrismaService,
     private readonly config: Config,
     private readonly cache: Cache,
-    private readonly event: EventEmitter2
+    private readonly event: EventEmitter
   ) {}
 
   onModuleInit() {
@@ -191,6 +222,33 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       this.job = null;
       this.logger.log('Automation stopped');
     }
+  }
+
+  @OnEvent('workspace.deleted')
+  async onWorkspaceDeleted(workspaceId: string) {
+    await this.db.snapshot.deleteMany({
+      where: {
+        workspaceId,
+      },
+    });
+    await this.db.update.deleteMany({
+      where: {
+        workspaceId,
+      },
+    });
+  }
+
+  @OnEvent('snapshot.deleted')
+  async onSnapshotDeleted({
+    id,
+    workspaceId,
+  }: EventPayload<'snapshot.deleted'>) {
+    await this.db.update.deleteMany({
+      where: {
+        id,
+        workspaceId,
+      },
+    });
   }
 
   /**
@@ -374,23 +432,17 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     }
 
     const { id, workspaceId } = candidate;
-    // acquire lock
-    const ok = await this.lockUpdatesForAutoSquash(workspaceId, id);
 
-    if (!ok) {
-      return;
-    }
-
-    try {
-      await this._get(workspaceId, id);
-    } catch (e) {
-      this.logger.error(
-        `Failed to apply updates for workspace: ${workspaceId}, guid: ${id}`
-      );
-      this.logger.error(e);
-    } finally {
-      await this.unlockUpdatesForAutoSquash(workspaceId, id);
-    }
+    await this.lockUpdatesForAutoSquash(workspaceId, id, async () => {
+      try {
+        await this._get(workspaceId, id);
+      } catch (e) {
+        this.logger.error(
+          `Failed to apply updates for workspace: ${workspaceId}, guid: ${id}`
+        );
+        this.logger.error(e);
+      }
+    });
   }
 
   private async getAutoSquashCandidate() {
@@ -414,34 +466,67 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     doc: Doc,
     initialSeq?: number
   ) {
-    const blob = Buffer.from(encodeStateAsUpdate(doc));
-    const state = Buffer.from(encodeStateVector(doc));
+    return this.lockSnapshotForUpsert(workspaceId, guid, async () => {
+      const blob = Buffer.from(encodeStateAsUpdate(doc));
 
-    if (isEmptyBuffer(blob)) {
-      return;
-    }
+      if (isEmptyBuffer(blob)) {
+        return false;
+      }
 
-    await this.db.snapshot.upsert({
-      select: {
-        seq: true,
-      },
-      where: {
-        id_workspaceId: {
-          id: guid,
-          workspaceId,
-        },
-      },
-      create: {
-        id: guid,
-        workspaceId,
-        blob,
-        state,
-        seq: initialSeq,
-      },
-      update: {
-        blob,
-        state,
-      },
+      const state = Buffer.from(encodeStateVector(doc));
+
+      return await this.db.$transaction(async db => {
+        const snapshot = await db.snapshot.findUnique({
+          where: {
+            id_workspaceId: {
+              id: guid,
+              workspaceId,
+            },
+          },
+        });
+
+        // update
+        if (snapshot) {
+          // only update if state is newer
+          if (isStateNewer(snapshot.state ?? Buffer.from([0]), state)) {
+            await db.snapshot.update({
+              select: {
+                seq: true,
+              },
+              where: {
+                id_workspaceId: {
+                  workspaceId,
+                  id: guid,
+                },
+              },
+              data: {
+                blob,
+                state,
+              },
+            });
+
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          // create
+          await db.snapshot.create({
+            select: {
+              seq: true,
+            },
+            data: {
+              id: guid,
+              workspaceId,
+              blob,
+              state,
+              seq: initialSeq,
+            },
+          });
+
+          return true;
+        }
+      });
     });
   }
 
@@ -480,25 +565,39 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       ...updates.map(u => u.blob)
     );
 
-    if (snapshot) {
-      this.event.emit('doc:manager:snapshot:beforeUpdate', snapshot);
-    }
-
     await this.upsert(workspaceId, id, doc, last.seq);
-    this.logger.debug(
-      `Squashed ${updates.length} updates for ${id} in workspace ${workspaceId}`
-    );
-    await this.db.update.deleteMany({
-      where: {
+    if (snapshot) {
+      this.event.emit('snapshot.updated', {
         id,
         workspaceId,
-        seq: {
-          in: updates.map(u => u.seq),
+        previous: {
+          blob: snapshot.blob,
+          state: snapshot.state,
+          updatedAt: snapshot.updatedAt,
         },
-      },
-    });
+      });
+    }
 
-    await this.updateCachedUpdatesCount(workspaceId, id, -updates.length);
+    const done = await this.upsert(workspaceId, id, doc, last.seq);
+
+    if (done) {
+      this.logger.debug(
+        `Squashed ${updates.length} updates for ${id} in workspace ${workspaceId}`
+      );
+
+      await this.db.update.deleteMany({
+        where: {
+          id,
+          workspaceId,
+          seq: {
+            in: updates.map(u => u.seq),
+          },
+        },
+      });
+
+      await this.updateCachedUpdatesCount(workspaceId, id, -updates.length);
+    }
+
     return doc;
   }
 
@@ -581,22 +680,44 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     return null;
   }
 
-  private async lockUpdatesForAutoSquash(workspaceId: string, guid: string) {
-    return this.cache.setnx(
+  private async doWithLock<T>(lock: string, job: () => Promise<T>) {
+    const acquired = await this.cache.setnx(lock, 1, {
+      ttl: 60 * 1000,
+    });
+
+    if (!acquired) {
+      return;
+    }
+
+    try {
+      return await job();
+    } finally {
+      await this.cache.delete(lock).catch(e => {
+        // safe, the lock will be expired when ttl ends
+        this.logger.error(`Failed to release lock ${lock}`, e);
+      });
+    }
+  }
+
+  private async lockUpdatesForAutoSquash<T>(
+    workspaceId: string,
+    guid: string,
+    job: () => Promise<T>
+  ) {
+    return this.doWithLock(
       `doc:manager:updates-lock:${workspaceId}::${guid}`,
-      1,
-      {
-        ttl: 60 * 1000,
-      }
+      job
     );
   }
 
-  private async unlockUpdatesForAutoSquash(workspaceId: string, guid: string) {
-    return this.cache
-      .delete(`doc:manager:updates-lock:${workspaceId}::${guid}`)
-      .catch(e => {
-        // safe, the lock will be expired when ttl ends
-        this.logger.error('Failed to release updates lock', e);
-      });
+  async lockSnapshotForUpsert<T>(
+    workspaceId: string,
+    guid: string,
+    job: () => Promise<T>
+  ) {
+    return this.doWithLock(
+      `doc:manager:snapshot-lock:${workspaceId}::${guid}`,
+      job
+    );
   }
 }

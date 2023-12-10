@@ -1,3 +1,7 @@
+import { Avatar } from '@affine/component/ui/avatar';
+import { Loading } from '@affine/component/ui/loading';
+import { Tooltip } from '@affine/component/ui/tooltip';
+import { useCurrentSyncEngine } from '@affine/core/hooks/current/use-current-sync-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
   type SyncEngineStatus,
@@ -10,8 +14,6 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Tooltip } from '@toeverything/components/tooltip';
 import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
 import { debounce } from 'lodash-es';
@@ -24,10 +26,8 @@ import {
   useState,
 } from 'react';
 
-import { useCurrentSyncEngine } from '../../../../hooks/current/use-current-sync-engine';
 import { useSystemOnline } from '../../../../hooks/use-system-online';
 import type { AllWorkspace } from '../../../../shared';
-import { Loading } from './loading-icon';
 import {
   StyledSelectorContainer,
   StyledSelectorWrapper,

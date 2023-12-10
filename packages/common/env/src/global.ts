@@ -6,12 +6,9 @@ import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const blockSuiteFeatureFlags = z.object({
-  enable_set_remote_flag: z.boolean(),
-  enable_block_hub: z.boolean(),
-
-  enable_toggle_block: z.boolean(),
-  enable_bookmark_operation: z.boolean(),
-  enable_note_index: z.boolean(),
+  enable_transformer_clipboard: z.boolean(),
+  enable_expand_database_block: z.boolean(),
+  enable_bultin_ledits: z.boolean(),
 });
 
 export const runtimeFlagsSchema = z.object({
@@ -21,6 +18,7 @@ export const runtimeFlagsSchema = z.object({
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
+  downloadUrl: z.string(),
   // see: tools/workers
   imageProxyUrl: z.string(),
   enablePreloading: z.boolean(),

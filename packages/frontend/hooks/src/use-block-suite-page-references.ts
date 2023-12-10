@@ -5,12 +5,9 @@ import { useBlockSuiteWorkspacePage } from './use-block-suite-workspace-page';
 
 const weakMap = new WeakMap<Page, Atom<string[]>>();
 function getPageReferences(page: Page): string[] {
-  // todo: is there a way to use page indexer to get all references?
-  return ['affine:paragraph', 'affine:list', 'affine:database']
-    .flatMap(f => page.getBlockByFlavour(f))
-    .flatMap(b => b.text?.toDelta())
-    .map(v => v?.attributes?.reference?.pageId)
-    .filter(Boolean);
+  return Object.values(
+    page.workspace.indexer.backlink.linkIndexMap[page.id] ?? {}
+  ).flatMap(linkNodes => linkNodes.map(linkNode => linkNode.pageId));
 }
 
 const getPageReferencesAtom = (page: Page | null) => {
@@ -25,7 +22,7 @@ const getPageReferencesAtom = (page: Page | null) => {
         page.slots.ready.on(() => {
           set(getPageReferences(page));
         }),
-        page.slots.yUpdated.on(() => {
+        page.workspace.indexer.backlink.slots.indexUpdated.on(() => {
           set(getPageReferences(page));
         }),
       ];

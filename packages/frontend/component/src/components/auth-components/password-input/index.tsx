@@ -4,6 +4,7 @@ import { type FC, useEffect } from 'react';
 import { useCallback, useState } from 'react';
 
 import { Input, type InputProps } from '../../../ui/input';
+import * as styles from '../share.css';
 import { ErrorIcon } from './error';
 import { SuccessIcon } from './success';
 import { Tag } from './tag';
@@ -74,6 +75,7 @@ export const PasswordInput: FC<
   return (
     <>
       <Input
+        className={styles.input}
         type="password"
         size="extraLarge"
         style={{ marginBottom: 20 }}
@@ -83,6 +85,7 @@ export const PasswordInput: FC<
         {...inputProps}
       />
       <Input
+        className={styles.input}
         type="password"
         size="extraLarge"
         placeholder={t['com.affine.auth.set.password.placeholder.confirm']()}

@@ -373,6 +373,7 @@
   "com.affine.appUpdater.downloading": "Downloading",
   "com.affine.appUpdater.installUpdate": "Restart to install update",
   "com.affine.appUpdater.openDownloadPage": "Open download page",
+  "com.affine.appUpdater.downloadUpdate": "Download update",
   "com.affine.appUpdater.updateAvailable": "Update available",
   "com.affine.appUpdater.whatsNew": "Discover what's new!",
   "com.affine.appearanceSettings.clientBorder.description": "Customise the appearance of the client.",
@@ -480,6 +481,7 @@
   "com.affine.auth.toast.title.signed-in": "Signed in",
   "com.affine.backButton": "Back",
   "com.affine.banner.content": "This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.",
+  "com.affine.banner.local-warning": "Your local data is stored in the browser and may be lost. Don't risk it - enable cloud now!",
   "com.affine.brand.affineCloud": "AFFiNE Cloud",
   "com.affine.cloudTempDisable.description": "We are upgrading the AFFiNE Cloud service and it is temporarily unavailable on the client side. If you wish to stay updated on the progress and be notified on availability, you can fill out the <1>AFFiNE Cloud Signup</1>.",
   "com.affine.cloudTempDisable.title": "AFFiNE Cloud is upgrading now.",
@@ -509,6 +511,7 @@
   "com.affine.cmdk.affine.editor.edgeless.presentation-start": "Start Presentation",
   "com.affine.cmdk.affine.editor.remove-from-favourites": "Remove from Favourites",
   "com.affine.cmdk.affine.editor.restore-from-trash": "Restore from Trash",
+  "com.affine.cmdk.affine.editor.trash-footer-hint": "This page has been moved to the trash, you can either restore or permanently delete it.",
   "com.affine.cmdk.affine.font-style.to": "Change Font Style to",
   "com.affine.cmdk.affine.full-width-layout.to": "Change Full Width Layout to",
   "com.affine.cmdk.affine.getting-started": "Getting Started",
@@ -606,6 +609,7 @@
   "com.affine.filter": "Filter",
   "com.affine.filter.after": "after",
   "com.affine.filter.before": "before",
+  "com.affine.filter.last": "last",
   "com.affine.filter.contains all": "contains all",
   "com.affine.filter.contains one of": "contains one of",
   "com.affine.filter.does not contains all": "does not contains all",
@@ -1000,5 +1004,6 @@
   "com.affine.history.empty-prompt.title": "Empty",
   "com.affine.history.empty-prompt.description": "This document is such a spring chicken, it hasn't sprouted a single historical sprig yet!",
   "com.affine.history.confirm-restore-modal.restore": "Restore",
-  "com.affine.history.confirm-restore-modal.hint": "You are about to restore the current version of the page to the latest version available. This action will overwrite any changes made prior to the latest version."
+  "com.affine.history.confirm-restore-modal.hint": "You are about to restore the current version of the page to the latest version available. This action will overwrite any changes made prior to the latest version.",
+  "com.affine.share-page.header.present": "Present"
 }

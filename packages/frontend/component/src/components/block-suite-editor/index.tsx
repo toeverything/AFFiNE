@@ -1,5 +1,5 @@
-import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
+import { EditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import clsx from 'clsx';
 import { use } from 'foxact/use';

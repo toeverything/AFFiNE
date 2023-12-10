@@ -1,45 +1,25 @@
 import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
-import type { LayoutNode } from '@affine/sdk/entry';
-import { rootBlockHubAtom } from '@affine/workspace/atom';
-import type { BlockHub } from '@blocksuite/blocks';
-import type { EditorContainer } from '@blocksuite/editor';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
+import type { EditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import {
-  addCleanup,
-  pluginEditorAtom,
-  pluginWindowAtom,
-} from '@toeverything/infra/__internal__/plugin';
-import { contentLayoutAtom, getCurrentStore } from '@toeverything/infra/atom';
+import { pluginEditorAtom } from '@toeverything/infra/__internal__/plugin';
+import { getCurrentStore } from '@toeverything/infra/atom';
+import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
-import { useAtomValue, useSetAtom } from 'jotai';
-import type { CSSProperties, ReactElement } from 'react';
-import {
-  memo,
-  startTransition,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useAtomValue } from 'jotai';
+import type { CSSProperties } from 'react';
+import { memo, Suspense, useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { type PageMode, pageSettingFamily } from '../atoms';
-import { fontStyleOptions } from '../atoms/settings';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
-import { Bookmark } from './bookmark';
 import * as styles from './page-detail-editor.css';
-import { editorContainer, pluginContainer } from './page-detail-editor.css';
-import { TrashButtonGroup } from './pure/trash-button-group';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -60,44 +40,14 @@ function useRouterHash() {
   return useLocation().hash.substring(1);
 }
 
-function useCreateAndSetRootBlockHub(
-  editor?: EditorContainer,
-  showBlockHub?: boolean
-) {
-  const setBlockHub = useSetAtom(rootBlockHubAtom);
-  useEffect(() => {
-    let canceled = false;
-    let blockHub: BlockHub | undefined;
-    if (editor && showBlockHub) {
-      editor
-        .createBlockHub()
-        .then(bh => {
-          if (canceled) {
-            return;
-          }
-          blockHub = bh;
-          setBlockHub(blockHub);
-        })
-        .catch(console.error);
-    }
-    return () => {
-      canceled = true;
-      blockHub?.remove();
-    };
-  }, [editor, showBlockHub, setBlockHub]);
-}
-
-const EditorWrapper = memo(function EditorWrapper({
+const PageDetailEditorMain = memo(function PageDetailEditorMain({
   workspace,
+  page,
   pageId,
   onLoad,
   isPublic,
   publishMode,
-}: PageDetailEditorProps) {
-  const page = useBlockSuiteWorkspacePage(workspace, pageId);
-  if (!page) {
-    throw new PageNotFoundError(workspace, pageId);
-  }
+}: PageDetailEditorProps & { page: Page }) {
   const meta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === pageId
   );
@@ -143,10 +93,8 @@ const EditorWrapper = memo(function EditorWrapper({
     [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
-  const [editor, setEditor] = useState<EditorContainer>();
+  const [, setEditor] = useState<EditorContainer>();
   const blockId = useRouterHash();
-
-  useCreateAndSetRootBlockHub(editor, !meta.trash);
 
   const onLoadEditor = useCallback(
     (editor: EditorContainer) => {
@@ -165,6 +113,9 @@ const EditorWrapper = memo(function EditorWrapper({
       if (onLoad) {
         disposableGroup.add(onLoad(page, editor));
       }
+
+      // todo: remove the following
+      // for now this is required for the image-preview plugin to work
       const rootStore = getCurrentStore();
       const editorItems = rootStore.get(pluginEditorAtom);
       let disposes: (() => void)[] = [];
@@ -194,133 +145,23 @@ const EditorWrapper = memo(function EditorWrapper({
   );
 
   return (
-    <>
-      <Editor
-        className={clsx(styles.editor, {
-          'full-screen': appSettings.fullWidthLayout,
-          'is-public-page': isPublic,
-        })}
-        style={
-          {
-            '--affine-font-family': value,
-          } as CSSProperties
-        }
-        mode={mode}
-        page={page}
-        onModeChange={setEditorMode}
-        defaultSelectedBlockId={blockId}
-        onLoadEditor={onLoadEditor}
-      />
-      {meta.trash && <TrashButtonGroup />}
-      <Bookmark page={page} />
-    </>
-  );
-});
-
-interface PluginContentAdapterProps {
-  windowItem: (div: HTMLDivElement) => () => void;
-  pluginName: string;
-}
-
-const PluginContentAdapter = memo<PluginContentAdapterProps>(
-  function PluginContentAdapter({ windowItem, pluginName }) {
-    const rootRef = useRef<HTMLDivElement | null>(null);
-    useEffect(() => {
-      const abortController = new AbortController();
-      const root = rootRef.current;
-      if (root) {
-        startTransition(() => {
-          if (abortController.signal.aborted) {
-            return;
-          }
-          const div = document.createElement('div');
-          const cleanup = windowItem(div);
-          root.append(div);
-          if (abortController.signal.aborted) {
-            cleanup();
-            div.remove();
-          } else {
-            const cl = () => {
-              cleanup();
-              div.remove();
-            };
-            const dispose = addCleanup(pluginName, cl);
-            abortController.signal.addEventListener('abort', () => {
-              window.setTimeout(() => {
-                dispose();
-                cl();
-              });
-            });
-          }
-        });
-        return () => {
-          abortController.abort();
-        };
+    <Editor
+      className={clsx(styles.editor, {
+        'full-screen': appSettings.fullWidthLayout,
+        'is-public-page': isPublic,
+      })}
+      style={
+        {
+          '--affine-font-family': value,
+        } as CSSProperties
       }
-      return;
-    }, [pluginName, windowItem]);
-    return <div className={pluginContainer} ref={rootRef} />;
-  }
-);
-
-interface LayoutPanelProps {
-  node: LayoutNode;
-  editorProps: PageDetailEditorProps;
-  depth: number;
-}
-
-const LayoutPanel = memo(function LayoutPanel(
-  props: LayoutPanelProps
-): ReactElement {
-  const { node, depth, editorProps } = props;
-  const windowItems = useAtomValue(pluginWindowAtom);
-  if (typeof node === 'string') {
-    if (node === 'editor') {
-      return <EditorWrapper {...editorProps} />;
-    } else {
-      const windowItem = windowItems[node];
-      return <PluginContentAdapter pluginName={node} windowItem={windowItem} />;
-    }
-  } else {
-    return (
-      <PanelGroup
-        direction={node.direction}
-        style={depth === 0 ? { height: 'calc(100% - 52px)' } : undefined}
-        className={depth === 0 ? editorContainer : undefined}
-      >
-        <Panel
-          defaultSizePercentage={node.splitPercentage}
-          style={{
-            maxWidth: node.maxWidth?.[0],
-          }}
-        >
-          <Suspense>
-            <LayoutPanel
-              node={node.first}
-              editorProps={editorProps}
-              depth={depth + 1}
-            />
-          </Suspense>
-        </Panel>
-        <PanelResizeHandle />
-        <Panel
-          defaultSizePercentage={100 - node.splitPercentage}
-          style={{
-            overflow: 'scroll',
-            maxWidth: node.maxWidth?.[1],
-          }}
-        >
-          <Suspense>
-            <LayoutPanel
-              node={node.second}
-              editorProps={editorProps}
-              depth={depth + 1}
-            />
-          </Suspense>
-        </Panel>
-      </PanelGroup>
-    );
-  }
+      mode={mode}
+      page={page}
+      onModeChange={setEditorMode}
+      defaultSelectedBlockId={blockId}
+      onLoadEditor={onLoadEditor}
+    />
+  );
 });
 
 export const PageDetailEditor = (props: PageDetailEditorProps) => {
@@ -330,27 +171,9 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
     throw new PageNotFoundError(workspace, pageId);
   }
 
-  const layout = useAtomValue(contentLayoutAtom);
-
-  if (layout === 'editor') {
-    return (
-      <Suspense>
-        <PanelGroup
-          style={{ height: 'calc(100% - 52px)' }}
-          direction="horizontal"
-          className={editorContainer}
-        >
-          <Panel>
-            <EditorWrapper {...props} />
-          </Panel>
-        </PanelGroup>
-      </Suspense>
-    );
-  }
-
   return (
     <Suspense>
-      <LayoutPanel node={layout} editorProps={props} depth={0} />
+      <PageDetailEditorMain {...props} page={page} />
     </Suspense>
   );
 };
