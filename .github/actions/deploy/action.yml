@@ -34,7 +34,7 @@ runs:
         project_id: '${{ inputs.gcp-project-id }}'
 
     - name: 'Setup gcloud cli'
-      uses: 'google-github-actions/setup-gcloud@v1'
+      uses: 'google-github-actions/setup-gcloud@v2'
       with:
         install_components: 'gke-gcloud-auth-plugin'
 
