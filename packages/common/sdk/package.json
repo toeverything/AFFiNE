@@ -1,6 +1,6 @@
 {
   "name": "@affine/sdk",
-  "version": "0.10.3",
+  "version": "0.10.4-beta.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
