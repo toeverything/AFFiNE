@@ -553,6 +553,8 @@
   "com.affine.collection.menu.rename": "Rename",
   "com.affine.collectionBar.backToAll": "Back to all",
   "com.affine.collections.header": "Collections",
+  "com.affine.collections.empty.message": "No collections",
+  "com.affine.collections.empty.new-collection-button": "New collection",
   "com.affine.confirmModal.button.cancel": "Cancel",
   "com.affine.currentYear": "Current Year",
   "com.affine.deleteLeaveWorkspace.description": "Delete workspace from this device and optionally delete all data.",

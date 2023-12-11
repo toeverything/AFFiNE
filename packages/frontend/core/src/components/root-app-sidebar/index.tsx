@@ -12,15 +12,22 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import { MoveToTrash } from '@affine/component/page-list';
+import {
+  createEmptyCollection,
+  MoveToTrash,
+  useCollectionManager,
+  useEditCollectionName,
+} from '@affine/component/page-list';
 import { Menu } from '@affine/component/ui/menu';
+import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
-import type { Page } from '@blocksuite/store';
+import { type Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
+import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo } from 'react';
 
@@ -171,6 +178,24 @@ export const RootAppSidebar = ({
   }, [setOpenUserWorkspaceList]);
   useRegisterBrowserHistoryCommands(router.back, router.forward);
   const userInfo = useDeleteCollectionInfo();
+
+  const setting = useCollectionManager(collectionsCRUDAtom);
+  const { node, open } = useEditCollectionName({
+    title: t['com.affine.editCollection.createCollection'](),
+    showTips: true,
+  });
+  const handleCreateCollection = useCallback(() => {
+    open('')
+      .then(async name => {
+        const id = nanoid();
+        await setting.createCollection(createEmptyCollection(id, { name }));
+        navigateHelper.jumpToCollection(blockSuiteWorkspace.id, id);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [blockSuiteWorkspace.id, navigateHelper, open, setting]);
+
   return (
     <AppSidebar
       router={router}
@@ -245,9 +270,13 @@ export const RootAppSidebar = ({
         </CategoryDivider>
         <FavoriteList workspace={blockSuiteWorkspace} />
         <CategoryDivider label={t['com.affine.rootAppSidebar.collections']()}>
-          <AddCollectionButton />
+          <AddCollectionButton node={node} onClick={handleCreateCollection} />
         </CategoryDivider>
-        <CollectionsList workspace={blockSuiteWorkspace} info={userInfo} />
+        <CollectionsList
+          workspace={blockSuiteWorkspace}
+          info={userInfo}
+          onCreate={handleCreateCollection}
+        />
         <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
         {/* fixme: remove the following spacer */}
         <div style={{ height: '4px' }} />

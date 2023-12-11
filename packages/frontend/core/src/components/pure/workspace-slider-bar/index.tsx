@@ -8,4 +8,5 @@ export type FavoriteListProps = {
 export type CollectionsListProps = {
   workspace: Workspace;
   info: DeleteCollectionInfo;
+  onCreate?: () => void;
 };
