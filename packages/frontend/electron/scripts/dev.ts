@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import type { ChildProcessWithoutNullStreams } from 'child_process';
 import type { BuildContext } from 'esbuild';
 import * as esbuild from 'esbuild';
+import kill from 'tree-kill';
 
 import { config, electronDir, rootDir } from './common';
 
@@ -24,9 +25,9 @@ function spawnOrReloadElectron() {
   if (watchMode) {
     return;
   }
-  if (spawnProcess !== null) {
+  if (spawnProcess !== null && spawnProcess.pid) {
     spawnProcess.off('exit', process.exit);
-    spawnProcess.kill('SIGINT');
+    kill(spawnProcess.pid);
     spawnProcess = null;
   }
 
