@@ -565,38 +565,39 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       ...updates.map(u => u.blob)
     );
 
-    await this.upsert(workspaceId, id, doc, last.seq);
-    if (snapshot) {
-      this.event.emit('snapshot.updated', {
-        id,
-        workspaceId,
-        previous: {
-          blob: snapshot.blob,
-          state: snapshot.state,
-          updatedAt: snapshot.updatedAt,
-        },
-      });
-    }
-
     const done = await this.upsert(workspaceId, id, doc, last.seq);
 
     if (done) {
+      if (snapshot) {
+        this.event.emit('snapshot.updated', {
+          id,
+          workspaceId,
+          previous: {
+            blob: snapshot.blob,
+            state: snapshot.state,
+            updatedAt: snapshot.updatedAt,
+          },
+        });
+      }
+
       this.logger.debug(
         `Squashed ${updates.length} updates for ${id} in workspace ${workspaceId}`
       );
-
-      await this.db.update.deleteMany({
-        where: {
-          id,
-          workspaceId,
-          seq: {
-            in: updates.map(u => u.seq),
-          },
-        },
-      });
-
-      await this.updateCachedUpdatesCount(workspaceId, id, -updates.length);
     }
+
+    // always delete updates
+    // the upsert will return false if the state is not newer, so we don't need to worry about it
+    const { count } = await this.db.update.deleteMany({
+      where: {
+        id,
+        workspaceId,
+        seq: {
+          in: updates.map(u => u.seq),
+        },
+      },
+    });
+
+    await this.updateCachedUpdatesCount(workspaceId, id, -count);
 
     return doc;
   }
