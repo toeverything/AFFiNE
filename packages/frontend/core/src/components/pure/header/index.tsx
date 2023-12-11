@@ -16,12 +16,19 @@ interface HeaderPros {
   right?: ReactNode;
   center?: ReactNode;
   bottomBorder?: boolean;
+  isFloat?: boolean;
 }
 
 // The Header component is used to solve the following problems
 // 1. Manage layout issues independently of page or business logic
 // 2. Dynamic centered middle element (relative to the main-container), when the middle element is detected to collide with the two elements, the line wrapping process is performed
-export const Header = ({ left, center, right, bottomBorder }: HeaderPros) => {
+export const Header = ({
+  left,
+  center,
+  right,
+  bottomBorder,
+  isFloat,
+}: HeaderPros) => {
   const sidebarSwitchRef = useRef<HTMLDivElement | null>(null);
   const leftSlotRef = useRef<HTMLDivElement | null>(null);
   const centerSlotRef = useRef<HTMLDivElement | null>(null);
@@ -45,7 +52,9 @@ export const Header = ({ left, center, right, bottomBorder }: HeaderPros) => {
   const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
   return (
     <div
-      className={clsx(style.header, bottomBorder && style.bottomBorder)}
+      className={clsx(style.header, bottomBorder && style.bottomBorder, {
+        [style.headerFloat]: isFloat,
+      })}
       data-open={open}
       data-sidebar-floating={appSidebarFloating}
       data-testid="header"
