@@ -109,7 +109,7 @@
     "typescript": "^5.3.2",
     "vite": "^5.0.6",
     "vite-plugin-istanbul": "^5.0.0",
-    "vite-plugin-static-copy": "^0.17.1",
+    "vite-plugin-static-copy": "^1.0.0",
     "vite-tsconfig-paths": "^4.2.1",
     "vitest": "0.34.6",
     "vitest-fetch-mock": "^0.2.2",

@@ -645,7 +645,7 @@ __metadata:
     typescript: "npm:^5.3.2"
     vite: "npm:^5.0.6"
     vite-plugin-istanbul: "npm:^5.0.0"
-    vite-plugin-static-copy: "npm:^0.17.1"
+    vite-plugin-static-copy: "npm:^1.0.0"
     vite-tsconfig-paths: "npm:^4.2.1"
     vitest: "npm:0.34.6"
     vitest-fetch-mock: "npm:^0.2.2"
@@ -35951,17 +35951,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite-plugin-static-copy@npm:^0.17.1":
-  version: 0.17.1
-  resolution: "vite-plugin-static-copy@npm:0.17.1"
+"vite-plugin-static-copy@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "vite-plugin-static-copy@npm:1.0.0"
   dependencies:
     chokidar: "npm:^3.5.3"
     fast-glob: "npm:^3.2.11"
     fs-extra: "npm:^11.1.0"
     picocolors: "npm:^1.0.0"
   peerDependencies:
-    vite: ^3.0.0 || ^4.0.0 || ^5.0.0
-  checksum: 53762f6504ea65148d92603b0e01ea7c67008d6c1adab2cc5575c0d76d8f456e5b4a88c9379376ed6415bea1348042b2648a1a91f6a3a92ab87f49ec80471855
+    vite: ^5.0.0
+  checksum: 838353190f60973bbc6fb944336caf4375cd5fb7e2534c219e3185b28bfdf2e87ee3babc56c538a7f7d78e15c662b7b8b3a2d2a8d97f1e74dc8f3d71f6c3f539
   languageName: node
   linkType: hard
 
