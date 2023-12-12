@@ -3,8 +3,13 @@ import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 
-import { extensions } from './config';
+import { framePanelExtension } from './extensions/frame';
+import { outlineExtension } from './extensions/outline';
 import { type EditorExtension, type EditorExtensionName } from './types';
+
+// the list of all possible extensions in affine.
+// order matters (determines the order of the tabs)
+export const extensions: EditorExtension[] = [outlineExtension, framePanelExtension];
 
 export interface EditorSidebarState {
   isOpen: boolean;
