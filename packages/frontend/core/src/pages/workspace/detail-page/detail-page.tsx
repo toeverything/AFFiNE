@@ -54,6 +54,7 @@ import { performanceRenderLogger } from '../../../shared';
 import * as styles from './detail-page.css';
 import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
 import {
+  editorContainerAtom,
   EditorSidebar,
   editorSidebarOpenAtom,
   editorSidebarStateAtom,
@@ -188,6 +189,7 @@ const DetailPageImpl = ({ page }: { page: Page }) => {
   const { setTemporaryFilter } = useCollectionManager(collectionsCRUDAtom);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
+  const setEditorContainer = useSetAtom(editorContainerAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
 
   const onLoad = useCallback(
@@ -212,6 +214,7 @@ const DetailPageImpl = ({ page }: { page: Page }) => {
         }
       } catch {}
       setPageMode(currentPageId, mode);
+      setEditorContainer(editor);
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });

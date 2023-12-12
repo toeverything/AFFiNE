@@ -4,4 +4,5 @@ export const root = style({
   display: 'flex',
   height: '100%',
   width: '100%',
+  paddingTop: '16px', 
 });
