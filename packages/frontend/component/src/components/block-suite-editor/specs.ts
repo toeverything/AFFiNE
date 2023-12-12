@@ -1,7 +1,7 @@
 import {
   AttachmentService,
-  EdgelessPreset,
-  PagePreset,
+  DocEditorBlockSpecs,
+  EdgelessEditorBlockSpecs,
 } from '@blocksuite/blocks';
 import bytes from 'bytes';
 
@@ -17,30 +17,30 @@ class CustomAttachmentService extends AttachmentService {
   }
 }
 
-function getPresets() {
-  const pageModePreset = PagePreset.map(preset => {
-    if (preset.schema.model.flavour === 'affine:attachment') {
+function getSpecs() {
+  const docModeSpecs = DocEditorBlockSpecs.map(spec => {
+    if (spec.schema.model.flavour === 'affine:attachment') {
       return {
-        ...preset,
+        ...spec,
         service: CustomAttachmentService,
       };
     }
-    return preset;
+    return spec;
   });
-  const edgelessModePreset = EdgelessPreset.map(preset => {
-    if (preset.schema.model.flavour === 'affine:attachment') {
+  const edgelessModeSpecs = EdgelessEditorBlockSpecs.map(spec => {
+    if (spec.schema.model.flavour === 'affine:attachment') {
       return {
-        ...preset,
+        ...spec,
         service: CustomAttachmentService,
       };
     }
-    return preset;
+    return spec;
   });
 
   return {
-    pageModePreset,
-    edgelessModePreset,
+    docModeSpecs,
+    edgelessModeSpecs,
   };
 }
 
-export const editorPresets = getPresets();
+export const editorSpecs = getSpecs();

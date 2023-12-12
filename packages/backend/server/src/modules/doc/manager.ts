@@ -464,6 +464,9 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
     workspaceId: string,
     guid: string,
     doc: Doc,
+    // we always delay the snapshot update to avoid db overload,
+    // so the value of `updatedAt` will not be accurate to user's real action time
+    updatedAt: Date,
     initialSeq?: number
   ) {
     return this.lockSnapshotForUpsert(workspaceId, guid, async () => {
@@ -502,6 +505,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
               data: {
                 blob,
                 state,
+                updatedAt,
               },
             });
 
@@ -521,6 +525,8 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
               blob,
               state,
               seq: initialSeq,
+              createdAt: updatedAt,
+              updatedAt,
             },
           });
 
@@ -565,7 +571,13 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
       ...updates.map(u => u.blob)
     );
 
-    const done = await this.upsert(workspaceId, id, doc, last.seq);
+    const done = await this.upsert(
+      workspaceId,
+      id,
+      doc,
+      last.createdAt,
+      last.seq
+    );
 
     if (done) {
       if (snapshot) {

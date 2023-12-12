@@ -19,7 +19,7 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
-import { editorPresets } from './preset';
+import { editorSpecs } from './specs';
 
 interface BlockElement extends Element {
   path: string[];
@@ -83,7 +83,7 @@ export class NoPageRootError extends Error {
     super('Page root not found when render editor!');
 
     // Log info to let sentry collect more message
-    const hasExpectSpace = Array.from(page.doc.spaces.values()).some(
+    const hasExpectSpace = Array.from(page.rootDoc.spaces.values()).some(
       doc => page.spaceDoc.guid === doc.guid
     );
     const blocks = page.spaceDoc.getMap('blocks') as YMap<YMap<any>>;
@@ -162,8 +162,8 @@ const BlockSuiteEditorImpl = ({
 
   if (editor.page !== page) {
     editor.page = page;
-    editor.pagePreset = editorPresets.pageModePreset;
-    editor.edgelessPreset = editorPresets.edgelessModePreset;
+    editor.docSpecs = editorSpecs.docModeSpecs;
+    editor.edgelessSpecs = editorSpecs.edgelessModeSpecs;
   }
 
   useLayoutEffect(() => {
@@ -211,7 +211,7 @@ const BlockSuiteEditorImpl = ({
           block: 'center',
           inline: 'center',
         });
-        const selectManager = editor.root.value?.selection;
+        const selectManager = editor.root?.selection;
         if (!blockElement.path.length || !selectManager) {
           return;
         }
