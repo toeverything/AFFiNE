@@ -9,7 +9,7 @@ import * as styles from './frame.css';
 // A wrapper for FramePanel
 const EditorFramePanel = () => {
   const framePanelRef = useRef<FramePanel | null>(null);
-  
+
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
       assertExists(framePanelRef.current, 'frame panel should be initialized');
