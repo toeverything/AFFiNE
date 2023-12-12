@@ -1,8 +1,5 @@
 import { AnimatedCollectionsIcon, toast } from '@affine/component';
-import {
-  MenuItem as SidebarMenuItem,
-  MenuLinkItem as SidebarMenuLinkItem,
-} from '@affine/component/app-sidebar';
+import { MenuLinkItem as SidebarMenuLinkItem } from '@affine/component/app-sidebar';
 import {
   CollectionOperations,
   filterPage,
@@ -10,10 +7,10 @@ import {
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
-import { IconButton } from '@affine/component/ui/button';
+import { Button, IconButton } from '@affine/component/ui/button';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { InformationIcon, MoreHorizontalIcon } from '@blocksuite/icons';
+import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
@@ -155,19 +152,32 @@ const CollectionRenderer = ({
     </Collapsible.Root>
   );
 };
-export const CollectionsList = ({ workspace, info }: CollectionsListProps) => {
+export const CollectionsList = ({
+  workspace,
+  info,
+  onCreate,
+}: CollectionsListProps) => {
   const metas = useBlockSuitePageMeta(workspace);
   const { collections } = useSavedCollections(collectionsCRUDAtom);
   const t = useAFFiNEI18N();
   if (collections.length === 0) {
     return (
-      <SidebarMenuItem
-        data-testid="slider-bar-collection-null-description"
-        icon={<InformationIcon />}
-        disabled
-      >
-        <span>{t['Create a collection']()}</span>
-      </SidebarMenuItem>
+      <div className={styles.emptyCollectionWrapper}>
+        <div className={styles.emptyCollectionContent}>
+          <div className={styles.emptyCollectionIconWrapper}>
+            <ViewLayersIcon className={styles.emptyCollectionIcon} />
+          </div>
+          <div
+            data-testid="slider-bar-collection-null-description"
+            className={styles.emptyCollectionMessage}
+          >
+            {t['com.affine.collections.empty.message']()}
+          </div>
+        </div>
+        <Button className={styles.emptyCollectionNewButton} onClick={onCreate}>
+          {t['com.affine.collections.empty.new-collection-button']()}
+        </Button>
+      </div>
     );
   }
   return (

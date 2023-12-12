@@ -20,6 +20,7 @@ export function ShareHeader({
 
   return (
     <Header
+      isFloat={publishMode === 'edgeless'}
       left={<ShareHeaderLeftItem />}
       center={
         <BlockSuiteHeaderTitle

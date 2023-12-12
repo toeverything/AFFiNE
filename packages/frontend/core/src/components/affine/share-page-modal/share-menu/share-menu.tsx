@@ -87,17 +87,9 @@ const CloudShareMenu = (props: ShareMenuProps) => {
       }}
     >
       <Button data-testid="cloud-share-menu-button" type="primary">
-        <div
-          style={{
-            color: isSharedPage
-              ? 'var(--affine-link-color)'
-              : 'var(--affine-text-primary-color)',
-          }}
-        >
-          {isSharedPage
-            ? t['com.affine.share-menu.sharedButton']()
-            : t['com.affine.share-menu.shareButton']()}
-        </div>
+        {isSharedPage
+          ? t['com.affine.share-menu.sharedButton']()
+          : t['com.affine.share-menu.shareButton']()}
       </Button>
     </Menu>
   );

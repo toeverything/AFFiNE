@@ -10,6 +10,9 @@ export const editor = style({
         '--affine-editor-side-padding': '15px',
       },
     },
+    '&.is-public-page': {
+      height: '100%',
+    },
   },
 });
 
