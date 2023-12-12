@@ -172,14 +172,24 @@ export const pageToCommand = (
   const commandLabel = label || {
     title: title,
   };
+  const subTitle = commandLabel.subTitle || '';
 
   return {
     id: page.id,
     label: commandLabel,
     // hack: when comparing, the part between >>> and <<< will be ignored
     // adding this patch so that CMDK will not complain about duplicated commands
+    // TODO: we should use a better way to handle this
+    // Since the blocksuite indexer is asynchronous, we can't get the results immediately,
+    // so add subTitle to the value so we can update the command when the results change
     value:
-      title + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+      title +
+      subTitle +
+      valueWrapperStart +
+      page.id +
+      '.' +
+      category +
+      valueWrapperEnd,
     originalValue: title,
     category: category,
     run: () => {
