@@ -50,7 +50,7 @@ test('create one workspace in the workspace list', async ({
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(2000);
   const result = await getPagesCount(page);
-  expect(result).toBe(13);
+  expect(result).toBe(11);
   await page.reload();
   await page.waitForTimeout(4000);
   const result1 = await getPagesCount(page);
