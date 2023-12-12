@@ -182,17 +182,17 @@ test('allow creation of filters by tags', async ({ page }) => {
     .all();
   const pagesWithTagsCount = pagesWithTags.length;
   expect(pagesWithTagsCount).not.toBe(0);
-  await createPageWithTag(page, { title: 'Page A', tags: ['A'] });
-  await createPageWithTag(page, { title: 'Page B', tags: ['B'] });
+  await createPageWithTag(page, { title: 'Page A', tags: ['Page A'] });
+  await createPageWithTag(page, { title: 'Page B', tags: ['Page B'] });
   await clickSideBarAllPageButton(page);
   await checkFilterName(page, 'is not empty');
   expect(await getPagesCount(page)).toBe(pagesWithTagsCount + 2);
   await changeFilter(page, 'contains all');
   expect(await getPagesCount(page)).toBe(pageCount + 2);
-  await selectTag(page, 'A');
+  await selectTag(page, 'Page A');
   expect(await getPagesCount(page)).toBe(1);
   await changeFilter(page, 'does not contains all');
-  await selectTag(page, 'B');
+  await selectTag(page, 'Page B');
   expect(await getPagesCount(page)).toBe(pageCount + 1);
 });
 
