@@ -3,4 +3,4 @@ name: graphql
 description: AFFiNE GraphQL server
 type: application
 version: 0.0.0
-appVersion: "0.10.4-beta.1"
+appVersion: "0.10.4-beta.2"
