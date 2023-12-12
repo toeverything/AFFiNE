@@ -541,6 +541,7 @@
   "com.affine.collection-bar.action.tooltip.unpin": "Unpin",
   "com.affine.collection.addPage.alreadyExists": "Page already exists",
   "com.affine.collection.addPage.success": "Added successfully",
+  "com.affine.collection.removePage.success": "Removed successfully",
   "com.affine.collection.addPages": "Add Pages",
   "com.affine.collection.addPages.tips": "<0>Add pages:</0> You can freely select pages and add them to the collection.",
   "com.affine.collection.addRules": "Add Rules",
@@ -920,6 +921,8 @@
   "com.affine.toastMessage.removedFavorites": "Removed from Favourites",
   "com.affine.toastMessage.restored": "{{title}} restored",
   "com.affine.toastMessage.successfullyDeleted": "Successfully deleted",
+  "com.affine.toastMessage.rename": "Successfully renamed",
+  "com.affine.toastMessage.addLinkedPage": "Successfully added linked page",
   "com.affine.today": "Today",
   "com.affine.trashOperation.delete": "Delete",
   "com.affine.trashOperation.delete.description": "Once deleted, you can't undo this action. Do you confirm?",
@@ -1007,5 +1010,6 @@
   "com.affine.history.empty-prompt.description": "This document is such a spring chicken, it hasn't sprouted a single historical sprig yet!",
   "com.affine.history.confirm-restore-modal.restore": "Restore",
   "com.affine.history.confirm-restore-modal.hint": "You are about to restore the current version of the page to the latest version available. This action will overwrite any changes made prior to the latest version.",
-  "com.affine.share-page.header.present": "Present"
+  "com.affine.share-page.header.present": "Present",
+  "com.affine.page-operation.add-linked-page": "Add linked page"
 }

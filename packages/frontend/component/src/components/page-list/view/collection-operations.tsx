@@ -22,12 +22,14 @@ export const CollectionOperations = ({
   config,
   setting,
   info,
+  openRenameModal,
   children,
 }: PropsWithChildren<{
   info: DeleteCollectionInfo;
   collection: Collection;
   config: AllPageListConfig;
   setting: ReturnType<typeof useCollectionManager>;
+  openRenameModal?: () => void;
 }>) => {
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
@@ -36,7 +38,12 @@ export const CollectionOperations = ({
     useEditCollectionName({
       title: t['com.affine.editCollection.renameCollection'](),
     });
+
   const showEditName = useCallback(() => {
+    // use openRenameModal if it is in the sidebar collection list
+    if (openRenameModal) {
+      return openRenameModal();
+    }
     openEditCollectionNameModal(collection.name)
       .then(name => {
         return setting.updateCollection({ ...collection, name });
@@ -44,7 +51,8 @@ export const CollectionOperations = ({
       .catch(err => {
         console.error(err);
       });
-  }, [openEditCollectionNameModal, collection, setting]);
+  }, [openRenameModal, openEditCollectionNameModal, collection, setting]);
+
   const showEdit = useCallback(() => {
     openEditCollectionModal(collection)
       .then(collection => {
@@ -54,6 +62,7 @@ export const CollectionOperations = ({
         console.error(err);
       });
   }, [setting, collection, openEditCollectionModal]);
+
   const actions = useMemo<
     Array<
       | {

@@ -52,6 +52,7 @@ export const EditCollectionModal = ({
         .catch(err => {
           console.error(err);
         });
+      onOpenChange(false);
     },
     [onConfirm, onOpenChange]
   );

@@ -102,6 +102,7 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
       ? defaultCollection
       : collections.find(v => v.id === currentCollectionId) ??
         defaultCollection;
+
   return {
     currentCollection: currentCollection,
     savedCollections: collections,

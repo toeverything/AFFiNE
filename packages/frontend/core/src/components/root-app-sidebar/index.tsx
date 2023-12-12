@@ -36,6 +36,7 @@ import { useHistoryAtom } from '../../atoms/history';
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
+import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
@@ -88,9 +89,6 @@ const RouteMenuLinkItem = forwardRef<
   );
 });
 RouteMenuLinkItem.displayName = 'RouteMenuLinkItem';
-
-// Unique droppable IDs
-export const DROPPABLE_SIDEBAR_TRASH = 'trash-folder';
 
 /**
  * This is for the whole affine app sidebar.
@@ -170,8 +168,9 @@ export const RootAppSidebar = ({
     };
   }, [history, setHistory]);
 
+  const dropItemId = getDropItemId('trash');
   const trashDroppable = useDroppable({
-    id: DROPPABLE_SIDEBAR_TRASH,
+    id: dropItemId,
   });
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);

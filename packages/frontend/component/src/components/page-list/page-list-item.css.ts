@@ -23,13 +23,9 @@ export const root = style({
 
 export const dragOverlay = style({
   display: 'flex',
-  height: '54px', // 42 + 12
   alignItems: 'center',
-  background: 'var(--affine-hover-color-filled)',
-  boxShadow: 'var(--affine-menu-shadow)',
-  borderRadius: 10,
   zIndex: 1001,
-  cursor: 'pointer',
+  cursor: 'grabbing',
   maxWidth: '360px',
   transition: 'transform 0.2s',
   willChange: 'transform',
@@ -38,6 +34,16 @@ export const dragOverlay = style({
       transform: 'scale(0.8)',
     },
   },
+});
+export const dragPageItemOverlay = style({
+  height: '54px',
+  borderRadius: '10px',
+  display: 'flex',
+  alignItems: 'center',
+  background: 'var(--affine-hover-color-filled)',
+  boxShadow: 'var(--affine-menu-shadow)',
+  maxWidth: '360px',
+  minWidth: '260px',
 });
 
 export const dndCell = style({

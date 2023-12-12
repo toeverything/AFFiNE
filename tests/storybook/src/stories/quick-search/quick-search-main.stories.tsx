@@ -64,6 +64,7 @@ function useRegisterCommands() {
           createPage: createMockedPage,
           importFile: () => Promise.resolve(),
           isPreferredEdgeless: () => false,
+          createLinkedPage: createMockedPage,
         },
       }),
       registerAffineLayoutCommands({
