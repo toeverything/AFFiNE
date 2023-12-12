@@ -158,7 +158,7 @@ const DetailPageLayout = ({
             onExpand={onExpandSidebar}
             ref={sidebarRef}
             defaultSizePixels={Math.max(sidebarState.width, 240)}
-            minSizePixels={240}
+            minSizePixels={sidebarState.isOpen ? 240 : 0}
             maxSizePercentage={50}
           >
             {sidebar}
