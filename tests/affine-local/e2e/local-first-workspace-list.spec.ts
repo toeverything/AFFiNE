@@ -54,7 +54,7 @@ test('create one workspace in the workspace list', async ({
   await page.reload();
   await page.waitForTimeout(4000);
   const result1 = await getPagesCount(page);
-  expect(result1).toBe(13);
+  expect(result1).toBe(11);
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.flavour).toContain('local');
