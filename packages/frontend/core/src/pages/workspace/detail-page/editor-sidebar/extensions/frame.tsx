@@ -1,17 +1,14 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { FrameIcon } from '@blocksuite/icons';
 import { FramePanel } from '@blocksuite/presets';
-import { useAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
 
-import { editorContainerAtom } from '../atoms';
 import type { EditorExtension } from '../types';
 import * as styles from './frame.css';
 
-// A wrapper for TOCNotesPanel
+// A wrapper for FramePanel
 const EditorFramePanel = () => {
   const framePanelRef = useRef<FramePanel | null>(null);
-  const [editorContainer] = useAtom(editorContainerAtom);
   
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
@@ -20,7 +17,7 @@ const EditorFramePanel = () => {
     }
   }, []);
 
-  if (!editorContainer) {
+  if (!currentEditor) {
     return;
   }
 
@@ -28,8 +25,8 @@ const EditorFramePanel = () => {
     framePanelRef.current = new FramePanel();
   }
 
-  if (editorContainer !== framePanelRef.current?.editor) {
-    (framePanelRef.current as FramePanel).editor = editorContainer;
+  if (currentEditor !== framePanelRef.current?.editor) {
+    (framePanelRef.current as FramePanel).editor = currentEditor;
     (framePanelRef.current as FramePanel).fitPadding = [20, 20, 20, 20];
   }
 

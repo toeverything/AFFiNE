@@ -1,17 +1,10 @@
 // main editor sidebar states
 import { assertExists } from '@blocksuite/global/utils';
-import type { EditorContainer } from '@blocksuite/presets';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 
-import { framePanelExtension } from './extensions/frame';
-import { outlineExtension } from './extensions/outline';
-import type { EditorExtension, EditorExtensionName } from './types';
-
-// the list of all possible extensions in affine.
-// order matters (determines the order of the tabs)
-export const extensions: EditorExtension[] = [outlineExtension, framePanelExtension];
-export const editorContainerAtom = atom<EditorContainer | null>(null);
+import { extensions } from './config';
+import { type EditorExtension, type EditorExtensionName } from './types';
 
 export interface EditorSidebarState {
   isOpen: boolean;
