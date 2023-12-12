@@ -3,10 +3,7 @@
     "QmQb34xduM": {
       "sys:id": "QmQb34xduM",
       "sys:flavour": "affine:page",
-      "sys:children": [
-        "f4WAKZ67ki",
-        "xj7QSmgQgT"
-      ],
+      "sys:children": ["f4WAKZ67ki", "xj7QSmgQgT"],
       "prop:title": [
         {
           "insert": "Personal Home"
