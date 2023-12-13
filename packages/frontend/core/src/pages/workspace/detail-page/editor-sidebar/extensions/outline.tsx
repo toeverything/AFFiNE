@@ -24,7 +24,6 @@ const EditorOutline = () => {
     return;
   }
 
-  
   if (!tocPanelRef.current) {
     tocPanelRef.current = new TOCPanel();
   }
