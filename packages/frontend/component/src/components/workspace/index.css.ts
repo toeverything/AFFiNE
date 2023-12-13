@@ -54,6 +54,7 @@ export const mainContainerStyle = style({
   width: 0,
   flex: 1,
   maxWidth: '100%',
+  backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
       margin: '8px',
@@ -78,6 +79,9 @@ export const mainContainerStyle = style({
       top: '-8px',
       left: 0,
       WebkitAppRegion: 'drag',
+    },
+    '&[data-transparent=true]': {
+      backgroundColor: 'transparent',
     },
   },
 } as ComplexStyleRule);
