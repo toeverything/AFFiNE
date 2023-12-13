@@ -44,7 +44,10 @@ export class UsersService {
       })
       .then(user => user?.features.map(f => f.feature) ?? []);
 
-    return getStorageQuota(features) || this.config.objectStorage.quota;
+    return (
+      getStorageQuota(features.map(f => f.feature)) ||
+      this.config.objectStorage.quota
+    );
   }
 
   async findUserByEmail(email: string) {
