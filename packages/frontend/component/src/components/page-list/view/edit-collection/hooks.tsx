@@ -27,7 +27,7 @@ export const useSelectPage = ({
         contentOptions={{
           style: {
             padding: 0,
-            transform: 'translate(-50%,calc(-50% + 16px))',
+            transform: 'translateY(16px)',
             maxWidth: 976,
             backgroundColor: 'var(--affine-white)',
           },
