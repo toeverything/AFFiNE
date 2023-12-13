@@ -7,9 +7,16 @@ export function getIoManager(): Manager {
   if (ioManager) {
     return ioManager;
   }
-  ioManager = new Manager('/', {
-    autoConnect: false,
-    transports: ['websocket'],
-  });
+  const { protocol, hostname, port } = window.location;
+  ioManager = new Manager(
+    `${protocol === 'https:' ? 'wss' : 'ws'}://${hostname}${
+      port ? `:${port}` : ''
+    }/`,
+    {
+      autoConnect: false,
+      transports: ['websocket'],
+      secure: location.protocol === 'https:',
+    }
+  );
   return ioManager;
 }
