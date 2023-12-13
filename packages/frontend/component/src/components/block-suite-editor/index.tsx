@@ -3,6 +3,7 @@ import { EditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
+import { useAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import {
   memo,
@@ -19,7 +20,10 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
+import { editorContainerAtom } from './index.jotai';
 import { editorSpecs } from './specs';
+
+export { editorContainerAtom } from './index.jotai';
 
 interface BlockElement extends Element {
   path: string[];
@@ -147,6 +151,7 @@ const BlockSuiteEditorImpl = ({
 }: EditorProps): ReactElement => {
   usePageRoot(page);
 
+  const [, setEditorContainer] = useAtom(editorContainerAtom);
   assertExists(page, 'page should not be null');
   const editorRef = useRef<EditorContainer | null>(null);
   if (editorRef.current === null) {
@@ -193,10 +198,12 @@ const BlockSuiteEditorImpl = ({
       return;
     }
     container.append(editor);
+    setEditorContainer(editor);
+
     return () => {
       editor.remove();
     };
-  }, [editor]);
+  }, [editor, setEditorContainer]);
 
   const blockElement = useBlockElementById(
     containerRef.current,
