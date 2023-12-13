@@ -180,6 +180,7 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Import']()}
       </MenuItem>
+      <Export exportHandler={exportHandler} />
 
       {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
       runtimeConfig.enablePageHistory ? (
@@ -197,7 +198,6 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
         </MenuItem>
       ) : null}
 
-      <Export exportHandler={exportHandler} />
       <MenuSeparator />
       <MoveToTrash
         data-testid="editor-option-menu-delete"
