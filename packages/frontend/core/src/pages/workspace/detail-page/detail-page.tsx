@@ -3,6 +3,7 @@ import {
   createTagFilter,
   useCollectionManager,
 } from '@affine/component/page-list';
+import { ResizePanel } from '@affine/component/resize-panel';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import { SyncEngineStep } from '@affine/workspace/providers';
@@ -21,16 +22,8 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from 'react';
-import type { PanelOnResize } from 'react-resizable-panels';
-import {
-  type ImperativePanelHandle,
-  Panel,
-  PanelGroup,
-  PanelResizeHandle,
-} from 'react-resizable-panels';
 import { type LoaderFunction, useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
@@ -56,6 +49,7 @@ import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
 import {
   EditorSidebar,
   editorSidebarOpenAtom,
+  editorSidebarResizingAtom,
   editorSidebarStateAtom,
   editorSidebarWidthAtom,
 } from './editor-sidebar';
@@ -67,16 +61,8 @@ interface DetailPageLayoutProps {
   sidebar: ReactNode;
 }
 
-// disable animation to avoid UI flash
-function useEnableAnimation() {
-  const [enable, setEnable] = useState(false);
-  useEffect(() => {
-    window.setTimeout(() => {
-      setEnable(true);
-    }, 500);
-  }, []);
-  return enable;
-}
+const MIN_SIDEBAR_WIDTH = 320;
+const MAX_SIDEBAR_WIDTH = 800;
 
 // todo: consider move to a shared place if we also want to reuse the layout for other routes
 const DetailPageLayout = ({
@@ -87,85 +73,39 @@ const DetailPageLayout = ({
 }: DetailPageLayoutProps): ReactElement => {
   const sidebarState = useAtomValue(editorSidebarStateAtom);
   const setSidebarWidth = useSetAtom(editorSidebarWidthAtom);
-  const setSidebarOpen = useSetAtom(editorSidebarOpenAtom);
   const { clientBorder } = useAtomValue(appSettingAtom);
-
-  const sidebarRef = useRef<ImperativePanelHandle>(null);
-
-  const onExpandSidebar = useCallback(() => {
-    setSidebarOpen(true);
-  }, [setSidebarOpen]);
-
-  const onCollapseSidebar = useCallback(() => {
-    setSidebarOpen(false);
-  }, [setSidebarOpen]);
-
-  const onResize: PanelOnResize = useCallback(
-    e => {
-      if (e.sizePixels > 0) {
-        setSidebarWidth(e.sizePixels);
-      }
-    },
-    [setSidebarWidth]
-  );
-
-  useEffect(() => {
-    const panelHandle = sidebarRef.current;
-    if (!panelHandle) {
-      return;
-    }
-
-    if (sidebarState.isOpen) {
-      panelHandle.expand();
-    } else {
-      panelHandle.collapse();
-    }
-  }, [sidebarState.isOpen]);
-
-  const enableAnimation = useEnableAnimation();
+  const setResizing = useSetAtom(editorSidebarResizingAtom);
+  const setOpen = useSetAtom(editorSidebarOpenAtom);
 
   return (
-    <PanelGroup
-      direction="horizontal"
+    <div
       className={styles.root}
-      dataAttributes={{
-        'data-disable-animation': !enableAnimation ? 'true' : undefined,
-        'data-client-border': clientBorder ? 'true' : undefined,
-      }}
+      data-client-border={clientBorder && sidebarState.isOpen}
     >
-      <Panel id="editor" className={styles.mainContainer}>
+      <div className={styles.mainContainer}>
         {header}
         {main}
         {footer}
-      </Panel>
+      </div>
       {sidebar ? (
-        <>
-          <PanelResizeHandle
-            dataAttributes={{
-              'data-collapsed': !sidebarState.isOpen,
-            }}
-            className={styles.resizeHandle}
-          >
-            <div className={styles.resizeHandleInner} />
-          </PanelResizeHandle>
-          <Panel
-            id="editor-sidebar"
-            className={styles.sidebarContainer}
-            onResize={onResize}
-            collapsedSizePixels={0}
-            collapsible
-            onCollapse={onCollapseSidebar}
-            onExpand={onExpandSidebar}
-            ref={sidebarRef}
-            defaultSizePixels={Math.max(sidebarState.width, 240)}
-            minSizePixels={sidebarState.isOpen ? 240 : 0}
-            maxSizePercentage={50}
-          >
-            {sidebar}
-          </Panel>
-        </>
+        <ResizePanel
+          enableAnimation={false}
+          resizeHandlePos="left"
+          resizeHandleOffset={clientBorder ? 4 : 0}
+          width={sidebarState.width}
+          className={styles.sidebarContainer}
+          onResizing={setResizing}
+          resizing={sidebarState.resizing}
+          open={sidebarState.isOpen}
+          onOpen={setOpen}
+          onWidthChange={setSidebarWidth}
+          minWidth={MIN_SIDEBAR_WIDTH}
+          maxWidth={MAX_SIDEBAR_WIDTH}
+        >
+          {sidebar}
+        </ResizePanel>
       ) : null}
-    </PanelGroup>
+    </div>
   );
 };
 
@@ -262,10 +202,10 @@ const DetailPageImpl = ({ page }: { page: Page }) => {
         footer={isInTrash ? <TrashPageFooter pageId={page.id} /> : null}
         sidebar={
           !isInTrash ? (
-            <>
+            <div className={styles.sidebarContainerInner}>
               <RightSidebarHeader />
               <EditorSidebar />
-            </>
+            </div>
           ) : null
         }
       />

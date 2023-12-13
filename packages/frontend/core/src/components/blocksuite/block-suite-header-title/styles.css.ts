@@ -7,6 +7,7 @@ export const headerTitleContainer = style({
   flexGrow: 1,
   position: 'relative',
   width: '100%',
+  columnGap: 12,
 });
 
 export const titleEditButton = style({

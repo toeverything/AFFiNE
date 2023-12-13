@@ -86,7 +86,7 @@ export function registerAffineSettingsCommands({
     })
   );
 
-  //Font styles
+  // Font styles
   unsubs.push(
     registerAffineCommand({
       id: 'affine:change-font-style-to-sans',
@@ -144,7 +144,7 @@ export function registerAffineSettingsCommands({
     })
   );
 
-  //Display Language
+  // Display Language
   languagesList.forEach(language => {
     unsubs.push(
       registerAffineCommand({
@@ -162,7 +162,7 @@ export function registerAffineSettingsCommands({
     );
   });
 
-  //Layout Style
+  // Layout Style
   unsubs.push(
     registerAffineCommand({
       id: `affine:change-client-border-style`,

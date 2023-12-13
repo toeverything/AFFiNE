@@ -24,7 +24,7 @@ const dragToFavourites = async (
 const dragToCollection = async (page: Page, dragItem: Locator) => {
   await page.getByTestId('slider-bar-add-collection-button').click();
   const input = page.getByTestId('input-collection-title');
-  await input.isVisible();
+  await expect(input).toBeVisible();
   await input.fill('test collection');
   await page.getByTestId('save-collection').click();
   const collection = page.getByTestId('collection-item');

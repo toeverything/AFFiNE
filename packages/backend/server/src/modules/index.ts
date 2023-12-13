@@ -1,8 +1,9 @@
 import { DynamicModule, Type } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { SERVER_FLAVOR } from '../config';
 import { GqlModule } from '../graphql.module';
-import { SERVER_FLAVOR, ServerConfigModule } from './config';
+import { ServerConfigModule } from './config';
 import { DocModule } from './doc';
 import { PaymentModule } from './payment';
 import { SelfHostedModule } from './self-hosted';
@@ -14,7 +15,7 @@ const BusinessModules: (Type | DynamicModule)[] = [];
 
 switch (SERVER_FLAVOR) {
   case 'sync':
-    BusinessModules.push(SyncModule, DocModule.forSync());
+    BusinessModules.push(SyncModule, DocModule);
     break;
   case 'selfhosted':
     BusinessModules.push(
@@ -25,7 +26,7 @@ switch (SERVER_FLAVOR) {
       WorkspaceModule,
       UsersModule,
       SyncModule,
-      DocModule.forRoot()
+      DocModule
     );
     break;
   case 'graphql':
@@ -35,7 +36,7 @@ switch (SERVER_FLAVOR) {
       GqlModule,
       WorkspaceModule,
       UsersModule,
-      DocModule.forRoot(),
+      DocModule,
       PaymentModule
     );
     break;
@@ -48,7 +49,7 @@ switch (SERVER_FLAVOR) {
       WorkspaceModule,
       UsersModule,
       SyncModule,
-      DocModule.forRoot(),
+      DocModule,
       PaymentModule
     );
     break;

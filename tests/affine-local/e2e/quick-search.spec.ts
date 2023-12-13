@@ -7,7 +7,7 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page, checkVisible = true) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
@@ -50,10 +50,9 @@ async function assertTitle(page: Page, text: string) {
   }
 }
 
-async function checkElementIsInView(page: Page, searchText: string) {
-  const element = page.getByText(searchText);
+async function checkElementIsInView(page: Page, locator: Locator) {
   // check if the element is in view
-  const elementRect = await element.boundingBox();
+  const elementRect = await locator.boundingBox();
   const viewportHeight = page.viewportSize()?.height;
 
   if (!elementRect || !viewportHeight) {
@@ -401,7 +400,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
     await page.keyboard.press('Enter', { delay: 10 });
   }
   await page.keyboard.insertText('123456');
-  const textBlock = page.getByText('123456');
+  const textBlock = page.locator('editor-container').getByText('123456');
   await expect(textBlock).toBeVisible();
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
@@ -413,7 +412,10 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   ]);
   await page.locator('[cmdk-item] [data-testid=cmdk-label]').first().click();
   await waitForScrollToFinish(page);
-  const isVisitable = await checkElementIsInView(page, '123456');
+  const isVisitable = await checkElementIsInView(
+    page,
+    page.locator('editor-container').getByText('123456')
+  );
   expect(isVisitable).toBe(true);
   const selectionElement = page.locator('affine-block-selection');
   await expect(selectionElement).toBeVisible();

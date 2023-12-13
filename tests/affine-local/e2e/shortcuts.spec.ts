@@ -10,7 +10,7 @@ test('Open shortcuts modal', async ({ page }) => {
 
   const shortcutsIcon = page.locator('[data-testid=shortcuts-icon]');
   await page.waitForTimeout(1000);
-  expect(await shortcutsIcon.isVisible()).toEqual(true);
+  await expect(shortcutsIcon).toBeVisible();
 
   await shortcutsIcon.click();
   await page.waitForTimeout(1000);

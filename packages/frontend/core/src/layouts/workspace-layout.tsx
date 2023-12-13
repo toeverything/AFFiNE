@@ -219,6 +219,10 @@ export const WorkspaceLayoutInner = ({
 
   const { appSettings } = useAppSettingHelper();
   const location = useLocation();
+  const { pageId } = useParams();
+
+  // todo: refactor this that the root layout do not need to check route state
+  const isInPageDetail = !!pageId;
 
   return (
     <>
@@ -247,15 +251,18 @@ export const WorkspaceLayoutInner = ({
               paths={pathGenerator}
             />
           </Suspense>
-          <Suspense fallback={<MainContainer />}>
-            <MainContainer padding={appSettings.clientBorder}>
+          <MainContainer
+            transparent={isInPageDetail}
+            padding={appSettings.clientBorder}
+          >
+            <Suspense>
               {migration ? (
                 <WorkspaceUpgrade migration={migration} />
               ) : (
                 children
               )}
-            </MainContainer>
-          </Suspense>
+            </Suspense>
+          </MainContainer>
         </AppContainer>
         <PageListTitleCellDragOverlay />
       </DndContext>

@@ -74,7 +74,6 @@
     "react-dom": "18.2.0",
     "react-error-boundary": "^4.0.11",
     "react-is": "18.2.0",
-    "react-resizable-panels": "^0.0.61",
     "react-router-dom": "^6.16.0",
     "rxjs": "^7.8.1",
     "ses": "^0.18.8",

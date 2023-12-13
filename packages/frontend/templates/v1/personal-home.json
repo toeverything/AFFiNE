@@ -28,10 +28,7 @@
         "YN7S4Pe19c",
         "V9nK8F7B0R",
         "jj-qOseCj-",
-        "hgSgQdYwWJ",
-        "j-qvp7hm9T",
-        "jYvIAUYNyr",
-        "t9fKXZGLWZ"
+        "hgSgQdYwWJ"
       ],
       "prop:xywh": "[0,0,800,547]",
       "prop:background": "--affine-background-secondary-color",
@@ -50,24 +47,6 @@
             "reference": {
               "type": "LinkedPage",
               "pageId": "646305d9-93e0-48df-bb92-d82944ceb5a3"
-            }
-          }
-        }
-      ],
-      "prop:checked": false
-    },
-    "jYvIAUYNyr": {
-      "sys:id": "jYvIAUYNyr",
-      "sys:flavour": "affine:list",
-      "sys:children": [],
-      "prop:type": "bulleted",
-      "prop:text": [
-        {
-          "insert": " ",
-          "attributes": {
-            "reference": {
-              "type": "LinkedPage",
-              "pageId": "512b1cb3-d22d-4b20-a7aa-58e2afcb1238"
             }
           }
         }
@@ -107,11 +86,6 @@
       "sys:flavour": "affine:divider",
       "sys:children": []
     },
-    "j-qvp7hm9T": {
-      "sys:id": "j-qvp7hm9T",
-      "sys:flavour": "affine:divider",
-      "sys:children": []
-    },
     "hgSgQdYwWJ": {
       "sys:id": "hgSgQdYwWJ",
       "sys:flavour": "affine:paragraph",
@@ -126,26 +100,6 @@
         },
         {
           "insert": "is an efficient framework that details the steps you and your team need to consider taking to plan and execute a successful event."
-        }
-      ]
-    },
-    "t9fKXZGLWZ": {
-      "sys:id": "t9fKXZGLWZ",
-      "sys:flavour": "affine:paragraph",
-      "sys:children": [],
-      "prop:type": "quote",
-      "prop:text": [
-        {
-          "insert": "Plan your next holidays and keep track of your favorite locations and attractions while creating a luggage checklist easily in this "
-        },
-        {
-          "insert": "Travel plan template",
-          "attributes": {
-            "bold": true
-          }
-        },
-        {
-          "insert": "! "
         }
       ]
     },

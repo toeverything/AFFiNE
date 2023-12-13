@@ -5,7 +5,7 @@ import { type App, type BrowserWindow, ipcMain } from 'electron';
 import { buildType, CLOUD_BASE_URL, isDev } from './config';
 import { logger } from './logger';
 import {
-  getOrCreateWindow,
+  getMainWindow,
   handleOpenUrlInHiddenWindow,
   mainWindowOrigin,
   removeCookie,
@@ -39,8 +39,12 @@ export function setupDeepLink(app: App) {
 
   // on windows & linux, we need to listen for the second-instance event
   app.on('second-instance', (event, commandLine) => {
-    getOrCreateWindow()
+    getMainWindow()
       .then(window => {
+        if (!window) {
+          logger.error('main window is not ready');
+          return;
+        }
         window.show();
         const url = commandLine.pop();
         if (url?.startsWith(`${protocol}://`)) {
@@ -66,9 +70,9 @@ async function handleAffineUrl(url: string) {
 }
 
 async function handleOauthJwt(url: string) {
-  if (url) {
+  const mainWindow = await getMainWindow();
+  if (url && mainWindow) {
     try {
-      const mainWindow = await getOrCreateWindow();
       mainWindow.show();
       const urlObj = new URL(url);
       const token = urlObj.searchParams.get('token');
