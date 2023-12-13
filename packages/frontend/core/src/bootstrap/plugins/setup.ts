@@ -541,7 +541,7 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
         } else if (part === 'formatBar') {
           const register = (widget: AffineFormatBarWidget) => {
             const div = document.createElement('div');
-            const root = widget.root;
+            const root = widget.host;
             const cleanup = (callback as CallbackMap['formatBar'])(
               div,
               widget.page,
