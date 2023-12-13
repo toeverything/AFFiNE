@@ -10,6 +10,7 @@ export function getIoManager(): Manager {
   ioManager = new Manager('/', {
     autoConnect: false,
     transports: ['websocket'],
+    secure: location.protocol === 'https:',
   });
   return ioManager;
 }
