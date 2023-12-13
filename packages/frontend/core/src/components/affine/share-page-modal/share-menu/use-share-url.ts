@@ -19,8 +19,11 @@ export const generateUrl = ({
   // to generate a public url like https://affine.app/share/123/456
   // or https://affine.app/share/123/456?mode=edgeless
 
+  const { protocol, hostname, port } = window.location;
   const url = new URL(
-    `${runtimeConfig.serverUrlPrefix}/${urlType}/${workspaceId}/${pageId}`
+    `${protocol}//${hostname}${
+      port ? `:${port}` : ''
+    }/${urlType}/${workspaceId}/${pageId}`
   );
   return url.toString();
 };
