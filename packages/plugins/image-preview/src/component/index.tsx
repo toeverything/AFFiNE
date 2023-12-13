@@ -75,7 +75,7 @@ const ImagePreviewModalImpl = (
     let timeoutId: number;
 
     if (!isOpen) {
-    timeoutId = window.setTimeout(() => {
+      timeoutId = window.setTimeout(() => {
         props.onClose();
         setIsOpen(true);
       }, 300);
