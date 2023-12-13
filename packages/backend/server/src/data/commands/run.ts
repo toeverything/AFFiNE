@@ -14,7 +14,7 @@ interface Migration {
   down: (db: PrismaService) => Promise<void>;
 }
 
-async function collectMigrations(): Promise<Migration[]> {
+export async function collectMigrations(): Promise<Migration[]> {
   const folder = join(fileURLToPath(import.meta.url), '../../migrations');
 
   const migrationFiles = readdirSync(folder)
