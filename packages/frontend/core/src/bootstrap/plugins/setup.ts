@@ -146,7 +146,7 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     '@affine/component': import('@affine/component'),
     '@blocksuite/icons': import('@blocksuite/icons'),
     '@blocksuite/blocks': import('@blocksuite/blocks'),
-    '@blocksuite/virgo': import('@blocksuite/virgo'),
+    '@blocksuite/inline': import('@blocksuite/inline'),
     '@affine/sdk/entry': {
       rootStore,
       currentWorkspaceAtom: currentWorkspaceAtom,

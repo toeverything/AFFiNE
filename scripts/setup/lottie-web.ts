@@ -5,7 +5,7 @@ vi.mock('lottie-web', () => ({
 }));
 
 vi.mock('@blocksuite/presets', () => ({
-  EditorContainer: vi.fn(),
+  AffineEditorContainer: vi.fn(),
 }));
 
 if (typeof window !== 'undefined' && HTMLCanvasElement) {

@@ -1,5 +1,5 @@
 import { assertExists } from '@blocksuite/global/utils';
-import { EditorContainer } from '@blocksuite/presets';
+import { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
@@ -31,7 +31,7 @@ export type EditorProps = {
   defaultSelectedBlockId?: string;
   onModeChange?: (mode: 'page' | 'edgeless') => void;
   // on Editor instance instantiated
-  onLoadEditor?: (editor: EditorContainer) => () => void;
+  onLoadEditor?: (editor: AffineEditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
 };
@@ -148,9 +148,9 @@ const BlockSuiteEditorImpl = ({
   usePageRoot(page);
 
   assertExists(page, 'page should not be null');
-  const editorRef = useRef<EditorContainer | null>(null);
+  const editorRef = useRef<AffineEditorContainer | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new EditorContainer();
+    editorRef.current = new AffineEditorContainer();
     editorRef.current.autofocus = true;
   }
   const editor = editorRef.current;
