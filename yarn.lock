@@ -417,7 +417,6 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-error-boundary: "npm:^4.0.11"
     react-is: "npm:18.2.0"
-    react-resizable-panels: "npm:^0.0.61"
     react-router-dom: "npm:^6.16.0"
     rxjs: "npm:^7.8.1"
     ses: "npm:^0.18.8"
@@ -31849,16 +31848,6 @@ __metadata:
     react: ^16.14.0 || ^17.0.0 || ^18.0.0
     react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0
   checksum: 008a2c651f86a5466b98594a9a1d929c65b00d9f3979733e4f6911284079767b3fdf97aaed934edb406f413f6d01b8221d22e9a8281fe6d59405f2c357490eb9
-  languageName: node
-  linkType: hard
-
-"react-resizable-panels@npm:^0.0.61":
-  version: 0.0.61
-  resolution: "react-resizable-panels@npm:0.0.61"
-  peerDependencies:
-    react: ^16.14.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0
-  checksum: 6a2eca04892f24f3b270c782a03e8302799391b1436f73ff7fb6ff5cb0eabd8695772b809f34a2ead34f3d1361fe6cfcdf5229856acc6a268448e15413c09a5d
   languageName: node
   linkType: hard
 
