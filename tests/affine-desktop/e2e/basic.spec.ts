@@ -142,19 +142,19 @@ test('affine onboarding button', async ({ page }) => {
   await page.getByTestId('help-island').click();
   await page.getByTestId('easy-guide').click();
   const onboardingModal = page.locator('[data-testid=onboarding-modal]');
-  expect(await onboardingModal.isVisible()).toEqual(true);
+  await expect(onboardingModal).toBeVisible();
   const switchVideo = page.locator(
     '[data-testid=onboarding-modal-switch-video]'
   );
-  expect(await switchVideo.isVisible()).toEqual(true);
+  await expect(switchVideo).toBeVisible();
   await page.getByTestId('onboarding-modal-next-button').click();
   const editingVideo = page.locator(
     '[data-testid=onboarding-modal-editing-video]'
   );
-  expect(await editingVideo.isVisible()).toEqual(true);
+  await expect(editingVideo).toBeVisible();
   await page.getByTestId('onboarding-modal-close-button').click();
 
-  expect(await onboardingModal.isVisible()).toEqual(false);
+  await expect(onboardingModal).toBeHidden();
 });
 
 test('windows only check', async ({ page }) => {

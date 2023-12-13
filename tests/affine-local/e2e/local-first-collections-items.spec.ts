@@ -43,7 +43,7 @@ const createAndPinCollection = async (
     delay: 200,
   });
   const title = page.getByTestId('input-collection-title');
-  await title.isVisible();
+  await expect(title).toBeVisible();
   await title.fill(options?.collectionName ?? 'test collection');
   await page.getByTestId('save-collection').click();
   await page.waitForTimeout(100);
@@ -162,7 +162,7 @@ test('add collection from sidebar', async ({ page }) => {
   await expect(nullCollection).toBeVisible();
   await page.getByTestId('slider-bar-add-collection-button').click();
   const title = page.getByTestId('input-collection-title');
-  await title.isVisible();
+  await expect(title).toBeVisible();
   await title.fill('test collection');
   await page.getByTestId('save-collection').click();
   await page.waitForTimeout(100);
