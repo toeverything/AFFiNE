@@ -16,6 +16,8 @@ export enum ExternalAccount {
   firebase = 'firebase',
 }
 
+export type ServerFlavor = 'allinone' | 'graphql' | 'sync' | 'selfhosted';
+
 type EnvConfigType = 'string' | 'int' | 'float' | 'boolean';
 type ConfigPaths = LeafPaths<
   Omit<
@@ -345,6 +347,11 @@ export interface AFFiNEConfig {
 
   doc: {
     manager: {
+      /**
+       * Whether auto merge updates into doc snapshot.
+       */
+      enableUpdateAutoMerging: boolean;
+
       /**
        * How often the [DocManager] will start a new turn of merging pending updates into doc snapshot.
        *

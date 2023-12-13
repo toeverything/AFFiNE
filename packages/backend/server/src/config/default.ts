@@ -7,8 +7,11 @@ import { join } from 'node:path';
 import parse from 'parse-duration';
 
 import pkg from '../../package.json' assert { type: 'json' };
-import type { AFFiNEConfig } from './def';
+import type { AFFiNEConfig, ServerFlavor } from './def';
 import { applyEnvToConfig } from './env';
+
+export const SERVER_FLAVOR = (process.env.SERVER_FLAVOR ??
+  'allinone') as ServerFlavor;
 
 // Don't use this in production
 export const examplePrivateKey = `-----BEGIN EC PRIVATE KEY-----
@@ -206,6 +209,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     },
     doc: {
       manager: {
+        enableUpdateAutoMerging: SERVER_FLAVOR !== 'sync',
         updatePollInterval: 3000,
         experimentalMergeWithJwstCodec: false,
       },

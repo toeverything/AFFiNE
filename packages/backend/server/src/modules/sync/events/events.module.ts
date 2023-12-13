@@ -5,7 +5,7 @@ import { PermissionService } from '../../workspaces/permission';
 import { EventsGateway } from './events.gateway';
 
 @Module({
-  imports: [DocModule.forFeature()],
+  imports: [DocModule],
   providers: [EventsGateway, PermissionService],
 })
 export class EventsModule {}

@@ -9,14 +9,13 @@ import {
 import Redis from 'ioredis';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
-import { Config, ConfigModule } from './config';
+import { Config } from './config';
 import { getRequestResponseFromContext } from './utils/nestjs';
 
 @Global()
 @Module({
   imports: [
     ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
       inject: [Config],
       useFactory: (config: Config): ThrottlerModuleOptions => {
         const options: ThrottlerModuleOptions = {

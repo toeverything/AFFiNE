@@ -26,7 +26,7 @@ const createModule = () => {
       CacheModule,
       EventModule,
       ConfigModule.forRoot(),
-      DocModule.forRoot(),
+      DocModule,
     ],
   }).compile();
 };

@@ -1,5 +1,4 @@
 import {
-  Inject,
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -97,8 +96,6 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   private busy = false;
 
   constructor(
-    @Inject('DOC_MANAGER_AUTOMATION')
-    private readonly automation: boolean,
     private readonly db: PrismaService,
     private readonly config: Config,
     private readonly cache: Cache,
@@ -106,7 +103,7 @@ export class DocManager implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (this.automation) {
+    if (this.config.doc.manager.enableUpdateAutoMerging) {
       this.logger.log('Use Database');
       this.setup();
     }

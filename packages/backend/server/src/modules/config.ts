@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Field, ObjectType, Query } from '@nestjs/graphql';
 
-export const { SERVER_FLAVOR } = process.env;
+import { SERVER_FLAVOR } from '../config';
 
 @ObjectType()
 export class ServerConfigType {
@@ -19,7 +19,7 @@ export class ServerConfigResolver {
   serverConfig(): ServerConfigType {
     return {
       version: AFFiNE.version,
-      flavor: SERVER_FLAVOR || 'allinone',
+      flavor: SERVER_FLAVOR,
     };
   }
 }
