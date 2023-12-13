@@ -7,7 +7,7 @@ export function getIoManager(): Manager {
   if (ioManager) {
     return ioManager;
   }
-  ioManager = new Manager(runtimeConfig.serverUrlPrefix + '/', {
+  ioManager = new Manager('/', {
     autoConnect: false,
     transports: ['websocket'],
   });

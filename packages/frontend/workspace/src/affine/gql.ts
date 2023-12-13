@@ -19,9 +19,7 @@ import useSWRMutation from 'swr/mutation';
 
 setupGlobal();
 
-export const fetcher = gqlFetcherFactory(
-  runtimeConfig.serverUrlPrefix + '/graphql'
-);
+export const fetcher = gqlFetcherFactory('/graphql');
 
 /**
  * A `useSWR` wrapper for sending graphql queries
