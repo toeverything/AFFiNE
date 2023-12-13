@@ -20,7 +20,7 @@ export const generateUrl = ({
   // or https://affine.app/share/123/456?mode=edgeless
 
   const url = new URL(
-    `${runtimeConfig.serverUrlPrefix}/${urlType}/${workspaceId}/${pageId}`
+    `${location.protocol}//${location.hostname}/${urlType}/${workspaceId}/${pageId}`
   );
   return url.toString();
 };
