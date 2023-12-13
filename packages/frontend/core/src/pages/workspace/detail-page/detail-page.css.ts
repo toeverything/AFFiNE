@@ -78,7 +78,6 @@ export const resizeHandleInner = style({
 });
 
 export const sidebarContainer = style({
-  transition: 'flex 0.2s ease-in-out',
   display: 'flex',
   flexDirection: 'column',
   selectors: {
