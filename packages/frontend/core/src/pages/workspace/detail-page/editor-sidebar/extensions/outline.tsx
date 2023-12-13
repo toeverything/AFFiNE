@@ -29,7 +29,8 @@ const EditorOutline = () => {
   }
 
   if (editorContainer !== tocPanelRef.current?.editor) {
-    (tocPanelRef.current as TOCPanel).page = editorContainer;
+    (tocPanelRef.current as TOCPanel).editor = editorContainer;
+    (tocPanelRef.current as TOCPanel).fitPadding = [20, 20, 20, 20];
   }
 
   return <div className={styles.root} ref={onRefChange} />;
