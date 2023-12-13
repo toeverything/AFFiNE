@@ -1,21 +1,12 @@
-import { baseTheme } from '@toeverything/theme';
 import type { ComplexStyleRule } from '@vanilla-extract/css';
-import { createVar, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 
 export const floatingMaxWidth = 768;
-export const navWidthVar = createVar('nav-width');
 
 export const navWrapperStyle = style({
-  vars: {
-    [navWidthVar]: '256px',
-  },
-  position: 'relative',
-  width: navWidthVar,
-  minWidth: navWidthVar,
-  height: '100%',
   zIndex: 3,
   paddingBottom: '8px',
-  backgroundColor: 'transparent',
+  backgroundColor: 'var(--affine-background-primary-color)',
   '@media': {
     print: {
       display: 'none',
@@ -23,23 +14,7 @@ export const navWrapperStyle = style({
     },
   },
   selectors: {
-    '&[data-is-floating="true"]': {
-      position: 'absolute',
-      width: `calc(${navWidthVar})`,
-      zIndex: 4,
-      backgroundColor: 'var(--affine-background-primary-color)',
-    },
-    '&[data-open="false"]': {
-      marginLeft: `calc(${navWidthVar} * -1)`,
-    },
-    '&[data-enable-animation="true"]': {
-      transition: 'margin-left .3s .05s, width .3s .05s',
-    },
-    '&[data-is-floating="false"].has-background': {
-      backgroundColor: 'var(--affine-white-60)',
-      borderRight: '1px solid var(--affine-border-color)',
-    },
-    '&.has-border': {
+    '&[data-has-border=true]': {
       borderRight: '1px solid var(--affine-border-color)',
     },
   },
@@ -63,7 +38,6 @@ export const navStyle = style({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  zIndex: parseInt(baseTheme.zIndexModal),
 });
 
 export const navHeaderStyle = style({

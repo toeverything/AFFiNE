@@ -13,12 +13,14 @@ export const extensions: EditorExtension[] = [outlineExtension];
 export interface EditorSidebarState {
   isOpen: boolean;
   width: number;
+  resizing: boolean;
   activeExtension?: EditorExtension;
   extensions: EditorExtension[];
 }
 
 const baseStateAtom = atom<EditorSidebarState>({
   isOpen: false,
+  resizing: false,
   width: 300, // todo: should be resizable
   activeExtension: extensions[0],
   extensions: extensions, // todo: maybe should be dynamic (by feature flag?)
@@ -27,6 +29,7 @@ const baseStateAtom = atom<EditorSidebarState>({
 export const editorSidebarStateAtom = atom(get => get(baseStateAtom));
 
 const isOpenAtom = selectAtom(baseStateAtom, state => state.isOpen);
+const resizingAtom = selectAtom(baseStateAtom, state => state.resizing);
 const activeExtensionAtom = selectAtom(
   baseStateAtom,
   state => state.activeExtension
@@ -44,6 +47,16 @@ export const editorSidebarOpenAtom = atom(
   (_, set, isOpen: boolean) => {
     set(baseStateAtom, prev => {
       return { ...prev, isOpen };
+    });
+  }
+);
+
+// get/set sidebar resizing state
+export const editorSidebarResizingAtom = atom(
+  get => get(resizingAtom),
+  (_, set, resizing: boolean) => {
+    set(baseStateAtom, prev => {
+      return { ...prev, resizing };
     });
   }
 );

@@ -1,18 +1,16 @@
-import { assignInlineVars } from '@vanilla-extract/dynamic';
-import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 
 import { Skeleton } from '../../ui/skeleton';
+import { ResizePanel } from '../resize-panel';
 import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
 import {
   floatingMaxWidth,
   navBodyStyle,
   navHeaderStyle,
   navStyle,
-  navWidthVar,
   navWrapperStyle,
   sidebarFloatMaskStyle,
 } from './index.css';
@@ -23,7 +21,6 @@ import {
   appSidebarResizingAtom,
   appSidebarWidthAtom,
 } from './index.jotai';
-import { ResizeIndicator } from './resize-indicator';
 import type { SidebarHeaderProps } from './sidebar-header';
 import { SidebarHeader } from './sidebar-header';
 
@@ -33,30 +30,19 @@ export type AppSidebarProps = PropsWithChildren<
   }
 >;
 
-function useEnableAnimation() {
-  const [enable, setEnable] = useState(false);
-  useEffect(() => {
-    window.setTimeout(() => {
-      setEnable(true);
-    }, 500);
-  }, []);
-  return enable;
-}
-
 export type History = {
   stack: string[];
   current: number;
 };
 
+const MAX_WIDTH = 480;
+const MIN_WIDTH = 256;
+
 export function AppSidebar(props: AppSidebarProps): ReactElement {
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
-  const [appSidebarFloating, setAppSidebarFloating] = useAtom(
-    appSidebarFloatingAtom
-  );
-
-  const isResizing = useAtomValue(appSidebarResizingAtom);
-  const navRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useAtom(appSidebarWidthAtom);
+  const [floating, setFloating] = useAtom(appSidebarFloatingAtom);
+  const [resizing, setResizing] = useAtom(appSidebarResizingAtom);
 
   useEffect(() => {
     function onResize() {
@@ -64,7 +50,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         `(max-width: ${floatingMaxWidth}px)`
       ).matches;
       const isOverflowWidth = window.matchMedia(
-        `(max-width: ${appSidebarWidth / 0.4}px)`
+        `(max-width: ${width / 0.4}px)`
       ).matches;
       const isFloating = isFloatingMaxWidth || isOverflowWidth;
       if (
@@ -75,7 +61,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         // so that the sidebar can be closed on mobile by default
         setOpen(!isFloating);
       }
-      setAppSidebarFloating(isFloating && !!open);
+      setFloating(isFloating && !!open);
     }
 
     const dOnResize = debounce(onResize, 50);
@@ -83,33 +69,34 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
     return () => {
       window.removeEventListener('resize', dOnResize);
     };
-  }, [appSidebarWidth, open, setAppSidebarFloating, setOpen]);
+  }, [open, setFloating, setOpen, width]);
 
-  // disable animation to avoid UI flash
-  const enableAnimation = useEnableAnimation();
-
+  const transparent = environment.isDesktop && !props.hasBackground;
   const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const hasRightBorder = !environment.isDesktop || !transparent;
 
   return (
     <>
-      <div
-        style={assignInlineVars({
-          [navWidthVar]: `${appSidebarWidth}px`,
-        })}
-        className={clsx(navWrapperStyle, {
-          'has-background': environment.isDesktop && props.hasBackground,
-          'has-border':
-            !environment.isDesktop ||
-            (environment.isDesktop && props.hasBackground),
-        })}
-        data-open={open}
+      <ResizePanel
+        floating={floating}
+        open={open}
+        resizing={resizing}
+        maxWidth={MAX_WIDTH}
+        minWidth={MIN_WIDTH}
+        width={width}
+        resizeHandlePos="right"
+        onOpen={setOpen}
+        onResizing={setResizing}
+        onWidthChange={setWidth}
+        className={navWrapperStyle}
+        resizeHandleVerticalPadding={transparent ? 16 : 0}
+        data-transparent={transparent}
+        data-has-border={hasRightBorder}
         data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
-        data-is-floating={appSidebarFloating}
-        data-has-background={props.hasBackground}
-        data-enable-animation={enableAnimation && !isResizing}
+        data-has-background={environment.isDesktop && props.hasBackground}
       >
-        <nav className={navStyle} ref={navRef} data-testid="app-sidebar">
+        <nav className={navStyle} data-testid="app-sidebar">
           <SidebarHeader
             router={props.router}
             generalShortcutsInfo={props.generalShortcutsInfo}
@@ -118,12 +105,11 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
             {props.children}
           </div>
         </nav>
-        <ResizeIndicator targetElement={navRef.current} />
-      </div>
+      </ResizePanel>
       <div
         data-testid="app-sidebar-float-mask"
         data-open={open}
-        data-is-floating={appSidebarFloating}
+        data-is-floating={floating}
         className={sidebarFloatMaskStyle}
         onClick={() => setOpen(false)}
       />
@@ -132,15 +118,12 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
 }
 
 export const AppSidebarFallback = (): ReactElement | null => {
-  const appSidebarWidth = useAtomValue(appSidebarWidthAtom);
+  const width = useAtomValue(appSidebarWidthAtom);
   return (
     <div
-      style={assignInlineVars({
-        [navWidthVar]: `${appSidebarWidth}px`,
-      })}
-      className={clsx(navWrapperStyle, {
-        'has-border': true,
-      })}
+      style={{ width }}
+      className={navWrapperStyle}
+      data-has-border
       data-open="true"
     >
       <nav className={navStyle}>

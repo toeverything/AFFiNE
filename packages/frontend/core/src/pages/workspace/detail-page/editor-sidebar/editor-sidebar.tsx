@@ -7,10 +7,5 @@ export const EditorSidebar = () => {
   const sidebarState = useAtomValue(editorSidebarStateAtom);
   const Component = sidebarState.activeExtension?.Component;
 
-  // do we need this?
-  if (!sidebarState.isOpen) {
-    return null;
-  }
-
   return <div className={styles.root}>{Component ? <Component /> : null}</div>;
 };
