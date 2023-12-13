@@ -1,4 +1,4 @@
-import { registerTOCComponents } from '@blocksuite/blocks';
+import { registerTOCComponents } from '@blocksuite/presets';
 import { registerFramePanelComponents } from '@blocksuite/presets';
 
 registerTOCComponents(components => {
