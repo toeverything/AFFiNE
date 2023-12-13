@@ -111,7 +111,13 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   }, []);
   const t = useAFFiNEI18N();
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -119,6 +125,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
           gap: 8,
           padding: '12px 24px',
           fontSize: 'var(--affine-font-xs)',
+          ['WebkitAppRegion' as string]: 'drag',
         }}
       >
         <div
@@ -127,6 +134,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             alignItems: 'center',
             gap: 4,
             color: 'var(--affine-text-secondary-color)',
+            ['WebkitAppRegion' as string]: 'no-drag',
           }}
         >
           <ViewLayersIcon
@@ -138,7 +146,11 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
         </div>
         <div
           data-testid="collection-name"
-          style={{ fontWeight: 600, color: 'var(--affine-text-primary-color)' }}
+          style={{
+            fontWeight: 600,
+            color: 'var(--affine-text-primary-color)',
+            ['WebkitAppRegion' as string]: 'no-drag',
+          }}
         >
           {collection.name}
         </div>
