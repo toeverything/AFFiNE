@@ -8,7 +8,7 @@ import { PermissionService } from './permission';
 import { PagePermissionResolver, WorkspaceResolver } from './resolver';
 
 @Module({
-  imports: [DocModule.forFeature()],
+  imports: [DocModule],
   controllers: [WorkspacesController],
   providers: [
     WorkspaceResolver,

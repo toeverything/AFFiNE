@@ -28,12 +28,10 @@ export class EventEmitter {
   }
 }
 
-export const OnEvent = (
+export const OnEvent = RawOnEvent as (
   event: Event,
   opts?: Parameters<typeof RawOnEvent>[1]
-) => {
-  return RawOnEvent(event, opts);
-};
+) => MethodDecorator;
 
 @Global()
 @Module({
