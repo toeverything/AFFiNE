@@ -26,7 +26,10 @@ declare global {
   var currentEditor: AffineEditorContainer | undefined;
 }
 
-export type OnLoadEditor = (page: Page, editor: AffineEditorContainer) => () => void;
+export type OnLoadEditor = (
+  page: Page,
+  editor: AffineEditorContainer
+) => () => void;
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;

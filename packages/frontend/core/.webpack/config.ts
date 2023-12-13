@@ -207,7 +207,13 @@ export const createConfiguration: (
           : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
         '@blocksuite/inline': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'inline', 'src')
-          : join(workspaceRoot, 'node_modules', '@blocksuite', 'inline', 'dist'),
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'inline',
+              'dist'
+            ),
       },
     },
 
