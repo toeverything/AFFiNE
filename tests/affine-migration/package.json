@@ -7,10 +7,10 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
-    "@blocksuite/block-std": "0.11.0-nightly-202312130039-9833e9f",
-    "@blocksuite/blocks": "0.11.0-nightly-202312130039-9833e9f",
-    "@blocksuite/global": "0.11.0-nightly-202312130039-9833e9f",
-    "@blocksuite/store": "0.11.0-nightly-202312130039-9833e9f",
+    "@blocksuite/block-std": "0.11.0-nightly-202312130833-3d913f0",
+    "@blocksuite/blocks": "0.11.0-nightly-202312130833-3d913f0",
+    "@blocksuite/global": "0.11.0-nightly-202312130833-3d913f0",
+    "@blocksuite/store": "0.11.0-nightly-202312130833-3d913f0",
     "@playwright/test": "^1.39.0"
   },
   "version": "0.10.3-canary.2"

@@ -37,8 +37,8 @@
     "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.11.0-nightly-202312130039-9833e9f",
-    "@blocksuite/store": "0.11.0-nightly-202312130039-9833e9f",
+    "@blocksuite/blocks": "0.11.0-nightly-202312130833-3d913f0",
+    "@blocksuite/store": "0.11.0-nightly-202312130833-3d913f0",
     "fake-indexeddb": "^5.0.0",
     "vite": "^5.0.6",
     "vite-plugin-dts": "3.6.0",
