@@ -1,24 +1,24 @@
 import { MenuLinkItem } from '@affine/component/app-sidebar';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
-import { type PageMeta, type Workspace } from '@blocksuite/store';
+import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
-import { useAtomValue } from 'jotai/react';
+import { useAtomValue } from 'jotai/index';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { pageSettingFamily } from '../../../../atoms';
-import * as styles from '../favorite/styles.css';
-import { PostfixItem } from './postfix-item';
-export interface ReferencePageProps {
-  workspace: Workspace;
-  pageId: string;
-  metaMapping: Record<string, PageMeta>;
-  parentIds: Set<string>;
-}
+import { getDragItemId } from '../../../../hooks/affine/use-sidebar-drag';
+import { DragMenuItemOverlay } from '../components/drag-menu-item-overlay';
+import { PostfixItem } from '../components/postfix-item';
+import {
+  ReferencePage,
+  type ReferencePageProps,
+} from '../components/reference-page';
+import * as styles from './styles.css';
 
-export const ReferencePage = ({
+export const FavouritePage = ({
   workspace,
   pageId,
   metaMapping,
@@ -27,6 +27,7 @@ export const ReferencePage = ({
   const t = useAFFiNEI18N();
   const params = useParams();
   const active = params.pageId === pageId;
+  const dragItemId = getDragItemId('favouritePage', pageId);
 
   const setting = useAtomValue(pageSettingFamily(pageId));
   const icon = useMemo(() => {
@@ -49,26 +50,44 @@ export const ReferencePage = ({
   const untitled = !metaMapping[pageId]?.title;
   const pageTitle = metaMapping[pageId]?.title || t['Untitled']();
 
+  const pageTitleElement = useMemo(() => {
+    return <DragMenuItemOverlay icon={icon} pageTitle={pageTitle} />;
+  }, [icon, pageTitle]);
+
+  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
+    id: dragItemId,
+    data: {
+      pageId,
+      pageTitle: pageTitleElement,
+    },
+  });
+
   return (
     <Collapsible.Root
       className={styles.favItemWrapper}
       data-nested={nestedItem}
       open={!collapsed}
+      data-draggable={true}
+      data-dragging={isDragging}
     >
       <MenuLinkItem
-        data-type="reference-page"
-        data-testid={`reference-page-${pageId}`}
+        data-testid={`favourite-page-${pageId}`}
+        data-type="favourite-list-item"
+        icon={icon}
+        className={styles.favItem}
         active={active}
         to={`/workspace/${workspace.id}/${pageId}`}
-        icon={icon}
         collapsed={collapsible ? collapsed : undefined}
         onCollapsedChange={setCollapsed}
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
         postfix={
           <PostfixItem
             workspace={workspace}
             pageId={pageId}
             pageTitle={pageTitle}
-            isReferencePage={true}
+            inFavorites={true}
           />
         }
       >
@@ -76,23 +95,19 @@ export const ReferencePage = ({
           {pageTitle}
         </span>
       </MenuLinkItem>
-      {collapsible && (
-        <Collapsible.Content className={styles.collapsibleContent}>
-          <div className={styles.collapsibleContentInner}>
-            {referencesToShow.map(ref => {
-              return (
-                <ReferencePage
-                  key={ref}
-                  workspace={workspace}
-                  pageId={ref}
-                  metaMapping={metaMapping}
-                  parentIds={new Set([...parentIds, pageId])}
-                />
-              );
-            })}
-          </div>
-        </Collapsible.Content>
-      )}
+      <Collapsible.Content className={styles.collapsibleContent}>
+        {referencesToShow.map(id => {
+          return (
+            <ReferencePage
+              key={id}
+              workspace={workspace}
+              pageId={id}
+              metaMapping={metaMapping}
+              parentIds={new Set([pageId])}
+            />
+          );
+        })}
+      </Collapsible.Content>
     </Collapsible.Root>
   );
 };

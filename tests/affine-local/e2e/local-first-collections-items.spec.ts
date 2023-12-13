@@ -60,18 +60,16 @@ test('Show collections items in sidebar', async ({ page }) => {
   const collectionPage = collections.getByTestId('collection-page').nth(0);
   expect(await collectionPage.textContent()).toBe('test page');
   await collectionPage.hover();
-  await collectionPage.getByTestId('collection-page-options').click();
-  const deletePage = page
-    .getByTestId('collection-page-option')
-    .getByText('Delete');
+  await collectionPage
+    .getByTestId('left-sidebar-page-operation-button')
+    .click();
+  const deletePage = page.getByText('Delete');
   await deletePage.click();
   await page.getByTestId('confirm-delete-page').click();
   expect(await collections.getByTestId('collection-page').count()).toBe(0);
   await first.hover();
   await first.getByTestId('collection-options').click();
-  const deleteCollection = page
-    .getByTestId('collection-option')
-    .getByText('Delete');
+  const deleteCollection = page.getByText('Delete');
   await deleteCollection.click();
   await page.waitForTimeout(50);
   expect(await items.count()).toBe(0);
@@ -100,13 +98,10 @@ test('edit collection', async ({ page }) => {
   const first = items.first();
   await first.hover();
   await first.getByTestId('collection-options').click();
-  const editCollection = page
-    .getByTestId('collection-option')
-    .getByText('Rename');
+  const editCollection = page.getByText('Rename');
   await editCollection.click();
-  const title = page.getByTestId('input-collection-title');
-  await title.fill('123');
-  await page.getByTestId('save-collection').click();
+  await page.getByTestId('rename-modal-input').fill('123');
+  await page.keyboard.press('Enter');
   await page.waitForTimeout(100);
   expect(await first.textContent()).toBe('123');
 });
@@ -123,9 +118,8 @@ test('edit collection and change filter date', async ({ page }) => {
     .getByTestId('collection-option')
     .getByText('Rename');
   await editCollection.click();
-  const title = page.getByTestId('input-collection-title');
-  await title.fill('123');
-  await page.getByTestId('save-collection').click();
+  await page.getByTestId('rename-modal-input').fill('123');
+  await page.keyboard.press('Enter');
   await page.waitForTimeout(100);
   expect(await first.textContent()).toBe('123');
 });

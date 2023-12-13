@@ -121,7 +121,7 @@ const PageListOperationsCell = ({
 export const PageListItem = (props: PageListItemProps) => {
   const pageTitleElement = useMemo(() => {
     return (
-      <>
+      <div className={styles.dragPageItemOverlay}>
         <div className={styles.titleIconsWrapper}>
           <PageSelectionCell
             onSelectedChange={props.onSelectedChange}
@@ -131,7 +131,7 @@ export const PageListItem = (props: PageListItemProps) => {
           <PageListIconCell icon={props.icon} />
         </div>
         <PageListTitleCell title={props.title} preview={props.preview} />
-      </>
+      </div>
     );
   }, [
     props.icon,
@@ -142,6 +142,7 @@ export const PageListItem = (props: PageListItemProps) => {
     props.title,
   ]);
 
+  // TODO: use getDropItemId
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
     id: 'page-list-item-title-' + props.pageId,
     data: {

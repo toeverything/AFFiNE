@@ -67,11 +67,7 @@ export const WorkspaceDeleteModal = ({
       )}
       <div className={styles.inputContent}>
         <Input
-          ref={ref => {
-            if (ref) {
-              window.setTimeout(() => ref.focus(), 0);
-            }
-          }}
+          autoFocus
           onChange={setDeleteStr}
           data-testid="delete-workspace-input"
           onEnter={handleOnEnter}

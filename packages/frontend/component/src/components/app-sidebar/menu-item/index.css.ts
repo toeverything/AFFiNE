@@ -18,6 +18,7 @@ export const root = style({
   padding: '0 12px',
   fontSize: 'var(--affine-font-sm)',
   marginTop: '4px',
+  position: 'relative',
   selectors: {
     '&:hover': {
       background: 'var(--affine-hover-color)',
@@ -40,7 +41,7 @@ export const root = style({
       paddingLeft: '4px',
       paddingRight: '4px',
     },
-    '&[data-type="collection-list-item"][data-collapsible="false"][data-active="true"],&[data-type="favorite-list-item"][data-collapsible="false"][data-active="true"], &[data-type="favorite-list-item"][data-collapsible="false"]:hover, &[data-type="collection-list-item"][data-collapsible="false"]:hover':
+    '&[data-type="collection-list-item"][data-collapsible="false"][data-active="true"],&[data-type="reference-page"][data-collapsible="false"][data-active="true"], &[data-type="reference-page"][data-collapsible="false"]:hover, &[data-type="collection-list-item"][data-collapsible="false"]:hover':
       {
         width: 'calc(100% + 8px)',
         transform: 'translateX(-8px)',
@@ -61,11 +62,14 @@ export const content = style({
 });
 
 export const postfix = style({
-  justifySelf: 'flex-end',
+  right: '4px',
+  position: 'absolute',
   opacity: 0,
   pointerEvents: 'none',
   selectors: {
     [`${root}:hover &`]: {
+      justifySelf: 'flex-end',
+      position: 'initial',
       opacity: 1,
       pointerEvents: 'all',
     },

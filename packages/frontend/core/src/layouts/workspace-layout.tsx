@@ -7,11 +7,9 @@ import {
   PageListDragOverlay,
 } from '@affine/component/page-list';
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import { getBlobEngine } from '@affine/workspace/manager';
 import { assertExists } from '@blocksuite/global/utils';
-import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
   DragOverlay,
@@ -35,14 +33,10 @@ import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper'
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
-import {
-  DROPPABLE_SIDEBAR_TRASH,
-  RootAppSidebar,
-} from '../components/root-app-sidebar';
+import { RootAppSidebar } from '../components/root-app-sidebar';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
-import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
+import { useSidebarDrag } from '../hooks/affine/use-sidebar-drag';
 import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
@@ -51,7 +45,6 @@ import {
   CurrentWorkspaceModals,
 } from '../providers/modal-provider';
 import { pathGenerator } from '../shared';
-import { toast } from '../utils';
 
 const CMDKQuickSearchModal = lazy(() =>
   import('../components/pure/cmdk').then(module => ({
@@ -169,7 +162,6 @@ export const WorkspaceLayoutInner = ({
   const [currentWorkspace] = useCurrentWorkspace();
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
-  const t = useAFFiNEI18N();
 
   useRegisterWorkspaceCommands();
 
@@ -223,28 +215,7 @@ export const WorkspaceLayoutInner = ({
     })
   );
 
-  const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-
-  const handleDragEnd = useCallback(
-    (e: DragEndEvent) => {
-      // Drag page into trash folder
-      if (
-        e.over?.id === DROPPABLE_SIDEBAR_TRASH &&
-        String(e.active.id).startsWith('page-list-item-')
-      ) {
-        const { pageId } = e.active.data.current as DraggableTitleCellData;
-        // TODO-Doma
-        // Co-locate `moveToTrash` with the toast for reuse, as they're always used together
-        moveToTrash(pageId);
-        toast(t['com.affine.toastMessage.successfullyDeleted']());
-      }
-      // Drag page into Collections
-      processCollectionsDrag(e);
-    },
-    [moveToTrash, t]
-  );
+  const handleDragEnd = useSidebarDrag();
 
   const { appSettings } = useAppSettingHelper();
   const location = useLocation();

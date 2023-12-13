@@ -7,37 +7,25 @@ import {
   useCollectionManager,
   useSavedCollections,
 } from '@affine/component/page-list';
+import { RenameModal } from '@affine/component/rename-modal';
 import { Button, IconButton } from '@affine/component/ui/button';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
-import type { DragEndEvent } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { collectionsCRUDAtom } from '../../../../atoms/collections';
 import { useAllPageListConfig } from '../../../../hooks/affine/use-all-page-list-config';
+import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';
 import type { CollectionsListProps } from '../index';
 import { Page } from './page';
 import * as styles from './styles.css';
-
-const Collections_DROP_AREA_PREFIX = 'collections-';
-const isCollectionsDropArea = (id?: string | number) => {
-  return typeof id === 'string' && id.startsWith(Collections_DROP_AREA_PREFIX);
-};
-export const processCollectionsDrag = (e: DragEndEvent) => {
-  if (
-    isCollectionsDropArea(e.over?.id) &&
-    String(e.active.id).startsWith('page-list-item-')
-  ) {
-    e.over?.data.current?.addToCollection?.(e.active.data.current?.pageId);
-  }
-};
 
 const CollectionRenderer = ({
   collection,
@@ -51,10 +39,25 @@ const CollectionRenderer = ({
   info: DeleteCollectionInfo;
 }) => {
   const [collapsed, setCollapsed] = useState(true);
+  const [open, setOpen] = useState(false);
   const setting = useCollectionManager(collectionsCRUDAtom);
   const t = useAFFiNEI18N();
+  const dragItemId = getDropItemId('collections', collection.id);
+
+  const removeFromAllowList = useAsyncCallback(
+    async (id: string) => {
+      await setting.updateCollection({
+        ...collection,
+        allowList: collection.allowList?.filter(v => v !== id),
+      });
+
+      toast(t['com.affine.collection.removePage.success']());
+    },
+    [collection, setting, t]
+  );
+
   const { setNodeRef, isOver } = useDroppable({
-    id: `${Collections_DROP_AREA_PREFIX}${collection.id}`,
+    id: dragItemId,
     data: {
       addToCollection: (id: string) => {
         if (collection.allowList.includes(id)) {
@@ -69,6 +72,7 @@ const CollectionRenderer = ({
       },
     },
   });
+
   const config = useAllPageListConfig();
   const allPagesMeta = useMemo(
     () => Object.fromEntries(pages.map(v => [v.id, v])),
@@ -78,60 +82,69 @@ const CollectionRenderer = ({
     () => new Set(collection.allowList),
     [collection.allowList]
   );
-  const removeFromAllowList = useAsyncCallback(
-    async (id: string) => {
-      await setting.updateCollection({
-        ...collection,
-        allowList: collection.allowList?.filter(v => v !== id),
-      });
-    },
-    [collection, setting]
-  );
+
   const pagesToRender = pages.filter(
     page => filterPage(collection, page) && !page.trash
   );
   const location = useLocation();
   const currentPath = location.pathname.split('?')[0];
   const path = `/workspace/${workspace.id}/collection/${collection.id}`;
+
+  const onRename = useAsyncCallback(
+    async (name: string) => {
+      await setting.updateCollection({
+        ...collection,
+        name,
+      });
+      toast(t['com.affine.toastMessage.rename']());
+    },
+    [collection, setting, t]
+  );
+  const handleOpen = useCallback(() => {
+    setOpen(true);
+  }, []);
+
   return (
-    <Collapsible.Root open={!collapsed}>
+    <Collapsible.Root open={!collapsed} ref={setNodeRef}>
       <SidebarMenuLinkItem
         data-testid="collection-item"
         data-type="collection-list-item"
-        ref={setNodeRef}
         onCollapsedChange={setCollapsed}
         active={isOver || currentPath === path}
         icon={<AnimatedCollectionsIcon closed={isOver} />}
         to={path}
         postfix={
-          <div onClick={stopPropagation}>
+          <div
+            onClick={stopPropagation}
+            style={{ display: 'flex', alignItems: 'center' }}
+          >
             <CollectionOperations
               info={info}
               collection={collection}
               setting={setting}
               config={config}
+              openRenameModal={handleOpen}
             >
               <IconButton
                 data-testid="collection-options"
                 type="plain"
-                withoutHoverStyle
+                size="small"
+                style={{ marginLeft: 4 }}
               >
                 <MoreHorizontalIcon />
               </IconButton>
             </CollectionOperations>
+            <RenameModal
+              open={open}
+              onOpenChange={setOpen}
+              onRename={onRename}
+              currentName={collection.name}
+            />
           </div>
         }
         collapsed={pagesToRender.length > 0 ? collapsed : undefined}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>{collection.name}</div>
-        </div>
+        <span>{collection.name}</span>
       </SidebarMenuLinkItem>
       <Collapsible.Content className={styles.collapsibleContent}>
         <div style={{ marginLeft: 20, marginTop: -4 }}>

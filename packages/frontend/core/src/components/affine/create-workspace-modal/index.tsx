@@ -81,11 +81,7 @@ const NameWorkspaceContent = ({
       {...props}
     >
       <Input
-        ref={ref => {
-          if (ref) {
-            window.setTimeout(() => ref.focus(), 0);
-          }
-        }}
+        autoFocus
         data-testid="create-workspace-input"
         onKeyDown={handleKeyDown}
         placeholder={t['com.affine.nameWorkspace.placeholder']()}

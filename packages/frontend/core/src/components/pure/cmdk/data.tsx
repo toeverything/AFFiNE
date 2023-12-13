@@ -25,7 +25,7 @@ import {
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
 import { groupBy } from 'lodash-es';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   openQuickSearchModalAtom,
@@ -173,13 +173,21 @@ export const pageToCommand = (
     title: title,
   };
 
+  // hack: when comparing, the part between >>> and <<< will be ignored
+  // adding this patch so that CMDK will not complain about duplicated commands
+  const id =
+    title +
+    (label?.subTitle || '') +
+    valueWrapperStart +
+    page.id +
+    '.' +
+    category +
+    valueWrapperEnd;
+
   return {
-    id: page.id,
+    id,
     label: commandLabel,
-    // hack: when comparing, the part between >>> and <<< will be ignored
-    // adding this patch so that CMDK will not complain about duplicated commands
-    value:
-      title + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+    value: id,
     originalValue: title,
     category: category,
     run: () => {
@@ -216,7 +224,25 @@ export const usePageCommands = () => {
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
 
+  const [searchTime, setSearchTime] = useState<number>(0);
+
+  // HACK: blocksuite indexer is async,
+  // so we need to re-search after it has been updated
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    const dosearch = () => {
+      setSearchTime(Date.now());
+      timer = setTimeout(dosearch, 500);
+    };
+    timer = setTimeout(dosearch, 500);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   return useMemo(() => {
+    searchTime; // hack to make the searchTime as a dependency
+
     let results: CMDKCommand[] = [];
     if (query.trim() === '') {
       results = recentPages.map(page => {
@@ -322,6 +348,7 @@ export const usePageCommands = () => {
     store,
     t,
     workspace.blockSuiteWorkspace,
+    searchTime,
   ]);
 };
 
