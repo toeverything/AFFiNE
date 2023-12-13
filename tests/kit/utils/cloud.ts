@@ -183,7 +183,7 @@ export async function enableCloudWorkspace(page: Page) {
 
 export async function enableCloudWorkspaceFromShareButton(page: Page) {
   const shareMenuButton = page.getByTestId('local-share-menu-button');
-  expect(await shareMenuButton.isVisible()).toBeTruthy();
+  await expect(shareMenuButton).toBeVisible();
 
   // FIXME: this is a workaround for the flaky test
   // For unknown reasons,

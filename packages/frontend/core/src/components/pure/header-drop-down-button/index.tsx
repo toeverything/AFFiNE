@@ -1,5 +1,5 @@
 import { IconButton, type IconButtonProps } from '@affine/component/ui/button';
-import { ArrowDownSmallIcon } from '@blocksuite/icons';
+import { MoreHorizontalIcon } from '@blocksuite/icons';
 import { forwardRef } from 'react';
 
 import { headerMenuTrigger } from './styles.css';
@@ -17,7 +17,7 @@ export const HeaderDropDownButton = forwardRef<
       withoutHoverStyle={true}
       type="plain"
     >
-      <ArrowDownSmallIcon />
+      <MoreHorizontalIcon />
     </IconButton>
   );
 });

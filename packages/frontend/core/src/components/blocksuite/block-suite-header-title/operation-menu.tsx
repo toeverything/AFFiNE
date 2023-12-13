@@ -1,5 +1,4 @@
-import { FlexWrapper } from '@affine/component';
-import { Export, MoveToTrash } from '@affine/component/page-list';
+import { Export, FavoriteTag, MoveToTrash } from '@affine/component/page-list';
 import {
   Menu,
   MenuIcon,
@@ -22,7 +21,7 @@ import {
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { currentModeAtom } from '../../../atoms/mode';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
@@ -39,9 +38,8 @@ type PageMenuProps = {
   pageId: string;
 };
 // fixme: refactor this file
-export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
+export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
-  const ref = useRef(null);
 
   // fixme(himself65): remove these hooks ASAP
   const [workspace] = useCurrentWorkspace();
@@ -148,7 +146,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
-      {/* {TODO: add tag and duplicate function support} */}
+      {/* {TODO: add tag function support} */}
       {/* <MenuItem
         icon={<TagsIcon />}
         data-testid="editor-option-menu-add-tag"
@@ -211,7 +209,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
     return null;
   }
   return (
-    <FlexWrapper alignItems="center" justifyContent="center" ref={ref}>
+    <>
       <Menu
         items={EditMenu}
         contentOptions={{
@@ -228,6 +226,7 @@ export const PageMenu = ({ rename, pageId }: PageMenuProps) => {
           onOpenChange={setHistoryModalOpen}
         />
       ) : null}
-    </FlexWrapper>
+      <FavoriteTag active={!!pageMeta?.favorite} onClick={handleFavorite} />
+    </>
   );
 };

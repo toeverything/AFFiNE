@@ -14,7 +14,7 @@ import {
 
 import type { PageMode } from '../../../atoms';
 import { EditorModeSwitch } from '../block-suite-mode-switch';
-import { PageMenu } from './operation-menu';
+import { PageHeaderMenuButton } from './operation-menu';
 import * as styles from './styles.css';
 
 export interface BlockSuiteHeaderTitleProps {
@@ -81,9 +81,6 @@ const StableTitle = ({
         pageId={pageId}
         isPublic={isPublic}
         publicMode={publicMode}
-        style={{
-          marginRight: '12px',
-        }}
       />
       <span
         data-testid="title-edit-button"
@@ -92,7 +89,9 @@ const StableTitle = ({
       >
         {title || 'Untitled'}
       </span>
-      {isPublic ? null : <PageMenu rename={onRename} pageId={pageId} />}
+      {isPublic ? null : (
+        <PageHeaderMenuButton rename={onRename} pageId={pageId} />
+      )}
     </div>
   );
 };
