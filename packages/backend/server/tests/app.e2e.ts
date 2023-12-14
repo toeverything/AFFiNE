@@ -45,6 +45,13 @@ class FakePrisma {
       },
     };
   }
+  get newFeaturesWaitingList() {
+    return {
+      async findUnique() {
+        return null;
+      },
+    };
+  }
 }
 
 test.beforeEach(async t => {
@@ -119,6 +126,7 @@ test('should find default user', async t => {
     })
     .expect(200)
     .expect(res => {
+      console.log(res.body);
       t.is(res.body.data.user.email, 'alex.yang@example.org');
     });
 });

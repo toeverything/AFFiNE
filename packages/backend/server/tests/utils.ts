@@ -324,7 +324,7 @@ async function listBlobs(
   return res.body.data.listBlobs;
 }
 
-async function collectBlobSizes(
+async function getWorkspaceBlobsSize(
   app: INestApplication,
   token: string,
   workspaceId: string
@@ -335,14 +335,14 @@ async function collectBlobSizes(
     .send({
       query: `
             query {
-              collectBlobSizes(workspaceId: "${workspaceId}") {
-                size
+              workspace(id: "${workspaceId}") {
+                blobsSize
               }
             }
           `,
     })
     .expect(200);
-  return res.body.data.collectBlobSizes.size;
+  return res.body.data.workspace.blobsSize;
 }
 
 async function collectAllBlobSizes(
@@ -566,13 +566,13 @@ export {
   changeEmail,
   checkBlobSize,
   collectAllBlobSizes,
-  collectBlobSizes,
   createWorkspace,
   currentUser,
   flushDB,
   getInviteInfo,
   getPublicWorkspace,
   getWorkspace,
+  getWorkspaceBlobsSize,
   inviteUser,
   leaveWorkspace,
   listBlobs,

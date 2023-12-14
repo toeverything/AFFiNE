@@ -51,17 +51,6 @@ type RemoveAvatar {
   success: Boolean!
 }
 
-type AddToNewFeaturesWaitingList {
-  email: String!
-
-  """New features kind"""
-  type: NewFeaturesKind!
-}
-
-enum NewFeaturesKind {
-  EarlyAccess
-}
-
 type TokenType {
   token: String!
   refresh: String!
@@ -196,6 +185,9 @@ type WorkspaceType {
   """Owner of workspace"""
   owner: UserType!
 
+  """Blobs size of workspace"""
+  blobsSize: Int!
+
   """Shared pages of workspace"""
   sharedPages: [String!]! @deprecated(reason: "use WorkspaceType.publicPages")
 
@@ -269,7 +261,6 @@ type Query {
 
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]!
-  collectBlobSizes(workspaceId: String!): WorkspaceBlobSizes!
   collectAllBlobSizes: WorkspaceBlobSizes!
   checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
 
@@ -278,6 +269,7 @@ type Query {
 
   """Get user by email"""
   user(email: String!): UserType
+  listEarlyAccess: [UserType!]!
   prices: [SubscriptionPrice!]!
 }
 
@@ -315,7 +307,8 @@ type Mutation {
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!
   deleteAccount: DeleteAccount!
-  addToNewFeaturesWaitingList(type: NewFeaturesKind!, email: String!): AddToNewFeaturesWaitingList!
+  addToEarlyAccess(email: String!): Int!
+  removeEarlyAccess(email: String!): Int!
 
   """Create a subscription checkout link of stripe"""
   checkout(recurring: SubscriptionRecurring!, idempotencyKey: String!): String!

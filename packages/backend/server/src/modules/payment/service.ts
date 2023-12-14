@@ -11,7 +11,7 @@ import Stripe from 'stripe';
 
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
-import { UsersService } from '../users';
+import { FeatureManagementService } from '../features';
 import { ScheduleManager } from './schedule';
 
 const OnEvent = (
@@ -82,8 +82,8 @@ export class SubscriptionService {
     config: Config,
     private readonly stripe: Stripe,
     private readonly db: PrismaService,
-    private readonly user: UsersService,
-    private readonly scheduleManager: ScheduleManager
+    private readonly scheduleManager: ScheduleManager,
+    private readonly features: FeatureManagementService
   ) {
     this.paymentConfig = config.payment;
 
@@ -658,7 +658,7 @@ export class SubscriptionService {
     user: User,
     couponType: CouponType
   ): Promise<string | null> {
-    const earlyAccess = await this.user.isEarlyAccessUser(user.email);
+    const earlyAccess = await this.features.canEarlyAccess(user.email);
     if (earlyAccess) {
       try {
         const coupon = await this.stripe.coupons.retrieve(couponType);

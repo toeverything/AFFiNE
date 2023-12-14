@@ -4,6 +4,7 @@ import ava, { type TestFn } from 'ava';
 import { stub } from 'sinon';
 
 import { AppModule } from '../src/app';
+import { Quotas } from '../src/modules/quota';
 import { UsersService } from '../src/modules/users';
 import { PermissionService } from '../src/modules/workspaces/permission';
 import { WorkspaceResolver } from '../src/modules/workspaces/resolver';
@@ -19,6 +20,9 @@ class FakePermission {
     return {
       user: new FakePrisma().fakeUser,
     };
+  }
+  async getOwnedWorkspaces() {
+    return [''];
   }
 }
 
@@ -40,6 +44,19 @@ test.beforeEach(async t => {
       workspaceUserPermission: {
         async findMany() {
           return [];
+        },
+      },
+      userFeatures: {
+        async count() {
+          return 1;
+        },
+        async findFirst() {
+          return {
+            createdAt: new Date(),
+            expiredAt: new Date(),
+            reason: '',
+            feature: Quotas[0],
+          };
         },
       },
     })

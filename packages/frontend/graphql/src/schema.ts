@@ -40,10 +40,6 @@ export enum InvoiceStatus {
   Void = 'Void',
 }
 
-export enum NewFeaturesKind {
-  EarlyAccess = 'EarlyAccess',
-}
-
 /** User permission in workspace */
 export enum Permission {
   Admin = 'Admin',
@@ -127,7 +123,7 @@ export type BlobSizesQueryVariables = Exact<{
 
 export type BlobSizesQuery = {
   __typename?: 'Query';
-  collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+  workspace: { __typename?: 'WorkspaceType'; blobsSize: number };
 };
 
 export type AllBlobSizesQueryVariables = Exact<{ [key: string]: never }>;

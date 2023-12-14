@@ -1,11 +1,38 @@
 import {
+  CommonFeature,
   FeatureKind,
   Features,
   FeatureType,
-  upsertFeature,
-} from '../../modules/features';
-import { Quotas } from '../../modules/quota';
+} from '../../modules/features/types';
+import { Quotas } from '../../modules/quota/types';
 import { PrismaService } from '../../prisma';
+
+// upgrade features from lower version to higher version
+async function upsertFeature(
+  db: PrismaService,
+  feature: CommonFeature
+): Promise<void> {
+  const hasEqualOrGreaterVersion =
+    (await db.features.count({
+      where: {
+        feature: feature.feature,
+        version: {
+          gte: feature.version,
+        },
+      },
+    })) > 0;
+  // will not update exists version
+  if (!hasEqualOrGreaterVersion) {
+    await db.features.create({
+      data: {
+        feature: feature.feature,
+        type: feature.type,
+        version: feature.version,
+        configs: feature.configs,
+      },
+    });
+  }
+}
 
 export class UserFeaturesInit1698652531198 {
   // do the migration

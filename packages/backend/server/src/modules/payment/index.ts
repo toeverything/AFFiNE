@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { UsersModule } from '../users';
+import { FeatureModule } from '../features';
 import { SubscriptionResolver, UserSubscriptionResolver } from './resolver';
 import { ScheduleManager } from './schedule';
 import { SubscriptionService } from './service';
@@ -8,7 +8,7 @@ import { StripeProvider } from './stripe';
 import { StripeWebhook } from './webhook';
 
 @Module({
-  imports: [UsersModule],
+  imports: [FeatureModule],
   providers: [
     ScheduleManager,
     StripeProvider,

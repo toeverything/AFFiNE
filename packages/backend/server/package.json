@@ -135,7 +135,8 @@
       "ENABLE_LOCAL_EMAIL": "true",
       "OAUTH_EMAIL_LOGIN": "noreply@toeverything.info",
       "OAUTH_EMAIL_PASSWORD": "affine",
-      "OAUTH_EMAIL_SENDER": "noreply@toeverything.info"
+      "OAUTH_EMAIL_SENDER": "noreply@toeverything.info",
+      "FEATURES_EARLY_ACCESS_PREVIEW": "false"
     }
   },
   "nodemonConfig": {

@@ -11,8 +11,8 @@ import Google from 'next-auth/providers/google';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { SessionService } from '../../session';
-import { NewFeaturesKind } from '../users/types';
-import { isStaff } from '../users/utils';
+import { FeatureType } from '../features';
+import { Quota_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 import {
   decode,
@@ -44,6 +44,17 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         email: data.email,
         avatarUrl: '',
         emailVerified: data.emailVerified,
+        features: {
+          create: {
+            reason: 'created by email sign up',
+            activated: true,
+            feature: {
+              connect: {
+                feature_version: Quota_FreePlanV1,
+              },
+            },
+          },
+        },
       };
       if (data.email && !data.name) {
         userData.name = data.email.split('@')[0];
@@ -223,18 +234,23 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         }
         const email = profile?.email ?? user.email;
         if (email) {
-          if (isStaff(email)) {
-            return true;
-          }
-          return prisma.newFeaturesWaitingList
-            .findUnique({
+          // FIXME: cannot inject FeatureManagementService here
+          // it will cause prisma.account to be undefined
+          // then prismaAdapter.getUserByAccount will throw error
+          if (email.endsWith('@toeverything.info')) return true;
+          return prisma.userFeatures
+            .count({
               where: {
-                email,
-                type: NewFeaturesKind.EarlyAccess,
+                user: {
+                  email,
+                },
+                feature: {
+                  feature: FeatureType.EarlyAccess,
+                },
+                activated: true,
               },
             })
-            .then(user => !!user)
-            .catch(() => false);
+            .then(count => count > 0);
         }
         return false;
       },

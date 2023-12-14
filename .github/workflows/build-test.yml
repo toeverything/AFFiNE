@@ -374,7 +374,9 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
+        run: |
+          yarn workspace @affine/server data-migration run
+          yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
@@ -464,7 +466,9 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Run init-db script
-        run: yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
+        run: |
+          yarn workspace @affine/server data-migration run
+          yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
       - name: Download storage.node
         uses: actions/download-artifact@v3
         with:
