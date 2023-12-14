@@ -4,7 +4,11 @@ import {
 } from '@affine/component/global-loading';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { HtmlTransformer, MarkdownTransformer, type PageBlockModel } from '@blocksuite/blocks';
+import {
+  HtmlTransformer,
+  MarkdownTransformer,
+  type PageBlockModel,
+} from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
