@@ -95,6 +95,8 @@ export const test = base.extend<{
       env.DEV_SERVER_URL = process.env.DEV_SERVER_URL;
     }
 
+    env.SKIP_ONBOARDING = '1';
+
     const electronApp = await electron.launch({
       args: [clonedDist],
       env,

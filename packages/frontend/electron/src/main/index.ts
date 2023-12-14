@@ -14,6 +14,7 @@ import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
+import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
 
@@ -26,11 +27,9 @@ if (overrideSession) {
 }
 
 if (require('electron-squirrel-startup')) app.quit();
-// allow tests to overwrite app name through passing args
-if (process.argv.includes('--app-name')) {
-  const appNameIndex = process.argv.indexOf('--app-name');
-  const appName = process.argv[appNameIndex + 1];
-  app.setName(appName);
+
+if (process.env.SKIP_ONBOARDING) {
+  launchStage.value = 'main';
 }
 
 /**

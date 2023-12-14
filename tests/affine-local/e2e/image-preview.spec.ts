@@ -1,12 +1,12 @@
 /* eslint-disable unicorn/prefer-dom-node-dataset */
+import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import fs from 'fs';
 
 async function importImage(page: Page, url: string) {
