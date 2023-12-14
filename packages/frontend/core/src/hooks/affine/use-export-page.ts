@@ -52,6 +52,8 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
         await window.apis?.export.savePDFFileAs(
           (page.root as PageBlockModel).title.toString()
         );
+      } else {
+        await contentParser['exportPdf']();
       }
       break;
     case 'png':
