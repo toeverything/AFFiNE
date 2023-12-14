@@ -47,6 +47,7 @@ export const mainHeaderRight = style({
 
 export const spacer = style({
   flexGrow: 1,
+  minWidth: 12,
 });
 
 export const standaloneExtensionSwitcherWrapper = style({

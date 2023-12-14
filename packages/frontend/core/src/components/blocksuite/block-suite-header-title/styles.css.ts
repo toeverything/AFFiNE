@@ -6,7 +6,7 @@ export const headerTitleContainer = style({
   alignItems: 'center',
   flexGrow: 1,
   position: 'relative',
-  width: '100%',
+  overflow: 'hidden',
   columnGap: 12,
 });
 
