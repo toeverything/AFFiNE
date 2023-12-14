@@ -114,18 +114,8 @@ export class UserResolver {
   @ResolveField(() => UserQuotaType, { name: 'quota', nullable: true })
   async getQuota(@CurrentUser() me: User) {
     const quota = await this.quota.getUserQuota(me.id);
-    const configs = quota.feature.configs;
 
-    return Object.assign(
-      {
-        name: quota.feature.feature,
-        humanReadable: this.quota.getHumanReadableQuota(
-          quota.feature.feature,
-          configs
-        ),
-      },
-      configs
-    );
+    return quota.feature;
   }
 
   @Throttle({ default: { limit: 10, ttl: 60 } })

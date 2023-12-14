@@ -812,6 +812,7 @@ __metadata:
     typescript: "npm:^5.3.2"
     ws: "npm:^8.14.2"
     yjs: "npm:^13.6.10"
+    zod: "npm:^3.22.4"
   bin:
     run-test: ./scripts/run-test.ts
   languageName: unknown

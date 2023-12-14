@@ -82,7 +82,8 @@
     "socket.io": "^4.7.2",
     "stripe": "^14.5.0",
     "ws": "^8.14.2",
-    "yjs": "^13.6.10"
+    "yjs": "^13.6.10",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",

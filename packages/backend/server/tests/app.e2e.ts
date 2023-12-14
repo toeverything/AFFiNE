@@ -12,6 +12,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
+import { FeatureManagementService } from '../src/modules/features';
 import { PrismaService } from '../src/prisma/service';
 
 const gql = '/graphql';
@@ -60,6 +61,8 @@ test.beforeEach(async t => {
   })
     .overrideProvider(PrismaService)
     .useClass(FakePrisma)
+    .overrideProvider(FeatureManagementService)
+    .useValue({ canEarlyAccess: () => true })
     .compile();
   t.context.app = module.createNestApplication({
     cors: true,

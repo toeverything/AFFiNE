@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PermissionService } from '../workspaces/permission';
-import { QuotaService } from './quota';
+import { QuotaService } from './service';
 import { QuotaManagementService } from './storage';
 
 /**
@@ -17,4 +17,5 @@ import { QuotaManagementService } from './storage';
 export class QuotaModule {}
 
 export { QuotaManagementService, QuotaService };
-export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas, QuotaType } from './types';
+export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas } from './schema';
+export { QuotaType } from './types';

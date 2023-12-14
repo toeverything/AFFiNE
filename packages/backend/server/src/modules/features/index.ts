@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
-import { FeatureService } from './configure';
-import { FeatureManagementService } from './feature';
+import { FeatureManagementService } from './management';
+import { FeatureService } from './service';
 
 /**
  * Feature module provider pre-user feature flag management.
@@ -16,6 +16,6 @@ import { FeatureManagementService } from './feature';
 })
 export class FeatureModule {}
 
-export type { CommonFeature, Feature } from './types';
+export { type CommonFeature, commonFeatureSchema } from './types';
 export { FeatureKind, Features, FeatureType } from './types';
 export { FeatureManagementService, FeatureService, PrismaService };

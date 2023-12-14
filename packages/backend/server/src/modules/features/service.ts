@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
-import { Feature, FeatureKind, FeatureType } from './types';
+import { UserType } from '../users/types';
+import { getFeature } from './feature';
+import { FeatureKind, FeatureType } from './types';
 
 @Injectable()
 export class FeatureService {
@@ -27,15 +29,20 @@ export class FeatureService {
   }
 
   async getFeature(feature: FeatureType) {
-    return this.prisma.features.findFirst({
+    const data = await this.prisma.features.findFirst({
       where: {
         feature,
         type: FeatureKind.Feature,
       },
+      select: { id: true },
       orderBy: {
         version: 'desc',
       },
     });
+    if (data) {
+      return getFeature(this.prisma, data.id);
+    }
+    return undefined;
   }
 
   async addUserFeature(
@@ -120,21 +127,21 @@ export class FeatureService {
         reason: true,
         createdAt: true,
         expiredAt: true,
-        feature: {
-          select: {
-            feature: true,
-            configs: true,
-          },
-        },
+        featureId: true,
       },
     });
-    return features as typeof features &
-      {
-        feature: Pick<Feature, 'feature' | 'configs'>;
-      }[];
+
+    const configs = await Promise.all(
+      features.map(async feature => ({
+        ...feature,
+        feature: await getFeature(this.prisma, feature.featureId),
+      }))
+    );
+
+    return configs.filter(feature => !!feature.feature);
   }
 
-  async listFeatureUsers(feature: FeatureType) {
+  async listFeatureUsers(feature: FeatureType): Promise<UserType[]> {
     return this.prisma.userFeatures
       .findMany({
         where: {

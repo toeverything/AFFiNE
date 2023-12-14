@@ -240,8 +240,7 @@ export class DocHistoryManager {
     }
 
     const quota = await this.quota.getUserQuota(permission.userId);
-
-    return new Date(Date.now() + quota.feature.configs.historyPeriod);
+    return quota.feature.historyPeriodFromNow;
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT /* everyday at 12am */)

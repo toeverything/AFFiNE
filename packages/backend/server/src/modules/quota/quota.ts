@@ -1,157 +1,81 @@
-import { Injectable } from '@nestjs/common';
-
 import { PrismaService } from '../../prisma';
-import { FeatureKind } from '../features';
-import {
-  formatDate,
-  formatSize,
-  getQuotaName,
-  Quota,
-  QuotaType,
-} from './types';
+import { formatDate, formatSize, Quota, QuotaSchema } from './types';
 
-@Injectable()
-export class QuotaService {
-  constructor(private readonly prisma: PrismaService) {}
+const QuotaCache = new Map<number, QuotaConfig>();
 
-  // get activated user quota
-  async getUserQuota(userId: string) {
-    const quota = await this.prisma.userFeatures.findFirst({
+export class QuotaConfig {
+  readonly config: Quota;
+
+  static async get(prisma: PrismaService, featureId: number) {
+    const cachedQuota = QuotaCache.get(featureId);
+
+    if (cachedQuota) {
+      return cachedQuota;
+    }
+
+    const quota = await prisma.features.findFirst({
       where: {
-        user: {
-          id: userId,
-        },
-        feature: {
-          type: FeatureKind.Quota,
-        },
-        activated: true,
-      },
-      select: {
-        reason: true,
-        createdAt: true,
-        expiredAt: true,
-        feature: {
-          select: {
-            feature: true,
-            configs: true,
-          },
-        },
+        id: featureId,
       },
     });
-    console.error(userId, quota);
-    return quota as typeof quota & {
-      feature: Pick<Quota, 'feature' | 'configs'>;
-    };
+
+    if (!quota) {
+      throw new Error(`Quota config ${featureId} not found`);
+    }
+
+    const config = new QuotaConfig(quota);
+    // we always edit quota config as a new quota config
+    // so we can cache it by featureId
+    QuotaCache.set(featureId, config);
+
+    return config;
   }
 
-  getHumanReadableQuota(feature: QuotaType, configs: Quota['configs']) {
+  private constructor(data: any) {
+    const config = QuotaSchema.safeParse(data);
+    if (config.success) {
+      this.config = config.data;
+    } else {
+      throw new Error(
+        `Invalid quota config: ${config.error.message}, ${JSON.stringify(
+          data
+        )})}`
+      );
+    }
+  }
+
+  /// feature name of quota
+  get name() {
+    return this.config.feature;
+  }
+
+  get blobLimit() {
+    return this.config.configs.blobLimit;
+  }
+
+  get storageQuota() {
+    return this.config.configs.storageQuota;
+  }
+
+  get historyPeriod() {
+    return this.config.configs.historyPeriod;
+  }
+
+  get historyPeriodFromNow() {
+    return new Date(Date.now() + this.historyPeriod);
+  }
+
+  get memberLimit() {
+    return this.config.configs.memberLimit;
+  }
+
+  get humanReadable() {
     return {
-      name: getQuotaName(feature),
-      blobLimit: formatSize(configs.blobLimit),
-      storageQuota: formatSize(configs.storageQuota),
-      historyPeriod: formatDate(configs.historyPeriod),
-      memberLimit: configs.memberLimit.toString(),
+      name: this.config.configs.name,
+      blobLimit: formatSize(this.blobLimit),
+      storageQuota: formatSize(this.storageQuota),
+      historyPeriod: formatDate(this.historyPeriod),
+      memberLimit: this.memberLimit.toString(),
     };
-  }
-
-  // get all user quota records
-  async getUserQuotas(userId: string) {
-    const quotas = await this.prisma.userFeatures.findMany({
-      where: {
-        user: {
-          id: userId,
-        },
-        feature: {
-          type: FeatureKind.Quota,
-        },
-      },
-      select: {
-        activated: true,
-        reason: true,
-        createdAt: true,
-        expiredAt: true,
-        feature: {
-          select: {
-            feature: true,
-            configs: true,
-          },
-        },
-      },
-    });
-    return quotas as typeof quotas &
-      {
-        feature: Pick<Quota, 'feature' | 'configs'>;
-      }[];
-  }
-
-  // switch user to a new quota
-  // currently each user can only have one quota
-  async switchUserQuota(
-    userId: string,
-    quota: QuotaType,
-    reason?: string,
-    expiredAt?: Date
-  ) {
-    await this.prisma.$transaction(async tx => {
-      const latestFreePlan = await tx.features.aggregate({
-        where: {
-          feature: QuotaType.Quota_FreePlanV1,
-        },
-        _max: {
-          version: true,
-        },
-      });
-
-      // we will deactivate all exists quota for this user
-      await tx.userFeatures.updateMany({
-        where: {
-          id: undefined,
-          userId,
-          feature: {
-            type: FeatureKind.Quota,
-          },
-        },
-        data: {
-          activated: false,
-        },
-      });
-
-      await tx.userFeatures.create({
-        data: {
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          feature: {
-            connect: {
-              feature_version: {
-                feature: quota,
-                version: latestFreePlan._max.version || 1,
-              },
-              type: FeatureKind.Quota,
-            },
-          },
-          reason: reason ?? 'switch quota',
-          activated: true,
-          expiredAt,
-        },
-      });
-    });
-  }
-
-  async hasQuota(userId: string, quota: QuotaType) {
-    return this.prisma.userFeatures
-      .count({
-        where: {
-          userId,
-          feature: {
-            feature: quota,
-            type: FeatureKind.Quota,
-          },
-          activated: true,
-        },
-      })
-      .then(count => count > 0);
   }
 }

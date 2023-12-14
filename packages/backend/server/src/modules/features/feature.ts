@@ -1,80 +1,78 @@
-import { Injectable, Logger } from '@nestjs/common';
-
-import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
-import { FeatureService } from './configure';
-import { FeatureType } from './types';
+import { Feature, FeatureSchema, FeatureType } from './types';
 
-enum NewFeaturesKind {
-  EarlyAccess,
-}
+class FeatureConfig {
+  readonly config: Feature;
 
-@Injectable()
-export class FeatureManagementService {
-  protected logger = new Logger(FeatureManagementService.name);
-  constructor(
-    private readonly feature: FeatureService,
-    private readonly prisma: PrismaService,
-    private readonly config: Config
-  ) {}
-
-  isStaff(email: string) {
-    return email.endsWith('@toeverything.info');
-  }
-
-  async addEarlyAccess(userId: string) {
-    return this.feature.addUserFeature(
-      userId,
-      FeatureType.EarlyAccess,
-      1,
-      'Early access user'
-    );
-  }
-
-  async removeEarlyAccess(userId: string) {
-    return this.feature.removeUserFeature(userId, FeatureType.EarlyAccess);
-  }
-
-  async listEarlyAccess() {
-    return this.feature.listFeatureUsers(FeatureType.EarlyAccess);
-  }
-
-  /// check early access by email
-  async canEarlyAccess(email: string) {
-    if (
-      this.config.featureFlags.earlyAccessPreview &&
-      !email.endsWith('@toeverything.info')
-    ) {
-      const user = await this.prisma.user.findFirst({
-        where: {
-          email,
-        },
-      });
-      if (user) {
-        const canEarlyAccess = await this.feature
-          .hasFeature(user.id, FeatureType.EarlyAccess)
-          .catch(() => false);
-        if (canEarlyAccess) {
-          return true;
-        }
-
-        // TODO: Outdated, switch to feature gates
-        const oldCanEarlyAccess = await this.prisma.newFeaturesWaitingList
-          .findUnique({
-            where: { email, type: NewFeaturesKind.EarlyAccess },
-          })
-          .then(x => !!x)
-          .catch(() => false);
-        if (oldCanEarlyAccess) {
-          this.logger.warn(
-            `User ${email} has early access in old table but not in new table`
-          );
-        }
-        return oldCanEarlyAccess;
-      }
-      return false;
+  constructor(data: any) {
+    const config = FeatureSchema.safeParse(data);
+    if (config.success) {
+      this.config = config.data;
     } else {
-      return true;
+      throw new Error(`Invalid quota config: ${config.error.message}`);
     }
   }
+
+  /// feature name of quota
+  get name() {
+    return this.config.feature;
+  }
+}
+
+export class EarlyAccessFeatureConfig extends FeatureConfig {
+  constructor(data: any) {
+    super(data);
+
+    if (this.config.feature !== FeatureType.EarlyAccess) {
+      throw new Error('Invalid feature config: type is not EarlyAccess');
+    }
+  }
+
+  checkWhiteList(email: string) {
+    for (const domain in this.config.configs.whitelist) {
+      if (email.endsWith(domain)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+const FeatureConfigMap = {
+  [FeatureType.EarlyAccess]: EarlyAccessFeatureConfig,
+};
+
+const FeatureCache = new Map<
+  number,
+  InstanceType<(typeof FeatureConfigMap)[FeatureType]>
+>();
+
+export async function getFeature(prisma: PrismaService, featureId: number) {
+  const cachedQuota = FeatureCache.get(featureId);
+
+  if (cachedQuota) {
+    return cachedQuota;
+  }
+
+  const feature = await prisma.features.findFirst({
+    where: {
+      id: featureId,
+    },
+  });
+  if (!feature) {
+    // this should unreachable
+    throw new Error(`Quota config ${featureId} not found`);
+  }
+  const ConfigClass = FeatureConfigMap[feature.feature as FeatureType];
+
+  if (!ConfigClass) {
+    throw new Error(`Feature config ${featureId} not found`);
+  }
+
+  const config = new ConfigClass(feature);
+  // we always edit quota config as a new quota config
+  // so we can cache it by featureId
+  FeatureCache.set(featureId, config);
+
+  return config;
 }

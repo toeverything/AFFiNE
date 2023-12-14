@@ -480,9 +480,9 @@ export class SubscriptionService {
 
   private getPlanQuota(plan: SubscriptionPlan) {
     if (plan === SubscriptionPlan.Free) {
-      return QuotaType.Quota_FreePlanV1;
+      return QuotaType.FreePlanV1;
     } else if (plan === SubscriptionPlan.Pro) {
-      return QuotaType.Quota_ProPlanV1;
+      return QuotaType.ProPlanV1;
     } else {
       throw new Error(`Unknown plan: ${plan}`);
     }
@@ -520,7 +520,7 @@ export class SubscriptionService {
       }
     } else {
       // switch to free plan if subscription is canceled
-      await this.quota.switchUserQuota(user.id, QuotaType.Quota_FreePlanV1);
+      await this.quota.switchUserQuota(user.id, QuotaType.FreePlanV1);
     }
 
     const commonData = {

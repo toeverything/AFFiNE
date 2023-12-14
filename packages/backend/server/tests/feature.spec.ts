@@ -81,12 +81,8 @@ test('should be able to set feature', async t => {
   await feature.addUserFeature(u1.id, FeatureType.EarlyAccess, 1, 'test');
 
   const f2 = await feature.getUserFeatures(u1.id);
-  t.is(f2.length, 1, 'should have one feature');
-  t.is(
-    f2[0].feature.feature,
-    FeatureType.EarlyAccess,
-    'should be early access'
-  );
+  t.is(f2.length, 1, 'should have 1 feature');
+  t.is(f2[0].feature.name, FeatureType.EarlyAccess, 'should be early access');
 });
 
 test('should be able to check early access', async t => {
@@ -101,7 +97,7 @@ test('should be able to check early access', async t => {
   t.true(f2, 'should have early access');
 
   const f3 = await feature.listFeatureUsers(FeatureType.EarlyAccess);
-  t.is(f3.length, 1, 'should have one user');
+  t.is(f3.length, 1, 'should have 1 user');
   t.is(f3[0].id, u1.id, 'should be the same user');
 });
 
@@ -116,7 +112,7 @@ test('should be able revert quota', async t => {
   const f2 = await early_access.canEarlyAccess(u1.email);
   t.true(f2, 'should have early access');
   const q1 = await early_access.listEarlyAccess();
-  t.is(q1.length, 1, 'should have one user');
+  t.is(q1.length, 1, 'should have 1 user');
   t.is(q1[0].id, u1.id, 'should be the same user');
 
   await early_access.removeEarlyAccess(u1.id);
@@ -127,10 +123,21 @@ test('should be able revert quota', async t => {
 
   const q3 = await feature.getUserFeatures(u1.id);
   t.is(q3.length, 1, 'should have 1 feature');
-  t.is(
-    q3[0].feature.feature,
-    FeatureType.EarlyAccess,
-    'should be early access'
-  );
+  t.is(q3[0].feature.name, FeatureType.EarlyAccess, 'should be early access');
   t.is(q3[0].activated, false, 'should be deactivated');
+});
+
+test('should be same instance after reset the feature', async t => {
+  const { auth, feature, early_access } = t.context;
+  const u1 = await auth.signUp('DarkSky', 'darksky@example.org', '123456');
+
+  await early_access.addEarlyAccess(u1.id);
+  const f1 = (await feature.getUserFeatures(u1.id))[0];
+
+  await early_access.removeEarlyAccess(u1.id);
+
+  await early_access.addEarlyAccess(u1.id);
+  const f2 = (await feature.getUserFeatures(u1.id))[1];
+
+  t.is(f1.feature, f2.feature, 'should be same instance');
 });

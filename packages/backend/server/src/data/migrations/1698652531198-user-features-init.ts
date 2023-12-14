@@ -1,10 +1,12 @@
+import { Prisma } from '@prisma/client';
+
 import {
   CommonFeature,
   FeatureKind,
   Features,
   FeatureType,
 } from '../../modules/features';
-import { Quotas } from '../../modules/quota/types';
+import { Quotas } from '../../modules/quota/schema';
 import { PrismaService } from '../../prisma';
 
 export class UserFeaturesInit1698652531198 {
@@ -48,7 +50,7 @@ async function upsertFeature(
         feature: feature.feature,
         type: feature.type,
         version: feature.version,
-        configs: feature.configs,
+        configs: feature.configs as Prisma.InputJsonValue,
       },
     });
   }

@@ -6,6 +6,7 @@ import request from 'supertest';
 
 import { AppModule } from '../src/app';
 import { ExceptionLogger } from '../src/middleware/exception-logger';
+import { FeatureManagementService } from '../src/modules/features';
 import { PrismaService } from '../src/prisma';
 
 const gql = '/graphql';
@@ -38,6 +39,8 @@ test.beforeEach(async () => {
   })
     .overrideProvider(PrismaService)
     .useClass(FakePrisma)
+    .overrideProvider(FeatureManagementService)
+    .useValue({})
     .compile();
   app = module.createNestApplication({
     cors: true,
