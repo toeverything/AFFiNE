@@ -33,6 +33,7 @@ import type {
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import { MakeCache, PreventCache } from '../../cache';
 import { EventEmitter } from '../../event';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
@@ -656,6 +657,7 @@ export class WorkspaceResolver {
   @Query(() => [String], {
     description: 'List blobs of workspace',
   })
+  @MakeCache(['blobs'], ['workspaceId'])
   async listBlobs(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
@@ -690,6 +692,7 @@ export class WorkspaceResolver {
   }
 
   @Mutation(() => String)
+  @PreventCache(['blobs'], ['workspaceId'])
   async setBlob(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
@@ -749,6 +752,7 @@ export class WorkspaceResolver {
   }
 
   @Mutation(() => Boolean)
+  @PreventCache(['blobs'], ['workspaceId'])
   async deleteBlob(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
