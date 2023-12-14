@@ -1,8 +1,8 @@
 import { getIsOwnerQuery } from '@affine/graphql';
-import { useQuery } from '@affine/workspace/affine/gql';
+import { useQueryImmutable } from '@affine/workspace/affine/gql';
 
 export function useIsWorkspaceOwner(workspaceId: string) {
-  const { data } = useQuery({
+  const { data } = useQueryImmutable({
     query: getIsOwnerQuery,
     variables: {
       workspaceId,
