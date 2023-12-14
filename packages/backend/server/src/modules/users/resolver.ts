@@ -7,11 +7,8 @@ import {
 import {
   Args,
   Context,
-  Field,
-  ID,
   Int,
   Mutation,
-  ObjectType,
   Query,
   ResolveField,
   Resolver,
@@ -26,46 +23,10 @@ import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
 import { AuthService } from '../auth/service';
 import { FeatureManagementService } from '../features';
+import { QuotaService } from '../quota';
 import { StorageService } from '../storage/storage.service';
+import { DeleteAccount, RemoveAvatar, UserQuotaType, UserType } from './types';
 import { UsersService } from './users';
-
-@ObjectType()
-export class UserType implements Partial<User> {
-  @Field(() => ID)
-  id!: string;
-
-  @Field({ description: 'User name' })
-  name!: string;
-
-  @Field({ description: 'User email' })
-  email!: string;
-
-  @Field(() => String, { description: 'User avatar url', nullable: true })
-  avatarUrl: string | null = null;
-
-  @Field(() => Date, { description: 'User email verified', nullable: true })
-  emailVerified: Date | null = null;
-
-  @Field({ description: 'User created date', nullable: true })
-  createdAt!: Date;
-
-  @Field(() => Boolean, {
-    description: 'User password has been set',
-    nullable: true,
-  })
-  hasPassword?: boolean;
-}
-
-@ObjectType()
-export class DeleteAccount {
-  @Field()
-  success!: boolean;
-}
-@ObjectType()
-export class RemoveAvatar {
-  @Field()
-  success!: boolean;
-}
 
 /**
  * User resolver
@@ -80,7 +41,8 @@ export class UserResolver {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly users: UsersService,
-    private readonly feature: FeatureManagementService
+    private readonly feature: FeatureManagementService,
+    private readonly quota: QuotaService
   ) {}
 
   @Throttle({
@@ -146,6 +108,24 @@ export class UserResolver {
       userResponse.hasPassword = true;
     }
     return user;
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60 } })
+  @ResolveField(() => UserQuotaType, { name: 'quota', nullable: true })
+  async getQuota(@CurrentUser() me: User) {
+    const quota = await this.quota.getUserQuota(me.id);
+    const configs = quota.feature.configs;
+
+    return Object.assign(
+      {
+        name: quota.feature.feature,
+        humanReadable: this.quota.getHumanReadableQuota(
+          quota.feature.feature,
+          configs
+        ),
+      },
+      configs
+    );
   }
 
   @Throttle({ default: { limit: 10, ttl: 60 } })

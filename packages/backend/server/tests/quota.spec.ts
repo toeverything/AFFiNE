@@ -16,9 +16,8 @@ import {
   QuotaType,
 } from '../src/modules/quota';
 import { PrismaModule } from '../src/prisma';
-import { StorageModule } from '../src/storage';
 import { RateLimiterModule } from '../src/throttler';
-import { initFeatureConfigs } from './utils';
+import { FakeStorageModule, initFeatureConfigs } from './utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -47,10 +46,10 @@ test.beforeEach(async t => {
         host: 'example.org',
         https: true,
       }),
-      StorageModule.forRoot(),
       PrismaModule,
       AuthModule,
       QuotaModule,
+      FakeStorageModule.forRoot(),
       RateLimiterModule,
       RevertCommand,
       RunCommand,

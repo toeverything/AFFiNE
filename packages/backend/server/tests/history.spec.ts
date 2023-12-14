@@ -8,8 +8,9 @@ import * as Sinon from 'sinon';
 import { ConfigModule } from '../src/config';
 import type { EventPayload } from '../src/event';
 import { DocHistoryManager } from '../src/modules/doc';
+import { QuotaModule } from '../src/modules/quota';
 import { PrismaModule, PrismaService } from '../src/prisma';
-import { flushDB } from './utils';
+import { FakeStorageModule, flushDB } from './utils';
 
 let app: INestApplication;
 let m: TestingModule;
@@ -20,7 +21,13 @@ let db: PrismaService;
 test.beforeEach(async () => {
   await flushDB();
   m = await Test.createTestingModule({
-    imports: [PrismaModule, ScheduleModule.forRoot(), ConfigModule.forRoot()],
+    imports: [
+      PrismaModule,
+      QuotaModule,
+      FakeStorageModule.forRoot(),
+      ScheduleModule.forRoot(),
+      ConfigModule.forRoot(),
+    ],
     providers: [DocHistoryManager],
   }).compile();
 
@@ -277,8 +284,8 @@ test('should be able to recover from history', async t => {
   t.is(history2.timestamp.getTime(), snapshot.updatedAt.getTime());
 
   // new history data force created with snapshot state before recovered
-  t.deepEqual(history2?.blob, Buffer.from([1, 1]));
-  t.deepEqual(history2?.state, Buffer.from([1, 1]));
+  t.deepEqual(history2.blob, Buffer.from([1, 1]));
+  t.deepEqual(history2.state, Buffer.from([1, 1]));
 });
 
 test('should be able to cleanup expired history', async t => {

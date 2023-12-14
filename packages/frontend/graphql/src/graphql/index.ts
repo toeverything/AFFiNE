@@ -508,6 +508,32 @@ mutation publishPage($workspaceId: String!, $pageId: String!, $mode: PublicPageM
 }`,
 };
 
+export const quotaQuery = {
+  id: 'quotaQuery' as const,
+  operationName: 'quota',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query quota {
+  currentUser {
+    quota {
+      name
+      blobLimit
+      storageQuota
+      historyPeriod
+      memberLimit
+      humanReadable {
+        name
+        blobLimit
+        storageQuota
+        historyPeriod
+        memberLimit
+      }
+    }
+  }
+}`,
+};
+
 export const recoverDocMutation = {
   id: 'recoverDocMutation' as const,
   operationName: 'recoverDoc',

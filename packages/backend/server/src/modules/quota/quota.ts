@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
 import { FeatureKind } from '../features';
-import { Quota, QuotaType } from './types';
+import {
+  formatDate,
+  formatSize,
+  getQuotaName,
+  Quota,
+  QuotaType,
+} from './types';
 
 @Injectable()
 export class QuotaService {
@@ -32,8 +38,19 @@ export class QuotaService {
         },
       },
     });
+    console.error(userId, quota);
     return quota as typeof quota & {
       feature: Pick<Quota, 'feature' | 'configs'>;
+    };
+  }
+
+  getHumanReadableQuota(feature: QuotaType, configs: Quota['configs']) {
+    return {
+      name: getQuotaName(feature),
+      blobLimit: formatSize(configs.blobLimit),
+      storageQuota: formatSize(configs.storageQuota),
+      historyPeriod: formatDate(configs.historyPeriod),
+      memberLimit: configs.memberLimit.toString(),
     };
   }
 

@@ -14,10 +14,16 @@ import {
 
 import { CacheModule } from '../src/cache';
 import { Config, ConfigModule } from '../src/config';
+import {
+  collectMigrations,
+  RevertCommand,
+  RunCommand,
+} from '../src/data/commands/run';
 import { EventModule } from '../src/event';
 import { DocManager, DocModule } from '../src/modules/doc';
+import { QuotaModule } from '../src/modules/quota';
 import { PrismaModule, PrismaService } from '../src/prisma';
-import { flushDB } from './utils';
+import { FakeStorageModule, flushDB } from './utils';
 
 const createModule = () => {
   return Test.createTestingModule({
@@ -25,8 +31,12 @@ const createModule = () => {
       PrismaModule,
       CacheModule,
       EventModule,
+      QuotaModule,
+      FakeStorageModule.forRoot(),
       ConfigModule.forRoot(),
       DocModule,
+      RevertCommand,
+      RunCommand,
     ],
   }).compile();
 };
@@ -45,6 +55,13 @@ test.beforeEach(async () => {
   app = m.createNestApplication();
   app.enableShutdownHooks();
   await app.init();
+
+  // init features
+  const run = m.get(RunCommand);
+  const revert = m.get(RevertCommand);
+  const migrations = await collectMigrations();
+  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
+  await run.run();
 });
 
 test.afterEach.always(async () => {

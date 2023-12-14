@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma';
 import { FeatureService } from './configure';
 import { FeatureType } from './types';
 
-export enum NewFeaturesKind {
+enum NewFeaturesKind {
   EarlyAccess,
 }
 

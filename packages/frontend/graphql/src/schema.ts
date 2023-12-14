@@ -499,6 +499,31 @@ export type PublishPageMutation = {
   };
 };
 
+export type QuotaQueryVariables = Exact<{ [key: string]: never }>;
+
+export type QuotaQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    quota: {
+      __typename?: 'UserQuota';
+      name: string;
+      blobLimit: number;
+      storageQuota: number;
+      historyPeriod: number;
+      memberLimit: number;
+      humanReadable: {
+        __typename?: 'UserQuotaHumanReadable';
+        name: string;
+        blobLimit: string;
+        storageQuota: string;
+        historyPeriod: string;
+        memberLimit: string;
+      };
+    } | null;
+  } | null;
+};
+
 export type RecoverDocMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
@@ -818,6 +843,11 @@ export type Queries =
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
+    }
+  | {
+      name: 'quotaQuery';
+      variables: QuotaQueryVariables;
+      response: QuotaQuery;
     }
   | {
       name: 'serverConfigQuery';

@@ -12,6 +12,7 @@ import Stripe from 'stripe';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { FeatureManagementService } from '../features';
+import { QuotaService, QuotaType } from '../quota';
 import { ScheduleManager } from './schedule';
 
 const OnEvent = (
@@ -60,6 +61,11 @@ export enum SubscriptionStatus {
   Trialing = 'trialing',
 }
 
+const SubscriptionActivated: Stripe.Subscription.Status[] = [
+  SubscriptionStatus.Active,
+  SubscriptionStatus.Trialing,
+];
+
 export enum InvoiceStatus {
   Draft = 'draft',
   Open = 'open',
@@ -83,7 +89,8 @@ export class SubscriptionService {
     private readonly stripe: Stripe,
     private readonly db: PrismaService,
     private readonly scheduleManager: ScheduleManager,
-    private readonly features: FeatureManagementService
+    private readonly features: FeatureManagementService,
+    private readonly quota: QuotaService
   ) {
     this.paymentConfig = config.payment;
 
@@ -471,6 +478,16 @@ export class SubscriptionService {
     }
   }
 
+  private getPlanQuota(plan: SubscriptionPlan) {
+    if (plan === SubscriptionPlan.Free) {
+      return QuotaType.Quota_FreePlanV1;
+    } else if (plan === SubscriptionPlan.Pro) {
+      return QuotaType.Quota_ProPlanV1;
+    } else {
+      throw new Error(`Unknown plan: ${plan}`);
+    }
+  }
+
   private async saveSubscription(
     user: User,
     subscription: Stripe.Subscription,
@@ -483,23 +500,28 @@ export class SubscriptionService {
       subscription = await this.stripe.subscriptions.retrieve(subscription.id);
     }
 
-    // get next bill date from upcoming invoice
-    // see https://stripe.com/docs/api/invoices/upcoming
-    let nextBillAt: Date | null = null;
-    if (
-      (subscription.status === SubscriptionStatus.Active ||
-        subscription.status === SubscriptionStatus.Trialing) &&
-      !subscription.canceled_at
-    ) {
-      nextBillAt = new Date(subscription.current_period_end * 1000);
-    }
-
     const price = subscription.items.data[0].price;
     if (!price.lookup_key) {
       throw new Error('Unexpected subscription with no key');
     }
 
     const [plan, recurring] = decodeLookupKey(price.lookup_key);
+    const planActivated = SubscriptionActivated.includes(subscription.status);
+
+    let nextBillAt: Date | null = null;
+    if (planActivated) {
+      // update user's quota if plan activated
+      await this.quota.switchUserQuota(user.id, this.getPlanQuota(plan));
+
+      // get next bill date from upcoming invoice
+      // see https://stripe.com/docs/api/invoices/upcoming
+      if (!subscription.canceled_at) {
+        nextBillAt = new Date(subscription.current_period_end * 1000);
+      }
+    } else {
+      // switch to free plan if subscription is canceled
+      await this.quota.switchUserQuota(user.id, QuotaType.Quota_FreePlanV1);
+    }
 
     const commonData = {
       start: new Date(subscription.current_period_start * 1000),

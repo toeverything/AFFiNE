@@ -57,14 +57,10 @@ test.beforeEach(async t => {
     ],
   }).compile();
 
-  const quota = module.get(FeatureService);
-  const storageQuota = module.get(FeatureManagementService);
-  const auth = module.get(AuthService);
-
   t.context.app = module;
-  t.context.feature = quota;
-  t.context.early_access = storageQuota;
-  t.context.auth = auth;
+  t.context.auth = module.get(AuthService);
+  t.context.feature = module.get(FeatureService);
+  t.context.early_access = module.get(FeatureManagementService);
 
   // init features
   await initFeatureConfigs(module);

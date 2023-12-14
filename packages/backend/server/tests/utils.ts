@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-import type { INestApplication } from '@nestjs/common';
+import type {
+  DynamicModule,
+  FactoryProvider,
+  INestApplication,
+} from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { PrismaClient, type User } from '@prisma/client';
@@ -10,6 +14,7 @@ import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import type { TokenType } from '../src/modules/auth';
 import type { UserType } from '../src/modules/users';
 import type { InvitationType, WorkspaceType } from '../src/modules/workspaces';
+import { StorageProvide } from '../src/storage';
 
 const gql = '/graphql';
 
@@ -559,6 +564,24 @@ export class FakePrisma {
       async update() {
         return this.findFirst();
       },
+    };
+  }
+}
+
+export class FakeStorageModule {
+  static forRoot(): DynamicModule {
+    const storageProvider: FactoryProvider = {
+      provide: StorageProvide,
+      useFactory: async () => {
+        return null;
+      },
+    };
+
+    return {
+      global: true,
+      module: FakeStorageModule,
+      providers: [storageProvider],
+      exports: [storageProvider],
     };
   }
 }

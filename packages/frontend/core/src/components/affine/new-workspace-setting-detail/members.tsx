@@ -15,7 +15,7 @@ import { Menu, MenuItem } from '@affine/component/ui/menu';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Permission, SubscriptionPlan } from '@affine/graphql';
+import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon, MoreVerticalIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -37,16 +37,10 @@ import { useInviteMember } from '../../../hooks/affine/use-invite-member';
 import { useMemberCount } from '../../../hooks/affine/use-member-count';
 import { type Member, useMembers } from '../../../hooks/affine/use-members';
 import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
-import { useUserSubscription } from '../../../hooks/use-subscription';
+import { useUserQuota } from '../../../hooks/use-quota';
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
-
-enum MemberLimitCount {
-  Free = '3',
-  Pro = '10',
-  Other = '?',
-}
 
 const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
@@ -148,23 +142,17 @@ export const CloudWorkspaceMembersPanel = ({
     });
   }, [setSettingModalAtom]);
 
-  const [subscription] = useUserSubscription();
-  const plan = subscription?.plan ?? SubscriptionPlan.Free;
-  const memberLimit = useMemo(() => {
-    if (plan === SubscriptionPlan.Free) {
-      return MemberLimitCount.Free;
-    }
-    if (plan === SubscriptionPlan.Pro) {
-      return MemberLimitCount.Pro;
-    }
-    return MemberLimitCount.Other;
-  }, [plan]);
+  const quota = useUserQuota();
+
   const desc = useMemo(() => {
+    if (!quota) return null;
+
+    const humanReadable = quota.humanReadable;
     return (
       <span>
         {t['com.affine.payment.member.description']({
-          planName: plan,
-          memberLimit,
+          planName: humanReadable.name,
+          memberLimit: humanReadable.memberLimit,
         })}
         {upgradable ? (
           <>
@@ -179,7 +167,7 @@ export const CloudWorkspaceMembersPanel = ({
         ) : null}
       </span>
     );
-  }, [handleUpgrade, memberLimit, plan, t, upgradable]);
+  }, [handleUpgrade, quota, t, upgradable]);
 
   return (
     <>

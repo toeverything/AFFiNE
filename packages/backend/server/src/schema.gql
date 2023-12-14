@@ -10,6 +10,23 @@ type ServerConfigType {
   flavor: String!
 }
 
+type UserQuotaHumanReadable {
+  name: String!
+  blobLimit: String!
+  storageQuota: String!
+  historyPeriod: String!
+  memberLimit: String!
+}
+
+type UserQuota {
+  name: String!
+  blobLimit: Float!
+  storageQuota: Float!
+  historyPeriod: Float!
+  memberLimit: Int!
+  humanReadable: UserQuotaHumanReadable!
+}
+
 type UserType {
   id: ID!
 
@@ -31,6 +48,7 @@ type UserType {
   """User password has been set"""
   hasPassword: Boolean
   token: TokenType!
+  quota: UserQuota
 
   """Get user invoice count"""
   invoiceCount: Int!

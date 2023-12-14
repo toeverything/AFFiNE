@@ -3,9 +3,29 @@ import {
   FeatureKind,
   Features,
   FeatureType,
-} from '../../modules/features/types';
+} from '../../modules/features';
 import { Quotas } from '../../modules/quota/types';
 import { PrismaService } from '../../prisma';
+
+export class UserFeaturesInit1698652531198 {
+  // do the migration
+  static async up(db: PrismaService) {
+    // upgrade features from lower version to higher version
+    for (const feature of Features) {
+      await upsertFeature(db, feature);
+    }
+    await migrateNewFeatureTable(db);
+
+    for (const quota of Quotas) {
+      await upsertFeature(db, quota);
+    }
+  }
+
+  // revert the migration
+  static async down(_db: PrismaService) {
+    // TODO: revert the migration
+  }
+}
 
 // upgrade features from lower version to higher version
 async function upsertFeature(
@@ -31,26 +51,6 @@ async function upsertFeature(
         configs: feature.configs,
       },
     });
-  }
-}
-
-export class UserFeaturesInit1698652531198 {
-  // do the migration
-  static async up(db: PrismaService) {
-    // upgrade features from lower version to higher version
-    for (const feature of Features) {
-      await upsertFeature(db, feature);
-    }
-    await migrateNewFeatureTable(db);
-
-    for (const quota of Quotas) {
-      await upsertFeature(db, quota);
-    }
-  }
-
-  // revert the migration
-  static async down(_db: PrismaService) {
-    // TODO: revert the migration
   }
 }
 
