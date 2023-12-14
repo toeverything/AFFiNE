@@ -15,6 +15,7 @@ export const mainContainer = style({
   flexDirection: 'column',
   minWidth: 0,
   overflow: 'hidden',
+  background: 'var(--affine-background-primary-color)',
   selectors: {
     [`${root}[data-client-border=true] &`]: {
       borderRadius: '4px',
@@ -47,6 +48,7 @@ export const sidebarContainer = style({
 
 export const sidebarContainerInner = style({
   display: 'flex',
+  background: 'var(--affine-background-primary-color)',
   flexDirection: 'column',
   overflow: 'hidden',
   height: '100%',
