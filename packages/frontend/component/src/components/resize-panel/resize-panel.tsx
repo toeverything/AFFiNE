@@ -149,12 +149,13 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
     ref
   ) {
     const enableAnimation = useEnableAnimation() && _enableAnimation;
+    const safeWidth = Math.min(maxWidth, Math.max(minWidth, width));
     return (
       <div
         {...rest}
         ref={ref}
         style={assignInlineVars({
-          [styles.panelWidthVar]: `${width}px`,
+          [styles.panelWidthVar]: `${safeWidth}px`,
         })}
         className={clsx(className, styles.root)}
         data-open={open}
