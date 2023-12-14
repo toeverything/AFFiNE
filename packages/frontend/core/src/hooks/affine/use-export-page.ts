@@ -4,7 +4,7 @@ import {
 } from '@affine/component/global-loading';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { PageBlockModel } from '@blocksuite/blocks';
+import { HtmlTransformer, MarkdownTransformer, type PageBlockModel } from '@blocksuite/blocks';
 import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
@@ -12,12 +12,6 @@ import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 type ExportType = 'pdf' | 'html' | 'png' | 'markdown';
-const typeToContentParserMethodMap = {
-  pdf: 'exportPdf',
-  html: 'exportHtml',
-  png: 'exportPng',
-  markdown: 'exportMarkdown',
-} satisfies Record<ExportType, keyof ContentParser>;
 
 const contentParserWeakMap = new WeakMap<Page, ContentParser>();
 
@@ -41,14 +35,24 @@ interface ExportHandlerOptions {
 }
 
 async function exportHandler({ page, type }: ExportHandlerOptions) {
-  if (type === 'pdf' && environment.isDesktop && page.meta.mode === 'page') {
-    await window.apis?.export.savePDFFileAs(
-      (page.root as PageBlockModel).title.toString()
-    );
-  } else {
-    const contentParser = getContentParser(page);
-    const method = typeToContentParserMethodMap[type];
-    await contentParser[method]();
+  const contentParser = getContentParser(page);
+  switch (type) {
+    case 'html':
+      await HtmlTransformer.exportPage(page);
+      break;
+    case 'markdown':
+      await MarkdownTransformer.exportPage(page);
+      break;
+    case 'pdf':
+      if (environment.isDesktop && page.meta.mode === 'page') {
+        await window.apis?.export.savePDFFileAs(
+          (page.root as PageBlockModel).title.toString()
+        );
+      }
+      break;
+    case 'png':
+      await contentParser['exportPng']();
+      break;
   }
 }
 
