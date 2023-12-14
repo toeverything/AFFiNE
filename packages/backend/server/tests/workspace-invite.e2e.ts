@@ -9,17 +9,14 @@ import ava, { type TestFn } from 'ava';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';
-import {
-  collectMigrations,
-  RevertCommand,
-  RunCommand,
-} from '../src/data/commands/run';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { MailService } from '../src/modules/auth/mailer';
 import { AuthService } from '../src/modules/auth/service';
 import {
   acceptInviteById,
   createWorkspace,
   getWorkspace,
+  initFeatureConfigs,
   inviteUser,
   leaveWorkspace,
   revokeUser,
@@ -63,11 +60,7 @@ test.beforeEach(async t => {
   t.context.mail = mail;
 
   // init features
-  const run = module.get(RunCommand);
-  const revert = module.get(RevertCommand);
-  const migrations = await collectMigrations();
-  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
-  await run.run();
+  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async t => {

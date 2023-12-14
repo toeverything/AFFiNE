@@ -64,41 +64,64 @@ export class RunCommand extends CommandRunner {
         continue;
       }
 
-      this.logger.log(`Running ${migration.name}...`);
-      const record = await this.db.dataMigration.create({
-        data: {
-          name: migration.name,
-          startedAt: new Date(),
-        },
-      });
+      await this.runMigration(migration);
 
-      try {
-        await migration.up(this.db);
-      } catch (e) {
-        await this.db.dataMigration.delete({
-          where: {
-            id: record.id,
-          },
-        });
-        await migration.down(this.db);
-        this.logger.error('Failed to run data migration', e);
-        process.exit(1);
-      }
-
-      await this.db.dataMigration.update({
-        where: {
-          id: record.id,
-        },
-        data: {
-          finishedAt: new Date(),
-        },
-      });
       done.push(migration);
     }
 
     this.logger.log(`Done ${done.length} migrations`);
     done.forEach(migration => {
       this.logger.log(`  ✔ ${migration.name}`);
+    });
+  }
+
+  async runOne(name: string) {
+    const migrations = await collectMigrations();
+    const migration = migrations.find(m => m.name === name);
+
+    if (!migration) {
+      throw new Error(`Unknown migration name: ${name}.`);
+    }
+    const exists = await this.db.dataMigration.count({
+      where: {
+        name: migration.name,
+      },
+    });
+
+    if (exists) return;
+
+    await this.runMigration(migration);
+  }
+
+  private async runMigration(migration: Migration) {
+    this.logger.log(`Running ${migration.name}...`);
+    const record = await this.db.dataMigration.create({
+      data: {
+        name: migration.name,
+        startedAt: new Date(),
+      },
+    });
+
+    try {
+      await migration.up(this.db);
+    } catch (e) {
+      await this.db.dataMigration.delete({
+        where: {
+          id: record.id,
+        },
+      });
+      await migration.down(this.db);
+      this.logger.error('Failed to run data migration', e);
+      process.exit(1);
+    }
+
+    await this.db.dataMigration.update({
+      where: {
+        id: record.id,
+      },
+      data: {
+        finishedAt: new Date(),
+      },
     });
   }
 }

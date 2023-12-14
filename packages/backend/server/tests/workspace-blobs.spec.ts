@@ -6,17 +6,14 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
-import {
-  collectMigrations,
-  RevertCommand,
-  RunCommand,
-} from '../src/data/commands/run';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { QuotaService, QuotaType } from '../src/modules/quota';
 import {
   checkBlobSize,
   collectAllBlobSizes,
   createWorkspace,
   getWorkspaceBlobsSize,
+  initFeatureConfigs,
   listBlobs,
   setBlob,
   signUp,
@@ -52,11 +49,7 @@ test.beforeEach(async () => {
   quota = module.get(QuotaService);
 
   // init features
-  const run = module.get(RunCommand);
-  const revert = module.get(RevertCommand);
-  const migrations = await collectMigrations();
-  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
-  await run.run();
+  await initFeatureConfigs(module);
 
   await app.init();
 });

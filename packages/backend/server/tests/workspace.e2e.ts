@@ -6,17 +6,14 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
-import {
-  collectMigrations,
-  RevertCommand,
-  RunCommand,
-} from '../src/data/commands/run';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import {
   acceptInviteById,
   createWorkspace,
   currentUser,
   getPublicWorkspace,
   getWorkspacePublicPages,
+  initFeatureConfigs,
   inviteUser,
   publishPage,
   revokePublicPage,
@@ -53,11 +50,7 @@ test.beforeEach(async t => {
   t.context.app = app;
 
   // init features
-  const run = module.get(RunCommand);
-  const revert = module.get(RevertCommand);
-  const migrations = await collectMigrations();
-  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
-  await run.run();
+  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async t => {

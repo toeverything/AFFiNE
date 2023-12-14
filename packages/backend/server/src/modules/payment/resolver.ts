@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import {
   Args,
+  Context,
   Field,
   Int,
   Mutation,
@@ -254,8 +255,13 @@ export class UserSubscriptionResolver {
   constructor(private readonly db: PrismaService) {}
 
   @ResolveField(() => UserSubscriptionType, { nullable: true })
-  async subscription(@CurrentUser() me: User, @Parent() user: User) {
-    if (me.id !== user.id) {
+  async subscription(
+    @Context() ctx: { isAdminQuery: boolean },
+    @CurrentUser() me: User,
+    @Parent() user: User
+  ) {
+    // allow admin to query other user's subscription
+    if (!ctx.isAdminQuery && me.id !== user.id) {
       throw new GraphQLError(
         'You are not allowed to access this subscription',
         {

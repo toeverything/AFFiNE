@@ -223,6 +223,47 @@ export type DeleteWorkspaceMutation = {
   deleteWorkspace: boolean;
 };
 
+export type AddToEarlyAccessMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type AddToEarlyAccessMutation = {
+  __typename?: 'Mutation';
+  addToEarlyAccess: number;
+};
+
+export type EarlyAccessUsersQueryVariables = Exact<{ [key: string]: never }>;
+
+export type EarlyAccessUsersQuery = {
+  __typename?: 'Query';
+  earlyAccessUsers: Array<{
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    emailVerified: string | null;
+    createdAt: string | null;
+    subscription: {
+      __typename?: 'UserSubscription';
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+      status: SubscriptionStatus;
+      start: string;
+      end: string;
+    } | null;
+  }>;
+};
+
+export type RemoveEarlyAccessMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type RemoveEarlyAccessMutation = {
+  __typename?: 'Mutation';
+  removeEarlyAccess: number;
+};
+
 export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetCurrentUserQuery = {
@@ -699,6 +740,11 @@ export type Queries =
       response: AllBlobSizesQuery;
     }
   | {
+      name: 'earlyAccessUsersQuery';
+      variables: EarlyAccessUsersQueryVariables;
+      response: EarlyAccessUsersQuery;
+    }
+  | {
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
@@ -834,6 +880,16 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'addToEarlyAccessMutation';
+      variables: AddToEarlyAccessMutationVariables;
+      response: AddToEarlyAccessMutation;
+    }
+  | {
+      name: 'removeEarlyAccessMutation';
+      variables: RemoveEarlyAccessMutationVariables;
+      response: RemoveEarlyAccessMutation;
     }
   | {
       name: 'leaveWorkspaceMutation';

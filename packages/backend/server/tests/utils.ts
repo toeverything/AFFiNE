@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
+import { TestingModule } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { PrismaClient, type User } from '@prisma/client';
 import request from 'supertest';
 
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import type { TokenType } from '../src/modules/auth';
 import type { UserType } from '../src/modules/users';
 import type { InvitationType, WorkspaceType } from '../src/modules/workspaces';
@@ -559,6 +561,13 @@ export class FakePrisma {
       },
     };
   }
+}
+
+export async function initFeatureConfigs(module: TestingModule) {
+  const run = module.get(RunCommand);
+  const revert = module.get(RevertCommand);
+  await Promise.allSettled([revert.run(['UserFeaturesInit1698652531198'])]);
+  await run.runOne('UserFeaturesInit1698652531198');
 }
 
 export {

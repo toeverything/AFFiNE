@@ -269,7 +269,7 @@ type Query {
 
   """Get user by email"""
   user(email: String!): UserType
-  listEarlyAccess: [UserType!]!
+  earlyAccessUsers: [UserType!]!
   prices: [SubscriptionPrice!]!
 }
 

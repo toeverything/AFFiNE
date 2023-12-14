@@ -188,6 +188,53 @@ mutation deleteWorkspace($id: String!) {
 }`,
 };
 
+export const addToEarlyAccessMutation = {
+  id: 'addToEarlyAccessMutation' as const,
+  operationName: 'addToEarlyAccess',
+  definitionName: 'addToEarlyAccess',
+  containsFile: false,
+  query: `
+mutation addToEarlyAccess($email: String!) {
+  addToEarlyAccess(email: $email)
+}`,
+};
+
+export const earlyAccessUsersQuery = {
+  id: 'earlyAccessUsersQuery' as const,
+  operationName: 'earlyAccessUsers',
+  definitionName: 'earlyAccessUsers',
+  containsFile: false,
+  query: `
+query earlyAccessUsers {
+  earlyAccessUsers {
+    id
+    name
+    email
+    avatarUrl
+    emailVerified
+    createdAt
+    subscription {
+      plan
+      recurring
+      status
+      start
+      end
+    }
+  }
+}`,
+};
+
+export const removeEarlyAccessMutation = {
+  id: 'removeEarlyAccessMutation' as const,
+  operationName: 'removeEarlyAccess',
+  definitionName: 'removeEarlyAccess',
+  containsFile: false,
+  query: `
+mutation removeEarlyAccess($email: String!) {
+  removeEarlyAccess(email: $email)
+}`,
+};
+
 export const getCurrentUserQuery = {
   id: 'getCurrentUserQuery' as const,
   operationName: 'getCurrentUser',

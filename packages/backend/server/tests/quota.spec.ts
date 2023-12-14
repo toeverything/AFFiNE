@@ -5,11 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
-import {
-  collectMigrations,
-  RevertCommand,
-  RunCommand,
-} from '../src/data/commands/run';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
 import {
@@ -22,6 +18,7 @@ import {
 import { PrismaModule } from '../src/prisma';
 import { StorageModule } from '../src/storage';
 import { RateLimiterModule } from '../src/throttler';
+import { initFeatureConfigs } from './utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -70,11 +67,7 @@ test.beforeEach(async t => {
   t.context.auth = auth;
 
   // init features
-  const run = module.get(RunCommand);
-  const revert = module.get(RevertCommand);
-  const migrations = await collectMigrations();
-  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
-  await run.run();
+  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async t => {

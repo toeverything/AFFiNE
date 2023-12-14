@@ -1,0 +1,3 @@
+mutation removeEarlyAccess($email: String!) {
+  removeEarlyAccess(email: $email)
+}
