@@ -14,6 +14,7 @@ import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { appSettingAtom, currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
+  memo,
   type ReactElement,
   type ReactNode,
   useCallback,
@@ -101,7 +102,7 @@ const DetailPageLayout = ({
   );
 };
 
-const DetailPageImpl = ({ page }: { page: Page }) => {
+const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
   const currentPageId = page.id;
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
@@ -200,7 +201,7 @@ const DetailPageImpl = ({ page }: { page: Page }) => {
       <GlobalPageHistoryModal />
     </>
   );
-};
+});
 
 const useForceUpdate = () => {
   const [, setCount] = useState(0);

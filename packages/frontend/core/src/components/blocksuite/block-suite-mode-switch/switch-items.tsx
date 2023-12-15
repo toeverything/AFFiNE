@@ -45,21 +45,30 @@ const HoverAnimateController = ({
   );
 };
 
+const pageLottieOptions = {
+  loop: false,
+  autoplay: false,
+  animationData: pageHover,
+  rendererSettings: {
+    preserveAspectRatio: 'xMidYMid slice',
+  },
+};
+
+const edgelessLottieOptions = {
+  loop: false,
+  autoplay: false,
+  animationData: edgelessHover,
+  rendererSettings: {
+    preserveAspectRatio: 'xMidYMid slice',
+  },
+};
+
 export const PageSwitchItem = (
   props: Omit<HoverAnimateControllerProps, 'children'>
 ) => {
   return (
     <HoverAnimateController {...props}>
-      <InternalLottie
-        options={{
-          loop: false,
-          autoplay: false,
-          animationData: pageHover,
-          rendererSettings: {
-            preserveAspectRatio: 'xMidYMid slice',
-          },
-        }}
-      />
+      <InternalLottie options={pageLottieOptions} />
     </HoverAnimateController>
   );
 };
@@ -69,16 +78,7 @@ export const EdgelessSwitchItem = (
 ) => {
   return (
     <HoverAnimateController {...props}>
-      <InternalLottie
-        options={{
-          loop: false,
-          autoplay: false,
-          animationData: edgelessHover,
-          rendererSettings: {
-            preserveAspectRatio: 'xMidYMid slice',
-          },
-        }}
-      />
+      <InternalLottie options={edgelessLottieOptions} />
     </HoverAnimateController>
   );
 };
