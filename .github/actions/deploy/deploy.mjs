@@ -28,6 +28,7 @@ const {
   REDIS_PASSWORD,
   STRIPE_API_KEY,
   STRIPE_WEBHOOK_KEY,
+  STATIC_IP_NAME,
 } = process.env;
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -35,17 +36,13 @@ const buildType = BUILD_TYPE || 'canary';
 
 const isProduction = buildType === 'stable';
 const isBeta = buildType === 'beta';
+const isInternal = buildType === 'internal';
 
 const createHelmCommand = ({ isDryRun }) => {
   const flag = isDryRun ? '--dry-run' : '--atomic';
   const imageTag = `${buildType}-${GIT_SHORT_HASH}`;
-  const staticIpName = isProduction
-    ? 'affine-cluster-production'
-    : isBeta
-      ? 'affine-cluster-beta'
-      : 'affine-cluster-dev';
   const redisAndPostgres =
-    isProduction || isBeta
+    isProduction || isBeta || isInternal
       ? [
           `--set-string global.database.url=${DATABASE_URL}`,
           `--set-string global.database.user=${DATABASE_USERNAME}`,
@@ -59,26 +56,32 @@ const createHelmCommand = ({ isDryRun }) => {
         ]
       : [];
   const serviceAnnotations =
-    isProduction || isBeta
+    isProduction || isBeta || isInternal
       ? [
           `--set-json   web.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
-          `--set-json   graphql.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
           `--set-json   graphql.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
-          `--set-json   sync.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
           `--set-json   sync.service.annotations=\"{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }\"`,
+          `--set-json   cloud-sql-proxy.serviceAccount.annotations=\"{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }\"`,
+          `--set-json   cloud-sql-proxy.nodeSelector=\"{ \\"iam.gke.io/gke-metadata-server-enabled\\": \\"true\\" }\"`,
         ]
       : [];
   const webReplicaCount = isProduction ? 3 : isBeta ? 2 : 2;
   const graphqlReplicaCount = isProduction ? 10 : isBeta ? 5 : 2;
   const syncReplicaCount = isProduction ? 10 : isBeta ? 5 : 2;
-  const namespace = isProduction ? 'production' : isBeta ? 'beta' : 'dev';
+  const namespace = isProduction
+    ? 'production'
+    : isBeta
+      ? 'beta'
+      : isInternal
+        ? 'internal'
+        : 'dev';
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const host = DEPLOY_HOST || CANARY_DEPLOY_HOST;
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
     `--namespace  ${namespace}`,
     `--set        global.ingress.enabled=true`,
-    `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${staticIpName}\\" }\"`,
+    `--set-json   global.ingress.annotations=\"{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${STATIC_IP_NAME}\\" }\"`,
     `--set-string global.ingress.host="${host}"`,
     `--set-string global.version="${APP_VERSION}"`,
     ...redisAndPostgres,

@@ -1,6 +1,11 @@
 apiVersion: v2
 name: sync
-description: A Helm chart for Kubernetes
+description: AFFiNE Sync Server
 type: application
 version: 0.0.0
 appVersion: "0.10.3-canary.2"
+dependencies:
+  - name: gcloud-sql-proxy
+    version: 0.0.0
+    repository: "file://../gcloud-sql-proxy"
+    condition: .global.database.gcloud.enabled

@@ -1,0 +1,17 @@
+{{- if .Values.global.database.gcloud.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "gcloud-sql-proxy.fullname" . }}-test-connection"
+  labels:
+    {{- include "gcloud-sql-proxy.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "gcloud-sql-proxy.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never
+{{- end }}

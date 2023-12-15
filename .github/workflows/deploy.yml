@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       flavor:
-        description: 'Build type (canary, beta, or stable)'
+        description: 'Build type (canary, beta, or stable or internal)'
         type: string
         default: canary
 
@@ -249,3 +249,4 @@ jobs:
           CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
           STRIPE_WEBHOOK_KEY: ${{ secrets.STRIPE_WEBHOOK_KEY }}
+          STATIC_IP_NAME: ${{ secrets.STATIC_IP_NAME }}
