@@ -69,7 +69,7 @@ export const LocalSharePage = (props: ShareMenuProps) => {
 
 export const AffineSharePage = (props: ShareMenuProps) => {
   const {
-    workspace: { id: workspaceId },
+    workspaceMetadata: { id: workspaceId },
     currentPage,
   } = props;
   const pageId = currentPage.id;
@@ -239,9 +239,11 @@ export const AffineSharePage = (props: ShareMenuProps) => {
 };
 
 export const SharePage = (props: ShareMenuProps) => {
-  if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (props.workspaceMetadata.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
-  } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+  } else if (
+    props.workspaceMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD
+  ) {
     return <AffineSharePage {...props} />;
   }
   throw new Error('Unreachable');

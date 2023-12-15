@@ -4,16 +4,17 @@ import {
   FavoriteTag,
 } from '@affine/component/page-list';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtomValue } from 'jotai';
 import { useCallback, useMemo } from 'react';
 
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import { useCurrentWorkspace } from '../current/use-current-workspace';
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 
 export const useAllPageListConfig = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const workspace = currentWorkspace.blockSuiteWorkspace;
   const pageMetas = useBlockSuitePageMeta(workspace);
   const { isPreferredEdgeless } = usePageHelper(workspace);

@@ -20,7 +20,6 @@ const UserPlanButtonWithData = () => {
       setSettingModalAtom({
         open: true,
         activeTab: 'plans',
-        workspaceId: null,
       });
     },
     [setSettingModalAtom]

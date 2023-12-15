@@ -1,13 +1,12 @@
 import { Menu } from '@affine/component/ui/menu';
-import { DebugLogger } from '@affine/debug';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getWorkspace } from '@toeverything/infra/__internal__/workspace';
-import { getCurrentStore } from '@toeverything/infra/atom';
-import { lazy } from 'react';
-import type { LoaderFunction } from 'react-router-dom';
-import { redirect } from 'react-router-dom';
+import { workspaceListAtom } from '@affine/workspace/atom';
+import { useAtomValue } from 'jotai';
+import { lazy, useEffect } from 'react';
 
+import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
+import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../shared';
 
 const AllWorkspaceModals = lazy(() =>
   import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
@@ -15,44 +14,27 @@ const AllWorkspaceModals = lazy(() =>
   }))
 );
 
-const logger = new DebugLogger('index-page');
-
-export const loader: LoaderFunction = async () => {
-  const rootStore = getCurrentStore();
-  const { createFirstAppData } = await import('../bootstrap/setup');
-  createFirstAppData(rootStore);
-  const meta = await rootStore.get(rootWorkspacesMetadataAtom);
-  const lastId = localStorage.getItem('last_workspace_id');
-  const lastPageId = localStorage.getItem('last_page_id');
-  const target = (lastId && meta.find(({ id }) => id === lastId)) || meta.at(0);
-  if (target) {
-    const targetWorkspace = getWorkspace(target.id);
-
-    const nonTrashPages = targetWorkspace.meta.pageMetas.filter(
-      ({ trash }) => !trash
-    );
-    const helloWorldPage = nonTrashPages.find(({ jumpOnce }) => jumpOnce)?.id;
-    const pageId =
-      nonTrashPages.find(({ id }) => id === lastPageId)?.id ??
-      nonTrashPages.at(0)?.id;
-    if (helloWorldPage) {
-      logger.debug(
-        'Found target workspace. Jump to hello world page',
-        helloWorldPage
-      );
-      return redirect(`/workspace/${targetWorkspace.id}/${helloWorldPage}`);
-    } else if (pageId) {
-      logger.debug('Found target workspace. Jump to page', pageId);
-      return redirect(`/workspace/${targetWorkspace.id}/${pageId}`);
-    } else {
-      logger.debug('Found target workspace. Jump to all page');
-      return redirect(`/workspace/${targetWorkspace.id}/all`);
-    }
-  }
-  return null;
-};
-
 export const Component = () => {
+  const list = useAtomValue(workspaceListAtom);
+  const { openPage } = useNavigateHelper();
+
+  useEffect(() => {
+    if (list.length === 0) {
+      return;
+    }
+
+    // open last workspace
+    const lastId = localStorage.getItem('last_workspace_id');
+    const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
+    openPage(openWorkspace.id, WorkspaceSubPath.ALL);
+  }, [list, openPage]);
+
+  useEffect(() => {
+    createFirstAppData().catch(err => {
+      console.error('Failed to create first app data', err);
+    });
+  }, []);
+
   // TODO: We need a no workspace page
   return (
     <>

@@ -28,8 +28,7 @@ function generateUUID() {
 export const enableCoverage = !!process.env.CI || !!process.env.COVERAGE;
 
 type CurrentWorkspace = {
-  id: string;
-  flavour: string;
+  meta: { id: string; flavour: string };
   blockSuiteWorkspace: Workspace;
 };
 

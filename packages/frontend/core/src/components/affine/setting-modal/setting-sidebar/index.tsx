@@ -4,22 +4,23 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import type { WorkspaceMetadata } from '@affine/workspace';
+import {
+  waitForCurrentWorkspaceAtom,
+  workspaceListAtom,
+} from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
+import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
+import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
-import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
+import { type ReactElement, Suspense, useCallback } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
 import { UserPlanButton } from '../../auth/user-plan-button';
 import type {
   GeneralSettingKeys,
@@ -109,7 +110,7 @@ export const SettingSidebar = ({
 }: {
   generalSettingList: GeneralSettingList;
   onGeneralSettingClick: (key: GeneralSettingKeys) => void;
-  onWorkspaceSettingClick: (workspaceId: string) => void;
+  onWorkspaceSettingClick: (workspaceMetadata: WorkspaceMetadata) => void;
   selectedWorkspaceId: string | null;
   selectedGeneralKey: string | null;
   onAccountSettingClick: () => void;
@@ -182,25 +183,20 @@ export const WorkspaceList = ({
   onWorkspaceSettingClick,
   selectedWorkspaceId,
 }: {
-  onWorkspaceSettingClick: (workspaceId: string) => void;
+  onWorkspaceSettingClick: (workspaceMetadata: WorkspaceMetadata) => void;
   selectedWorkspaceId: string | null;
 }) => {
-  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
-  const [currentWorkspace] = useCurrentWorkspace();
-  const workspaceList = useMemo(() => {
-    return workspaces.filter(
-      ({ flavour }) => flavour !== WorkspaceFlavour.AFFINE_PUBLIC
-    );
-  }, [workspaces]);
+  const workspaces = useAtomValue(workspaceListAtom);
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   return (
     <>
-      {workspaceList.map(workspace => {
+      {workspaces.map(workspace => {
         return (
           <Suspense key={workspace.id} fallback={<WorkspaceListItemSkeleton />}>
             <WorkspaceListItem
               meta={workspace}
               onClick={() => {
-                onWorkspaceSettingClick(workspace.id);
+                onWorkspaceSettingClick(workspace);
               }}
               isCurrent={workspace.id === currentWorkspace.id}
               isActive={workspace.id === selectedWorkspaceId}
@@ -218,33 +214,34 @@ const WorkspaceListItem = ({
   isCurrent,
   isActive,
 }: {
-  meta: RootWorkspaceMetadata;
+  meta: WorkspaceMetadata;
   onClick: () => void;
   isCurrent: boolean;
   isActive: boolean;
 }) => {
-  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(meta.id);
-  const workspace = useAtomValue(workspaceAtom);
-  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
-  const [workspaceName] = useBlockSuiteWorkspaceName(workspace);
+  const information = useWorkspaceInfo(meta);
+
+  const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
+
+  const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
   return (
     <div
       className={clsx(sidebarSelectItem, { active: isActive })}
-      title={workspaceName}
+      title={name}
       onClick={onClick}
       data-testid="workspace-list-item"
     >
       <Avatar
         size={14}
-        url={workspaceAvatar}
-        name={workspaceName}
+        url={avatarUrl}
+        name={name}
         colorfulFallback
         style={{
           marginRight: '10px',
         }}
       />
-      <span className="setting-name">{workspaceName}</span>
+      <span className="setting-name">{name}</span>
       {isCurrent ? (
         <Tooltip content="Current" side="top">
           <div

@@ -13,6 +13,7 @@ import { WindowsAppControls } from '@affine/core/components/pure/header/windows-
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import {
   CloseIcon,
   FilterIcon,
@@ -31,7 +32,6 @@ import {
   pageCollectionBaseAtom,
 } from '../../atoms/collections';
 import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
-import { useCurrentWorkspace } from '../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../shared';
 import { getWorkspaceSetting } from '../../utils/workspace-setting';
@@ -51,7 +51,7 @@ export const Component = function CollectionPage() {
   const { collections, loading } = useAtomValue(pageCollectionBaseAtom);
   const navigate = useNavigateHelper();
   const params = useParams();
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const collection = collections.find(v => v.id === params.collectionId);
   const pushNotification = useSetAtom(pushNotificationAtom);
   useEffect(() => {
@@ -102,11 +102,11 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   const { node, open } = useEditCollection(useAllPageListConfig());
   const openPageEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
-    await updateCollection(ret);
+    updateCollection(ret);
   }, [open, collection, updateCollection]);
   const openRuleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'rule');
-    await updateCollection(ret);
+    updateCollection(ret);
   }, [collection, open, updateCollection]);
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {

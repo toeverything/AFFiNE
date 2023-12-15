@@ -38,5 +38,5 @@ test('New a page , then delete it in all pages, finally find it in trash', async
   ).not.toBeUndefined();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

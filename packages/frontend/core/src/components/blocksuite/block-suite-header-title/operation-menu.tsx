@@ -7,6 +7,7 @@ import {
 } from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DuplicateIcon,
@@ -18,7 +19,6 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import type { PageMeta } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
@@ -27,7 +27,6 @@ import { currentModeAtom } from '../../../atoms/mode';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useExportPage } from '../../../hooks/affine/use-export-page';
 import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { toast } from '../../../utils';
 import { PageHistoryModal } from '../../affine/page-history-modal/history-modal';
 import { HeaderDropDownButton } from '../../pure/header-drop-down-button';
@@ -42,16 +41,16 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
   const t = useAFFiNEI18N();
 
   // fixme(himself65): remove these hooks ASAP
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const currentPage = blockSuiteWorkspace.getPage(pageId);
   assertExists(currentPage);
 
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
-  ) as PageMeta;
+  );
   const currentMode = useAtomValue(currentModeAtom);
-  const favorite = pageMeta.favorite ?? false;
+  const favorite = pageMeta?.favorite ?? false;
 
   const { togglePageMode, toggleFavorite, duplicate } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
@@ -65,12 +64,15 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
   }, []);
 
   const handleOpenTrashModal = useCallback(() => {
+    if (!pageMeta) {
+      return;
+    }
     setTrashModal({
       open: true,
       pageIds: [pageId],
       pageTitles: [pageMeta.title],
     });
-  }, [pageId, pageMeta.title, setTrashModal]);
+  }, [pageId, pageMeta, setTrashModal]);
 
   const handleFavorite = useCallback(() => {
     toggleFavorite(pageId);
@@ -205,7 +207,7 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
       />
     </>
   );
-  if (pageMeta.trash) {
+  if (pageMeta?.trash) {
     return null;
   }
   return (

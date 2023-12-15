@@ -151,10 +151,10 @@ test('can collaborate with other user and name should display when editing', asy
   {
     const title = getBlockSuiteEditorTitle(page2);
     expect(await title.innerText()).toBe('TEST TITLE');
-    const typingPromise = Promise.all([
-      page.keyboard.press('Enter', { delay: 50 }),
-      page.keyboard.type('TEST CONTENT', { delay: 50 }),
-    ]);
+    const typingPromise = (async () => {
+      await page.keyboard.press('Enter', { delay: 50 });
+      await page.keyboard.type('TEST CONTENT', { delay: 50 });
+    })();
     // username should be visible when editing
     await expect(page2.getByText(user.name)).toBeVisible();
     await typingPromise;

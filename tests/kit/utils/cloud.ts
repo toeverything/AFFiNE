@@ -1,6 +1,7 @@
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  waitForAllPagesLoad,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import {
@@ -191,7 +192,7 @@ export async function enableCloudWorkspace(page: Page) {
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
   // wait for upload and delete local workspace
   await page.waitForTimeout(2000);
-  await waitForEditorLoad(page);
+  await waitForAllPagesLoad(page);
   await clickNewPageButton(page);
 }
 

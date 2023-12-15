@@ -94,7 +94,6 @@ export function registerAffineNavigationCommands({
       run() {
         store.set(openSettingModalAtom, {
           activeTab: 'appearance',
-          workspaceId: null,
           open: true,
         });
       },

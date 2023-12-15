@@ -7,8 +7,7 @@ import {
   PageListDragOverlay,
 } from '@affine/component/page-list';
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getBlobEngine } from '@affine/workspace/manager';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DndContext,
@@ -20,8 +19,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
-import type { MigrationPoint } from '@toeverything/infra/blocksuite';
+import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -37,7 +35,6 @@ import { RootAppSidebar } from '../components/root-app-sidebar';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
 import { useSidebarDrag } from '../hooks/affine/use-sidebar-drag';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import {
@@ -57,11 +54,11 @@ export const QuickSearch = () => {
     openQuickSearchModalAtom
   );
 
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { pageId } = useParams();
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(
-    currentWorkspace?.blockSuiteWorkspace
+    currentWorkspace.blockSuiteWorkspace
   ).find(meta => meta.id === pageId);
 
   if (!blockSuiteWorkspace) {
@@ -77,89 +74,25 @@ export const QuickSearch = () => {
   );
 };
 
-export const CurrentWorkspaceContext = ({
+export const WorkspaceLayout = function WorkspaceLayout({
   children,
-}: PropsWithChildren): ReactNode => {
-  const workspaceId = useAtomValue(currentWorkspaceIdAtom);
-  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
-  const exist = metadata.find(m => m.id === workspaceId);
-  if (metadata.length === 0) {
-    return <WorkspaceFallback key="no-workspace" />;
-  }
-  if (!workspaceId) {
-    return <WorkspaceFallback key="finding-workspace-id" />;
-  }
-  if (!exist) {
-    return <WorkspaceFallback key="workspace-not-found" />;
-  }
-  return children;
-};
-
-type WorkspaceLayoutProps = {
-  migration?: MigrationPoint;
-};
-
-const useSyncWorkspaceBlob = () => {
-  // temporary solution for sync blob
-
-  const [currentWorkspace] = useCurrentWorkspace();
-
-  useEffect(() => {
-    const blobEngine = getBlobEngine(currentWorkspace.blockSuiteWorkspace);
-    let stopped = false;
-    function sync() {
-      if (stopped) {
-        return;
-      }
-
-      blobEngine
-        ?.sync()
-        .catch(error => {
-          console.error('sync blob error', error);
-        })
-        .finally(() => {
-          // sync every 1 minute
-          setTimeout(sync, 60000);
-        });
-    }
-
-    // after currentWorkspace changed, wait 1 second to start sync
-    setTimeout(sync, 1000);
-
-    return () => {
-      stopped = true;
-    };
-  }, [currentWorkspace]);
-};
-
-export const WorkspaceLayout = function WorkspacesSuspense({
-  children,
-  migration,
-}: PropsWithChildren<WorkspaceLayoutProps>) {
-  useSyncWorkspaceBlob();
+}: PropsWithChildren) {
   return (
     <AdapterProviderWrapper>
-      <CurrentWorkspaceContext>
-        {/* load all workspaces is costly, do not block the whole UI */}
-        <Suspense>
-          <AllWorkspaceModals />
-          <CurrentWorkspaceModals />
-        </Suspense>
-        <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner migration={migration}>
-            {children}
-          </WorkspaceLayoutInner>
-        </Suspense>
-      </CurrentWorkspaceContext>
+      {/* load all workspaces is costly, do not block the whole UI */}
+      <Suspense>
+        <AllWorkspaceModals />
+        <CurrentWorkspaceModals />
+      </Suspense>
+      <Suspense fallback={<WorkspaceFallback />}>
+        <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+      </Suspense>
     </AdapterProviderWrapper>
   );
 };
 
-export const WorkspaceLayoutInner = ({
-  children,
-  migration,
-}: PropsWithChildren<WorkspaceLayoutProps>) => {
-  const [currentWorkspace] = useCurrentWorkspace();
+export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
 
@@ -200,7 +133,6 @@ export const WorkspaceLayoutInner = ({
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({
       activeTab: 'appearance',
-      workspaceId: null,
       open: true,
     });
   }, [setOpenSettingModalAtom]);
@@ -223,6 +155,8 @@ export const WorkspaceLayoutInner = ({
 
   // todo: refactor this that the root layout do not need to check route state
   const isInPageDetail = !!pageId;
+
+  const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
 
   return (
     <>
@@ -256,8 +190,8 @@ export const WorkspaceLayoutInner = ({
             padding={appSettings.clientBorder}
           >
             <Suspense>
-              {migration ? (
-                <WorkspaceUpgrade migration={migration} />
+              {upgradeStatus?.needUpgrade || upgradeStatus?.upgrading ? (
+                <WorkspaceUpgrade />
               ) : (
                 children
               )}

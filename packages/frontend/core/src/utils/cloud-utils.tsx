@@ -4,11 +4,9 @@ import {
   TRACE_ID_BYTES,
   traceReporter,
 } from '@affine/graphql';
-import { refreshRootMetadataAtom } from '@affine/workspace/atom';
-import { getCurrentStore } from '@toeverything/infra/atom';
+import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { signIn, signOut } from 'next-auth/react';
-import { startTransition } from 'react';
 
 type TraceParams = {
   startTime: string;
@@ -91,10 +89,9 @@ export const signOutCloud: typeof signOut = async options => {
   })
     .then(result => {
       if (result) {
-        startTransition(() => {
-          localStorage.removeItem('last_workspace_id');
-          getCurrentStore().set(refreshRootMetadataAtom);
-        });
+        new BroadcastChannel(
+          CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
+        ).postMessage(1);
       }
       return onResolveHandleTrace(result, traceParams);
     })

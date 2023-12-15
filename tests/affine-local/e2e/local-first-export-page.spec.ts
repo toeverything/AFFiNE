@@ -41,7 +41,7 @@ test.skip('New a page ,then open it and export html', async ({
   );
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test.skip('New a page ,then open it and export markdown', async ({
@@ -74,5 +74,5 @@ test.skip('New a page ,then open it and export markdown', async ({
   );
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

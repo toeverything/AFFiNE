@@ -1,10 +1,7 @@
 import { DebugLogger } from '@affine/debug';
-import type { WorkspaceRegistry } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
 export { BlockSuiteWorkspace };
-
-export type AllWorkspace = WorkspaceRegistry[keyof WorkspaceRegistry];
 
 export enum WorkspaceSubPath {
   ALL = 'all',

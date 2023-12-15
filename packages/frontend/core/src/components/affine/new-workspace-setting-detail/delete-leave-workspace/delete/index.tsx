@@ -3,28 +3,28 @@ import {
   ConfirmModal,
   type ConfirmModalProps,
 } from '@affine/component/ui/modal';
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useCallback, useState } from 'react';
 
 import * as styles from './style.css';
 
 interface WorkspaceDeleteProps extends ConfirmModalProps {
-  workspace: AffineOfficialWorkspace;
+  workspaceMetadata: WorkspaceMetadata;
 }
 
 export const WorkspaceDeleteModal = ({
-  workspace,
+  workspaceMetadata,
   ...props
 }: WorkspaceDeleteProps) => {
   const { onConfirm } = props;
-  const [workspaceName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace
-  );
   const [deleteStr, setDeleteStr] = useState<string>('');
+  const info = useWorkspaceInfo(workspaceMetadata);
+  const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
   const allowDelete = deleteStr === workspaceName;
   const t = useAFFiNEI18N();
 
@@ -46,7 +46,7 @@ export const WorkspaceDeleteModal = ({
       }}
       {...props}
     >
-      {workspace.flavour === WorkspaceFlavour.LOCAL ? (
+      {workspaceMetadata.flavour === WorkspaceFlavour.LOCAL ? (
         <Trans i18nKey="com.affine.workspaceDelete.description">
           Deleting (
           <span className={styles.workspaceName}>

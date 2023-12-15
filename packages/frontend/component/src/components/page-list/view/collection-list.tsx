@@ -35,14 +35,10 @@ export const CollectionList = ({
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
-      setting
-        .updateCollection({
-          ...setting.currentCollection,
-          filterList,
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      setting.updateCollection({
+        ...setting.currentCollection,
+        filterList,
+      });
     },
     [setting]
   );
@@ -53,8 +49,8 @@ export const CollectionList = ({
   }, []);
 
   const onConfirm = useCallback(
-    async (view: Collection) => {
-      await setting.updateCollection(view);
+    (view: Collection) => {
+      setting.updateCollection(view);
       closeUpdateCollectionModal(false);
     },
     [closeUpdateCollectionModal, setting]

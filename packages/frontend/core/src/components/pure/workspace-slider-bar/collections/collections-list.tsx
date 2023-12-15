@@ -15,7 +15,6 @@ import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -44,9 +43,9 @@ const CollectionRenderer = ({
   const t = useAFFiNEI18N();
   const dragItemId = getDropItemId('collections', collection.id);
 
-  const removeFromAllowList = useAsyncCallback(
-    async (id: string) => {
-      await setting.updateCollection({
+  const removeFromAllowList = useCallback(
+    (id: string) => {
+      setting.updateCollection({
         ...collection,
         allowList: collection.allowList?.filter(v => v !== id),
       });
@@ -66,9 +65,7 @@ const CollectionRenderer = ({
         } else {
           toast(t['com.affine.collection.addPage.success']());
         }
-        setting.addPage(collection.id, id).catch(err => {
-          console.error(err);
-        });
+        setting.addPage(collection.id, id);
       },
     },
   });
@@ -90,9 +87,9 @@ const CollectionRenderer = ({
   const currentPath = location.pathname.split('?')[0];
   const path = `/workspace/${workspace.id}/collection/${collection.id}`;
 
-  const onRename = useAsyncCallback(
-    async (name: string) => {
-      await setting.updateCollection({
+  const onRename = useCallback(
+    (name: string) => {
+      setting.updateCollection({
         ...collection,
         name,
       });

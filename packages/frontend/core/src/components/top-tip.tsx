@@ -1,17 +1,18 @@
 import { BrowserWarning } from '@affine/component/affine-banner';
 import { LocalDemoTips } from '@affine/component/affine-banner';
-import {
-  type AffineOfficialWorkspace,
-  WorkspaceFlavour,
-} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useSetAtom } from 'jotai';
+import type { Workspace } from '@affine/workspace';
+import { workspaceManagerAtom } from '@affine/workspace/atom';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { authAtom } from '../atoms';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
-import { useOnTransformWorkspace } from '../hooks/root/use-on-transform-workspace';
+import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../shared';
 import { EnableAffineCloudModal } from './affine/enable-affine-cloud-modal';
 
 const minimumChromeVersion = 106;
@@ -57,9 +58,11 @@ const OSWarningMessage = () => {
 };
 
 export const TopTip = ({
+  pageId,
   workspace,
 }: {
-  workspace: AffineOfficialWorkspace;
+  pageId?: string;
+  workspace: Workspace;
 }) => {
   const loginStatus = useCurrentLoginStatus();
   const isLoggedIn = loginStatus === 'authenticated';
@@ -73,18 +76,18 @@ export const TopTip = ({
     setAuthModal({ openModal: true, state: 'signIn' });
   }, [setAuthModal]);
 
-  const onTransformWorkspace = useOnTransformWorkspace();
-  const handleConfirm = useCallback(() => {
+  const { openPage } = useNavigateHelper();
+  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const handleConfirm = useAsyncCallback(async () => {
     if (workspace.flavour !== WorkspaceFlavour.LOCAL) {
       return;
     }
-    onTransformWorkspace(
-      WorkspaceFlavour.LOCAL,
-      WorkspaceFlavour.AFFINE_CLOUD,
-      workspace
-    );
+    // TODO: we need to transform local to cloud
+    const { id: newId } =
+      await workspaceManager.transformLocalToCloud(workspace);
+    openPage(newId, pageId || WorkspaceSubPath.ALL);
     setOpen(false);
-  }, [onTransformWorkspace, workspace]);
+  }, [openPage, pageId, workspace, workspaceManager]);
 
   if (
     showLocalDemoTips &&

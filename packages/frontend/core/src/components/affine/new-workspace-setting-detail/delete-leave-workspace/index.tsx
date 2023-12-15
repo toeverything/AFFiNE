@@ -1,29 +1,44 @@
+import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import {
+  currentWorkspaceAtom,
+  workspaceListAtom,
+  workspaceManagerAtom,
+} from '@affine/workspace/atom';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
+import { openSettingModalAtom } from '../../../../atoms';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../../../../hooks/use-navigate-helper';
 import type { WorkspaceSettingDetailProps } from '../types';
 import { WorkspaceDeleteModal } from './delete';
 
-export interface DeleteLeaveWorkspaceProps extends WorkspaceSettingDetailProps {
-  workspace: AffineOfficialWorkspace;
-}
+export interface DeleteLeaveWorkspaceProps
+  extends WorkspaceSettingDetailProps {}
 
 export const DeleteLeaveWorkspace = ({
-  workspace,
-  onDeleteCloudWorkspace,
-  onDeleteLocalWorkspace,
-  onLeaveWorkspace,
+  workspaceMetadata,
   isOwner,
 }: DeleteLeaveWorkspaceProps) => {
   const t = useAFFiNEI18N();
+  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
   // fixme: cloud regression
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
+  const setSettingModal = useSetAtom(openSettingModalAtom);
+
+  const workspaceManager = useAtomValue(workspaceManagerAtom);
+  const workspaceList = useAtomValue(workspaceListAtom);
+  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const pushNotification = useSetAtom(pushNotificationAtom);
 
   const onLeaveOrDelete = useCallback(() => {
     if (isOwner) {
@@ -33,18 +48,41 @@ export const DeleteLeaveWorkspace = ({
     }
   }, [isOwner]);
 
-  const onLeaveConfirm = useCallback(() => {
-    return onLeaveWorkspace();
-  }, [onLeaveWorkspace]);
+  const onDeleteConfirm = useAsyncCallback(async () => {
+    setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
 
-  const onDeleteConfirm = useCallback(() => {
-    if (workspace.flavour === WorkspaceFlavour.LOCAL) {
-      return onDeleteLocalWorkspace();
+    if (currentWorkspace?.id === workspaceMetadata.id) {
+      const backWorkspace = workspaceList.find(
+        ws => ws.id !== workspaceMetadata.id
+      );
+      // TODO: if there is no workspace, jump to a new page(wait for design)
+      if (backWorkspace) {
+        jumpToSubPath(
+          backWorkspace?.id || '',
+          WorkspaceSubPath.ALL,
+          RouteLogic.REPLACE
+        );
+      } else {
+        jumpToIndex(RouteLogic.REPLACE);
+      }
     }
-    if (workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-      return onDeleteCloudWorkspace();
-    }
-  }, [onDeleteCloudWorkspace, onDeleteLocalWorkspace, workspace.flavour]);
+
+    await workspaceManager.deleteWorkspace(workspaceMetadata);
+    pushNotification({
+      title: t['Successfully deleted'](),
+      type: 'success',
+    });
+  }, [
+    currentWorkspace?.id,
+    jumpToIndex,
+    jumpToSubPath,
+    pushNotification,
+    setSettingModal,
+    t,
+    workspaceList,
+    workspaceManager,
+    workspaceMetadata,
+  ]);
 
   return (
     <>
@@ -68,13 +106,13 @@ export const DeleteLeaveWorkspace = ({
           onConfirm={onDeleteConfirm}
           open={showDelete}
           onOpenChange={setShowDelete}
-          workspace={workspace}
+          workspaceMetadata={workspaceMetadata}
         />
       ) : (
         <ConfirmModal
           open={showLeave}
           cancelText={t['com.affine.confirmModal.button.cancel']()}
-          onConfirm={onLeaveConfirm}
+          onConfirm={onDeleteConfirm}
           onOpenChange={setShowLeave}
           title={`${t['com.affine.deleteLeaveWorkspace.leave']()}?`}
           description={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}

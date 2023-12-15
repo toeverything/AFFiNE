@@ -13,7 +13,6 @@ import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { Menu, MenuItem } from '@affine/component/ui/menu';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -45,7 +44,6 @@ import type { WorkspaceSettingDetailProps } from './types';
 const COUNT_PER_PAGE = 8;
 export interface MembersPanelProps extends WorkspaceSettingDetailProps {
   upgradable: boolean;
-  workspace: AffineOfficialWorkspace;
 }
 type OnRevoke = (memberId: string) => void;
 const MembersPanelLocal = () => {
@@ -62,11 +60,11 @@ const MembersPanelLocal = () => {
 };
 
 export const CloudWorkspaceMembersPanel = ({
-  workspace,
   isOwner,
   upgradable,
+  workspaceMetadata,
 }: MembersPanelProps) => {
-  const workspaceId = workspace.id;
+  const workspaceId = workspaceMetadata.id;
   const memberCount = useMemberCount(workspaceId);
 
   const t = useAFFiNEI18N();
@@ -138,7 +136,6 @@ export const CloudWorkspaceMembersPanel = ({
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
-      workspaceId: null,
     });
   }, [setSettingModalAtom]);
 
@@ -345,7 +342,7 @@ const MemberItem = ({
 };
 
 export const MembersPanel = (props: MembersPanelProps): ReactElement | null => {
-  if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (props.workspaceMetadata.flavour === WorkspaceFlavour.LOCAL) {
     return <MembersPanelLocal />;
   }
   return (

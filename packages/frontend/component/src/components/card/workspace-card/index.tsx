@@ -1,11 +1,10 @@
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
-import { useAtomValue } from 'jotai/react';
+import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
+import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useCallback } from 'react';
 
 import { Avatar } from '../../../ui/avatar';
@@ -68,10 +67,10 @@ const WorkspaceType = ({ flavour, isOwner }: WorkspaceTypeProps) => {
 };
 
 export interface WorkspaceCardProps {
-  currentWorkspaceId: string | null;
-  meta: RootWorkspaceMetadata;
-  onClick: (workspaceId: string) => void;
-  onSettingClick: (workspaceId: string) => void;
+  currentWorkspaceId?: string | null;
+  meta: WorkspaceMetadata;
+  onClick: (metadata: WorkspaceMetadata) => void;
+  onSettingClick: (metadata: WorkspaceMetadata) => void;
   isOwner?: boolean;
 }
 
@@ -98,29 +97,31 @@ export const WorkspaceCard = ({
   meta,
   isOwner = true,
 }: WorkspaceCardProps) => {
-  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(meta.id);
-  const workspace = useAtomValue(workspaceAtom);
-  const [name] = useBlockSuiteWorkspaceName(workspace);
-  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(workspace);
+  const information = useWorkspaceInfo(meta);
+  const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
+
+  const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
   return (
     <StyledCard
       data-testid="workspace-card"
       onClick={useCallback(() => {
-        onClick(meta.id);
-      }, [onClick, meta.id])}
-      active={workspace.id === currentWorkspaceId}
+        onClick(meta);
+      }, [onClick, meta])}
+      active={meta.id === currentWorkspaceId}
     >
-      <Avatar size={28} url={workspaceAvatar} name={name} colorfulFallback />
+      <Avatar size={28} url={avatarUrl} name={name} colorfulFallback />
       <StyledWorkspaceInfo>
         <StyledWorkspaceTitleArea style={{ display: 'flex' }}>
-          <StyledWorkspaceTitle>{name}</StyledWorkspaceTitle>
+          <StyledWorkspaceTitle>
+            {information?.name ?? UNTITLED_WORKSPACE_NAME}
+          </StyledWorkspaceTitle>
 
           <StyledSettingLink
             size="small"
             className="setting-entry"
             onClick={e => {
               e.stopPropagation();
-              onSettingClick(meta.id);
+              onSettingClick(meta);
             }}
             withoutHoverStyle={true}
           >

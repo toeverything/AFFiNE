@@ -10,6 +10,7 @@
     { "path": "../../common/env" },
     { "path": "../../common/y-indexeddb" },
     { "path": "../../common/debug" },
-    { "path": "../../common/infra" }
+    { "path": "../../common/infra" },
+    { "path": "../workspace" }
   ]
 }

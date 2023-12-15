@@ -2,21 +2,17 @@ import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import {
+  currentWorkspaceAtom,
+  waitForCurrentWorkspaceAtom,
+} from '@affine/workspace/atom';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import {
-  getWorkspace,
-  waitForWorkspace,
-} from '@toeverything/infra/__internal__/workspace';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-  getCurrentStore,
-} from '@toeverything/infra/atom';
+import { currentPageIdAtom, getCurrentStore } from '@toeverything/infra/atom';
 import {
   type AffineCommand,
   AffineCommandRegistry,
@@ -33,7 +29,6 @@ import {
   recentPageIdsBaseAtom,
 } from '../../../atoms';
 import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
@@ -53,8 +48,8 @@ export const cmdkValueAtom = atom('');
 
 // like currentWorkspaceAtom, but not throw error
 const safeCurrentPageAtom = atom<Promise<Page | undefined>>(async get => {
-  const currentWorkspaceId = get(currentWorkspaceIdAtom);
-  if (!currentWorkspaceId) {
+  const currentWorkspace = get(currentWorkspaceAtom);
+  if (!currentWorkspace) {
     return;
   }
 
@@ -64,9 +59,7 @@ const safeCurrentPageAtom = atom<Promise<Page | undefined>>(async get => {
     return;
   }
 
-  const workspace = getWorkspace(currentWorkspaceId);
-  await waitForWorkspace(workspace);
-  const page = workspace.getPage(currentPageId);
+  const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
 
   if (!page) {
     return;
@@ -132,7 +125,7 @@ export const filteredAffineCommands = atom(async get => {
 });
 
 const useWorkspacePages = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const pages = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   return pages;
 };
@@ -166,7 +159,7 @@ export const pageToCommand = (
   blockId?: string
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
-  const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+  const currentWorkspace = store.get(currentWorkspaceAtom);
 
   const title = page.title || t['Untitled']();
   const commandLabel = label || {
@@ -191,18 +184,18 @@ export const pageToCommand = (
     originalValue: title,
     category: category,
     run: () => {
-      if (!currentWorkspaceId) {
+      if (!currentWorkspace) {
         console.error('current workspace not found');
         return;
       }
       if (blockId) {
         return navigationHelper.jumpToPageBlock(
-          currentWorkspaceId,
+          currentWorkspace.id,
           page.id,
           blockId
         );
       }
-      return navigationHelper.jumpToPage(currentWorkspaceId, page.id);
+      return navigationHelper.jumpToPage(currentWorkspace.id, page.id);
     },
     icon: pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
     timestamp: page.updatedDate,
@@ -217,7 +210,7 @@ export const usePageCommands = () => {
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
   const store = getCurrentStore();
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
   const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
   const query = useAtomValue(cmdkQueryAtom);
@@ -359,7 +352,7 @@ export const collectionToCommand = (
   selectCollection: (id: string) => void,
   t: ReturnType<typeof useAFFiNEI18N>
 ): CMDKCommand => {
-  const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+  const currentWorkspace = store.get(currentWorkspaceAtom);
   const label = collection.name || t['Untitled']();
   const category = 'affine:collections';
   return {
@@ -377,11 +370,11 @@ export const collectionToCommand = (
     originalValue: label,
     category: category,
     run: () => {
-      if (!currentWorkspaceId) {
+      if (!currentWorkspace) {
         console.error('current workspace not found');
         return;
       }
-      navigationHelper.jumpToSubPath(currentWorkspaceId, WorkspaceSubPath.ALL);
+      navigationHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
       selectCollection(collection.id);
     },
     icon: <ViewLayersIcon />,
@@ -395,7 +388,7 @@ export const useCollectionsCommands = () => {
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const selectCollection = useCallback(
     (id: string) => {
       navigationHelper.jumpToCollection(workspace.id, id);

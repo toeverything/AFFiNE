@@ -17,7 +17,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { validateAndReduceImage } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {
@@ -37,6 +36,7 @@ import {
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
+import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';
 import * as style from './style.css';
 
@@ -187,7 +187,6 @@ const StoragePanel = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
-      workspaceId: null,
     });
   }, [setSettingModalAtom]);
 

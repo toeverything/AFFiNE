@@ -7,11 +7,10 @@ import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
 import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import { currentWorkspaceAtom } from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
-import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
+import { useWorkspace } from '@toeverything/hooks/use-workspace';
 import { useStore } from 'jotai';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';
@@ -80,19 +79,15 @@ function useRegisterCommands() {
 }
 
 function usePrepareWorkspace() {
+  const workspaceId = 'test-workspace';
   const store = useStore();
+  const workspace = useWorkspace({
+    id: workspaceId,
+    flavour: WorkspaceFlavour.LOCAL,
+  });
   useLayoutEffect(() => {
-    const workspaceId = 'test-workspace';
-    getOrCreateWorkspace(workspaceId, WorkspaceFlavour.LOCAL);
-    store.set(rootWorkspacesMetadataAtom, [
-      {
-        id: workspaceId,
-        flavour: WorkspaceFlavour.LOCAL,
-        version: 4,
-      },
-    ]);
-    store.set(currentWorkspaceIdAtom, workspaceId);
-  }, [store]);
+    store.set(currentWorkspaceAtom, workspace);
+  }, [store, workspace]);
 }
 
 export const CMDKStoryWithCommands: StoryFn = () => {

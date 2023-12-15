@@ -24,6 +24,7 @@
     "@vitejs/plugin-react": "^4.2.0",
     "concurrently": "^8.2.2",
     "jest-mock": "^29.7.0",
+    "nanoid": "^5.0.3",
     "serve": "^14.2.1",
     "ses": "^0.18.8",
     "storybook": "^7.5.3",

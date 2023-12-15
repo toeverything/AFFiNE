@@ -1,10 +1,8 @@
 import './page-detail-editor.css';
 
-import { PageNotFoundError } from '@affine/env/constant';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { pluginEditorAtom } from '@toeverything/infra/__internal__/plugin';
 import { getCurrentStore } from '@toeverything/infra/atom';
@@ -51,10 +49,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   isPublic,
   publishMode,
 }: PageDetailEditorProps & { page: Page }) {
-  const meta = useBlockSuitePageMeta(workspace).find(
-    meta => meta.id === pageId
-  );
-
   const { switchToEdgelessMode, switchToPageMode } =
     useBlockSuiteMetaHelper(workspace);
 
@@ -73,7 +67,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
 
   const { appSettings } = useAppSettingHelper();
 
-  assertExists(meta);
   const value = useMemo(() => {
     const fontStyle = fontStyleOptions.find(
       option => option.key === appSettings.fontStyle
@@ -171,9 +164,8 @@ export const PageDetailEditor = (props: PageDetailEditorProps) => {
   const { workspace, pageId } = props;
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
   if (!page) {
-    throw new PageNotFoundError(workspace, pageId);
+    return null;
   }
-
   return (
     <Suspense>
       <PageDetailEditorMain {...props} page={page} />

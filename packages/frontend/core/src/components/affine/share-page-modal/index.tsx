@@ -1,39 +1,41 @@
-import {
-  type AffineOfficialWorkspace,
-  WorkspaceFlavour,
-} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import type { Workspace } from '@affine/workspace';
+import { workspaceManagerAtom } from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
-import { useCallback, useState } from 'react';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useAtomValue } from 'jotai';
+import { useState } from 'react';
 
-import { useOnTransformWorkspace } from '../../../hooks/root/use-on-transform-workspace';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
 import { ShareMenu } from './share-menu';
 
 type SharePageModalProps = {
-  workspace: AffineOfficialWorkspace;
+  workspace: Workspace;
   page: Page;
 };
 
 export const SharePageButton = ({ workspace, page }: SharePageModalProps) => {
-  const onTransformWorkspace = useOnTransformWorkspace();
   const [open, setOpen] = useState(false);
 
-  const handleConfirm = useCallback(() => {
+  const { openPage } = useNavigateHelper();
+
+  const workspaceManager = useAtomValue(workspaceManagerAtom);
+
+  const handleConfirm = useAsyncCallback(async () => {
     if (workspace.flavour !== WorkspaceFlavour.LOCAL) {
       return;
     }
-    onTransformWorkspace(
-      WorkspaceFlavour.LOCAL,
-      WorkspaceFlavour.AFFINE_CLOUD,
-      workspace
-    );
+    const { id: newId } =
+      await workspaceManager.transformLocalToCloud(workspace);
+    openPage(newId, page.id);
     setOpen(false);
-  }, [onTransformWorkspace, workspace]);
+  }, [openPage, page.id, workspace, workspaceManager]);
 
   return (
     <>
       <ShareMenu
-        workspace={workspace}
+        workspaceMetadata={workspace.meta}
         currentPage={page}
         onEnableAffineCloud={() => setOpen(true)}
       />

@@ -1,4 +1,3 @@
-import type { Workspace } from '@blocksuite/store';
 import { nanoid } from 'nanoid';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
@@ -264,19 +263,17 @@ export function migrateToSubdoc(oldDoc: YDoc): YDoc {
   return newDoc;
 }
 
-export const upgradeV1ToV2 = async (
-  oldDoc: YDoc,
-  createWorkspace: () => Promise<Workspace>
-) => {
+/**
+ * upgrade oldDoc to v2, write to targetDoc
+ */
+export const upgradeV1ToV2 = async (oldDoc: YDoc, targetDoc: YDoc) => {
   const newDoc = migrateToSubdoc(oldDoc);
-  const newWorkspace = await createWorkspace();
-  applyUpdate(newWorkspace.doc, encodeStateAsUpdate(newDoc), migrationOrigin);
+  applyUpdate(targetDoc, encodeStateAsUpdate(newDoc), migrationOrigin);
   newDoc.getSubdocs().forEach(subdoc => {
-    newWorkspace.doc.getSubdocs().forEach(newDoc => {
+    targetDoc.getSubdocs().forEach(newDoc => {
       if (subdoc.guid === newDoc.guid) {
         applyUpdate(newDoc, encodeStateAsUpdate(subdoc), migrationOrigin);
       }
     });
   });
-  return newWorkspace;
 };

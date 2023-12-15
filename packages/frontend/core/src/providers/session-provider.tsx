@@ -2,7 +2,7 @@ import '@toeverything/hooks/use-affine-ipc-renderer';
 
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { refreshRootMetadataAtom } from '@affine/workspace/atom';
+import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -22,14 +22,15 @@ const SessionDefence = (props: PropsWithChildren) => {
   const prevSession = useRef<ReturnType<typeof useSession>>();
   const [sessionInAtom, setSession] = useAtom(sessionAtom);
   const pushNotification = useSetAtom(pushNotificationAtom);
-  const refreshMetadata = useSetAtom(refreshRootMetadataAtom);
   const onceSignedInEvents = useOnceSignedInEvents();
   const t = useAFFiNEI18N();
 
   const refreshAfterSignedInEvents = useAsyncCallback(async () => {
     await onceSignedInEvents();
-    refreshMetadata();
-  }, [onceSignedInEvents, refreshMetadata]);
+    new BroadcastChannel(
+      CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
+    ).postMessage(1);
+  }, [onceSignedInEvents]);
 
   useEffect(() => {
     if (sessionInAtom !== session && session.status === 'authenticated') {

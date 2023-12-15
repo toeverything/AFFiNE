@@ -107,9 +107,7 @@ export const CollectionOperations = ({
         ),
         name: t['Delete'](),
         click: () => {
-          setting.deleteCollection(info, collection.id).catch(err => {
-            console.error(err);
-          });
+          setting.deleteCollection(info, collection.id);
         },
         type: 'danger',
       },

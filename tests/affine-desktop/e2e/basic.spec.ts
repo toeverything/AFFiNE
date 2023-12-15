@@ -18,7 +18,7 @@ test('new page', async ({ page, workspace }) => {
     delay: 100,
   });
   await page.waitForSelector('v-line');
-  const flavour = (await workspace.current()).flavour;
+  const flavour = (await workspace.current()).meta.flavour;
   expect(flavour).toBe('local');
 });
 
@@ -169,14 +169,8 @@ test('windows only check', async ({ page }) => {
 test('delete workspace', async ({ page }) => {
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
-  await page
-    .getByTestId('create-workspace-input')
-    .pressSequentially('Delete Me', {
-      delay: 100,
-    });
-  await page.getByTestId('create-workspace-create-button').click({
-    delay: 100,
-  });
+  await page.getByTestId('create-workspace-input').fill('Delete Me');
+  await page.getByTestId('create-workspace-create-button').click();
   // await page.getByTestId('create-workspace-continue-button').click({
   //   delay: 100,
   // });
@@ -197,9 +191,7 @@ test('delete workspace', async ({ page }) => {
   );
   await page.mouse.wheel(0, 500);
   await page.getByTestId('delete-workspace-button').click();
-  await page
-    .getByTestId('delete-workspace-input')
-    .pressSequentially('Delete Me');
+  await page.getByTestId('delete-workspace-input').fill('Delete Me');
   await page.getByTestId('delete-workspace-confirm-button').click();
   await page.waitForTimeout(1000);
   expect(await page.getByTestId('workspace-name').textContent()).toBe(

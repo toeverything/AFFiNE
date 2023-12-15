@@ -18,7 +18,7 @@ import { bootstrapPluginSystem } from '../bootstrap/register-plugins';
 async function main() {
   const { setup } = await import('../bootstrap/setup');
   const rootStore = getCurrentStore();
-  await setup(rootStore);
+  setup();
   const { _pluginNestedImportsMap } = createSetup(rootStore);
   const pluginRegisterPromise = bootstrapPluginSystem(rootStore);
   const root = document.getElementById('app');

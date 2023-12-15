@@ -5,9 +5,9 @@ import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { NotificationCenter } from '@affine/component/notification-center';
 import { WorkspaceFallback } from '@affine/component/workspace';
+import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import { getCurrentStore } from '@toeverything/infra/atom';
-import { use } from 'foxact/use';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -41,7 +41,6 @@ async function loadLanguage() {
   if (environment.isBrowser) {
     performanceI18nLogger.info('start');
 
-    const { createI18n, setUpLanguage } = await import('@affine/i18n');
     const i18n = createI18n();
     document.documentElement.lang = i18n.language;
 
@@ -51,12 +50,15 @@ async function loadLanguage() {
   }
 }
 
-const languageLoadingPromise = loadLanguage().catch(console.error);
+let languageLoadingPromise: Promise<void> | null = null;
 
 export const App = memo(function App() {
   performanceRenderLogger.info('App');
 
-  use(languageLoadingPromise);
+  if (!languageLoadingPromise) {
+    languageLoadingPromise = loadLanguage().catch(console.error);
+  }
+
   return (
     <CacheProvider value={cache}>
       <AffineContext store={getCurrentStore()}>

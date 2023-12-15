@@ -3,47 +3,38 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useMemo } from 'react';
+import { useWorkspace } from '@toeverything/hooks/use-workspace';
+import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 
 import { useSelfHosted } from '../../../hooks/affine/use-server-flavor';
-import { useWorkspace } from '../../../hooks/use-workspace';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
+import { EnableCloudPanel } from './enable-cloud';
 import { ExportPanel } from './export';
 import { LabelsPanel } from './labels';
 import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
-import { PublishPanel } from './publish';
 import { StoragePanel } from './storage';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
-  const { workspaceId } = props;
   const t = useAFFiNEI18N();
   const isSelfHosted = useSelfHosted();
-  const workspace = useWorkspace(workspaceId);
-  const [name] = useBlockSuiteWorkspaceName(workspace.blockSuiteWorkspace);
+  const workspaceMetadata = props.workspaceMetadata;
 
-  const storageAndExportSetting = useMemo(() => {
-    if (environment.isDesktop) {
-      return (
-        <SettingWrapper title={t['Storage and Export']()}>
-          {runtimeConfig.enableMoveDatabase ? (
-            <StoragePanel workspace={workspace} />
-          ) : null}
-          <ExportPanel workspace={workspace} />
-        </SettingWrapper>
-      );
-    } else {
-      return null;
-    }
-  }, [t, workspace]);
+  // useWorkspace hook is a vary heavy operation here, but we need syncing name and avatar changes here,
+  // we don't have a better way to do this now
+  const workspace = useWorkspace(workspaceMetadata);
+
+  const workspaceInfo = useWorkspaceInfo(workspaceMetadata);
 
   return (
     <>
       <SettingHeader
-        title={t[`Workspace Settings with name`]({ name })}
+        title={t[`Workspace Settings with name`]({
+          name: workspaceInfo?.name ?? UNTITLED_WORKSPACE_NAME,
+        })}
         subtitle={t['com.affine.settings.workspace.description']()}
       />
       <SettingWrapper title={t['Info']()}>
@@ -53,20 +44,26 @@ export const WorkspaceSettingDetail = (props: WorkspaceSettingDetailProps) => {
           spreadCol={false}
         >
           <ProfilePanel workspace={workspace} {...props} />
-          <LabelsPanel workspace={workspace} {...props} />
+          <LabelsPanel {...props} />
         </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.brand.affineCloud']()}>
-        <PublishPanel workspace={workspace} {...props} />
-        <MembersPanel
-          workspace={workspace}
-          upgradable={!isSelfHosted}
-          {...props}
-        />
+        <EnableCloudPanel workspace={workspace} {...props} />
+        <MembersPanel upgradable={!isSelfHosted} {...props} />
       </SettingWrapper>
-      {storageAndExportSetting}
+      {environment.isDesktop && (
+        <SettingWrapper title={t['Storage and Export']()}>
+          {runtimeConfig.enableMoveDatabase ? (
+            <StoragePanel workspaceMetadata={workspaceMetadata} />
+          ) : null}
+          <ExportPanel
+            workspace={workspace}
+            workspaceMetadata={workspaceMetadata}
+          />
+        </SettingWrapper>
+      )}
       <SettingWrapper>
-        <DeleteLeaveWorkspace workspace={workspace} {...props} />
+        <DeleteLeaveWorkspace {...props} />
       </SettingWrapper>
     </>
   );

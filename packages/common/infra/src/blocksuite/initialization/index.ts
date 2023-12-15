@@ -2,12 +2,9 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
 import { nanoid } from 'nanoid';
+import { Map as YMap } from 'yjs';
 
-import { migratePages } from '../migration/blocksuite';
-import {
-  checkWorkspaceCompatibility,
-  MigrationPoint,
-} from '../migration/workspace';
+import { getLatestVersions } from '../migration/blocksuite';
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.load(() => {
@@ -261,10 +258,11 @@ export async function buildShowcaseWorkspace(
 
   // The showcase building will create multiple pages once, and may skip the version writing.
   // https://github.com/toeverything/blocksuite/blob/master/packages/store/src/workspace/page.ts#L662
-  const compatibilityResult = checkWorkspaceCompatibility(workspace);
-  if (compatibilityResult === MigrationPoint.BlockVersion) {
-    await migratePages(workspace.doc, workspace.schema);
-  }
+  workspace.doc.getMap('meta').set('pageVersion', 2);
+  const newVersions = getLatestVersions(workspace.schema);
+  workspace.doc
+    .getMap('meta')
+    .set('blockVersions', new YMap(Object.entries(newVersions)));
 
   Object.entries(pageMetas).forEach(([oldId, meta]) => {
     const newId = idMap[oldId];

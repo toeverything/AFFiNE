@@ -7,6 +7,7 @@ import { Button } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import type { PageMode } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { Workspace } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
@@ -22,7 +23,6 @@ import {
 
 import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
   EdgelessSwitchItem,
@@ -423,7 +423,7 @@ export const PageHistoryModal = ({
 
 export const GlobalPageHistoryModal = () => {
   const [{ open, pageId }, setState] = useAtom(pageHistoryModalAtom);
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {

@@ -1,8 +1,4 @@
-import type {
-  AffineCloudWorkspace,
-  LocalWorkspace,
-} from '@affine/env/workspace';
-import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -26,17 +22,17 @@ import { workspaceItemStyle } from './index.css';
 
 export interface WorkspaceListProps {
   disabled?: boolean;
-  currentWorkspaceId: string | null;
-  items: (AffineCloudWorkspace | LocalWorkspace)[];
-  onClick: (workspaceId: string) => void;
-  onSettingClick: (workspaceId: string) => void;
+  currentWorkspaceId?: string | null;
+  items: WorkspaceMetadata[];
+  onClick: (workspaceMetadata: WorkspaceMetadata) => void;
+  onSettingClick: (workspaceMetadata: WorkspaceMetadata) => void;
   onDragEnd: (event: DragEndEvent) => void;
-  useIsWorkspaceOwner?: (workspaceId: string) => boolean;
+  useIsWorkspaceOwner?: (workspaceMetadata: WorkspaceMetadata) => boolean;
 }
 
 interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
-  item: RootWorkspaceMetadata;
-  useIsWorkspaceOwner?: (workspaceId: string) => boolean;
+  item: WorkspaceMetadata;
+  useIsWorkspaceOwner?: (workspaceMetadata: WorkspaceMetadata) => boolean;
 }
 
 const SortableWorkspaceItem = ({
@@ -62,7 +58,7 @@ const SortableWorkspaceItem = ({
     }),
     [disabled, transform, transition]
   );
-  const isOwner = useIsWorkspaceOwner?.(item.id);
+  const isOwner = useIsWorkspaceOwner?.(item);
   return (
     <div
       className={workspaceItemStyle}

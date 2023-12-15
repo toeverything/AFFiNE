@@ -28,5 +28,5 @@ test('click btn bew page and open in tab', async ({ page, workspace }) => {
   expect(newTabPage.url()).toBe(newPageUrl);
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

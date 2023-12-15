@@ -33,7 +33,7 @@ test('Show favorite items in sidebar', async ({ page, workspace }) => {
   );
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('Show favorite reference in sidebar', async ({ page, workspace }) => {
@@ -73,7 +73,7 @@ test('Show favorite reference in sidebar', async ({ page, workspace }) => {
   ).toBeVisible();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test("Deleted page's reference will not be shown in sidebar", async ({
@@ -124,7 +124,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   expect(collapseButton).toHaveAttribute('data-disabled', 'true');
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('Add new favorite page via sidebar', async ({ page }) => {

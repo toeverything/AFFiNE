@@ -9,10 +9,9 @@ import {
   useCollectionManager,
   VirtualizedPageList,
 } from '@affine/component/page-list';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import {
   CloseIcon,
   DeleteIcon,
@@ -21,18 +20,16 @@ import {
 } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { getBlockSuiteWorkspaceAtom } from '@toeverything/infra/__internal__/workspace';
-import { getCurrentStore } from '@toeverything/infra/atom';
 import clsx from 'clsx';
+import { useAtomValue, useSetAtom } from 'jotai';
 import {
   type PropsWithChildren,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import type { LoaderFunction } from 'react-router-dom';
-import { redirect } from 'react-router-dom';
 import { NIL } from 'uuid';
 
 import { collectionsCRUDAtom } from '../../../atoms/collections';
@@ -45,31 +42,12 @@ import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-co
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
 import { useDeleteCollectionInfo } from '../../../hooks/affine/use-delete-collection-info';
 import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { performanceRenderLogger } from '../../../shared';
 import { EmptyPageList } from '../page-list-empty';
 import { useFilteredPageMetas } from '../pages';
 import * as styles from './all-page.css';
 import { FilterContainer } from './all-page-filter';
-
-export const loader: LoaderFunction = async args => {
-  const rootStore = getCurrentStore();
-  const workspaceId = args.params.workspaceId;
-  assertExists(workspaceId);
-  const [workspaceAtom] = getBlockSuiteWorkspaceAtom(workspaceId);
-  const workspace = await rootStore.get(workspaceAtom);
-  for (const pageId of workspace.pages.keys()) {
-    const page = workspace.getPage(pageId);
-    if (page && page.meta.jumpOnce) {
-      workspace.meta.setPageMeta(page.id, {
-        jumpOnce: false,
-      });
-      return redirect(`/workspace/${workspace.id}/${page.id}`);
-    }
-  }
-  rootStore.set(currentCollectionAtom, NIL);
-  return null;
-};
 
 const PageListHeader = () => {
   const t = useAFFiNEI18N();
@@ -100,7 +78,7 @@ const PageListHeader = () => {
 };
 
 const usePageOperationsRenderer = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -155,7 +133,7 @@ const PageListFloatingToolbar = ({
   selectedIds: string[];
   onClose: () => void;
 }) => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -206,7 +184,7 @@ const NewPageButton = ({
   className?: string;
   size?: 'small' | 'default';
 }>) => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { importFile, createEdgeless, createPage } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -263,14 +241,14 @@ const AllPageHeader = ({
         }
         center={<WorkspaceModeFilterTab />}
       />
-      <FilterContainer workspaceId={workspace.id} />
+      <FilterContainer />
     </>
   );
 };
 
 // even though it is called all page, it is also being used for collection route as well
 export const AllPage = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { isPreferredEdgeless } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -300,12 +278,10 @@ export const AllPage = () => {
 
   return (
     <div className={styles.root}>
-      {currentWorkspace.flavour !== WorkspaceFlavour.AFFINE_PUBLIC ? (
-        <AllPageHeader
-          workspace={currentWorkspace.blockSuiteWorkspace}
-          showCreateNew={!hideHeaderCreateNewPage}
-        />
-      ) : null}
+      <AllPageHeader
+        workspace={currentWorkspace.blockSuiteWorkspace}
+        showCreateNew={!hideHeaderCreateNewPage}
+      />
       {filteredPageMetas.length > 0 ? (
         <>
           <VirtualizedPageList
@@ -344,6 +320,36 @@ export const AllPage = () => {
 
 export const Component = () => {
   performanceRenderLogger.info('AllPage');
+
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentCollection = useSetAtom(currentCollectionAtom);
+  const navigateHelper = useNavigateHelper();
+
+  useEffect(() => {
+    function checkJumpOnce() {
+      for (const [pageId] of currentWorkspace.blockSuiteWorkspace.pages) {
+        const page = currentWorkspace.blockSuiteWorkspace.getPage(pageId);
+        if (page && page.meta.jumpOnce) {
+          currentWorkspace.blockSuiteWorkspace.meta.setPageMeta(page.id, {
+            jumpOnce: false,
+          });
+          navigateHelper.jumpToPage(currentWorkspace.id, pageId);
+        }
+      }
+    }
+    checkJumpOnce();
+    return currentWorkspace.blockSuiteWorkspace.slots.pagesUpdated.on(
+      checkJumpOnce
+    ).dispose;
+  }, [
+    currentWorkspace.blockSuiteWorkspace,
+    currentWorkspace.id,
+    navigateHelper,
+  ]);
+
+  useEffect(() => {
+    currentCollection(NIL);
+  }, [currentCollection]);
 
   return <AllPage />;
 };

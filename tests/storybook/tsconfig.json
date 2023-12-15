@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["./src"],
+  "include": ["./src/**/*", "./.storybook/**/*"],
   "compilerOptions": {
     // Workaround for storybook build
     "baseUrl": "../..",
@@ -17,6 +17,9 @@
     },
     {
       "path": "../../packages/common/env"
+    },
+    {
+      "path": "../../packages/common/infra"
     },
     {
       "path": "../../packages/frontend/workspace"

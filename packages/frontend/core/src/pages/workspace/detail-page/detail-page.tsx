@@ -5,17 +5,13 @@ import {
 } from '@affine/component/page-list';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { globalBlockSuiteSchema } from '@affine/workspace/manager';
-import { SyncEngineStep } from '@affine/workspace/providers';
-import { assertExists } from '@blocksuite/global/utils';
+import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import {
-  appSettingAtom,
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/infra/atom';
+import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
+import { appSettingAtom, currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
   type ReactElement,
@@ -24,7 +20,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { type LoaderFunction, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
@@ -37,13 +33,9 @@ import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
-import {
-  useCurrentSyncEngine,
-  useCurrentSyncEngineStatus,
-} from '../../../hooks/current/use-current-sync-engine';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { performanceRenderLogger } from '../../../shared';
+import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
 import {
@@ -112,11 +104,7 @@ const DetailPageLayout = ({
 const DetailPageImpl = ({ page }: { page: Page }) => {
   const currentPageId = page.id;
   const { openPage, jumpToSubPath } = useNavigateHelper();
-  const [currentWorkspace] = useCurrentWorkspace();
-  assertExists(
-    currentWorkspace,
-    'current workspace is null when rendering detail'
-  );
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
 
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
@@ -186,7 +174,7 @@ const DetailPageImpl = ({ page }: { page: Page }) => {
               workspace={currentWorkspace}
               showSidebarSwitch={!isInTrash}
             />
-            <TopTip workspace={currentWorkspace} />
+            <TopTip pageId={currentPageId} workspace={currentWorkspace} />
           </>
         }
         main={
@@ -231,31 +219,23 @@ const useSafePage = (workspace: Workspace, pageId: string) => {
 };
 
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const currentSyncEngineStatus = useCurrentSyncEngineStatus();
-  const currentSyncEngine = useCurrentSyncEngine();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentSyncEngineStep = useWorkspaceStatus(
+    currentWorkspace,
+    s => s.engine.sync.step
+  );
 
   // set sync engine priority target
   useEffect(() => {
-    currentSyncEngine?.setPriorityRule(id => id.endsWith(pageId));
-  }, [pageId, currentSyncEngine, currentWorkspace]);
+    currentWorkspace.setPriorityRule(id => id.endsWith(pageId));
+  }, [pageId, currentWorkspace]);
 
   const page = useSafePage(currentWorkspace?.blockSuiteWorkspace, pageId);
 
-  const navigate = useNavigateHelper();
-
-  // if sync engine has been synced and the page is null, wait 1s and jump to 404 page.
-  useEffect(() => {
-    if (currentSyncEngineStatus?.step === SyncEngineStep.Synced && !page) {
-      const timeout = setTimeout(() => {
-        navigate.jumpTo404();
-      }, 1000);
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-    return;
-  }, [currentSyncEngineStatus, navigate, page]);
+  // if sync engine has been synced and the page is null, show 404 page.
+  if (currentSyncEngineStep === SyncEngineStep.Synced && !page) {
+    return <PageNotFound />;
+  }
 
   if (!page) {
     return <PageDetailSkeleton key="current-page-is-null" />;
@@ -270,27 +250,18 @@ export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
   return <DetailPageImpl page={page} />;
 };
 
-export const loader: LoaderFunction = async () => {
-  return null;
-};
-
 export const Component = () => {
   performanceRenderLogger.info('DetailPage');
 
-  const setCurrentWorkspaceId = useSetAtom(currentWorkspaceIdAtom);
   const setCurrentPageId = useSetAtom(currentPageIdAtom);
   const params = useParams();
 
   useEffect(() => {
-    if (params.workspaceId) {
-      localStorage.setItem('last_workspace_id', params.workspaceId);
-      setCurrentWorkspaceId(params.workspaceId);
-    }
     if (params.pageId) {
       localStorage.setItem('last_page_id', params.pageId);
       setCurrentPageId(params.pageId);
     }
-  }, [params, setCurrentPageId, setCurrentWorkspaceId]);
+  }, [params, setCurrentPageId]);
 
   const pageId = params.pageId;
 
