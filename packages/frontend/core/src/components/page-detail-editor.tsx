@@ -2,7 +2,7 @@ import './page-detail-editor.css';
 
 import { PageNotFoundError } from '@affine/env/constant';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
-import type { EditorContainer } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
@@ -23,10 +23,13 @@ import * as styles from './page-detail-editor.css';
 
 declare global {
   // eslint-disable-next-line no-var
-  var currentEditor: EditorContainer | undefined;
+  var currentEditor: AffineEditorContainer | undefined;
 }
 
-export type OnLoadEditor = (page: Page, editor: EditorContainer) => () => void;
+export type OnLoadEditor = (
+  page: Page,
+  editor: AffineEditorContainer
+) => () => void;
 
 export interface PageDetailEditorProps {
   isPublic?: boolean;
@@ -93,11 +96,11 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
-  const [, setEditor] = useState<EditorContainer>();
+  const [, setEditor] = useState<AffineEditorContainer>();
   const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
-    (editor: EditorContainer) => {
+    (editor: AffineEditorContainer) => {
       // debug current detail editor
       globalThis.currentEditor = editor;
       setEditor(editor);

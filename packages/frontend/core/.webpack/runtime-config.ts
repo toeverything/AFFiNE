@@ -6,7 +6,6 @@ const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
 const editorFlags: BlockSuiteFeatureFlags = {
-  enable_transformer_clipboard: false,
   enable_expand_database_block: false,
   enable_bultin_ledits: false,
 };

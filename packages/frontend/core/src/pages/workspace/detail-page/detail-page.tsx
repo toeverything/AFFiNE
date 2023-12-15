@@ -8,7 +8,7 @@ import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import { SyncEngineStep } from '@affine/workspace/providers';
 import { assertExists } from '@blocksuite/global/utils';
-import type { EditorContainer } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import {
@@ -131,7 +131,7 @@ const DetailPageImpl = ({ page }: { page: Page }) => {
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
 
   const onLoad = useCallback(
-    (page: Page, editor: EditorContainer) => {
+    (page: Page, editor: AffineEditorContainer) => {
       try {
         // todo(joooye34): improve the following migration code
         const surfaceBlock = page.getBlockByFlavour('affine:surface')[0];

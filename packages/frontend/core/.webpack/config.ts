@@ -205,9 +205,15 @@ export const createConfiguration: (
         '@blocksuite/store': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'store', 'src')
           : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
-        '@blocksuite/virgo': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'virgo', 'src')
-          : join(workspaceRoot, 'node_modules', '@blocksuite', 'virgo', 'dist'),
+        '@blocksuite/inline': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'inline', 'src')
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'inline',
+              'dist'
+            ),
       },
     },
 

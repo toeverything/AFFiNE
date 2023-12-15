@@ -12,7 +12,7 @@ export const PresentButton = () => {
 
   const handlePresent = useCallback(() => {
     // TODO: use editor Atom
-    const editorRoot = document.querySelector('block-suite-root');
+    const editorRoot = document.querySelector('editor-host');
     if (!editorRoot || isPresent) return;
 
     // TODO: use surfaceService subAtom
@@ -28,7 +28,7 @@ export const PresentButton = () => {
     if (!isPresent) return;
 
     // TODO: use editor Atom
-    const editorRoot = document.querySelector('block-suite-root');
+    const editorRoot = document.querySelector('editor-host');
     if (!editorRoot) return;
 
     // TODO: use surfaceService subAtom
