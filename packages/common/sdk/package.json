@@ -22,11 +22,11 @@
     "dist"
   ],
   "dependencies": {
-    "@blocksuite/block-std": "0.11.0-nightly-202312140423-1a7e31e",
-    "@blocksuite/blocks": "0.11.0-nightly-202312140423-1a7e31e",
-    "@blocksuite/global": "0.11.0-nightly-202312140423-1a7e31e",
-    "@blocksuite/presets": "0.11.0-nightly-202312140423-1a7e31e",
-    "@blocksuite/store": "0.11.0-nightly-202312140423-1a7e31e",
+    "@blocksuite/block-std": "0.11.0-nightly-202312150424-f13b992",
+    "@blocksuite/blocks": "0.11.0-nightly-202312150424-f13b992",
+    "@blocksuite/global": "0.11.0-nightly-202312150424-f13b992",
+    "@blocksuite/presets": "0.11.0-nightly-202312150424-f13b992",
+    "@blocksuite/store": "0.11.0-nightly-202312150424-f13b992",
     "jotai": "^2.5.1",
     "zod": "^3.22.4"
   },

@@ -6,5 +6,5 @@ export const root = style({
   flex: 1,
   overflow: 'auto',
   width: '100%',
-  minWidth: '318px',
+  minWidth: '320px',
 });
