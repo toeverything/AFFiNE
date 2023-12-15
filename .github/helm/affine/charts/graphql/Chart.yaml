@@ -3,4 +3,4 @@ name: graphql
 description: AFFiNE GraphQL server
 type: application
 version: 0.0.0
-appVersion: "0.10.3-canary.2"
+appVersion: "0.11.0-canary.0"
