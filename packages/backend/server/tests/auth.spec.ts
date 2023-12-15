@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 
 import { ConfigModule } from '../src/config';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { GqlModule } from '../src/graphql.module';
 import { AuthModule } from '../src/modules/auth';
 import { AuthResolver } from '../src/modules/auth/resolver';
@@ -11,6 +12,7 @@ import { AuthService } from '../src/modules/auth/service';
 import { PrismaModule } from '../src/prisma';
 import { mintChallengeResponse, verifyChallengeResponse } from '../src/storage';
 import { RateLimiterModule } from '../src/throttler';
+import { initFeatureConfigs } from './utils';
 
 let authService: AuthService;
 let authResolver: AuthResolver;
@@ -40,10 +42,15 @@ test.beforeEach(async () => {
       GqlModule,
       AuthModule,
       RateLimiterModule,
+      RevertCommand,
+      RunCommand,
     ],
   }).compile();
   authService = module.get(AuthService);
   authResolver = module.get(AuthResolver);
+
+  // init features
+  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async () => {

@@ -1,14 +1,9 @@
 import type { Storage } from '@affine/storage';
-import {
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { StorageProvide } from '../../storage';
 import { PermissionService } from '../workspaces/permission';
-import { QuotaService } from './quota';
+import { QuotaService } from './service';
 
 @Injectable()
 export class QuotaManagementService {
@@ -20,17 +15,15 @@ export class QuotaManagementService {
 
   async getUserQuota(userId: string) {
     const quota = await this.quota.getUserQuota(userId);
-    if (quota) {
-      return {
-        name: quota.feature.feature,
-        reason: quota.reason,
-        createAt: quota.createdAt,
-        expiredAt: quota.expiredAt,
-        blobLimit: quota.feature.configs.blobLimit,
-        storageQuota: quota.feature.configs.storageQuota,
-      };
-    }
-    return null;
+
+    return {
+      name: quota.feature.name,
+      reason: quota.reason,
+      createAt: quota.createdAt,
+      expiredAt: quota.expiredAt,
+      blobLimit: quota.feature.blobLimit,
+      storageQuota: quota.feature.storageQuota,
+    };
   }
 
   // TODO: lazy calc, need to be optimized with cache
@@ -45,7 +38,7 @@ export class QuotaManagementService {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
     if (!owner) throw new NotFoundException('Workspace owner not found');
-    const { storageQuota } = (await this.getUserQuota(owner.id)) || {};
+    const { storageQuota } = await this.getUserQuota(owner.id);
     // get all workspaces size of owner used
     const usageSize = await this.getUserUsage(owner.id);
 
@@ -55,9 +48,6 @@ export class QuotaManagementService {
   async checkBlobQuota(workspaceId: string, size: number) {
     const { quota, size: usageSize } =
       await this.getWorkspaceUsage(workspaceId);
-    if (typeof quota !== 'number') {
-      throw new ForbiddenException(`user's quota not exists`);
-    }
 
     return quota - (size + usageSize);
   }

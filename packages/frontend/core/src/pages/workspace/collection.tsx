@@ -1,3 +1,7 @@
+import {
+  appSidebarOpenAtom,
+  SidebarSwitch,
+} from '@affine/component/app-sidebar';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import {
   AffineShapeIcon,
@@ -5,6 +9,7 @@ import {
   useCollectionManager,
   useEditCollection,
 } from '@affine/component/page-list';
+import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -90,6 +95,8 @@ export const Component = function CollectionPage() {
   );
 };
 
+const isWindowsDesktop = environment.isDesktop && environment.isWindows;
+
 const Placeholder = ({ collection }: { collection: Collection }) => {
   const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
   const { node, open } = useEditCollection(useAllPageListConfig());
@@ -110,6 +117,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
     localStorage.setItem('hide-empty-collection-help-info', 'true');
   }, []);
   const t = useAFFiNEI18N();
+  const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
   return (
     <div
       style={{
@@ -123,11 +131,13 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '12px 24px',
+          height: 52,
+          paddingLeft: '16px',
           fontSize: 'var(--affine-font-xs)',
           ['WebkitAppRegion' as string]: 'drag',
         }}
       >
+        <SidebarSwitch show={!leftSidebarOpen} />
         <div
           style={{
             display: 'flex',
@@ -154,6 +164,8 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
         >
           {collection.name}
         </div>
+        <div style={{ flex: 1 }} />
+        {isWindowsDesktop && <WindowsAppControls />}
       </div>
       <div
         style={{

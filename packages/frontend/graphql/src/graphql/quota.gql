@@ -1,0 +1,18 @@
+query quota {
+  currentUser {
+    quota {
+      name
+      blobLimit
+      storageQuota
+      historyPeriod
+      memberLimit
+      humanReadable {
+        name
+        blobLimit
+        storageQuota
+        historyPeriod
+        memberLimit
+      }
+    }
+  }
+}

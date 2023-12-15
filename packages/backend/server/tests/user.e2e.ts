@@ -6,7 +6,8 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
-import { currentUser, signUp } from './utils';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
+import { currentUser, initFeatureConfigs, signUp } from './utils';
 
 let app: INestApplication;
 
@@ -21,6 +22,7 @@ test.beforeEach(async () => {
 test.beforeEach(async () => {
   const module = await Test.createTestingModule({
     imports: [AppModule],
+    providers: [RevertCommand, RunCommand],
   }).compile();
   app = module.createNestApplication();
   app.use(
@@ -30,6 +32,9 @@ test.beforeEach(async () => {
     })
   );
   await app.init();
+
+  // init features
+  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async () => {

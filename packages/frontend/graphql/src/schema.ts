@@ -40,10 +40,6 @@ export enum InvoiceStatus {
   Void = 'Void',
 }
 
-export enum NewFeaturesKind {
-  EarlyAccess = 'EarlyAccess',
-}
-
 /** User permission in workspace */
 export enum Permission {
   Admin = 'Admin',
@@ -127,7 +123,7 @@ export type BlobSizesQueryVariables = Exact<{
 
 export type BlobSizesQuery = {
   __typename?: 'Query';
-  collectBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
+  workspace: { __typename?: 'WorkspaceType'; blobsSize: number };
 };
 
 export type AllBlobSizesQueryVariables = Exact<{ [key: string]: never }>;
@@ -225,6 +221,47 @@ export type DeleteWorkspaceMutationVariables = Exact<{
 export type DeleteWorkspaceMutation = {
   __typename?: 'Mutation';
   deleteWorkspace: boolean;
+};
+
+export type AddToEarlyAccessMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type AddToEarlyAccessMutation = {
+  __typename?: 'Mutation';
+  addToEarlyAccess: number;
+};
+
+export type EarlyAccessUsersQueryVariables = Exact<{ [key: string]: never }>;
+
+export type EarlyAccessUsersQuery = {
+  __typename?: 'Query';
+  earlyAccessUsers: Array<{
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    emailVerified: string | null;
+    createdAt: string | null;
+    subscription: {
+      __typename?: 'UserSubscription';
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+      status: SubscriptionStatus;
+      start: string;
+      end: string;
+    } | null;
+  }>;
+};
+
+export type RemoveEarlyAccessMutationVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type RemoveEarlyAccessMutation = {
+  __typename?: 'Mutation';
+  removeEarlyAccess: number;
 };
 
 export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
@@ -460,6 +497,31 @@ export type PublishPageMutation = {
     id: string;
     mode: PublicPageMode;
   };
+};
+
+export type QuotaQueryVariables = Exact<{ [key: string]: never }>;
+
+export type QuotaQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    quota: {
+      __typename?: 'UserQuota';
+      name: string;
+      blobLimit: number;
+      storageQuota: number;
+      historyPeriod: number;
+      memberLimit: number;
+      humanReadable: {
+        __typename?: 'UserQuotaHumanReadable';
+        name: string;
+        blobLimit: string;
+        storageQuota: string;
+        historyPeriod: string;
+        memberLimit: string;
+      };
+    } | null;
+  } | null;
 };
 
 export type RecoverDocMutationVariables = Exact<{
@@ -703,6 +765,11 @@ export type Queries =
       response: AllBlobSizesQuery;
     }
   | {
+      name: 'earlyAccessUsersQuery';
+      variables: EarlyAccessUsersQueryVariables;
+      response: EarlyAccessUsersQuery;
+    }
+  | {
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
@@ -778,6 +845,11 @@ export type Queries =
       response: PricesQuery;
     }
   | {
+      name: 'quotaQuery';
+      variables: QuotaQueryVariables;
+      response: QuotaQuery;
+    }
+  | {
       name: 'serverConfigQuery';
       variables: ServerConfigQueryVariables;
       response: ServerConfigQuery;
@@ -838,6 +910,16 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'addToEarlyAccessMutation';
+      variables: AddToEarlyAccessMutationVariables;
+      response: AddToEarlyAccessMutation;
+    }
+  | {
+      name: 'removeEarlyAccessMutation';
+      variables: RemoveEarlyAccessMutationVariables;
+      response: RemoveEarlyAccessMutation;
     }
   | {
       name: 'leaveWorkspaceMutation';
