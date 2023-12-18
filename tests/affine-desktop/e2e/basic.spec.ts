@@ -177,7 +177,7 @@ test('delete workspace', async ({ page }) => {
   await page.waitForTimeout(1000);
   await clickSideBarSettingButton(page);
   await page.getByTestId('current-workspace-label').click();
-  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
     'Delete Me'
   );
   const contentElement = page.getByTestId('setting-modal-content');
