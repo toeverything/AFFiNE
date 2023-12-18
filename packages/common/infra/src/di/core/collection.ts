@@ -1,19 +1,14 @@
-import {
-  applyServiceCollectionAllExt,
-  type ServiceCollectionExt,
-} from '../ext';
 import { DEFAULT_SERVICE_VARIANT } from './consts';
 import { createServiceProvider } from './provider';
 import { RawServiceProviderImpl } from './raw-provider';
 import type {
-  BaseServiceCollection,
   ServiceFactory,
   ServiceProvider,
   ServiceType,
   ServiceVariant,
 } from './types';
 
-export class AbstractServiceCollection implements BaseServiceCollection {
+export class ServiceCollection {
   services: Map<ServiceType, Map<ServiceVariant, ServiceFactory>> = new Map();
 
   add(type: ServiceType, service: any, variant?: ServiceVariant) {
@@ -33,7 +28,3 @@ export class AbstractServiceCollection implements BaseServiceCollection {
     return createServiceProvider(new RawServiceProviderImpl(this));
   }
 }
-
-export const ServiceCollection = applyServiceCollectionAllExt(
-  AbstractServiceCollection
-) as { new (): BaseServiceCollection & ServiceCollectionExt };

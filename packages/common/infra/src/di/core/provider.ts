@@ -1,6 +1,4 @@
-import { applyServiceProviderAllExt } from '../ext';
 import type {
-  BaseServiceProvider,
   RawServiceProvider,
   ServiceProvider,
   ServiceType,
@@ -8,7 +6,7 @@ import type {
   Type,
 } from './types';
 
-class AbstractServiceProvider implements BaseServiceProvider {
+export class BaseServiceProvider implements ServiceProvider {
   constructor(public readonly provider: RawServiceProvider) {}
 
   resolveRaw(type: ServiceType, variant?: ServiceVariant | undefined) {
@@ -22,14 +20,14 @@ class AbstractServiceProvider implements BaseServiceProvider {
   resolve<T>(type: Type<T>, variant?: ServiceVariant): T {
     return this.provider.resolveRaw(type, variant);
   }
-}
 
-const ServiceProviderWithExt = applyServiceProviderAllExt(
-  AbstractServiceProvider
-);
+  resolveAll<T = any>(type: string | symbol | Type<T>): Map<ServiceVariant, T> {
+    return this.provider.resolveAllRaw(type);
+  }
+}
 
 export function createServiceProvider(
   raw: RawServiceProvider
-): ServiceProvider {
-  return new ServiceProviderWithExt(raw) as ServiceProvider;
+): BaseServiceProvider {
+  return new BaseServiceProvider(raw);
 }

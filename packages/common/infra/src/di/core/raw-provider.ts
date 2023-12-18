@@ -1,3 +1,4 @@
+import type { ServiceCollection } from './collection';
 import { DEFAULT_SERVICE_VARIANT } from './consts';
 import {
   CircularDependencyError,
@@ -6,12 +7,7 @@ import {
   ServiceNotFoundError,
 } from './error';
 import { createServiceProvider } from './provider';
-import type {
-  BaseServiceCollection,
-  RawServiceProvider,
-  ServiceType,
-  ServiceVariant,
-} from './types';
+import type { RawServiceProvider, ServiceType, ServiceVariant } from './types';
 
 export class ServiceCachePool {
   cache: Map<ServiceType, Map<ServiceVariant, any>> = new Map();
@@ -106,7 +102,7 @@ export class ServiceResolver implements RawServiceProvider {
 export class RawServiceProviderImpl implements RawServiceProvider {
   public readonly cache = new ServiceCachePool();
 
-  constructor(public readonly collection: BaseServiceCollection) {}
+  constructor(public readonly collection: ServiceCollection) {}
 
   resolveRaw(type: ServiceType, variant?: ServiceVariant | undefined) {
     const resolver = new ServiceResolver(this);

@@ -158,14 +158,4 @@ describe('di', () => {
     const provider = serviceCollection.provider();
     expect(provider.resolve('test-service')).toEqual({ b: 'i am B' });
   });
-
-  test('ext', () => {
-    const serviceCollection = new ServiceCollection();
-
-    serviceCollection.addTest();
-
-    const provider = serviceCollection.provider();
-
-    expect(provider.resolveTest()).toEqual({ hello: 'world' });
-  });
 });
