@@ -36,7 +36,6 @@ export const pluginPackageJson = atom<
 
 export const enabledPluginAtom = atomWithStorage('affine-enabled-plugin', [
   '@affine/image-preview-plugin',
-  '@affine/outline-plugin',
 ]);
 
 export const pluginHeaderItemAtom = atom<

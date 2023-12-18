@@ -1,10 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type {
-  CallbackMap,
-  ExpectedLayout,
-  LayoutNode,
-  PluginContext,
-} from '@affine/sdk/entry';
+import type { CallbackMap, PluginContext } from '@affine/sdk/entry';
 import { AffineFormatBarWidget } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -12,10 +7,7 @@ import {
   pluginEditorAtom,
   pluginHeaderItemAtom,
   pluginSettingAtom,
-  pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
-import { contentLayoutAtom, currentPageIdAtom } from '@toeverything/infra/atom';
-import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
 import type { createStore } from 'jotai/vanilla';
 import { createElement, type PropsWithChildren } from 'react';
@@ -30,83 +22,6 @@ const dynamicImportKey = '$h‍_import';
 const permissionLogger = new DebugLogger('plugins:permission');
 const importLogger = new DebugLogger('plugins:import');
 const entryLogger = new DebugLogger('plugins:entry');
-
-const pushLayoutAtom = atom<
-  null,
-  // fixme: check plugin name here
-  [
-    pluginName: string,
-    create: (root: HTMLElement) => () => void,
-    options:
-      | {
-          maxWidth: (number | undefined)[];
-        }
-      | undefined,
-  ],
-  void
->(null, (_, set, pluginName, callback, options) => {
-  set(pluginWindowAtom, items => ({
-    ...items,
-    [pluginName]: callback,
-  }));
-  set(contentLayoutAtom, layout => {
-    if (layout === 'editor') {
-      return {
-        direction: 'horizontal',
-        first: 'editor',
-        second: pluginName,
-        splitPercentage: 70,
-        maxWidth: options?.maxWidth,
-      };
-    } else {
-      return {
-        direction: 'horizontal',
-        first: 'editor',
-        splitPercentage: 70,
-        second: {
-          direction: 'horizontal',
-          first: pluginName,
-          second: layout.second,
-          splitPercentage: 50,
-        },
-      } satisfies ExpectedLayout;
-    }
-  });
-  addCleanup(pluginName, () => {
-    set(deleteLayoutAtom, pluginName);
-  });
-});
-
-const deleteLayoutAtom = atom<null, [string], void>(null, (_, set, id) => {
-  set(pluginWindowAtom, items => {
-    const newItems = { ...items };
-    delete newItems[id];
-    return newItems;
-  });
-  const removeLayout = (layout: LayoutNode): LayoutNode | string => {
-    if (typeof layout === 'string') {
-      return layout;
-    }
-    if (layout.first === id) {
-      return layout.second;
-    } else if (layout.second === id) {
-      return layout.first;
-    } else {
-      return {
-        ...layout,
-        second: removeLayout(layout.second),
-      };
-    }
-  };
-
-  set(contentLayoutAtom, layout => {
-    if (layout === 'editor') {
-      return 'editor';
-    } else {
-      return removeLayout(layout) as ExpectedLayout;
-    }
-  });
-});
 
 const setupWeakMap = new WeakMap<
   ReturnType<typeof createStore>,
@@ -124,11 +39,6 @@ export function createSetup(rootStore: ReturnType<typeof createStore>) {
 }
 
 function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
-  // clean up plugin windows when switching to other pages
-  rootStore.sub(currentPageIdAtom, () => {
-    rootStore.set(contentLayoutAtom, 'editor');
-  });
-
   // module -> importName -> updater[]
   const _rootImportsMap = new Map<string, Map<string, any>>();
   const rootImportsMapSetupPromise = setupImportsMap(_rootImportsMap, {
@@ -145,9 +55,6 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     '@blocksuite/inline': import('@blocksuite/inline'),
     '@affine/sdk/entry': {
       rootStore,
-      currentPageIdAtom: currentPageIdAtom,
-      pushLayoutAtom: pushLayoutAtom,
-      deleteLayoutAtom: deleteLayoutAtom,
     },
     '@blocksuite/global/utils': import('@blocksuite/global/utils'),
     '@toeverything/infra/atom': import('@toeverything/infra/atom'),

@@ -26,7 +26,6 @@ test('plugin should exist', async ({ page }) => {
     '@affine/hello-world-plugin',
     '@affine/image-preview-plugin',
     '@affine/vue-hello-world-plugin',
-    '@affine/outline-plugin',
   ];
   expect(packageJson).toEqual(
     plugins

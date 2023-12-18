@@ -1,6 +1,4 @@
-import type { ExpectedLayout } from '@affine/sdk/entry';
 import type Buffer from 'buffer';
-import type { WritableAtom } from 'jotai';
 import { z } from 'zod';
 
 import type { TypedEventEmitter } from './core/event-emitter.js';
@@ -31,14 +29,6 @@ export const packageJsonOutputSchema = z.object({
     assets: z.array(z.string()),
   }),
 });
-
-type SetStateAction<Value> = Value | ((prev: Value) => Value);
-
-export type ContentLayoutAtom = WritableAtom<
-  ExpectedLayout,
-  [SetStateAction<ExpectedLayout>],
-  void
->;
 
 export abstract class HandlerManager<
   Namespace extends string,
