@@ -102,7 +102,7 @@
     "storybook-dark-mode": "^3.0.1",
     "typescript": "^5.3.2",
     "vite": "^5.0.6",
-    "vitest": "0.34.6",
+    "vitest": "1.0.4",
     "yjs": "^13.6.10"
   },
   "version": "0.10.3-canary.2"

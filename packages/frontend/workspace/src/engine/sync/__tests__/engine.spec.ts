@@ -1,7 +1,5 @@
 import 'fake-indexeddb/auto';
 
-import { setTimeout } from 'node:timers/promises';
-
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema, Workspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -127,46 +125,54 @@ describe('SyncEngine', () => {
     expect(syncEngine.status.step).toEqual(SyncEngineStep.Stopped);
 
     syncEngine.start();
-    await setTimeout(100);
 
-    expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
-    expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.LoadingRootDoc);
+    await vi.waitFor(() => {
+      expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
+      expect(syncEngine.status.local?.step).toEqual(
+        SyncPeerStep.LoadingRootDoc
+      );
+    });
 
     localStorage.resumePull();
-    await setTimeout(100);
 
-    expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
-    expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
-    expect(syncEngine.status.remotes[0]?.step).toEqual(
-      SyncPeerStep.LoadingRootDoc
-    );
+    await vi.waitFor(() => {
+      expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
+      expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
+      expect(syncEngine.status.remotes[0]?.step).toEqual(
+        SyncPeerStep.LoadingRootDoc
+      );
+    });
 
     remoteStorage.resumePull();
-    await setTimeout(100);
 
-    expect(syncEngine.status.step).toEqual(SyncEngineStep.Synced);
-    expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
-    expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Synced);
+    await vi.waitFor(() => {
+      expect(syncEngine.status.step).toEqual(SyncEngineStep.Synced);
+      expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Synced);
+      expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
+    });
 
     ydoc.getArray('test').insert(0, [1, 2, 3]);
-    await setTimeout(100);
 
-    expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
-    expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Syncing);
-    expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Syncing);
+    await vi.waitFor(() => {
+      expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
+      expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Syncing);
+      expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Syncing);
+    });
 
     localStorage.resumePush();
-    await setTimeout(100);
 
-    expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
-    expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
-    expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Syncing);
+    await vi.waitFor(() => {
+      expect(syncEngine.status.step).toEqual(SyncEngineStep.Syncing);
+      expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
+      expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Syncing);
+    });
 
     remoteStorage.resumePush();
-    await setTimeout(100);
 
-    expect(syncEngine.status.step).toEqual(SyncEngineStep.Synced);
-    expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
-    expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Synced);
+    await vi.waitFor(() => {
+      expect(syncEngine.status.step).toEqual(SyncEngineStep.Synced);
+      expect(syncEngine.status.local?.step).toEqual(SyncPeerStep.Synced);
+      expect(syncEngine.status.remotes[0]?.step).toEqual(SyncPeerStep.Synced);
+    });
   });
 });

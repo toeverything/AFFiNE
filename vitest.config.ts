@@ -37,6 +37,7 @@ export default defineConfig({
     ],
     testTimeout: 5000,
     coverage: {
+      all: false,
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],
       reportsDirectory: resolve(rootDir, '.coverage/store'),

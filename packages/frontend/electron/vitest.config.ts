@@ -13,11 +13,15 @@ export default defineConfig({
       '@affine/electron': resolve(rootDir, 'packages/frontend/electron/src'),
     },
   },
+
   test: {
     include: ['./test/**/*.spec.ts'],
     testTimeout: 5000,
-    singleThread: true,
-    threads: false,
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],

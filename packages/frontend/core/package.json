@@ -111,7 +111,7 @@
     "swc-loader": "^0.2.3",
     "swc-plugin-coverage-instrument": "^0.0.20",
     "thread-loader": "^4.0.2",
-    "vitest": "0.34.6",
+    "vitest": "1.0.4",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
