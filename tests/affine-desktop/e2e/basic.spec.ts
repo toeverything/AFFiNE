@@ -14,7 +14,7 @@ const historyShortcut = async (page: Page, command: 'goBack' | 'goForward') => {
 };
 
 test('new page', async ({ page, workspace }) => {
-  await page.getByTestId('new-page-button').click({
+  await page.getByTestId('sidebar-new-page-button').click({
     delay: 100,
   });
   await page.waitForSelector('v-line');
@@ -32,7 +32,7 @@ test('app sidebar router forward/back', async ({ page }) => {
   {
     // create pages
     await page.waitForTimeout(500);
-    await page.getByTestId('new-page-button').click({
+    await page.getByTestId('sidebar-new-page-button').click({
       delay: 100,
     });
     await page.waitForSelector('v-line');
@@ -42,7 +42,7 @@ test('app sidebar router forward/back', async ({ page }) => {
       delay: 100,
     });
     await page.waitForTimeout(500);
-    await page.getByTestId('new-page-button').click({
+    await page.getByTestId('sidebar-new-page-button').click({
       delay: 100,
     });
     await page.waitForSelector('v-line');
@@ -52,7 +52,7 @@ test('app sidebar router forward/back', async ({ page }) => {
       delay: 100,
     });
     await page.waitForTimeout(500);
-    await page.getByTestId('new-page-button').click({
+    await page.getByTestId('sidebar-new-page-button').click({
       delay: 100,
     });
     await page.waitForSelector('v-line');

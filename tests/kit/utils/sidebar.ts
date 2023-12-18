@@ -13,5 +13,5 @@ export async function clickSideBarCurrentWorkspaceBanner(page: Page) {
 }
 
 export async function clickNewPageButton(page: Page) {
-  return page.getByTestId('new-page-button').click();
+  return page.getByTestId('sidebar-new-page-button').click();
 }

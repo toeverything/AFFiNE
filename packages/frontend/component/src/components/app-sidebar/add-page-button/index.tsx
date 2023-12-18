@@ -21,7 +21,7 @@ export function AddPageButton({
 
   return (
     <button
-      data-testid="new-page-button"
+      data-testid="sidebar-new-page-button"
       style={style}
       className={clsx([styles.root, className])}
       onClick={onClick}

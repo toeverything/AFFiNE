@@ -116,6 +116,7 @@ bootstrapPluginSystem(store).catch(err => {
 workspaceManager
   .createWorkspace(WorkspaceFlavour.LOCAL, async w => {
     w.meta.setName('test-workspace');
+    w.meta.writeVersion(w);
   })
   .then(id => {
     store.set(

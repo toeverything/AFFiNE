@@ -72,7 +72,9 @@ const PageListHeader = () => {
   return (
     <div className={styles.allPagesHeader}>
       <div className={styles.allPagesHeaderTitle}>{title}</div>
-      <NewPageButton>{t['New Page']()}</NewPageButton>
+      <NewPageButton testId="new-page-button-trigger">
+        {t['New Page']()}
+      </NewPageButton>
     </div>
   );
 };
@@ -180,16 +182,18 @@ const NewPageButton = ({
   className,
   children,
   size,
+  testId,
 }: PropsWithChildren<{
   className?: string;
   size?: 'small' | 'default';
+  testId?: string;
 }>) => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { importFile, createEdgeless, createPage } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
   return (
-    <div className={className}>
+    <div className={className} data-testid={testId}>
       <PureNewPageButton
         size={size}
         importFile={importFile}
