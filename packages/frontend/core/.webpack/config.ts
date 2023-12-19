@@ -389,6 +389,12 @@ export const createConfiguration: (
         watch: true,
       },
       proxy: {
+        '/api/worker/': {
+          target: 'https://affine-worker.toeverything.workers.dev',
+          pathRewrite: { '^/api/worker/': '/api/' },
+          changeOrigin: true,
+          secure: false,
+        },
         '/api': 'http://localhost:3010',
         '/socket.io': {
           target: 'http://localhost:3010',

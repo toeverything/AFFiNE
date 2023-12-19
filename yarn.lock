@@ -296,6 +296,7 @@ __metadata:
     rxjs: "npm:^7.8.1"
     storybook: "npm:^7.5.3"
     storybook-dark-mode: "npm:^3.0.1"
+    swr: "npm:^2.2.4"
     typescript: "npm:^5.3.2"
     uuid: "npm:^9.0.1"
     vite: "npm:^5.0.6"
@@ -34310,7 +34311,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swr@npm:2.2.4":
+"swr@npm:2.2.4, swr@npm:^2.2.4":
   version: 2.2.4
   resolution: "swr@npm:2.2.4"
   dependencies:

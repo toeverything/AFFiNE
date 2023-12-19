@@ -35,7 +35,6 @@ globalStyle(`${scrollableViewport} > div`, {
 
 export const scrollableContainer = style({
   height: '100%',
-  marginBottom: '4px',
 });
 
 export const scrollbar = style({

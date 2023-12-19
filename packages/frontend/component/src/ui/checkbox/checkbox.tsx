@@ -17,6 +17,10 @@ export type CheckboxProps = Omit<
   disabled?: boolean;
   indeterminate?: boolean;
   animation?: boolean;
+  name?: string;
+  label?: string;
+  inputClassName?: string;
+  labelClassName?: string;
 };
 
 export const Checkbox = ({
@@ -25,6 +29,11 @@ export const Checkbox = ({
   indeterminate: indeterminate,
   disabled,
   animation,
+  name,
+  label,
+  inputClassName,
+  labelClassName,
+  className,
   ...otherProps
 }: CheckboxProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +65,7 @@ export const Checkbox = ({
 
   return (
     <div
-      className={clsx(styles.root, disabled && styles.disabled)}
+      className={clsx(styles.root, className, disabled && styles.disabled)}
       role="checkbox"
       {...otherProps}
     >
@@ -64,12 +73,19 @@ export const Checkbox = ({
       <input
         ref={inputRef}
         data-testid="affine-checkbox"
-        className={clsx(styles.input)}
+        className={clsx(styles.input, inputClassName)}
         type="checkbox"
         value={checked ? 'on' : 'off'}
+        id={name}
+        name={name}
         checked={checked}
         onChange={handleChange}
       />
+      {label ? (
+        <label htmlFor={name} className={clsx(labelClassName)}>
+          {label}
+        </label>
+      ) : null}
     </div>
   );
 };

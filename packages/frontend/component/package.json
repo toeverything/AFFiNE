@@ -68,6 +68,7 @@
     "react-router-dom": "^6.16.0",
     "react-virtuoso": "^4.6.2",
     "rxjs": "^7.8.1",
+    "swr": "^2.2.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

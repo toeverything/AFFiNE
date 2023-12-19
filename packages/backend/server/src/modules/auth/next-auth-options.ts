@@ -258,6 +258,10 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
         return url;
       },
     };
+
+    nextAuthOptions.pages = {
+      newUser: '/auth/onboarding',
+    };
     return nextAuthOptions;
   },
   inject: [Config, PrismaService, MailService, SessionService],
