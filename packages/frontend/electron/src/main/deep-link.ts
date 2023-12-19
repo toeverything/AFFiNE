@@ -108,6 +108,10 @@ async function handleOauthJwt(url: string) {
 
       ipcMain.once('affine:login', () => {
         hiddenWindow?.destroy();
+        if (urlObj.searchParams.get('next') === 'onboarding') {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          mainWindow.loadURL(mainWindowOrigin + '/auth/onboarding');
+        }
       });
 
       // hacks to refresh auth state in the main window

@@ -2,6 +2,8 @@ import { fetchWithTraceReport } from '@affine/graphql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { type Location, useLocation, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
 import { Button } from '../../ui/button';
@@ -29,6 +31,23 @@ type QuestionnaireAnswer = {
   ask: string;
   answer: string[];
 };
+
+function getCallbackUrl(location: Location) {
+  try {
+    const url =
+      location.state?.callbackURL ||
+      new URLSearchParams(location.search).get('callbackUrl');
+    if (typeof url === 'string' && url) {
+      if (!url.startsWith('http:') && !url.startsWith('https:')) {
+        return url;
+      }
+      // we will ignore host to avoid redirect hack
+      const parsedUrl = new URL(url);
+      return parsedUrl.pathname + parsedUrl.search;
+    }
+  } catch (_) {}
+  return null;
+}
 
 export const ScrollableLayout = ({
   children,
@@ -69,6 +88,8 @@ export const OnboardingPage = ({
   user: User;
   onOpenAffine: () => void;
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [questionIdx, setQuestionIdx] = useState(0);
   const { data: questions } = useSWR<Question[]>(
     '/api/worker/questionnaire',
@@ -78,12 +99,21 @@ export const OnboardingPage = ({
   const [options, setOptions] = useState(new Set<string>());
   const [inputs, setInputs] = useState<Record<string, string>>({});
 
+  const callbackUrl = useMemo(() => getCallbackUrl(location), [location]);
   const question = useMemo(
     () => questions?.[questionIdx],
     [questionIdx, questions]
   );
 
   if (!questions) {
+    return null;
+  }
+
+  if (callbackUrl?.startsWith('/open-app/signin-redirect')) {
+    const url = new URL(callbackUrl, window.location.origin);
+    url.searchParams.set('next', 'onboarding');
+    console.log('redirect to', url.toString());
+    window.location.assign(url.toString());
     return null;
   }
 
@@ -198,7 +228,13 @@ export const OnboardingPage = ({
           className={clsx(styles.button, styles.openAFFiNEButton)}
           type="primary"
           size="extraLarge"
-          onClick={onOpenAffine}
+          onClick={() => {
+            if (callbackUrl) {
+              navigate(callbackUrl);
+            } else {
+              onOpenAffine();
+            }
+          }}
           iconPosition="end"
           icon={<ArrowRightSmallIcon />}
         >
