@@ -1,5 +1,5 @@
 import { assert } from 'console';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import { join } from 'path';
 
 import { mainWindowOrigin } from './constants';
@@ -27,17 +27,22 @@ async function createOnboardingWindow(additionalArguments: string[]) {
 
   assert(helperExposedMeta, 'helperExposedMeta should be defined');
 
+  // get user's screen size
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
   const browserWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width,
+    height,
     frame: false,
     show: false,
     closable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    skipTaskbar: true,
-    // transparent: true,
+    // skipTaskbar: true,
+    transparent: true,
+    backgroundColor: '#00FFFFFF',
+    hasShadow: false,
     webPreferences: {
       webgl: true,
       preload: join(__dirname, './preload.js'),
@@ -46,7 +51,10 @@ async function createOnboardingWindow(additionalArguments: string[]) {
   });
 
   browserWindow.on('ready-to-show', () => {
-    browserWindow.show();
+    // TODO: add a timeout to avoid flickering, window is ready, but dom is not ready
+    setTimeout(() => {
+      browserWindow.show();
+    }, 300);
   });
 
   await browserWindow.loadURL(

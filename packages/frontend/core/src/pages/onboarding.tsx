@@ -1,6 +1,7 @@
-import { Button } from '@affine/component/ui/button';
+import { useCallback } from 'react';
 import { redirect } from 'react-router-dom';
 
+import { Onboarding } from '../components/affine/onboarding/onboarding';
 import {
   appConfigStorage,
   useAppConfigStorage,
@@ -18,9 +19,9 @@ export const loader = () => {
 
 export const Component = () => {
   const { jumpToIndex } = useNavigateHelper();
-  const [onBoarding, setOnboarding] = useAppConfigStorage('onBoarding');
+  const [, setOnboarding] = useAppConfigStorage('onBoarding');
 
-  const openApp = () => {
+  const openApp = useCallback(() => {
     if (environment.isDesktop) {
       window.apis.ui.handleOpenMainApp().catch(err => {
         console.log('failed to open main app', err);
@@ -29,24 +30,7 @@ export const Component = () => {
       jumpToIndex(RouteLogic.REPLACE);
       setOnboarding(false);
     }
-  };
+  }, [jumpToIndex, setOnboarding]);
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
-        gap: '8px',
-        height: '100vh',
-      }}
-    >
-      <Button onClick={() => setOnboarding(!onBoarding)}>
-        Toggle onboarding
-      </Button>
-      onboarding page, onboarding mode is {onBoarding ? 'on' : 'off'}
-      <Button onClick={openApp}>Enter App</Button>
-    </div>
-  );
+  return <Onboarding onOpenApp={openApp} />;
 };
