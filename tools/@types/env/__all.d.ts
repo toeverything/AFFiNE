@@ -1,15 +1,14 @@
 import type { Environment, RuntimeConfig } from '@affine/env/global';
 import type {
-  DBHandlerManager,
-  DebugHandlerManager,
-  DialogHandlerManager,
+  DBHandlers,
+  DebugHandlers,
+  DialogHandlers,
   EventMap,
-  ExportHandlerManager,
-  UIHandlerManager,
-  UnwrapManagerHandlerToClientSide,
-  UpdaterHandlerManager,
+  ExportHandlers,
+  UIHandlers,
+  UpdaterHandlers,
   WorkspaceHandlerManager,
-} from '@toeverything/infra/index';
+} from '@toeverything/infra/type';
 
 declare global {
   interface Window {
@@ -17,13 +16,13 @@ declare global {
       electron: boolean;
     };
     apis: {
-      db: UnwrapManagerHandlerToClientSide<DBHandlerManager>;
-      debug: UnwrapManagerHandlerToClientSide<DebugHandlerManager>;
-      dialog: UnwrapManagerHandlerToClientSide<DialogHandlerManager>;
-      export: UnwrapManagerHandlerToClientSide<ExportHandlerManager>;
-      ui: UnwrapManagerHandlerToClientSide<UIHandlerManager>;
-      updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
-      workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
+      db: DBHandlers;
+      debug: DebugHandlers;
+      dialog: DialogHandlers;
+      export: ExportHandlers;
+      ui: UIHandlers;
+      updater: UpdaterHandlers;
+      workspace: WorkspaceHandlerManager;
     };
     events: EventMap;
     affine: {

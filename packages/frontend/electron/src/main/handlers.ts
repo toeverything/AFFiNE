@@ -1,11 +1,10 @@
 import type {
-  ClipboardHandlerManager,
-  DebugHandlerManager,
-  ExportHandlerManager,
-  UIHandlerManager,
-  UnwrapManagerHandlerToServerSide,
-  UpdaterHandlerManager,
-} from '@toeverything/infra/index';
+  ClipboardHandlers,
+  DebugHandlers,
+  ExportHandlers,
+  UIHandlers,
+  UpdaterHandlers,
+} from '@toeverything/infra/type';
 import { ipcMain } from 'electron';
 
 import { clipboardHandlers } from './clipboard';
@@ -24,26 +23,11 @@ export const debugHandlers = {
 };
 
 type AllHandlers = {
-  debug: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    DebugHandlerManager
-  >;
-  clipboard: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    ClipboardHandlerManager
-  >;
-  export: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    ExportHandlerManager
-  >;
-  ui: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    UIHandlerManager
-  >;
-  updater: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    UpdaterHandlerManager
-  >;
+  debug: DebugHandlers;
+  clipboard: ClipboardHandlers;
+  export: ExportHandlers;
+  ui: UIHandlers;
+  updater: UpdaterHandlers;
 };
 
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process

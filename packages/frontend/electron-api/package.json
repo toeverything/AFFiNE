@@ -1,0 +1,9 @@
+{
+  "name": "@affine/electron-api",
+  "version": "0.10.3-canary.2",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
