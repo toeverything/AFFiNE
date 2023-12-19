@@ -193,9 +193,9 @@ export const pageCollectionBaseAtom =
             collections: workspaceSetting.collections,
           });
         };
-        workspaceSetting.collectionsYArray.observe(fn);
+        workspaceSetting.setting.observeDeep(fn);
         group.add(() => {
-          workspaceSetting.collectionsYArray.unobserve(fn);
+          workspaceSetting.setting.unobserveDeep(fn);
         });
 
         return () => {
