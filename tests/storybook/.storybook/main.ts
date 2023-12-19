@@ -34,6 +34,14 @@ export default {
     name: '@storybook/react-vite',
   },
   async viteFinal(config, _options) {
+    const runtimeConfig = getRuntimeConfig({
+      distribution: 'browser',
+      mode: 'development',
+      channel: 'canary',
+      coverage: false,
+    });
+    // disable for storybook build
+    runtimeConfig.enableCloud = false;
     return mergeConfig(config, {
       assetsInclude: ['**/*.md'],
       resolve: {
@@ -59,12 +67,7 @@ export default {
         )}`,
         'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
         'process.env.CAPTCHA_SITE_KEY': `"${process.env.CAPTCHA_SITE_KEY}"`,
-        runtimeConfig: getRuntimeConfig({
-          distribution: 'browser',
-          mode: 'development',
-          channel: 'canary',
-          coverage: false,
-        }),
+        runtimeConfig: runtimeConfig,
       },
     });
   },
