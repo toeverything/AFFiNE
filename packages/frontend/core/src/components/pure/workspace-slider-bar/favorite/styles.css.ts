@@ -143,3 +143,32 @@ globalStyle(`${menuItem} svg`, {
 globalStyle(`${menuItem}.danger:hover svg`, {
   color: 'var(--affine-error-color)',
 });
+
+export const emptyFavouritesContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 6,
+  padding: '9px 20px 25px 21px',
+});
+
+export const emptyFavouritesIconWrapper = style({
+  width: 36,
+  height: 36,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '50%',
+  backgroundColor: 'var(--affine-background-secondary-color)',
+});
+
+export const emptyFavouritesIcon = style({
+  fontSize: 20,
+  color: 'var(--affine-icon-secondary)',
+});
+
+export const emptyFavouritesMessage = style({
+  fontSize: 'var(--affine-font-sm)',
+  textAlign: 'center',
+  color: 'var(--affine-text-secondary-color)',
+});

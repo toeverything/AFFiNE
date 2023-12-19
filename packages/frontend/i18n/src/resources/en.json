@@ -805,6 +805,7 @@
   "com.affine.publicLinkDisableModal.title": "Disable Public Link",
   "com.affine.rootAppSidebar.collections": "Collections",
   "com.affine.rootAppSidebar.favorites": "Favourites",
+  "com.affine.rootAppSidebar.favorites.empty": "You can add documents to your favourites",
   "com.affine.rootAppSidebar.others": "Others",
   "com.affine.selectPage.empty": "Empty",
   "com.affine.selectPage.empty.tips": "No page titles contain <1>{{search}}</1>",
