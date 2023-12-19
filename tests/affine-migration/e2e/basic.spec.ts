@@ -1,11 +1,12 @@
 import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
 import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { test } from '@affine-test/kit/playwright';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { coreUrl } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 async function open404PageToInitData(page: Page, version: string) {
   const snapshotStorage = new SnapshotStorage(version);

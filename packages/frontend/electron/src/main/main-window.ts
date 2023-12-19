@@ -5,6 +5,7 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
+import { mainWindowOrigin } from './constants';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 import { uiSubjects } from './ui/subject';
@@ -14,8 +15,6 @@ const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
 const DEV_TOOL = process.env.DEV_TOOL === 'true';
-
-export const mainWindowOrigin = process.env.DEV_SERVER_URL || 'file://.';
 
 // todo: not all window need all of the exposed meta
 const getWindowAdditionalArguments = async () => {

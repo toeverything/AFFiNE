@@ -2,9 +2,11 @@ import { Menu } from '@affine/component/ui/menu';
 import { workspaceListAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
 import { lazy, useEffect } from 'react';
+import { type LoaderFunction, redirect } from 'react-router-dom';
 
 import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
+import { appConfigStorage } from '../hooks/use-app-config-storage';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../shared';
 
@@ -13,6 +15,13 @@ const AllWorkspaceModals = lazy(() =>
     default: AllWorkspaceModals,
   }))
 );
+
+export const loader: LoaderFunction = async () => {
+  if (!environment.isDesktop && appConfigStorage.get('onBoarding')) {
+    return redirect('/onboarding');
+  }
+  return null;
+};
 
 export const Component = () => {
   const list = useAtomValue(workspaceListAtom);

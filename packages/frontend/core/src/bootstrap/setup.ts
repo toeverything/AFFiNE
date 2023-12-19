@@ -10,6 +10,7 @@ import {
   useNavigationType,
 } from 'react-router-dom';
 
+import { appConfigProxy } from '../hooks/use-app-config-storage';
 import { performanceLogger } from '../shared';
 
 const performanceSetupLogger = performanceLogger.namespace('setup');
@@ -46,6 +47,13 @@ export function setup() {
       editorVersion: runtimeConfig.editorVersion,
     });
   }
+
+  // load persistent config for electron
+  // TODO: should be sync, but it's not necessary for now
+  environment.isDesktop &&
+    appConfigProxy
+      .getSync()
+      .catch(() => console.error('failed to load app config'));
 
   performanceSetupLogger.info('done');
 }

@@ -2,9 +2,12 @@ import { app, nativeTheme } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
+import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
-import { getMainWindow } from '../main-window';
+import { getMainWindow, initMainWindow } from '../main-window';
+import { getOnboardingWindow } from '../onboarding';
 import type { NamespaceHandlers } from '../type';
+import { launchStage } from '../windows-manager/stage';
 import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
 
@@ -45,6 +48,16 @@ export const uiHandlers = {
   },
   getChallengeResponse: async (_, challenge: string) => {
     return getChallengeResponse(challenge);
+  },
+  handleOpenMainApp: async () => {
+    if (launchStage.value === 'onboarding') {
+      launchStage.value = 'main';
+      persistentConfig.patch('onBoarding', false);
+    }
+    initMainWindow().catch(logger.error);
+    getOnboardingWindow()
+      .then(w => w?.destroy())
+      .catch(logger.error);
   },
   getBookmarkDataByLink: async (_, link: string) => {
     if (

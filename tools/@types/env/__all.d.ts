@@ -1,5 +1,6 @@
 import type { Environment, RuntimeConfig } from '@affine/env/global';
 import type {
+  ConfigStorageHandlerManager,
   DBHandlerManager,
   DebugHandlerManager,
   DialogHandlerManager,
@@ -24,6 +25,7 @@ declare global {
       ui: UnwrapManagerHandlerToClientSide<UIHandlerManager>;
       updater: UnwrapManagerHandlerToClientSide<UpdaterHandlerManager>;
       workspace: UnwrapManagerHandlerToClientSide<WorkspaceHandlerManager>;
+      configStorage: UnwrapManagerHandlerToClientSide<ConfigStorageHandlerManager>;
     };
     events: EventMap;
     affine: {
