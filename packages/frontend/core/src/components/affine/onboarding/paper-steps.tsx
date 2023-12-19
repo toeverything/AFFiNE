@@ -55,7 +55,6 @@ export const PaperSteps = ({
 
   useEffect(() => {
     if (stage === 'unfold' && status.unfoldingId === article.id) {
-      console.log('unfold', article.id);
       setFold(false);
     }
   }, [article.id, stage, status.unfoldingId]);

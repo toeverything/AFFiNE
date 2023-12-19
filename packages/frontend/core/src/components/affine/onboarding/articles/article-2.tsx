@@ -4,6 +4,7 @@ import illustration1png from './assets/article-2-illustration-1.jpg';
 import illustration2png from './assets/article-2-illustration-2.jpg';
 import note1png from './assets/article-2-note-1.png';
 import note2png from './assets/article-2-note-2.png';
+import { BlogLink } from './blog-link';
 
 export const article2: Array<OnboardingBlockOption> = [
   {
@@ -140,6 +141,7 @@ export const article2: Array<OnboardingBlockOption> = [
           media can also be an echo chamber that can push us to unwittingly
           become more extreme in our beliefs.
         </p>
+        <BlogLink />
       </>
     ),
     offset: { x: 150, y: -680 },

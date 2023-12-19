@@ -4,6 +4,7 @@ import bookmark1png from './assets/article-4-bookmark-1.png';
 import bookmark2png from './assets/article-4-bookmark-2.png';
 import illustration1jpg from './assets/article-4-illustration-1.jpg';
 import illustration2jpg from './assets/article-4-illustration-2.jpg';
+import { BlogLink } from './blog-link';
 
 export const article4: Array<OnboardingBlockOption> = [
   {
@@ -180,6 +181,7 @@ export const article4: Array<OnboardingBlockOption> = [
           degree as in the previous one. Psychology is not applied biology, nor
           is biology applied chemistry.
         </p>
+        <BlogLink />
       </>
     ),
 

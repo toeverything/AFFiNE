@@ -36,7 +36,7 @@ const paperLocations = {
 /** paper enter animation config */
 const paperEnterAnimationOriginal = {
   '0': {
-    curveCenter: 4,
+    curveCenter: 3,
     curve: 292,
     delay: 800,
     fromZ: 1230,
@@ -54,7 +54,7 @@ const paperEnterAnimationOriginal = {
   },
   '1': {
     curveCenter: 4,
-    curve: 280,
+    curve: 390,
     delay: 0,
     fromZ: 3697,
     fromX: 25,
@@ -71,9 +71,9 @@ const paperEnterAnimationOriginal = {
   },
   '2': {
     curveCenter: 3,
-    curve: 660,
+    curve: 1240,
     delay: 1700,
-    fromZ: 57379,
+    fromZ: 27379,
     fromX: 2,
     fromY: -77,
     fromRotateX: 0,
@@ -87,8 +87,8 @@ const paperEnterAnimationOriginal = {
     easing: 'ease',
   },
   '3': {
-    curveCenter: 4,
-    curve: 260,
+    curveCenter: 1,
+    curve: 300,
     delay: 1500,
     fromZ: 4303,
     fromX: -37,
@@ -104,8 +104,8 @@ const paperEnterAnimationOriginal = {
     easing: 'ease',
   },
   '4': {
-    curveCenter: 3,
-    curve: 270,
+    curveCenter: 4,
+    curve: 470,
     delay: 1571,
     fromZ: 1876,
     fromX: 65,

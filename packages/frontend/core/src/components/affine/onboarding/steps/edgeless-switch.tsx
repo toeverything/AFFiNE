@@ -1,4 +1,5 @@
 import { Button } from '@affine/component';
+import clsx from 'clsx';
 import { debounce } from 'lodash-es';
 import {
   type CSSProperties,
@@ -8,6 +9,7 @@ import {
   useState,
 } from 'react';
 
+import Logo from '../assets/logo';
 import { OnboardingBlock } from '../switch-widgets/block';
 import { EdgelessSwitchButtons } from '../switch-widgets/switch';
 import { ToolbarSVG } from '../switch-widgets/toolbar';
@@ -39,7 +41,8 @@ export const EdgelessSwitch = ({
   onBack,
   onNext,
 }: EdgelessSwitchProps) => {
-  const windowRef = useRef<HTMLDivElement>(null);
+  // const windowRef = useRef<HTMLDivElement>(null);
+  const docRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const mouseDownRef = useRef(false);
   const prevStateRef = useRef<EdgelessSwitchState | null>(
@@ -59,12 +62,12 @@ export const EdgelessSwitch = ({
   const onSwitchToPageMode = useCallback(() => setMode('page'), []);
   const onSwitchToEdgelessMode = useCallback(() => setMode('edgeless'), []);
   const toggleGrabbing = useCallback((v: boolean) => {
-    if (!windowRef.current) return;
-    windowRef.current.classList.toggle('grabbing', v);
+    if (!docRef.current) return;
+    docRef.current.classList.toggle('grabbing', v);
   }, []);
   const turnOnScaling = useCallback(() => {
-    if (!windowRef.current) return;
-    windowRef.current.classList.add('scaling');
+    if (!docRef.current) return;
+    docRef.current.classList.add('scaling');
   }, []);
 
   const enableScrollWithDelay = useCallback(() => {
@@ -86,20 +89,21 @@ export const EdgelessSwitch = ({
   }, []);
   const onNextClick = useCallback(() => {
     if (mode === 'page') setMode('edgeless');
+    else if (mode === 'edgeless') setMode('well-done');
     else onNext?.();
   }, [mode, onNext]);
 
   useEffect(() => {
     turnOffScalingRef.current = debounce(() => {
-      if (!windowRef.current) return;
-      windowRef.current.classList.remove('scaling');
+      if (!docRef.current) return;
+      docRef.current.classList.remove('scaling');
     }, 100);
   }, []);
 
   useEffect(() => {
     if (mode === 'page') return;
     const canvas = canvasRef.current;
-    const win = windowRef.current;
+    const win = docRef.current;
     if (!win || !canvas) return;
 
     const onWheel = (e: WheelEvent) => {
@@ -197,40 +201,71 @@ export const EdgelessSwitch = ({
 
   return (
     <div
-      ref={windowRef}
       data-mode={mode}
-      data-scroll={scrollable}
       className={styles.edgelessSwitchWindow}
       style={canvasStyle}
     >
-      <div className={styles.canvas} ref={canvasRef}>
-        <div className={styles.page}>
-          {
-            /* render blocks */
-            article.blocks.map((block, key) => {
-              return <OnboardingBlock key={key} mode={mode} {...block} />;
-            })
-          }
+      <div className={styles.orbit}>
+        <div
+          ref={docRef}
+          className={clsx(styles.orbitItem, styles.doc)}
+          data-scroll={scrollable}
+        >
+          <div className={styles.canvas} ref={canvasRef}>
+            <div className={styles.page}>
+              {
+                /* render blocks */
+                article.blocks.map((block, key) => {
+                  return <OnboardingBlock key={key} mode={mode} {...block} />;
+                })
+              }
+            </div>
+          </div>
+
+          <div data-no-drag className={styles.noDragWrapper}>
+            <header className={styles.header}>
+              <Button size="extraLarge" onClick={onBack}>
+                Back
+              </Button>
+              <EdgelessSwitchButtons
+                mode={mode}
+                onSwitchToPageMode={onSwitchToPageMode}
+                onSwitchToEdgelessMode={onSwitchToEdgelessMode}
+              />
+              <Button size="extraLarge" type="primary" onClick={onNextClick}>
+                Next
+              </Button>
+            </header>
+
+            <div className={styles.toolbar}>
+              <ToolbarSVG />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div data-no-drag className={styles.noDragWrapper}>
-        <header className={styles.header}>
-          <Button size="extraLarge" onClick={onBack}>
-            Back
+        <div className={clsx(styles.orbitItem, styles.wellDone)}>
+          <div
+            className={styles.wellDoneEnterAnim}
+            onDoubleClick={() => setMode('edgeless')}
+          >
+            <Logo />
+          </div>
+          <h1 className={clsx(styles.wellDoneTitle, styles.wellDoneEnterAnim)}>
+            Well Done !
+          </h1>
+          <p className={clsx(styles.wellDoneContent, styles.wellDoneEnterAnim)}>
+            You have the flexibility to switch between Page and Edgeless
+            <br /> Mode at any point during content creation.
+          </p>
+          <Button
+            className={styles.wellDoneEnterAnim}
+            onClick={onNextClick}
+            type="primary"
+            size="extraLarge"
+            style={{ marginTop: 40 }}
+          >
+            Get Start
           </Button>
-          <EdgelessSwitchButtons
-            mode={mode}
-            onSwitchToPageMode={onSwitchToPageMode}
-            onSwitchToEdgelessMode={onSwitchToEdgelessMode}
-          />
-          <Button size="extraLarge" type="primary" onClick={onNextClick}>
-            Next
-          </Button>
-        </header>
-
-        <div className={styles.toolbar}>
-          <ToolbarSVG />
         </div>
       </div>
     </div>

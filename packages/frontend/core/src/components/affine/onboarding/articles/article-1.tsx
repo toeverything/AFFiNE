@@ -7,6 +7,7 @@ import bookmark1png from './assets/article-1-bookmark-1.png';
 import illustration1png from './assets/article-1-illustration-1.png';
 import Article1Illustration2 from './assets/article-1-illustration-2';
 import { hr, link, quote } from './blocks.css';
+import { BlogLink } from './blog-link';
 
 export const article1: Array<OnboardingBlockOption> = [
   {
@@ -256,6 +257,7 @@ export const article1: Array<OnboardingBlockOption> = [
           intricate algorithm, designing a user interface, or figuring out how
           to lead a team towards some goal are also creative efforts.)
         </p>
+        <BlogLink />
       </>
     ),
     offset: { x: 900, y: -950 },

@@ -47,7 +47,7 @@ export const OnboardingBlock = ({
   const blockStyles = {
     ...baseStyles,
     ...style,
-    ...customStyle?.[mode],
+    ...customStyle?.[mode === 'page' ? 'page' : 'edgeless'],
   } as CSSProperties;
 
   return (
@@ -58,7 +58,7 @@ export const OnboardingBlock = ({
       }}
       className={onboardingBlock}
       data-mode={mode}
-      data-bg-mode={bg && mode === 'edgeless'}
+      data-bg-mode={bg && mode !== 'page'}
       data-invisible={mode === 'page' && edgelessOnly}
     >
       {children}

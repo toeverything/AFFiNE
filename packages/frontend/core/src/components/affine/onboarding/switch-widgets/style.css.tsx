@@ -109,7 +109,7 @@ export const onboardingBlock = style([
       '&:last-child': {
         marginBottom: 0,
       },
-      '&[data-mode="edgeless"]': {
+      '&[data-mode="edgeless"], &[data-mode="well-done"]': {
         transition: `all ${onboardingVars.block.transition} var(--enter-delay)`,
       },
       '&[data-mode="page"]': {

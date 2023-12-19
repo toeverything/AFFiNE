@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { globalStyle, keyframes, style } from '@vanilla-extract/css';
 
 // in case that we need to support dark mode later
 export const onboardingVars = {
@@ -23,16 +23,25 @@ export const onboardingVars = {
     transformTransition: '0.3s ease',
   },
   web: {
-    bg: '#fafafa',
+    bg: '#F4F4F5',
+    windowShadow:
+      '1px 18px 39px 0px rgba(0, 0, 0, 0.15), 5px 71px 71px 0px rgba(0, 0, 0, 0.09), 12px 160px 96px 0px rgba(0, 0, 0, 0.05), 20px 284px 114px 0px rgba(0, 0, 0, 0.01), 32px 443px 124px 0px rgba(0, 0, 0, 0.00)',
   },
 
   article: {
     w: '1200px',
     h: '800px',
+    r: '8px',
   },
   edgeless: {
     w: '1200px',
     h: '800px',
+    r: '8px',
+  },
+  wellDone: {
+    w: '800px',
+    h: '600px',
+    r: '12px',
   },
 
   canvas: {
@@ -62,6 +71,11 @@ export const perspective = style({
   transformStyle: 'preserve-3d',
 });
 
+export const fadeIn = keyframes({
+  from: { opacity: 0 },
+  to: { opacity: 1 },
+});
+
 export const onboarding = style([
   perspective,
   {
@@ -80,9 +94,17 @@ export const onboarding = style([
         inset: 0,
         background: onboardingVars.web.bg,
         transform: 'translateZ(-1000px) scale(2)',
+        transition: 'opacity 0.3s ease',
       },
       '&[data-is-desktop="true"]::after': {
-        content: 'unset',
+        animation: `${fadeIn} 0.8s linear`,
+        // content: 'unset',
+        background:
+          // 'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 99.58%)',
+          'linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 80%)',
+      },
+      '&[data-is-window="true"][data-is-desktop="true"]::after': {
+        opacity: 0,
       },
     },
   },

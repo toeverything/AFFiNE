@@ -20,11 +20,16 @@ const fadeOut = keyframes({
 export const unfoldingWrapper = style([
   paperLocation,
   {
+    vars: {
+      '--hover-offset-y': '0px',
+      '--hover-scale': '1',
+    },
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
 
-    transform: 'rotate(var(--toRotateZ))',
+    transform:
+      'rotate(var(--toRotateZ)) translateY(var(--hover-offset-y)) scale(var(--hover-scale))',
     cursor: 'pointer',
 
     backgroundColor: onboardingVars.paper.bg,
@@ -37,6 +42,13 @@ export const unfoldingWrapper = style([
     animation: `${shadowIn} 0.5s ease forwards`,
 
     transition: `all 0.23s ease, width ${unfolding.sizeTransition}, height ${unfolding.sizeTransition}, transform ${unfolding.transformTransition}`,
+
+    ':hover': {
+      vars: {
+        '--hover-offset-y': '-10px',
+        '--hover-scale': '1.03',
+      },
+    },
 
     '::before': {
       // hack border
@@ -53,6 +65,9 @@ export const unfoldingWrapper = style([
       '&[data-fold="false"]': {
         vars: {
           '--toRotateZ': '0deg',
+          // reset hover to avoid flickering
+          '--hover-offset-y': '0px',
+          '--hover-scale': '1',
         },
         width: onboardingVars.article.w,
         height: onboardingVars.article.h,

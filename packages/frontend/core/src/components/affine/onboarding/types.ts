@@ -3,7 +3,7 @@ import type { PropsWithChildren, ReactNode } from 'react';
 
 export type OnboardingStep = 'enter' | 'unfold' | 'edgeless-switch';
 export type ArticleId = '0' | '1' | '2' | '3' | '4';
-export type EdgelessSwitchMode = 'edgeless' | 'page';
+export type EdgelessSwitchMode = 'edgeless' | 'page' | 'well-done';
 
 /**
  * Paper enter animation options
@@ -77,10 +77,7 @@ export interface OnboardingBlockOption extends PropsWithChildren {
   style?: CSSProperties;
 
   /** customize style for different mode */
-  customStyle?: {
-    page?: CSSProperties;
-    edgeless?: CSSProperties;
-  };
+  customStyle?: Partial<Record<EdgelessSwitchMode, CSSProperties>>;
 
   /** attach a sub block to current block */
   sub?: OnboardingBlockOption;

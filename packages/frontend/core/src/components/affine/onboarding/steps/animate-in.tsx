@@ -12,8 +12,8 @@ interface AnimateInProps {
   onFinished?: () => void;
 }
 
-const easing = 'spring(5, 100, 10, 0)';
-const segments = 4;
+const easing = 'spring(3.2, 100, 10, 0)';
+const segments = 6;
 
 const animeSync = (params: Parameters<typeof anime>[0]) => {
   return new Promise(resolve => {

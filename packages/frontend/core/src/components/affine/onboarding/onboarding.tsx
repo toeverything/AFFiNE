@@ -35,7 +35,11 @@ export const Onboarding = ({ onOpenApp }: OnboardingProps) => {
   }, []);
 
   return (
-    <div className={styles.onboarding} data-is-desktop={environment.isDesktop}>
+    <div
+      className={styles.onboarding}
+      data-is-desktop={environment.isDesktop}
+      data-is-window={!!status.activeId || !!status.unfoldingId}
+    >
       <div className={styles.offsetOrigin}>
         {(Object.entries(articles) as Array<[ArticleId, ArticleOption]>).map(
           ([id, article]) => {

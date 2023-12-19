@@ -5,6 +5,7 @@ import illustration2jpg from './assets/article-3-illustration-2.jpg';
 import illustration3jpg from './assets/article-3-illustration-3.jpg';
 import illustration4jpg from './assets/article-3-illustration-4.jpg';
 import illustration5jpg from './assets/article-3-illustration-5.jpg';
+import { BlogLink } from './blog-link';
 
 export const article3: Array<OnboardingBlockOption> = [
   {
@@ -191,6 +192,7 @@ export const article3: Array<OnboardingBlockOption> = [
           game world in creative and flexible ways, leading to fresh and
           unexpected discoveries.
         </p>
+        <BlogLink />
       </>
     ),
     offset: { x: 450, y: -1400 },

@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css';
+import { globalStyle, keyframes, style } from '@vanilla-extract/css';
 
 import { onboardingVars } from '../style.css';
 
@@ -7,9 +7,9 @@ export const edgelessSwitchWindow = style({
   borderRadius: onboardingVars.paper.r,
   backgroundColor: onboardingVars.paper.bg,
   position: 'relative',
-  transition: `width ${onboardingVars.window.transition.size}, height ${onboardingVars.window.transition.size}`,
+  transition: `width ${onboardingVars.window.transition.size}, height ${onboardingVars.window.transition.size}, border-radius ${onboardingVars.window.transition.size}`,
   overflow: 'hidden',
-  boxShadow: 'var(--affine-shadow-2)',
+  boxShadow: onboardingVars.web.windowShadow,
 
   fontFamily: 'var(--affine-font-family)',
   color: onboardingVars.paper.textColor,
@@ -18,11 +18,43 @@ export const edgelessSwitchWindow = style({
     '&[data-mode="edgeless"]': {
       width: onboardingVars.edgeless.w,
       height: onboardingVars.edgeless.h,
+      borderRadius: onboardingVars.edgeless.r,
     },
     '&[data-mode="page"]': {
       width: onboardingVars.article.w,
       height: onboardingVars.article.h,
+      borderRadius: onboardingVars.article.r,
     },
+    '&[data-mode="well-done"]': {
+      width: onboardingVars.wellDone.w,
+      height: onboardingVars.wellDone.h,
+      borderRadius: onboardingVars.wellDone.r,
+    },
+  },
+});
+
+export const orbit = style({
+  width: '200%',
+  height: '100%',
+  display: 'flex',
+  transition: 'transform 0.4s ease',
+  willChange: 'transform',
+  selectors: {
+    '[data-mode="well-done"] &': {
+      transform: 'translateX(-50%)',
+    },
+  },
+});
+export const orbitItem = style({
+  width: '50%',
+  height: '100%',
+  flexShrink: 0,
+  flexGrow: 0,
+  overflow: 'hidden',
+});
+
+export const doc = style({
+  selectors: {
     // grid background
     '&::before': {
       content: '""',
@@ -39,10 +71,54 @@ export const edgelessSwitchWindow = style({
       pointerEvents: 'none',
       transition: 'opacity 0.3s ease',
     },
-    '&[data-mode="edgeless"]::before': {
+    '[data-mode="edgeless"] &::before': {
       opacity: 1,
     },
   },
+});
+
+export const wellDone = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  textAlign: 'center',
+  userSelect: 'none',
+});
+
+const wellDoneSlideIn = keyframes({
+  from: {
+    transform: 'translateX(100px)',
+    opacity: 0,
+  },
+  to: {
+    transform: 'translateX(0)',
+    opacity: 1,
+  },
+});
+export const wellDoneEnterAnim = style({
+  opacity: 0,
+  selectors: {
+    '[data-mode="well-done"] &': {
+      animation: `${wellDoneSlideIn} 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) forwards`,
+    },
+    '&:nth-child(1)': { animationDelay: '0.1s' },
+    '&:nth-child(2)': { animationDelay: '0.15s' },
+    '&:nth-child(3)': { animationDelay: '0.2s' },
+    '&:nth-child(4)': { animationDelay: '0.25s' },
+  },
+});
+
+export const wellDoneTitle = style({
+  fontSize: 28,
+  lineHeight: '36px',
+  fontWeight: '600',
+});
+export const wellDoneContent = style({
+  fontSize: 15,
+  lineHeight: '24px',
+  fontWeight: '400',
 });
 
 export const toolbar = style({
@@ -77,11 +153,11 @@ export const canvas = style({
     '[data-mode="edgeless"] &': {
       cursor: 'grab',
     },
-    '.grabbing[data-mode="edgeless"] &': {
+    '[data-mode="edgeless"] .grabbing &': {
       cursor: 'grabbing',
       transition: 'none',
     },
-    '.scaling[data-mode="edgeless"] &': {
+    '[data-mode="edgeless"] .scaling &': {
       transition: 'none',
     },
   },

@@ -14,11 +14,16 @@ export const tooltip = style({
   fontSize: '20px',
   lineHeight: '28px',
   fontWeight: 600,
-  textShadow: '0px 0px 4px rgba(66, 65, 73, 0.14)',
-  color: 'white',
   opacity: 0,
   animation: `${fadeIn} 1s ease forwards`,
   animationDelay: onboardingVars.animateIn.tooltipShowUpDelay,
+  color: '#121212',
+  selectors: {
+    '[data-is-desktop="true"] &': {
+      color: 'white',
+      textShadow: '0px 0px 4px rgba(66, 65, 73, 0.14)',
+    },
+  },
 });
 
 export const next = style({
