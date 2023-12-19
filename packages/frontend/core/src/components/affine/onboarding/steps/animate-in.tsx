@@ -13,6 +13,8 @@ interface AnimateInProps {
 }
 
 const easing = 'spring(5, 100, 10, 0)';
+const segments = 4;
+
 const animeSync = (params: Parameters<typeof anime>[0]) => {
   return new Promise(resolve => {
     anime({ ...params, complete: () => resolve(null) });
@@ -26,9 +28,8 @@ export const AnimateIn = ({
 }: AnimateInProps) => {
   const { id: _id, enterOptions, brief } = article;
   const id = `onboardingMoveIn${_id}`;
-  const segments = 4;
 
-  const rotateX = enterOptions.curve / segments;
+  const rotateX = (1.2 * enterOptions.curve) / segments;
 
   useEffect(() => {
     Promise.all([
@@ -39,7 +40,7 @@ export const AnimateIn = ({
         delay: enterOptions.delay,
       }),
       animeSync({
-        targets: `[data-id="${id}"] ${paperStyles.segment}[data-direction="down"]`,
+        targets: `[data-id="${id}"] .${paperStyles.segment}[data-direction="down"]`,
         rotateX: [rotateX, 0],
         easing,
         delay: enterOptions.delay,

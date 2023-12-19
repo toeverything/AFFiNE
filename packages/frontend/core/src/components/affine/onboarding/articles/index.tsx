@@ -1,5 +1,11 @@
 import { article, articleWrapper, text, title } from '../curve-paper/paper.css';
-import type { ArticleId, ArticleOption } from '../types';
+import type { ArticleId, ArticleOption, EdgelessSwitchState } from '../types';
+// TODO: lazy load
+import { article0 } from './article-0';
+import { article1 } from './article-1';
+import { article2 } from './article-2';
+import { article3 } from './article-3';
+import { article4 } from './article-4';
 
 const ids = ['0', '1', '2', '3', '4'] as Array<ArticleId>;
 
@@ -127,19 +133,29 @@ const paperBriefs = {
   '0': (
     <div className={articleWrapper}>
       <article className={article}>
-        <h1 className={title}>Breath of the Wild: Redefining Game Design</h1>
+        <h1 className={title}>HOWTO: Be more productive</h1>
         <p className={text}>
           “With all the time you spend watching TV,” he tells me, “you could
           have written a novel by now.” It’s hard to disagree with the sentiment
           — writing a novel is undoubtedly a better use of time than watching TV
-          — but what about the hidden assumption? Such comments imply that time
-          is “fungible” — that time spent watching TV can just as easily be
-          spent writing a novel. And sadly, that’s just not the case.
+          — but what about the hidden ...
         </p>
       </article>
     </div>
   ),
-  '1': (
+  '3': (
+    <div className={articleWrapper}>
+      <article className={article}>
+        <h1 className={title}>Breath of the Wild: Redefining Game Design</h1>
+        <p className={text}>
+          At GDC 2017, Hidemaro Fujibayashi, Satoru Takizawa, and Takuhiro Dohta
+          from Nintendo shared their insights on The Legend of Zelda: Breath of
+          the Wild&apos;s groundbreaking game mechanics. One standout ...
+        </p>
+      </article>
+    </div>
+  ),
+  '2': (
     <div className={articleWrapper}>
       <article className={article}>
         <h1 className={title}>Learning with earning with retrieval practice</h1>
@@ -150,13 +166,12 @@ const paperBriefs = {
         <p className={text}>
           Students often re-read, underline, or highlight materials, thinking
           that it will help them learn better. But, the best method for really
-          turning information into long-term memory is to use what is called
-          ‘retrieval practice’.
+          ...
         </p>
       </article>
     </div>
   ),
-  '2': (
+  '1': (
     <div className={articleWrapper}>
       <article className={article}>
         <h1 className={title}>
@@ -168,14 +183,12 @@ const paperBriefs = {
           Cloud apps like Google Docs and Trello are popular because they enable
           real-time collaboration with colleagues, and they make it easy for us
           to access our work from all of our devices. However, by centralizing
-          data storage on servers, cloud apps also take away ownership and
-          agency from users. If a service shuts down, the software stops
-          functioning, and data created with that software is lost.
+          ...
         </p>
       </article>
     </div>
   ),
-  '3': (
+  '4': (
     <div className={articleWrapper}>
       <article className={article}>
         <h1 className={title}>More Is Different</h1>
@@ -186,30 +199,47 @@ const paperBriefs = {
         <p className={text}>
           The reductionist hypothesis may still be a topic for controversy among
           philosophers, but among the great majority of active scientists I
-          think it is accepted without questions. The workings of our minds and
-          bodies, and of all the animate or inanimate matter of which we have
-          any detailed knowledge, are assumed to be controlled by the same set
-          of fundamental laws, which except under certain extreme conditions we
-          feel we know pretty well.
+          think it is accepted without ...
         </p>
       </article>
     </div>
   ),
-  '4': (
-    <div className={articleWrapper}>
-      <article className={article}>
-        <h1 className={title}>HOWTO: Be more productive</h1>
-        <p className={text}>
-          “With all the time you spend watching TV,” he tells me, “you could
-          have written a novel by now.” It’s hard to disagree with the sentiment
-          — writing a novel is undoubtedly a better use of time than watching TV
-          — but what about the hidden assumption? Such comments imply that time
-          is “fungible” — that time spent watching TV can just as easily be
-          spent writing a novel. And sadly, that’s just not the case.
-        </p>
-      </article>
-    </div>
-  ),
+};
+
+const contents = {
+  '0': article0,
+  '1': article1,
+  '2': article2,
+  '3': article3,
+  '4': article4,
+};
+
+const states: Partial<Record<ArticleId, EdgelessSwitchState>> = {
+  '0': {
+    scale: 0.5,
+    offsetX: -330,
+    offsetY: -380,
+  },
+  '1': {
+    scale: 0.4,
+    offsetX: -330,
+    offsetY: -500,
+  },
+  '2': {
+    scale: 0.45,
+    offsetX: 0,
+    offsetY: -380,
+  },
+  '3': {
+    scale: 0.4,
+    offsetX: 100,
+    offsetY: -320,
+  },
+  '4': {
+    scale: 0.48,
+    offsetX: 10,
+    offsetY: -220,
+  },
 };
 
 export const articles: Record<ArticleId, ArticleOption> = ids.reduce(
@@ -221,6 +251,8 @@ export const articles: Record<ArticleId, ArticleOption> = ids.reduce(
         location: paperLocations[id],
         enterOptions: paperEnterAnimations[id],
         brief: paperBriefs[id],
+        blocks: contents[id],
+        initState: states[id],
       } satisfies ArticleOption,
     };
   },

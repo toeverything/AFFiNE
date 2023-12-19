@@ -3,7 +3,7 @@ import { globalStyle, style } from '@vanilla-extract/css';
 // in case that we need to support dark mode later
 export const onboardingVars = {
   window: {
-    bg: 'var(--affine-pure-white)',
+    bg: 'white',
     shadow: 'var(--affine-shadow-1)',
     transition: {
       size: '0.3s ease',
@@ -13,7 +13,7 @@ export const onboardingVars = {
     w: '230px',
     h: '302px',
     r: '8px',
-    bg: 'var(--affine-pure-white)',
+    bg: 'white',
     // textColor: 'var(--affine-light-text-primary-color)',
     textColor: '#121212',
     borderColor: '#E3E2E4',
@@ -23,7 +23,7 @@ export const onboardingVars = {
     transformTransition: '0.3s ease',
   },
   web: {
-    bg: '#fafafa', // TODO: use var
+    bg: '#fafafa',
   },
 
   article: {
@@ -33,6 +33,27 @@ export const onboardingVars = {
   edgeless: {
     w: '1200px',
     h: '800px',
+  },
+
+  canvas: {
+    width: 3500,
+    height: 3500,
+    pageBlockWidth: 800,
+    bgImage: 'radial-gradient(#e6e6e6 1px, #fff 1px)',
+  },
+
+  toolbar: {
+    bg: 'white',
+    borderColor: '#E3E2E4',
+  },
+
+  block: {
+    transition: '0.5s ease',
+  },
+
+  animateIn: {
+    tooltipShowUpDelay: '5s',
+    nextButtonShowUpDelay: '20s',
   },
 };
 
@@ -85,4 +106,21 @@ export const paperLocation = style({
   position: 'absolute',
   left: `calc(var(--offset-x) - ${onboardingVars.paper.w} / 2)`,
   top: `calc(var(--offset-y) - ${onboardingVars.paper.h} / 2)`,
+});
+
+export const tipsWrapper = style({
+  position: 'absolute',
+  width: `calc(${onboardingVars.article.w} - 48px)`,
+  top: `calc(-${onboardingVars.article.h} / 2 + 24px)`,
+  pointerEvents: 'none',
+  display: 'flex',
+  justifyContent: 'center',
+  opacity: 0,
+  transition: '0.3s ease 1s',
+  selectors: {
+    '&[data-visible="true"]': {
+      pointerEvents: 'auto',
+      opacity: 1,
+    },
+  },
 });
