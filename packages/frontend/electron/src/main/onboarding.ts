@@ -1,31 +1,22 @@
-import { assert } from 'console';
 import { BrowserWindow, screen } from 'electron';
 import { join } from 'path';
 
 import { mainWindowOrigin } from './constants';
 // import { getExposedMeta } from './exposed';
-import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 
 // todo: not all window need all of the exposed meta
 const getWindowAdditionalArguments = async () => {
   const { getExposedMeta } = await import('./exposed');
   const mainExposedMeta = getExposedMeta();
-  const helperProcessManager = await ensureHelperProcess();
-  const helperExposedMeta = await helperProcessManager.rpc?.getMeta();
   return [
     `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
-    `--helper-exposed-meta=` + JSON.stringify(helperExposedMeta),
+    `--window-name=onboarding`,
   ];
 };
 
 async function createOnboardingWindow(additionalArguments: string[]) {
   logger.info('creating onboarding window');
-
-  const helperProcessManager = await ensureHelperProcess();
-  const helperExposedMeta = await helperProcessManager.rpc?.getMeta();
-
-  assert(helperExposedMeta, 'helperExposedMeta should be defined');
 
   // get user's screen size
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -35,6 +26,7 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     height,
     frame: false,
     show: false,
+    resizable: false,
     closable: false,
     minimizable: false,
     maximizable: false,

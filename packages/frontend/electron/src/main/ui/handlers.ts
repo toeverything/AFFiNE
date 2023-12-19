@@ -54,10 +54,17 @@ export const uiHandlers = {
       launchStage.value = 'main';
       persistentConfig.patch('onBoarding', false);
     }
-    initMainWindow().catch(logger.error);
-    getOnboardingWindow()
-      .then(w => w?.destroy())
-      .catch(logger.error);
+
+    try {
+      const onboarding = await getOnboardingWindow();
+      onboarding?.hide();
+      await initMainWindow();
+      // need to destroy onboarding window after main window is ready
+      // otherwise the main window will be closed as well
+      onboarding?.destroy();
+    } catch (err) {
+      logger.error('handleOpenMainApp', err);
+    }
   },
   getBookmarkDataByLink: async (_, link: string) => {
     if (

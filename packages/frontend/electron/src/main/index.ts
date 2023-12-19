@@ -10,7 +10,6 @@ import { persistentConfig } from './config-storage/persist';
 import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
-import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
@@ -59,7 +58,9 @@ app.on('window-all-closed', () => {
 /**
  * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
-app.on('activate', launch);
+app.on('activate', () => {
+  launch().catch(e => console.error('Failed launch:', e));
+});
 
 setupDeepLink(app);
 
@@ -71,7 +72,6 @@ app
   .then(registerProtocol)
   .then(registerHandlers)
   .then(registerEvents)
-  .then(ensureHelperProcess)
   .then(launch)
   .then(createApplicationMenu)
   .then(registerUpdater)

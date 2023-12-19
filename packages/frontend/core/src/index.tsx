@@ -16,19 +16,25 @@ const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
   performanceMainLogger.info('start');
 
-  const rootStore = getCurrentStore();
-  performanceMainLogger.info('setup start');
-  setup();
-  performanceMainLogger.info('setup done');
+  // skip bootstrap setup for desktop onboarding
+  if (window.appInfo?.windowName !== 'onboarding') {
+    const rootStore = getCurrentStore();
+    performanceMainLogger.info('setup start');
+    setup();
+    performanceMainLogger.info('setup done');
 
-  bootstrapPluginSystem(rootStore).catch(err => {
-    console.error('Failed to bootstrap plugin system', err);
-  });
+    bootstrapPluginSystem(rootStore).catch(err => {
+      console.error('Failed to bootstrap plugin system', err);
+    });
+  }
 
+  mountApp();
+}
+
+function mountApp() {
   performanceMainLogger.info('import app');
   const root = document.getElementById('app');
   assertExists(root);
-
   performanceMainLogger.info('render app');
   createRoot(root).render(
     <StrictMode>

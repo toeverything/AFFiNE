@@ -14,8 +14,6 @@ import { parseCookie } from './utils';
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
-const DEV_TOOL = process.env.DEV_TOOL === 'true';
-
 // todo: not all window need all of the exposed meta
 const getWindowAdditionalArguments = async () => {
   const { getExposedMeta } = await import('./exposed');
@@ -25,6 +23,7 @@ const getWindowAdditionalArguments = async () => {
   return [
     `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
     `--helper-exposed-meta=` + JSON.stringify(helperExposedMeta),
+    `--window-name=main`,
   ];
 };
 
@@ -92,12 +91,6 @@ async function createWindow(additionalArguments: string[]) {
     );
 
     logger.info('main window is ready to show');
-
-    if (DEV_TOOL) {
-      browserWindow.webContents.openDevTools({
-        mode: 'detach',
-      });
-    }
   });
 
   browserWindow.on('close', e => {
