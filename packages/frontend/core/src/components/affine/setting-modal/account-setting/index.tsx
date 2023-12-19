@@ -38,7 +38,7 @@ import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';
-import * as style from './style.css';
+import * as styles from './style.css';
 
 export const UserAvatar = () => {
   const t = useAFFiNEI18N();
@@ -133,17 +133,16 @@ export const AvatarAndName = () => {
           <UserAvatar />
         </Suspense>
 
-        <div className={style.profileInputWrapper}>
+        <div className={styles.profileInputWrapper}>
           <label>{t['com.affine.settings.profile.name']()}</label>
           <FlexWrapper alignItems="center">
             <Input
+              className={styles.userNameInput}
               defaultValue={input}
               data-testid="user-name-input"
               placeholder={t['com.affine.settings.profile.placeholder']()}
               maxLength={64}
               minLength={0}
-              width={280}
-              height={28}
               onChange={setInput}
               onEnter={handleUpdateUserName}
             />
@@ -151,7 +150,7 @@ export const AvatarAndName = () => {
               <Button
                 data-testid="save-user-name"
                 onClick={handleUpdateUserName}
-                className={style.button}
+                className={styles.button}
                 style={{
                   marginLeft: '12px',
                 }}
@@ -244,7 +243,7 @@ export const AccountSetting: FC = () => {
       />
       <AvatarAndName />
       <SettingRow name={t['com.affine.settings.email']()} desc={user.email}>
-        <Button onClick={onChangeEmail} className={style.button}>
+        <Button onClick={onChangeEmail} className={styles.button}>
           {t['com.affine.settings.email.action']()}
         </Button>
       </SettingRow>
@@ -252,7 +251,7 @@ export const AccountSetting: FC = () => {
         name={t['com.affine.settings.password']()}
         desc={t['com.affine.settings.password.message']()}
       >
-        <Button onClick={onPasswordButtonClick} className={style.button}>
+        <Button onClick={onPasswordButtonClick} className={styles.button}>
           {user.hasPassword
             ? t['com.affine.settings.password.action.change']()
             : t['com.affine.settings.password.action.set']()}

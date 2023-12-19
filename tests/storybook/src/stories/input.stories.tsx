@@ -26,7 +26,7 @@ Basic.play = async ({ canvasElement }) => {
 };
 
 export const DynamicHeight: StoryFn<typeof Input> = () => {
-  return <Input width={200} data-testid="test-input" />;
+  return <Input style={{ width: '200px' }} data-testid="test-input" />;
 };
 
 DynamicHeight.play = async ({ canvasElement }) => {

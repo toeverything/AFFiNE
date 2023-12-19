@@ -22,7 +22,7 @@ import {
 
 import { validateAndReduceImage } from '../../../utils/reduce-image';
 import { Upload } from '../../pure/file-upload';
-import * as style from './style.css';
+import * as styles from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
@@ -168,7 +168,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   const canAdjustAvatar = !workspaceIsLoading && avatarUrl && isOwner;
 
   return (
-    <div className={style.profileWrapper}>
+    <div className={styles.profileWrapper}>
       <Upload
         accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
         fileChange={handleUploadAvatar}
@@ -198,13 +198,12 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
       </Upload>
 
       <Wrapper marginLeft={20}>
-        <div className={style.label}>{t['Workspace Name']()}</div>
+        <div className={styles.label}>{t['Workspace Name']()}</div>
         <FlexWrapper alignItems="center" flexGrow="1">
           <Input
             disabled={workspaceIsLoading || !isOwner}
-            width={280}
-            height={32}
             value={input}
+            className={styles.workspaceNameInput}
             data-testid="workspace-name-input"
             placeholder={t['Workspace Name']()}
             maxLength={64}

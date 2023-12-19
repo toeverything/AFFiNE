@@ -201,3 +201,8 @@ export const arrowRight = style({
   color: 'var(--affine-text-emphasis-color)',
   cursor: 'pointer',
 });
+
+export const workspaceNameInput = style({
+  height: '32px',
+  width: '280px',
+});

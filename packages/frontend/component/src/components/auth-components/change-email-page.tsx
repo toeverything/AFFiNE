@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '../../ui/button';
 import { AuthInput } from './auth-input';
 import { AuthPageContainer } from './auth-page-container';
+import * as styles from './share.css';
 import { emailRegex } from './utils';
 
 export const ChangeEmailPage = ({
@@ -44,6 +45,7 @@ export const ChangeEmailPage = ({
     >
       <>
         <AuthInput
+          className={styles.input}
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
           value={email}
