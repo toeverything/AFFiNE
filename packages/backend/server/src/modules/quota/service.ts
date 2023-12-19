@@ -83,9 +83,9 @@ export class QuotaService {
     expiredAt?: Date
   ) {
     await this.prisma.$transaction(async tx => {
-      const latestFreePlan = await tx.features.aggregate({
+      const latestPlanVersion = await tx.features.aggregate({
         where: {
-          feature: QuotaType.FreePlanV1,
+          feature: quota,
         },
         _max: {
           version: true,
@@ -117,7 +117,7 @@ export class QuotaService {
             connect: {
               feature_version: {
                 feature: quota,
-                version: latestFreePlan._max.version || 1,
+                version: latestPlanVersion._max.version || 1,
               },
               type: FeatureKind.Quota,
             },
