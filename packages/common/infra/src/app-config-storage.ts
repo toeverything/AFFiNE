@@ -3,6 +3,8 @@ import { z } from 'zod';
 const _appConfigSchema = z.object({
   /** whether to show onboarding first */
   onBoarding: z.boolean().optional().default(true),
+  /** whether to show change workspace guide modal */
+  dismissWorkspaceGuideModal: z.boolean().optional().default(false),
 });
 export type AppConfigSchema = z.infer<typeof _appConfigSchema>;
 export const defaultAppConfig = _appConfigSchema.parse({});
@@ -20,7 +22,7 @@ interface StorageOptions<T> {
 /**
  * Storage for app configuration, stored in memory by default
  */
-class Storage<T> {
+class Storage<T extends object> {
   private _cfg: T;
   private readonly _id = _inMemoryId++;
   private readonly _options;
@@ -67,7 +69,10 @@ class Storage<T> {
         return this._cfg;
       }
     } else {
-      return this.get()[key];
+      const fullConfig = this.get();
+      // TODO: handle key not found, set default value
+      // if (!(key in fullConfig)) {}
+      return fullConfig[key];
     }
   }
 

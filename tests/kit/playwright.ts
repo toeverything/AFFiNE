@@ -34,7 +34,10 @@ type CurrentWorkspace = {
 
 export const skipOnboarding = async (context: BrowserContext) => {
   await context.addInitScript(() => {
-    window.localStorage.setItem('app_config', '{"onBoarding":false}');
+    window.localStorage.setItem(
+      'app_config',
+      '{"onBoarding":false, "dismissWorkspaceGuideModal":true}'
+    );
   });
 };
 

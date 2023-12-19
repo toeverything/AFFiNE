@@ -6,6 +6,7 @@ import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, overrideSession } from './config';
+import { persistentConfig } from './config-storage/persist';
 import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
@@ -30,6 +31,10 @@ if (require('electron-squirrel-startup')) app.quit();
 
 if (process.env.SKIP_ONBOARDING) {
   launchStage.value = 'main';
+  persistentConfig.set({
+    onBoarding: false,
+    dismissWorkspaceGuideModal: true,
+  });
 }
 
 /**
