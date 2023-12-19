@@ -16,9 +16,23 @@ export const onboardingVars = {
     bg: 'var(--affine-pure-white)',
     // textColor: 'var(--affine-light-text-primary-color)',
     textColor: '#121212',
+    borderColor: '#E3E2E4',
+  },
+  unfolding: {
+    sizeTransition: '0.3s ease',
+    transformTransition: '0.3s ease',
   },
   web: {
     bg: '#fafafa', // TODO: use var
+  },
+
+  article: {
+    w: '1200px',
+    h: '800px',
+  },
+  edgeless: {
+    w: '1200px',
+    h: '800px',
   },
 };
 
