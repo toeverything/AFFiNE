@@ -423,7 +423,7 @@ __metadata:
     react-is: "npm:18.2.0"
     react-router-dom: "npm:^6.16.0"
     rxjs: "npm:^7.8.1"
-    ses: "npm:^0.18.8"
+    ses: "npm:^1.0.0"
     source-map-loader: "npm:^4.0.1"
     style-loader: "npm:^3.3.3"
     swc-loader: "npm:^0.2.3"
