@@ -3,6 +3,7 @@ import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 
+import { copilotExtension } from './extensions/copilot';
 import { framePanelExtension } from './extensions/frame';
 import { outlineExtension } from './extensions/outline';
 import type { EditorExtension, EditorExtensionName } from './types';
@@ -12,6 +13,7 @@ import type { EditorExtension, EditorExtensionName } from './types';
 export const extensions: EditorExtension[] = [
   outlineExtension,
   framePanelExtension,
+  copilotExtension,
 ];
 
 export interface EditorSidebarState {
@@ -30,8 +32,6 @@ const baseStateAtom = atom<EditorSidebarState>({
   extensions: extensions, // todo: maybe should be dynamic (by feature flag?)
 });
 
-export const editorSidebarStateAtom = atom(get => get(baseStateAtom));
-
 const isOpenAtom = selectAtom(baseStateAtom, state => state.isOpen);
 const resizingAtom = selectAtom(baseStateAtom, state => state.resizing);
 const activeExtensionAtom = selectAtom(
@@ -40,9 +40,10 @@ const activeExtensionAtom = selectAtom(
 );
 const widthAtom = selectAtom(baseStateAtom, state => state.width);
 
-export const editorExtensionsAtom = selectAtom(
-  baseStateAtom,
-  state => state.extensions
+export const editorExtensionsAtom = selectAtom(baseStateAtom, state =>
+  state.extensions.filter(e => {
+    return e.name !== 'copilot' || runtimeConfig.enableCopilot;
+  })
 );
 
 // get/set sidebar open state

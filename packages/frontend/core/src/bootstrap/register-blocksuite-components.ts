@@ -1,5 +1,7 @@
-import { registerTOCPanelComponents } from '@blocksuite/presets';
-import { registerFramePanelComponents } from '@blocksuite/presets';
+import {
+  registerFramePanelComponents,
+  registerTOCPanelComponents,
+} from '@blocksuite/presets';
 
 registerTOCPanelComponents(components => {
   for (const compName in components) {

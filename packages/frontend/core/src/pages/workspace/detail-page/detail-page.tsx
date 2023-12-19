@@ -12,7 +12,7 @@ import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { appSettingAtom, currentPageIdAtom } from '@toeverything/infra/atom';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   memo,
   type ReactElement,
@@ -43,7 +43,6 @@ import {
   EditorSidebar,
   editorSidebarOpenAtom,
   editorSidebarResizingAtom,
-  editorSidebarStateAtom,
   editorSidebarWidthAtom,
 } from './editor-sidebar';
 
@@ -64,17 +63,13 @@ const DetailPageLayout = ({
   footer,
   sidebar,
 }: DetailPageLayoutProps): ReactElement => {
-  const sidebarState = useAtomValue(editorSidebarStateAtom);
-  const setSidebarWidth = useSetAtom(editorSidebarWidthAtom);
+  const [width, setWidth] = useAtom(editorSidebarWidthAtom);
   const { clientBorder } = useAtomValue(appSettingAtom);
-  const setResizing = useSetAtom(editorSidebarResizingAtom);
-  const setOpen = useSetAtom(editorSidebarOpenAtom);
+  const [resizing, setResizing] = useAtom(editorSidebarResizingAtom);
+  const [open, setOpen] = useAtom(editorSidebarOpenAtom);
 
   return (
-    <div
-      className={styles.root}
-      data-client-border={clientBorder && sidebarState.isOpen}
-    >
+    <div className={styles.root} data-client-border={clientBorder && open}>
       <div className={styles.mainContainer}>
         {header}
         {main}
@@ -85,13 +80,13 @@ const DetailPageLayout = ({
           enableAnimation={false}
           resizeHandlePos="left"
           resizeHandleOffset={clientBorder ? 4 : 0}
-          width={sidebarState.width}
+          width={width}
           className={styles.sidebarContainer}
           onResizing={setResizing}
-          resizing={sidebarState.resizing}
-          open={sidebarState.isOpen}
+          resizing={resizing}
+          open={open}
           onOpen={setOpen}
-          onWidthChange={setSidebarWidth}
+          onWidthChange={setWidth}
           minWidth={MIN_SIDEBAR_WIDTH}
           maxWidth={MAX_SIDEBAR_WIDTH}
         >
