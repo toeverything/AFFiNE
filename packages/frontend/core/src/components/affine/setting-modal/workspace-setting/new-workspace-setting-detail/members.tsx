@@ -29,15 +29,18 @@ import {
   useState,
 } from 'react';
 
-import { openSettingModalAtom } from '../../../atoms';
-import type { CheckedUser } from '../../../hooks/affine/use-current-user';
-import { useCurrentUser } from '../../../hooks/affine/use-current-user';
-import { useInviteMember } from '../../../hooks/affine/use-invite-member';
-import { useMemberCount } from '../../../hooks/affine/use-member-count';
-import { type Member, useMembers } from '../../../hooks/affine/use-members';
-import { useRevokeMemberPermission } from '../../../hooks/affine/use-revoke-member-permission';
-import { useUserQuota } from '../../../hooks/use-quota';
-import { AffineErrorBoundary } from '../affine-error-boundary';
+import { openSettingModalAtom } from '../../../../../atoms';
+import type { CheckedUser } from '../../../../../hooks/affine/use-current-user';
+import { useCurrentUser } from '../../../../../hooks/affine/use-current-user';
+import { useInviteMember } from '../../../../../hooks/affine/use-invite-member';
+import { useMemberCount } from '../../../../../hooks/affine/use-member-count';
+import {
+  type Member,
+  useMembers,
+} from '../../../../../hooks/affine/use-members';
+import { useRevokeMemberPermission } from '../../../../../hooks/affine/use-revoke-member-permission';
+import { useUserQuota } from '../../../../../hooks/use-quota';
+import { AffineErrorBoundary } from '../../../affine-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 

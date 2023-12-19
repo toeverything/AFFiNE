@@ -27,7 +27,6 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
-import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -78,7 +77,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
   children,
 }: PropsWithChildren) {
   return (
-    <AdapterProviderWrapper>
+    <>
       {/* load all workspaces is costly, do not block the whole UI */}
       <Suspense>
         <AllWorkspaceModals />
@@ -87,7 +86,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
       <Suspense fallback={<WorkspaceFallback />}>
         <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
       </Suspense>
-    </AdapterProviderWrapper>
+    </>
   );
 };
 

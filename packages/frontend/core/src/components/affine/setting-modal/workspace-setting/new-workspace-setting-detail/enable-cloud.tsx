@@ -10,10 +10,10 @@ import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useState } from 'react';
 
-import { openSettingModalAtom } from '../../../atoms';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { EnableAffineCloudModal } from '../enable-affine-cloud-modal';
-import { TmpDisableAffineCloudModal } from '../tmp-disable-affine-cloud-modal';
+import { openSettingModalAtom } from '../../../../../atoms';
+import { useNavigateHelper } from '../../../../../hooks/use-navigate-helper';
+import { EnableAffineCloudModal } from '../../../enable-affine-cloud-modal';
+import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export interface PublishPanelProps extends WorkspaceSettingDetailProps {

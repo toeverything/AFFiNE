@@ -13,11 +13,11 @@ import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
-import { openSettingModalAtom } from '../../../../atoms';
+import { openSettingModalAtom } from '../../../../../../atoms';
 import {
   RouteLogic,
   useNavigateHelper,
-} from '../../../../hooks/use-navigate-helper';
+} from '../../../../../../hooks/use-navigate-helper';
 import type { WorkspaceSettingDetailProps } from '../types';
 import { WorkspaceDeleteModal } from './delete';
 

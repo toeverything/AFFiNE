@@ -20,8 +20,8 @@ import {
   useState,
 } from 'react';
 
-import { validateAndReduceImage } from '../../../utils/reduce-image';
-import { Upload } from '../../pure/file-upload';
+import { validateAndReduceImage } from '../../../../../utils/reduce-image';
+import { Upload } from '../../../../pure/file-upload';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
