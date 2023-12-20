@@ -3,6 +3,7 @@ import type Buffer from 'buffer';
 import type { WritableAtom } from 'jotai';
 import { z } from 'zod';
 
+import type { AppConfigSchema } from './app-config-storage.js';
 import type { TypedEventEmitter } from './core/event-emitter.js';
 
 type Buffer = Buffer.Buffer;
@@ -175,6 +176,7 @@ export type UIHandlers = {
   handleCloseApp: () => Promise<any>;
   getGoogleOauthCode: () => Promise<any>;
   getChallengeResponse: (resource: string) => Promise<string>;
+  handleOpenMainApp: () => Promise<any>;
 };
 
 export type ClipboardHandlers = {
@@ -209,6 +211,11 @@ export type WorkspaceHandlers = {
   delete: (id: string) => Promise<void>;
   getMeta: (id: string) => Promise<WorkspaceMeta>;
   clone: (id: string, newId: string) => Promise<void>;
+};
+
+export type ConfigStorageHandlers = {
+  set: (config: AppConfigSchema | Partial<AppConfigSchema>) => Promise<void>;
+  get: () => Promise<AppConfigSchema>;
 };
 
 export type UnwrapManagerHandlerToServerSide<

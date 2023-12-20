@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.10.3",
+  "version": "0.11.0",
   "author": "toeverything",
   "repository": {
     "url": "https://github.com/toeverything/AFFiNE",
@@ -32,10 +32,10 @@
     "@affine/sdk": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/vue-hello-world-plugin": "workspace:*",
-    "@blocksuite/blocks": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/lit": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/presets": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/store": "0.11.0-nightly-202312120309-2b3d2ba",
+    "@blocksuite/blocks": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/lit": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/presets": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/store": "0.11.0-nightly-202312200102-8254dc9",
     "@electron-forge/cli": "^7.2.0",
     "@electron-forge/core": "^7.2.0",
     "@electron-forge/core-utils": "^7.2.0",
@@ -67,7 +67,7 @@
     "ts-node": "^10.9.1",
     "undici": "^6.0.0",
     "uuid": "^9.0.1",
-    "vitest": "0.34.6",
+    "vitest": "1.0.4",
     "which": "^4.0.0",
     "zod": "^3.22.4"
   },

@@ -1,10 +1,4 @@
-import type {
-  ActiveDocProvider,
-  PassiveDocProvider,
-  Workspace as BlockSuiteWorkspace,
-} from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
-import type { DataSourceAdapter } from 'y-provider';
 
 export enum WorkspaceSubPath {
   ALL = 'all',
@@ -13,73 +7,6 @@ export enum WorkspaceSubPath {
   TRASH = 'trash',
   SHARED = 'shared',
 }
-
-export interface AffineDownloadProvider extends PassiveDocProvider {
-  flavour: 'affine-download';
-}
-
-/**
- * Download the first binary from local IndexedDB
- */
-export interface BroadCastChannelProvider extends PassiveDocProvider {
-  flavour: 'broadcast-channel';
-}
-
-/**
- * Long polling provider with local IndexedDB
- */
-export interface LocalIndexedDBBackgroundProvider
-  extends DataSourceAdapter,
-    PassiveDocProvider {
-  flavour: 'local-indexeddb-background';
-}
-
-export interface LocalIndexedDBDownloadProvider extends ActiveDocProvider {
-  flavour: 'local-indexeddb';
-}
-
-export interface SQLiteProvider extends PassiveDocProvider, DataSourceAdapter {
-  flavour: 'sqlite';
-}
-
-export interface SQLiteDBDownloadProvider extends ActiveDocProvider {
-  flavour: 'sqlite-download';
-}
-
-export interface AffineSocketIOProvider
-  extends PassiveDocProvider,
-    DataSourceAdapter {
-  flavour: 'affine-socket-io';
-}
-
-type BaseWorkspace = {
-  flavour: string;
-  id: string;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-};
-
-export interface AffineCloudWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.AFFINE_CLOUD;
-  id: string;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-}
-
-export interface LocalWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.LOCAL;
-  id: string;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-}
-
-export interface AffinePublicWorkspace extends BaseWorkspace {
-  flavour: WorkspaceFlavour.AFFINE_PUBLIC;
-  id: string;
-  blockSuiteWorkspace: BlockSuiteWorkspace;
-}
-
-export type AffineOfficialWorkspace =
-  | AffineCloudWorkspace
-  | LocalWorkspace
-  | AffinePublicWorkspace;
 
 export enum ReleaseType {
   // if workspace is not released yet, we will not show it in the workspace list
@@ -99,7 +26,6 @@ export enum WorkspaceFlavour {
    */
   AFFINE_CLOUD = 'affine-cloud',
   LOCAL = 'local',
-  AFFINE_PUBLIC = 'affine-public',
 }
 
 export const settingPanel = {
@@ -112,59 +38,24 @@ export const settingPanel = {
 export const settingPanelValues = Object.values(settingPanel);
 export type SettingPanel = (typeof settingPanel)[keyof typeof settingPanel];
 
-// built-in workspaces
-export interface WorkspaceRegistry {
-  [WorkspaceFlavour.LOCAL]: LocalWorkspace;
-  [WorkspaceFlavour.AFFINE_PUBLIC]: AffinePublicWorkspace;
-  [WorkspaceFlavour.AFFINE_CLOUD]: AffineCloudWorkspace;
-}
-
-export interface WorkspaceCRUD<Flavour extends keyof WorkspaceRegistry> {
-  create: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<string>;
-  delete: (blockSuiteWorkspace: BlockSuiteWorkspace) => Promise<void>;
-  get: (workspaceId: string) => Promise<WorkspaceRegistry[Flavour] | null>;
-  // not supported yet
-  // update: (workspace: FlavourToWorkspace[Flavour]) => Promise<void>;
-  list: () => Promise<WorkspaceRegistry[Flavour][]>;
-}
-
-type UIBaseProps<_Flavour extends keyof WorkspaceRegistry> = {
-  currentWorkspaceId: string;
+export type WorkspaceHeaderProps = {
+  rightSlot?: ReactNode;
+  currentEntry:
+    | {
+        subPath: WorkspaceSubPath;
+      }
+    | {
+        pageId: string;
+      };
 };
-
-type NewSettingProps<Flavour extends keyof WorkspaceRegistry> =
-  UIBaseProps<Flavour> & {
-    onDeleteLocalWorkspace: () => void;
-    onDeleteCloudWorkspace: () => void;
-    onLeaveWorkspace: () => void;
-    onTransformWorkspace: <
-      From extends keyof WorkspaceRegistry,
-      To extends keyof WorkspaceRegistry,
-    >(
-      from: From,
-      to: To,
-      workspace: WorkspaceRegistry[From]
-    ) => void;
-  };
 
 interface FC<P> {
   (props: P): ReactNode;
 }
 
-export interface WorkspaceUISchema<Flavour extends keyof WorkspaceRegistry> {
-  NewSettingsDetail: FC<NewSettingProps<Flavour>>;
+export interface WorkspaceUISchema {
   Provider: FC<PropsWithChildren>;
   LoginCard?: FC<object>;
-}
-
-export interface AppEvents {
-  // event there is no workspace
-  // usually used to initialize workspace adapter
-  'app:init': () => string[];
-  // event if you have access to workspace adapter
-  'app:access': () => Promise<boolean>;
-  'service:start': () => void;
-  'service:stop': () => void;
 }
 
 export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
@@ -172,8 +63,5 @@ export interface WorkspaceAdapter<Flavour extends WorkspaceFlavour> {
   flavour: Flavour;
   // The Adapter will be loaded according to the priority
   loadPriority: LoadPriority;
-  Events: Partial<AppEvents>;
-  // Fetch necessary data for the first render
-  CRUD: WorkspaceCRUD<Flavour>;
-  UI: WorkspaceUISchema<Flavour>;
+  UI: WorkspaceUISchema;
 }

@@ -1,12 +1,12 @@
 /* eslint-disable unicorn/prefer-dom-node-dataset */
+import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import fs from 'fs';
 
 async function importImage(page: Page, url: string) {
@@ -82,7 +82,7 @@ test('image go left and right', async ({ page }) => {
     await importImage(page, 'http://localhost:8081/affine-preview.png');
   }
   const locator = page.getByTestId('image-preview-modal');
-  expect(locator.isVisible()).toBeTruthy();
+  await expect(locator).toBeHidden();
   await page.locator('img').first().dblclick();
   await page.waitForTimeout(1000);
   {
@@ -125,7 +125,7 @@ test('image able to zoom in and out with mouse scroll', async ({ page }) => {
   const naturalWidth = await locator.evaluate(
     (img: HTMLImageElement) => img.naturalWidth
   );
-  expect(locator.isVisible()).toBeTruthy();
+  await expect(locator).toBeVisible();
   const { width, height } = await page.evaluate(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -660,10 +660,10 @@ test('keypress esc should close the modal', async ({ page }) => {
   await importImage(page, 'http://localhost:8081/large-image.png');
   await page.locator('img').first().dblclick();
   const locator = page.getByTestId('image-preview-modal');
-  expect(locator.isVisible()).toBeTruthy();
+  await expect(locator).toBeVisible();
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
-  expect(await locator.isVisible()).toBeFalsy();
+  await expect(locator).toBeHidden();
 });
 
 test('when mouse moves outside, the modal should be closed', async ({
@@ -706,7 +706,7 @@ test('caption should be visible and different styles were applied if image zoome
   await page.getByPlaceholder('Write a caption').fill(sampleCaption);
   await page.locator('img').first().dblclick();
   const locator = page.getByTestId('image-preview-modal');
-  expect(await locator.isVisible()).toBeTruthy();
+  await expect(locator).toBeVisible();
   await page.waitForTimeout(1000);
   let captionLocator = locator.getByTestId('image-caption-zoomedout');
   await expect(captionLocator).toBeVisible();

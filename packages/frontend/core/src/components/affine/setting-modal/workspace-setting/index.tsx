@@ -1,113 +1,18 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
-import { WorkspaceSubPath } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { useSetAtom } from 'jotai';
-import { useAtomValue } from 'jotai';
-import { useCallback } from 'react';
+import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 
-import { getUIAdapter } from '../../../../adapters/workspace';
-import { openSettingModalAtom } from '../../../../atoms';
-import { useLeaveWorkspace } from '../../../../hooks/affine/use-leave-workspace';
-import { useCurrentWorkspace } from '../../../../hooks/current/use-current-workspace';
-import { useOnTransformWorkspace } from '../../../../hooks/root/use-on-transform-workspace';
-import {
-  RouteLogic,
-  useNavigateHelper,
-} from '../../../../hooks/use-navigate-helper';
-import { useWorkspace } from '../../../../hooks/use-workspace';
-import { useAppHelper } from '../../../../hooks/use-workspaces';
+import { NewWorkspaceSettingDetail } from '../../../../adapters/shared';
+import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
 
-export const WorkspaceSetting = ({ workspaceId }: { workspaceId: string }) => {
-  const t = useAFFiNEI18N();
-
-  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
-  const [currentWorkspace] = useCurrentWorkspace();
-
-  const workspace = useWorkspace(workspaceId);
-  const [workspaceName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace
-  );
-  const workspaces = useAtomValue(rootWorkspacesMetadataAtom);
-  const pushNotification = useSetAtom(pushNotificationAtom);
-
-  const leaveWorkspace = useLeaveWorkspace();
-  const setSettingModal = useSetAtom(openSettingModalAtom);
-  const { deleteWorkspace } = useAppHelper();
-
-  const { NewSettingsDetail } = getUIAdapter(workspace.flavour);
-
-  const closeAndJumpOut = useCallback(() => {
-    setSettingModal(prev => ({ ...prev, open: false, workspaceId: null }));
-
-    if (currentWorkspace.id === workspaceId) {
-      const backWorkspace = workspaces.find(ws => ws.id !== workspaceId);
-      // TODO: if there is no workspace, jump to a new page(wait for design)
-      if (backWorkspace) {
-        jumpToSubPath(
-          backWorkspace?.id || '',
-          WorkspaceSubPath.ALL,
-          RouteLogic.REPLACE
-        );
-      } else {
-        setTimeout(() => {
-          jumpToIndex(RouteLogic.REPLACE);
-        }, 100);
-      }
-    }
-  }, [
-    currentWorkspace.id,
-    jumpToIndex,
-    jumpToSubPath,
-    setSettingModal,
-    workspaceId,
-    workspaces,
-  ]);
-
-  const handleDeleteWorkspace = useAsyncCallback(async () => {
-    closeAndJumpOut();
-    await deleteWorkspace(workspaceId);
-
-    pushNotification({
-      title: t['Successfully deleted'](),
-      type: 'success',
-    });
-  }, [closeAndJumpOut, deleteWorkspace, pushNotification, t, workspaceId]);
-
-  const handleLeaveWorkspace = useAsyncCallback(async () => {
-    closeAndJumpOut();
-    await leaveWorkspace(workspaceId, workspaceName);
-
-    pushNotification({
-      title: 'Successfully leave',
-      type: 'success',
-    });
-  }, [
-    closeAndJumpOut,
-    leaveWorkspace,
-    pushNotification,
-    workspaceId,
-    workspaceName,
-  ]);
-
-  const onTransformWorkspace = useOnTransformWorkspace();
-  // const handleDelete = useCallback(async () => {
-  //   await onDeleteWorkspace();
-  //   toast(t['Successfully deleted'](), {
-  //     portal: document.body,
-  //   });
-  //   onClose();
-  // }, [onClose, onDeleteWorkspace, t, workspace.id]);
-
+export const WorkspaceSetting = ({
+  workspaceMetadata,
+}: {
+  workspaceMetadata: WorkspaceMetadata;
+}) => {
+  const isOwner = useIsWorkspaceOwner(workspaceMetadata);
   return (
-    <NewSettingsDetail
-      onDeleteCloudWorkspace={handleDeleteWorkspace}
-      onDeleteLocalWorkspace={handleDeleteWorkspace}
-      onLeaveWorkspace={handleLeaveWorkspace}
-      onTransformWorkspace={onTransformWorkspace}
-      currentWorkspaceId={workspaceId}
+    <NewWorkspaceSettingDetail
+      workspaceMetadata={workspaceMetadata}
+      isOwner={isOwner}
     />
   );
 };

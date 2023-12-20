@@ -1,14 +1,9 @@
 import { Button } from '@affine/component/ui/button';
 import { Divider } from '@affine/component/ui/divider';
 import { Menu } from '@affine/component/ui/menu';
-import {
-  type AffineCloudWorkspace,
-  type AffineOfficialWorkspace,
-  type AffinePublicWorkspace,
-  type LocalWorkspace,
-  WorkspaceFlavour,
-} from '@affine/env/workspace';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import { WebIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 
@@ -17,13 +12,8 @@ import * as styles from './index.css';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
 
-export interface ShareMenuProps<
-  Workspace extends AffineOfficialWorkspace =
-    | AffineCloudWorkspace
-    | LocalWorkspace
-    | AffinePublicWorkspace,
-> {
-  workspace: Workspace;
+export interface ShareMenuProps {
+  workspaceMetadata: WorkspaceMetadata;
   currentPage: Page;
   onEnableAffineCloud: () => void;
 }
@@ -70,7 +60,7 @@ const LocalShareMenu = (props: ShareMenuProps) => {
 const CloudShareMenu = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   const {
-    workspace: { id: workspaceId },
+    workspaceMetadata: { id: workspaceId },
     currentPage,
   } = props;
   const { isSharedPage } = useIsSharedPage(workspaceId, currentPage.id);
@@ -96,9 +86,9 @@ const CloudShareMenu = (props: ShareMenuProps) => {
 };
 
 export const ShareMenu = (props: ShareMenuProps) => {
-  const { workspace } = props;
+  const { workspaceMetadata } = props;
 
-  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (workspaceMetadata.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalShareMenu {...props} />;
   }
   return <CloudShareMenu {...props} />;

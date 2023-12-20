@@ -1,11 +1,13 @@
 import { MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import type { CloudDoc } from '@affine/workspace/affine/download';
-import { downloadBinaryFromCloud } from '@affine/workspace/affine/download';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
+import { fetchWithTraceReport } from '@affine/graphql';
+import {
+  createAffineCloudBlobStorage,
+  createStaticBlobStorage,
+  globalBlockSuiteSchema,
+} from '@affine/workspace';
 import { assertExists } from '@blocksuite/global/utils';
-import type { Page } from '@blocksuite/store';
+import { type Page, Workspace } from '@blocksuite/store';
 import { noop } from 'foxact/noop';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
@@ -23,6 +25,35 @@ import { AppContainer } from '../../components/affine/app-container';
 import { PageDetailEditor } from '../../components/page-detail-editor';
 import { SharePageNotFoundError } from '../../components/share-page-not-found-error';
 import { ShareHeader } from './share-header';
+
+type DocPublishMode = 'edgeless' | 'page';
+
+export type CloudDoc = {
+  arrayBuffer: ArrayBuffer;
+  publishMode: DocPublishMode;
+};
+
+export async function downloadBinaryFromCloud(
+  rootGuid: string,
+  pageGuid: string
+): Promise<CloudDoc | null> {
+  const response = await fetchWithTraceReport(
+    `/api/workspaces/${rootGuid}/docs/${pageGuid}`,
+    {
+      priority: 'high',
+    }
+  );
+  if (response.ok) {
+    const publishMode = (response.headers.get('publish-mode') ||
+      'page') as DocPublishMode;
+    const arrayBuffer = await response.arrayBuffer();
+
+    // return both arrayBuffer and publish mode
+    return { arrayBuffer, publishMode };
+  }
+
+  return null;
+}
 
 type LoaderData = {
   page: Page;
@@ -49,10 +80,18 @@ export const loader: LoaderFunction = async ({ params }) => {
   if (!workspaceId || !pageId) {
     return redirect('/404');
   }
-  const workspace = getOrCreateWorkspace(
-    workspaceId,
-    WorkspaceFlavour.AFFINE_PUBLIC
-  );
+  const workspace = new Workspace({
+    id: workspaceId,
+    blobStorages: [
+      () => ({
+        crud: createAffineCloudBlobStorage(workspaceId),
+      }),
+      () => ({
+        crud: createStaticBlobStorage(),
+      }),
+    ],
+    schema: globalBlockSuiteSchema,
+  });
   // download root workspace
   {
     const response = await downloadBinaryFromCloud(workspaceId, workspaceId);
@@ -84,9 +123,9 @@ export const Component = (): ReactElement => {
     <AppContainer>
       <MainContainer>
         <ShareHeader
-          workspace={page.workspace}
           pageId={page.id}
           publishMode={publishMode}
+          blockSuiteWorkspace={page.workspace}
         />
         <PageDetailEditor
           isPublic

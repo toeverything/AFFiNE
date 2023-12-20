@@ -1,12 +1,7 @@
-import { createVar, style } from '@vanilla-extract/css';
-
-export const widthVar = createVar('widthVar');
+import { style } from '@vanilla-extract/css';
 
 export const inputWrapper = style({
-  vars: {
-    [widthVar]: '100%',
-  },
-  width: widthVar,
+  width: '100%',
   height: 28,
   lineHeight: '22px',
   padding: '0 10px',

@@ -54,11 +54,14 @@ export const mainContainerStyle = style({
   width: 0,
   flex: 1,
   maxWidth: '100%',
+  backgroundColor: 'var(--affine-background-primary-color)',
   selectors: {
     '&[data-show-padding="true"]': {
       margin: '8px',
       borderRadius: '5px',
       overflow: 'hidden',
+      // todo: is this performance intensive?
+      filter: 'drop-shadow(0px 0px 4px rgba(66,65,73,.14))',
       '@media': {
         print: {
           overflow: 'visible',
@@ -79,41 +82,11 @@ export const mainContainerStyle = style({
       left: 0,
       WebkitAppRegion: 'drag',
     },
+    '&[data-transparent=true]': {
+      backgroundColor: 'transparent',
+    },
   },
 } as ComplexStyleRule);
-
-// These styles override the default styles of the react-resizable-panels
-// as the default styles make the overflow part hidden when printing to PDF.
-// See https://github.com/toeverything/AFFiNE/pull/3893
-globalStyle(`${mainContainerStyle} > div[data-panel-group]`, {
-  '@media': {
-    print: {
-      overflow: 'visible !important',
-    },
-  },
-});
-
-// These styles override the default styles of the react-resizable-panels
-// as the default styles make the overflow part hidden when printing to PDF.
-// See https://github.com/toeverything/AFFiNE/pull/3893
-globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
-  '@media': {
-    print: {
-      overflow: 'visible !important',
-    },
-  },
-});
-
-// Hack margin so that it works normally when sidebar is closed
-globalStyle(
-  `[data-testid=app-sidebar-wrapper][data-open=true][data-is-floating=false][data-has-background=false]
- ~ ${mainContainerStyle}[data-show-padding="true"]`,
-  {
-    // transition added here to prevent the transition from being applied on page load
-    transition: 'margin-left .3s ease-in-out',
-    marginLeft: '0',
-  }
-);
 
 export const toolStyle = style({
   position: 'absolute',

@@ -1,4 +1,4 @@
-export type EditorExtensionName = 'outline' | 'frame';
+export type EditorExtensionName = 'outline' | 'frame' | 'copilot';
 
 export interface EditorExtension {
   name: EditorExtensionName;

@@ -1,5 +1,5 @@
 import type { BaseSelection } from '@blocksuite/block-std';
-import type { EditorContainer } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import type { Workspace } from '@blocksuite/store';
 import type { Atom, getDefaultStore } from 'jotai/vanilla';
@@ -10,7 +10,7 @@ export type Part = 'headerItem' | 'editor' | 'setting' | 'formatBar';
 
 export type CallbackMap = {
   headerItem: (root: HTMLElement) => () => void;
-  editor: (root: HTMLElement, editor: EditorContainer) => () => void;
+  editor: (root: HTMLElement, editor: AffineEditorContainer) => () => void;
   setting: (root: HTMLElement) => () => void;
   formatBar: (
     root: HTMLElement,

@@ -8,6 +8,20 @@ async function main() {
     data: {
       ...userA,
       password: await hash(userA.password),
+      features: {
+        create: {
+          reason: 'created by api sign up',
+          activated: true,
+          feature: {
+            connect: {
+              feature_version: {
+                feature: 'free_plan_v1',
+                version: 1,
+              },
+            },
+          },
+        },
+      },
     },
   });
 }

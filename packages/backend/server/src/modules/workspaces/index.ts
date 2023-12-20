@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { DocModule } from '../doc';
+import { QuotaModule } from '../quota';
 import { UsersService } from '../users';
 import { WorkspacesController } from './controller';
 import { DocHistoryResolver } from './history.resolver';
@@ -8,7 +9,7 @@ import { PermissionService } from './permission';
 import { PagePermissionResolver, WorkspaceResolver } from './resolver';
 
 @Module({
-  imports: [DocModule.forFeature()],
+  imports: [DocModule, QuotaModule],
   controllers: [WorkspacesController],
   providers: [
     WorkspaceResolver,

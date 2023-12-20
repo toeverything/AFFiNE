@@ -14,11 +14,7 @@ import {
   pluginSettingAtom,
   pluginWindowAtom,
 } from '@toeverything/infra/__internal__/plugin';
-import {
-  contentLayoutAtom,
-  currentPageIdAtom,
-  currentWorkspaceAtom,
-} from '@toeverything/infra/atom';
+import { contentLayoutAtom, currentPageIdAtom } from '@toeverything/infra/atom';
 import { atom } from 'jotai';
 import { Provider } from 'jotai/react';
 import type { createStore } from 'jotai/vanilla';
@@ -146,10 +142,9 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
     '@affine/component': import('@affine/component'),
     '@blocksuite/icons': import('@blocksuite/icons'),
     '@blocksuite/blocks': import('@blocksuite/blocks'),
-    '@blocksuite/virgo': import('@blocksuite/virgo'),
+    '@blocksuite/inline': import('@blocksuite/inline'),
     '@affine/sdk/entry': {
       rootStore,
-      currentWorkspaceAtom: currentWorkspaceAtom,
       currentPageIdAtom: currentPageIdAtom,
       pushLayoutAtom: pushLayoutAtom,
       deleteLayoutAtom: deleteLayoutAtom,
@@ -541,7 +536,7 @@ function createSetupImpl(rootStore: ReturnType<typeof createStore>) {
         } else if (part === 'formatBar') {
           const register = (widget: AffineFormatBarWidget) => {
             const div = document.createElement('div');
-            const root = widget.root;
+            const root = widget.host;
             const cleanup = (callback as CallbackMap['formatBar'])(
               div,
               widget.page,

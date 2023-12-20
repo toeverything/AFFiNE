@@ -40,7 +40,6 @@ export const HelpIsland = () => {
       setOpenSettingModalAtom({
         open: true,
         activeTab: tab,
-        workspaceId: null,
       });
     },
     [setOpenSettingModalAtom]

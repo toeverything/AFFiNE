@@ -119,7 +119,6 @@ const SubscriptionSettings = () => {
     setOpenSettingModalAtom({
       open: true,
       activeTab: 'plans',
-      workspaceId: null,
     });
   }, [setOpenSettingModalAtom]);
 

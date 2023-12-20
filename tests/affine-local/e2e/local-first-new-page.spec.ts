@@ -16,7 +16,7 @@ test('click btn new page', async ({ page, workspace }) => {
   expect(newPageId).not.toBe(originPageId);
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('click btn bew page and find it in all pages', async ({
@@ -33,5 +33,5 @@ test('click btn bew page and find it in all pages', async ({
   expect(cell).not.toBeUndefined();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

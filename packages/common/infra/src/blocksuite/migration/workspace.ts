@@ -1,61 +1,48 @@
 import type { Workspace } from '@blocksuite/store';
-import type { Schema } from '@blocksuite/store';
-import type { Doc as YDoc } from 'yjs';
-
-import { migratePages } from './blocksuite';
-import { upgradeV1ToV2 } from './subdoc';
-
-interface MigrationOptions {
-  doc: YDoc;
-  schema: Schema;
-  createWorkspace: () => Promise<Workspace>;
-}
-
-function createMigrationQueue(options: MigrationOptions) {
-  return [
-    async (doc: YDoc) => {
-      const newWorkspace = await upgradeV1ToV2(doc, options.createWorkspace);
-      return newWorkspace.doc;
-    },
-    async (doc: YDoc) => {
-      await migratePages(doc, options.schema);
-      return doc;
-    },
-  ];
-}
+import type { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 /**
  * For split migrate function from MigrationQueue.
  */
 export enum MigrationPoint {
   SubDoc = 1,
-  BlockVersion = 2,
-}
-
-export async function migrateWorkspace(
-  point: MigrationPoint,
-  options: MigrationOptions
-) {
-  const migrationQueue = createMigrationQueue(options);
-  const migrationFns = migrationQueue.slice(point - 1);
-
-  let doc = options.doc;
-  for (const migrate of migrationFns) {
-    doc = await migrate(doc);
-  }
-  return doc;
+  GuidFix = 2,
+  BlockVersion = 3,
 }
 
 export function checkWorkspaceCompatibility(
   workspace: Workspace
 ): MigrationPoint | null {
-  const workspaceDocJSON = workspace.doc.toJSON();
-  const spaceMetaObj = workspaceDocJSON['space:meta'];
-  const docKeys = Object.keys(workspaceDocJSON);
-  const haveSpaceMeta = !!spaceMetaObj && Object.keys(spaceMetaObj).length > 0;
+  // check if there is any key starts with 'space:' on root doc
+  const spaceMetaObj = workspace.doc.share.get('space:meta') as
+    | YMap<any>
+    | undefined;
+  const docKeys = Array.from(workspace.doc.share.keys());
+  const haveSpaceMeta = !!spaceMetaObj && spaceMetaObj.size > 0;
   const haveLegacySpace = docKeys.some(key => key.startsWith('space:'));
   if (haveSpaceMeta || haveLegacySpace) {
     return MigrationPoint.SubDoc;
+  }
+
+  // exit if no pages
+  if (!workspace.meta.pages?.length) {
+    return null;
+  }
+
+  // check guid compatibility
+  const meta = workspace.doc.getMap('meta') as YMap<unknown>;
+  const pages = meta.get('pages') as YArray<YMap<unknown>>;
+  for (const page of pages) {
+    const pageId = page.get('id') as string | undefined;
+    if (pageId?.includes(':')) {
+      return MigrationPoint.GuidFix;
+    }
+  }
+  const spaces = workspace.doc.getMap('spaces') as YMap<YDoc>;
+  for (const [pageId, _] of spaces) {
+    if (pageId.includes(':')) {
+      return MigrationPoint.GuidFix;
+    }
   }
 
   const hasVersion = workspace.meta.hasVersion;

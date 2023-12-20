@@ -10,7 +10,10 @@ import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 import { useSharingUrl } from './use-share-url';
 
-export const ShareExport = ({ workspace, currentPage }: ShareMenuProps) => {
+export const ShareExport = ({
+  workspaceMetadata: workspace,
+  currentPage,
+}: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   const workspaceId = workspace.id;
   const pageId = currentPage.id;

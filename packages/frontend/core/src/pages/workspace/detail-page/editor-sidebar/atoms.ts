@@ -3,39 +3,47 @@ import { assertExists } from '@blocksuite/global/utils';
 import { atom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 
+import { copilotExtension } from './extensions/copilot';
+import { framePanelExtension } from './extensions/frame';
 import { outlineExtension } from './extensions/outline';
 import type { EditorExtension, EditorExtensionName } from './types';
 
 // the list of all possible extensions in affine.
 // order matters (determines the order of the tabs)
-export const extensions: EditorExtension[] = [outlineExtension];
+export const extensions: EditorExtension[] = [
+  outlineExtension,
+  framePanelExtension,
+  copilotExtension,
+];
 
 export interface EditorSidebarState {
   isOpen: boolean;
   width: number;
+  resizing: boolean;
   activeExtension?: EditorExtension;
   extensions: EditorExtension[];
 }
 
 const baseStateAtom = atom<EditorSidebarState>({
   isOpen: false,
+  resizing: false,
   width: 300, // todo: should be resizable
   activeExtension: extensions[0],
   extensions: extensions, // todo: maybe should be dynamic (by feature flag?)
 });
 
-export const editorSidebarStateAtom = atom(get => get(baseStateAtom));
-
 const isOpenAtom = selectAtom(baseStateAtom, state => state.isOpen);
+const resizingAtom = selectAtom(baseStateAtom, state => state.resizing);
 const activeExtensionAtom = selectAtom(
   baseStateAtom,
   state => state.activeExtension
 );
 const widthAtom = selectAtom(baseStateAtom, state => state.width);
 
-export const editorExtensionsAtom = selectAtom(
-  baseStateAtom,
-  state => state.extensions
+export const editorExtensionsAtom = selectAtom(baseStateAtom, state =>
+  state.extensions.filter(e => {
+    return e.name !== 'copilot' || runtimeConfig.enableCopilot;
+  })
 );
 
 // get/set sidebar open state
@@ -44,6 +52,16 @@ export const editorSidebarOpenAtom = atom(
   (_, set, isOpen: boolean) => {
     set(baseStateAtom, prev => {
       return { ...prev, isOpen };
+    });
+  }
+);
+
+// get/set sidebar resizing state
+export const editorSidebarResizingAtom = atom(
+  get => get(resizingAtom),
+  (_, set, resizing: boolean) => {
+    set(baseStateAtom, prev => {
+      return { ...prev, resizing };
     });
   }
 );

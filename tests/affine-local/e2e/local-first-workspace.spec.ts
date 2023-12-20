@@ -11,5 +11,5 @@ test('preset workspace name', async ({ page, workspace }) => {
   expect(await workspaceName.textContent()).toBe('Demo Workspace');
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

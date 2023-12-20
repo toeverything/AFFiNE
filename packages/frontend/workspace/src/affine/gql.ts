@@ -8,11 +8,11 @@ import type {
   RecursiveMaybeFields,
 } from '@affine/graphql';
 import { gqlFetcherFactory } from '@affine/graphql';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { GraphQLError } from 'graphql';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Key, SWRConfiguration, SWRResponse } from 'swr';
 import useSWR, { useSWRConfig } from 'swr';
+import useSWRImutable from 'swr/immutable';
 import useSWRInfinite from 'swr/infinite';
 import type {
   SWRMutationConfiguration,
@@ -42,8 +42,8 @@ export const fetcher = gqlFetcherFactory('/graphql');
  * })
  * ```
  */
-export function useQuery<Query extends GraphQLQuery>(
-  options: QueryOptions<Query>,
+type useQueryFn = <Query extends GraphQLQuery>(
+  options?: QueryOptions<Query>,
   config?: Omit<
     SWRConfiguration<
       QueryResponse<Query>,
@@ -52,31 +52,35 @@ export function useQuery<Query extends GraphQLQuery>(
     >,
     'fetcher'
   >
-): SWRResponse<
+) => SWRResponse<
   QueryResponse<Query>,
   GraphQLError | GraphQLError[],
   {
     suspense: true;
   }
 >;
-export function useQuery<Query extends GraphQLQuery>(
-  options: QueryOptions<Query>,
-  config?: any
-) {
-  const configWithSuspense: SWRConfiguration = useMemo(
-    () => ({
-      suspense: true,
-      ...config,
-    }),
-    [config]
-  );
 
-  return useSWR(
-    () => ['cloud', options.query.id, options.variables],
-    () => fetcher(options),
-    configWithSuspense
-  );
-}
+const createUseQuery =
+  (immutable: boolean): useQueryFn =>
+  (options, config) => {
+    const configWithSuspense: SWRConfiguration = useMemo(
+      () => ({
+        suspense: true,
+        ...config,
+      }),
+      [config]
+    );
+
+    const useSWRFn = immutable ? useSWRImutable : useSWR;
+    return useSWRFn(
+      options ? () => ['cloud', options.query.id, options.variables] : null,
+      options ? () => fetcher(options) : null,
+      configWithSuspense
+    );
+  };
+
+export const useQuery = createUseQuery(false);
+export const useQueryImmutable = createUseQuery(true);
 
 export function useQueryInfinite<Query extends GraphQLQuery>(
   options: Omit<QueryOptions<Query>, 'variables'> & {
@@ -121,11 +125,13 @@ export function useQueryInfinite<Query extends GraphQLQuery>(
   const loadingMore = size > 0 && data && !data[size - 1];
 
   // todo: find a generic way to know whether or not there are more items to load
-  const loadMore = useAsyncCallback(async () => {
+  const loadMore = useCallback(() => {
     if (loadingMore) {
       return;
     }
-    await setSize(size => size + 1);
+    setSize(size => size + 1).catch(err => {
+      console.error(err);
+    });
   }, [loadingMore, setSize]);
   return {
     data,

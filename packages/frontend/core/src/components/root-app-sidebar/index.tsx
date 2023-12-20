@@ -22,6 +22,7 @@ import { Menu } from '@affine/component/ui/menu';
 import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { Workspace } from '@affine/workspace';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import { type Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
@@ -36,10 +37,10 @@ import { useHistoryAtom } from '../../atoms/history';
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { useDeleteCollectionInfo } from '../../hooks/affine/use-delete-collection-info';
 import { useGeneralShortcuts } from '../../hooks/affine/use-shortcuts';
+import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import type { AllWorkspace } from '../../shared';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';
@@ -52,7 +53,7 @@ export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
   onOpenQuickSearchModal: () => void;
   onOpenSettingModal: () => void;
-  currentWorkspace: AllWorkspace;
+  currentWorkspace: Workspace;
   openPage: (pageId: string) => void;
   createPage: () => Page;
   currentPath: string;
@@ -88,9 +89,6 @@ const RouteMenuLinkItem = forwardRef<
   );
 });
 RouteMenuLinkItem.displayName = 'RouteMenuLinkItem';
-
-// Unique droppable IDs
-export const DROPPABLE_SIDEBAR_TRASH = 'trash-folder';
 
 /**
  * This is for the whole affine app sidebar.
@@ -170,8 +168,9 @@ export const RootAppSidebar = ({
     };
   }, [history, setHistory]);
 
+  const dropItemId = getDropItemId('trash');
   const trashDroppable = useDroppable({
-    id: DROPPABLE_SIDEBAR_TRASH,
+    id: dropItemId,
   });
   const closeUserWorkspaceList = useCallback(() => {
     setOpenUserWorkspaceList(false);
@@ -186,9 +185,9 @@ export const RootAppSidebar = ({
   });
   const handleCreateCollection = useCallback(() => {
     open('')
-      .then(async name => {
+      .then(name => {
         const id = nanoid();
-        await setting.createCollection(createEmptyCollection(id, { name }));
+        setting.createCollection(createEmptyCollection(id, { name }));
         navigateHelper.jumpToCollection(blockSuiteWorkspace.id, id);
       })
       .catch(err => {
@@ -231,7 +230,6 @@ export const RootAppSidebar = ({
           }}
         >
           <WorkspaceCard
-            currentWorkspace={currentWorkspace}
             onClick={useCallback(() => {
               setOpenUserWorkspaceList(true);
             }, [setOpenUserWorkspaceList])}

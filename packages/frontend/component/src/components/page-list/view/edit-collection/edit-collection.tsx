@@ -19,7 +19,7 @@ export interface EditCollectionModalProps {
   open: boolean;
   mode?: EditCollectionMode;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (view: Collection) => Promise<void>;
+  onConfirm: (view: Collection) => void;
   allPageListConfig: AllPageListConfig;
 }
 
@@ -45,13 +45,8 @@ export const EditCollectionModal = ({
   const t = useAFFiNEI18N();
   const onConfirmOnCollection = useCallback(
     (view: Collection) => {
-      onConfirm(view)
-        .then(() => {
-          onOpenChange(false);
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      onConfirm(view);
+      onOpenChange(false);
     },
     [onConfirm, onOpenChange]
   );

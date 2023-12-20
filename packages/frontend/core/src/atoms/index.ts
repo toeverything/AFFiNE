@@ -14,13 +14,15 @@ export const openOnboardingModalAtom = atom(false);
 export const openSignOutModalAtom = atom(false);
 export const openPaymentDisableAtom = atom(false);
 
-export type SettingAtom = Pick<SettingProps, 'activeTab' | 'workspaceId'> & {
+export type SettingAtom = Pick<
+  SettingProps,
+  'activeTab' | 'workspaceMetadata'
+> & {
   open: boolean;
 };
 
 export const openSettingModalAtom = atom<SettingAtom>({
   activeTab: 'appearance',
-  workspaceId: null,
   open: false,
 });
 

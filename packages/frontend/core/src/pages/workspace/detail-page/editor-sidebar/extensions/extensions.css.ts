@@ -39,7 +39,7 @@ export const button = style({
 
   selectors: {
     '&[data-active=true]': {
-      color: 'var(--affine-primary-color)',
+      pointerEvents: 'none',
     },
   },
 });

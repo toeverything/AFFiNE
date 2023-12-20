@@ -1,12 +1,16 @@
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
+import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import {
+  workspaceListAtom,
+  workspaceManagerAtom,
+} from '@affine/workspace/atom';
 import { Logo1Icon } from '@blocksuite/icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import {
   authAtom,
@@ -81,9 +85,16 @@ export const UserWithWorkspaceList = ({
     onEventEnd?.();
   }, [onEventEnd, setOpenCreateWorkspaceModal]);
 
-  const workspaces = useAtomValue(rootWorkspacesMetadataAtom, {
-    delay: 0,
-  });
+  const workspaces = useAtomValue(workspaceListAtom);
+
+  const workspaceManager = useAtomValue(workspaceManagerAtom);
+
+  // revalidate workspace list when mounted
+  useEffect(() => {
+    workspaceManager.list.revalidate().catch(err => {
+      throw new Unreachable('revlidate should never throw, ' + err);
+    });
+  }, [workspaceManager]);
 
   return (
     <div className={styles.workspaceListWrapper}>

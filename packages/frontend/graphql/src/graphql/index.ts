@@ -56,12 +56,12 @@ mutation setBlob($workspaceId: String!, $blob: Upload!) {
 export const blobSizesQuery = {
   id: 'blobSizesQuery' as const,
   operationName: 'blobSizes',
-  definitionName: 'collectBlobSizes',
+  definitionName: 'workspace',
   containsFile: false,
   query: `
 query blobSizes($workspaceId: String!) {
-  collectBlobSizes(workspaceId: $workspaceId) {
-    size
+  workspace(id: $workspaceId) {
+    blobsSize
   }
 }`,
 };
@@ -185,6 +185,53 @@ export const deleteWorkspaceMutation = {
   query: `
 mutation deleteWorkspace($id: String!) {
   deleteWorkspace(id: $id)
+}`,
+};
+
+export const addToEarlyAccessMutation = {
+  id: 'addToEarlyAccessMutation' as const,
+  operationName: 'addToEarlyAccess',
+  definitionName: 'addToEarlyAccess',
+  containsFile: false,
+  query: `
+mutation addToEarlyAccess($email: String!) {
+  addToEarlyAccess(email: $email)
+}`,
+};
+
+export const earlyAccessUsersQuery = {
+  id: 'earlyAccessUsersQuery' as const,
+  operationName: 'earlyAccessUsers',
+  definitionName: 'earlyAccessUsers',
+  containsFile: false,
+  query: `
+query earlyAccessUsers {
+  earlyAccessUsers {
+    id
+    name
+    email
+    avatarUrl
+    emailVerified
+    createdAt
+    subscription {
+      plan
+      recurring
+      status
+      start
+      end
+    }
+  }
+}`,
+};
+
+export const removeEarlyAccessMutation = {
+  id: 'removeEarlyAccessMutation' as const,
+  operationName: 'removeEarlyAccess',
+  definitionName: 'removeEarlyAccess',
+  containsFile: false,
+  query: `
+mutation removeEarlyAccess($email: String!) {
+  removeEarlyAccess(email: $email)
 }`,
 };
 
@@ -457,6 +504,32 @@ mutation publishPage($workspaceId: String!, $pageId: String!, $mode: PublicPageM
   publishPage(workspaceId: $workspaceId, pageId: $pageId, mode: $mode) {
     id
     mode
+  }
+}`,
+};
+
+export const quotaQuery = {
+  id: 'quotaQuery' as const,
+  operationName: 'quota',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query quota {
+  currentUser {
+    quota {
+      name
+      blobLimit
+      storageQuota
+      historyPeriod
+      memberLimit
+      humanReadable {
+        name
+        blobLimit
+        storageQuota
+        historyPeriod
+        memberLimit
+      }
+    }
   }
 }`,
 };

@@ -9,7 +9,7 @@ import { createEmptyCollection } from '../use-collection-manager';
 import { useEditCollectionName } from './use-edit-collection';
 
 interface SaveAsCollectionButtonProps {
-  onConfirm: (collection: Collection) => Promise<void>;
+  onConfirm: (collection: Collection) => void;
 }
 
 export const SaveAsCollectionButton = ({

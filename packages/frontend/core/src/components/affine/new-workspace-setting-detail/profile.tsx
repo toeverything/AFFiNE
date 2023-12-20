@@ -2,51 +2,120 @@ import { FlexWrapper, Input, Wrapper } from '@affine/component';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { Workspace } from '@affine/workspace';
+import { SyncPeerStep } from '@affine/workspace';
 import { CameraIcon } from '@blocksuite/icons';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
+import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,
   type MouseEvent,
   startTransition,
   useCallback,
+  useEffect,
   useState,
 } from 'react';
 
+import { validateAndReduceImage } from '../../../utils/reduce-image';
 import { Upload } from '../../pure/file-upload';
-import * as style from './style.css';
+import * as styles from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
-  workspace: AffineOfficialWorkspace;
+  workspace: Workspace | null;
 }
 
-export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
+export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   const t = useAFFiNEI18N();
   const pushNotification = useSetAtom(pushNotificationAtom);
 
-  const [workspaceAvatar, update] = useBlockSuiteWorkspaceAvatarUrl(
-    workspace.blockSuiteWorkspace
+  const workspaceIsLoading =
+    useWorkspaceStatus(
+      workspace,
+      status =>
+        !status.engine.sync.local ||
+        status.engine.sync.local?.step <= SyncPeerStep.LoadingRootDoc
+    ) ?? true;
+
+  const [avatarBlob, setAvatarBlob] = useState<string | null>(null);
+  const [name, setName] = useState('');
+
+  const avatarUrl = useWorkspaceBlobObjectUrl(workspace?.meta, avatarBlob);
+
+  useEffect(() => {
+    if (workspace?.blockSuiteWorkspace) {
+      setAvatarBlob(workspace.blockSuiteWorkspace.meta.avatar ?? null);
+      setName(
+        workspace.blockSuiteWorkspace.meta.name ?? UNTITLED_WORKSPACE_NAME
+      );
+      const dispose = workspace.blockSuiteWorkspace.meta.commonFieldsUpdated.on(
+        () => {
+          setAvatarBlob(workspace.blockSuiteWorkspace.meta.avatar ?? null);
+          setName(
+            workspace.blockSuiteWorkspace.meta.name ?? UNTITLED_WORKSPACE_NAME
+          );
+        }
+      );
+      return () => {
+        dispose.dispose();
+      };
+    } else {
+      setAvatarBlob(null);
+      setName(UNTITLED_WORKSPACE_NAME);
+    }
+    return;
+  }, [workspace]);
+
+  const setWorkspaceAvatar = useCallback(
+    async (file: File | null) => {
+      if (!workspace) {
+        return;
+      }
+      if (!file) {
+        workspace.blockSuiteWorkspace.meta.setAvatar('');
+        return;
+      }
+      try {
+        const reducedFile = await validateAndReduceImage(file);
+        const blobs = workspace.blockSuiteWorkspace.blob;
+        const blobId = await blobs.set(reducedFile);
+        workspace.blockSuiteWorkspace.meta.setAvatar(blobId);
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
+    },
+    [workspace]
   );
 
-  const [name, setName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace
+  const setWorkspaceName = useCallback(
+    (name: string) => {
+      if (!workspace) {
+        return;
+      }
+      workspace.blockSuiteWorkspace.meta.setName(name);
+    },
+    [workspace]
   );
 
-  const [input, setInput] = useState<string>(name);
+  const [input, setInput] = useState<string>('');
+  useEffect(() => {
+    setInput(name);
+  }, [name]);
 
   const handleUpdateWorkspaceName = useCallback(
     (name: string) => {
-      setName(name);
+      setWorkspaceName(name);
       pushNotification({
         title: t['Update workspace name success'](),
         type: 'success',
       });
     },
-    [pushNotification, setName, t]
+    [pushNotification, setWorkspaceName, t]
   );
 
   const handleSetInput = useCallback((value: string) => {
@@ -68,17 +137,17 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
     handleUpdateWorkspaceName(input);
   }, [handleUpdateWorkspaceName, input]);
 
-  const handleRemoveUserAvatar = useCallback(
+  const handleRemoveUserAvatar = useAsyncCallback(
     async (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      await update(null);
+      await setWorkspaceAvatar(null);
     },
-    [update]
+    [setWorkspaceAvatar]
   );
 
   const handleUploadAvatar = useCallback(
     (file: File) => {
-      update(file)
+      setWorkspaceAvatar(file)
         .then(() => {
           pushNotification({
             title: 'Update workspace avatar success',
@@ -93,13 +162,13 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
           });
         });
     },
-    [pushNotification, update]
+    [pushNotification, setWorkspaceAvatar]
   );
 
-  const canAdjustAvatar = workspaceAvatar && isOwner;
+  const canAdjustAvatar = !workspaceIsLoading && avatarUrl && isOwner;
 
   return (
-    <div className={style.profileWrapper}>
+    <div className={styles.profileWrapper}>
       <Upload
         accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
         fileChange={handleUploadAvatar}
@@ -108,7 +177,7 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
       >
         <Avatar
           size={56}
-          url={workspaceAvatar}
+          url={avatarUrl}
           name={name}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
@@ -129,13 +198,12 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
       </Upload>
 
       <Wrapper marginLeft={20}>
-        <div className={style.label}>{t['Workspace Name']()}</div>
+        <div className={styles.label}>{t['Workspace Name']()}</div>
         <FlexWrapper alignItems="center" flexGrow="1">
           <Input
-            disabled={!isOwner}
-            width={280}
-            height={32}
-            defaultValue={input}
+            disabled={workspaceIsLoading || !isOwner}
+            value={input}
+            className={styles.workspaceNameInput}
             data-testid="workspace-name-input"
             placeholder={t['Workspace Name']()}
             maxLength={64}
@@ -143,7 +211,7 @@ export const ProfilePanel = ({ workspace, isOwner }: ProfilePanelProps) => {
             onChange={handleSetInput}
             onKeyUp={handleKeyUp}
           />
-          {input === workspace.blockSuiteWorkspace.meta.name ? null : (
+          {input === name ? null : (
             <Button
               data-testid="save-workspace-name"
               onClick={handleClick}

@@ -57,5 +57,5 @@ test('should create a page with a local first avatar and remove it', async ({
 
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

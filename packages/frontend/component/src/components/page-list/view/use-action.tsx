@@ -40,9 +40,7 @@ export const useActions = ({
         name: 'delete',
         tooltip: t['com.affine.collection-bar.action.tooltip.delete'](),
         click: () => {
-          setting.deleteCollection(info, collection.id).catch(err => {
-            console.error(err);
-          });
+          setting.deleteCollection(info, collection.id);
         },
       },
     ];

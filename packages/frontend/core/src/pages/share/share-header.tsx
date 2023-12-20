@@ -1,30 +1,27 @@
-import type { Workspace } from '@blocksuite/store';
+import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 
 import type { PageMode } from '../../atoms';
 import { BlockSuiteHeaderTitle } from '../../components/blocksuite/block-suite-header-title';
 import ShareHeaderLeftItem from '../../components/cloud/share-header-left-item';
 import ShareHeaderRightItem from '../../components/cloud/share-header-right-item';
 import { Header } from '../../components/pure/header';
-import { useWorkspace } from '../../hooks/use-workspace';
 
 export function ShareHeader({
-  workspace,
   pageId,
   publishMode,
+  blockSuiteWorkspace,
 }: {
-  workspace: Workspace;
   pageId: string;
   publishMode: PageMode;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
 }) {
-  const currentWorkspace = useWorkspace(workspace.id);
-
   return (
     <Header
       isFloat={publishMode === 'edgeless'}
       left={<ShareHeaderLeftItem />}
       center={
         <BlockSuiteHeaderTitle
-          workspace={currentWorkspace}
+          blockSuiteWorkspace={blockSuiteWorkspace}
           pageId={pageId}
           isPublic={true}
           publicMode={publishMode}
@@ -32,7 +29,7 @@ export function ShareHeader({
       }
       right={
         <ShareHeaderRightItem
-          workspaceId={workspace.id}
+          workspaceId={blockSuiteWorkspace.id}
           pageId={pageId}
           publishMode={publishMode}
         />

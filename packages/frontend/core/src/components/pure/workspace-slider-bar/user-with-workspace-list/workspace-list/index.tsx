@@ -1,39 +1,29 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import type {
-  AffineCloudWorkspace,
-  LocalWorkspace,
-} from '@affine/env/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { RootWorkspaceMetadata } from '@affine/workspace/atom';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
+import type { WorkspaceMetadata } from '@affine/workspace';
+import { currentWorkspaceAtom } from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/infra/atom';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
-import { startTransition, useCallback, useMemo, useTransition } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   openCreateWorkspaceModalAtom,
   openSettingModalAtom,
 } from '../../../../../atoms';
-import type { AllWorkspace } from '../../../../../shared';
 import { useIsWorkspaceOwner } from '../.././../../../hooks/affine/use-is-workspace-owner';
 import { useNavigateHelper } from '../.././../../../hooks/use-navigate-helper';
 import * as styles from './index.css';
 interface WorkspaceModalProps {
   disabled?: boolean;
-  workspaces: (AffineCloudWorkspace | LocalWorkspace)[];
-  currentWorkspaceId: AllWorkspace['id'] | null;
-  onClickWorkspace: (workspace: RootWorkspaceMetadata['id']) => void;
-  onClickWorkspaceSetting: (workspace: RootWorkspaceMetadata['id']) => void;
+  workspaces: WorkspaceMetadata[];
+  currentWorkspaceId?: string | null;
+  onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
+  onClickWorkspaceSetting: (workspaceMetadata: WorkspaceMetadata) => void;
   onNewWorkspace: () => void;
   onAddWorkspace: () => void;
   onDragEnd: (event: DragEndEvent) => void;
@@ -102,22 +92,14 @@ export const AFFiNEWorkspaceList = ({
   workspaces,
   onEventEnd,
 }: {
-  workspaces: RootWorkspaceMetadata[];
+  workspaces: WorkspaceMetadata[];
   onEventEnd?: () => void;
 }) => {
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
   const { jumpToSubPath } = useNavigateHelper();
 
-  const setWorkspaces = useSetAtom(rootWorkspacesMetadataAtom);
-
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useAtom(
-    currentWorkspaceIdAtom
-  );
-
-  const setCurrentPageId = useSetAtom(currentPageIdAtom);
-
-  const [, startCloseTransition] = useTransition();
+  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
 
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
 
@@ -130,7 +112,7 @@ export const AFFiNEWorkspaceList = ({
     () =>
       workspaces.filter(
         ({ flavour }) => flavour === WorkspaceFlavour.AFFINE_CLOUD
-      ) as (AffineCloudWorkspace | LocalWorkspace)[],
+      ) as WorkspaceMetadata[],
     [workspaces]
   );
 
@@ -138,44 +120,37 @@ export const AFFiNEWorkspaceList = ({
     () =>
       workspaces.filter(
         ({ flavour }) => flavour === WorkspaceFlavour.LOCAL
-      ) as (AffineCloudWorkspace | LocalWorkspace)[],
+      ) as WorkspaceMetadata[],
     [workspaces]
   );
 
   const onClickWorkspaceSetting = useCallback(
-    (workspaceId: string) => {
+    (workspaceMetadata: WorkspaceMetadata) => {
       setOpenSettingModalAtom({
         open: true,
         activeTab: 'workspace',
-        workspaceId,
+        workspaceMetadata,
       });
       onEventEnd?.();
     },
     [onEventEnd, setOpenSettingModalAtom]
   );
 
-  const onMoveWorkspace = useCallback(
-    (activeId: string, overId: string) => {
-      const oldIndex = workspaces.findIndex(w => w.id === activeId);
-
-      const newIndex = workspaces.findIndex(w => w.id === overId);
-      startTransition(() => {
-        setWorkspaces(workspaces => arrayMove(workspaces, oldIndex, newIndex));
-      });
-    },
-    [setWorkspaces, workspaces]
-  );
+  const onMoveWorkspace = useCallback((_activeId: string, _overId: string) => {
+    // TODO: order
+    // const oldIndex = workspaces.findIndex(w => w.id === activeId);
+    // const newIndex = workspaces.findIndex(w => w.id === overId);
+    // startTransition(() => {
+    //   setWorkspaces(workspaces => arrayMove(workspaces, oldIndex, newIndex));
+    // });
+  }, []);
 
   const onClickWorkspace = useCallback(
-    (workspaceId: string) => {
-      startCloseTransition(() => {
-        setCurrentWorkspaceId(workspaceId);
-        setCurrentPageId(null);
-        jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
-      });
+    (workspaceMetadata: WorkspaceMetadata) => {
+      jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
       onEventEnd?.();
     },
-    [jumpToSubPath, onEventEnd, setCurrentPageId, setCurrentWorkspaceId]
+    [jumpToSubPath, onEventEnd]
   );
 
   const onDragEnd = useCallback(
@@ -211,7 +186,7 @@ export const AFFiNEWorkspaceList = ({
             onClickWorkspaceSetting={onClickWorkspaceSetting}
             onNewWorkspace={onNewWorkspace}
             onAddWorkspace={onAddWorkspace}
-            currentWorkspaceId={currentWorkspaceId}
+            currentWorkspaceId={currentWorkspace?.id}
             onDragEnd={onDragEnd}
           />
           {localWorkspaces.length > 0 && cloudWorkspaces.length > 0 ? (
@@ -225,7 +200,7 @@ export const AFFiNEWorkspaceList = ({
         onClickWorkspaceSetting={onClickWorkspaceSetting}
         onNewWorkspace={onNewWorkspace}
         onAddWorkspace={onAddWorkspace}
-        currentWorkspaceId={currentWorkspaceId}
+        currentWorkspaceId={currentWorkspace?.id}
         onDragEnd={onDragEnd}
       />
     </ScrollableContainer>

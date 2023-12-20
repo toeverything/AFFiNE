@@ -1,6 +1,7 @@
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import { Modal, type ModalProps } from '@affine/component/ui/modal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 import { ContactWithUsIcon } from '@blocksuite/icons';
 import { debounce } from 'lodash-es';
 import { Suspense, useCallback, useLayoutEffect, useRef } from 'react';
@@ -20,16 +21,16 @@ type ActiveTab = GeneralSettingKeys | 'workspace' | 'account';
 
 export interface SettingProps extends ModalProps {
   activeTab: ActiveTab;
-  workspaceId: string | null;
+  workspaceMetadata?: WorkspaceMetadata | null;
   onSettingClick: (params: {
     activeTab: ActiveTab;
-    workspaceId: string | null;
+    workspaceMetadata: WorkspaceMetadata | null;
   }) => void;
 }
 
 export const SettingModal = ({
   activeTab = 'appearance',
-  workspaceId = null,
+  workspaceMetadata = null,
   onSettingClick,
   ...modalProps
 }: SettingProps) => {
@@ -75,22 +76,22 @@ export const SettingModal = ({
     (key: GeneralSettingKeys) => {
       onSettingClick({
         activeTab: key,
-        workspaceId: null,
+        workspaceMetadata: null,
       });
     },
     [onSettingClick]
   );
   const onWorkspaceSettingClick = useCallback(
-    (workspaceId: string) => {
+    (workspaceMetadata: WorkspaceMetadata) => {
       onSettingClick({
         activeTab: 'workspace',
-        workspaceId,
+        workspaceMetadata,
       });
     },
     [onSettingClick]
   );
   const onAccountSettingClick = useCallback(() => {
-    onSettingClick({ activeTab: 'account', workspaceId: null });
+    onSettingClick({ activeTab: 'account', workspaceMetadata: null });
   }, [onSettingClick]);
 
   return (
@@ -114,7 +115,7 @@ export const SettingModal = ({
         onGeneralSettingClick={onGeneralSettingClick}
         onWorkspaceSettingClick={onWorkspaceSettingClick}
         selectedGeneralKey={activeTab}
-        selectedWorkspaceId={workspaceId}
+        selectedWorkspaceId={workspaceMetadata?.id ?? null}
         onAccountSettingClick={onAccountSettingClick}
       />
 
@@ -125,9 +126,12 @@ export const SettingModal = ({
       >
         <div ref={modalContentRef} className={style.centerContainer}>
           <div className={style.content}>
-            {activeTab === 'workspace' && workspaceId ? (
+            {activeTab === 'workspace' && workspaceMetadata ? (
               <Suspense fallback={<WorkspaceDetailSkeleton />}>
-                <WorkspaceSetting key={workspaceId} workspaceId={workspaceId} />
+                <WorkspaceSetting
+                  key={workspaceMetadata.id}
+                  workspaceMetadata={workspaceMetadata}
+                />
               </Suspense>
             ) : null}
             {generalSettingList.some(v => v.key === activeTab) ? (

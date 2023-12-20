@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron';
 
 import { applicationMenuEvents } from './application-menu';
 import { logger } from './logger';
-import { uiEvents } from './ui';
+import { uiEvents } from './ui/events';
 import { updaterEvents } from './updater/event';
 
 export const allEvents = {

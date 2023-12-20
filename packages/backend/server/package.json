@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.10.3",
+  "version": "0.11.0",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -82,7 +82,8 @@
     "socket.io": "^4.7.2",
     "stripe": "^14.5.0",
     "ws": "^8.14.2",
-    "yjs": "^13.6.10"
+    "yjs": "^13.6.10",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
@@ -135,7 +136,8 @@
       "ENABLE_LOCAL_EMAIL": "true",
       "OAUTH_EMAIL_LOGIN": "noreply@toeverything.info",
       "OAUTH_EMAIL_PASSWORD": "affine",
-      "OAUTH_EMAIL_SENDER": "noreply@toeverything.info"
+      "OAUTH_EMAIL_SENDER": "noreply@toeverything.info",
+      "FEATURES_EARLY_ACCESS_PREVIEW": "false"
     }
   },
   "nodemonConfig": {

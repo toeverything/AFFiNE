@@ -1,27 +1,26 @@
 import { Input, toast } from '@affine/component';
-import { Button } from '@affine/component/ui/button';
 import {
   ConfirmModal,
   type ConfirmModalProps,
   Modal,
 } from '@affine/component/ui/modal';
-import { Tooltip } from '@affine/component/ui/tooltip';
 import { DebugLogger } from '@affine/debug';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { HelpIcon } from '@blocksuite/icons';
+import { workspaceManagerAtom } from '@affine/workspace/atom';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import type {
-  LoadDBFileResult,
-  SelectDBFileLocationResult,
-} from '@toeverything/infra/type';
-import { useSetAtom } from 'jotai';
+import { getCurrentStore } from '@toeverything/infra/atom';
+import {
+  buildShowcaseWorkspace,
+  initEmptyPage,
+} from '@toeverything/infra/blocksuite';
+import type { LoadDBFileResult } from '@toeverything/infra/type';
+import { useAtomValue } from 'jotai';
 import type { KeyboardEvent } from 'react';
-import { useEffect } from 'react';
 import { useLayoutEffect } from 'react';
 import { useCallback, useState } from 'react';
 
-import { openDisableCloudAlertModalAtom } from '../../../atoms';
-import { useAppHelper } from '../../../hooks/use-workspaces';
+import { setPageModeAtom } from '../../../atoms';
 import * as style from './index.css';
 
 type CreateWorkspaceStep =
@@ -81,11 +80,7 @@ const NameWorkspaceContent = ({
       {...props}
     >
       <Input
-        ref={ref => {
-          if (ref) {
-            window.setTimeout(() => ref.focus(), 0);
-          }
-        }}
+        autoFocus
         data-testid="create-workspace-input"
         onKeyDown={handleKeyDown}
         placeholder={t['com.affine.nameWorkspace.placeholder']()}
@@ -98,159 +93,14 @@ const NameWorkspaceContent = ({
   );
 };
 
-interface SetDBLocationContentProps {
-  onConfirmLocation: (dir?: string) => void;
-}
-
-const useDefaultDBLocation = () => {
-  const [defaultDBLocation, setDefaultDBLocation] = useState('');
-
-  useEffect(() => {
-    window.apis?.db
-      .getDefaultStorageLocation()
-      .then(dir => {
-        setDefaultDBLocation(dir);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, []);
-
-  return defaultDBLocation;
-};
-
-const SetDBLocationContent = ({
-  onConfirmLocation,
-}: SetDBLocationContentProps) => {
-  const t = useAFFiNEI18N();
-  const defaultDBLocation = useDefaultDBLocation();
-  const [opening, setOpening] = useState(false);
-
-  const handleSelectDBFileLocation = useCallback(() => {
-    if (opening) {
-      return;
-    }
-    setOpening(true);
-    (async function () {
-      const result: SelectDBFileLocationResult =
-        await window.apis?.dialog.selectDBFileLocation();
-      setOpening(false);
-      if (result?.filePath) {
-        onConfirmLocation(result.filePath);
-      } else if (result?.error) {
-        toast(t[result.error]());
-      }
-    })().catch(err => {
-      logger.error(err);
-    });
-  }, [onConfirmLocation, opening, t]);
-
-  return (
-    <div className={style.content}>
-      <div className={style.contentTitle}>
-        {t['com.affine.setDBLocation.title']()}
-      </div>
-      <p>{t['com.affine.setDBLocation.description']()}</p>
-      <div className={style.buttonGroup}>
-        <Button
-          disabled={opening}
-          data-testid="create-workspace-customize-button"
-          type="primary"
-          onClick={handleSelectDBFileLocation}
-        >
-          {t['com.affine.setDBLocation.button.customize']()}
-        </Button>
-        <Tooltip
-          content={t['com.affine.setDBLocation.tooltip.defaultLocation']({
-            location: defaultDBLocation,
-          })}
-        >
-          <Button
-            data-testid="create-workspace-default-location-button"
-            type="primary"
-            onClick={() => {
-              onConfirmLocation();
-            }}
-            icon={<HelpIcon />}
-            iconPosition="end"
-          >
-            {t['com.affine.setDBLocation.button.defaultLocation']()}
-          </Button>
-        </Tooltip>
-      </div>
-    </div>
-  );
-};
-
-interface SetSyncingModeContentProps {
-  mode: CreateWorkspaceMode;
-  onConfirmMode: (enableCloudSyncing: boolean) => void;
-}
-
-const SetSyncingModeContent = ({
-  mode,
-  onConfirmMode,
-}: SetSyncingModeContentProps) => {
-  const t = useAFFiNEI18N();
-  const [enableCloudSyncing, setEnableCloudSyncing] = useState(false);
-  return (
-    <div className={style.content}>
-      <div className={style.contentTitle}>
-        {mode === 'new'
-          ? t['com.affine.setSyncingMode.title.created']()
-          : t['com.affine.setSyncingMode.title.added']()}
-      </div>
-
-      <div className={style.radioGroup}>
-        <label onClick={() => setEnableCloudSyncing(false)}>
-          <input
-            className={style.radio}
-            type="radio"
-            readOnly
-            checked={!enableCloudSyncing}
-          />
-          {t['com.affine.setSyncingMode.deviceOnly']()}
-        </label>
-        <label onClick={() => setEnableCloudSyncing(true)}>
-          <input
-            className={style.radio}
-            type="radio"
-            readOnly
-            checked={enableCloudSyncing}
-          />
-          {t['com.affine.setSyncingMode.cloud']()}
-        </label>
-      </div>
-
-      <div className={style.buttonGroup}>
-        <Button
-          data-testid="create-workspace-continue-button"
-          type="primary"
-          onClick={() => {
-            onConfirmMode(enableCloudSyncing);
-          }}
-        >
-          {t['com.affine.setSyncingMode.button.continue']()}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
 export const CreateWorkspaceModal = ({
   mode,
   onClose,
   onCreate,
 }: ModalProps) => {
-  const { createLocalWorkspace, addLocalWorkspace } = useAppHelper();
   const [step, setStep] = useState<CreateWorkspaceStep>();
-  const [addedId, setAddedId] = useState<string>();
-  const [workspaceName, setWorkspaceName] = useState<string>();
-  const [dbFileLocation, setDBFileLocation] = useState<string>();
-  const setOpenDisableCloudAlertModal = useSetAtom(
-    openDisableCloudAlertModalAtom
-  );
   const t = useAFFiNEI18N();
+  const workspaceManager = useAtomValue(workspaceManagerAtom);
 
   // todo: maybe refactor using xstate?
   useLayoutEffect(() => {
@@ -269,9 +119,8 @@ export const CreateWorkspaceModal = ({
         setStep(undefined);
         const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
-          setAddedId(result.workspaceId);
-          const newWorkspaceId = await addLocalWorkspace(result.workspaceId);
-          onCreate(newWorkspaceId);
+          workspaceManager._addLocalWorkspace(result.workspaceId);
+          onCreate(result.workspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {
             toast(t[result.error]());
@@ -289,76 +138,37 @@ export const CreateWorkspaceModal = ({
     return () => {
       canceled = true;
     };
-  }, [addLocalWorkspace, mode, onClose, onCreate, t]);
-
-  const onConfirmEnableCloudSyncing = useCallback(
-    (enableCloudSyncing: boolean) => {
-      (async function () {
-        if (!runtimeConfig.enableCloud && enableCloudSyncing) {
-          setOpenDisableCloudAlertModal(true);
-        } else {
-          let id = addedId;
-          // syncing mode is also the last step
-          if (addedId && mode === 'add') {
-            await addLocalWorkspace(addedId);
-          } else if (mode === 'new' && workspaceName) {
-            id = await createLocalWorkspace(workspaceName);
-            // if dbFileLocation is set, move db file to that location
-            if (dbFileLocation) {
-              await window.apis?.dialog.moveDBFile(id, dbFileLocation);
-            }
-          } else {
-            logger.error('invalid state');
-            return;
-          }
-          if (id) {
-            onCreate(id);
-          }
-        }
-      })().catch(e => {
-        logger.error(e);
-      });
-    },
-    [
-      addLocalWorkspace,
-      addedId,
-      createLocalWorkspace,
-      dbFileLocation,
-      mode,
-      onCreate,
-      setOpenDisableCloudAlertModal,
-      workspaceName,
-    ]
-  );
+  }, [mode, onClose, onCreate, t, workspaceManager]);
 
   const onConfirmName = useAsyncCallback(
     async (name: string) => {
-      setWorkspaceName(name);
       // this will be the last step for web for now
       // fix me later
-      const id = await createLocalWorkspace(name);
+      const id = await workspaceManager.createWorkspace(
+        WorkspaceFlavour.LOCAL,
+        async workspace => {
+          workspace.meta.setName(name);
+          if (runtimeConfig.enablePreloading) {
+            await buildShowcaseWorkspace(workspace, {
+              store: getCurrentStore(),
+              atoms: {
+                pageMode: setPageModeAtom,
+              },
+            });
+          } else {
+            const page = workspace.createPage();
+            workspace.setPageMeta(page.id, {
+              jumpOnce: true,
+            });
+            await initEmptyPage(page);
+          }
+          logger.debug('create first workspace');
+        }
+      );
       onCreate(id);
     },
-    [createLocalWorkspace, onCreate]
+    [onCreate, workspaceManager]
   );
-
-  const setDBLocationNode =
-    step === 'set-db-location' ? (
-      <SetDBLocationContent
-        onConfirmLocation={dir => {
-          setDBFileLocation(dir);
-          setStep('name-workspace');
-        }}
-      />
-    ) : null;
-
-  const setSyncingModeNode =
-    step === 'set-syncing-mode' ? (
-      <SetSyncingModeContent
-        mode={mode}
-        onConfirmMode={onConfirmEnableCloudSyncing}
-      />
-    ) : null;
 
   const onOpenChange = useCallback(
     (open: boolean) => {
@@ -388,8 +198,6 @@ export const CreateWorkspaceModal = ({
       }}
     >
       <div className={style.header}></div>
-      {setDBLocationNode}
-      {setSyncingModeNode}
     </Modal>
   );
 };

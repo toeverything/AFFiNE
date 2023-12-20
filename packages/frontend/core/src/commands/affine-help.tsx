@@ -34,7 +34,7 @@ export function registerAffineHelpCommands({
         store.set(openSettingModalAtom, {
           open: true,
           activeTab: 'about',
-          workspaceId: null,
+          workspaceMetadata: null,
         });
       },
     })

@@ -7,7 +7,13 @@ import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';
-import { Suspense, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   cmdkQueryAtom,
@@ -189,6 +195,12 @@ export const CMDKContainer = ({
   const isInEditor = pageMeta !== undefined;
   const [opening, setOpening] = useState(open);
 
+  const handleFocus = useCallback((ref: HTMLInputElement | null) => {
+    if (ref) {
+      window.setTimeout(() => ref.focus(), 0);
+    }
+  }, []);
+
   // fix list height animation on openning
   useLayoutEffect(() => {
     if (open) {
@@ -235,7 +247,7 @@ export const CMDKContainer = ({
       ) : null}
       <Command.Input
         placeholder={t['com.affine.cmdk.placeholder']()}
-        autoFocus
+        ref={handleFocus}
         {...rest}
         value={query}
         onValueChange={onQueryChange}

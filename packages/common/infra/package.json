@@ -40,6 +40,11 @@
       "import": "./dist/type.js",
       "require": "./dist/type.cjs"
     },
+    "./app-config-storage": {
+      "type": "./dist/src/app-config-storage.d.ts",
+      "import": "./dist/app-config-storage.js",
+      "require": "./dist/app-config-storage.cjs"
+    },
     "./__internal__/*": {
       "type": "./dist/src/__internal__/*.d.ts",
       "import": "./dist/__internal__/*.js",
@@ -57,9 +62,9 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/sdk": "workspace:*",
-    "@blocksuite/blocks": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/global": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/store": "0.11.0-nightly-202312120309-2b3d2ba",
+    "@blocksuite/blocks": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/global": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/store": "0.11.0-nightly-202312200102-8254dc9",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
     "tinykeys": "^2.1.0",
@@ -68,8 +73,8 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/lit": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/presets": "0.11.0-nightly-202312120309-2b3d2ba",
+    "@blocksuite/lit": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/presets": "0.11.0-nightly-202312200102-8254dc9",
     "@testing-library/react": "^14.0.0",
     "async-call-rpc": "^6.3.1",
     "electron": "link:../../frontend/electron/node_modules/electron",
@@ -78,7 +83,7 @@
     "rxjs": "^7.8.1",
     "vite": "^5.0.6",
     "vite-plugin-dts": "3.6.0",
-    "vitest": "0.34.6",
+    "vitest": "1.0.4",
     "yjs": "^13.6.10"
   },
   "peerDependencies": {
@@ -109,5 +114,5 @@
       "optional": true
     }
   },
-  "version": "0.10.3"
+  "version": "0.11.0"
 }

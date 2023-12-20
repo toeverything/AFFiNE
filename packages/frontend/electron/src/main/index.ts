@@ -6,14 +6,15 @@ import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, overrideSession } from './config';
+import { persistentConfig } from './config-storage/persist';
 import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
-import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { getOrCreateWindow } from './main-window';
 import { registerProtocol } from './protocol';
 import { registerUpdater } from './updater';
+import { launch } from './windows-manager/launcher';
+import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
 
@@ -26,11 +27,13 @@ if (overrideSession) {
 }
 
 if (require('electron-squirrel-startup')) app.quit();
-// allow tests to overwrite app name through passing args
-if (process.argv.includes('--app-name')) {
-  const appNameIndex = process.argv.indexOf('--app-name');
-  const appName = process.argv[appNameIndex + 1];
-  app.setName(appName);
+
+if (process.env.SKIP_ONBOARDING) {
+  launchStage.value = 'main';
+  persistentConfig.set({
+    onBoarding: false,
+    dismissWorkspaceGuideModal: true,
+  });
 }
 
 /**
@@ -53,12 +56,10 @@ app.on('window-all-closed', () => {
 });
 
 /**
- * @see https://www.electronjs.org/docs/v14-x-y/api/app#event-activate-macos Event: 'activate'
+ * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  getOrCreateWindow().catch(e =>
-    console.error('Failed to restore or create window:', e)
-  );
+  launch().catch(e => console.error('Failed launch:', e));
 });
 
 setupDeepLink(app);
@@ -71,8 +72,7 @@ app
   .then(registerProtocol)
   .then(registerHandlers)
   .then(registerEvents)
-  .then(ensureHelperProcess)
-  .then(getOrCreateWindow)
+  .then(launch)
   .then(createApplicationMenu)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));

@@ -15,40 +15,21 @@ export const AddFavouriteButton = ({
   workspace,
   pageId,
 }: AddFavouriteButtonProps) => {
-  const { createPage } = usePageHelper(workspace);
+  const { createPage, createLinkedPage } = usePageHelper(workspace);
   const { setPageMeta } = usePageMetaHelper(workspace);
   const handleAddFavorite = useAsyncCallback(
     async e => {
       if (pageId) {
         e.stopPropagation();
         e.preventDefault();
-        const page = createPage();
-        await page.load();
-        const parentPage = workspace.getPage(pageId);
-        if (parentPage) {
-          await parentPage.load();
-          const text = parentPage.Text.fromDelta([
-            {
-              insert: ' ',
-              attributes: {
-                reference: {
-                  type: 'LinkedPage',
-                  pageId: page.id,
-                },
-              },
-            },
-          ]);
-          const [frame] = parentPage.getBlockByFlavour('affine:note');
-          frame && parentPage.addBlock('affine:paragraph', { text }, frame.id);
-          setPageMeta(page.id, {});
-        }
+        createLinkedPage(pageId);
       } else {
         const page = createPage();
         await page.load();
         setPageMeta(page.id, { favorite: true });
       }
     },
-    [createPage, setPageMeta, workspace, pageId]
+    [pageId, createLinkedPage, createPage, setPageMeta]
   );
 
   return (

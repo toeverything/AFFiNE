@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import type { FC, HTMLAttributes } from 'react';
 
 import { Input, type InputProps } from '../../ui/input';
 import * as styles from './share.css';
@@ -9,27 +8,25 @@ export type AuthInputProps = InputProps & {
   errorHint?: string;
   withoutHint?: boolean;
   onEnter?: () => void;
-  wrapperProps?: HTMLAttributes<HTMLDivElement>;
 };
-export const AuthInput: FC<AuthInputProps> = ({
+export const AuthInput = ({
   label,
   error,
   errorHint,
   withoutHint = false,
   onEnter,
-  wrapperProps: { className, ...otherWrapperProps } = {},
+  className,
   ...inputProps
-}) => {
+}: AuthInputProps) => {
   return (
     <div
-      className={clsx(styles.authInputWrapper, className, {
+      className={clsx(styles.authInputWrapper, {
         'without-hint': withoutHint,
       })}
-      {...otherWrapperProps}
     >
       {label ? <label>{label}</label> : null}
       <Input
-        className={styles.input}
+        className={clsx(className)}
         size="extraLarge"
         status={error ? 'error' : 'default'}
         onKeyDown={e => {

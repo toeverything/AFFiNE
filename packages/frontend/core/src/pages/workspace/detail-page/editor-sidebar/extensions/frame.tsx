@@ -1,41 +1,43 @@
-import { TOCNotesPanel } from '@blocksuite/blocks';
+import { editorContainerAtom } from '@affine/component/block-suite-editor';
 import { assertExists } from '@blocksuite/global/utils';
 import { FrameIcon } from '@blocksuite/icons';
+import { FramePanel } from '@blocksuite/presets';
+import { useAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
 
-import { useCurrentPage } from '../../../../../hooks/current/use-current-page';
 import type { EditorExtension } from '../types';
 import * as styles from './frame.css';
 
-// A wrapper for TOCNotesPanel
-const EditorOutline = () => {
-  const tocPanelRef = useRef<TOCNotesPanel | null>(null);
-  const currentPage = useCurrentPage();
+// A wrapper for FramePanel
+const EditorFramePanel = () => {
+  const framePanelRef = useRef<FramePanel | null>(null);
+  const [editorContainer] = useAtom(editorContainerAtom);
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
-      assertExists(tocPanelRef.current, 'toc panel should be initialized');
-      container.append(tocPanelRef.current);
+      assertExists(framePanelRef.current, 'frame panel should be initialized');
+      container.append(framePanelRef.current);
     }
   }, []);
 
-  if (!currentPage) {
+  if (!editorContainer) {
     return;
   }
 
-  if (!tocPanelRef.current) {
-    tocPanelRef.current = new TOCNotesPanel();
+  if (!framePanelRef.current) {
+    framePanelRef.current = new FramePanel();
   }
 
-  if (currentPage !== tocPanelRef.current?.page) {
-    (tocPanelRef.current as TOCNotesPanel).page = currentPage;
+  if (editorContainer !== framePanelRef.current?.editor) {
+    (framePanelRef.current as FramePanel).editor = editorContainer;
+    (framePanelRef.current as FramePanel).fitPadding = [20, 20, 20, 20];
   }
 
   return <div className={styles.root} ref={onRefChange} />;
 };
 
-export const frameExtension: EditorExtension = {
+export const framePanelExtension: EditorExtension = {
   name: 'frame',
   icon: <FrameIcon />,
-  Component: EditorOutline,
+  Component: EditorFramePanel,
 };

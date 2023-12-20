@@ -31,7 +31,7 @@ test('New a page and open it ,then favorite it', async ({
   await favoriteBtn.click();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('Export to html, markdown and png', async ({ page }) => {
@@ -121,5 +121,5 @@ test('Cancel favorite', async ({ page, workspace }) => {
   ).not.toBeUndefined();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

@@ -1,11 +1,12 @@
 import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
 import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { test } from '@affine-test/kit/playwright';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { coreUrl } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 async function open404PageToInitData(page: Page, version: string) {
   const snapshotStorage = new SnapshotStorage(version);
@@ -38,9 +39,6 @@ test('v1 to v4', async ({ page }) => {
   await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
   await page.getByTestId('upgrade-workspace-button').click();
 
-  await expect(page.getByText('Refresh Current Page')).toBeVisible();
-  await page.getByTestId('upgrade-workspace-button').click();
-
   await expect(page.getByTestId('page-list-item')).toHaveCount(2);
   await page
     .getByTestId('page-list-item-title-text')
@@ -63,10 +61,6 @@ test('v2 to v4, database migration', async ({ page }) => {
   await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
   await page.getByTestId('upgrade-workspace-button').click();
 
-  await expect(page.getByText('Refresh Current Page')).toBeVisible();
-  await page.getByTestId('upgrade-workspace-button').click();
-  await waitForEditorLoad(page);
-
   // check page mode is correct
   await expect(page.locator('v-line').nth(0)).toHaveText('hello');
   await expect(page.locator('affine-database')).toBeVisible();
@@ -83,9 +77,6 @@ test('v3 to v4, surface migration', async ({ page }) => {
   await page.goto(detailPagePath);
 
   await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
-  await page.getByTestId('upgrade-workspace-button').click();
-
-  await expect(page.getByText('Refresh Current Page')).toBeVisible();
   await page.getByTestId('upgrade-workspace-button').click();
   await waitForEditorLoad(page);
 
@@ -104,9 +95,6 @@ test('v0 to v4, subdoc migration', async ({ page }) => {
   await clickSideBarAllPageButton(page);
 
   await expect(page.getByTestId('upgrade-workspace-button')).toBeVisible();
-  await page.getByTestId('upgrade-workspace-button').click();
-
-  await expect(page.getByText('Refresh Current Page')).toBeVisible();
   await page.getByTestId('upgrade-workspace-button').click();
 
   await expect(page.getByTestId('page-list-item')).toHaveCount(2);

@@ -1,4 +1,4 @@
-import { test } from '@affine-test/kit/playwright';
+import { skipOnboarding, test } from '@affine-test/kit/playwright';
 import {
   addUserToWorkspace,
   createRandomUser,
@@ -56,6 +56,7 @@ test('can enable share page', async ({ page, browser }) => {
   // check share page is accessible
   {
     const context = await browser.newContext();
+    await skipOnboarding(context);
     const url: string = await page.evaluate(() =>
       navigator.clipboard.readText()
     );
@@ -97,6 +98,7 @@ test('share page with default edgeless', async ({ page, browser }) => {
   // check share page is accessible
   {
     const context = await browser.newContext();
+    await skipOnboarding(context);
     const url: string = await page.evaluate(() =>
       navigator.clipboard.readText()
     );
@@ -135,6 +137,7 @@ test('can collaborate with other user and name should display when editing', asy
   const workspaceId = currentUrl.split('/')[4];
   const userB = await createRandomUser();
   const context = await browser.newContext();
+  await skipOnboarding(context);
   const page2 = await context.newPage();
   await loginUser(page2, userB.email);
   await addUserToWorkspace(workspaceId, userB.id, 1 /* READ */);
@@ -151,10 +154,10 @@ test('can collaborate with other user and name should display when editing', asy
   {
     const title = getBlockSuiteEditorTitle(page2);
     expect(await title.innerText()).toBe('TEST TITLE');
-    const typingPromise = Promise.all([
-      page.keyboard.press('Enter', { delay: 50 }),
-      page.keyboard.type('TEST CONTENT', { delay: 50 }),
-    ]);
+    const typingPromise = (async () => {
+      await page.keyboard.press('Enter', { delay: 50 });
+      await page.keyboard.type('TEST CONTENT', { delay: 50 });
+    })();
     // username should be visible when editing
     await expect(page2.getByText(user.name)).toBeVisible();
     await typingPromise;
@@ -205,6 +208,7 @@ test('can sync collections between different browser', async ({
 
   {
     const context = await browser.newContext();
+    await skipOnboarding(context);
     const page2 = await context.newPage();
     await loginUser(page2, user.email);
     await page2.goto(page.url());
@@ -268,6 +272,7 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
 
   {
     const context = await browser.newContext();
+    await skipOnboarding(context);
     const page2 = await context.newPage();
     await loginUser(page2, user.email);
     await page2.goto(page.url());

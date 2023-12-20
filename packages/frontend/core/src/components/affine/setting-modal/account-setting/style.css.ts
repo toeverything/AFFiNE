@@ -43,3 +43,8 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
 export const button = style({
   padding: '4px 12px',
 });
+
+export const userNameInput = style({
+  height: '32px',
+  width: '280px',
+});

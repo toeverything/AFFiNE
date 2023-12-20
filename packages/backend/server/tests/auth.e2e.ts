@@ -9,11 +9,13 @@ import ava, { type TestFn } from 'ava';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';
+import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { MailService } from '../src/modules/auth/mailer';
 import { AuthService } from '../src/modules/auth/service';
 import {
   changeEmail,
   createWorkspace,
+  initFeatureConfigs,
   sendChangeEmail,
   sendVerifyChangeEmail,
   signUp,
@@ -37,6 +39,7 @@ test.beforeEach(async t => {
   await client.$disconnect();
   const module = await Test.createTestingModule({
     imports: [AppModule],
+    providers: [RevertCommand, RunCommand],
   }).compile();
   const app = module.createNestApplication();
   app.use(
@@ -52,6 +55,9 @@ test.beforeEach(async t => {
   t.context.app = app;
   t.context.auth = auth;
   t.context.mail = mail;
+
+  // init features
+  await initFeatureConfigs(module);
 });
 
 test.afterEach(async t => {

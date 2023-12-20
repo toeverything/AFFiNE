@@ -10,7 +10,7 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const dbPath = path.join(
     appInfo.sessionData,
     'workspaces',
-    w.id,
+    w.meta.id,
     'storage.db'
   );
   // check if db file exists
@@ -25,7 +25,7 @@ test.skip('move workspace db file', async ({ page, appInfo, workspace }) => {
   // goto workspace setting
   await page.getByTestId('workspace-list-item').click();
 
-  const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp-dir');
+  const tmpPath = path.join(appInfo.sessionData, w.meta.id + '-tmp-dir');
 
   // move db file to tmp folder
   await page.evaluate(tmpPath => {
@@ -53,7 +53,7 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
 
-  const originalId = w.id;
+  const originalId = w.meta.id;
 
   const newWorkspaceName = 'new-test-name';
 
@@ -67,7 +67,7 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
   await page.getByTestId('save-workspace-name').click();
   await page.waitForSelector('text="Update workspace name success"');
 
-  const tmpPath = path.join(appInfo.sessionData, w.id + '-tmp.db');
+  const tmpPath = path.join(appInfo.sessionData, w.meta.id + '-tmp.db');
 
   // export db file to tmp folder
   await page.evaluate(tmpPath => {
@@ -105,7 +105,7 @@ test.fixme('export then add', async ({ page, appInfo, workspace }) => {
   // sleep for a while to wait for the workspace to be added :D
   await page.waitForTimeout(2000);
   const newWorkspace = await workspace.current();
-  expect(newWorkspace.id).not.toBe(originalId);
+  expect(newWorkspace.meta.id).not.toBe(originalId);
   // check its name is correct
   await expect(page.getByTestId('workspace-name')).toHaveText(newWorkspaceName);
 

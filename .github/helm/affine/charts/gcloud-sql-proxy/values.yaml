@@ -1,0 +1,40 @@
+replicaCount: 3
+
+image:
+  # the tag is defined as chart appVersion.
+  repository: gcr.io/cloud-sql-connectors/cloud-sql-proxy
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  runAsNonRoot: true
+
+service:
+  type: ClusterIP
+  port: 5432
+
+resources:
+  limits:
+    memory: "4Gi"
+    cpu: "2"
+
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}

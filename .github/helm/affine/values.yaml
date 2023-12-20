@@ -16,6 +16,8 @@ global:
       cloudSqlInternal: ''
       connectionName: ''
       serviceAccount: ''
+      cloudProxyReplicas: 3
+      proxyPort: '5432'
   redis:
     enabled: true
     host: 'redis-master'

@@ -1,6 +1,5 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
@@ -44,8 +43,7 @@ export const EditorModeSwitch = ({
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
     meta => meta.id === pageId
   );
-  assertExists(pageMeta);
-  const { trash } = pageMeta;
+  const trash = pageMeta?.trash ?? false;
 
   const { togglePageMode, switchToEdgelessMode, switchToPageMode } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);

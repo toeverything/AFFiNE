@@ -1,26 +1,33 @@
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { useAtomValue } from 'jotai';
 import { Suspense, useEffect } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 
 const SyncAwarenessInnerLoggedIn = () => {
   const currentUser = useCurrentUser();
-  const [{ blockSuiteWorkspace: workspace }] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
 
   useEffect(() => {
-    if (currentUser && workspace) {
-      workspace.awarenessStore.awareness.setLocalStateField('user', {
-        name: currentUser.name,
-        // todo: add avatar?
-      });
+    if (currentUser && currentWorkspace) {
+      currentWorkspace.blockSuiteWorkspace.awarenessStore.awareness.setLocalStateField(
+        'user',
+        {
+          name: currentUser.name,
+          // todo: add avatar?
+        }
+      );
 
       return () => {
-        workspace.awarenessStore.awareness.setLocalStateField('user', null);
+        currentWorkspace.blockSuiteWorkspace.awarenessStore.awareness.setLocalStateField(
+          'user',
+          null
+        );
       };
     }
     return;
-  }, [currentUser, workspace]);
+  }, [currentUser, currentWorkspace]);
 
   return null;
 };

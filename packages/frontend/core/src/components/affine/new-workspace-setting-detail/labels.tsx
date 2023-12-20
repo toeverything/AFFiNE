@@ -1,12 +1,9 @@
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
 import { useMemo } from 'react';
 
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
-export interface LabelsPanelProps extends WorkspaceSettingDetailProps {
-  workspace: AffineOfficialWorkspace;
-}
+export interface LabelsPanelProps extends WorkspaceSettingDetailProps {}
 
 type WorkspaceStatus =
   | 'local'
@@ -38,7 +35,10 @@ const Label = ({ value, background }: LabelProps) => {
     </div>
   );
 };
-export const LabelsPanel = ({ workspace, isOwner }: LabelsPanelProps) => {
+export const LabelsPanel = ({
+  workspaceMetadata,
+  isOwner,
+}: LabelsPanelProps) => {
   const labelMap: LabelMap = useMemo(
     () => ({
       local: {
@@ -74,11 +74,10 @@ export const LabelsPanel = ({ workspace, isOwner }: LabelsPanelProps) => {
   );
   const labelConditions: labelConditionsProps[] = [
     { condition: !isOwner, label: 'joinedWorkspace' },
-    { condition: workspace.flavour === 'local', label: 'local' },
-    { condition: workspace.flavour === 'affine-cloud', label: 'syncCloud' },
+    { condition: workspaceMetadata.flavour === 'local', label: 'local' },
     {
-      condition: workspace.flavour === 'affine-public',
-      label: 'publishedToWeb',
+      condition: workspaceMetadata.flavour === 'affine-cloud',
+      label: 'syncCloud',
     },
     //TODO: add these labels
     // { status==="synced", label: 'availableOffline' }

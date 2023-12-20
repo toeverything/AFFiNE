@@ -5,7 +5,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema } from '@blocksuite/store';
 import {
   forceUpgradePages,
-  guidCompatibilityFix,
+  migrateGuidCompatibility,
   migrateToSubdoc,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
@@ -127,8 +127,8 @@ export const applyGuidCompatibilityFix = async (db: SqliteConnection) => {
   const rootDoc = new YDoc();
   oldRows.forEach(row => applyUpdate(rootDoc, row.data));
 
-  // see comments of guidCompatibilityFix
-  guidCompatibilityFix(rootDoc);
+  // see comments of migrateGuidCompatibility
+  migrateGuidCompatibility(rootDoc);
 
   // todo: backup?
   await db.replaceUpdates(undefined, [

@@ -10,7 +10,7 @@ export interface CreateCollectionModalProps {
   title?: string;
   onConfirmText?: string;
   init: string;
-  onConfirm: (title: string) => Promise<void>;
+  onConfirm: (title: string) => void;
   open: boolean;
   showTips?: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,13 +27,8 @@ export const CreateCollectionModal = ({
   const t = useAFFiNEI18N();
   const onConfirmTitle = useCallback(
     (title: string) => {
-      onConfirm(title)
-        .then(() => {
-          onOpenChange(false);
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      onConfirm(title);
+      onOpenChange(false);
     },
     [onConfirm, onOpenChange]
   );

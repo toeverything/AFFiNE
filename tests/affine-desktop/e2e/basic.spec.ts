@@ -14,11 +14,11 @@ const historyShortcut = async (page: Page, command: 'goBack' | 'goForward') => {
 };
 
 test('new page', async ({ page, workspace }) => {
-  await page.getByTestId('new-page-button').click({
+  await page.getByTestId('sidebar-new-page-button').click({
     delay: 100,
   });
   await page.waitForSelector('v-line');
-  const flavour = (await workspace.current()).flavour;
+  const flavour = (await workspace.current()).meta.flavour;
   expect(flavour).toBe('local');
 });
 
@@ -32,7 +32,7 @@ test('app sidebar router forward/back', async ({ page }) => {
   {
     // create pages
     await page.waitForTimeout(500);
-    await page.getByTestId('new-page-button').click({
+    await page.getByTestId('sidebar-new-page-button').click({
       delay: 100,
     });
     await page.waitForSelector('v-line');
@@ -42,7 +42,7 @@ test('app sidebar router forward/back', async ({ page }) => {
       delay: 100,
     });
     await page.waitForTimeout(500);
-    await page.getByTestId('new-page-button').click({
+    await page.getByTestId('sidebar-new-page-button').click({
       delay: 100,
     });
     await page.waitForSelector('v-line');
@@ -52,7 +52,7 @@ test('app sidebar router forward/back', async ({ page }) => {
       delay: 100,
     });
     await page.waitForTimeout(500);
-    await page.getByTestId('new-page-button').click({
+    await page.getByTestId('sidebar-new-page-button').click({
       delay: 100,
     });
     await page.waitForSelector('v-line');
@@ -142,19 +142,19 @@ test('affine onboarding button', async ({ page }) => {
   await page.getByTestId('help-island').click();
   await page.getByTestId('easy-guide').click();
   const onboardingModal = page.locator('[data-testid=onboarding-modal]');
-  expect(await onboardingModal.isVisible()).toEqual(true);
+  await expect(onboardingModal).toBeVisible();
   const switchVideo = page.locator(
     '[data-testid=onboarding-modal-switch-video]'
   );
-  expect(await switchVideo.isVisible()).toEqual(true);
+  await expect(switchVideo).toBeVisible();
   await page.getByTestId('onboarding-modal-next-button').click();
   const editingVideo = page.locator(
     '[data-testid=onboarding-modal-editing-video]'
   );
-  expect(await editingVideo.isVisible()).toEqual(true);
+  await expect(editingVideo).toBeVisible();
   await page.getByTestId('onboarding-modal-close-button').click();
 
-  expect(await onboardingModal.isVisible()).toEqual(false);
+  await expect(onboardingModal).toBeHidden();
 });
 
 test('windows only check', async ({ page }) => {
@@ -169,21 +169,15 @@ test('windows only check', async ({ page }) => {
 test('delete workspace', async ({ page }) => {
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
-  await page
-    .getByTestId('create-workspace-input')
-    .pressSequentially('Delete Me', {
-      delay: 100,
-    });
-  await page.getByTestId('create-workspace-create-button').click({
-    delay: 100,
-  });
+  await page.getByTestId('create-workspace-input').fill('Delete Me');
+  await page.getByTestId('create-workspace-create-button').click();
   // await page.getByTestId('create-workspace-continue-button').click({
   //   delay: 100,
   // });
   await page.waitForTimeout(1000);
   await clickSideBarSettingButton(page);
   await page.getByTestId('current-workspace-label').click();
-  expect(await page.getByTestId('workspace-name-input').inputValue()).toBe(
+  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
     'Delete Me'
   );
   const contentElement = page.getByTestId('setting-modal-content');
@@ -197,9 +191,7 @@ test('delete workspace', async ({ page }) => {
   );
   await page.mouse.wheel(0, 500);
   await page.getByTestId('delete-workspace-button').click();
-  await page
-    .getByTestId('delete-workspace-input')
-    .pressSequentially('Delete Me');
+  await page.getByTestId('delete-workspace-input').fill('Delete Me');
   await page.getByTestId('delete-workspace-confirm-button').click();
   await page.waitForTimeout(1000);
   expect(await page.getByTestId('workspace-name').textContent()).toBe(

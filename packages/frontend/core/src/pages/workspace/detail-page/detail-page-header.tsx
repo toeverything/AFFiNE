@@ -4,7 +4,7 @@ import {
   appSidebarOpenAtom,
   SidebarSwitch,
 } from '@affine/component/app-sidebar';
-import type { AllWorkspace } from '@affine/core/shared';
+import type { Workspace } from '@affine/workspace';
 import { RightSidebarIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -106,7 +106,7 @@ export function DetailPageHeader({
   showSidebarSwitch = true,
 }: {
   page: Page;
-  workspace: AllWorkspace;
+  workspace: Workspace;
   showSidebarSwitch?: boolean;
 }) {
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
@@ -117,7 +117,10 @@ export function DetailPageHeader({
     <Header className={styles.mainHeader}>
       <SidebarSwitch show={!leftSidebarOpen} />
       {!leftSidebarOpen ? <HeaderDivider /> : null}
-      <BlockSuiteHeaderTitle pageId={page.id} workspace={workspace} />
+      <BlockSuiteHeaderTitle
+        pageId={page.id}
+        blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+      />
       <div className={styles.spacer} />
       {page ? <SharePageButton workspace={workspace} page={page} /> : null}
       <RightHeader showSidebarSwitch={showSidebarSwitch} />

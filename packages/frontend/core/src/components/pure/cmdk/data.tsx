@@ -2,21 +2,17 @@ import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import {
+  currentWorkspaceAtom,
+  waitForCurrentWorkspaceAtom,
+} from '@affine/workspace/atom';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import {
-  getWorkspace,
-  waitForWorkspace,
-} from '@toeverything/infra/__internal__/workspace';
-import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-  getCurrentStore,
-} from '@toeverything/infra/atom';
+import { currentPageIdAtom, getCurrentStore } from '@toeverything/infra/atom';
 import {
   type AffineCommand,
   AffineCommandRegistry,
@@ -25,7 +21,7 @@ import {
 } from '@toeverything/infra/command';
 import { atom, useAtomValue } from 'jotai';
 import { groupBy } from 'lodash-es';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   openQuickSearchModalAtom,
@@ -33,7 +29,6 @@ import {
   recentPageIdsBaseAtom,
 } from '../../../atoms';
 import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
@@ -53,8 +48,8 @@ export const cmdkValueAtom = atom('');
 
 // like currentWorkspaceAtom, but not throw error
 const safeCurrentPageAtom = atom<Promise<Page | undefined>>(async get => {
-  const currentWorkspaceId = get(currentWorkspaceIdAtom);
-  if (!currentWorkspaceId) {
+  const currentWorkspace = get(currentWorkspaceAtom);
+  if (!currentWorkspace) {
     return;
   }
 
@@ -64,9 +59,7 @@ const safeCurrentPageAtom = atom<Promise<Page | undefined>>(async get => {
     return;
   }
 
-  const workspace = getWorkspace(currentWorkspaceId);
-  await waitForWorkspace(workspace);
-  const page = workspace.getPage(currentPageId);
+  const page = currentWorkspace.blockSuiteWorkspace.getPage(currentPageId);
 
   if (!page) {
     return;
@@ -132,7 +125,7 @@ export const filteredAffineCommands = atom(async get => {
 });
 
 const useWorkspacePages = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const pages = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   return pages;
 };
@@ -166,35 +159,43 @@ export const pageToCommand = (
   blockId?: string
 ): CMDKCommand => {
   const pageMode = store.get(pageSettingsAtom)?.[page.id]?.mode;
-  const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+  const currentWorkspace = store.get(currentWorkspaceAtom);
 
   const title = page.title || t['Untitled']();
   const commandLabel = label || {
     title: title,
   };
 
+  // hack: when comparing, the part between >>> and <<< will be ignored
+  // adding this patch so that CMDK will not complain about duplicated commands
+  const id =
+    title +
+    (label?.subTitle || '') +
+    valueWrapperStart +
+    page.id +
+    '.' +
+    category +
+    valueWrapperEnd;
+
   return {
-    id: page.id,
+    id,
     label: commandLabel,
-    // hack: when comparing, the part between >>> and <<< will be ignored
-    // adding this patch so that CMDK will not complain about duplicated commands
-    value:
-      title + valueWrapperStart + page.id + '.' + category + valueWrapperEnd,
+    value: id,
     originalValue: title,
     category: category,
     run: () => {
-      if (!currentWorkspaceId) {
+      if (!currentWorkspace) {
         console.error('current workspace not found');
         return;
       }
       if (blockId) {
         return navigationHelper.jumpToPageBlock(
-          currentWorkspaceId,
+          currentWorkspace.id,
           page.id,
           blockId
         );
       }
-      return navigationHelper.jumpToPage(currentWorkspaceId, page.id);
+      return navigationHelper.jumpToPage(currentWorkspace.id, page.id);
     },
     icon: pageMode === 'edgeless' ? <EdgelessIcon /> : <PageIcon />,
     timestamp: page.updatedDate,
@@ -209,14 +210,32 @@ export const usePageCommands = () => {
   const recentPages = useRecentPages();
   const pages = useWorkspacePages();
   const store = getCurrentStore();
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const pageHelper = usePageHelper(workspace.blockSuiteWorkspace);
   const pageMetaHelper = usePageMetaHelper(workspace.blockSuiteWorkspace);
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
 
+  const [searchTime, setSearchTime] = useState<number>(0);
+
+  // HACK: blocksuite indexer is async,
+  // so we need to re-search after it has been updated
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    const dosearch = () => {
+      setSearchTime(Date.now());
+      timer = setTimeout(dosearch, 500);
+    };
+    timer = setTimeout(dosearch, 500);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   return useMemo(() => {
+    searchTime; // hack to make the searchTime as a dependency
+
     let results: CMDKCommand[] = [];
     if (query.trim() === '') {
       results = recentPages.map(page => {
@@ -322,6 +341,7 @@ export const usePageCommands = () => {
     store,
     t,
     workspace.blockSuiteWorkspace,
+    searchTime,
   ]);
 };
 
@@ -332,7 +352,7 @@ export const collectionToCommand = (
   selectCollection: (id: string) => void,
   t: ReturnType<typeof useAFFiNEI18N>
 ): CMDKCommand => {
-  const currentWorkspaceId = store.get(currentWorkspaceIdAtom);
+  const currentWorkspace = store.get(currentWorkspaceAtom);
   const label = collection.name || t['Untitled']();
   const category = 'affine:collections';
   return {
@@ -350,11 +370,11 @@ export const collectionToCommand = (
     originalValue: label,
     category: category,
     run: () => {
-      if (!currentWorkspaceId) {
+      if (!currentWorkspace) {
         console.error('current workspace not found');
         return;
       }
-      navigationHelper.jumpToSubPath(currentWorkspaceId, WorkspaceSubPath.ALL);
+      navigationHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
       selectCollection(collection.id);
     },
     icon: <ViewLayersIcon />,
@@ -368,7 +388,7 @@ export const useCollectionsCommands = () => {
   const query = useAtomValue(cmdkQueryAtom);
   const navigationHelper = useNavigateHelper();
   const t = useAFFiNEI18N();
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const selectCollection = useCallback(
     (id: string) => {
       navigationHelper.jumpToCollection(workspace.id, id);

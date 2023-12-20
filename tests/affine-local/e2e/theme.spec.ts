@@ -5,12 +5,12 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
 
+test.use({
+  colorScheme: 'light',
+});
+
 // default could be anything, according to the system
-test('default white', async ({ browser }) => {
-  const context = await browser.newContext({
-    colorScheme: 'light',
-  });
-  const page = await context.newPage();
+test('default white', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   const root = page.locator('html');

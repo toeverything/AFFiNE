@@ -3,11 +3,11 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/global": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/store": "0.11.0-nightly-202312120309-2b3d2ba",
+    "@blocksuite/global": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/store": "0.11.0-nightly-202312200102-8254dc9",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vitest": "0.34.6",
+    "vitest": "1.0.4",
     "zod": "^3.22.4"
   },
   "exports": {
@@ -26,5 +26,5 @@
   "dependencies": {
     "lit": "^3.0.2"
   },
-  "version": "0.10.3"
+  "version": "0.11.0"
 }

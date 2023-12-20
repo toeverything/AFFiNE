@@ -1,8 +1,8 @@
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
 import {
-  currentPageIdAtom,
-  currentWorkspaceIdAtom,
-} from '@toeverything/infra/atom';
+  currentWorkspaceAtom,
+  workspaceListAtom,
+} from '@affine/workspace/atom';
+import { currentPageIdAtom } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai/react';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -13,8 +13,8 @@ export interface DumpInfoProps {
 
 export const DumpInfo = (_props: DumpInfoProps) => {
   const location = useLocation();
-  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
-  const currentWorkspaceId = useAtomValue(currentWorkspaceIdAtom);
+  const workspaceList = useAtomValue(workspaceListAtom);
+  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
   const currentPageId = useAtomValue(currentPageIdAtom);
   const path = location.pathname;
   const query = useParams();
@@ -22,10 +22,10 @@ export const DumpInfo = (_props: DumpInfoProps) => {
     console.info('DumpInfo', {
       path,
       query,
-      currentWorkspaceId,
+      currentWorkspaceId: currentWorkspace?.id,
       currentPageId,
-      metadata,
+      workspaceList,
     });
-  }, [path, query, currentWorkspaceId, currentPageId, metadata]);
+  }, [path, query, currentWorkspace, currentPageId, workspaceList]);
   return null;
 };

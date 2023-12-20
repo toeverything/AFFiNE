@@ -4,32 +4,32 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import type { Collection, Filter } from '@affine/env/filter';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
 import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { filterContainerStyle } from '../../../components/filter-container.css';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { useWorkspace } from '../../../hooks/use-workspace';
 
-export const FilterContainer = ({ workspaceId }: { workspaceId: string }) => {
-  const currentWorkspace = useWorkspace(workspaceId);
+export const FilterContainer = () => {
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const navigateHelper = useNavigateHelper();
   const setting = useCollectionManager(collectionsCRUDAtom);
   const saveToCollection = useCallback(
-    async (collection: Collection) => {
-      await setting.createCollection({
+    (collection: Collection) => {
+      setting.createCollection({
         ...collection,
         filterList: setting.currentCollection.filterList,
       });
-      navigateHelper.jumpToCollection(workspaceId, collection.id);
+      navigateHelper.jumpToCollection(currentWorkspace.id, collection.id);
     },
-    [setting, navigateHelper, workspaceId]
+    [setting, navigateHelper, currentWorkspace.id]
   );
 
-  const onFilterChange = useAsyncCallback(
-    async (filterList: Filter[]) => {
-      await setting.updateCollection({
+  const onFilterChange = useCallback(
+    (filterList: Filter[]) => {
+      setting.updateCollection({
         ...setting.currentCollection,
         filterList,
       });

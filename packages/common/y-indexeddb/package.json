@@ -1,7 +1,7 @@
 {
   "name": "@toeverything/y-indexeddb",
   "type": "module",
-  "version": "0.10.3",
+  "version": "0.11.0",
   "description": "IndexedDB database adapter for Yjs",
   "repository": "toeverything/AFFiNE",
   "author": "toeverything",
@@ -37,12 +37,12 @@
     "y-provider": "workspace:*"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.11.0-nightly-202312120309-2b3d2ba",
-    "@blocksuite/store": "0.11.0-nightly-202312120309-2b3d2ba",
+    "@blocksuite/blocks": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/store": "0.11.0-nightly-202312200102-8254dc9",
     "fake-indexeddb": "^5.0.0",
     "vite": "^5.0.6",
     "vite-plugin-dts": "3.6.0",
-    "vitest": "0.34.6",
+    "vitest": "1.0.4",
     "y-indexeddb": "^9.0.11",
     "yjs": "^13.6.10"
   },

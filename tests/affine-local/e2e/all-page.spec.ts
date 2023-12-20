@@ -26,12 +26,13 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 function getAllPage(page: Page) {
-  const newPageButton = page.getByTestId('new-page-button');
+  const newPageButton = page.getByTestId('new-page-button-trigger');
   const newPageDropdown = newPageButton.locator('svg');
-  const edgelessBlockCard = page.getByTestId('switch-edgeless-mode-button');
+  const edgelessBlockCard = page.getByTestId('new-edgeless-button-in-all-page');
 
   async function clickNewPageButton() {
-    return newPageButton.click();
+    const newPageButton = page.getByTestId('new-page-button-trigger');
+    return await newPageButton.click();
   }
 
   async function clickNewEdgelessDropdown() {

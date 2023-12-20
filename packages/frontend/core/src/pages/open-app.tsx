@@ -169,13 +169,16 @@ const OpenOAuthJwt = () => {
     const maybeSchema = appSchemas.safeParse(params.get('schema'));
     return maybeSchema.success ? maybeSchema.data : 'affine';
   }, [params]);
+  const next = useMemo(() => params.get('next'), [params]);
   const channel = schemaToChanel[schema as Schema];
 
   if (!currentUser || !currentUser?.token?.sessionToken) {
     return null;
   }
 
-  const urlToOpen = `${schema}://signin-redirect?token=${currentUser.token.sessionToken}`;
+  const urlToOpen = `${schema}://signin-redirect?token=${
+    currentUser.token.sessionToken
+  }&next=${next || ''}`;
 
   return <OpenAppImpl urlToOpen={urlToOpen} channel={channel} />;
 };

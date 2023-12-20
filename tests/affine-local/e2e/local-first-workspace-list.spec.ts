@@ -25,7 +25,7 @@ test('just one item in the workspace list at first', async ({
   ).not.toBeNull();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('create one workspace in the workspace list', async ({
@@ -50,14 +50,14 @@ test('create one workspace in the workspace list', async ({
   await clickSideBarAllPageButton(page);
   await page.waitForTimeout(2000);
   const result = await getPagesCount(page);
-  expect(result).toBe(13);
+  expect(result).toBe(11);
   await page.reload();
   await page.waitForTimeout(4000);
   const result1 = await getPagesCount(page);
-  expect(result1).toBe(13);
+  expect(result1).toBe(11);
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('create multi workspace in the workspace list', async ({
@@ -88,7 +88,7 @@ test('create multi workspace in the workspace list', async ({
 
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 
   await openWorkspaceListModal(page);
   await page.waitForTimeout(1000);
@@ -142,5 +142,5 @@ test('create multi workspace in the workspace list', async ({
 
   const nextWorkspace = await workspace.current();
 
-  expect(currentWorkspace.id).toBe(nextWorkspace.id);
+  expect(currentWorkspace.meta.id).toBe(nextWorkspace.meta.id);
 });

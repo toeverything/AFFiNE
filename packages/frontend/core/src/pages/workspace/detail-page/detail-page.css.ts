@@ -13,9 +13,11 @@ export const mainContainer = style({
   height: '100%',
   position: 'relative',
   flexDirection: 'column',
-  width: '100%',
+  minWidth: 0,
+  overflow: 'hidden',
+  background: 'var(--affine-background-primary-color)',
   selectors: {
-    [`${root}[data-client-border] &`]: {
+    [`${root}[data-client-border=true] &`]: {
       borderRadius: '4px',
     },
   },
@@ -27,68 +29,32 @@ export const editorContainer = style({
   flexDirection: 'column',
   flex: 1,
   overflow: 'hidden',
-  zIndex: 0, // it will create stacking context to limit layer of child elements and be lower than after auto zIndex
-});
-
-export const resizeHandle = style({
-  width: '1px',
-  position: 'relative',
-  backgroundColor: 'var(--affine-border-color)',
-  selectors: {
-    '&[data-collapsed=true]': {
-      display: 'none',
-    },
-    [`${root}[data-client-border] &`]: {
-      width: '8px',
-      backgroundColor: 'transparent',
-    },
-  },
-});
-
-export const resizeHandleInner = style({
-  height: '100%',
-  width: '10px', // this is the real hit box
-  position: 'absolute',
-  transform: 'translateX(-50%)',
-  zIndex: 10,
-  transition: 'all 0.2s ease-in-out',
-  display: 'flex',
-  justifyContent: 'center',
-  '::before': {
-    content: '""',
-    width: '0px',
-    height: '100%',
-    borderRadius: '2px',
-    transition: 'all 0.2s ease-in-out',
-  },
-  selectors: {
-    [`${root}[data-client-border] &`]: {
-      transform: 'translateX(-1px)',
-    },
-    [`:is(${resizeHandle}:hover, ${resizeHandle}[data-resize-handle-active]) &::before`]:
-      {
-        width: '2px',
-        backgroundColor: 'var(--affine-primary-color)',
-      },
-    [`${resizeHandle}[data-resize-handle-active] &::before`]: {
-      width: '4px',
-      borderRadius: '4px',
-    },
-  },
+  zIndex: 0,
 });
 
 export const sidebarContainer = style({
-  transition: 'flex 0.2s ease-in-out',
   display: 'flex',
-  flexDirection: 'column',
+  flexShrink: 0,
+  height: '100%',
   selectors: {
-    [`${resizeHandle}[data-resize-handle-active] + &`]: {
-      transition: 'none',
+    [`${root}[data-client-border=true] &`]: {
+      paddingLeft: 9,
     },
-    [`${root}[data-disable-animation] &`]: {
-      transition: 'none',
+    [`${root}[data-client-border=false] &`]: {
+      borderLeft: '1px solid var(--affine-border-color)',
     },
-    [`${root}[data-client-border] &`]: {
+  },
+});
+
+export const sidebarContainerInner = style({
+  display: 'flex',
+  background: 'var(--affine-background-primary-color)',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  height: '100%',
+  width: '100%',
+  selectors: {
+    [`${root}[data-client-border=true] &`]: {
       borderRadius: '4px',
     },
   },

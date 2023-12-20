@@ -2,6 +2,7 @@ import {
   ChangeEmailPage,
   ChangePasswordPage,
   ConfirmChangeEmail,
+  OnboardingPage,
   SetPasswordPage,
   SignInSuccessPage,
   SignUpPage,
@@ -31,6 +32,7 @@ import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 const authTypeSchema = z.enum([
+  'onboarding',
   'setPassword',
   'signIn',
   'changePassword',
@@ -93,6 +95,8 @@ export const AuthPage = (): ReactElement | null => {
   }, [jumpToIndex]);
 
   switch (authType) {
+    case 'onboarding':
+      return <OnboardingPage user={user} onOpenAffine={onOpenAffine} />;
     case 'signUp': {
       return (
         <SignUpPage

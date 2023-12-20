@@ -74,9 +74,6 @@ export const InviteModal = ({
         error={!isValidEmail}
         errorHint={isValidEmail ? '' : t['com.affine.auth.sign.email.error']()}
         onEnter={handleConfirm}
-        wrapperProps={{
-          style: { padding: 0 },
-        }}
         size="large"
       />
     </ConfirmModal>

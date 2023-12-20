@@ -47,5 +47,5 @@ test('New a page , then delete it in all pages, restore it', async ({
   expect(restoreCell).not.toBeUndefined();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

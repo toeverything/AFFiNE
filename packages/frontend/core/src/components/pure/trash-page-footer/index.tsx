@@ -3,21 +3,21 @@ import { ConfirmModal } from '@affine/component/ui/modal';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon, ResetIcon } from '@blocksuite/icons';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
+import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { useAppSettingHelper } from '../../../hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentWorkspace } from '../../../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { toast } from '../../../utils';
 import * as styles from './styles.css';
 
 export const TrashPageFooter = ({ pageId }: { pageId: string }) => {
-  // fixme(himself65): remove these hooks ASAP
-  const [workspace] = useCurrentWorkspace();
+  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
   assertExists(workspace);
   const blockSuiteWorkspace = workspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(

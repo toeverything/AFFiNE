@@ -26,14 +26,14 @@ test('Show favorite items in sidebar', async ({ page, workspace }) => {
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
   const favoriteListItemInSidebar = page.getByTestId(
-    'favorite-list-item-' + newPageId
+    'favourite-page-' + newPageId
   );
   expect(await favoriteListItemInSidebar.textContent()).toBe(
     'this is a new page to favorite'
   );
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('Show favorite reference in sidebar', async ({ page, workspace }) => {
@@ -55,7 +55,7 @@ test('Show favorite reference in sidebar', async ({ page, workspace }) => {
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
 
-  const favItemTestId = 'favorite-list-item-' + newPageId;
+  const favItemTestId = 'favourite-page-' + newPageId;
 
   const favoriteListItemInSidebar = page.getByTestId(favItemTestId);
   expect(await favoriteListItemInSidebar.textContent()).toBe(
@@ -69,11 +69,11 @@ test('Show favorite reference in sidebar', async ({ page, workspace }) => {
   await expect(collapseButton).toBeVisible();
   await collapseButton.click();
   await expect(
-    page.locator('[data-type="favorite-list-item"] >> text=Another page')
+    page.locator('[data-type="reference-page"] >> text=Another page')
   ).toBeVisible();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test("Deleted page's reference will not be shown in sidebar", async ({
@@ -110,7 +110,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   // confirm delete
   await page.locator('button >> text=Delete').click();
 
-  const favItemTestId = 'favorite-list-item-' + newPageId;
+  const favItemTestId = 'favourite-page-' + newPageId;
 
   const favoriteListItemInSidebar = page.getByTestId(favItemTestId);
   expect(await favoriteListItemInSidebar.textContent()).toBe(
@@ -124,7 +124,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
   expect(collapseButton).toHaveAttribute('data-disabled', 'true');
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('Add new favorite page via sidebar', async ({ page }) => {
@@ -137,7 +137,7 @@ test('Add new favorite page via sidebar', async ({ page }) => {
   await getBlockSuiteEditorTitle(page).fill('this is a new fav page');
   // check if the page title is shown in the favorite list
   const favItem = page.locator(
-    '[data-type=favorite-list-item] >> text=this is a new fav page'
+    '[data-type=favourite-list-item] >> text=this is a new fav page'
   );
   await expect(favItem).toBeVisible();
 });

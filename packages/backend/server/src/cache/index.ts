@@ -22,3 +22,5 @@ const CacheProvider: FactoryProvider = {
 })
 export class CacheModule {}
 export { LocalCache as Cache };
+
+export { CacheInterceptor, MakeCache, PreventCache } from './interceptor';

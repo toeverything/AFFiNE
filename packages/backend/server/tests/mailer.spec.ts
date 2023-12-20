@@ -9,6 +9,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';
 import { MailService } from '../src/modules/auth/mailer';
+import { FeatureManagementService } from '../src/modules/features';
 import { PrismaService } from '../src/prisma';
 import { createWorkspace, getInviteInfo, inviteUser, signUp } from './utils';
 
@@ -100,6 +101,8 @@ test.beforeEach(async t => {
   })
     .overrideProvider(PrismaService)
     .useValue(FakePrisma)
+    .overrideProvider(FeatureManagementService)
+    .useValue({})
     .compile();
   const app = module.createNestApplication();
   app.use(

@@ -29,6 +29,7 @@ import { GQLLoggerPlugin } from './graphql/logger-plugin';
           context: ({ req, res }: { req: Request; res: Response }) => ({
             req,
             res,
+            isAdminQuery: false,
           }),
           plugins: [new GQLLoggerPlugin()],
         };

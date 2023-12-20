@@ -205,9 +205,15 @@ export const createConfiguration: (
         '@blocksuite/store': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'store', 'src')
           : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
-        '@blocksuite/virgo': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'virgo', 'src')
-          : join(workspaceRoot, 'node_modules', '@blocksuite', 'virgo', 'dist'),
+        '@blocksuite/inline': blocksuiteBaseDir
+          ? join(blocksuiteBaseDir, 'packages', 'inline', 'src')
+          : join(
+              workspaceRoot,
+              'node_modules',
+              '@blocksuite',
+              'inline',
+              'dist'
+            ),
       },
     },
 
@@ -383,6 +389,12 @@ export const createConfiguration: (
         watch: true,
       },
       proxy: {
+        '/api/worker/': {
+          target: 'https://affine-worker.toeverything.workers.dev',
+          pathRewrite: { '^/api/worker/': '/api/' },
+          changeOrigin: true,
+          secure: false,
+        },
         '/api': 'http://localhost:3010',
         '/socket.io': {
           target: 'http://localhost:3010',

@@ -9,14 +9,19 @@ import MockSessionContext, {
 import { ThemeProvider, useTheme } from 'next-themes';
 import { useDarkMode } from 'storybook-dark-mode';
 import { AffineContext } from '@affine/component/context';
+import { workspaceManager } from '@affine/workspace';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
 import { createStore } from 'jotai/vanilla';
 import { _setCurrentStore } from '@toeverything/infra/atom';
-import { setupGlobal } from '@affine/env/global';
+import { setupGlobal, type Environment } from '@affine/env/global';
 
 import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
+import { setup } from '@affine/core/bootstrap/setup';
+import { bootstrapPluginSystem } from '@affine/core/bootstrap/register-plugins';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { currentWorkspaceAtom } from '@affine/workspace/atom';
 
 setupGlobal();
 export const parameters = {
@@ -101,37 +106,26 @@ const ThemeChange = () => {
   return null;
 };
 
-const storeMap = new Map<string, ReturnType<typeof createStore>>();
-
-const bootstrapPluginSystemPromise = import(
-  '@affine/core/bootstrap/register-plugins'
-).then(({ bootstrapPluginSystem }) => bootstrapPluginSystem);
-
-const setupPromise = import('@affine/core/bootstrap/setup').then(
-  ({ setup }) => setup
-);
+localStorage.clear();
+const store = createStore();
+_setCurrentStore(store);
+setup();
+bootstrapPluginSystem(store).catch(err => {
+  console.error('Failed to bootstrap plugin system', err);
+});
+workspaceManager
+  .createWorkspace(WorkspaceFlavour.LOCAL, async w => {
+    w.meta.setName('test-workspace');
+    w.meta.writeVersion(w);
+  })
+  .then(id => {
+    store.set(
+      currentWorkspaceAtom,
+      workspaceManager.use({ flavour: WorkspaceFlavour.LOCAL, id }).workspace
+    );
+  });
 
 const withContextDecorator: Decorator = (Story, context) => {
-  const { data: store } = useSWR(
-    context.id,
-    async () => {
-      if (storeMap.has(context.id)) {
-        return storeMap.get(context.id);
-      }
-      localStorage.clear();
-      const store = createStore();
-      _setCurrentStore(store);
-      const setup = await setupPromise;
-      await setup(store);
-      const bootstrapPluginSystem = await bootstrapPluginSystemPromise;
-      await bootstrapPluginSystem(store);
-      storeMap.set(context.id, store);
-      return store;
-    },
-    {
-      suspense: true,
-    }
-  );
   return (
     <ThemeProvider>
       <AffineContext store={store}>
@@ -152,14 +146,22 @@ const withPlatformSelectionDecorator: Decorator = (Story, context) => {
     }
     switch (context.globals.platform) {
       case 'desktop-macos':
-        environment.isDesktop = true;
-        environment.isMacOs = true;
-        environment.isWindows = false;
+        environment = {
+          ...environment,
+          isBrowser: true,
+          isDesktop: true,
+          isMacOs: true,
+          isWindows: false,
+        } as Environment;
         break;
       case 'desktop-windows':
-        environment.isDesktop = true;
-        environment.isMacOs = false;
-        environment.isWindows = true;
+        environment = {
+          ...environment,
+          isBrowser: true,
+          isDesktop: true,
+          isMacOs: false,
+          isWindows: true,
+        } as Environment;
         break;
       default:
         globalThis.$AFFINE_SETUP = false;

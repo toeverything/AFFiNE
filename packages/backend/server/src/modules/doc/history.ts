@@ -7,7 +7,7 @@ import { Config } from '../../config';
 import { type EventPayload, OnEvent } from '../../event';
 import { metrics } from '../../metrics';
 import { PrismaService } from '../../prisma';
-import { SubscriptionStatus } from '../payment/service';
+import { QuotaService } from '../quota';
 import { Permission } from '../workspaces/types';
 import { isEmptyBuffer } from './manager';
 
@@ -16,7 +16,8 @@ export class DocHistoryManager {
   private readonly logger = new Logger(DocHistoryManager.name);
   constructor(
     private readonly config: Config,
-    private readonly db: PrismaService
+    private readonly db: PrismaService,
+    private readonly quota: QuotaService
   ) {}
 
   @OnEvent('workspace.deleted')
@@ -222,9 +223,6 @@ export class DocHistoryManager {
     return history.timestamp;
   }
 
-  /**
-   * @todo(@darkskygit) refactor with [Usage Control] system
-   */
   async getExpiredDateFromNow(workspaceId: string) {
     const permission = await this.db.workspaceUserPermission.findFirst({
       select: {
@@ -241,25 +239,8 @@ export class DocHistoryManager {
       throw new Error('Workspace owner not found');
     }
 
-    const sub = await this.db.userSubscription.findFirst({
-      select: {
-        id: true,
-      },
-      where: {
-        userId: permission.userId,
-        status: SubscriptionStatus.Active,
-      },
-    });
-
-    return new Date(
-      Date.now() +
-        1000 *
-          60 *
-          60 *
-          24 *
-          // 30 days for subscription user, 7 days for free user
-          (sub ? 30 : 7)
-    );
+    const quota = await this.quota.getUserQuota(permission.userId);
+    return quota.feature.historyPeriodFromNow;
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT /* everyday at 12am */)
