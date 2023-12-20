@@ -81,8 +81,7 @@ const snapshotFetcher = async (
     return null;
   }
   const res = await fetchWithTraceReport(
-    runtimeConfig.serverUrlPrefix +
-      `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
+    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
     {
       priority: 'high',
     }

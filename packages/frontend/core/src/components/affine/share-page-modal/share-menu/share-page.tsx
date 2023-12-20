@@ -140,7 +140,9 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             lineHeight: '20px',
           }}
           value={
-            isSharedPage ? sharingUrl : `${runtimeConfig.serverUrlPrefix}/...`
+            isSharedPage
+              ? sharingUrl
+              : `${location.protocol}//${location.hostname}/...`
           }
           readOnly
         />

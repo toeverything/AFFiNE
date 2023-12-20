@@ -21,15 +21,13 @@ export const createAffineCloudBlobStorage = (
         ? key
         : `/api/workspaces/${workspaceId}/blobs/${key}`;
 
-      return fetchWithTraceReport(runtimeConfig.serverUrlPrefix + suffix).then(
-        async res => {
-          if (!res.ok) {
-            // status not in the range 200-299
-            return null;
-          }
-          return bufferToBlob(await res.arrayBuffer());
+      return fetchWithTraceReport(suffix).then(async res => {
+        if (!res.ok) {
+          // status not in the range 200-299
+          return null;
         }
-      );
+        return bufferToBlob(await res.arrayBuffer());
+      });
     },
     set: async (key, value) => {
       const {

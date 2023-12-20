@@ -38,8 +38,7 @@ export async function downloadBinaryFromCloud(
   pageGuid: string
 ): Promise<CloudDoc | null> {
   const response = await fetchWithTraceReport(
-    runtimeConfig.serverUrlPrefix +
-      `/api/workspaces/${rootGuid}/docs/${pageGuid}`,
+    `/api/workspaces/${rootGuid}/docs/${pageGuid}`,
     {
       priority: 'high',
     }
