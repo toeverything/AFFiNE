@@ -1,7 +1,7 @@
 /// <reference types="./global.d.ts" />
 import { start as startAutoMetrics } from './metrics';
 startAutoMetrics();
-
+import {rateLimit} from 'express-rate-limit';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
@@ -24,7 +24,12 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       ? ['verbose']
       : ['log'],
 });
-
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour in milliseconds
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later',
+});
+app.use(limiter);
 app.use(serverTimingAndCache);
 
 app.use(
