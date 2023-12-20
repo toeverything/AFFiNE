@@ -26,7 +26,6 @@
     "jest-mock": "^29.7.0",
     "nanoid": "^5.0.3",
     "serve": "^14.2.1",
-    "ses": "0.18.8",
     "storybook": "^7.5.3",
     "storybook-dark-mode": "^3.0.1",
     "wait-on": "^7.2.0"

@@ -424,7 +424,7 @@ __metadata:
     react-is: "npm:18.2.0"
     react-router-dom: "npm:^6.16.0"
     rxjs: "npm:^7.8.1"
-    ses: "npm:0.18.8"
+    ses: "npm:^1.0.0"
     source-map-loader: "npm:^4.0.1"
     style-loader: "npm:^3.3.3"
     swc-loader: "npm:^0.2.3"
@@ -693,7 +693,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/plugin-cli@workspace:tools/plugin-cli"
   dependencies:
-    "@endo/static-module-record": "npm:0.8.2"
     "@plugxjs/vite-plugin": "npm:0.1.0"
     "@swc/core": "npm:^1.3.93"
     "@toeverything/infra": "workspace:^"
@@ -874,7 +873,6 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-router-dom: "npm:^6.19.0"
     serve: "npm:^14.2.1"
-    ses: "npm:0.18.8"
     storybook: "npm:^7.5.3"
     storybook-addon-react-router-v6: "npm:^2.0.10"
     storybook-dark-mode: "npm:^3.0.1"
@@ -955,17 +953,6 @@ __metadata:
     "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
-
-"@agoric/babel-generator@npm:^7.17.6":
-  version: 7.17.6
-  resolution: "@agoric/babel-generator@npm:7.17.6"
-  dependencies:
-    "@babel/types": "npm:^7.17.0"
-    jsesc: "npm:^2.5.1"
-    source-map: "npm:^0.5.0"
-  checksum: 12cd14851369eeb8c3892c8a81a7100bc468758c4c464b088d46b3e365cdb6572896aeef5dc9e76f243613c7373231cb1de2e21de8fc5cbf85b4178653b2de8a
-  languageName: node
-  linkType: hard
 
 "@ampproject/remapping@npm:^2.2.0":
   version: 2.2.1
@@ -2779,7 +2766,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/parser@npm:^7.1.0, @babel/parser@npm:^7.13.16, @babel/parser@npm:^7.14.0, @babel/parser@npm:^7.14.7, @babel/parser@npm:^7.16.8, @babel/parser@npm:^7.17.3, @babel/parser@npm:^7.20.7, @babel/parser@npm:^7.22.15, @babel/parser@npm:^7.22.7, @babel/parser@npm:^7.23.0, @babel/parser@npm:^7.23.3, @babel/parser@npm:^7.23.6":
+"@babel/parser@npm:^7.1.0, @babel/parser@npm:^7.13.16, @babel/parser@npm:^7.14.0, @babel/parser@npm:^7.14.7, @babel/parser@npm:^7.16.8, @babel/parser@npm:^7.20.7, @babel/parser@npm:^7.22.15, @babel/parser@npm:^7.22.7, @babel/parser@npm:^7.23.0, @babel/parser@npm:^7.23.3, @babel/parser@npm:^7.23.6":
   version: 7.23.6
   resolution: "@babel/parser@npm:7.23.6"
   bin:
@@ -4047,7 +4034,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/traverse@npm:^7.14.0, @babel/traverse@npm:^7.16.0, @babel/traverse@npm:^7.16.8, @babel/traverse@npm:^7.17.3, @babel/traverse@npm:^7.18.9, @babel/traverse@npm:^7.22.8, @babel/traverse@npm:^7.23.3, @babel/traverse@npm:^7.23.4":
+"@babel/traverse@npm:^7.14.0, @babel/traverse@npm:^7.16.0, @babel/traverse@npm:^7.16.8, @babel/traverse@npm:^7.18.9, @babel/traverse@npm:^7.22.8, @babel/traverse@npm:^7.23.3, @babel/traverse@npm:^7.23.4":
   version: 7.23.6
   resolution: "@babel/traverse@npm:7.23.6"
   dependencies:
@@ -4065,7 +4052,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/types@npm:^7.0.0, @babel/types@npm:^7.16.8, @babel/types@npm:^7.17.0, @babel/types@npm:^7.18.13, @babel/types@npm:^7.18.9, @babel/types@npm:^7.20.7, @babel/types@npm:^7.21.3, @babel/types@npm:^7.22.15, @babel/types@npm:^7.22.19, @babel/types@npm:^7.22.5, @babel/types@npm:^7.23.0, @babel/types@npm:^7.23.3, @babel/types@npm:^7.23.4, @babel/types@npm:^7.23.6, @babel/types@npm:^7.3.3, @babel/types@npm:^7.4.4, @babel/types@npm:^7.8.3":
+"@babel/types@npm:^7.0.0, @babel/types@npm:^7.16.8, @babel/types@npm:^7.18.13, @babel/types@npm:^7.18.9, @babel/types@npm:^7.20.7, @babel/types@npm:^7.21.3, @babel/types@npm:^7.22.15, @babel/types@npm:^7.22.19, @babel/types@npm:^7.22.5, @babel/types@npm:^7.23.0, @babel/types@npm:^7.23.3, @babel/types@npm:^7.23.4, @babel/types@npm:^7.23.6, @babel/types@npm:^7.3.3, @babel/types@npm:^7.4.4, @babel/types@npm:^7.8.3":
   version: 7.23.6
   resolution: "@babel/types@npm:7.23.6"
   dependencies:
@@ -5197,23 +5184,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/env-options@npm:^0.1.4":
-  version: 0.1.4
-  resolution: "@endo/env-options@npm:0.1.4"
-  checksum: 0d6b82bdf07602dfc373a475234a206b61e9d0ab6ea886fdcbd111a37d9ce4e55ead5dbc1c7af52cf67a11a7185b40e7b30c3367da3928897082502d7e1274f1
-  languageName: node
-  linkType: hard
-
-"@endo/static-module-record@npm:0.8.2":
-  version: 0.8.2
-  resolution: "@endo/static-module-record@npm:0.8.2"
-  dependencies:
-    "@agoric/babel-generator": "npm:^7.17.6"
-    "@babel/parser": "npm:^7.17.3"
-    "@babel/traverse": "npm:^7.17.3"
-    "@babel/types": "npm:^7.17.0"
-    ses: "npm:^0.18.8"
-  checksum: 49585fede4edcf3e5f4e578142c902a440d4176434b9213b7d1aaca7d496784eaaac11355f3c8fd2eff7a351d1a8f17c479949f69828ece7f66c4ef9153c29e9
+"@endo/env-options@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@endo/env-options@npm:1.0.0"
+  checksum: 3f1f8fe2966ca26388d49fdae12a940564a96f185b43e2a59cade126b00b1894970fe1da4c8a7d042929f598a923bbc800ed7841adf11a6f4d7c6460e522cb2a
   languageName: node
   linkType: hard
 
@@ -33052,12 +33026,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ses@npm:0.18.8, ses@npm:^0.18.8":
-  version: 0.18.8
-  resolution: "ses@npm:0.18.8"
+"ses@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "ses@npm:1.0.0"
   dependencies:
-    "@endo/env-options": "npm:^0.1.4"
-  checksum: 243b8d546ca2f0ad68cda1178689c4a4bfab8ac25fd03daccaf6c4b94ee0c10b07eb10b8d477c73ceef9ba10a2205d2bef0bd3c64b8c98130c01adfd9c873103
+    "@endo/env-options": "npm:^1.0.0"
+  checksum: 27430e2fbe6440189e8d7b105716ef11da78d642861815f9a3513bc20fd5e0a00a314fa0d57b46bc7e458a68e9a878e7466cdffc3efdd92f57bbbbbb4f021e10
   languageName: node
   linkType: hard
 
@@ -33499,7 +33473,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map@npm:^0.5.0, source-map@npm:^0.5.7":
+"source-map@npm:^0.5.7":
   version: 0.5.7
   resolution: "source-map@npm:0.5.7"
   checksum: 9b4ac749ec5b5831cad1f8cc4c19c4298ebc7474b24a0acf293e2f040f03f8eeccb3d01f12aa0f90cf46d555c887e03912b83a042c627f419bda5152d89c5269

@@ -1,4 +1,4 @@
-import './polyfill/ses-lockdown';
+import 'ses';
 import './polyfill/intl-segmenter';
 import './polyfill/request-idle-callback';
 
