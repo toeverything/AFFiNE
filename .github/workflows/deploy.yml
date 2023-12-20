@@ -4,10 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       flavor:
-        description: 'Build type (canary, beta, or stable or internal)'
-        type: string
+        description: 'Select what enverionment to deploy to'
+        type: choice
         default: canary
-
+        options:
+          - canary
+          - beta
+          - stable
+          - internal
 env:
   APP_NAME: affine
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -18,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -36,6 +42,8 @@ jobs:
     environment: ${{ github.event.inputs.flavor }}
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Plugins
@@ -67,6 +75,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Rust
@@ -88,6 +98,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Rust
@@ -207,12 +219,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: setup deploy version
-        id: version
-        run: |
-          export APP_VERSION=`node -e "console.log(require('./package.json').version)"`
-          echo $APP_VERSION
-          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
       - name: Deploy to ${{ github.event.inputs.flavor }}
         uses: ./.github/actions/deploy
         with:
