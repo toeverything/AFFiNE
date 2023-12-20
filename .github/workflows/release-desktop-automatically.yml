@@ -1,0 +1,27 @@
+name: Dispatch Release Desktop by tag
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
+  schedule:
+    - cron: '0 7 * * *'
+
+jobs:
+  dispatch-desktop-app-by-tag:
+    runs-on: ubuntu-latest
+    name: Setup Release Desktop
+    steps:
+      - name: dispatch desktop release by tag
+        if: ${{ github.event == 'push' }}
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: release-desktop.yml
+          inputs: '{ "build-type": "canary", "is-draft": true, "is-pre-release": true }'
+      - name: dispatch desktop release by schedule
+        if: ${{ github.event == 'schedule' }}
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: release-desktop.yml
+          inputs: '{ "build-type": "canary", "is-draft": true, "is-pre-release": true }'
+          ref: canary

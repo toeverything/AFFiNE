@@ -1,0 +1,27 @@
+name: Dispatch Deploy by tag
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
+  schedule:
+    - cron: '0 7 * * *'
+
+jobs:
+  dispatch-deploy-by-tag:
+    runs-on: ubuntu-latest
+    name: Setup deploy environment
+    steps:
+      - name: dispatch deploy by tag
+        if: ${{ github.event == 'push' }}
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: deploy.yml
+          inputs: '{ "flavor": "canary" }'
+      - name: dispatch deploy by schedule
+        if: ${{ github.event == 'schedule' }}
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: deploy.yml
+          inputs: '{ "flavor": "canary" }'
+          ref: canary
