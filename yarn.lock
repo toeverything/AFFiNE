@@ -424,7 +424,7 @@ __metadata:
     react-is: "npm:18.2.0"
     react-router-dom: "npm:^6.16.0"
     rxjs: "npm:^7.8.1"
-    ses: "npm:0.18.8"
+    ses: "npm:1.0.0"
     source-map-loader: "npm:^4.0.1"
     style-loader: "npm:^3.3.3"
     swc-loader: "npm:^0.2.3"
@@ -5201,6 +5201,13 @@ __metadata:
   version: 0.1.4
   resolution: "@endo/env-options@npm:0.1.4"
   checksum: 0d6b82bdf07602dfc373a475234a206b61e9d0ab6ea886fdcbd111a37d9ce4e55ead5dbc1c7af52cf67a11a7185b40e7b30c3367da3928897082502d7e1274f1
+  languageName: node
+  linkType: hard
+
+"@endo/env-options@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@endo/env-options@npm:1.0.0"
+  checksum: 3f1f8fe2966ca26388d49fdae12a940564a96f185b43e2a59cade126b00b1894970fe1da4c8a7d042929f598a923bbc800ed7841adf11a6f4d7c6460e522cb2a
   languageName: node
   linkType: hard
 
@@ -33058,6 +33065,15 @@ __metadata:
   dependencies:
     "@endo/env-options": "npm:^0.1.4"
   checksum: 243b8d546ca2f0ad68cda1178689c4a4bfab8ac25fd03daccaf6c4b94ee0c10b07eb10b8d477c73ceef9ba10a2205d2bef0bd3c64b8c98130c01adfd9c873103
+  languageName: node
+  linkType: hard
+
+"ses@npm:1.0.0":
+  version: 1.0.0
+  resolution: "ses@npm:1.0.0"
+  dependencies:
+    "@endo/env-options": "npm:^1.0.0"
+  checksum: 27430e2fbe6440189e8d7b105716ef11da78d642861815f9a3513bc20fd5e0a00a314fa0d57b46bc7e458a68e9a878e7466cdffc3efdd92f57bbbbbb4f021e10
   languageName: node
   linkType: hard
 
