@@ -168,14 +168,15 @@ export const pageToCommand = (
 
   // hack: when comparing, the part between >>> and <<< will be ignored
   // adding this patch so that CMDK will not complain about duplicated commands
-  const id =
+  const id = CSS.escape(
     title +
-    (label?.subTitle || '') +
-    valueWrapperStart +
-    page.id +
-    '.' +
-    category +
-    valueWrapperEnd;
+      (label?.subTitle || '') +
+      valueWrapperStart +
+      page.id +
+      '.' +
+      category +
+      valueWrapperEnd
+  );
 
   return {
     id,
