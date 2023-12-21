@@ -100,8 +100,7 @@ export const onboarding = style([
         animation: `${fadeIn} 0.8s linear`,
         // content: 'unset',
         background:
-          // 'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 99.58%)',
-          'linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 80%)',
+          'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 99.58%)',
       },
       '&[data-is-window="true"][data-is-desktop="true"]::after': {
         opacity: 0,
