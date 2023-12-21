@@ -33,7 +33,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enablePayment: true,
       enablePageHistory: false,
       enableCopilot: false,
-      serverUrlPrefix: 'https://insider.affine.pro', // Let insider be stable environment temporarily.
+      serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
       editorVersion: packageJson.dependencies['@blocksuite/presets'],
