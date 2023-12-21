@@ -6,10 +6,15 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-canary.[0-9]+'
   workflow_dispatch:
     inputs:
-      version:
-        description: App Version
+      build-type:
+        description: 'Build Type'
+        type: choice
         required: true
-        default: 0.0.0
+        default: canary
+        options:
+          - canary
+          - beta
+          - stable
       is-draft:
         description: 'Draft Release?'
         type: boolean
@@ -20,11 +25,6 @@ on:
         type: boolean
         required: true
         default: true
-      build-type:
-        description: 'Build Type (canary, beta or stable)'
-        type: string
-        required: true
-        default: canary
 
 permissions:
   actions: write
@@ -32,7 +32,7 @@ permissions:
   security-events: write
 
 env:
-  BUILD_TYPE: ${{ github.event.inputs.build-type || (github.ref_type == 'tag' && contains(github.ref, 'canary') && 'canary') }}
+  BUILD_TYPE: ${{ github.event.inputs.build-type }}
   DEBUG: napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
@@ -40,26 +40,17 @@ env:
 jobs:
   before-make:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.build-type || (github.ref_type == 'tag' && contains(github.ref, 'canary') && 'canary') }}
+    environment: ${{ github.event.inputs.build-type }}
     outputs:
-      RELEASE_VERSION: ${{ steps.get-canary-version.outputs.RELEASE_VERSION }}
+      RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
         uses: ./.github/actions/setup-sentry
-      - name: Get canary version
-        id: get-canary-version
-        if: ${{ github.ref_type == 'tag' }}
-        run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          PACKAGE_VERSION=$(node -p "require('./packages/frontend/electron/package.json').version")
-          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
-            exit 1
-          fi
-          echo "RELEASE_VERSION=$(node -p "require('./packages/frontend/electron/package.json').version")" >> $GITHUB_OUTPUT
       - name: generate-assets
         run: yarn workspace @affine/electron generate-assets
         env:
@@ -67,7 +58,7 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          RELEASE_VERSION: ${{ github.event.inputs.version || steps.get-canary-version.outputs.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
           SKIP_PLUGIN_BUILD: 'true'
           SKIP_NX_CACHE: 'true'
 
@@ -361,14 +352,14 @@ jobs:
         run: |
           node ./packages/frontend/electron/scripts/generate-yml.js
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
         uses: softprops/action-gh-release@v1
         with:
-          name: ${{ github.event.inputs.version || needs.before-make.outputs.RELEASE_VERSION }}
+          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
           draft: ${{ github.event.inputs.is-draft || true }}
-          prerelease: ${{ github.event.inputs.is-pre-release || needs.before-make.outputs.version }}
+          prerelease: ${{ github.event.inputs.is-pre-release || true }}
           files: |
             ./VERSION
             ./*.zip
