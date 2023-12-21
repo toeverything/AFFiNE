@@ -8,6 +8,9 @@ type ServerConfigType {
 
   """server flavor"""
   flavor: String!
+
+  """server base url"""
+  baseUrl: String!
 }
 
 type UserQuotaHumanReadable {

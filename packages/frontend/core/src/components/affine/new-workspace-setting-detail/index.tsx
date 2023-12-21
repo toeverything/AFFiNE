@@ -8,7 +8,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useWorkspace } from '@toeverything/hooks/use-workspace';
 import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 
-import { useSelfHosted } from '../../../hooks/affine/use-server-flavor';
+import { useSelfHosted } from '../../../hooks/affine/use-server-config';
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { EnableCloudPanel } from './enable-cloud';
 import { ExportPanel } from './export';

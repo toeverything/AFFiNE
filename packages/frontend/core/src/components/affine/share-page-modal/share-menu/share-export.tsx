@@ -19,7 +19,7 @@ export const ShareExport = ({
   const t = useAFFiNEI18N();
   const workspaceId = workspace.id;
   const pageId = currentPage.id;
-  const { onClickCopyLink } = useSharingUrl({
+  const { sharingUrl, onClickCopyLink } = useSharingUrl({
     workspaceId,
     pageId,
     urlType: 'workspace',
@@ -57,6 +57,7 @@ export const ShareExport = ({
               onClick={onClickCopyLink}
               icon={<LinkIcon />}
               type="plain"
+              disabled={!sharingUrl}
             >
               {t['com.affine.share-menu.copy-private-link']()}
             </Button>

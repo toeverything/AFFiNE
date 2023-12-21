@@ -9,7 +9,7 @@ const errorHandler: Middleware = useSWRNext => (key, fetcher, config) => {
   return useSWRNext(key, wrappedFetcher.bind(null, fetcher), config);
 };
 
-export const useServerFlavor = () => {
+const useServerConfig = () => {
   const { data: config, error } = useQueryImmutable(
     { query: serverConfigQuery },
     {
@@ -18,14 +18,39 @@ export const useServerFlavor = () => {
   );
 
   if (error || !config) {
+    return null;
+  }
+
+  return config.serverConfig;
+};
+
+export const useServerFlavor = () => {
+  const config = useServerConfig();
+
+  if (!config) {
     return 'local';
   }
 
-  return config.serverConfig.flavor;
+  return config.flavor;
 };
 
 export const useSelfHosted = () => {
   const serverFlavor = useServerFlavor();
 
   return ['local', 'selfhosted'].includes(serverFlavor);
+};
+
+export const useServerBaseUrl = () => {
+  const config = useServerConfig();
+
+  if (!config) {
+    if (environment.isDesktop) {
+      // don't use window.location in electron
+      return null;
+    }
+    const { protocol, hostname, port } = window.location;
+    return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+  }
+
+  return config.baseUrl;
 };

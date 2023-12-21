@@ -655,6 +655,7 @@ query serverConfig {
   serverConfig {
     version
     flavor
+    baseUrl
   }
 }`,
 };

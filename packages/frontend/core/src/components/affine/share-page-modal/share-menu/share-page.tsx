@@ -18,6 +18,7 @@ import { useCallback } from 'react';
 import type { PageMode } from '../../../../atoms';
 import { currentModeAtom } from '../../../../atoms/mode';
 import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';
+import { useServerBaseUrl } from '../../../../hooks/affine/use-server-config';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 import { useSharingUrl } from './use-share-url';
@@ -98,6 +99,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     pageId,
     urlType: 'share',
   });
+  const baseUrl = useServerBaseUrl();
   const t = useAFFiNEI18N();
 
   const onClickCreateLink = useCallback(() => {
@@ -140,9 +142,13 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             lineHeight: '20px',
           }}
           value={
-            isSharedPage
-              ? sharingUrl
-              : `${location.protocol}//${location.hostname}/...`
+            (isSharedPage && sharingUrl) ||
+            `${
+              baseUrl ||
+              `${location.protocol}${
+                location.port ? `:${location.port}` : ''
+              }//${location.hostname}`
+            }/...`
           }
           readOnly
         />
@@ -151,6 +157,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             onClick={onClickCopyLink}
             data-testid="share-menu-copy-link-button"
             style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
+            disabled={!sharingUrl}
           >
             {t.Copy()}
           </Button>

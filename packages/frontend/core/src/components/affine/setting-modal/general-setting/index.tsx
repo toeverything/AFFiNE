@@ -8,7 +8,7 @@ import {
 import type { ReactElement, SVGProps } from 'react';
 
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
-import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
+import { useSelfHosted } from '../../../../hooks/affine/use-server-config';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
