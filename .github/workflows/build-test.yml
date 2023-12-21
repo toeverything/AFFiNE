@@ -140,7 +140,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-plugin
           path: ./test-results
@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
@@ -194,7 +194,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-migration
           path: ./tests/affine-migration/test-results
@@ -269,7 +269,7 @@ jobs:
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.filename.outputs.filename }}
           path: ./packages/frontend/native/${{ steps.filename.outputs.filename }}
@@ -296,7 +296,7 @@ jobs:
           package: '@affine/storage'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storage.node
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/storage/storage.node
@@ -320,7 +320,7 @@ jobs:
       - name: zip core
         run: tar -czf dist.tar.gz --directory=packages/frontend/core/dist .
       - name: Upload core artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core
           path: dist.tar.gz
@@ -490,7 +490,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-server
           path: ./tests/affine-cloud/test-results
@@ -596,7 +596,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results

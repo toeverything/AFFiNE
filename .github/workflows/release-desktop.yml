@@ -61,7 +61,7 @@ jobs:
           SKIP_NX_CACHE: 'true'
 
       - name: Upload core artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core
           path: packages/frontend/electron/resources/web-static
@@ -144,7 +144,7 @@ jobs:
           mv packages/frontend/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
@@ -210,7 +210,7 @@ jobs:
         run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/* -DestinationPath archive.zip
 
       - name: Save packaged artifacts for signing
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: |
@@ -265,7 +265,7 @@ jobs:
           echo $FILES_TO_BE_SIGNED
 
       - name: Save installer for signing
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: archive.zip
@@ -306,7 +306,7 @@ jobs:
           mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds

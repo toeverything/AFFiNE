@@ -36,7 +36,7 @@ jobs:
           cd ${{ env.ARCHIVE_DIR }}
           7za a signed.zip .\out\*
       - name: upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: signed-${{ inputs.artifact-name }}
           path: ${{ env.ARCHIVE_DIR }}/signed.zip
