@@ -1,9 +1,15 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow, type Display, screen } from 'electron';
 import { join } from 'path';
 
+import { isMacOS } from '../shared/utils';
 import { mainWindowOrigin } from './constants';
 // import { getExposedMeta } from './exposed';
 import { logger } from './logger';
+
+const getScreenSize = (display: Display) => {
+  const { width, height } = isMacOS() ? display.bounds : display.workArea;
+  return { width, height };
+};
 
 // todo: not all window need all of the exposed meta
 const getWindowAdditionalArguments = async () => {
@@ -15,11 +21,24 @@ const getWindowAdditionalArguments = async () => {
   ];
 };
 
+function fullscreenAndCenter(browserWindow: BrowserWindow) {
+  const position = browserWindow.getPosition();
+  const size = browserWindow.getSize();
+  const currentDisplay = screen.getDisplayNearestPoint({
+    x: position[0] + size[0] / 2,
+    y: position[1] + size[1] / 2,
+  });
+  if (!currentDisplay) return;
+  const { width, height } = getScreenSize(currentDisplay);
+  browserWindow.setSize(width, height);
+  browserWindow.center();
+}
+
 async function createOnboardingWindow(additionalArguments: string[]) {
   logger.info('creating onboarding window');
 
   // get user's screen size
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const { width, height } = getScreenSize(screen.getPrimaryDisplay());
 
   const browserWindow = new BrowserWindow({
     width,
@@ -36,6 +55,7 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     // skipTaskbar: true,
     transparent: true,
     hasShadow: false,
+    roundedCorners: false,
     webPreferences: {
       webgl: true,
       preload: join(__dirname, './preload.js'),
@@ -56,10 +76,16 @@ async function createOnboardingWindow(additionalArguments: string[]) {
   browserWindow.on('ready-to-show', () => {
     // forcing zoom factor to 1 to avoid onboarding display issues
     browserWindow.webContents.setZoomFactor(1);
+    fullscreenAndCenter(browserWindow);
     // TODO: add a timeout to avoid flickering, window is ready, but dom is not ready
     setTimeout(() => {
       browserWindow.show();
     }, 300);
+  });
+
+  // When moved to another screen, resize to fit the screen
+  browserWindow.on('moved', () => {
+    fullscreenAndCenter(browserWindow);
   });
 
   await browserWindow.loadURL(
