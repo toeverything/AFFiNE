@@ -4,7 +4,9 @@ import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkIcon } from '@blocksuite/icons';
+import { useAtomValue } from 'jotai';
 
+import { currentModeAtom } from '../../../../atoms/mode';
 import { useExportPage } from '../../../../hooks/affine/use-export-page';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
@@ -23,6 +25,7 @@ export const ShareExport = ({
     urlType: 'workspace',
   });
   const exportHandler = useExportPage(currentPage);
+  const currentMode = useAtomValue(currentModeAtom);
 
   return (
     <>
@@ -36,6 +39,7 @@ export const ShareExport = ({
         <ExportMenuItems
           exportHandler={exportHandler}
           className={styles.menuItemStyle}
+          pageMode={currentMode}
         />
       </div>
       {workspace.flavour !== WorkspaceFlavour.LOCAL ? (

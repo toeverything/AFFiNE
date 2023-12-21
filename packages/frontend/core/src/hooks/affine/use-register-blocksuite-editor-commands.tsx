@@ -141,7 +141,7 @@ export function useRegisterBlocksuiteEditorCommands(
     unsubs.push(
       registerAffineCommand({
         id: `editor:${mode}-export-to-pdf`,
-        preconditionStrategy,
+        preconditionStrategy: () => mode === 'page' && !trash,
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to PDF'](),
@@ -167,7 +167,7 @@ export function useRegisterBlocksuiteEditorCommands(
     unsubs.push(
       registerAffineCommand({
         id: `editor:${mode}-export-to-png`,
-        preconditionStrategy,
+        preconditionStrategy: () => mode === 'page' && !trash,
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['Export to PNG'](),

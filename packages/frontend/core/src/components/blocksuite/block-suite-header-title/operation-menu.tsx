@@ -182,7 +182,7 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
       >
         {t['Import']()}
       </MenuItem>
-      <Export exportHandler={exportHandler} />
+      <Export exportHandler={exportHandler} pageMode={currentMode} />
 
       {workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
       runtimeConfig.enablePageHistory ? (
