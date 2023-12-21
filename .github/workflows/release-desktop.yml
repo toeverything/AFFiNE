@@ -93,6 +93,9 @@ jobs:
       SKIP_GENERATE_ASSETS: 1
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -167,6 +170,9 @@ jobs:
       SKIP_GENERATE_ASSETS: 1
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
