@@ -17,13 +17,14 @@ const affineCoreOutDir = path.join(affineCoreDir, 'dist');
 const publicAffineOutDir = path.join(publicDistDir, `web-static`);
 const releaseVersionEnv = process.env.RELEASE_VERSION || '';
 
-console.log('build with following dir', {
+console.log('build with following variables', {
   repoRootDir,
   electronRootDir,
   publicDistDir,
   affineSrcDir: affineCoreDir,
   affineSrcOutDir: affineCoreOutDir,
   publicAffineOutDir,
+  releaseVersionEnv,
 });
 
 // step 0: check version match
