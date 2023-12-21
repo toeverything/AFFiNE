@@ -14,7 +14,7 @@ jobs:
     env:
       ARCHIVE_DIR: ${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.artifact-name }}
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ env.ARCHIVE_DIR }}

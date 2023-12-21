@@ -216,7 +216,7 @@ jobs:
           full-cache: true
 
       - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
@@ -381,7 +381,7 @@ jobs:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
 
       - name: Download storage.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/server
@@ -470,13 +470,13 @@ jobs:
           yarn workspace @affine/server data-migration run
           yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
       - name: Download storage.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/server
 
       - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
@@ -554,7 +554,7 @@ jobs:
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
 
       - name: Download ${{ steps.filename.outputs.filename }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ steps.filename.outputs.filename }}
           path: ./packages/frontend/native

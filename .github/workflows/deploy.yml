@@ -130,22 +130,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download core artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: core
           path: ./packages/frontend/core/dist
       - name: Download server dist
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: server-dist
           path: ./packages/backend/server/dist
       - name: Download storage.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/server
       - name: Download storage.node arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: storage.arm64.node
           path: ./packages/backend/storage
