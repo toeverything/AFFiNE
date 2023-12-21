@@ -34,6 +34,11 @@ export const Onboarding = ({ onOpenApp }: OnboardingProps) => {
     });
   }, []);
 
+  const onTooltipNext = useCallback(() => {
+    if (status.activeId) return;
+    setStatus({ activeId: null, unfoldingId: '4' });
+  }, [status.activeId]);
+
   return (
     <div
       className={styles.onboarding}
@@ -80,9 +85,7 @@ export const Onboarding = ({ onOpenApp }: OnboardingProps) => {
         )}
 
         <div className={styles.tipsWrapper} data-visible={!status.activeId}>
-          <AnimateInTooltip
-            onNext={() => setStatus({ activeId: null, unfoldingId: '4' })}
-          />
+          <AnimateInTooltip onNext={onTooltipNext} visible={!status.activeId} />
         </div>
       </div>
     </div>

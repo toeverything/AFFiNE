@@ -44,7 +44,7 @@
     "@radix-ui/react-dialog": "^1.0.4",
     "@radix-ui/react-scroll-area": "^1.0.5",
     "@radix-ui/react-select": "^2.0.0",
-    "@react-hookz/web": "^23.1.0",
+    "@react-hookz/web": "^24.0.0",
     "@sentry/integrations": "^7.83.0",
     "@sentry/react": "^7.83.0",
     "@toeverything/theme": "^0.7.20",

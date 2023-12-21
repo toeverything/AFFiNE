@@ -2,7 +2,15 @@ import { Button } from '@affine/component';
 
 import * as styles from './animate-in-tooltip.css';
 
-export const AnimateInTooltip = ({ onNext }: { onNext: () => void }) => {
+interface AnimateInTooltipProps {
+  onNext: () => void;
+  visible?: boolean;
+}
+
+export const AnimateInTooltip = ({
+  onNext,
+  visible,
+}: AnimateInTooltipProps) => {
   return (
     <>
       <div className={styles.tooltip}>
@@ -10,9 +18,11 @@ export const AnimateInTooltip = ({ onNext }: { onNext: () => void }) => {
         whiteboards and databases
       </div>
       <div className={styles.next}>
-        <Button type="primary" size="extraLarge" onClick={onNext}>
-          Next
-        </Button>
+        {visible ? (
+          <Button type="primary" size="extraLarge" onClick={onNext}>
+            Next
+          </Button>
+        ) : null}
       </div>
     </>
   );
