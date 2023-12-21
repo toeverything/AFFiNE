@@ -5,20 +5,29 @@ import electronWindowState from 'electron-window-state';
 import { join } from 'path';
 
 import { isMacOS, isWindows } from '../shared/utils';
-import { getExposedMeta } from './exposed';
+import { mainWindowOrigin } from './constants';
 import { ensureHelperProcess } from './helper-process';
 import { logger } from './logger';
-import { uiSubjects } from './ui';
+import { uiSubjects } from './ui/subject';
 import { parseCookie } from './utils';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 
-const DEV_TOOL = process.env.DEV_TOOL === 'true';
+// todo: not all window need all of the exposed meta
+const getWindowAdditionalArguments = async () => {
+  const { getExposedMeta } = await import('./exposed');
+  const mainExposedMeta = getExposedMeta();
+  const helperProcessManager = await ensureHelperProcess();
+  const helperExposedMeta = await helperProcessManager.rpc?.getMeta();
+  return [
+    `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
+    `--helper-exposed-meta=` + JSON.stringify(helperExposedMeta),
+    `--window-name=main`,
+  ];
+};
 
-export const mainWindowOrigin = process.env.DEV_SERVER_URL || 'file://.';
-
-async function createWindow() {
+async function createWindow(additionalArguments: string[]) {
   logger.info('create window');
   const mainWindowState = electronWindowState({
     defaultWidth: 1000,
@@ -29,8 +38,6 @@ async function createWindow() {
   const helperExposedMeta = await helperProcessManager.rpc?.getMeta();
 
   assert(helperExposedMeta, 'helperExposedMeta should be defined');
-
-  const mainExposedMeta = getExposedMeta();
 
   const browserWindow = new BrowserWindow({
     titleBarStyle: isMacOS()
@@ -56,10 +63,7 @@ async function createWindow() {
       spellcheck: false, // FIXME: enable?
       preload: join(__dirname, './preload.js'),
       // serialize exposed meta that to be used in preload
-      additionalArguments: [
-        `--main-exposed-meta=` + JSON.stringify(mainExposedMeta),
-        `--helper-exposed-meta=` + JSON.stringify(helperExposedMeta),
-      ],
+      additionalArguments: additionalArguments,
     },
   });
 
@@ -87,12 +91,6 @@ async function createWindow() {
     );
 
     logger.info('main window is ready to show');
-
-    if (DEV_TOOL) {
-      browserWindow.webContents.openDevTools({
-        mode: 'detach',
-      });
-    }
   });
 
   browserWindow.on('close', e => {
@@ -146,19 +144,22 @@ async function createWindow() {
 let browserWindow$: Promise<BrowserWindow> | undefined;
 
 /**
- * Restore existing BrowserWindow or Create new BrowserWindow
+ * Init main BrowserWindow. Will create a new window if it's not created yet.
  */
-export async function restoreOrCreateWindow() {
+export async function initMainWindow() {
   if (!browserWindow$ || (await browserWindow$.then(w => w.isDestroyed()))) {
-    browserWindow$ = createWindow();
+    const additionalArguments = await getWindowAdditionalArguments();
+    browserWindow$ = createWindow(additionalArguments);
   }
   const mainWindow = await browserWindow$;
-
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
-    logger.info('restore main window');
-  }
   return mainWindow;
+}
+
+export async function getMainWindow() {
+  if (!browserWindow$) return;
+  const window = await browserWindow$;
+  if (window.isDestroyed()) return;
+  return window;
 }
 
 export async function handleOpenUrlInHiddenWindow(url: string) {
@@ -188,7 +189,11 @@ export async function setCookie(
   arg0: CookiesSetDetails | string,
   arg1?: string
 ) {
-  const window = await restoreOrCreateWindow();
+  const window = await browserWindow$;
+  if (!window) {
+    // do nothing if window is not ready
+    return;
+  }
   const details =
     typeof arg1 === 'string' && typeof arg0 === 'string'
       ? parseCookie(arg0, arg1)
@@ -204,12 +209,20 @@ export async function setCookie(
 }
 
 export async function removeCookie(url: string, name: string): Promise<void> {
-  const window = await restoreOrCreateWindow();
+  const window = await browserWindow$;
+  if (!window) {
+    // do nothing if window is not ready
+    return;
+  }
   await window.webContents.session.cookies.remove(url, name);
 }
 
 export async function getCookie(url?: string, name?: string) {
-  const window = await restoreOrCreateWindow();
+  const window = await browserWindow$;
+  if (!window) {
+    // do nothing if window is not ready
+    return;
+  }
   const cookies = await window.webContents.session.cookies.get({
     url,
     name,

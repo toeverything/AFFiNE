@@ -1,30 +1,30 @@
 import { Input } from '@affine/component';
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ConfirmModal,
   type ConfirmModalProps,
-} from '@toeverything/components/modal';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
+} from '@affine/component/ui/modal';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
+import { WorkspaceFlavour } from '@affine/env/workspace';
+import { Trans } from '@affine/i18n';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useCallback, useState } from 'react';
 
 import * as styles from './style.css';
 
 interface WorkspaceDeleteProps extends ConfirmModalProps {
-  workspace: AffineOfficialWorkspace;
+  workspaceMetadata: WorkspaceMetadata;
 }
 
 export const WorkspaceDeleteModal = ({
-  workspace,
+  workspaceMetadata,
   ...props
 }: WorkspaceDeleteProps) => {
   const { onConfirm } = props;
-  const [workspaceName] = useBlockSuiteWorkspaceName(
-    workspace.blockSuiteWorkspace
-  );
   const [deleteStr, setDeleteStr] = useState<string>('');
+  const info = useWorkspaceInfo(workspaceMetadata);
+  const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
   const allowDelete = deleteStr === workspaceName;
   const t = useAFFiNEI18N();
 
@@ -46,7 +46,7 @@ export const WorkspaceDeleteModal = ({
       }}
       {...props}
     >
-      {workspace.flavour === WorkspaceFlavour.LOCAL ? (
+      {workspaceMetadata.flavour === WorkspaceFlavour.LOCAL ? (
         <Trans i18nKey="com.affine.workspaceDelete.description">
           Deleting (
           <span className={styles.workspaceName}>
@@ -67,11 +67,7 @@ export const WorkspaceDeleteModal = ({
       )}
       <div className={styles.inputContent}>
         <Input
-          ref={ref => {
-            if (ref) {
-              window.setTimeout(() => ref.focus(), 0);
-            }
-          }}
+          autoFocus
           onChange={setDeleteStr}
           data-testid="delete-workspace-input"
           onEnter={handleOnEnter}

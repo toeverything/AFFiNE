@@ -1,13 +1,10 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FavoritedIcon, FavoriteIcon } from '@blocksuite/icons';
-import {
-  IconButton,
-  type IconButtonProps,
-} from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import Lottie from 'lottie-react';
 import { forwardRef, useCallback, useState } from 'react';
 
+import { IconButton, type IconButtonProps } from '../../../ui/button';
+import { Tooltip } from '../../../ui/tooltip';
 import favoritedAnimation from './favorited-animation/data.json';
 
 export const FavoriteTag = forwardRef<

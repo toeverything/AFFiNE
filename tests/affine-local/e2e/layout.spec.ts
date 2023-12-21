@@ -34,7 +34,10 @@ test('Click resizer can close sidebar', async ({ page }) => {
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).toBeVisible();
 
-  await page.getByTestId('app-sidebar-resizer').click();
+  await page
+    .getByTestId('app-sidebar-wrapper')
+    .getByTestId('resize-handle')
+    .click();
   await expect(sliderBarArea).not.toBeInViewport();
 });
 
@@ -44,7 +47,9 @@ test('Drag resizer can resize sidebar', async ({ page }) => {
   const sliderBarArea = page.getByTestId('sliderBar-inner');
   await expect(sliderBarArea).toBeVisible();
 
-  const sliderResizer = page.getByTestId('app-sidebar-resizer');
+  const sliderResizer = page
+    .getByTestId('app-sidebar-wrapper')
+    .getByTestId('resize-handle');
   await sliderResizer.hover();
   await page.mouse.down();
   await page.mouse.move(400, 300, {

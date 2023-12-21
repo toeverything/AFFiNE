@@ -1,4 +1,3 @@
-import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import type {
   ChangeEvent,
@@ -13,11 +12,10 @@ import type {
 } from 'react';
 import { forwardRef, useCallback, useState } from 'react';
 
-import { input, inputWrapper, widthVar } from './style.css';
+import { input, inputWrapper } from './style.css';
 
 export type InputProps = {
   disabled?: boolean;
-  width?: CSSProperties['width'];
   onChange?: (value: string) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
@@ -34,7 +32,6 @@ export type InputProps = {
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     disabled,
-    width,
     onChange: propsOnChange,
     noBorder = false,
     className,
@@ -48,11 +45,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     endFix,
     onEnter,
     onKeyDown,
+    autoFocus,
     ...otherProps
   }: InputProps,
   ref: ForwardedRef<HTMLInputElement>
 ) {
   const [isFocus, setIsFocus] = useState(false);
+
+  const handleAutoFocus = useCallback((ref: HTMLInputElement | null) => {
+    if (ref) {
+      window.setTimeout(() => ref.focus(), 0);
+    }
+  }, []);
 
   return (
     <div
@@ -71,9 +75,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         'extra-large': size === 'extraLarge',
       })}
       style={{
-        ...assignInlineVars({
-          [widthVar]: width ? `${width}px` : '100%',
-        }),
         ...style,
       }}
     >
@@ -83,7 +84,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={ref}
+        ref={autoFocus ? handleAutoFocus : ref}
         disabled={disabled}
         style={inputStyle}
         onFocus={useCallback(

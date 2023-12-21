@@ -6,11 +6,11 @@ import type {
 import type { PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Menu } from '@toeverything/components/menu';
 import { useCallback, useState } from 'react';
 
+import { Button } from '../../../ui/button';
 import { FlexWrapper } from '../../../ui/layout';
+import { Menu } from '../../../ui/menu';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';
@@ -35,14 +35,10 @@ export const CollectionList = ({
   const [collection, setCollection] = useState<Collection>();
   const onChange = useCallback(
     (filterList: Filter[]) => {
-      setting
-        .updateCollection({
-          ...setting.currentCollection,
-          filterList,
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      setting.updateCollection({
+        ...setting.currentCollection,
+        filterList,
+      });
     },
     [setting]
   );
@@ -53,8 +49,8 @@ export const CollectionList = ({
   }, []);
 
   const onConfirm = useCallback(
-    async (view: Collection) => {
-      await setting.updateCollection(view);
+    (view: Collection) => {
+      setting.updateCollection(view);
       closeUpdateCollectionModal(false);
     },
     [closeUpdateCollectionModal, setting]

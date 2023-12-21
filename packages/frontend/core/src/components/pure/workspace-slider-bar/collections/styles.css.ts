@@ -28,6 +28,37 @@ export const title = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 });
+
+globalStyle(`[data-draggable=true] ${title}:before`, {
+  content: '""',
+  position: 'absolute',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  left: 0,
+  width: 4,
+  height: 4,
+  transition: 'height 0.2s, opacity 0.2s',
+  backgroundColor: 'var(--affine-placeholder-color)',
+  borderRadius: '2px',
+  opacity: 0,
+  willChange: 'height, opacity',
+});
+
+globalStyle(`[data-draggable=true] ${title}:hover:before`, {
+  height: 12,
+  opacity: 1,
+});
+
+globalStyle(`[data-draggable=true][data-dragging=true] ${title}`, {
+  opacity: 0.5,
+});
+
+globalStyle(`[data-draggable=true][data-dragging=true] ${title}:before`, {
+  height: 32,
+  width: 2,
+  opacity: 1,
+});
+
 export const more = style({
   display: 'flex',
   alignItems: 'center',
@@ -86,4 +117,46 @@ export const collapsibleContent = style({
       animation: `${slideUp} 0.2s ease-in-out`,
     },
   },
+});
+
+export const emptyCollectionWrapper = style({
+  padding: '9px 0',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 8,
+});
+
+export const emptyCollectionContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 6,
+});
+
+export const emptyCollectionIconWrapper = style({
+  width: 36,
+  height: 36,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '50%',
+  backgroundColor: 'var(--affine-background-secondary-color)',
+});
+
+export const emptyCollectionIcon = style({
+  fontSize: 20,
+  color: 'var(--affine-icon-secondary)',
+});
+
+export const emptyCollectionMessage = style({
+  fontSize: 'var(--affine-font-sm)',
+  textAlign: 'center',
+  color: 'var(--affine-text-secondary-color)',
+});
+
+export const emptyCollectionNewButton = style({
+  padding: '0 8px',
+  height: '30px',
+  fontSize: 'var(--affine-font-sm)',
 });

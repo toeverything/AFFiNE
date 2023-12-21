@@ -23,7 +23,7 @@ export const appStyle = style({
       inset: 0,
       opacity: 'var(--affine-noise-opacity, 0)',
       backgroundRepeat: 'repeat',
-      backgroundSize: '2.5%',
+      backgroundSize: '3%',
       // todo: figure out how to use vanilla-extract webpack plugin to inject img url
       backgroundImage: `var(--noise-background)`,
     },
@@ -32,13 +32,13 @@ export const appStyle = style({
 
 globalStyle(`html[data-theme="light"] ${appStyle}`, {
   vars: {
-    '--affine-noise-opacity': '0.25',
+    '--affine-noise-opacity': '0.35',
   },
 });
 
 globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   vars: {
-    '--affine-noise-opacity': '0.1',
+    '--affine-noise-opacity': '1',
   },
 
   '@media': {
@@ -60,7 +60,8 @@ export const mainContainerStyle = style({
       margin: '8px',
       borderRadius: '5px',
       overflow: 'hidden',
-      boxShadow: 'var(--affine-shadow-1)',
+      // todo: is this performance intensive?
+      filter: 'drop-shadow(0px 0px 4px rgba(66,65,73,.14))',
       '@media': {
         print: {
           overflow: 'visible',
@@ -72,12 +73,6 @@ export const mainContainerStyle = style({
     '&[data-show-padding="true"][data-is-macos="true"]': {
       borderRadius: '6px',
     },
-    '&[data-in-trash-page="true"]': {
-      marginBottom: '66px',
-    },
-    '&[data-in-trash-page="true"][data-show-padding="true"]': {
-      marginBottom: '66px',
-    },
     '&[data-show-padding="true"]:before': {
       content: '""',
       position: 'absolute',
@@ -87,44 +82,14 @@ export const mainContainerStyle = style({
       left: 0,
       WebkitAppRegion: 'drag',
     },
+    '&[data-transparent=true]': {
+      backgroundColor: 'transparent',
+    },
   },
 } as ComplexStyleRule);
 
-// These styles override the default styles of the react-resizable-panels
-// as the default styles make the overflow part hidden when printing to PDF.
-// See https://github.com/toeverything/AFFiNE/pull/3893
-globalStyle(`${mainContainerStyle} > div[data-panel-group]`, {
-  '@media': {
-    print: {
-      overflow: 'visible !important',
-    },
-  },
-});
-
-// These styles override the default styles of the react-resizable-panels
-// as the default styles make the overflow part hidden when printing to PDF.
-// See https://github.com/toeverything/AFFiNE/pull/3893
-globalStyle(`${mainContainerStyle} > div[data-panel-group] > div[data-panel]`, {
-  '@media': {
-    print: {
-      overflow: 'visible !important',
-    },
-  },
-});
-
-// Hack margin so that it works normally when sidebar is closed
-globalStyle(
-  `[data-testid=app-sidebar-wrapper][data-open=true][data-is-floating=false][data-has-background=false]
- ~ ${mainContainerStyle}[data-show-padding="true"]`,
-  {
-    // transition added here to prevent the transition from being applied on page load
-    transition: 'margin-left .3s ease-in-out',
-    marginLeft: '0',
-  }
-);
-
 export const toolStyle = style({
-  position: 'fixed',
+  position: 'absolute',
   right: '30px',
   bottom: '30px',
   zIndex: 'var(--affine-z-index-popover)',
@@ -141,22 +106,6 @@ export const toolStyle = style({
     },
     print: {
       display: 'none',
-    },
-  },
-  selectors: {
-    '&[data-in-trash-page="true"]': {
-      bottom: '70px',
-      '@media': {
-        'screen and (max-width: 960px)': {
-          bottom: '80px',
-        },
-        'screen and (max-width: 640px)': {
-          bottom: '85px',
-        },
-        print: {
-          display: 'none',
-        },
-      },
     },
   },
 });

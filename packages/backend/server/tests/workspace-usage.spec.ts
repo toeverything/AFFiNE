@@ -4,6 +4,8 @@ import ava, { type TestFn } from 'ava';
 import { stub } from 'sinon';
 
 import { AppModule } from '../src/app';
+import { FeatureManagementService } from '../src/modules/features';
+import { Quotas } from '../src/modules/quota';
 import { UsersService } from '../src/modules/users';
 import { PermissionService } from '../src/modules/workspaces/permission';
 import { WorkspaceResolver } from '../src/modules/workspaces/resolver';
@@ -19,6 +21,9 @@ class FakePermission {
     return {
       user: new FakePrisma().fakeUser,
     };
+  }
+  async getOwnedWorkspaces() {
+    return [''];
   }
 }
 
@@ -42,6 +47,36 @@ test.beforeEach(async t => {
           return [];
         },
       },
+      userFeatures: {
+        async count() {
+          return 1;
+        },
+        async findFirst() {
+          return {
+            createdAt: new Date(),
+            expiredAt: new Date(),
+            reason: '',
+            feature: Quotas[0],
+          };
+        },
+      },
+      features: {
+        async findFirst() {
+          return {
+            id: 0,
+            feature: 'free_plan_v1',
+            version: 1,
+            type: 1,
+            configs: {
+              name: 'Free',
+              blobLimit: 1,
+              storageQuota: 1,
+              historyPeriod: 1,
+              memberLimit: 3,
+            },
+          };
+        },
+      },
     })
     .overrideProvider(PermissionService)
     .useClass(FakePermission)
@@ -53,6 +88,8 @@ test.beforeEach(async t => {
         return 1024 * 10;
       },
     })
+    .overrideProvider(FeatureManagementService)
+    .useValue({})
     .compile();
   t.context.app = module.createNestApplication();
   t.context.resolver = t.context.app.get(WorkspaceResolver);

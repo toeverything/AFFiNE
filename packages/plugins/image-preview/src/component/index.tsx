@@ -1,3 +1,5 @@
+import { Button, IconButton } from '@affine/component/ui/button';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -11,8 +13,6 @@ import {
   ViewBarIcon,
 } from '@blocksuite/icons';
 import type { Workspace } from '@blocksuite/store';
-import { Button, IconButton } from '@toeverything/components/button';
-import { Tooltip } from '@toeverything/components/tooltip';
 import clsx from 'clsx';
 import { useErrorBoundary } from 'foxact/use-error-boundary';
 import { useAtom } from 'jotai';
@@ -191,7 +191,7 @@ const ImagePreviewModalImpl = (
         const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
         const store = block.page.blob;
-        const url = store?.get(block.sourceId);
+        const url = store?.get(block.sourceId as string);
         const img = await url;
         if (!img) {
           return;
@@ -260,7 +260,7 @@ const ImagePreviewModalImpl = (
         assertExists(page);
         const block = page.getBlockById(blockId) as ImageBlockModel;
         assertExists(block);
-        return props.workspace.blob.get(block?.sourceId);
+        return props.workspace.blob.get(block?.sourceId as string);
       },
       suspense: true,
     }

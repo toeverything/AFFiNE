@@ -107,12 +107,11 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Ecosystem
 
-| Name                                                                                            |                                         |                                                                                                                                                     |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [@toeverything/component](https://github.com/toeverything/design/tree/main/packages/components) | Toeverything Shared Component Resources |                                                                                                                                                     |
-| [@affine/component](packages/frontend/component)                                                | AFFiNE Component Resources              | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
-| [@toeverything/y-indexeddb](packages/common/y-indexeddb)                                        | IndexedDB database adapter for Yjs      | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
-| [@toeverything/theme](packages/common/theme)                                                    | AFFiNE theme                            | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
+| Name                                                     |                                    |                                                                                                                                                     |
+| -------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [@affine/component](packages/frontend/component)         | AFFiNE Component Resources         | [![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)](https://affine-storybook.vercel.app/)                          |
+| [@toeverything/y-indexeddb](packages/common/y-indexeddb) | IndexedDB database adapter for Yjs | [![](https://img.shields.io/npm/dm/@toeverything/y-indexeddb?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/y-indexeddb) |
+| [@toeverything/theme](packages/common/theme)             | AFFiNE theme                       | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme)             |
 
 ## Plugins
 
@@ -228,7 +227,7 @@ See [LICENSE] for details.
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/canary/.github/CLA.md
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.74.0-dea584
+[rust-version-icon]: https://img.shields.io/badge/Rust-1.74.1-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/canary/graphs/badge.svg?branch=canary
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success

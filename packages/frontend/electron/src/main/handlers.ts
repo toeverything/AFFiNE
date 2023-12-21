@@ -1,5 +1,6 @@
 import type {
   ClipboardHandlerManager,
+  ConfigStorageHandlerManager,
   DebugHandlerManager,
   ExportHandlerManager,
   UIHandlerManager,
@@ -9,9 +10,10 @@ import type {
 import { ipcMain } from 'electron';
 
 import { clipboardHandlers } from './clipboard';
+import { configStorageHandlers } from './config-storage';
 import { exportHandlers } from './export';
 import { getLogFilePath, logger, revealLogFile } from './logger';
-import { uiHandlers } from './ui';
+import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
 
 export const debugHandlers = {
@@ -44,6 +46,10 @@ type AllHandlers = {
     Electron.IpcMainInvokeEvent,
     UpdaterHandlerManager
   >;
+  configStorage: UnwrapManagerHandlerToServerSide<
+    Electron.IpcMainInvokeEvent,
+    ConfigStorageHandlerManager
+  >;
 };
 
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
@@ -53,6 +59,7 @@ export const allHandlers = {
   clipboard: clipboardHandlers,
   export: exportHandlers,
   updater: updaterHandlers,
+  configStorage: configStorageHandlers,
 } satisfies AllHandlers;
 
 export const registerHandlers = () => {

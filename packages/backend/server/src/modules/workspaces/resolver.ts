@@ -33,6 +33,8 @@ import type {
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
+import { MakeCache, PreventCache } from '../../cache';
+import { EventEmitter } from '../../event';
 import { PrismaService } from '../../prisma';
 import { StorageProvide } from '../../storage';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
@@ -41,8 +43,8 @@ import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Public } from '../auth';
 import { MailService } from '../auth/mailer';
 import { AuthService } from '../auth/service';
-import { UsersService } from '../users';
-import { UserType } from '../users/resolver';
+import { QuotaManagementService } from '../quota';
+import { UsersService, UserType } from '../users';
 import { PermissionService, PublicPageMode } from './permission';
 import { Permission } from './types';
 import { defaultWorkspaceAvatar } from './utils';
@@ -146,6 +148,8 @@ export class WorkspaceResolver {
     private readonly prisma: PrismaService,
     private readonly permissions: PermissionService,
     private readonly users: UsersService,
+    private readonly event: EventEmitter,
+    private readonly quota: QuotaManagementService,
     @Inject(StorageProvide) private readonly storage: Storage
   ) {}
 
@@ -231,6 +235,14 @@ export class WorkspaceResolver {
       }));
   }
 
+  @ResolveField(() => Int, {
+    description: 'Blobs size of workspace',
+    complexity: 2,
+  })
+  async blobsSize(@Parent() workspace: WorkspaceType) {
+    return this.storage.blobsSize([workspace.id]);
+  }
+
   @Query(() => Boolean, {
     description: 'Get is owner of workspace',
     complexity: 2,
@@ -308,22 +320,11 @@ export class WorkspaceResolver {
   })
   async createWorkspace(
     @CurrentUser() user: UserType,
-    @Args({ name: 'init', type: () => GraphQLUpload })
-    update: FileUpload
+    // we no longer support init workspace with a preload file
+    // use sync system to uploading them once created
+    @Args({ name: 'init', type: () => GraphQLUpload, nullable: true })
+    init: FileUpload | null
   ) {
-    // convert stream to buffer
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const stream = update.createReadStream();
-      const chunks: Uint8Array[] = [];
-      stream.on('data', chunk => {
-        chunks.push(chunk);
-      });
-      stream.on('error', reject);
-      stream.on('end', () => {
-        resolve(Buffer.concat(chunks));
-      });
-    });
-
     const workspace = await this.prisma.workspace.create({
       data: {
         public: false,
@@ -341,14 +342,31 @@ export class WorkspaceResolver {
       },
     });
 
-    if (buffer.length) {
-      await this.prisma.snapshot.create({
-        data: {
-          id: workspace.id,
-          workspaceId: workspace.id,
-          blob: buffer,
-        },
+    if (init) {
+      // convert stream to buffer
+      const buffer = await new Promise<Buffer>(resolve => {
+        const stream = init.createReadStream();
+        const chunks: Uint8Array[] = [];
+        stream.on('data', chunk => {
+          chunks.push(chunk);
+        });
+        stream.on('error', () => {
+          resolve(Buffer.from([]));
+        });
+        stream.on('end', () => {
+          resolve(Buffer.concat(chunks));
+        });
       });
+
+      if (buffer.length) {
+        await this.prisma.snapshot.create({
+          data: {
+            id: workspace.id,
+            workspaceId: workspace.id,
+            blob: buffer,
+          },
+        });
+      }
     }
 
     return workspace;
@@ -382,18 +400,7 @@ export class WorkspaceResolver {
       },
     });
 
-    await this.prisma.$transaction([
-      this.prisma.update.deleteMany({
-        where: {
-          workspaceId: id,
-        },
-      }),
-      this.prisma.snapshot.deleteMany({
-        where: {
-          workspaceId: id,
-        },
-      }),
-    ]);
+    this.event.emit('workspace.deleted', id);
 
     return true;
   }
@@ -650,6 +657,7 @@ export class WorkspaceResolver {
   @Query(() => [String], {
     description: 'List blobs of workspace',
   })
+  @MakeCache(['blobs'], ['workspaceId'])
   async listBlobs(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string
@@ -660,35 +668,8 @@ export class WorkspaceResolver {
   }
 
   @Query(() => WorkspaceBlobSizes)
-  async collectBlobSizes(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    await this.permissions.checkWorkspace(workspaceId, user.id);
-
-    return this.storage.blobsSize([workspaceId]).then(size => ({ size }));
-  }
-
-  @Query(() => WorkspaceBlobSizes)
   async collectAllBlobSizes(@CurrentUser() user: UserType) {
-    const workspaces = await this.prisma.workspaceUserPermission
-      .findMany({
-        where: {
-          userId: user.id,
-          accepted: true,
-          type: Permission.Owner,
-        },
-        select: {
-          workspace: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      })
-      .then(data => data.map(({ workspace }) => workspace.id));
-
-    const size = await this.storage.blobsSize(workspaces);
+    const size = await this.quota.getUserUsage(user.id);
     return { size };
   }
 
@@ -696,7 +677,7 @@ export class WorkspaceResolver {
   async checkBlobSize(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
-    @Args('size', { type: () => Float }) size: number
+    @Args('size', { type: () => Float }) blobSize: number
   ) {
     const canWrite = await this.permissions.tryCheckWorkspace(
       workspaceId,
@@ -704,18 +685,14 @@ export class WorkspaceResolver {
       Permission.Write
     );
     if (canWrite) {
-      const { user } = await this.permissions.getWorkspaceOwner(workspaceId);
-      if (user) {
-        const quota = await this.users.getStorageQuotaById(user.id);
-        const { size: currentSize } = await this.collectAllBlobSizes(user);
-
-        return { size: quota - (size + currentSize) };
-      }
+      const size = await this.quota.checkBlobQuota(workspaceId, blobSize);
+      return { size };
     }
     return false;
   }
 
   @Mutation(() => String)
+  @PreventCache(['blobs'], ['workspaceId'])
   async setBlob(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
@@ -728,14 +705,12 @@ export class WorkspaceResolver {
       Permission.Write
     );
 
-    // quota was apply to owner's account
-    const { user: owner } =
-      await this.permissions.getWorkspaceOwner(workspaceId);
-    if (!owner) return new NotFoundException('Workspace owner not found');
-    const quota = await this.users.getStorageQuotaById(owner.id);
-    const { size } = await this.collectAllBlobSizes(owner);
+    const { quota, size } = await this.quota.getWorkspaceUsage(workspaceId);
 
     const checkExceeded = (recvSize: number) => {
+      if (!quota) {
+        throw new ForbiddenException('cannot find user quota');
+      }
       if (size + recvSize > quota) {
         this.logger.log(
           `storage size limit exceeded: ${size + recvSize} > ${quota}`
@@ -777,6 +752,7 @@ export class WorkspaceResolver {
   }
 
   @Mutation(() => Boolean)
+  @PreventCache(['blobs'], ['workspaceId'])
   async deleteBlob(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,

@@ -1,8 +1,10 @@
 export * from './initialization';
-export * from './migration/blob';
-export { migratePages as forceUpgradePages } from './migration/blocksuite'; // campatible with electron
+export {
+  migratePages as forceUpgradePages,
+  migrateGuidCompatibility,
+} from './migration/blocksuite'; // campatible with electron
 export * from './migration/fixing';
-export { migrateToSubdoc } from './migration/subdoc';
+export { migrateToSubdoc, upgradeV1ToV2 } from './migration/subdoc';
 export * from './migration/workspace';
 
 /**

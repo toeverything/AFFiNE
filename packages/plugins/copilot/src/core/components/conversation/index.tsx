@@ -1,5 +1,5 @@
+import { Button } from '@affine/component/ui/button';
 import { PlusIcon, ResetIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
 import { clsx } from 'clsx';
 import type { MessageType } from 'langchain/schema';
 import { marked } from 'marked';
@@ -23,7 +23,13 @@ export interface ConversationProps {
 }
 
 export const Conversation = (props: ConversationProps): ReactElement => {
-  const html = useMemo(() => marked.parse(props.text), [props.text]);
+  const html = useMemo(
+    () =>
+      marked.parse(props.text, {
+        async: false,
+      }) as string,
+    [props.text]
+  );
   return (
     <div
       className={clsx(styles.containerStyle, {

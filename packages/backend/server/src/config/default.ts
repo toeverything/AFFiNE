@@ -7,8 +7,11 @@ import { join } from 'node:path';
 import parse from 'parse-duration';
 
 import pkg from '../../package.json' assert { type: 'json' };
-import type { AFFiNEConfig } from './def';
+import type { AFFiNEConfig, ServerFlavor } from './def';
 import { applyEnvToConfig } from './env';
+
+export const SERVER_FLAVOR = (process.env.SERVER_FLAVOR ??
+  'allinone') as ServerFlavor;
 
 // Don't use this in production
 export const examplePrivateKey = `-----BEGIN EC PRIVATE KEY-----
@@ -55,7 +58,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
       AFFINE_ENV: 'affineEnv',
-      AFFINE_FREE_USER_QUOTA: 'objectStorage.quota',
       DATABASE_URL: 'db.url',
       ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
       R2_OBJECT_STORAGE_ACCOUNT_ID: 'objectStorage.r2.accountId',
@@ -189,8 +191,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       fs: {
         path: join(homedir(), '.affine-storage'),
       },
-      // 10GB
-      quota: 10 * 1024 * 1024 * 1024,
     },
     rateLimiter: {
       ttl: 60,
@@ -206,6 +206,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
     },
     doc: {
       manager: {
+        enableUpdateAutoMerging: SERVER_FLAVOR !== 'sync',
         updatePollInterval: 3000,
         experimentalMergeWithJwstCodec: false,
       },

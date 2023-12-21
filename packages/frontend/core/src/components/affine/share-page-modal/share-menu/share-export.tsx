@@ -1,16 +1,21 @@
 import { ExportMenuItems } from '@affine/component/page-list';
+import { Button } from '@affine/component/ui/button';
+import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Divider } from '@toeverything/components/divider';
+import { useAtomValue } from 'jotai';
 
+import { currentModeAtom } from '../../../../atoms/mode';
 import { useExportPage } from '../../../../hooks/affine/use-export-page';
 import * as styles from './index.css';
 import type { ShareMenuProps } from './share-menu';
 import { useSharingUrl } from './use-share-url';
 
-export const ShareExport = ({ workspace, currentPage }: ShareMenuProps) => {
+export const ShareExport = ({
+  workspaceMetadata: workspace,
+  currentPage,
+}: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   const workspaceId = workspace.id;
   const pageId = currentPage.id;
@@ -20,6 +25,7 @@ export const ShareExport = ({ workspace, currentPage }: ShareMenuProps) => {
     urlType: 'workspace',
   });
   const exportHandler = useExportPage(currentPage);
+  const currentMode = useAtomValue(currentModeAtom);
 
   return (
     <>
@@ -33,6 +39,7 @@ export const ShareExport = ({ workspace, currentPage }: ShareMenuProps) => {
         <ExportMenuItems
           exportHandler={exportHandler}
           className={styles.menuItemStyle}
+          pageMode={currentMode}
         />
       </div>
       {workspace.flavour !== WorkspaceFlavour.LOCAL ? (

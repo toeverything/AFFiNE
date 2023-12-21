@@ -12,7 +12,7 @@ export const useEditCollection = (config: AllPageListConfig) => {
   const [data, setData] = useState<{
     collection: Collection;
     mode?: 'page' | 'rule';
-    onConfirm: (collection: Collection) => Promise<void>;
+    onConfirm: (collection: Collection) => void;
   }>();
   const close = useCallback(() => setData(undefined), []);
 
@@ -35,7 +35,7 @@ export const useEditCollection = (config: AllPageListConfig) => {
         setData({
           collection,
           mode,
-          onConfirm: async collection => {
+          onConfirm: collection => {
             res(collection);
           },
         });
@@ -52,7 +52,7 @@ export const useEditCollectionName = ({
 }) => {
   const [data, setData] = useState<{
     name: string;
-    onConfirm: (name: string) => Promise<void>;
+    onConfirm: (name: string) => void;
   }>();
   const close = useCallback(() => setData(undefined), []);
 
@@ -71,7 +71,7 @@ export const useEditCollectionName = ({
       new Promise<string>(res => {
         setData({
           name,
-          onConfirm: async collection => {
+          onConfirm: collection => {
             res(collection);
           },
         });

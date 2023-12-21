@@ -2,12 +2,9 @@ import { assertExists } from '@blocksuite/global/utils';
 import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import type { createStore, WritableAtom } from 'jotai/vanilla';
 import { nanoid } from 'nanoid';
+import { Map as YMap } from 'yjs';
 
-import { migratePages } from '../migration/blocksuite';
-import {
-  checkWorkspaceCompatibility,
-  MigrationPoint,
-} from '../migration/workspace';
+import { getLatestVersions } from '../migration/blocksuite';
 
 export async function initEmptyPage(page: Page, title?: string) {
   await page.load(() => {
@@ -89,12 +86,8 @@ export async function buildShowcaseWorkspace(
   };
   workspace.meta.setProperties(prototypes);
   const edgelessPage1 = nanoid();
-  const edgelessPage2 = nanoid();
-  const edgelessPage3 = nanoid();
   const { store, atoms } = options;
-  [edgelessPage1, edgelessPage2, edgelessPage3].forEach(pageId => {
-    store.set(atoms.pageMode, pageId, 'edgeless');
-  });
+  store.set(atoms.pageMode, edgelessPage1, 'edgeless');
 
   const pageMetas = {
     '9f6f3c04-cf32-470c-9648-479dc838f10e': {
@@ -133,11 +126,6 @@ export async function buildShowcaseWorkspace(
       tags: [],
       updatedDate: 1691646845195,
     },
-    '512b1cb3-d22d-4b20-a7aa-58e2afcb1238': {
-      createDate: 1691574743531,
-      tags: ['icg1n5UdkP'],
-      updatedDate: 1691647117761,
-    },
     '22163830-8252-43fe-b62d-fd9bbeaa4caa': {
       createDate: 1691574859042,
       tags: [],
@@ -164,11 +152,6 @@ export async function buildShowcaseWorkspace(
       createDate: 1691636192263,
       tags: ['q3mceOl_zi', 'g1L5dXKctL'],
       updatedDate: 1691645102104,
-    },
-    '9d6e716e-a071-45a2-88ac-2f2f6eec0109': {
-      createDate: 1691574743531,
-      tags: ['icg1n5UdkP'],
-      updatedDate: 1691574743531,
     },
   } satisfies Record<string, Partial<PageMeta>>;
   const data = [
@@ -203,11 +186,6 @@ export async function buildShowcaseWorkspace(
       nanoid(),
     ],
     [
-      '512b1cb3-d22d-4b20-a7aa-58e2afcb1238',
-      import('@affine/templates/v1/travel-plan.json'),
-      edgelessPage2,
-    ],
-    [
       '22163830-8252-43fe-b62d-fd9bbeaa4caa',
       import('@affine/templates/v1/personal-knowledge-management.json'),
       nanoid(),
@@ -231,11 +209,6 @@ export async function buildShowcaseWorkspace(
       'aa02af3c-5c5c-4856-b7ce-947ad17331f3',
       import('@affine/templates/v1/okr-template.json'),
       nanoid(),
-    ],
-    [
-      '9d6e716e-a071-45a2-88ac-2f2f6eec0109',
-      import('@affine/templates/v1/travel-note.json'),
-      edgelessPage3,
     ],
   ] as const;
   const idMap = await Promise.all(data).then(async data => {
@@ -285,10 +258,11 @@ export async function buildShowcaseWorkspace(
 
   // The showcase building will create multiple pages once, and may skip the version writing.
   // https://github.com/toeverything/blocksuite/blob/master/packages/store/src/workspace/page.ts#L662
-  const compatibilityResult = checkWorkspaceCompatibility(workspace);
-  if (compatibilityResult === MigrationPoint.BlockVersion) {
-    await migratePages(workspace.doc, workspace.schema);
-  }
+  workspace.doc.getMap('meta').set('pageVersion', 2);
+  const newVersions = getLatestVersions(workspace.schema);
+  workspace.doc
+    .getMap('meta')
+    .set('blockVersions', new YMap(Object.entries(newVersions)));
 
   Object.entries(pageMetas).forEach(([oldId, meta]) => {
     const newId = idMap[oldId];

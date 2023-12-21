@@ -9,6 +9,8 @@
   "references": [
     { "path": "../../common/env" },
     { "path": "../../common/y-indexeddb" },
-    { "path": "../../common/debug" }
+    { "path": "../../common/debug" },
+    { "path": "../../common/infra" },
+    { "path": "../workspace" }
   ]
 }

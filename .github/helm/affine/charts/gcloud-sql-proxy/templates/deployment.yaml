@@ -1,0 +1,132 @@
+{{- if .Values.global.database.gcloud.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gcloud-sql-proxy.fullname" . }}
+  labels:
+    {{- include "gcloud-sql-proxy.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gcloud-sql-proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "gcloud-sql-proxy.labels" . | nindent 8 }}
+	{{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "gcloud-sql-proxy.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--address"
+            - "0.0.0.0"
+            - "--structured-logs"
+            - "--auto-iam-authn"
+            - "{{ .Values.global.database.gcloud.connectionName }}"
+          env:
+            # Enable HTTP healthchecks on port 9801. This enables /liveness,
+            # /readiness and /startup health check endpoints. Allow connections
+            # listen for connections on any interface (0.0.0.0) so that the
+            # k8s management components can reach these endpoints.
+            - name: CSQL_PROXY_HEALTH_CHECK
+              value: "true"
+            - name: CSQL_PROXY_HTTP_PORT
+              value: "9801"
+            - name: CSQL_PROXY_HTTP_ADDRESS
+              value: 0.0.0.0
+          ports:
+            - name: cloud-sql-proxy
+              containerPort: {{ .Values.global.database.gcloud.proxyPort }}
+              protocol: TCP
+            - containerPort: 9801
+              protocol: TCP
+          # The /startup probe returns OK when the proxy is ready to receive
+          # connections from the application. In this example, k8s will check
+          # once a second for 60 seconds.
+          startupProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /startup
+              port: 9801
+              scheme: HTTP
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 10
+          # The /liveness probe returns OK as soon as the proxy application has
+          # begun its startup process and continues to return OK until the
+          # process stops.
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /liveness
+              port: 9801
+              scheme: HTTP
+            # The probe will be checked every 10 seconds.
+            periodSeconds: 10
+            # Number of times the probe is allowed to fail before the transition
+            # from healthy to failure state.
+            #
+            # If periodSeconds = 60, 5 tries will result in five minutes of
+            # checks. The proxy starts to refresh a certificate five minutes
+            # before its expiration. If those five minutes lapse without a
+            # successful refresh, the liveness probe will fail and the pod will be
+            # restarted.
+            successThreshold: 1
+            # The probe will fail if it does not respond in 10 seconds
+            timeoutSeconds: 10
+          readinessProbe:
+            # The /readiness probe returns OK when the proxy can establish
+            # a new connections to its databases.
+            httpGet:
+              path: /readiness
+              port: 9801
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            # Number of times the probe must report success to transition from failure to healthy state.
+            # Defaults to 1 for readiness probe.
+            successThreshold: 1
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

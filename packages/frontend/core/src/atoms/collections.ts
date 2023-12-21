@@ -1,12 +1,18 @@
-import type { CollectionsCRUDAtom } from '@affine/component/page-list';
+import type {
+  CollectionsCRUD,
+  CollectionsCRUDAtom,
+} from '@affine/component/page-list';
 import type { Collection, DeprecatedCollection } from '@affine/env/filter';
+import {
+  currentWorkspaceAtom,
+  waitForCurrentWorkspaceAtom,
+} from '@affine/workspace/atom';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
-import { currentWorkspaceAtom } from '@toeverything/infra/atom';
 import { type DBSchema, openDB } from 'idb';
 import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 import { getUserSetting } from '../utils/user-setting';
 import { getWorkspaceSetting } from '../utils/workspace-setting';
@@ -95,7 +101,11 @@ type BaseCollectionsDataType = {
 export const pageCollectionBaseAtom =
   atomWithObservable<BaseCollectionsDataType>(
     get => {
-      const currentWorkspacePromise = get(currentWorkspaceAtom);
+      const currentWorkspace = get(currentWorkspaceAtom);
+      if (!currentWorkspace) {
+        return of({ loading: true, collections: [] });
+      }
+
       const session = get(sessionAtom);
       const userId = session?.data?.user.id ?? null;
       const migrateCollectionsFromIdbData = async (
@@ -149,48 +159,44 @@ export const pageCollectionBaseAtom =
 
       return new Observable<BaseCollectionsDataType>(subscriber => {
         const group = new DisposableGroup();
-        currentWorkspacePromise
-          .then(async currentWorkspace => {
-            const workspaceSetting = getWorkspaceSetting(currentWorkspace);
-            migrateCollectionsFromIdbData(currentWorkspace)
-              .then(collections => {
-                if (collections.length) {
-                  workspaceSetting.addCollection(...collections);
-                }
-              })
-              .catch(error => {
-                console.error(error);
-              });
-            migrateCollectionsFromUserData(currentWorkspace)
-              .then(collections => {
-                if (collections.length) {
-                  workspaceSetting.addCollection(...collections);
-                }
-              })
-              .catch(error => {
-                console.error(error);
-              });
-            subscriber.next({
-              loading: false,
-              collections: workspaceSetting.collections,
-            });
-            if (group.disposed) {
-              return;
+        const workspaceSetting = getWorkspaceSetting(
+          currentWorkspace.blockSuiteWorkspace
+        );
+        migrateCollectionsFromIdbData(currentWorkspace.blockSuiteWorkspace)
+          .then(collections => {
+            if (collections.length) {
+              workspaceSetting.addCollection(...collections);
             }
-            const fn = () => {
-              subscriber.next({
-                loading: false,
-                collections: workspaceSetting.collections,
-              });
-            };
-            workspaceSetting.collectionsYArray.observe(fn);
-            group.add(() => {
-              workspaceSetting.collectionsYArray.unobserve(fn);
-            });
           })
           .catch(error => {
-            subscriber.error(error);
+            console.error(error);
           });
+        migrateCollectionsFromUserData(currentWorkspace.blockSuiteWorkspace)
+          .then(collections => {
+            if (collections.length) {
+              workspaceSetting.addCollection(...collections);
+            }
+          })
+          .catch(error => {
+            console.error(error);
+          });
+        subscriber.next({
+          loading: false,
+          collections: workspaceSetting.collections,
+        });
+        if (group.disposed) {
+          return;
+        }
+        const fn = () => {
+          subscriber.next({
+            loading: false,
+            collections: workspaceSetting.collections,
+          });
+        };
+        workspaceSetting.setting.observeDeep(fn);
+        group.add(() => {
+          workspaceSetting.setting.unobserveDeep(fn);
+        });
 
         return () => {
           group.dispose();
@@ -199,21 +205,27 @@ export const pageCollectionBaseAtom =
     },
     { initialValue: { loading: true, collections: [] } }
   );
-export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(get => {
-  const workspacePromise = get(currentWorkspaceAtom);
+
+export const collectionsCRUDAtom: CollectionsCRUDAtom = atom(async get => {
+  const workspace = await get(waitForCurrentWorkspaceAtom);
   return {
-    addCollection: async (...collections) => {
-      const workspace = await workspacePromise;
-      getWorkspaceSetting(workspace).addCollection(...collections);
+    addCollection: (...collections) => {
+      getWorkspaceSetting(workspace.blockSuiteWorkspace).addCollection(
+        ...collections
+      );
     },
     collections: get(pageCollectionBaseAtom).collections,
-    updateCollection: async (id, updater) => {
-      const workspace = await workspacePromise;
-      getWorkspaceSetting(workspace).updateCollection(id, updater);
+    updateCollection: (id, updater) => {
+      getWorkspaceSetting(workspace.blockSuiteWorkspace).updateCollection(
+        id,
+        updater
+      );
     },
-    deleteCollection: async (info, ...ids) => {
-      const workspace = await workspacePromise;
-      getWorkspaceSetting(workspace).deleteCollection(info, ...ids);
+    deleteCollection: (info, ...ids) => {
+      getWorkspaceSetting(workspace.blockSuiteWorkspace).deleteCollection(
+        info,
+        ...ids
+      );
     },
-  };
+  } satisfies CollectionsCRUD;
 });

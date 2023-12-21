@@ -1,4 +1,4 @@
-import type { AffineOfficialWorkspace } from '@affine/env/workspace';
+import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
@@ -14,11 +14,11 @@ import {
 
 import type { PageMode } from '../../../atoms';
 import { EditorModeSwitch } from '../block-suite-mode-switch';
-import { PageMenu } from './operation-menu';
+import { PageHeaderMenuButton } from './operation-menu';
 import * as styles from './styles.css';
 
 export interface BlockSuiteHeaderTitleProps {
-  workspace: AffineOfficialWorkspace;
+  blockSuiteWorkspace: BlockSuiteWorkspace;
   pageId: string;
   isPublic?: boolean;
   publicMode?: PageMode;
@@ -53,7 +53,7 @@ const EditableTitle = ({
 };
 
 const StableTitle = ({
-  workspace,
+  blockSuiteWorkspace: workspace,
   pageId,
   onRename,
   isPublic,
@@ -61,8 +61,8 @@ const StableTitle = ({
 }: BlockSuiteHeaderTitleProps & {
   onRename?: () => void;
 }) => {
-  const currentPage = workspace.blockSuiteWorkspace.getPage(pageId);
-  const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
+  const currentPage = workspace.getPage(pageId);
+  const pageMeta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === currentPage?.id
   );
 
@@ -77,13 +77,10 @@ const StableTitle = ({
   return (
     <div className={styles.headerTitleContainer}>
       <EditorModeSwitch
-        blockSuiteWorkspace={workspace.blockSuiteWorkspace}
+        blockSuiteWorkspace={workspace}
         pageId={pageId}
         isPublic={isPublic}
         publicMode={publicMode}
-        style={{
-          marginRight: '12px',
-        }}
       />
       <span
         data-testid="title-edit-button"
@@ -92,18 +89,20 @@ const StableTitle = ({
       >
         {title || 'Untitled'}
       </span>
-      {isPublic ? null : <PageMenu rename={onRename} pageId={pageId} />}
+      {isPublic ? null : (
+        <PageHeaderMenuButton rename={onRename} pageId={pageId} />
+      )}
     </div>
   );
 };
 
 const BlockSuiteTitleWithRename = (props: BlockSuiteHeaderTitleProps) => {
-  const { workspace, pageId } = props;
-  const currentPage = workspace.blockSuiteWorkspace.getPage(pageId);
-  const pageMeta = useBlockSuitePageMeta(workspace.blockSuiteWorkspace).find(
+  const { blockSuiteWorkspace: workspace, pageId } = props;
+  const currentPage = workspace.getPage(pageId);
+  const pageMeta = useBlockSuitePageMeta(workspace).find(
     meta => meta.id === currentPage?.id
   );
-  const pageTitleMeta = usePageMetaHelper(workspace.blockSuiteWorkspace);
+  const pageTitleMeta = usePageMetaHelper(workspace);
 
   const [isEditable, setIsEditable] = useState(false);
   const [title, setPageTitle] = useState(pageMeta?.title || 'Untitled');

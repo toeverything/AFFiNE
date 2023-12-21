@@ -19,6 +19,8 @@ const useFilterTag = ({ name }: FilterTagProps) => {
       return t['com.affine.filter.after']();
     case 'before':
       return t['com.affine.filter.before']();
+    case 'last':
+      return t['com.affine.filter.last']();
     case 'is':
       return t['com.affine.filter.is']();
     case 'is not empty':

@@ -1,6 +1,5 @@
-import { IconButton } from '@toeverything/components/button';
-
 import { displayFlex, styled, textEllipsis } from '../../../styles';
+import { IconButton } from '../../../ui/button';
 
 export const StyledWorkspaceInfo = styled('div')(() => {
   return {

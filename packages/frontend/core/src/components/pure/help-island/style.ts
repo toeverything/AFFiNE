@@ -5,7 +5,6 @@ export const StyledIsland = styled('div')<{
   inEdgelessPage?: boolean;
 }>(({ spread, inEdgelessPage }) => {
   return {
-    transition: 'box-shadow 0.2s',
     width: '44px',
     position: 'relative',
     boxShadow: spread

@@ -13,7 +13,6 @@ import { describe, expect, test, vi } from 'vitest';
 import { beforeEach } from 'vitest';
 
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
-import { useBlockSuiteWorkspaceName } from '../use-block-suite-workspace-name';
 import { useBlockSuiteWorkspacePageTitle } from '../use-block-suite-workspace-page-title';
 
 let blockSuiteWorkspace: BlockSuiteWorkspace;
@@ -37,21 +36,6 @@ beforeEach(async () => {
   await initPage(blockSuiteWorkspace.createPage({ id: 'page0' }));
   await initPage(blockSuiteWorkspace.createPage({ id: 'page1' }));
   await initPage(blockSuiteWorkspace.createPage({ id: 'page2' }));
-});
-
-describe('useBlockSuiteWorkspaceName', () => {
-  test('basic', async () => {
-    blockSuiteWorkspace.meta.setName('test 1');
-    const workspaceNameHook = renderHook(() =>
-      useBlockSuiteWorkspaceName(blockSuiteWorkspace)
-    );
-    expect(workspaceNameHook.result.current[0]).toBe('test 1');
-    blockSuiteWorkspace.meta.setName('test 2');
-    workspaceNameHook.rerender();
-    expect(workspaceNameHook.result.current[0]).toBe('test 2');
-    workspaceNameHook.result.current[1]('test 3');
-    expect(blockSuiteWorkspace.meta.name).toBe('test 3');
-  });
 });
 
 describe('useBlockSuiteWorkspacePageTitle', () => {

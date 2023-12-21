@@ -2,18 +2,13 @@ import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, EditIcon, FilterIcon } from '@blocksuite/icons';
 import {
-  Menu,
-  MenuIcon,
-  MenuItem,
-  type MenuItemProps,
-} from '@toeverything/components/menu';
-import {
   type PropsWithChildren,
   type ReactElement,
   useCallback,
   useMemo,
 } from 'react';
 
+import { Menu, MenuIcon, MenuItem, type MenuItemProps } from '../../../ui/menu';
 import type { useCollectionManager } from '../use-collection-manager';
 import type { AllPageListConfig } from '.';
 import * as styles from './collection-operations.css';
@@ -27,12 +22,14 @@ export const CollectionOperations = ({
   config,
   setting,
   info,
+  openRenameModal,
   children,
 }: PropsWithChildren<{
   info: DeleteCollectionInfo;
   collection: Collection;
   config: AllPageListConfig;
   setting: ReturnType<typeof useCollectionManager>;
+  openRenameModal?: () => void;
 }>) => {
   const { open: openEditCollectionModal, node: editModal } =
     useEditCollection(config);
@@ -41,7 +38,12 @@ export const CollectionOperations = ({
     useEditCollectionName({
       title: t['com.affine.editCollection.renameCollection'](),
     });
+
   const showEditName = useCallback(() => {
+    // use openRenameModal if it is in the sidebar collection list
+    if (openRenameModal) {
+      return openRenameModal();
+    }
     openEditCollectionNameModal(collection.name)
       .then(name => {
         return setting.updateCollection({ ...collection, name });
@@ -49,7 +51,8 @@ export const CollectionOperations = ({
       .catch(err => {
         console.error(err);
       });
-  }, [openEditCollectionNameModal, collection, setting]);
+  }, [openRenameModal, openEditCollectionNameModal, collection, setting]);
+
   const showEdit = useCallback(() => {
     openEditCollectionModal(collection)
       .then(collection => {
@@ -59,6 +62,7 @@ export const CollectionOperations = ({
         console.error(err);
       });
   }, [setting, collection, openEditCollectionModal]);
+
   const actions = useMemo<
     Array<
       | {
@@ -103,9 +107,7 @@ export const CollectionOperations = ({
         ),
         name: t['Delete'](),
         click: () => {
-          setting.deleteCollection(info, collection.id).catch(err => {
-            console.error(err);
-          });
+          setting.deleteCollection(info, collection.id);
         },
         type: 'danger',
       },

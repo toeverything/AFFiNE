@@ -14,7 +14,6 @@ import { authAtom } from '../atoms';
 import { setOnceSignedInEventAtom } from '../atoms/event';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { useAppHelper } from '../hooks/use-workspaces';
 
 export const loader: LoaderFunction = async args => {
   const inviteId = args.params.inviteId || '';
@@ -49,7 +48,6 @@ export const loader: LoaderFunction = async args => {
 export const Component = () => {
   const loginStatus = useCurrentLoginStatus();
   const { jumpToSignIn } = useNavigateHelper();
-  const { addCloudWorkspace } = useAppHelper();
   const { jumpToSubPath } = useNavigateHelper();
 
   const setOnceSignedInEvent = useSetAtom(setOnceSignedInEventAtom);
@@ -61,13 +59,12 @@ export const Component = () => {
   };
 
   const openWorkspace = useCallback(() => {
-    addCloudWorkspace(inviteInfo.workspace.id);
     jumpToSubPath(
       inviteInfo.workspace.id,
       WorkspaceSubPath.ALL,
       RouteLogic.REPLACE
     );
-  }, [addCloudWorkspace, inviteInfo.workspace.id, jumpToSubPath]);
+  }, [inviteInfo.workspace.id, jumpToSubPath]);
 
   useEffect(() => {
     if (loginStatus === 'unauthenticated') {

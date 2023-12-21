@@ -41,7 +41,7 @@ test('page delete -> refresh page -> it should be disappear', async ({
 
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('page delete -> create new page -> refresh page -> new page should be appear -> old page should be disappear', async ({
@@ -95,7 +95,7 @@ test('page delete -> create new page -> refresh page -> new page should be appea
 
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('delete multiple pages -> create multiple pages -> refresh', async ({
@@ -155,5 +155,5 @@ test('delete multiple pages -> create multiple pages -> refresh', async ({
 
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

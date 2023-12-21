@@ -1,5 +1,6 @@
 import type {
   ClipboardHandlers,
+  ConfigStorageHandlers,
   DBHandlers,
   DebugHandlers,
   DialogHandlers,
@@ -48,4 +49,9 @@ export abstract class UpdaterHandlerManager extends HandlerManager<
 export abstract class WorkspaceHandlerManager extends HandlerManager<
   'workspace',
   WorkspaceHandlers
+> {}
+
+export abstract class ConfigStorageHandlerManager extends HandlerManager<
+  'configStorage',
+  ConfigStorageHandlers
 > {}

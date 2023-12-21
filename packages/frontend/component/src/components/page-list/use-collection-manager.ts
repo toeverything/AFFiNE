@@ -33,22 +33,21 @@ export const currentCollectionAtom = atomWithReset<string>(NIL);
 export type Updater<T> = (value: T) => T;
 export type CollectionUpdater = Updater<Collection>;
 export type CollectionsCRUD = {
-  addCollection: (...collections: Collection[]) => Promise<void>;
+  addCollection: (...collections: Collection[]) => void;
   collections: Collection[];
-  updateCollection: (id: string, updater: CollectionUpdater) => Promise<void>;
-  deleteCollection: (
-    info: DeleteCollectionInfo,
-    ...ids: string[]
-  ) => Promise<void>;
+  updateCollection: (id: string, updater: CollectionUpdater) => void;
+  deleteCollection: (info: DeleteCollectionInfo, ...ids: string[]) => void;
 };
-export type CollectionsCRUDAtom = Atom<CollectionsCRUD>;
+export type CollectionsCRUDAtom = Atom<
+  Promise<CollectionsCRUD> | CollectionsCRUD
+>;
 
 export const useSavedCollections = (collectionAtom: CollectionsCRUDAtom) => {
   const [{ collections, addCollection, deleteCollection, updateCollection }] =
     useAtom(collectionAtom);
   const addPage = useCallback(
-    async (collectionId: string, pageId: string) => {
-      await updateCollection(collectionId, old => {
+    (collectionId: string, pageId: string) => {
+      updateCollection(collectionId, old => {
         return {
           ...old,
           allowList: [pageId, ...(old.allowList ?? [])],
@@ -79,11 +78,11 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
     defaultCollectionAtom
   );
   const update = useCallback(
-    async (collection: Collection) => {
+    (collection: Collection) => {
       if (collection.id === NIL) {
         updateDefaultCollection(collection);
       } else {
-        await updateCollection(collection.id, () => collection);
+        updateCollection(collection.id, () => collection);
       }
     },
     [updateDefaultCollection, updateCollection]
@@ -102,6 +101,7 @@ export const useCollectionManager = (collectionsAtom: CollectionsCRUDAtom) => {
       ? defaultCollection
       : collections.find(v => v.id === currentCollectionId) ??
         defaultCollection;
+
   return {
     currentCollection: currentCollection,
     savedCollections: collections,

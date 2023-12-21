@@ -1,25 +1,22 @@
 import { DynamicModule, Type } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { SERVER_FLAVOR } from '../config';
 import { GqlModule } from '../graphql.module';
-import { SERVER_FLAVOR, ServerConfigModule } from './config';
+import { ServerConfigModule } from './config';
 import { DocModule } from './doc';
 import { PaymentModule } from './payment';
+import { QuotaModule } from './quota';
 import { SelfHostedModule } from './self-hosted';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
 
-const BusinessModules: (Type | DynamicModule)[] = [
-  EventEmitterModule.forRoot({
-    global: true,
-  }),
-];
+const BusinessModules: (Type | DynamicModule)[] = [];
 
 switch (SERVER_FLAVOR) {
   case 'sync':
-    BusinessModules.push(SyncModule, DocModule.forSync());
+    BusinessModules.push(SyncModule, DocModule);
     break;
   case 'selfhosted':
     BusinessModules.push(
@@ -30,7 +27,7 @@ switch (SERVER_FLAVOR) {
       WorkspaceModule,
       UsersModule,
       SyncModule,
-      DocModule.forRoot()
+      DocModule
     );
     break;
   case 'graphql':
@@ -40,8 +37,9 @@ switch (SERVER_FLAVOR) {
       GqlModule,
       WorkspaceModule,
       UsersModule,
-      DocModule.forRoot(),
-      PaymentModule
+      DocModule,
+      PaymentModule,
+      QuotaModule
     );
     break;
   case 'allinone':
@@ -52,8 +50,9 @@ switch (SERVER_FLAVOR) {
       GqlModule,
       WorkspaceModule,
       UsersModule,
+      QuotaModule,
       SyncModule,
-      DocModule.forRoot(),
+      DocModule,
       PaymentModule
     );
     break;

@@ -59,6 +59,9 @@ schema = isDev ? 'affine-dev' : schema;
 
 export const appInfo = {
   electron: true,
+  windowName: process.argv
+    .find(arg => arg.startsWith('--window-name='))
+    ?.split('=')[1],
   schema,
 };
 

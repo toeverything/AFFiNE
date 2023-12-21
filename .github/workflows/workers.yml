@@ -11,7 +11,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
-    environment: production
+    environment: stable
     steps:
       - uses: actions/checkout@v4
       - name: Publish

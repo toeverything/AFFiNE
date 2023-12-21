@@ -32,7 +32,7 @@ test('New a page ,then open it and show delete modal', async ({
   expect(confirmTip).not.toBeUndefined();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('New a page ,then go to all pages and show delete modal', async ({
@@ -58,5 +58,5 @@ test('New a page ,then go to all pages and show delete modal', async ({
   expect(confirmTip).not.toBeUndefined();
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });

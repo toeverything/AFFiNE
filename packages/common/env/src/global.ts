@@ -1,17 +1,14 @@
 /// <reference types="@blocksuite/global" />
 import { assertEquals } from '@blocksuite/global/utils';
+import type { Workspace } from '@blocksuite/store';
 import { z } from 'zod';
 
 import { isDesktop, isServer } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const blockSuiteFeatureFlags = z.object({
-  enable_set_remote_flag: z.boolean(),
-  enable_block_hub: z.boolean(),
-
-  enable_toggle_block: z.boolean(),
-  enable_bookmark_operation: z.boolean(),
-  enable_note_index: z.boolean(),
+  enable_expand_database_block: z.boolean(),
+  enable_bultin_ledits: z.boolean(),
 });
 
 export const runtimeFlagsSchema = z.object({
@@ -21,6 +18,7 @@ export const runtimeFlagsSchema = z.object({
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),
   changelogUrl: z.string(),
+  downloadUrl: z.string(),
   // see: tools/workers
   imageProxyUrl: z.string(),
   enablePreloading: z.boolean(),
@@ -33,6 +31,7 @@ export const runtimeFlagsSchema = z.object({
   enableEnhanceShareMode: z.boolean(),
   enablePayment: z.boolean(),
   enablePageHistory: z.boolean(),
+  enableCopilot: z.boolean(),
   // this is for the electron app
   serverUrlPrefix: z.string(),
   enableMoveDatabase: z.boolean(),
@@ -151,4 +150,13 @@ export function setupGlobal() {
   globalThis.environment = environment;
 
   globalThis.$AFFINE_SETUP = true;
+}
+
+export function setupEditorFlags(workspace: Workspace) {
+  Object.entries(runtimeConfig.editorFlags).forEach(([key, value]) => {
+    workspace.awarenessStore.setFlag(
+      key as keyof BlockSuiteFeatureFlags,
+      value
+    );
+  });
 }

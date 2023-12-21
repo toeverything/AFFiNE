@@ -1,16 +1,16 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
-import { Modal } from '@toeverything/components/modal';
 import { useCallback, useMemo, useState } from 'react';
 
+import { Button } from '../../../ui/button';
 import Input from '../../../ui/input';
+import { Modal } from '../../../ui/modal';
 import * as styles from './create-collection.css';
 
 export interface CreateCollectionModalProps {
   title?: string;
   onConfirmText?: string;
   init: string;
-  onConfirm: (title: string) => Promise<void>;
+  onConfirm: (title: string) => void;
   open: boolean;
   showTips?: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,13 +27,8 @@ export const CreateCollectionModal = ({
   const t = useAFFiNEI18N();
   const onConfirmTitle = useCallback(
     (title: string) => {
-      onConfirm(title)
-        .then(() => {
-          onOpenChange(false);
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      onConfirm(title);
+      onOpenChange(false);
     },
     [onConfirm, onOpenChange]
   );

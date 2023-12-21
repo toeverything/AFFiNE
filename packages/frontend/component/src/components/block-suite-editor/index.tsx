@@ -1,8 +1,9 @@
-import { EditorContainer } from '@blocksuite/editor';
 import { assertExists } from '@blocksuite/global/utils';
+import { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
+import { useAtom } from 'jotai';
 import type { CSSProperties, ReactElement } from 'react';
 import {
   memo,
@@ -19,7 +20,10 @@ import {
   blockSuiteEditorHeaderStyle,
   blockSuiteEditorStyle,
 } from './index.css';
-import { editorPresets } from './preset';
+import { editorContainerAtom } from './index.jotai';
+import { editorSpecs } from './specs';
+
+export { editorContainerAtom } from './index.jotai';
 
 interface BlockElement extends Element {
   path: string[];
@@ -31,7 +35,7 @@ export type EditorProps = {
   defaultSelectedBlockId?: string;
   onModeChange?: (mode: 'page' | 'edgeless') => void;
   // on Editor instance instantiated
-  onLoadEditor?: (editor: EditorContainer) => () => void;
+  onLoadEditor?: (editor: AffineEditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
 };
@@ -83,7 +87,7 @@ export class NoPageRootError extends Error {
     super('Page root not found when render editor!');
 
     // Log info to let sentry collect more message
-    const hasExpectSpace = Array.from(page.doc.spaces.values()).some(
+    const hasExpectSpace = Array.from(page.rootDoc.spaces.values()).some(
       doc => page.spaceDoc.guid === doc.guid
     );
     const blocks = page.spaceDoc.getMap('blocks') as YMap<YMap<any>>;
@@ -147,10 +151,11 @@ const BlockSuiteEditorImpl = ({
 }: EditorProps): ReactElement => {
   usePageRoot(page);
 
+  const [, setEditorContainer] = useAtom(editorContainerAtom);
   assertExists(page, 'page should not be null');
-  const editorRef = useRef<EditorContainer | null>(null);
+  const editorRef = useRef<AffineEditorContainer | null>(null);
   if (editorRef.current === null) {
-    editorRef.current = new EditorContainer();
+    editorRef.current = new AffineEditorContainer();
     editorRef.current.autofocus = true;
   }
   const editor = editorRef.current;
@@ -162,8 +167,8 @@ const BlockSuiteEditorImpl = ({
 
   if (editor.page !== page) {
     editor.page = page;
-    editor.pagePreset = editorPresets.pageModePreset;
-    editor.edgelessPreset = editorPresets.edgelessModePreset;
+    editor.docSpecs = editorSpecs.docModeSpecs;
+    editor.edgelessSpecs = editorSpecs.edgelessModeSpecs;
   }
 
   useLayoutEffect(() => {
@@ -193,10 +198,11 @@ const BlockSuiteEditorImpl = ({
       return;
     }
     container.append(editor);
+    setEditorContainer(editor);
     return () => {
       editor.remove();
     };
-  }, [editor]);
+  }, [editor, setEditorContainer]);
 
   const blockElement = useBlockElementById(
     containerRef.current,
@@ -211,7 +217,7 @@ const BlockSuiteEditorImpl = ({
           block: 'center',
           inline: 'center',
         });
-        const selectManager = editor.root.value?.selection;
+        const selectManager = editor.root?.selection;
         if (!blockElement.path.length || !selectManager) {
           return;
         }

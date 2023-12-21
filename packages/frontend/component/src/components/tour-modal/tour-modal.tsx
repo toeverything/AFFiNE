@@ -1,10 +1,10 @@
 /// <reference types="../../type.d.ts" />
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowLeftSmallIcon, ArrowRightSmallIcon } from '@blocksuite/icons';
-import { Modal, type ModalProps } from '@toeverything/components/modal';
 import clsx from 'clsx';
 import { useState } from 'react';
 
+import { Modal, type ModalProps } from '../../ui/modal';
 import editingVideo from './editingVideo.mp4';
 import {
   arrowStyle,

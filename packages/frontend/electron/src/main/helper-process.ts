@@ -20,6 +20,8 @@ import { logger } from './logger';
 
 const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
 
+const isDev = process.env.NODE_ENV === 'development';
+
 function pickAndBind<T extends object, U extends keyof T>(
   obj: T,
   keys: U[]
@@ -48,12 +50,16 @@ class HelperProcessManager {
   }
 
   private constructor() {
-    const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH);
+    const helperProcess = utilityProcess.fork(HELPER_PROCESS_PATH, [], {
+      // todo: port number should not being used
+      execArgv: isDev ? ['--inspect=40894'] : [],
+    });
     this.#process = helperProcess;
     this.ready = new Promise((resolve, reject) => {
       helperProcess.once('spawn', () => {
         try {
           this.#connectMain();
+          logger.info('[helper] forked', helperProcess.pid);
           resolve();
         } catch (err) {
           logger.error('[helper] connectMain error', err);

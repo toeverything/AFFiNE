@@ -1,8 +1,8 @@
 import { toast } from '@affine/component';
 import { BlockCard } from '@affine/component/card/block-card';
 import { WorkspaceCard } from '@affine/component/card/workspace-card';
+import { Tooltip } from '@affine/component/ui/tooltip';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { getOrCreateWorkspace } from '@affine/workspace/manager';
 import {
   EdgelessIcon,
   ExportToHtmlIcon,
@@ -10,7 +10,6 @@ import {
   PageIcon,
 } from '@blocksuite/icons';
 import type { Meta } from '@storybook/react';
-import { Tooltip } from '@toeverything/components/tooltip';
 
 export default {
   title: 'AFFiNE/Card',
@@ -19,13 +18,6 @@ export default {
     chromatic: { disableSnapshot: true },
   },
 } satisfies Meta;
-
-const blockSuiteWorkspace = getOrCreateWorkspace(
-  'blocksuite-local',
-  WorkspaceFlavour.LOCAL
-);
-
-blockSuiteWorkspace.meta.setName('Hello World');
 
 export const AffineWorkspaceCard = () => {
   return (

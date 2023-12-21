@@ -1,7 +1,12 @@
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import {
+  currentWorkspaceAtom,
+  waitForCurrentWorkspaceAtom,
+  workspaceListAtom,
+} from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback } from 'react';
 
@@ -14,7 +19,6 @@ import {
   openSignOutModalAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { signOutCloud } from '../utils/cloud-utils';
 
@@ -48,6 +52,13 @@ const OnboardingModal = lazy(() =>
     default: module.OnboardingModal,
   }))
 );
+const WorkspaceGuideModal = lazy(() =>
+  import('../components/affine/onboarding/workspace-guide-modal').then(
+    module => ({
+      default: module.WorkspaceGuideModal,
+    })
+  )
+);
 
 const SignOutModal = lazy(() =>
   import('../components/affine/sign-out-modal').then(module => ({
@@ -56,33 +67,43 @@ const SignOutModal = lazy(() =>
 );
 
 export const Setting = () => {
-  const [currentWorkspace] = useCurrentWorkspace();
-  const [{ open, workspaceId, activeTab }, setOpenSettingModalAtom] =
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const [{ open, workspaceMetadata, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
   assertExists(currentWorkspace);
 
   const onSettingClick = useCallback(
     ({
       activeTab,
-      workspaceId,
-    }: Pick<SettingAtom, 'activeTab' | 'workspaceId'>) => {
-      setOpenSettingModalAtom(prev => ({ ...prev, activeTab, workspaceId }));
+      workspaceMetadata,
+    }: Pick<SettingAtom, 'activeTab' | 'workspaceMetadata'>) => {
+      setOpenSettingModalAtom(prev => ({
+        ...prev,
+        activeTab,
+        workspaceMetadata,
+      }));
     },
     [setOpenSettingModalAtom]
   );
+
+  const onOpenChange = useCallback(
+    (open: boolean) => {
+      setOpenSettingModalAtom(prev => ({ ...prev, open }));
+    },
+    [setOpenSettingModalAtom]
+  );
+
+  if (!open) {
+    return null;
+  }
 
   return (
     <SettingModal
       open={open}
       activeTab={activeTab}
-      workspaceId={workspaceId}
+      workspaceMetadata={workspaceMetadata}
       onSettingClick={onSettingClick}
-      onOpenChange={useCallback(
-        (open: boolean) => {
-          setOpenSettingModalAtom(prev => ({ ...prev, open }));
-        },
-        [setOpenSettingModalAtom]
-      )}
+      onOpenChange={onOpenChange}
     />
   );
 };
@@ -128,7 +149,7 @@ export const AuthModal = (): ReactElement => {
 };
 
 export function CurrentWorkspaceModals() {
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
@@ -146,20 +167,32 @@ export function CurrentWorkspaceModals() {
           <OnboardingModal />
         </Suspense>
       )}
+      <WorkspaceGuideModal />
       {currentWorkspace && <Setting />}
     </>
   );
 }
 
 export const SignOutConfirmModal = () => {
-  const { jumpToIndex } = useNavigateHelper();
+  const { openPage } = useNavigateHelper();
   const [open, setOpen] = useAtom(openSignOutModalAtom);
+  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
+  const workspaceList = useAtomValue(workspaceListAtom);
 
   const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
     await signOutCloud();
-    jumpToIndex();
-  }, [jumpToIndex, setOpen]);
+
+    // if current workspace is affine cloud, switch to local workspace
+    if (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+      const localWorkspace = workspaceList.find(
+        w => w.flavour === WorkspaceFlavour.LOCAL
+      );
+      if (localWorkspace) {
+        openPage(localWorkspace.id, WorkspaceSubPath.ALL);
+      }
+    }
+  }, [currentWorkspace?.flavour, openPage, setOpen, workspaceList]);
 
   return (
     <SignOutModal open={open} onOpenChange={setOpen} onConfirm={onConfirm} />

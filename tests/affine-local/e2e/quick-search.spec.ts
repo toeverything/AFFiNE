@@ -7,13 +7,19 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 const openQuickSearchByShortcut = async (page: Page, checkVisible = true) => {
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
   if (checkVisible) {
     expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
   }
+};
+
+const insertInputText = async (page: Page, text: string) => {
+  await page.locator('[cmdk-input]').fill(text);
+  const actual = await page.locator('[cmdk-input]').inputValue();
+  expect(actual).toBe(text);
 };
 
 const keyboardDownAndSelect = async (page: Page, label: string) => {
@@ -44,10 +50,9 @@ async function assertTitle(page: Page, text: string) {
   }
 }
 
-async function checkElementIsInView(page: Page, searchText: string) {
-  const element = page.getByText(searchText);
+async function checkElementIsInView(page: Page, locator: Locator) {
   // check if the element is in view
-  const elementRect = await element.boundingBox();
+  const elementRect = await locator.boundingBox();
   const viewportHeight = page.viewportSize()?.height;
 
   if (!elementRect || !viewportHeight) {
@@ -77,14 +82,16 @@ async function waitForScrollToFinish(page: Page) {
 }
 
 async function assertResultList(page: Page, texts: string[]) {
-  const actual = await page
-    .locator('[cmdk-item] [data-testid=cmdk-label]')
-    .allInnerTexts();
-  const actualSplit = actual[0].split('\n');
-  expect(actualSplit[0]).toEqual(texts[0]);
-  if (actualSplit[1]) {
-    expect(actualSplit[1]).toEqual(texts[1]);
-  }
+  await expect(async () => {
+    const actual = await page
+      .locator('[cmdk-item] [data-testid=cmdk-label]')
+      .allInnerTexts();
+    const actualSplit = actual[0].split('\n');
+    expect(actualSplit[0]).toEqual(texts[0]);
+    if (actualSplit[1]) {
+      expect(actualSplit[1]).toEqual(texts[1]);
+    }
+  }).toPass();
 }
 
 async function titleIsFocused(page: Page) {
@@ -137,7 +144,7 @@ test('Create a new page with keyword', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  await page.keyboard.insertText('"test123456"');
+  await insertInputText(page, '"test123456"');
   const addNewPage = page.locator(
     '[cmdk-item] >> text=New ""test123456"" Page'
   );
@@ -151,9 +158,7 @@ test('Enter a keyword to search for', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
-  await page.keyboard.insertText('test123456');
-  const actual = await page.locator('[cmdk-input]').inputValue();
-  expect(actual).toBe('test123456');
+  await insertInputText(page, 'test123456');
 });
 
 test('Create a new page and search this page', async ({ page }) => {
@@ -162,7 +167,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   // input title and create new page
-  await page.keyboard.insertText('test123456');
+  await insertInputText(page, 'test123456');
   await page.waitForTimeout(300);
   const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Page');
   await addNewPage.click();
@@ -170,7 +175,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await page.waitForTimeout(300);
   await assertTitle(page, 'test123456');
   await openQuickSearchByShortcut(page);
-  await page.keyboard.insertText('test123456');
+  await insertInputText(page, 'test123456');
   await page.waitForTimeout(300);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
@@ -180,7 +185,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await page.reload();
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
-  await page.keyboard.insertText('test123456');
+  await insertInputText(page, 'test123456');
   await page.waitForTimeout(300);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
@@ -375,7 +380,7 @@ test('show not found item', async ({ page }) => {
   await clickNewPageButton(page);
   await openQuickSearchByShortcut(page);
   // input title and create new page
-  await page.keyboard.insertText('test123456');
+  await insertInputText(page, 'test123456');
   const notFoundItem = page.getByTestId('cmdk-search-not-found');
   await expect(notFoundItem).toBeVisible();
   await expect(notFoundItem).toHaveText('Search for "test123456"');
@@ -395,17 +400,22 @@ test('can use cmdk to search page content and scroll to it, then the block will 
     await page.keyboard.press('Enter', { delay: 10 });
   }
   await page.keyboard.insertText('123456');
+  const textBlock = page.locator('affine-editor-container').getByText('123456');
+  await expect(textBlock).toBeVisible();
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
-  await page.keyboard.insertText('123456');
+  await insertInputText(page, '123456');
   await page.waitForTimeout(300);
   await assertResultList(page, [
     'this is a new page to search for content',
     '123456',
   ]);
-  await page.keyboard.press('Enter');
+  await page.locator('[cmdk-item] [data-testid=cmdk-label]').first().click();
   await waitForScrollToFinish(page);
-  const isVisitable = await checkElementIsInView(page, '123456');
+  const isVisitable = await checkElementIsInView(
+    page,
+    page.locator('affine-editor-container').getByText('123456')
+  );
   expect(isVisitable).toBe(true);
   const selectionElement = page.locator('affine-block-selection');
   await expect(selectionElement).toBeVisible();
@@ -424,7 +434,7 @@ test('Create a new page with special characters in the title and search for this
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
   await openQuickSearchByShortcut(page);
 
-  await page.keyboard.insertText(specialTitle);
+  await insertInputText(page, specialTitle);
   await page.waitForTimeout(300);
 
   await assertResultList(page, [specialTitle, specialTitle]);

@@ -6,9 +6,9 @@ import {
   ExportToPdfIcon,
   ExportToPngIcon,
 } from '@blocksuite/icons';
-import { MenuIcon, MenuItem, MenuSub } from '@toeverything/components/menu';
 import { type ReactNode, useMemo } from 'react';
 
+import { MenuIcon, MenuItem, MenuSub } from '../../../ui/menu';
 import { transitionStyle } from './index.css';
 
 interface ExportMenuItemProps<T> {
@@ -21,6 +21,7 @@ interface ExportMenuItemProps<T> {
 
 interface ExportProps {
   exportHandler: (type: 'pdf' | 'html' | 'png' | 'markdown') => Promise<void>;
+  pageMode?: 'page' | 'edgeless';
   className?: string;
 }
 
@@ -47,6 +48,7 @@ export function ExportMenuItem<T>({
 export const ExportMenuItems = ({
   exportHandler,
   className = transitionStyle,
+  pageMode = 'page',
 }: ExportProps) => {
   const t = useAFFiNEI18N();
   const itemMap = useMemo(
@@ -94,16 +96,23 @@ export const ExportMenuItems = ({
     ],
     [className, exportHandler, t]
   );
-  const items = itemMap.map(({ component: Component, props }) => (
-    <Component key={props.label} {...props} />
-  ));
+  const items = itemMap.map(({ component: Component, props }) =>
+    pageMode === 'edgeless' &&
+    (props.type === 'pdf' || props.type === 'png') ? null : (
+      <Component key={props.label} {...props} />
+    )
+  );
   return items;
 };
 
-export const Export = ({ exportHandler, className }: ExportProps) => {
+export const Export = ({ exportHandler, className, pageMode }: ExportProps) => {
   const t = useAFFiNEI18N();
   const items = (
-    <ExportMenuItems exportHandler={exportHandler} className={className} />
+    <ExportMenuItems
+      exportHandler={exportHandler}
+      className={className}
+      pageMode={pageMode}
+    />
   );
   return (
     <MenuSub

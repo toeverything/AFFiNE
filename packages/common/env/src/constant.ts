@@ -6,6 +6,7 @@ declare global {
     appInfo: {
       electron: boolean;
       schema: string;
+      windowName: string;
     };
   }
 }

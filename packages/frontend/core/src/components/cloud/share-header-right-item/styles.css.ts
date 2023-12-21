@@ -13,3 +13,13 @@ export const iconWrapper = style({
     },
   },
 });
+export const rightItemContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '0 8px',
+});
+
+export const presentButton = style({
+  gap: '4px',
+});

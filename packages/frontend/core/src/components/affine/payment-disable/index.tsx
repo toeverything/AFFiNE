@@ -1,5 +1,5 @@
+import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ConfirmModal } from '@toeverything/components/modal';
 import { useAtom } from 'jotai';
 import { useCallback } from 'react';
 

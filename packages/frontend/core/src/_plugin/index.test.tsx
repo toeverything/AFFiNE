@@ -1,4 +1,3 @@
-import '../polyfill/ses-lockdown';
 import '../polyfill/intl-segmenter';
 
 import { assertExists } from '@blocksuite/global/utils';
@@ -18,8 +17,8 @@ import { bootstrapPluginSystem } from '../bootstrap/register-plugins';
 async function main() {
   const { setup } = await import('../bootstrap/setup');
   const rootStore = getCurrentStore();
-  await setup(rootStore);
-  const { _pluginNestedImportsMap } = createSetup(rootStore);
+  setup();
+  createSetup(rootStore);
   const pluginRegisterPromise = bootstrapPluginSystem(rootStore);
   const root = document.getElementById('app');
   assertExists(root);
@@ -27,11 +26,6 @@ async function main() {
   const App = () => {
     use(pluginRegisterPromise);
     const plugins = useAtomValue(loadedPluginNameAtom);
-    _pluginNestedImportsMap.forEach(value => {
-      const exports = value.get('index.js');
-      assertExists(exports);
-      assertExists(exports?.get('entry'));
-    });
     return (
       <div>
         <div data-plugins-load-status="success">

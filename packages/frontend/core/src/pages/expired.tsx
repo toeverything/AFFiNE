@@ -1,6 +1,6 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useCallback } from 'react';
 
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';

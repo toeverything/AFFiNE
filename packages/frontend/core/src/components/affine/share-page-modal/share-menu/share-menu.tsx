@@ -1,29 +1,19 @@
-import {
-  type AffineCloudWorkspace,
-  type AffineOfficialWorkspace,
-  type AffinePublicWorkspace,
-  type LocalWorkspace,
-  WorkspaceFlavour,
-} from '@affine/env/workspace';
+import { Button } from '@affine/component/ui/button';
+import { Divider } from '@affine/component/ui/divider';
+import { Menu } from '@affine/component/ui/menu';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import { WebIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
-import { Button } from '@toeverything/components/button';
-import { Divider } from '@toeverything/components/divider';
-import { Menu } from '@toeverything/components/menu';
 
 import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';
 import * as styles from './index.css';
 import { ShareExport } from './share-export';
 import { SharePage } from './share-page';
 
-export interface ShareMenuProps<
-  Workspace extends AffineOfficialWorkspace =
-    | AffineCloudWorkspace
-    | LocalWorkspace
-    | AffinePublicWorkspace,
-> {
-  workspace: Workspace;
+export interface ShareMenuProps {
+  workspaceMetadata: WorkspaceMetadata;
   currentPage: Page;
   onEnableAffineCloud: () => void;
 }
@@ -60,7 +50,7 @@ const LocalShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button data-testid="local-share-menu-button" type="plain">
+      <Button data-testid="local-share-menu-button" type="primary">
         {t['com.affine.share-menu.shareButton']()}
       </Button>
     </Menu>
@@ -70,13 +60,10 @@ const LocalShareMenu = (props: ShareMenuProps) => {
 const CloudShareMenu = (props: ShareMenuProps) => {
   const t = useAFFiNEI18N();
   const {
-    workspace: { id: workspaceId },
+    workspaceMetadata: { id: workspaceId },
     currentPage,
   } = props;
-  const { isSharedPage } = useIsSharedPage(
-    workspaceId,
-    currentPage.spaceDoc.guid
-  );
+  const { isSharedPage } = useIsSharedPage(workspaceId, currentPage.id);
 
   return (
     <Menu
@@ -89,27 +76,19 @@ const CloudShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button data-testid="cloud-share-menu-button" type="plain">
-        <div
-          style={{
-            color: isSharedPage
-              ? 'var(--affine-link-color)'
-              : 'var(--affine-text-primary-color)',
-          }}
-        >
-          {isSharedPage
-            ? t['com.affine.share-menu.sharedButton']()
-            : t['com.affine.share-menu.shareButton']()}
-        </div>
+      <Button data-testid="cloud-share-menu-button" type="primary">
+        {isSharedPage
+          ? t['com.affine.share-menu.sharedButton']()
+          : t['com.affine.share-menu.shareButton']()}
       </Button>
     </Menu>
   );
 };
 
 export const ShareMenu = (props: ShareMenuProps) => {
-  const { workspace } = props;
+  const { workspaceMetadata } = props;
 
-  if (workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (workspaceMetadata.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalShareMenu {...props} />;
   }
   return <CloudShareMenu {...props} />;

@@ -6,11 +6,11 @@ import {
   toast,
 } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
+import { Button } from '@affine/component/ui/button';
+import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { Button } from '@toeverything/components/button';
-import { Menu, MenuItem, MenuTrigger } from '@toeverything/components/menu';
 import { useAtomValue } from 'jotai';
 import { useMemo, useState } from 'react';
 import { useCallback } from 'react';
@@ -69,7 +69,7 @@ export const LocalSharePage = (props: ShareMenuProps) => {
 
 export const AffineSharePage = (props: ShareMenuProps) => {
   const {
-    workspace: { id: workspaceId },
+    workspaceMetadata: { id: workspaceId },
     currentPage,
   } = props;
   const pageId = currentPage.id;
@@ -80,7 +80,7 @@ export const AffineSharePage = (props: ShareMenuProps) => {
     changeShare,
     currentShareMode,
     disableShare,
-  } = useIsSharedPage(workspaceId, currentPage.spaceDoc.guid);
+  } = useIsSharedPage(workspaceId, currentPage.id);
   const currentPageMode = useAtomValue(currentModeAtom);
 
   const defaultMode = useMemo(() => {
@@ -140,7 +140,9 @@ export const AffineSharePage = (props: ShareMenuProps) => {
             lineHeight: '20px',
           }}
           value={
-            isSharedPage ? sharingUrl : `${runtimeConfig.serverUrlPrefix}/...`
+            isSharedPage
+              ? sharingUrl
+              : `${location.protocol}//${location.hostname}/...`
           }
           readOnly
         />
@@ -239,9 +241,11 @@ export const AffineSharePage = (props: ShareMenuProps) => {
 };
 
 export const SharePage = (props: ShareMenuProps) => {
-  if (props.workspace.flavour === WorkspaceFlavour.LOCAL) {
+  if (props.workspaceMetadata.flavour === WorkspaceFlavour.LOCAL) {
     return <LocalSharePage {...props} />;
-  } else if (props.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
+  } else if (
+    props.workspaceMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD
+  ) {
     return <AffineSharePage {...props} />;
   }
   throw new Error('Unreachable');

@@ -1,8 +1,10 @@
+import { Avatar } from '@affine/component/ui/avatar';
+import { Loading } from '@affine/component/ui/loading';
+import { Tooltip } from '@affine/component/ui/tooltip';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import {
-  type SyncEngineStatus,
-  SyncEngineStep,
-} from '@affine/workspace/providers';
+import { type SyncEngineStatus, SyncEngineStep } from '@affine/workspace';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import {
   CloudWorkspaceIcon,
   InformationFillDuotoneIcon,
@@ -10,11 +12,10 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { Avatar } from '@toeverything/components/avatar';
-import { Tooltip } from '@toeverything/components/tooltip';
-import { useBlockSuiteWorkspaceAvatarUrl } from '@toeverything/hooks/use-block-suite-workspace-avatar-url';
-import { useBlockSuiteWorkspaceName } from '@toeverything/hooks/use-block-suite-workspace-name';
-import { debounce } from 'lodash-es';
+import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
+import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
+import { useAtomValue } from 'jotai';
+import { debounce, mean } from 'lodash-es';
 import {
   forwardRef,
   type HTMLAttributes,
@@ -24,10 +25,7 @@ import {
   useState,
 } from 'react';
 
-import { useCurrentSyncEngine } from '../../../../hooks/current/use-current-sync-engine';
 import { useSystemOnline } from '../../../../hooks/use-system-online';
-import type { AllWorkspace } from '../../../../shared';
-import { Loading } from './loading-icon';
 import {
   StyledSelectorContainer,
   StyledSelectorWrapper,
@@ -47,10 +45,10 @@ const CloudWorkspaceStatus = () => {
   );
 };
 
-const SyncingWorkspaceStatus = () => {
+const SyncingWorkspaceStatus = ({ progress }: { progress?: number }) => {
   return (
     <>
-      <Loading />
+      <Loading progress={progress} speed={progress ? 0 : undefined} />
       Syncing...
     </>
   );
@@ -87,21 +85,18 @@ const OfflineStatus = () => {
   );
 };
 
-const WorkspaceStatus = ({
-  currentWorkspace,
-}: {
-  currentWorkspace: AllWorkspace;
-}) => {
+const useSyncEngineSyncProgress = () => {
   const isOnline = useSystemOnline();
 
   const [syncEngineStatus, setSyncEngineStatus] =
     useState<SyncEngineStatus | null>(null);
 
-  const syncEngine = useCurrentSyncEngine();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
 
+  // debounce sync engine status
   useEffect(() => {
-    setSyncEngineStatus(syncEngine?.status ?? null);
-    const disposable = syncEngine?.onStatusChange.on(
+    setSyncEngineStatus(currentWorkspace.engine.sync.status);
+    const disposable = currentWorkspace.engine.sync.onStatusChange.on(
       debounce(status => {
         setSyncEngineStatus(status);
       }, 500)
@@ -109,7 +104,25 @@ const WorkspaceStatus = ({
     return () => {
       disposable?.dispose();
     };
-  }, [syncEngine]);
+  }, [currentWorkspace]);
+
+  const progress = useMemo(() => {
+    if (!syncEngineStatus?.remotes || syncEngineStatus?.remotes.length === 0) {
+      return null;
+    }
+    return mean(
+      syncEngineStatus.remotes.map(peer => {
+        if (!peer) {
+          return 0;
+        }
+        const totalTask =
+          peer.totalDocs + peer.pendingPullUpdates + peer.pendingPushUpdates;
+        const doneTask = peer.loadedDocs;
+
+        return doneTask / totalTask;
+      })
+    );
+  }, [syncEngineStatus?.remotes]);
 
   const content = useMemo(() => {
     // TODO: add i18n
@@ -123,38 +136,51 @@ const WorkspaceStatus = ({
       return 'Disconnected, please check your network connection';
     }
     if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
-      return 'Syncing with AFFiNE Cloud';
+      return (
+        `Syncing with AFFiNE Cloud` +
+        (progress ? ` (${Math.floor(progress * 100)}%)` : '')
+      );
     }
     if (syncEngineStatus.retrying) {
       return 'Sync disconnected due to unexpected issues, reconnecting.';
     }
     return 'Synced with AFFiNE Cloud';
-  }, [currentWorkspace.flavour, isOnline, syncEngineStatus]);
+  }, [currentWorkspace.flavour, isOnline, progress, syncEngineStatus]);
 
   const CloudWorkspaceSyncStatus = useCallback(() => {
     if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
-      return SyncingWorkspaceStatus();
+      return SyncingWorkspaceStatus({
+        progress: progress ? Math.max(progress, 0.2) : undefined,
+      });
     } else if (syncEngineStatus.retrying) {
       return UnSyncWorkspaceStatus();
     } else {
       return CloudWorkspaceStatus();
     }
-  }, [syncEngineStatus]);
+  }, [progress, syncEngineStatus]);
+
+  return {
+    message: content,
+    icon:
+      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
+        !isOnline ? (
+          <OfflineStatus />
+        ) : (
+          <CloudWorkspaceSyncStatus />
+        )
+      ) : (
+        <LocalWorkspaceStatus />
+      ),
+  };
+};
+
+const WorkspaceStatus = () => {
+  const { message, icon } = useSyncEngineSyncProgress();
 
   return (
     <div style={{ display: 'flex' }}>
-      <Tooltip content={content}>
-        <StyledWorkspaceStatus>
-          {currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
-            !isOnline ? (
-              <OfflineStatus />
-            ) : (
-              <CloudWorkspaceSyncStatus />
-            )
-          ) : (
-            <LocalWorkspaceStatus />
-          )}
-        </StyledWorkspaceStatus>
+      <Tooltip content={message}>
+        <StyledWorkspaceStatus>{icon}</StyledWorkspaceStatus>
       </Tooltip>
     </div>
   );
@@ -162,17 +188,18 @@ const WorkspaceStatus = ({
 
 export const WorkspaceCard = forwardRef<
   HTMLDivElement,
-  {
-    currentWorkspace: AllWorkspace;
-  } & HTMLAttributes<HTMLDivElement>
->(({ currentWorkspace, ...props }, ref) => {
-  const [name] = useBlockSuiteWorkspaceName(
-    currentWorkspace.blockSuiteWorkspace
+  HTMLAttributes<HTMLDivElement>
+>(({ ...props }, ref) => {
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+
+  const information = useWorkspaceInfo(currentWorkspace.meta);
+
+  const avatarUrl = useWorkspaceBlobObjectUrl(
+    currentWorkspace.meta,
+    information?.avatar
   );
 
-  const [workspaceAvatar] = useBlockSuiteWorkspaceAvatarUrl(
-    currentWorkspace.blockSuiteWorkspace
-  );
+  const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
   return (
     <StyledSelectorContainer
@@ -186,7 +213,7 @@ export const WorkspaceCard = forwardRef<
       <Avatar
         data-testid="workspace-avatar"
         size={40}
-        url={workspaceAvatar}
+        url={avatarUrl}
         name={name}
         colorfulFallback
       />
@@ -194,7 +221,7 @@ export const WorkspaceCard = forwardRef<
         <StyledWorkspaceName data-testid="workspace-name">
           {name}
         </StyledWorkspaceName>
-        <WorkspaceStatus currentWorkspace={currentWorkspace} />
+        <WorkspaceStatus />
       </StyledSelectorWrapper>
     </StyledSelectorContainer>
   );

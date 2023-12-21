@@ -1,9 +1,12 @@
 import { isBrowser } from '@affine/env/constant';
+import { appSettingAtom } from '@toeverything/infra/atom';
 import type { UpdateMeta } from '@toeverything/infra/type';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
+import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { useCallback, useState } from 'react';
 import { Observable } from 'rxjs';
+
+import { useAsyncCallback } from './affine-async-hooks';
 
 function rpcToObservable<
   T,
@@ -41,25 +44,21 @@ function rpcToObservable<
   });
 }
 
+// download complete, ready to install
 export const updateReadyAtom = atomWithObservable(() => {
   return rpcToObservable(null as UpdateMeta | null, {
     event: window.events?.updater.onUpdateReady,
   });
 });
 
-export const updateAvailableStateAtom = atom<UpdateMeta | null>(null);
-
-export const updateAvailableAtom = atomWithObservable(get => {
-  return rpcToObservable(get(updateAvailableStateAtom), {
+// update available, but not downloaded yet
+export const updateAvailableAtom = atomWithObservable(() => {
+  return rpcToObservable(null as UpdateMeta | null, {
     event: window.events?.updater.onUpdateAvailable,
-    onSubscribe: () => {
-      window.apis?.updater.checkForUpdatesAndNotify().catch(err => {
-        console.error(err);
-      });
-    },
   });
 });
 
+// downloading new update
 export const downloadProgressAtom = atomWithObservable(() => {
   return rpcToObservable(null as number | null, {
     event: window.events?.updater.onDownloadProgress,
@@ -71,6 +70,8 @@ export const changelogCheckedAtom = atomWithStorage<Record<string, boolean>>(
   {}
 );
 
+export const checkingForUpdatesAtom = atom(false);
+
 export const currentVersionAtom = atom(async () => {
   if (!isBrowser) {
     return null;
@@ -79,29 +80,43 @@ export const currentVersionAtom = atom(async () => {
   return currentVersion;
 });
 
-export const currentChangelogUnreadAtom = atom(async get => {
-  if (!isBrowser) {
+const currentChangelogUnreadAtom = atom(
+  async get => {
+    if (!isBrowser) {
+      return false;
+    }
+    const mapping = get(changelogCheckedAtom);
+    const currentVersion = await get(currentVersionAtom);
+    if (currentVersion) {
+      return !mapping[currentVersion];
+    }
     return false;
+  },
+  async (get, set, v: boolean) => {
+    const currentVersion = await get(currentVersionAtom);
+    if (currentVersion) {
+      set(changelogCheckedAtom, mapping => {
+        return {
+          ...mapping,
+          [currentVersion]: v,
+        };
+      });
+    }
   }
-  const mapping = get(changelogCheckedAtom);
-  const currentVersion = await get(currentVersionAtom);
-  if (currentVersion) {
-    return !mapping[currentVersion];
-  }
-  return false;
-});
-
-export const isCheckingForUpdatesAtom = atom(false);
-export const isAutoDownloadUpdateAtom = atom(true);
-export const isAutoCheckUpdateAtom = atom(true);
+);
 
 export const useAppUpdater = () => {
   const [appQuitting, setAppQuitting] = useState(false);
   const updateReady = useAtomValue(updateReadyAtom);
-  const setUpdateAvailableState = useSetAtom(updateAvailableStateAtom);
-  const setIsCheckingForUpdates = useSetAtom(isCheckingForUpdatesAtom);
-  const setIsAutoCheckUpdate = useSetAtom(isAutoCheckUpdateAtom);
-  const setIsAutoDownloadUpdate = useSetAtom(isAutoDownloadUpdateAtom);
+  const [setting, setSetting] = useAtom(appSettingAtom);
+  const downloadProgress = useAtomValue(downloadProgressAtom);
+  const [changelogUnread, setChangelogUnread] = useAtom(
+    currentChangelogUnreadAtom
+  );
+
+  const [checkingForUpdates, setCheckingForUpdates] = useAtom(
+    checkingForUpdatesAtom
+  );
 
   const quitAndInstall = useCallback(() => {
     if (updateReady) {
@@ -114,73 +129,64 @@ export const useAppUpdater = () => {
   }, [updateReady]);
 
   const checkForUpdates = useCallback(async () => {
-    setIsCheckingForUpdates(true);
+    if (checkingForUpdates) {
+      return;
+    }
+    setCheckingForUpdates(true);
     try {
-      const updateInfo = await window.apis?.updater.checkForUpdatesAndNotify();
-      setIsCheckingForUpdates(false);
-      if (updateInfo) {
-        const updateMeta: UpdateMeta = {
-          version: updateInfo.version,
-          allowAutoUpdate: false,
-        };
-        setUpdateAvailableState(updateMeta);
-        return updateInfo.version;
-      }
-      return false;
+      const updateInfo = await window.apis?.updater.checkForUpdates();
+      return updateInfo?.version ?? false;
     } catch (err) {
-      setIsCheckingForUpdates(false);
       console.error('Error checking for updates:', err);
       return null;
+    } finally {
+      setCheckingForUpdates(false);
     }
-  }, [setIsCheckingForUpdates, setUpdateAvailableState]);
+  }, [checkingForUpdates, setCheckingForUpdates]);
 
   const downloadUpdate = useCallback(() => {
-    window.apis?.updater
-      .downloadUpdate()
-      .then(() => {})
-      .catch(err => {
-        console.error('Error downloading update:', err);
-      });
+    window.apis?.updater.downloadUpdate().catch(err => {
+      console.error('Error downloading update:', err);
+    });
   }, []);
 
   const toggleAutoDownload = useCallback(
     (enable: boolean) => {
-      window.apis?.updater
-        .setConfig({
-          autoDownloadUpdate: enable,
-        })
-        .then(() => {
-          setIsAutoDownloadUpdate(enable);
-        })
-        .catch(err => {
-          console.error('Error setting auto download:', err);
-        });
+      setSetting({
+        autoDownloadUpdate: enable,
+      });
     },
-    [setIsAutoDownloadUpdate]
+    [setSetting]
   );
 
   const toggleAutoCheck = useCallback(
     (enable: boolean) => {
-      window.apis?.updater
-        .setConfig({
-          autoCheckUpdate: enable,
-        })
-        .then(() => {
-          setIsAutoCheckUpdate(enable);
-        })
-        .catch(err => {
-          console.error('Error setting auto check:', err);
-        });
+      setSetting({
+        autoCheckUpdate: enable,
+      });
     },
-    [setIsAutoCheckUpdate]
+    [setSetting]
   );
+
+  const readChangelog = useAsyncCallback(async () => {
+    await setChangelogUnread(true);
+  }, [setChangelogUnread]);
 
   return {
     quitAndInstall,
-    appQuitting,
     checkForUpdates,
     downloadUpdate,
     toggleAutoDownload,
     toggleAutoCheck,
+    appQuitting,
+    checkingForUpdates,
+    autoCheck: setting.autoCheckUpdate,
+    autoDownload: setting.autoDownloadUpdate,
+    changelogUnread,
+    readChangelog,
+    updateReady,
+    updateAvailable: useAtomValue(updateAvailableAtom),
+    downloadProgress,
+    currentVersion: useAtomValue(currentVersionAtom),
   };
 };

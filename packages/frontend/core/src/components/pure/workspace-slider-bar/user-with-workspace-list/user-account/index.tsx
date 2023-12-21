@@ -1,12 +1,12 @@
+import { IconButton } from '@affine/component/ui/button';
+import { Divider } from '@affine/component/ui/divider';
+import { Menu, MenuIcon, MenuItem } from '@affine/component/ui/menu';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   AccountIcon,
   MoreHorizontalIcon,
   SignOutIcon,
 } from '@blocksuite/icons';
-import { IconButton } from '@toeverything/components/button';
-import { Divider } from '@toeverything/components/divider';
-import { Menu, MenuIcon, MenuItem } from '@toeverything/components/menu';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 

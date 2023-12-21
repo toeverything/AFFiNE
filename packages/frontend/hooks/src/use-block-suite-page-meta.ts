@@ -14,6 +14,7 @@ export function useBlockSuitePageMeta(
     const baseAtom = atom<PageMeta[]>(blockSuiteWorkspace.meta.pageMetas);
     weakMap.set(blockSuiteWorkspace, baseAtom);
     baseAtom.onMount = set => {
+      set(blockSuiteWorkspace.meta.pageMetas);
       const dispose = blockSuiteWorkspace.meta.pageMetasUpdated.on(() => {
         set(blockSuiteWorkspace.meta.pageMetas);
       });

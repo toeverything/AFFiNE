@@ -1,6 +1,6 @@
-import { Modal } from '@toeverything/components/modal';
 import { useCallback, useState } from 'react';
 
+import { Modal } from '../../../../ui/modal';
 import type { AllPageListConfig } from './edit-collection';
 import { SelectPage } from './select-page';
 export const useSelectPage = ({
@@ -27,7 +27,7 @@ export const useSelectPage = ({
         contentOptions={{
           style: {
             padding: 0,
-            transform: 'translate(-50%,calc(-50% + 16px))',
+            transform: 'translateY(16px)',
             maxWidth: 976,
             backgroundColor: 'var(--affine-white)',
           },

@@ -1,9 +1,13 @@
-import { app, BrowserWindow, nativeTheme } from 'electron';
+import { app, nativeTheme } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 
 import { isMacOS } from '../../shared/utils';
+import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
+import { getMainWindow, initMainWindow } from '../main-window';
+import { getOnboardingWindow } from '../onboarding';
 import type { NamespaceHandlers } from '../type';
+import { launchStage } from '../windows-manager/stage';
 import { getChallengeResponse } from './challenge';
 import { getGoogleOauthCode } from './google-auth';
 
@@ -13,32 +17,28 @@ export const uiHandlers = {
   },
   handleSidebarVisibilityChange: async (_, visible: boolean) => {
     if (isMacOS()) {
-      const windows = BrowserWindow.getAllWindows();
-      windows.forEach(w => {
-        // hide window buttons when sidebar is not visible
-        w.setWindowButtonVisibility(visible);
-      });
+      const window = await getMainWindow();
+      window?.setWindowButtonVisibility(visible);
     }
   },
   handleMinimizeApp: async () => {
-    const windows = BrowserWindow.getAllWindows();
-    windows.forEach(w => {
-      w.minimize();
-    });
+    const window = await getMainWindow();
+    window?.minimize();
   },
   handleMaximizeApp: async () => {
-    const windows = BrowserWindow.getAllWindows();
-    windows.forEach(w => {
-      // allow unmaximize when in full screen mode
-      if (w.isFullScreen()) {
-        w.setFullScreen(false);
-        w.unmaximize();
-      } else if (w.isMaximized()) {
-        w.unmaximize();
-      } else {
-        w.maximize();
-      }
-    });
+    const window = await getMainWindow();
+    if (!window) {
+      return;
+    }
+    // allow unmaximize when in full screen mode
+    if (window.isFullScreen()) {
+      window.setFullScreen(false);
+      window.unmaximize();
+    } else if (window.isMaximized()) {
+      window.unmaximize();
+    } else {
+      window.maximize();
+    }
   },
   handleCloseApp: async () => {
     app.quit();
@@ -48,6 +48,23 @@ export const uiHandlers = {
   },
   getChallengeResponse: async (_, challenge: string) => {
     return getChallengeResponse(challenge);
+  },
+  handleOpenMainApp: async () => {
+    if (launchStage.value === 'onboarding') {
+      launchStage.value = 'main';
+      persistentConfig.patch('onBoarding', false);
+    }
+
+    try {
+      const onboarding = await getOnboardingWindow();
+      onboarding?.hide();
+      await initMainWindow();
+      // need to destroy onboarding window after main window is ready
+      // otherwise the main window will be closed as well
+      onboarding?.destroy();
+    } catch (err) {
+      logger.error('handleOpenMainApp', err);
+    }
   },
   getBookmarkDataByLink: async (_, link: string) => {
     if (

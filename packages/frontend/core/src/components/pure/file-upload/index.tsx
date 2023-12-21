@@ -1,6 +1,6 @@
 import { styled } from '@affine/component';
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import type { ChangeEvent, PropsWithChildren } from 'react';
 import { useRef } from 'react';
 

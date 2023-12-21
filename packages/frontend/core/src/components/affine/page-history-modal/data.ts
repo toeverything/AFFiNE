@@ -6,12 +6,14 @@ import {
   recoverDocMutation,
 } from '@affine/graphql';
 import {
+  createAffineCloudBlobStorage,
+  globalBlockSuiteSchema,
+} from '@affine/workspace';
+import {
   useMutateQueryResource,
   useMutation,
   useQueryInfinite,
 } from '@affine/workspace/affine/gql';
-import { createAffineCloudBlobEngine } from '@affine/workspace/blob';
-import { globalBlockSuiteSchema } from '@affine/workspace/manager';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
@@ -79,8 +81,7 @@ const snapshotFetcher = async (
     return null;
   }
   const res = await fetchWithTraceReport(
-    runtimeConfig.serverUrlPrefix +
-      `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
+    `/api/workspaces/${workspaceId}/docs/${pageDocId}/histories/${ts}`,
     {
       priority: 'high',
     }
@@ -107,27 +108,13 @@ const workspaceMap = new Map<string, Workspace>();
 const getOrCreateWorkspace = (workspaceId: string) => {
   let workspace = workspaceMap.get(workspaceId);
   if (!workspace) {
-    const blobEngine = createAffineCloudBlobEngine(workspaceId);
+    const blobStorage = createAffineCloudBlobStorage(workspaceId);
     workspace = new Workspace({
       id: workspaceId,
       providerCreators: [],
       blobStorages: [
         () => ({
-          crud: {
-            async get(key) {
-              return (await blobEngine.get(key)) ?? null;
-            },
-            async set(key, value) {
-              await blobEngine.set(key, value);
-              return key;
-            },
-            async delete(key) {
-              return blobEngine.delete(key);
-            },
-            async list() {
-              return blobEngine.list();
-            },
-          },
+          crud: blobStorage,
         }),
       ],
       schema: globalBlockSuiteSchema,

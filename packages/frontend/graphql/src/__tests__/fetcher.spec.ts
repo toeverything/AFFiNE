@@ -80,7 +80,7 @@ describe('GraphQL fetcher', () => {
     });
 
     expect(fetch.mock.lastCall[1].body).toMatchInlineSnapshot(
-      '"{\\"query\\":\\"query { field }\\",\\"variables\\":{\\"a\\":false,\\"b\\":null},\\"operationName\\":\\"query\\"}"'
+      `"{"query":"query { field }","variables":{"a":false,"b":null},"operationName":"query"}"`
     );
 
     await gql({
@@ -91,7 +91,7 @@ describe('GraphQL fetcher', () => {
     });
 
     expect(fetch.mock.lastCall[1].body).toMatchInlineSnapshot(
-      '"{\\"query\\":\\"query { field }\\",\\"variables\\":{\\"a\\":false},\\"operationName\\":\\"query\\"}"'
+      `"{"query":"query { field }","variables":{"a":false},"operationName":"query"}"`
     );
   });
 

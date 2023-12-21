@@ -3,14 +3,14 @@ import { SettingHeader } from '@affine/component/setting-components';
 import { SettingRow } from '@affine/component/setting-components';
 import { SettingWrapper } from '@affine/component/setting-components';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useTheme } from 'next-themes';
-import { useCallback } from 'react';
-
 import {
   type AppSetting,
   fontStyleOptions,
   windowFrameStyleOptions,
-} from '../../../../../atoms/settings';
+} from '@toeverything/infra/atom';
+import { useTheme } from 'next-themes';
+import { useCallback } from 'react';
+
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
 import { DateFormatSetting } from './date-format-setting';

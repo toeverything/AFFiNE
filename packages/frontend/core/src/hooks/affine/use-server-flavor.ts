@@ -1,5 +1,5 @@
 import { serverConfigQuery } from '@affine/graphql';
-import { useQuery } from '@affine/workspace/affine/gql';
+import { useQueryImmutable } from '@affine/workspace/affine/gql';
 import type { BareFetcher, Middleware } from 'swr';
 
 const wrappedFetcher = (fetcher: BareFetcher<any> | null, ...args: any[]) =>
@@ -10,13 +10,10 @@ const errorHandler: Middleware = useSWRNext => (key, fetcher, config) => {
 };
 
 export const useServerFlavor = () => {
-  const { data: config, error } = useQuery(
+  const { data: config, error } = useQueryImmutable(
     { query: serverConfigQuery },
     {
       use: [errorHandler],
-      revalidateOnFocus: false,
-      revalidateOnMount: false,
-      revalidateIfStale: false,
     }
   );
 

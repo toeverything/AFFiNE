@@ -1,6 +1,7 @@
 import { toast } from '@affine/component';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -14,6 +15,7 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
   const { openPage, jumpToSubPath } = useNavigateHelper();
   const { createPage } = useBlockSuiteWorkspaceHelper(blockSuiteWorkspace);
   const pageSettings = useAtomValue(pageSettingsAtom);
+  const { setPageMeta } = usePageMetaHelper(blockSuiteWorkspace);
 
   const isPreferredEdgeless = useCallback(
     (pageId: string) => pageSettings[pageId]?.mode === 'edgeless',
@@ -61,15 +63,43 @@ export const usePageHelper = (blockSuiteWorkspace: BlockSuiteWorkspace) => {
     showImportModal({ workspace: blockSuiteWorkspace, onSuccess });
   }, [blockSuiteWorkspace, openPage, jumpToSubPath]);
 
+  const createLinkedPageAndOpen = useAsyncCallback(
+    async (pageId: string) => {
+      const page = createPageAndOpen();
+      await page.load();
+      const parentPage = blockSuiteWorkspace.getPage(pageId);
+      if (parentPage) {
+        await parentPage.load();
+        const text = parentPage.Text.fromDelta([
+          {
+            insert: ' ',
+            attributes: {
+              reference: {
+                type: 'LinkedPage',
+                pageId: page.id,
+              },
+            },
+          },
+        ]);
+        const [frame] = parentPage.getBlockByFlavour('affine:note');
+        frame && parentPage.addBlock('affine:paragraph', { text }, frame.id);
+        setPageMeta(page.id, {});
+      }
+    },
+    [blockSuiteWorkspace, createPageAndOpen, setPageMeta]
+  );
+
   return useMemo(() => {
     return {
       createPage: createPageAndOpen,
       createEdgeless: createEdgelessAndOpen,
       importFile: importFileAndOpen,
       isPreferredEdgeless: isPreferredEdgeless,
+      createLinkedPage: createLinkedPageAndOpen,
     };
   }, [
     createEdgelessAndOpen,
+    createLinkedPageAndOpen,
     createPageAndOpen,
     importFileAndOpen,
     isPreferredEdgeless,

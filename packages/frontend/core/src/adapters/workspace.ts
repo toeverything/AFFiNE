@@ -1,6 +1,5 @@
 import { Unreachable } from '@affine/env/constant';
 import type {
-  AppEvents,
   WorkspaceAdapter,
   WorkspaceUISchema,
 } from '@affine/env/workspace';
@@ -9,19 +8,9 @@ import {
   ReleaseType,
   WorkspaceFlavour,
 } from '@affine/env/workspace';
-import { CRUD as CloudCRUD } from '@affine/workspace/affine/crud';
 
 import { UI as CloudUI } from './cloud/ui';
 import { LocalAdapter } from './local';
-import { UI as PublicCloudUI } from './public-cloud/ui';
-
-const unimplemented = () => {
-  throw new Error('Not implemented');
-};
-
-const bypassList = async () => {
-  return [];
-};
 
 export const WorkspaceAdapters = {
   [WorkspaceFlavour.LOCAL]: LocalAdapter,
@@ -29,34 +18,7 @@ export const WorkspaceAdapters = {
     releaseType: ReleaseType.UNRELEASED,
     flavour: WorkspaceFlavour.AFFINE_CLOUD,
     loadPriority: LoadPriority.HIGH,
-    Events: {
-      'app:access': async () => {
-        try {
-          const { getSession } = await import('next-auth/react');
-          const session = await getSession();
-          return !!session;
-        } catch (e) {
-          console.error('failed to get session', e);
-          return false;
-        }
-      },
-    } as Partial<AppEvents>,
-    CRUD: CloudCRUD,
     UI: CloudUI,
-  },
-  [WorkspaceFlavour.AFFINE_PUBLIC]: {
-    releaseType: ReleaseType.UNRELEASED,
-    flavour: WorkspaceFlavour.AFFINE_PUBLIC,
-    loadPriority: LoadPriority.LOW,
-    Events: {} as Partial<AppEvents>,
-    // todo: implement this
-    CRUD: {
-      get: unimplemented,
-      list: bypassList,
-      delete: unimplemented,
-      create: unimplemented,
-    },
-    UI: PublicCloudUI,
   },
 } satisfies {
   [Key in WorkspaceFlavour]: WorkspaceAdapter<Key>;
@@ -64,8 +26,8 @@ export const WorkspaceAdapters = {
 
 export function getUIAdapter<Flavour extends WorkspaceFlavour>(
   flavour: Flavour
-): WorkspaceUISchema<Flavour> {
-  const ui = WorkspaceAdapters[flavour].UI as WorkspaceUISchema<Flavour>;
+): WorkspaceUISchema {
+  const ui = WorkspaceAdapters[flavour].UI as WorkspaceUISchema;
   if (!ui) {
     throw new Unreachable();
   }

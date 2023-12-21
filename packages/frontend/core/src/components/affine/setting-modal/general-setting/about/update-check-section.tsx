@@ -1,19 +1,12 @@
+import { Loading } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Button } from '@toeverything/components/button';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import {
-  downloadProgressAtom,
-  isCheckingForUpdatesAtom,
-  updateAvailableAtom,
-  updateReadyAtom,
-  useAppUpdater,
-} from '@toeverything/hooks/use-app-updater';
+import { useAppUpdater } from '@toeverything/hooks/use-app-updater';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Loading } from '../../../../pure/workspace-slider-bar/workspace-card/loading-icon';
 import * as styles from './style.css';
 
 enum CheckUpdateStatus {
@@ -25,17 +18,15 @@ enum CheckUpdateStatus {
 
 const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
   const t = useAFFiNEI18N();
-  const isCheckingForUpdates = useAtomValue(isCheckingForUpdatesAtom);
-  const updateAvailable = useAtomValue(updateAvailableAtom);
-  const updateReady = useAtomValue(updateReadyAtom);
-  const downloadProgress = useAtomValue(downloadProgressAtom);
+  const { updateAvailable, downloadProgress, updateReady, checkingForUpdates } =
+    useAppUpdater();
 
   const buttonLabel = useMemo(() => {
-    if (updateAvailable && downloadProgress === null) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.button.download']();
-    }
     if (updateReady) {
       return t['com.affine.aboutAFFiNE.checkUpdate.button.restart']();
+    }
+    if (updateAvailable && downloadProgress === null) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.button.download']();
     }
     if (
       checkUpdateStatus === CheckUpdateStatus.LATEST ||
@@ -47,16 +38,16 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
   }, [checkUpdateStatus, downloadProgress, t, updateAvailable, updateReady]);
 
   const subtitleLabel = useMemo(() => {
-    if (updateAvailable && downloadProgress === null) {
+    if (updateReady) {
+      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.restart']();
+    } else if (updateAvailable && downloadProgress === null) {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.update-available']({
         version: updateAvailable.version,
       });
-    } else if (isCheckingForUpdates) {
+    } else if (checkingForUpdates) {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.checking']();
     } else if (updateAvailable && downloadProgress !== null) {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.downloading']();
-    } else if (updateReady) {
-      return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.restart']();
     } else if (checkUpdateStatus === CheckUpdateStatus.ERROR) {
       return t['com.affine.aboutAFFiNE.checkUpdate.subtitle.error']();
     } else if (checkUpdateStatus === CheckUpdateStatus.LATEST) {
@@ -66,7 +57,7 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
   }, [
     checkUpdateStatus,
     downloadProgress,
-    isCheckingForUpdates,
+    checkingForUpdates,
     t,
     updateAvailable,
     updateReady,
@@ -83,14 +74,14 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
           error: checkUpdateStatus === CheckUpdateStatus.ERROR,
         })}
       >
-        {isCheckingForUpdates ? <Loading size={14} /> : null}
+        {checkingForUpdates ? <Loading size={14} /> : null}
         {subtitleLabel}
       </span>
     );
   }, [
     checkUpdateStatus,
     downloadProgress,
-    isCheckingForUpdates,
+    checkingForUpdates,
     subtitleLabel,
     updateAvailable,
     updateReady,
@@ -101,10 +92,14 @@ const useUpdateStatusLabels = (checkUpdateStatus: CheckUpdateStatus) => {
 
 export const UpdateCheckSection = () => {
   const t = useAFFiNEI18N();
-  const { checkForUpdates, downloadUpdate, quitAndInstall } = useAppUpdater();
-  const updateAvailable = useAtomValue(updateAvailableAtom);
-  const updateReady = useAtomValue(updateReadyAtom);
-  const downloadProgress = useAtomValue(downloadProgressAtom);
+  const {
+    checkForUpdates,
+    downloadUpdate,
+    quitAndInstall,
+    updateAvailable,
+    downloadProgress,
+    updateReady,
+  } = useAppUpdater();
   const [checkUpdateStatus, setCheckUpdateStatus] = useState<CheckUpdateStatus>(
     CheckUpdateStatus.UNCHECK
   );

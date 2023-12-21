@@ -17,9 +17,9 @@
   "scripts": {
     "build": "node build.mjs",
     "dev": "node dev.mjs",
-    "sync-languages": "ts-node -P ./tsconfig.node.json src/scripts/sync.ts",
+    "sync-languages": "node --loader ts-node/esm/transpile-only src/scripts/sync.ts",
     "sync-languages:check": "yarn run sync-languages --check",
-    "download-resources": "ts-node -P ./tsconfig.node.json src/scripts/download.ts"
+    "download-resources": "node --loader ts-node/esm/transpile-only src/scripts/download.ts"
   },
   "keywords": [],
   "repository": {
@@ -36,5 +36,5 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },
-  "version": "0.10.3-canary.2"
+  "version": "0.11.0"
 }

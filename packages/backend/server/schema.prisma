@@ -22,7 +22,7 @@ model User {
 
   accounts             Account[]
   sessions             Session[]
-  features             UserFeatureGates[]
+  features             UserFeatures[]
   customer             UserStripeCustomer?
   subscription         UserSubscription?
   invoices             UserInvoice[]
@@ -113,15 +113,48 @@ model WorkspacePageUserPermission {
   @@map("workspace_page_user_permissions")
 }
 
-model UserFeatureGates {
-  id        String   @id @default(uuid()) @db.VarChar
-  userId    String   @map("user_id") @db.VarChar
-  feature   String   @db.VarChar
-  reason    String   @db.VarChar
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// feature gates is a way to enable/disable features for a user
+// for example:
+// - early access is a feature that allow some users to access the insider version
+// - pro plan is a quota that allow some users access to more resources after they pay
+model UserFeatures {
+  id        Int    @id @default(autoincrement())
+  userId    String @map("user_id") @db.VarChar(36)
+  featureId Int    @map("feature_id") @db.Integer
 
-  @@map("user_feature_gates")
+  // we will record the reason why the feature is enabled/disabled
+  // for example:
+  // - pro_plan_v1: "user buy the pro plan"
+  reason    String    @db.VarChar
+  // record the quota enabled time
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  // record the quota expired time, pay plan is a subscription, so it will expired
+  expiredAt DateTime? @map("expired_at") @db.Timestamptz(6)
+  // whether the feature is activated
+  // for example:
+  // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
+  activated Boolean   @default(false)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature Features @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@map("user_features")
+}
+
+model Features {
+  id        Int      @id @default(autoincrement())
+  feature   String   @db.VarChar
+  version   Int      @default(0) @db.Integer
+  // 0: feature, 1: quota
+  type      Int      @db.Integer
+  // configs, define by feature conntroller
+  configs   Json     @db.Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  UserFeatureGates UserFeatures[]
+
+  @@unique([feature, version])
+  @@map("features")
 }
 
 model Account {

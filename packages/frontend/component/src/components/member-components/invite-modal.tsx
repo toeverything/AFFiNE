@@ -1,8 +1,8 @@
 import { Permission } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ConfirmModal } from '@toeverything/components/modal';
 import { useCallback, useEffect, useState } from 'react';
 
+import { ConfirmModal } from '../../ui/modal';
 import { AuthInput } from '..//auth-components';
 import { emailRegex } from '..//auth-components/utils';
 
@@ -74,9 +74,6 @@ export const InviteModal = ({
         error={!isValidEmail}
         errorHint={isValidEmail ? '' : t['com.affine.auth.sign.email.error']()}
         onEnter={handleConfirm}
-        wrapperProps={{
-          style: { padding: 0 },
-        }}
         size="large"
       />
     </ConfirmModal>

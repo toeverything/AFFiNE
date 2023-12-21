@@ -1,9 +1,9 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons';
-import { Menu } from '@toeverything/components/menu';
 import { type PropsWithChildren, useCallback, useState } from 'react';
 
 import { DropdownButton } from '../../../ui/button';
+import { Menu } from '../../../ui/menu';
 import { BlockCard } from '../../card/block-card';
 import { menuContent } from './new-page-button.css';
 
@@ -95,7 +95,6 @@ export const NewPageButton = ({
     >
       <DropdownButton
         size={size}
-        data-testid="new-page-button"
         onClick={useCallback(() => {
           createNewPage();
           setOpen(false);

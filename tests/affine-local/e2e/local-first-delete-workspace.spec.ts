@@ -45,7 +45,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   );
   const currentWorkspace = await workspace.current();
 
-  expect(currentWorkspace.flavour).toContain('local');
+  expect(currentWorkspace.meta.flavour).toContain('local');
 });
 
 test('Delete last workspace', async ({ page }) => {

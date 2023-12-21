@@ -1,5 +1,6 @@
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAtom, useStore } from 'jotai';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { useAtom, useAtomValue, useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
@@ -14,14 +15,13 @@ import {
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { useLanguageHelper } from './affine/use-language-helper';
-import { useCurrentWorkspace } from './current/use-current-workspace';
 import { useNavigateHelper } from './use-navigate-helper';
 
 export function useRegisterWorkspaceCommands() {
   const store = useStore();
   const t = useAFFiNEI18N();
   const theme = useTheme();
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const languageHelper = useLanguageHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();

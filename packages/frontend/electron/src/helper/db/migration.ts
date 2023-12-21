@@ -1,4 +1,3 @@
-import { equal } from 'node:assert';
 import { resolve } from 'node:path';
 
 import { SqliteConnection } from '@affine/native';
@@ -6,7 +5,7 @@ import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { Schema } from '@blocksuite/store';
 import {
   forceUpgradePages,
-  guidCompatibilityFix,
+  migrateGuidCompatibility,
   migrateToSubdoc,
   WorkspaceVersion,
 } from '@toeverything/infra/blocksuite';
@@ -78,19 +77,23 @@ export const migrateToLatest = async (
   };
   await downloadBinary(rootDoc, true);
   const result = await forceUpgradePages(rootDoc, schema);
-  equal(result, true, 'migrateWorkspace should return boolean value');
-  const uploadBinary = async (doc: YDoc, isRoot: boolean) => {
-    await connection.replaceUpdates(doc.guid, [
-      { docId: isRoot ? undefined : doc.guid, data: encodeStateAsUpdate(doc) },
-    ]);
-    // connection..applyUpdate(encodeStateAsUpdate(doc), 'self', doc.guid)
-    await Promise.all(
-      [...doc.subdocs].map(subdoc => {
-        return uploadBinary(subdoc, false);
-      })
-    );
-  };
-  await uploadBinary(rootDoc, true);
+  if (result) {
+    const uploadBinary = async (doc: YDoc, isRoot: boolean) => {
+      await connection.replaceUpdates(doc.guid, [
+        {
+          docId: isRoot ? undefined : doc.guid,
+          data: encodeStateAsUpdate(doc),
+        },
+      ]);
+      // connection..applyUpdate(encodeStateAsUpdate(doc), 'self', doc.guid)
+      await Promise.all(
+        [...doc.subdocs].map(subdoc => {
+          return uploadBinary(subdoc, false);
+        })
+      );
+    };
+    await uploadBinary(rootDoc, true);
+  }
   await connection.close();
 };
 
@@ -124,8 +127,8 @@ export const applyGuidCompatibilityFix = async (db: SqliteConnection) => {
   const rootDoc = new YDoc();
   oldRows.forEach(row => applyUpdate(rootDoc, row.data));
 
-  // see comments of guidCompatibilityFix
-  guidCompatibilityFix(rootDoc);
+  // see comments of migrateGuidCompatibility
+  migrateGuidCompatibility(rootDoc);
 
   // todo: backup?
   await db.replaceUpdates(undefined, [

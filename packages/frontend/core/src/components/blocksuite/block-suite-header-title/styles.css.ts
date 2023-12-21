@@ -2,11 +2,12 @@ import { type ComplexStyleRule, style } from '@vanilla-extract/css';
 
 export const headerTitleContainer = style({
   display: 'flex',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   alignItems: 'center',
   flexGrow: 1,
   position: 'relative',
-  width: '100%',
+  overflow: 'hidden',
+  columnGap: 12,
 });
 
 export const titleEditButton = style({

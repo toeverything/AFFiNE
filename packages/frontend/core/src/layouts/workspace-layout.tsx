@@ -2,21 +2,13 @@ import {
   AppSidebarFallback,
   appSidebarResizingAtom,
 } from '@affine/component/app-sidebar';
-import { RootBlockHub } from '@affine/component/block-hub';
 import {
   type DraggableTitleCellData,
   PageListDragOverlay,
 } from '@affine/component/page-list';
-import {
-  MainContainer,
-  ToolContainer,
-  WorkspaceFallback,
-} from '@affine/component/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { rootWorkspacesMetadataAtom } from '@affine/workspace/atom';
-import { getBlobEngine } from '@affine/workspace/manager';
+import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
+import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import type { DragEndEvent } from '@dnd-kit/core';
 import {
   DndContext,
   DragOverlay,
@@ -27,8 +19,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { currentWorkspaceIdAtom } from '@toeverything/infra/atom';
-import type { MigrationPoint } from '@toeverything/infra/blocksuite';
+import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -36,21 +27,14 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
-import { mainContainerAtom } from '../atoms/element';
 import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
+import { SyncAwareness } from '../components/affine/awareness';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import type { IslandItemNames } from '../components/pure/help-island';
-import { HelpIsland } from '../components/pure/help-island';
-import { processCollectionsDrag } from '../components/pure/workspace-slider-bar/collections';
-import {
-  DROPPABLE_SIDEBAR_TRASH,
-  RootAppSidebar,
-} from '../components/root-app-sidebar';
+import { RootAppSidebar } from '../components/root-app-sidebar';
 import { WorkspaceUpgrade } from '../components/workspace-upgrade';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
-import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
-import { useCurrentWorkspace } from '../hooks/current/use-current-workspace';
+import { useSidebarDrag } from '../hooks/affine/use-sidebar-drag';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import {
@@ -58,7 +42,6 @@ import {
   CurrentWorkspaceModals,
 } from '../providers/modal-provider';
 import { pathGenerator } from '../shared';
-import { toast } from '../utils';
 
 const CMDKQuickSearchModal = lazy(() =>
   import('../components/pure/cmdk').then(module => ({
@@ -71,11 +54,11 @@ export const QuickSearch = () => {
     openQuickSearchModalAtom
   );
 
-  const [currentWorkspace] = useCurrentWorkspace();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { pageId } = useParams();
-  const blockSuiteWorkspace = currentWorkspace?.blockSuiteWorkspace;
+  const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   const pageMeta = useBlockSuitePageMeta(
-    currentWorkspace?.blockSuiteWorkspace
+    currentWorkspace.blockSuiteWorkspace
   ).find(meta => meta.id === pageId);
 
   if (!blockSuiteWorkspace) {
@@ -91,96 +74,27 @@ export const QuickSearch = () => {
   );
 };
 
-const showList: IslandItemNames[] = environment.isDesktop
-  ? ['whatNew', 'contact', 'guide']
-  : ['whatNew', 'contact'];
-
-export const CurrentWorkspaceContext = ({
+export const WorkspaceLayout = function WorkspaceLayout({
   children,
-}: PropsWithChildren): ReactNode => {
-  const workspaceId = useAtomValue(currentWorkspaceIdAtom);
-  const metadata = useAtomValue(rootWorkspacesMetadataAtom);
-  const exist = metadata.find(m => m.id === workspaceId);
-  if (metadata.length === 0) {
-    return <WorkspaceFallback key="no-workspace" />;
-  }
-  if (!workspaceId) {
-    return <WorkspaceFallback key="finding-workspace-id" />;
-  }
-  if (!exist) {
-    return <WorkspaceFallback key="workspace-not-found" />;
-  }
-  return children;
-};
-
-type WorkspaceLayoutProps = {
-  migration?: MigrationPoint;
-};
-
-const useSyncWorkspaceBlob = () => {
-  // temporary solution for sync blob
-
-  const [currentWorkspace] = useCurrentWorkspace();
-
-  useEffect(() => {
-    const blobEngine = getBlobEngine(currentWorkspace.blockSuiteWorkspace);
-    let stopped = false;
-    function sync() {
-      if (stopped) {
-        return;
-      }
-
-      blobEngine
-        ?.sync()
-        .catch(error => {
-          console.error('sync blob error', error);
-        })
-        .finally(() => {
-          // sync every 1 minute
-          setTimeout(sync, 60000);
-        });
-    }
-
-    // after currentWorkspace changed, wait 1 second to start sync
-    setTimeout(sync, 1000);
-
-    return () => {
-      stopped = true;
-    };
-  }, [currentWorkspace]);
-};
-
-export const WorkspaceLayout = function WorkspacesSuspense({
-  children,
-  migration,
-}: PropsWithChildren<WorkspaceLayoutProps>) {
-  useSyncWorkspaceBlob();
+}: PropsWithChildren) {
   return (
     <AdapterProviderWrapper>
-      <CurrentWorkspaceContext>
-        {/* load all workspaces is costly, do not block the whole UI */}
-        <Suspense>
-          <AllWorkspaceModals />
-          <CurrentWorkspaceModals />
-        </Suspense>
-        <Suspense fallback={<WorkspaceFallback />}>
-          <WorkspaceLayoutInner migration={migration}>
-            {children}
-          </WorkspaceLayoutInner>
-        </Suspense>
-      </CurrentWorkspaceContext>
+      {/* load all workspaces is costly, do not block the whole UI */}
+      <Suspense>
+        <AllWorkspaceModals />
+        <CurrentWorkspaceModals />
+      </Suspense>
+      <Suspense fallback={<WorkspaceFallback />}>
+        <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
+      </Suspense>
     </AdapterProviderWrapper>
   );
 };
 
-export const WorkspaceLayoutInner = ({
-  children,
-  migration,
-}: PropsWithChildren<WorkspaceLayoutProps>) => {
-  const [currentWorkspace] = useCurrentWorkspace();
+export const WorkspaceLayoutInner = ({ children }: PropsWithChildren) => {
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { openPage } = useNavigateHelper();
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
-  const t = useAFFiNEI18N();
 
   useRegisterWorkspaceCommands();
 
@@ -219,7 +133,6 @@ export const WorkspaceLayoutInner = ({
   const handleOpenSettingModal = useCallback(() => {
     setOpenSettingModalAtom({
       activeTab: 'appearance',
-      workspaceId: null,
       open: true,
     });
   }, [setOpenSettingModalAtom]);
@@ -234,37 +147,16 @@ export const WorkspaceLayoutInner = ({
     })
   );
 
-  const { removeToTrash: moveToTrash } = useBlockSuiteMetaHelper(
-    currentWorkspace.blockSuiteWorkspace
-  );
-
-  const handleDragEnd = useCallback(
-    (e: DragEndEvent) => {
-      // Drag page into trash folder
-      if (
-        e.over?.id === DROPPABLE_SIDEBAR_TRASH &&
-        String(e.active.id).startsWith('page-list-item-')
-      ) {
-        const { pageId } = e.active.data.current as DraggableTitleCellData;
-        // TODO-Doma
-        // Co-locate `moveToTrash` with the toast for reuse, as they're always used together
-        moveToTrash(pageId);
-        toast(t['com.affine.toastMessage.successfullyDeleted']());
-      }
-      // Drag page into Collections
-      processCollectionsDrag(e);
-    },
-    [moveToTrash, t]
-  );
+  const handleDragEnd = useSidebarDrag();
 
   const { appSettings } = useAppSettingHelper();
   const location = useLocation();
   const { pageId } = useParams();
-  const pageMeta = useBlockSuitePageMeta(
-    currentWorkspace.blockSuiteWorkspace
-  ).find(meta => meta.id === pageId);
-  const inTrashPage = pageMeta?.trash ?? false;
-  const setMainContainer = useSetAtom(mainContainerAtom);
+
+  // todo: refactor this that the root layout do not need to check route state
+  const isInPageDetail = !!pageId;
+
+  const upgradeStatus = useWorkspaceStatus(currentWorkspace, s => s.upgrade);
 
   return (
     <>
@@ -293,27 +185,23 @@ export const WorkspaceLayoutInner = ({
               paths={pathGenerator}
             />
           </Suspense>
-          <Suspense fallback={<MainContainer ref={setMainContainer} />}>
-            <MainContainer
-              ref={setMainContainer}
-              padding={appSettings.clientBorder}
-              inTrashPage={inTrashPage}
-            >
-              {migration ? (
-                <WorkspaceUpgrade migration={migration} />
+          <MainContainer
+            transparent={isInPageDetail}
+            padding={appSettings.clientBorder}
+          >
+            <Suspense>
+              {upgradeStatus?.needUpgrade || upgradeStatus?.upgrading ? (
+                <WorkspaceUpgrade />
               ) : (
                 children
               )}
-              <ToolContainer inTrashPage={inTrashPage}>
-                <RootBlockHub />
-                <HelpIsland showList={pageId ? undefined : showList} />
-              </ToolContainer>
-            </MainContainer>
-          </Suspense>
+            </Suspense>
+          </MainContainer>
         </AppContainer>
         <PageListTitleCellDragOverlay />
       </DndContext>
       <QuickSearch />
+      <SyncAwareness />
     </>
   );
 };

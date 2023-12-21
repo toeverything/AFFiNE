@@ -14,6 +14,7 @@ import { nanoid } from 'nanoid';
 import { Config } from '../../config';
 import { PrismaService } from '../../prisma';
 import { verifyChallengeResponse } from '../../storage';
+import { Quota_FreePlanV1 } from '../quota';
 import { MailService } from './mailer';
 
 export type UserClaim = Pick<
@@ -190,6 +191,17 @@ export class AuthService {
         name,
         email,
         password: hashedPassword,
+        features: {
+          create: {
+            reason: 'created by api sign up',
+            activated: true,
+            feature: {
+              connect: {
+                feature_version: Quota_FreePlanV1,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -209,6 +221,17 @@ export class AuthService {
       data: {
         name: 'Unnamed',
         email,
+        features: {
+          create: {
+            reason: 'created by invite sign up',
+            activated: true,
+            feature: {
+              connect: {
+                feature_version: Quota_FreePlanV1,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -258,6 +281,7 @@ export class AuthService {
       },
     });
   }
+
   async changeEmail(id: string, newEmail: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: {
