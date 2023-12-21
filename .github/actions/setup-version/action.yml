@@ -8,7 +8,7 @@ runs:
       shell: bash
       run: |
         if [ "${{ github.ref_type }}" == "tag" ]; then
-          APP_VERSION=${{ github.ref_name }}
+          APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
         else
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           TIME_VERSION=$(date +%Y%m%d%H%M)
