@@ -224,7 +224,15 @@ export const EdgelessSwitch = ({
 
           <div data-no-drag className={styles.noDragWrapper}>
             <header className={styles.header}>
-              <Button size="extraLarge" onClick={onBack}>
+              <Button
+                style={{
+                  background: 'white',
+                  borderColor: '#E3E2E4',
+                  color: '#424149',
+                }}
+                size="extraLarge"
+                onClick={onBack}
+              >
                 Back
               </Button>
               <EdgelessSwitchButtons

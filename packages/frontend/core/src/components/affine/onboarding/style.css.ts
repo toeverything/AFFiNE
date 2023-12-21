@@ -133,16 +133,25 @@ export const paperLocation = style({
 export const tipsWrapper = style({
   position: 'absolute',
   width: `calc(${onboardingVars.article.w} - 48px)`,
-  top: `calc(-${onboardingVars.article.h} / 2 + 24px)`,
+  maxWidth: 'calc(100vw - 96px)',
+  bottom: 0,
+  height: `calc(${onboardingVars.article.h} / 2 - 24px)`,
+  maxHeight: 'calc(50vh - 48px)',
   pointerEvents: 'none',
   display: 'flex',
   justifyContent: 'center',
   opacity: 0,
-  transition: '0.3s ease 1s',
+  transition: '0.3s ease',
   selectors: {
     '&[data-visible="true"]': {
-      pointerEvents: 'auto',
       opacity: 1,
     },
   },
+});
+globalStyle(`${tipsWrapper} > *`, {
+  display: 'inline-block',
+  height: 'fit-content',
+});
+globalStyle(`${tipsWrapper}[data-visible="true"] > *`, {
+  pointerEvents: 'auto',
 });
