@@ -372,7 +372,7 @@ __metadata:
     "@radix-ui/react-dialog": "npm:^1.0.4"
     "@radix-ui/react-scroll-area": "npm:^1.0.5"
     "@radix-ui/react-select": "npm:^2.0.0"
-    "@react-hookz/web": "npm:^23.1.0"
+    "@react-hookz/web": "npm:^24.0.0"
     "@sentry/integrations": "npm:^7.83.0"
     "@sentry/react": "npm:^7.83.0"
     "@sentry/webpack-plugin": "npm:^2.8.0"
@@ -11238,9 +11238,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-hookz/web@npm:^23.1.0":
-  version: 23.1.0
-  resolution: "@react-hookz/web@npm:23.1.0"
+"@react-hookz/web@npm:^24.0.0":
+  version: 24.0.0
+  resolution: "@react-hookz/web@npm:24.0.0"
   dependencies:
     "@react-hookz/deep-equal": "npm:^1.0.4"
   peerDependencies:
@@ -11250,7 +11250,7 @@ __metadata:
   peerDependenciesMeta:
     js-cookie:
       optional: true
-  checksum: 7f345fc286ee3bae74b76b909898213a589250856783805d0356d8ef9ca0e3d1638e7499d8b77ae1dff6350dec230fda468e0e4c8fc05a9997902569d3d81b49
+  checksum: 85ec7ebecf3a69f098fecb89c1515ffd8c119f29a74521277df34af637059320669cf8ff6273063cec6a4c86cee4849e24fa8772191d08f81b2b88de69749670
   languageName: node
   linkType: hard
 
