@@ -1,4 +1,4 @@
-name: Dispatch Deploy by tag
+name: Deploy by tag or schedule
 
 on:
   push:
@@ -8,18 +8,18 @@ on:
     - cron: '0 7 * * *'
 
 jobs:
-  dispatch-deploy-by-tag:
+  dispatch-deploy:
     runs-on: ubuntu-latest
-    name: Setup deploy environment
+    name: Setup Deploy
     steps:
       - name: dispatch deploy by tag
-        if: ${{ github.event == 'push' }}
+        if: ${{ github.event_name == 'push' }}
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: deploy.yml
           inputs: '{ "flavor": "canary" }'
       - name: dispatch deploy by schedule
-        if: ${{ github.event == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' }}
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: deploy.yml

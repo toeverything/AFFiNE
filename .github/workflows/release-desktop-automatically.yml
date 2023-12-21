@@ -1,4 +1,4 @@
-name: Dispatch Release Desktop by tag
+name: Release Desktop by tag or schedule
 
 on:
   push:
@@ -8,18 +8,18 @@ on:
     - cron: '0 7 * * *'
 
 jobs:
-  dispatch-desktop-app-by-tag:
+  dispatch-release-desktop:
     runs-on: ubuntu-latest
     name: Setup Release Desktop
     steps:
       - name: dispatch desktop release by tag
-        if: ${{ github.event == 'push' }}
+        if: ${{ github.event_name == 'push' }}
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: release-desktop.yml
           inputs: '{ "build-type": "canary", "is-draft": true, "is-pre-release": true }'
       - name: dispatch desktop release by schedule
-        if: ${{ github.event == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' }}
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: release-desktop.yml
