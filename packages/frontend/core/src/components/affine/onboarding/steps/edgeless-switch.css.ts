@@ -14,6 +14,9 @@ export const edgelessSwitchWindow = style({
   fontFamily: 'var(--affine-font-family)',
   color: onboardingVars.paper.textColor,
 
+  maxWidth: 'calc(100vw - 48px)',
+  maxHeight: 'calc(100vh - 48px)',
+
   selectors: {
     '&[data-mode="edgeless"]': {
       width: onboardingVars.edgeless.w,

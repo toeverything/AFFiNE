@@ -15,7 +15,7 @@ import {
 import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useAtomValue } from 'jotai';
-import { debounce } from 'lodash-es';
+import { debounce, mean } from 'lodash-es';
 import {
   forwardRef,
   type HTMLAttributes,
@@ -45,10 +45,10 @@ const CloudWorkspaceStatus = () => {
   );
 };
 
-const SyncingWorkspaceStatus = () => {
+const SyncingWorkspaceStatus = ({ progress }: { progress?: number }) => {
   return (
     <>
-      <Loading />
+      <Loading progress={progress} speed={progress ? 0 : undefined} />
       Syncing...
     </>
   );
@@ -85,7 +85,7 @@ const OfflineStatus = () => {
   );
 };
 
-const WorkspaceStatus = () => {
+const useSyncEngineSyncProgress = () => {
   const isOnline = useSystemOnline();
 
   const [syncEngineStatus, setSyncEngineStatus] =
@@ -106,6 +106,24 @@ const WorkspaceStatus = () => {
     };
   }, [currentWorkspace]);
 
+  const progress = useMemo(() => {
+    if (!syncEngineStatus?.remotes || syncEngineStatus?.remotes.length === 0) {
+      return null;
+    }
+    return mean(
+      syncEngineStatus.remotes.map(peer => {
+        if (!peer) {
+          return 0;
+        }
+        const totalTask =
+          peer.totalDocs + peer.pendingPullUpdates + peer.pendingPushUpdates;
+        const doneTask = peer.loadedDocs;
+
+        return doneTask / totalTask;
+      })
+    );
+  }, [syncEngineStatus?.remotes]);
+
   const content = useMemo(() => {
     // TODO: add i18n
     if (currentWorkspace.flavour === WorkspaceFlavour.LOCAL) {
@@ -118,38 +136,51 @@ const WorkspaceStatus = () => {
       return 'Disconnected, please check your network connection';
     }
     if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
-      return 'Syncing with AFFiNE Cloud';
+      return (
+        `Syncing with AFFiNE Cloud` +
+        (progress ? ` (${Math.floor(progress * 100)}%)` : '')
+      );
     }
     if (syncEngineStatus.retrying) {
       return 'Sync disconnected due to unexpected issues, reconnecting.';
     }
     return 'Synced with AFFiNE Cloud';
-  }, [currentWorkspace.flavour, isOnline, syncEngineStatus]);
+  }, [currentWorkspace.flavour, isOnline, progress, syncEngineStatus]);
 
   const CloudWorkspaceSyncStatus = useCallback(() => {
     if (!syncEngineStatus || syncEngineStatus.step === SyncEngineStep.Syncing) {
-      return SyncingWorkspaceStatus();
+      return SyncingWorkspaceStatus({
+        progress: progress ? Math.max(progress, 0.2) : undefined,
+      });
     } else if (syncEngineStatus.retrying) {
       return UnSyncWorkspaceStatus();
     } else {
       return CloudWorkspaceStatus();
     }
-  }, [syncEngineStatus]);
+  }, [progress, syncEngineStatus]);
+
+  return {
+    message: content,
+    icon:
+      currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
+        !isOnline ? (
+          <OfflineStatus />
+        ) : (
+          <CloudWorkspaceSyncStatus />
+        )
+      ) : (
+        <LocalWorkspaceStatus />
+      ),
+  };
+};
+
+const WorkspaceStatus = () => {
+  const { message, icon } = useSyncEngineSyncProgress();
 
   return (
     <div style={{ display: 'flex' }}>
-      <Tooltip content={content}>
-        <StyledWorkspaceStatus>
-          {currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD ? (
-            !isOnline ? (
-              <OfflineStatus />
-            ) : (
-              <CloudWorkspaceSyncStatus />
-            )
-          ) : (
-            <LocalWorkspaceStatus />
-          )}
-        </StyledWorkspaceStatus>
+      <Tooltip content={message}>
+        <StyledWorkspaceStatus>{icon}</StyledWorkspaceStatus>
       </Tooltip>
     </div>
   );

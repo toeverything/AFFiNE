@@ -72,12 +72,12 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@blocksuite/blocks": "0.11.0-nightly-202312200102-8254dc9",
-    "@blocksuite/global": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/blocks": "0.11.0-nightly-202312210105-edfa58e",
+    "@blocksuite/global": "0.11.0-nightly-202312210105-edfa58e",
     "@blocksuite/icons": "2.1.36",
-    "@blocksuite/lit": "0.11.0-nightly-202312200102-8254dc9",
-    "@blocksuite/presets": "0.11.0-nightly-202312200102-8254dc9",
-    "@blocksuite/store": "0.11.0-nightly-202312200102-8254dc9",
+    "@blocksuite/lit": "0.11.0-nightly-202312210105-edfa58e",
+    "@blocksuite/presets": "0.11.0-nightly-202312210105-edfa58e",
+    "@blocksuite/store": "0.11.0-nightly-202312210105-edfa58e",
     "@storybook/addon-actions": "^7.5.3",
     "@storybook/addon-essentials": "^7.5.3",
     "@storybook/addon-interactions": "^7.5.3",

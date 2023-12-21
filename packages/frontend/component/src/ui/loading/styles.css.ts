@@ -13,5 +13,6 @@ export const loading = style({
   },
   textRendering: 'optimizeLegibility',
   WebkitFontSmoothing: 'antialiased',
+  transform: 'rotate(-90deg)',
   animation: `${rotate} ${speedVar} infinite linear`,
 });
