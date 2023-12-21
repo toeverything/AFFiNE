@@ -2,21 +2,25 @@ import { Manager } from 'socket.io-client';
 
 let ioManager: Manager | null = null;
 
+function getBaseUrl(): string {
+  if (environment.isDesktop) {
+    return runtimeConfig.serverUrlPrefix;
+  }
+  const { protocol, hostname, port } = window.location;
+  return `${protocol === 'https:' ? 'wss' : 'ws'}://${hostname}${
+    port ? `:${port}` : ''
+  }`;
+}
+
 // use lazy initialization socket.io io manager
 export function getIoManager(): Manager {
   if (ioManager) {
     return ioManager;
   }
-  const { protocol, hostname, port } = window.location;
-  ioManager = new Manager(
-    `${protocol === 'https:' ? 'wss' : 'ws'}://${hostname}${
-      port ? `:${port}` : ''
-    }/`,
-    {
-      autoConnect: false,
-      transports: ['websocket'],
-      secure: location.protocol === 'https:',
-    }
-  );
+  ioManager = new Manager(`${getBaseUrl()}/`, {
+    autoConnect: false,
+    transports: ['websocket'],
+    secure: location.protocol === 'https:',
+  });
   return ioManager;
 }
