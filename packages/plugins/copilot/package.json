@@ -37,5 +37,5 @@
     "react": "*",
     "react-dom": "*"
   },
-  "version": "0.11.0"
+  "version": "0.11.0-beta.1"
 }
