@@ -10,6 +10,9 @@ export class ServerConfigType {
 
   @Field({ description: 'server flavor' })
   flavor!: string;
+
+  @Field({ description: 'server base url' })
+  baseUrl!: string;
 }
 
 export class ServerConfigResolver {
@@ -20,6 +23,7 @@ export class ServerConfigResolver {
     return {
       version: AFFiNE.version,
       flavor: SERVER_FLAVOR,
+      baseUrl: AFFiNE.baseUrl,
     };
   }
 }

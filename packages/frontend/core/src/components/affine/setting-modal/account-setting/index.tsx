@@ -34,7 +34,7 @@ import {
   openSignOutModalAtom,
 } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
-import { useSelfHosted } from '../../../../hooks/affine/use-server-flavor';
+import { useSelfHosted } from '../../../../hooks/affine/use-server-config';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';

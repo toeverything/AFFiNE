@@ -2,7 +2,7 @@ import { type SubscriptionQuery, subscriptionQuery } from '@affine/graphql';
 import { useQuery } from '@affine/workspace/affine/gql';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 
-import { useSelfHosted } from './affine/use-server-flavor';
+import { useSelfHosted } from './affine/use-server-config';
 
 export type Subscription = NonNullable<
   NonNullable<SubscriptionQuery['currentUser']>['subscription']

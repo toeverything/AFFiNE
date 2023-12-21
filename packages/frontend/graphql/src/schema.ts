@@ -632,6 +632,7 @@ export type ServerConfigQuery = {
     __typename?: 'ServerConfigType';
     version: string;
     flavor: string;
+    baseUrl: string;
   };
 };
 

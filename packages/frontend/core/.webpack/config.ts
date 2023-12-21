@@ -391,7 +391,6 @@ export const createConfiguration: (
       proxy: {
         '/api/worker/': {
           target: 'https://affine-worker.toeverything.workers.dev',
-          pathRewrite: { '^/api/worker/': '/api/' },
           changeOrigin: true,
           secure: false,
         },

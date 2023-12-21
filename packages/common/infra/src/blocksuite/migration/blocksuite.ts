@@ -28,7 +28,12 @@ export async function migratePages(
   const oldVersions = versions?.toJSON() ?? {};
 
   spaces.forEach((space: YDoc) => {
-    schema.upgradePage(0, oldVersions, space);
+    try {
+      // Catch page upgrade error to avoid blocking the whole workspace migration.
+      schema.upgradePage(0, oldVersions, space);
+    } catch (e) {
+      console.error(e);
+    }
   });
   schema.upgradeWorkspace(rootDoc);
 
