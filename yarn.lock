@@ -25,10 +25,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@playwright/test": "npm:^1.39.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -42,10 +42,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@playwright/test": "npm:^1.39.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -59,10 +59,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@playwright/test": "npm:^1.39.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -76,10 +76,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@playwright/test": "npm:^1.39.0"
     express: "npm:^4.18.2"
     http-proxy-middleware: "npm:^3.0.0-beta.1"
@@ -138,10 +138,10 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@playwright/test": "npm:^1.39.0"
   languageName: unknown
   linkType: soft
@@ -222,12 +222,12 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@blocksuite/icons": "npm:2.1.36"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@dnd-kit/core": "npm:^6.0.8"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -351,14 +351,14 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@aws-sdk/client-s3": "npm:3.433.0"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@blocksuite/icons": "npm:2.1.36"
-    "@blocksuite/inline": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/inline": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@dnd-kit/core": "npm:^6.0.8"
     "@dnd-kit/sortable": "npm:^8.0.0"
     "@emotion/cache": "npm:^11.11.0"
@@ -468,10 +468,10 @@ __metadata:
     "@affine/sdk": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/vue-hello-world-plugin": "workspace:*"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@electron-forge/cli": "npm:^7.2.0"
     "@electron-forge/core": "npm:^7.2.0"
     "@electron-forge/core-utils": "npm:^7.2.0"
@@ -520,8 +520,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/common/env"
   dependencies:
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     lit: "npm:^3.0.2"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
@@ -711,11 +711,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/sdk@workspace:packages/common/sdk"
   dependencies:
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     jotai: "npm:^2.5.1"
     vite: "npm:^5.0.6"
     vite-plugin-dts: "npm:3.6.0"
@@ -840,14 +840,14 @@ __metadata:
   dependencies:
     "@affine/component": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@blocksuite/icons": "npm:2.1.36"
-    "@blocksuite/inline": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/inline": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@dnd-kit/sortable": "npm:^8.0.0"
     "@storybook/addon-actions": "npm:^7.5.3"
     "@storybook/addon-essentials": "npm:^7.5.3"
@@ -4077,29 +4077,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/block-std@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/block-std@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/block-std@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/block-std@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
     lz-string: "npm:^1.5.0"
     w3c-keyname: "npm:^2.2.8"
     zod: "npm:^3.22.4"
   peerDependencies:
-    "@blocksuite/store": 0.11.0-nightly-202312201403-7049092
-  checksum: 36865f2cdb2ff815b62bd9fe52a8efb9a7b2a96bc3438cd22000657baf0dc29bb23844beb0ab321d489a3f88730bfbf7dfa7ea5473e7aaf9259bb5330d3ef2b4
+    "@blocksuite/store": 0.11.0-nightly-202312210105-edfa58e
+  checksum: eb20c1b8a497562676c3d91b9470add50fdb01e4ec68243dc2349fa7cb943cd77f013b2d38db8d61de03caba8ca04de21ce84bb7d56cb6991d9e8b7901a05d41
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/blocks@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/blocks@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/blocks@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/inline": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/inline": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@floating-ui/dom": "npm:^1.5.3"
     "@toeverything/theme": "npm:^0.7.27"
     "@types/hast": "npm:^3.0.3"
@@ -4133,16 +4133,16 @@ __metadata:
     unified: "npm:^11.0.4"
     webfontloader: "npm:^1.6.28"
     zod: "npm:^3.22.4"
-  checksum: 13c47fdcaa6e2b5d8c3e451798dbeb28011f6c4d4916ffe87f9d70868dddff6743e9c3b05dbac43ed09d8a463b093efdb6afebd4c84d9d41d3292d016884802f
+  checksum: fc4fecfb2dd3bfdf0e91fd91bda40d7ba9c02533f6e5f2de17b32265288d0b44dbb64402c6f6a1b8adb469046df14d89beb15d1ba24e0724b9145495c2f0174d
   languageName: node
   linkType: hard
 
-"@blocksuite/global@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/global@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/global@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/global@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
     zod: "npm:^3.22.4"
-  checksum: c24815eb265afdb521e862cd88867e401837573d205a7dd99694f06c4e0ba900b3d20b7796fce2ae2b11342f062941e4c1f12dd848b4ab11274ac8604c0ae92f
+  checksum: f1943b1e456197d7e90775cdeda8bab01361f81c665cdcf025efe39c7d1e3f8e370873c80d5fcb02427410b4457a92deb3334d9e7401a47b276bd46714fbcf1a
   languageName: node
   linkType: hard
 
@@ -4156,55 +4156,55 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/inline@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/inline@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/inline@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/inline@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
     zod: "npm:^3.22.4"
   peerDependencies:
     lit: ^3.0.2
     yjs: ^13
-  checksum: f1775555d6a95b52ba936a0c397da7a43fcbc34a2e7dc7a5993334e6b6761251db460dfa2f51a7a17728e0abf8d06a5d8f0f753a6b7887724c8293228cf9cfeb
+  checksum: 066a2141351acbcb0d8a73244057e6d6d900681572cd9cc65226b7e4fba8ad5e4b0ff25aa9a9eade04c2a003d7d9794ce21fd55fade6eac7356c9e4b3fd8be4d
   languageName: node
   linkType: hard
 
-"@blocksuite/lit@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/lit@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/lit@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/lit@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/inline": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/inline": "npm:0.11.0-nightly-202312210105-edfa58e"
     lit: "npm:^3.1.0"
   peerDependencies:
-    "@blocksuite/block-std": 0.11.0-nightly-202312201403-7049092
-    "@blocksuite/store": 0.11.0-nightly-202312201403-7049092
-  checksum: 43ce552345e1a4776ce89efacb515a70c5a0b9d23f85fd301b8099c226128927ac9bc1aabff3415cb73c5a19964b6c9bcb00f8502a4eb28a4d8ebca54c5def1f
+    "@blocksuite/block-std": 0.11.0-nightly-202312210105-edfa58e
+    "@blocksuite/store": 0.11.0-nightly-202312210105-edfa58e
+  checksum: a736fbd9b8bcbb9e0341943c4a033a526ee6270049db4ba1eef3bfe937283f786b397cc6e086123b1b9d8f6b3f4d94d442722864a2f0ca3f1c6bcdfe9ad08db9
   languageName: node
   linkType: hard
 
-"@blocksuite/presets@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/presets@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/presets@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/presets@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@toeverything/theme": "npm:^0.7.27"
     lit: "npm:^3.1.0"
     openai: "npm:^4.20.1"
-  checksum: 43a1218a7a8abd20754a7b2e1714bb0afcf835afcb6372fad6ef15ecc804de39d3d0862194e6071e021d390712003b9ff27c58025eefa562f8ab8b1b35ef71c5
+  checksum: 471e5f4748dc695cff7bdba939e3cc9f8d9e302442d7b366b03c8a207280c2c2532c3abdd767f041a47a644e23faa7a2860c8a0b28b4530e0b194f076562acbe
   languageName: node
   linkType: hard
 
-"@blocksuite/store@npm:0.11.0-nightly-202312201403-7049092":
-  version: 0.11.0-nightly-202312201403-7049092
-  resolution: "@blocksuite/store@npm:0.11.0-nightly-202312201403-7049092"
+"@blocksuite/store@npm:0.11.0-nightly-202312210105-edfa58e":
+  version: 0.11.0-nightly-202312210105-edfa58e
+  resolution: "@blocksuite/store@npm:0.11.0-nightly-202312210105-edfa58e"
   dependencies:
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/inline": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/inline": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@types/flexsearch": "npm:^0.7.3"
     flexsearch: "npm:0.7.21"
     idb-keyval: "npm:^6.2.1"
@@ -4217,7 +4217,7 @@ __metadata:
   peerDependencies:
     async-call-rpc: ^6
     yjs: ^13
-  checksum: 7fd2819161466bf992a36dc60a2ba9e6b8f9846a3e669cc20b00fedcdb1d4e25a61d1e270b8f7f56324bd2098921d845330b8e4e1fb57d871724b3cf4a2d00fd
+  checksum: afd08bbb37060102de1cf5d0ce6f14a7197cd7b9f8e8cd306246de61e11122dabe01713e570ee7d4f38c8deed5090a0077bb628ed3421552d7c583da58ca5670
   languageName: node
   linkType: hard
 
@@ -13726,12 +13726,12 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@testing-library/react": "npm:^14.0.0"
     "@toeverything/infra": "workspace:*"
     "@types/image-blob-reduce": "npm:^4.1.3"
@@ -13782,11 +13782,11 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@affine/templates": "workspace:*"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/global": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/lit": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/presets": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     "@testing-library/react": "npm:^14.0.0"
     async-call-rpc: "npm:^6.3.1"
     electron: "link:../../frontend/electron/node_modules/electron"
@@ -13835,8 +13835,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@toeverything/y-indexeddb@workspace:packages/common/y-indexeddb"
   dependencies:
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312201403-7049092"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/blocks": "npm:0.11.0-nightly-202312210105-edfa58e"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     fake-indexeddb: "npm:^5.0.0"
     idb: "npm:^8.0.0"
     nanoid: "npm:^5.0.3"
@@ -36954,7 +36954,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "y-provider@workspace:packages/common/y-provider"
   dependencies:
-    "@blocksuite/store": "npm:0.11.0-nightly-202312201403-7049092"
+    "@blocksuite/store": "npm:0.11.0-nightly-202312210105-edfa58e"
     vite: "npm:^5.0.6"
     vite-plugin-dts: "npm:3.6.0"
     vitest: "npm:1.0.4"
