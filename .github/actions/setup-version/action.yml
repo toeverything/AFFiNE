@@ -1,0 +1,20 @@
+name: Setup Version
+description: 'Setup Version'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Write Version'
+      id: version
+      shell: bash
+      run: |
+        if [ "${{ github.ref_type }}" == "tag" ]; then
+          APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+        else
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TIME_VERSION=$(date +%Y%m%d%H%M)
+          GIT_SHORT_HASH=$(git rev-parse --short HEAD)
+          APP_VERSION=$PACKAGE_VERSION-nightly-$TIME_VERSION-$GIT_SHORT_HASH
+        fi
+        echo $APP_VERSION
+        echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_OUTPUT"
+        ./scripts/set-version.sh $APP_VERSION
