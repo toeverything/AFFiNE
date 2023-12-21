@@ -1,5 +1,9 @@
 name: Setup Version
 description: 'Setup Version'
+outputs:
+  APP_VERSION:
+    description: 'App Version'
+    value: ${{ steps.version.outputs.APP_VERSION }}
 runs:
   using: 'composite'
   steps:

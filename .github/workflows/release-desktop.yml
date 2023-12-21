@@ -43,6 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
+        id: version
         uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
