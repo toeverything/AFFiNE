@@ -41,7 +41,3 @@ export const sendButtonStyle = style({
     backgroundColor: 'transparent',
   },
 });
-
-export const debugContentInput = style({
-  width: '280px',
-});

@@ -137,12 +137,12 @@ export const AvatarAndName = () => {
           <label>{t['com.affine.settings.profile.name']()}</label>
           <FlexWrapper alignItems="center">
             <Input
-              className={styles.userNameInput}
               defaultValue={input}
               data-testid="user-name-input"
               placeholder={t['com.affine.settings.profile.placeholder']()}
               maxLength={64}
               minLength={0}
+              style={{ width: 280, height: 32 }}
               onChange={setInput}
               onEnter={handleUpdateUserName}
             />

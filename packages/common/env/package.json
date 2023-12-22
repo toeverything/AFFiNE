@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/global": "0.11.0-nightly-202312210105-edfa58e",
-    "@blocksuite/store": "0.11.0-nightly-202312210105-edfa58e",
+    "@blocksuite/global": "0.11.0-nightly-202312212326-e2b48df",
+    "@blocksuite/store": "0.11.0-nightly-202312212326-e2b48df",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "vitest": "1.0.4",
