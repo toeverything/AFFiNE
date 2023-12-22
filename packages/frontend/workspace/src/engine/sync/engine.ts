@@ -92,7 +92,7 @@ export class SyncEngine {
   }
 
   canGracefulStop() {
-    return !!this.status.local && this.status.local.pendingPushUpdates > 0;
+    return !!this.status.local && this.status.local.pendingPushUpdates === 0;
   }
 
   async waitForGracefulStop(abort?: AbortSignal) {

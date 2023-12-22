@@ -76,6 +76,11 @@ export function createCloudAwarenessProvider(
     removeAwarenessStates(awareness, [awareness.clientID], 'window unload');
   };
 
+  function handleConnect() {
+    socket.emit('client-handshake-awareness', workspaceId);
+    socket.emit('awareness-init', workspaceId);
+  }
+
   return {
     connect: () => {
       socket.on('server-awareness-broadcast', awarenessBroadcast);
@@ -86,16 +91,19 @@ export function createCloudAwarenessProvider(
 
       socket.connect();
 
+      socket.on('connect', handleConnect);
+
       socket.emit('client-handshake-awareness', workspaceId);
       socket.emit('awareness-init', workspaceId);
     },
     disconnect: () => {
+      removeAwarenessStates(awareness, [awareness.clientID], 'disconnect');
       awareness.off('update', awarenessUpdate);
       socket.emit('client-leave-awareness', workspaceId);
       socket.off('server-awareness-broadcast', awarenessBroadcast);
       socket.off('new-client-awareness-init', newClientAwarenessInitHandler);
+      socket.off('connect', handleConnect);
       window.removeEventListener('unload', windowBeforeUnloadHandler);
-      socket.disconnect();
     },
   };
 }
