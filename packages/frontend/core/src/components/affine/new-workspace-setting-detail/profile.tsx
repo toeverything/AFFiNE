@@ -203,7 +203,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
           <Input
             disabled={workspaceIsLoading || !isOwner}
             value={input}
-            className={styles.workspaceNameInput}
+            style={{ width: 280, height: 32 }}
             data-testid="workspace-name-input"
             placeholder={t['Workspace Name']()}
             maxLength={64}

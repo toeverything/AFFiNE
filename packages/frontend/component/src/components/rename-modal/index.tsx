@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 
 import Input from '../../ui/input';
 import { Menu } from '../../ui/menu';
-import * as styles from './index.css';
 
 export const RenameModal = ({
   onRename,
@@ -33,12 +32,12 @@ export const RenameModal = ({
       }}
       items={
         <Input
-          className={styles.input}
           autoFocus
           defaultValue={value}
           onChange={setValue}
           onEnter={handleRename}
           data-testid="rename-modal-input"
+          style={{ width: 220, height: 34 }}
         />
       }
     >
