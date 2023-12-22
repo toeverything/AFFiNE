@@ -14,7 +14,6 @@ import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,
   type MouseEvent,
-  startTransition,
   useCallback,
   useEffect,
   useState,
@@ -119,9 +118,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   );
 
   const handleSetInput = useCallback((value: string) => {
-    startTransition(() => {
-      setInput(value);
-    });
+    setInput(value);
   }, []);
 
   const handleKeyUp = useCallback(
@@ -203,7 +200,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
           <Input
             disabled={workspaceIsLoading || !isOwner}
             value={input}
-            className={styles.workspaceNameInput}
+            style={{ width: 280, height: 32 }}
             data-testid="workspace-name-input"
             placeholder={t['Workspace Name']()}
             maxLength={64}

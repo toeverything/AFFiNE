@@ -97,9 +97,16 @@ const useSyncEngineSyncProgress = () => {
   useEffect(() => {
     setSyncEngineStatus(currentWorkspace.engine.sync.status);
     const disposable = currentWorkspace.engine.sync.onStatusChange.on(
-      debounce(status => {
-        setSyncEngineStatus(status);
-      }, 500)
+      debounce(
+        status => {
+          setSyncEngineStatus(status);
+        },
+        300,
+        {
+          maxWait: 500,
+          trailing: true,
+        }
+      )
     );
     return () => {
       disposable?.dispose();

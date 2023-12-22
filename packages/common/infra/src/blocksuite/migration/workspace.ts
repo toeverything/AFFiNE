@@ -11,7 +11,8 @@ export enum MigrationPoint {
 }
 
 export function checkWorkspaceCompatibility(
-  workspace: Workspace
+  workspace: Workspace,
+  isCloud: boolean
 ): MigrationPoint | null {
   // check if there is any key starts with 'space:' on root doc
   const spaceMetaObj = workspace.doc.share.get('space:meta') as
@@ -20,7 +21,9 @@ export function checkWorkspaceCompatibility(
   const docKeys = Array.from(workspace.doc.share.keys());
   const haveSpaceMeta = !!spaceMetaObj && spaceMetaObj.size > 0;
   const haveLegacySpace = docKeys.some(key => key.startsWith('space:'));
-  if (haveSpaceMeta || haveLegacySpace) {
+
+  // DON'T UPGRADE SUBDOC ON CLOUD
+  if (!isCloud && (haveSpaceMeta || haveLegacySpace)) {
     return MigrationPoint.SubDoc;
   }
 
