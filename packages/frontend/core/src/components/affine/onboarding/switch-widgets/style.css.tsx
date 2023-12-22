@@ -49,10 +49,6 @@ export const switchButton = style({
   },
 });
 
-const pop = keyframes({
-  from: { transform: 'translateY(100%)' },
-  to: { transform: 'translateY(0)' },
-});
 export const toolbar = style({
   cursor: 'not-allowed',
   boxShadow: '0px 0px 12px 0px #4241492E',
@@ -64,14 +60,16 @@ export const toolbar = style({
 });
 export const toolbarPop = style({
   vars: {
-    '--delay': '0s',
+    '--delay': '0ms',
   },
 
+  transform: 'translateY(150%)',
+  transition: `transform 0.6s cubic-bezier(.8,.21,.31,1.03)`,
+  transitionDelay: '0ms',
   selectors: {
     '[data-mode="edgeless"] &': {
-      transform: 'translateY(120%)',
-      animation: `${pop} 0.4s cubic-bezier(.04,1.01,.42,1.31) forwards`,
-      animationDelay: 'var(--delay)',
+      transform: 'translateY(0%)',
+      transitionDelay: 'var(--delay)',
     },
   },
 });
