@@ -49,7 +49,8 @@ export class WorkspaceUpgradeController {
 
   checkIfNeedUpgrade() {
     const needUpgrade = !!checkWorkspaceCompatibility(
-      this.workspace.blockSuiteWorkspace
+      this.workspace.blockSuiteWorkspace,
+      this.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD
     );
     this.status = {
       ...this.status,
@@ -69,7 +70,8 @@ export class WorkspaceUpgradeController {
       await this.workspace.engine.sync.waitForSynced();
 
       const step = checkWorkspaceCompatibility(
-        this.workspace.blockSuiteWorkspace
+        this.workspace.blockSuiteWorkspace,
+        this.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD
       );
 
       if (!step) {
