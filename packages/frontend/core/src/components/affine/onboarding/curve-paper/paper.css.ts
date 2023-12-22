@@ -23,7 +23,27 @@ export const segment = style({
   position: 'absolute',
   top: `calc(var(--segments-up) / var(--segments) * 100%)`,
 
+  // add a thin line behind to hide the gap between segments
+  '::before': {
+    content: '""',
+    position: 'absolute',
+    transform: `translateZ(-1px)`,
+    width: '100%',
+    height: '2px',
+    background: onboardingVars.paper.bg,
+  },
+
   selectors: {
+    ['&[data-root="true"]::before']: {
+      content: 'none',
+    },
+    ['&[data-direction="up"]::before']: {
+      bottom: -1,
+    },
+    ['&[data-direction="down"]::before']: {
+      top: -1,
+    },
+
     ['&[data-root="true"]']: {
       height: `calc(1 / var(--segments) * 100%)`,
     },
