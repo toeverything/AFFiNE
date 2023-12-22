@@ -5,7 +5,6 @@ import { type ReactElement, useCallback } from 'react';
 
 import { openAIApiKeyAtom } from '../core/hooks';
 import { conversationHistoryDBName } from '../core/langchain/message-history';
-import * as styles from './index.css';
 
 export const DebugContent = (): ReactElement => {
   const [key, setKey] = useAtom(openAIApiKeyAtom);
@@ -13,7 +12,7 @@ export const DebugContent = (): ReactElement => {
     <div>
       <FlexWrapper justifyContent="space-between">
         <Input
-          className={styles.debugContentInput}
+          style={{ width: 280 }}
           defaultValue={key ?? undefined}
           onChange={useCallback(
             (newValue: string) => {
