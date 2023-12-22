@@ -51,8 +51,7 @@ export function createAffineStorage(
     });
   });
 
-  // TODO: handle error
-  socket.on('connect', () => {
+  function handleConnect() {
     socket.emit(
       'client-handshake-sync',
       workspaceId,
@@ -62,9 +61,21 @@ export function createAffineStorage(
         }
       }
     );
-  });
+  }
+
+  socket.on('connect', handleConnect);
 
   socket.connect();
+
+  socket.emit(
+    'client-handshake-sync',
+    workspaceId,
+    (response: { error?: any }) => {
+      if (!response.error) {
+        syncSender.start();
+      }
+    }
+  );
 
   return {
     name: 'affine-cloud',
@@ -124,14 +135,6 @@ export function createAffineStorage(
       await syncSender.send(docId, update);
     },
     async subscribe(cb, disconnect) {
-      const response: { error?: any } = await socket
-        .timeout(10000)
-        .emitWithAck('client-handshake-sync', workspaceId);
-
-      if (response.error) {
-        throw new Error('client-handshake error, ' + response.error);
-      }
-
       const handleUpdate = async (message: {
         workspaceId: string;
         guid: string;
@@ -157,7 +160,7 @@ export function createAffineStorage(
     disconnect() {
       syncSender.stop();
       socket.emit('client-leave-sync', workspaceId);
-      socket.disconnect();
+      socket.off('connect', handleConnect);
     },
   };
 }
