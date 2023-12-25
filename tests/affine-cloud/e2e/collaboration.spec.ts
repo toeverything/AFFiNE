@@ -236,7 +236,8 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   const image = page.locator('affine-image');
 
   page.evaluate(async () => {
-    window.showOpenFilePicker = undefined;
+    // https://github.com/toeverything/blocksuite/blob/master/packages/blocks/src/_common/utils/filesys.ts#L20
+    (window as any).showOpenFilePicker = undefined;
   });
 
   const title = getBlockSuiteEditorTitle(page);

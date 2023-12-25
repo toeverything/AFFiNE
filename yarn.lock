@@ -464,7 +464,6 @@ __metadata:
     "@affine/hello-world-plugin": "workspace:*"
     "@affine/image-preview-plugin": "workspace:*"
     "@affine/native": "workspace:*"
-    "@affine/outline-plugin": "workspace:*"
     "@affine/sdk": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/vue-hello-world-plugin": "workspace:*"
@@ -672,20 +671,6 @@ __metadata:
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.3.2"
     uuid: "npm:^9.0.1"
-  languageName: unknown
-  linkType: soft
-
-"@affine/outline-plugin@workspace:*, @affine/outline-plugin@workspace:packages/plugins/outline":
-  version: 0.0.0-use.local
-  resolution: "@affine/outline-plugin@workspace:packages/plugins/outline"
-  dependencies:
-    "@affine/component": "workspace:*"
-    "@affine/plugin-cli": "workspace:*"
-    "@affine/sdk": "workspace:*"
-    "@blocksuite/icons": "npm:2.1.36"
-    jotai: "npm:^2.5.1"
-    react: "npm:18.2.0"
-    react-dom: "npm:18.2.0"
   languageName: unknown
   linkType: soft
 

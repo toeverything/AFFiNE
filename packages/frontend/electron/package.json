@@ -28,7 +28,6 @@
     "@affine/hello-world-plugin": "workspace:*",
     "@affine/image-preview-plugin": "workspace:*",
     "@affine/native": "workspace:*",
-    "@affine/outline-plugin": "workspace:*",
     "@affine/sdk": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/vue-hello-world-plugin": "workspace:*",
