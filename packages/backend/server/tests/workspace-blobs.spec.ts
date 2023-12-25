@@ -71,14 +71,14 @@ test('should set blobs', async t => {
   const server = app.getHttpServer();
 
   const response1 = await request(server)
-    .get(`/api/workspaces/${workspace.id}/blobs/${hash1}`)
+    .get(`/api/workspaces/${workspace.id}/blobs?id=${hash1}`)
     .auth(u1.token.token, { type: 'bearer' })
     .buffer();
 
   t.deepEqual(response1.body, buffer1, 'failed to get blob');
 
   const response2 = await request(server)
-    .get(`/api/workspaces/${workspace.id}/blobs/${hash2}`)
+    .get(`/api/workspaces/${workspace.id}/blobs?id=${hash2}`)
     .auth(u1.token.token, { type: 'bearer' })
     .buffer();
 

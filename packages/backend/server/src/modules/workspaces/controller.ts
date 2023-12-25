@@ -6,6 +6,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Query,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -30,21 +31,30 @@ export class WorkspacesController {
     private readonly prisma: PrismaService
   ) {}
 
-  // get workspace blob
-  //
-  // NOTE: because graphql can't represent a File, so we have to use REST API to get blob
   @Get('/:id/blobs/:name')
-  @CallTimer('controllers', 'workspace_get_blob')
-  async blob(
+  async old_blob(
     @Param('id') workspaceId: string,
     @Param('name') name: string,
     @Res() res: Response
   ) {
-    const blob = await this.storage.getBlob(workspaceId, name);
+    return this.blob(workspaceId, name, res);
+  }
+
+  // get workspace blob
+  //
+  // NOTE: because graphql can't represent a File, so we have to use REST API to get blob
+  @Get('/:id/blobs')
+  @CallTimer('controllers', 'workspace_get_blob')
+  async blob(
+    @Param('id') workspaceId: string,
+    @Query('id') hash: string,
+    @Res() res: Response
+  ) {
+    const blob = await this.storage.getBlob(workspaceId, hash);
 
     if (!blob) {
       throw new NotFoundException(
-        `Blob not found in workspace ${workspaceId}: ${name}`
+        `Blob not found in workspace ${workspaceId}: ${hash}`
       );
     }
 

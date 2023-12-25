@@ -19,7 +19,7 @@ export const createAffineCloudBlobStorage = (
     get: async key => {
       const suffix = key.startsWith('/')
         ? key
-        : `/api/workspaces/${workspaceId}/blobs/${key}`;
+        : `/api/workspaces/${workspaceId}/blobs?id=${key}`;
 
       return fetchWithTraceReport(suffix).then(async res => {
         if (!res.ok) {
