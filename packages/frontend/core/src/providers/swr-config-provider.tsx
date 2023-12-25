@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
 import { SWRConfig } from 'swr';
 
-const cloudConfig: SWRConfiguration = {
+const swrConfig: SWRConfiguration = {
   suspense: true,
   use: [
     useSWRNext => (key, fetcher, config) => {
@@ -49,10 +49,6 @@ const cloudConfig: SWRConfiguration = {
   ],
 };
 
-export const Provider = (props: PropsWithChildren): ReactNode => {
-  if (!runtimeConfig.enableCloud) {
-    return props.children;
-  }
-
-  return <SWRConfig value={cloudConfig}>{props.children}</SWRConfig>;
+export const SWRConfigProvider = (props: PropsWithChildren): ReactNode => {
+  return <SWRConfig value={swrConfig}>{props.children}</SWRConfig>;
 };

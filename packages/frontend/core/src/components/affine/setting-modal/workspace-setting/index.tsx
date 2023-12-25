@@ -1,7 +1,7 @@
 import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 
-import { NewWorkspaceSettingDetail } from '../../../../adapters/shared';
 import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
+import { WorkspaceSettingDetail } from '../../new-workspace-setting-detail';
 
 export const WorkspaceSetting = ({
   workspaceMetadata,
@@ -10,7 +10,7 @@ export const WorkspaceSetting = ({
 }) => {
   const isOwner = useIsWorkspaceOwner(workspaceMetadata);
   return (
-    <NewWorkspaceSettingDetail
+    <WorkspaceSettingDetail
       workspaceMetadata={workspaceMetadata}
       isOwner={isOwner}
     />
