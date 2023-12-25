@@ -1,7 +1,8 @@
 import { Menu } from '@affine/component/ui/menu';
+import { WorkspaceFallback } from '@affine/component/workspace';
 import { workspaceListAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
-import { lazy, useEffect } from 'react';
+import { lazy, useEffect, useLayoutEffect, useState } from 'react';
 import { type LoaderFunction, redirect } from 'react-router-dom';
 
 import { createFirstAppData } from '../bootstrap/first-app-data';
@@ -24,10 +25,14 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const Component = () => {
+  // navigating and creating may be slow, to avoid flickering, we show workspace fallback
+  const [navigating, setNavigating] = useState(false);
+  const [creating, setCreating] = useState(false);
+
   const list = useAtomValue(workspaceListAtom);
   const { openPage } = useNavigateHelper();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (list.length === 0) {
       return;
     }
@@ -36,13 +41,23 @@ export const Component = () => {
     const lastId = localStorage.getItem('last_workspace_id');
     const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
     openPage(openWorkspace.id, WorkspaceSubPath.ALL);
+    setNavigating(true);
   }, [list, openPage]);
 
   useEffect(() => {
-    createFirstAppData().catch(err => {
-      console.error('Failed to create first app data', err);
-    });
+    setCreating(true);
+    createFirstAppData()
+      .catch(err => {
+        console.error('Failed to create first app data', err);
+      })
+      .finally(() => {
+        setCreating(false);
+      });
   }, []);
+
+  if (navigating || creating) {
+    return <WorkspaceFallback></WorkspaceFallback>;
+  }
 
   // TODO: We need a no workspace page
   return (
