@@ -15,7 +15,7 @@ function getBaseUrl(): string {
     return runtimeConfig.serverUrlPrefix;
   }
   const { protocol, hostname, port } = window.location;
-  return `${protocol}://${hostname}${port ? `:${port}` : ''}`;
+  return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
 }
 
 export const createAffineCloudBlobStorage = (
