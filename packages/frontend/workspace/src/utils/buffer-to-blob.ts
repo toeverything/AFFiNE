@@ -1,7 +1,7 @@
 import isSvg from 'is-svg';
 
 function fastCheckIsNotSvg(buffer: Uint8Array) {
-  // check first non-whitespace character is not '<svg'
+  // check first non-whitespace character is not '<svg' or '<?xml'
   for (let i = 0; i < buffer.length; i++) {
     const ch = buffer[i];
 
@@ -18,11 +18,20 @@ function fastCheckIsNotSvg(buffer: Uint8Array) {
       continue;
     }
 
-    return !(
-      buffer[i] === /* '<' */ 0x3c &&
-      buffer[i + 1] === /* 's' */ 0x73 &&
-      buffer[i + 2] === /* 'v' */ 0x76 &&
-      buffer[i + 3] === /* 'g' */ 0x67
+    return (
+      !(
+        buffer[i] === /* '<' */ 0x3c &&
+        buffer[i + 1] === /* 's' */ 0x73 &&
+        buffer[i + 2] === /* 'v' */ 0x76 &&
+        buffer[i + 3] === /* 'g' */ 0x67
+      ) &&
+      !(
+        buffer[i] === /* '<' */ 0x3c &&
+        buffer[i + 1] === /* '?' */ 0x3f &&
+        buffer[i + 2] === /* 'x' */ 0x78 &&
+        buffer[i + 3] === /* 'm' */ 0x6d &&
+        buffer[i + 4] === /* 'l' */ 0x6c
+      )
     );
   }
 
