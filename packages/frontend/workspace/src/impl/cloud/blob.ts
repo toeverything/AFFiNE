@@ -10,6 +10,14 @@ import { fetcher } from '../../affine/gql';
 import type { BlobStorage } from '../../engine/blob';
 import { bufferToBlob } from '../../utils/buffer-to-blob';
 
+function getBaseUrl(): string {
+  if (environment.isDesktop) {
+    return runtimeConfig.serverUrlPrefix;
+  }
+  const { protocol, hostname, port } = window.location;
+  return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+}
+
 export const createAffineCloudBlobStorage = (
   workspaceId: string
 ): BlobStorage => {
@@ -21,7 +29,7 @@ export const createAffineCloudBlobStorage = (
         ? key
         : `/api/workspaces/${workspaceId}/blobs/${key}`;
 
-      return fetchWithTraceReport(suffix).then(async res => {
+      return fetchWithTraceReport(getBaseUrl() + suffix).then(async res => {
         if (!res.ok) {
           // status not in the range 200-299
           return null;
