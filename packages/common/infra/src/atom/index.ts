@@ -4,4 +4,3 @@ export const loadedPluginNameAtom = atom<string[]>([]);
 
 export * from './root-store';
 export * from './settings';
-export * from './workspace';

@@ -11,7 +11,7 @@ import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
-import { appSettingAtom, currentPageIdAtom } from '@toeverything/infra/atom';
+import { appSettingAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   memo,
@@ -26,7 +26,7 @@ import type { Map as YMap } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
 import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { currentModeAtom } from '../../../atoms/mode';
+import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';

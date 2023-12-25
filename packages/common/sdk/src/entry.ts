@@ -60,6 +60,5 @@ export declare const pushLayoutAtom: WritableAtom<
   void
 >;
 export declare const deleteLayoutAtom: WritableAtom<null, [string], void>;
-export declare const currentPageIdAtom: Atom<string | null>;
 export declare const currentWorkspaceAtom: Atom<Promise<Workspace>>;
 export declare const rootStore: ReturnType<typeof getDefaultStore>;

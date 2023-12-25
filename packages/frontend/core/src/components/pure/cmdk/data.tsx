@@ -12,7 +12,7 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@toeverything/hooks/use-block-suite-page-meta';
-import { currentPageIdAtom, getCurrentStore } from '@toeverything/infra/atom';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   type AffineCommand,
   AffineCommandRegistry,
@@ -29,6 +29,7 @@ import {
   recentPageIdsBaseAtom,
 } from '../../../atoms';
 import { collectionsCRUDAtom } from '../../../atoms/collections';
+import { currentPageIdAtom } from '../../../atoms/mode';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
