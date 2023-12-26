@@ -221,7 +221,7 @@ const BlockSuiteEditorImpl = ({
         if (!blockElement.path.length || !selectManager) {
           return;
         }
-        const newSelection = selectManager.getInstance('block', {
+        const newSelection = selectManager.create('block', {
           path: blockElement.path,
         });
         selectManager.set([newSelection]);
