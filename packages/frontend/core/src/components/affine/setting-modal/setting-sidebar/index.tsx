@@ -127,9 +127,6 @@ export const SettingSidebar = ({
       </div>
       <div className={sidebarItemsWrapper}>
         {generalSettingList.map(({ title, icon, key, testId }) => {
-          if (!runtimeConfig.enablePlugin && key === 'plugins') {
-            return null;
-          }
           return (
             <div
               className={clsx(sidebarSelectItem, {

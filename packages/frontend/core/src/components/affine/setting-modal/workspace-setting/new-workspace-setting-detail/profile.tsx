@@ -2,6 +2,8 @@ import { FlexWrapper, Input, Wrapper } from '@affine/component';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { Upload } from '@affine/core/components/pure/file-upload';
+import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@affine/workspace';
@@ -19,9 +21,7 @@ import {
   useState,
 } from 'react';
 
-import { validateAndReduceImage } from '../../../utils/reduce-image';
-import { Upload } from '../../pure/file-upload';
-import * as styles from './style.css';
+import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export interface ProfilePanelProps extends WorkspaceSettingDetailProps {
@@ -165,7 +165,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
   const canAdjustAvatar = !workspaceIsLoading && avatarUrl && isOwner;
 
   return (
-    <div className={styles.profileWrapper}>
+    <div className={style.profileWrapper}>
       <Upload
         accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
         fileChange={handleUploadAvatar}
@@ -195,7 +195,7 @@ export const ProfilePanel = ({ isOwner, workspace }: ProfilePanelProps) => {
       </Upload>
 
       <Wrapper marginLeft={20}>
-        <div className={styles.label}>{t['Workspace Name']()}</div>
+        <div className={style.label}>{t['Workspace Name']()}</div>
         <FlexWrapper alignItems="center" flexGrow="1">
           <Input
             disabled={workspaceIsLoading || !isOwner}

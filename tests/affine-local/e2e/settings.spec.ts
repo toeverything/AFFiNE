@@ -4,7 +4,6 @@ import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import {
   openAboutPanel,
   openAppearancePanel,
-  openPluginsPanel,
   openSettingModal,
   openShortcutsPanel,
 } from '@affine-test/kit/utils/setting';
@@ -76,15 +75,6 @@ test('Open shortcuts panel', async ({ page }) => {
   await openSettingModal(page);
   await openShortcutsPanel(page);
   const title = page.getByTestId('keyboard-shortcuts-title');
-  await expect(title).toBeVisible();
-});
-
-test('Open plugins panel', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await openSettingModal(page);
-  await openPluginsPanel(page);
-  const title = page.getByTestId('plugins-title');
   await expect(title).toBeVisible();
 });
 
