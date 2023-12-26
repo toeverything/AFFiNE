@@ -101,7 +101,7 @@
     "@types/on-headers": "^1.0.3",
     "@types/pretty-time": "^1.1.5",
     "@types/sinon": "^17.0.2",
-    "@types/supertest": "^2.0.16",
+    "@types/supertest": "^6.0.0",
     "@types/ws": "^8.5.10",
     "ava": "^6.0.0",
     "c8": "^8.0.1",

@@ -764,7 +764,7 @@ __metadata:
     "@types/on-headers": "npm:^1.0.3"
     "@types/pretty-time": "npm:^1.1.5"
     "@types/sinon": "npm:^17.0.2"
-    "@types/supertest": "npm:^2.0.16"
+    "@types/supertest": "npm:^6.0.0"
     "@types/ws": "npm:^8.5.10"
     ava: "npm:^6.0.0"
     c8: "npm:^8.0.1"
@@ -14117,7 +14117,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookiejar@npm:*":
+"@types/cookiejar@npm:^2.1.5":
   version: 2.1.5
   resolution: "@types/cookiejar@npm:2.1.5"
   checksum: 04d5990e87b6387532d15a87d9ec9b2eb783039291193863751dcfd7fc723a3b3aa30ce4c06b03975cba58632e933772f1ff031af23eaa3ac7f94e71afa6e073
@@ -14605,6 +14605,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/methods@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@types/methods@npm:1.1.4"
+  checksum: ad2a7178486f2fd167750f3eb920ab032a947ff2e26f55c86670a6038632d790b46f52e5b6ead5823f1e53fc68028f1e9ddd15cfead7903e04517c88debd72b1
+  languageName: node
+  linkType: hard
+
 "@types/mime-types@npm:^2.1.0":
   version: 2.1.4
   resolution: "@types/mime-types@npm:2.1.4"
@@ -14928,22 +14935,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/superagent@npm:*":
-  version: 4.1.22
-  resolution: "@types/superagent@npm:4.1.22"
+"@types/superagent@npm:^8.1.0":
+  version: 8.1.1
+  resolution: "@types/superagent@npm:8.1.1"
   dependencies:
-    "@types/cookiejar": "npm:*"
+    "@types/cookiejar": "npm:^2.1.5"
+    "@types/methods": "npm:^1.1.4"
     "@types/node": "npm:*"
-  checksum: f847c3e681e8a9cc6b3cf5f72b24e5ee50bef1715a46b0258e51edd506be556ee342e636c40c123d5b005739e2f1f0090564f9197a18715410e7b6cf0498ed82
+  checksum: 02b987833cf0d85da9b137fd296fe8ad25a470d60f7e9d81a6ed3f8f8a5d6bace8780816bd35885e2928f467e819a4aa509879a7da0f28018ab1453845eb91e2
   languageName: node
   linkType: hard
 
-"@types/supertest@npm:^2.0.16":
-  version: 2.0.16
-  resolution: "@types/supertest@npm:2.0.16"
+"@types/supertest@npm:^6.0.0":
+  version: 6.0.1
+  resolution: "@types/supertest@npm:6.0.1"
   dependencies:
-    "@types/superagent": "npm:*"
-  checksum: 2fc998ea698e0467cdbe3bea0ebce2027ea3a45a13e51a6cecb0435f44b486faecf99c34d8702d2d7fe033e6e09fdd2b374af52ecc8d0c69a1deec66b8c0dd52
+    "@types/methods": "npm:^1.1.4"
+    "@types/superagent": "npm:^8.1.0"
+  checksum: 3d854d9c90f22da6ae2e99dc3434d1345b34ff2333ba61cd2393fdec395c3ea3fd90c8a7e3d68c5ec96aa2c27bd8af322bdc788b9fd527852ec49806fc7a40e2
   languageName: node
   linkType: hard
 
