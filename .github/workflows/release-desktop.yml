@@ -361,6 +361,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+          tag_name: ${{ (github.ref_type == 'tag' && github.ref_name) || needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
           draft: ${{ github.event.inputs.is-draft }}
           prerelease: ${{ github.event.inputs.is-pre-release }}
