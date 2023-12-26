@@ -17,13 +17,6 @@ export const deleteHintContainer = style({
   gap: '16px',
   backgroundColor: 'var(--affine-background-primary-color)',
   borderTop: '1px solid var(--affine-border-color)',
-  selectors: {
-    '&[data-has-background="false"]': {
-      backgroundColor: 'transparent',
-      borderTop: 'none',
-      padding: '14px 0',
-    },
-  },
 });
 export const deleteHintText = style({
   fontSize: '15px',
