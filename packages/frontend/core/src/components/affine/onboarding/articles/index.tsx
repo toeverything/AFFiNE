@@ -158,7 +158,7 @@ const paperBriefs = {
   '2': (
     <div className={articleWrapper}>
       <article className={article}>
-        <h1 className={title}>Learning with earning with retrieval practice</h1>
+        <h1 className={title}>Learning with retrieval practice</h1>
         <p className={text}>
           Are there any specific techniques to make the process of learning more
           effective?
