@@ -126,20 +126,20 @@ export const SettingModal = ({
       >
         <div ref={modalContentRef} className={style.centerContainer}>
           <div className={style.content}>
-            {activeTab === 'workspace' && workspaceMetadata ? (
-              <Suspense fallback={<WorkspaceDetailSkeleton />}>
+            <Suspense fallback={<WorkspaceDetailSkeleton />}>
+              {activeTab === 'workspace' && workspaceMetadata ? (
                 <WorkspaceSetting
                   key={workspaceMetadata.id}
                   workspaceMetadata={workspaceMetadata}
                 />
-              </Suspense>
-            ) : null}
-            {generalSettingList.some(v => v.key === activeTab) ? (
-              <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
-            ) : null}
-            {activeTab === 'account' && loginStatus === 'authenticated' ? (
-              <AccountSetting />
-            ) : null}
+              ) : null}
+              {generalSettingList.some(v => v.key === activeTab) ? (
+                <GeneralSetting generalKey={activeTab as GeneralSettingKeys} />
+              ) : null}
+              {activeTab === 'account' && loginStatus === 'authenticated' ? (
+                <AccountSetting />
+              ) : null}
+            </Suspense>
           </div>
           <div className={style.footer}>
             <a
