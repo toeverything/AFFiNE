@@ -17,11 +17,9 @@ export const modalHeader = style({
 });
 
 export const inputContent = style({
-  display: 'flex',
-  flexDirection: 'row',
-  justifyContent: 'center',
   margin: '24px 0',
   fontSize: 'var(--affine-font-base)',
+  width: '100%',
 });
 
 export const workspaceName = style({

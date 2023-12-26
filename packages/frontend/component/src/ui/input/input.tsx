@@ -59,66 +59,68 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   }, []);
 
   return (
-    <div
-      className={clsx(inputWrapper, className, {
-        // status
-        disabled: disabled,
-        'no-border': noBorder,
-        focus: isFocus,
-        // color
-        error: status === 'error',
-        success: status === 'success',
-        warning: status === 'warning',
-        default: status === 'default',
-        // size
-        large: size === 'large',
-        'extra-large': size === 'extraLarge',
-      })}
-      style={{
-        ...style,
-      }}
-    >
-      {preFix}
-      <input
-        className={clsx(input, {
+    <div className={className}>
+      <div
+        className={clsx(inputWrapper, {
+          // status
+          disabled: disabled,
+          'no-border': noBorder,
+          focus: isFocus,
+          // color
+          error: status === 'error',
+          success: status === 'success',
+          warning: status === 'warning',
+          default: status === 'default',
+          // size
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={autoFocus ? handleAutoFocus : ref}
-        disabled={disabled}
-        style={inputStyle}
-        onFocus={useCallback(
-          (e: FocusEvent<HTMLInputElement>) => {
-            setIsFocus(true);
-            onFocus?.(e);
-          },
-          [onFocus]
-        )}
-        onBlur={useCallback(
-          (e: FocusEvent<HTMLInputElement>) => {
-            setIsFocus(false);
-            onBlur?.(e);
-          },
-          [onBlur]
-        )}
-        onChange={useCallback(
-          (e: ChangeEvent<HTMLInputElement>) => {
-            propsOnChange?.(e.target.value);
-          },
-          [propsOnChange]
-        )}
-        onKeyDown={useCallback(
-          (e: KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
-              onEnter?.();
-            }
-            onKeyDown?.(e);
-          },
-          [onKeyDown, onEnter]
-        )}
-        {...otherProps}
-      />
-      {endFix}
+        style={{
+          ...style,
+        }}
+      >
+        {preFix}
+        <input
+          className={clsx(input, {
+            large: size === 'large',
+            'extra-large': size === 'extraLarge',
+          })}
+          ref={autoFocus ? handleAutoFocus : ref}
+          disabled={disabled}
+          style={inputStyle}
+          onFocus={useCallback(
+            (e: FocusEvent<HTMLInputElement>) => {
+              setIsFocus(true);
+              onFocus?.(e);
+            },
+            [onFocus]
+          )}
+          onBlur={useCallback(
+            (e: FocusEvent<HTMLInputElement>) => {
+              setIsFocus(false);
+              onBlur?.(e);
+            },
+            [onBlur]
+          )}
+          onChange={useCallback(
+            (e: ChangeEvent<HTMLInputElement>) => {
+              propsOnChange?.(e.target.value);
+            },
+            [propsOnChange]
+          )}
+          onKeyDown={useCallback(
+            (e: KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === 'Enter') {
+                onEnter?.();
+              }
+              onKeyDown?.(e);
+            },
+            [onKeyDown, onEnter]
+          )}
+          {...otherProps}
+        />
+        {endFix}
+      </div>
     </div>
   );
 });
