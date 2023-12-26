@@ -7,6 +7,7 @@ export const scrollableContainer = style({
   alignItems: 'center',
   height: '100vh',
   padding: '0 200px',
+  backgroundColor: 'var(--affine-background-primary-color)',
   '@media': {
     'screen and (max-width: 1024px)': {
       padding: '80px 36px',
