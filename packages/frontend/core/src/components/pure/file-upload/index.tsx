@@ -1,4 +1,3 @@
-import { styled } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { ChangeEvent, PropsWithChildren } from 'react';
@@ -42,7 +41,7 @@ export const Upload = ({
   }
 
   return (
-    <UploadStyle onClick={_chooseFile}>
+    <div style={{ display: 'flex' }} onClick={_chooseFile}>
       {children ?? <Button>{t['Upload']()}</Button>}
       <input
         ref={input_ref}
@@ -52,12 +51,6 @@ export const Upload = ({
         accept={accept}
         {...props}
       />
-    </UploadStyle>
+    </div>
   );
 };
-
-const UploadStyle = styled('div')(() => {
-  return {
-    display: 'inline-block',
-  };
-});
