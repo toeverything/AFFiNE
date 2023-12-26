@@ -569,7 +569,7 @@ __metadata:
     "@types/prettier": "npm:^3.0.0"
     i18next: "npm:^23.5.1"
     prettier: "npm:^3.0.3"
-    react-i18next: "npm:^13.3.0"
+    react-i18next: "npm:^14.0.0"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.2.2"
   languageName: unknown
@@ -31682,9 +31682,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-i18next@npm:^13.3.0":
-  version: 13.5.0
-  resolution: "react-i18next@npm:13.5.0"
+"react-i18next@npm:^14.0.0":
+  version: 14.0.0
+  resolution: "react-i18next@npm:14.0.0"
   dependencies:
     "@babel/runtime": "npm:^7.22.5"
     html-parse-stringify: "npm:^3.0.1"
@@ -31696,7 +31696,7 @@ __metadata:
       optional: true
     react-native:
       optional: true
-  checksum: 903b486d112cd0aa40bdc3afaefd0c32b91c0a1e3e3561367c8d91ddc0fbad9945f1d630c3ddcd4764795fc00e0887252e2d337256a825caf3a86de038f6b2db
+  checksum: e445768c576c5993e723375c030071e720abacc830c1810acfcec5c27185cba95affb11c0f71bb551ce98d30f6723e179de7f771487b1a1a6a9077821c5ec1f9
   languageName: node
   linkType: hard
 

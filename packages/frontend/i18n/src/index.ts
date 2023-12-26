@@ -68,7 +68,6 @@ const standardizeLocale = (language: string) => {
 };
 
 export const createI18n = (): I18nextProviderProps['i18n'] => {
-  // @ts-expect-error ts bug
   const i18n: I18nextProviderProps['i18n'] = i18next.createInstance();
   i18n
     .use(initReactI18next)
