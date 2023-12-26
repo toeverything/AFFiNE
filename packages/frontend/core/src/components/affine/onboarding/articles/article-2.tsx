@@ -8,12 +8,7 @@ import { BlogLink } from './blog-link';
 
 export const article2: Array<OnboardingBlockOption> = [
   {
-    children: (
-      <h1>
-        Learning with earning with
-        <br /> retrieval practice
-      </h1>
-    ),
+    children: <h1>Learning with retrieval practice</h1>,
     offset: { x: -824, y: 0 },
   },
   {
@@ -150,14 +145,14 @@ export const article2: Array<OnboardingBlockOption> = [
   {
     children: <img draggable={false} width={380} src={embed1png} />,
     edgelessOnly: true,
-    position: { x: -300, y: 0 },
+    position: { x: -200, y: -50 },
     fromPosition: { x: 300, y: -300 },
   },
 
   {
     children: <img draggable={false} width={309} src={note1png} />,
     edgelessOnly: true,
-    position: { x: -360, y: -20 },
+    position: { x: -260, y: -70 },
     fromPosition: { x: -360, y: -100 },
     enterDelay: 300,
     customStyle: {
@@ -170,7 +165,7 @@ export const article2: Array<OnboardingBlockOption> = [
   {
     children: <img draggable={false} width={1800} src={note2png} />,
     edgelessOnly: true,
-    position: { x: 0, y: 0 },
+    position: { x: 50, y: 0 },
     fromPosition: { x: 2000, y: -2000 },
   },
 ];
