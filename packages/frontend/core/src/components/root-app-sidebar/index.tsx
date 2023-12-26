@@ -30,7 +30,7 @@ import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
-import { forwardRef, useCallback, useEffect, useMemo } from 'react';
+import { forwardRef, Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
@@ -218,7 +218,11 @@ export const RootAppSidebar = ({
           rootOptions={{
             open: openUserWorkspaceList,
           }}
-          items={<UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />}
+          items={
+            <Suspense>
+              <UserWithWorkspaceList onEventEnd={closeUserWorkspaceList} />
+            </Suspense>
+          }
           contentOptions={{
             // hide trigger
             sideOffset: -58,
