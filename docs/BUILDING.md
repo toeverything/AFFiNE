@@ -67,11 +67,11 @@ git clone https://github.com/toeverything/AFFiNE
 
 #### Windows
 
-We using symbolic links in our codebase, due to [security design](https://learn.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-symbolic-links), creating symbolic links in Windows require administrator privileges.
+In our codebase, we use symbolic links. Due to the security design of Windows, the creation of symbolic links requires administrator privileges. This is part of the security policy settings of Windows, and more information can be found at [Security Policy Settings for Creating Symbolic Links](https://learn.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-symbolic-links).
 
-Please follow this guide to enable developer mode: https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development
+For detailed guidance on enabling this feature, please refer to the official documentation: [Enable Developer Mode on Windows](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
 
-Then run the following command with administrator privileges:
+Once Developer Mode is enabled, execute the following command with administrator privileges:
 
 ```sh
 # Enable symbolic links
