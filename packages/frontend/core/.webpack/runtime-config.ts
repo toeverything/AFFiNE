@@ -29,7 +29,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableCaptcha: true,
       enableEnhanceShareMode: false,
       enablePayment: true,
-      enablePageHistory: false,
+      enablePageHistory: true,
       enableCopilot: false,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
@@ -40,7 +40,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     get beta() {
       return {
         ...this.stable,
-        enablePageHistory: false,
+        enablePageHistory: true,
         enableCopilot: false,
         serverUrlPrefix: 'https://insider.affine.pro',
         appBuildType: 'beta' as const,
