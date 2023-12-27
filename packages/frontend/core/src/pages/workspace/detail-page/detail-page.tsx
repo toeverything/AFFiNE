@@ -35,6 +35,7 @@ import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
+import { useDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
@@ -114,6 +115,7 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
+  useDocumentTitle(pageMeta?.title ? `${pageMeta.title} · AFFiNE` : null);
 
   const onLoad = useCallback(
     (page: Page, editor: AffineEditorContainer) => {
