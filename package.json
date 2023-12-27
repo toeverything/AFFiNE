@@ -23,7 +23,6 @@
     "build": "yarn nx build @affine/core",
     "build:electron": "yarn nx build @affine/electron",
     "build:storage": "yarn nx run-many -t build -p @affine/storage",
-    "build:infra": "yarn nx run-many -t build --projects=tag:infra",
     "build:storybook": "yarn nx build @affine/storybook",
     "start:web-static": "yarn workspace @affine/core static-server",
     "start:storybook": "yarn exec serve tests/storybook/storybook-static -l 6006",

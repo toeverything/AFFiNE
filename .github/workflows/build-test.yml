@@ -216,7 +216,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/native
           electron-install: false
-          build-infra: false
       - name: Setup filename
         id: filename
         shell: bash
@@ -248,7 +247,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/storage
           electron-install: false
-          build-infra: false
       - name: Build Rust
         uses: ./.github/actions/build-rust
         with:

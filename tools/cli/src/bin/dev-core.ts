@@ -171,16 +171,6 @@ function awaitChildProcess(child: ChildProcess): Promise<number> {
 }
 
 try {
-  // Build:infra
-  await awaitChildProcess(
-    spawn('yarn', ['build:infra'], {
-      cwd,
-      stdio: 'inherit',
-      shell: true,
-      env: process.env,
-    })
-  );
-
   // Start webpack
   await awaitChildProcess(
     spawn(

@@ -13515,9 +13515,7 @@ __metadata:
     "@blocksuite/lit": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/presets": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/store": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@testing-library/react": "npm:^14.0.0"
     async-call-rpc: "npm:^6.3.1"
-    electron: "link:../../frontend/electron/node_modules/electron"
     jotai: "npm:^2.5.1"
     jotai-effect: "npm:^0.2.3"
     nanoid: "npm:^5.0.3"
@@ -19744,12 +19742,6 @@ __metadata:
   checksum: f8eecfb0ce8122a4c83342d59231ce76bd932c8ed9f19876df2c674086cdc881e9fb04aa33fbd5be374daa9de8e430536682f8383954080d8a5bd6b973f91111
   languageName: node
   linkType: hard
-
-"electron@link:../../frontend/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Fcommon%2Finfra":
-  version: 0.0.0-use.local
-  resolution: "electron@link:../../frontend/electron/node_modules/electron::locator=%40toeverything%2Finfra%40workspace%3Apackages%2Fcommon%2Finfra"
-  languageName: node
-  linkType: soft
 
 "electron@npm:^27.1.0":
   version: 27.1.2

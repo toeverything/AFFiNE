@@ -1,39 +1,13 @@
 {
   "name": "@toeverything/infra",
   "type": "module",
+  "private": true,
   "exports": {
-    "./blocksuite": {
-      "types": "./dist/src/blocksuite/index.d.ts",
-      "import": "./dist/blocksuite.js",
-      "require": "./dist/blocksuite.cjs"
-    },
-    "./command": {
-      "types": "./dist/src/command/index.d.ts",
-      "import": "./dist/command.js",
-      "require": "./dist/command.cjs"
-    },
-    "./atom": {
-      "type": "./dist/src/atom.d.ts",
-      "import": "./dist/atom.js",
-      "require": "./dist/atom.cjs"
-    },
-    "./app-config-storage": {
-      "type": "./dist/src/app-config-storage.d.ts",
-      "import": "./dist/app-config-storage.js",
-      "require": "./dist/app-config-storage.cjs"
-    },
-    "./__internal__/*": {
-      "type": "./dist/src/__internal__/*.d.ts",
-      "import": "./dist/__internal__/*.js",
-      "require": "./dist/__internal__/*.cjs"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch"
+    "./blocksuite": "./src/blocksuite/index.ts",
+    "./command": "./src/command/index.ts",
+    "./atom": "./src/atom/index.ts",
+    "./app-config-storage": "./src/app-config-storage.ts",
+    "./__internal__/*": "./src/__internal__/*.ts"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
@@ -51,9 +25,7 @@
     "@affine/templates": "workspace:*",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
-    "@testing-library/react": "^14.0.0",
     "async-call-rpc": "^6.3.1",
-    "electron": "link:../../frontend/electron/node_modules/electron",
     "nanoid": "^5.0.3",
     "react": "^18.2.0",
     "rxjs": "^7.8.1",

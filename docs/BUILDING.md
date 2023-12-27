@@ -67,12 +67,6 @@ Note: use `strip` from system instead of `binutils` if you are running MacOS. [s
 yarn workspace @affine/native build
 ```
 
-### Build Infra
-
-```sh
-yarn run build:infra
-```
-
 ### Build Server Dependencies
 
 ```sh
