@@ -57,6 +57,29 @@ corepack prepare yarn@stable --activate
 yarn install
 ```
 
+### Clone repository
+
+#### Linux & MacOS
+
+```sh
+git clone https://github.com/toeverything/AFFiNE
+```
+
+#### Windows
+
+In our codebase, we use symbolic links. Due to the security design of Windows, the creation of symbolic links requires administrator privileges. This is part of the security policy settings of Windows, and more information can be found at [Security Policy Settings for Creating Symbolic Links](https://learn.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-symbolic-links).
+
+For detailed guidance on enabling this feature, please refer to the official documentation: [Enable Developer Mode on Windows](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
+
+Once Developer Mode is enabled, execute the following command with administrator privileges:
+
+```sh
+# Enable symbolic links
+git config --global core.symlinks true
+# Clone the repository, also need to be run with administrator privileges
+git clone https://github.com/toeverything/AFFiNE
+```
+
 ### Build Native Dependencies
 
 Run the following script. It will build the native module at [`/packages/frontend/native`](/packages/frontend/native) and build Node.js binding using [NAPI.rs](https://napi.rs/).
