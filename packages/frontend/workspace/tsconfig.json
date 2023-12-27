@@ -10,6 +10,7 @@
     { "path": "../../common/env" },
     { "path": "../../common/debug" },
     { "path": "../../common/infra" },
-    { "path": "../../frontend/graphql" }
+    { "path": "../../frontend/graphql" },
+    { "path": "../../frontend/electron-api" }
   ]
 }

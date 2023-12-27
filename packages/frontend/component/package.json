@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
+    "@affine/electron-api": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/workspace": "workspace:*",

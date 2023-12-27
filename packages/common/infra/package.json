@@ -1,15 +1,7 @@
 {
   "name": "@toeverything/infra",
   "type": "module",
-  "module": "./dist/index.js",
-  "main": "./dist/index.cjs",
-  "types": "./dist/src/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
     "./blocksuite": {
       "types": "./dist/src/blocksuite/index.d.ts",
       "import": "./dist/blocksuite.js",
@@ -20,25 +12,10 @@
       "import": "./dist/command.js",
       "require": "./dist/command.cjs"
     },
-    "./core/*": {
-      "types": "./dist/src/core/*.d.ts",
-      "import": "./dist/core/*.js",
-      "require": "./dist/core/*.cjs"
-    },
-    "./preload/*": {
-      "types": "./dist/src/preload/*.d.ts",
-      "import": "./dist/preload/*.js",
-      "require": "./dist/preload/*.cjs"
-    },
     "./atom": {
       "type": "./dist/src/atom.d.ts",
       "import": "./dist/atom.js",
       "require": "./dist/atom.cjs"
-    },
-    "./type": {
-      "type": "./dist/src/type.d.ts",
-      "import": "./dist/type.js",
-      "require": "./dist/type.cjs"
     },
     "./app-config-storage": {
       "type": "./dist/src/app-config-storage.d.ts",

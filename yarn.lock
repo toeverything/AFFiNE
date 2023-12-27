@@ -115,6 +115,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine-test/kit": "workspace:*"
+    "@affine/electron-api": "workspace:*"
     "@playwright/test": "npm:^1.39.0"
     "@types/fs-extra": "npm:^11.0.2"
     fs-extra: "npm:^11.1.1"
@@ -156,6 +157,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/kit@workspace:tests/kit"
   dependencies:
+    "@affine/electron-api": "workspace:*"
     "@node-rs/argon2": "npm:^1.5.2"
     "@playwright/test": "npm:^1.39.0"
     express: "npm:^4.18.2"
@@ -209,6 +211,7 @@ __metadata:
   resolution: "@affine/component@workspace:packages/frontend/component"
   dependencies:
     "@affine/debug": "workspace:*"
+    "@affine/electron-api": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/workspace": "workspace:*"
@@ -309,6 +312,7 @@ __metadata:
     "@affine/cmdk": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
+    "@affine/electron-api": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
@@ -415,6 +419,15 @@ __metadata:
     "@types/debug": "npm:^4.1.9"
     debug: "npm:^4.3.4"
     vitest: "npm:1.0.4"
+  languageName: unknown
+  linkType: soft
+
+"@affine/electron-api@workspace:*, @affine/electron-api@workspace:packages/frontend/electron-api":
+  version: 0.0.0-use.local
+  resolution: "@affine/electron-api@workspace:packages/frontend/electron-api"
+  dependencies:
+    "@toeverything/infra": "workspace:*"
+    electron: "npm:^27.1.0"
   languageName: unknown
   linkType: soft
 
@@ -788,6 +801,7 @@ __metadata:
   dependencies:
     "@affine-test/fixtures": "workspace:*"
     "@affine/debug": "workspace:*"
+    "@affine/electron-api": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@testing-library/react": "npm:^14.0.0"
@@ -13438,6 +13452,7 @@ __metadata:
   resolution: "@toeverything/hooks@workspace:packages/frontend/hooks"
   dependencies:
     "@affine/debug": "workspace:*"
+    "@affine/electron-api": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@blocksuite/block-std": "npm:0.11.0-nightly-202312220916-e3abcbb"
@@ -13646,7 +13661,6 @@ __metadata:
   resolution: "@types/affine__env@workspace:tools/@types/env"
   dependencies:
     "@affine/env": "workspace:*"
-    "@toeverything/infra": "workspace:*"
   languageName: unknown
   linkType: soft
 

@@ -1,6 +1,6 @@
+import { apis, events, type UpdateMeta } from '@affine/electron-api';
 import { isBrowser } from '@affine/env/constant';
 import { appSettingAtom } from '@toeverything/infra/atom';
-import type { UpdateMeta } from '@toeverything/infra/type';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
 import { useCallback, useState } from 'react';
@@ -47,21 +47,21 @@ function rpcToObservable<
 // download complete, ready to install
 export const updateReadyAtom = atomWithObservable(() => {
   return rpcToObservable(null as UpdateMeta | null, {
-    event: window.events?.updater.onUpdateReady,
+    event: events?.updater.onUpdateReady,
   });
 });
 
 // update available, but not downloaded yet
 export const updateAvailableAtom = atomWithObservable(() => {
   return rpcToObservable(null as UpdateMeta | null, {
-    event: window.events?.updater.onUpdateAvailable,
+    event: events?.updater.onUpdateAvailable,
   });
 });
 
 // downloading new update
 export const downloadProgressAtom = atomWithObservable(() => {
   return rpcToObservable(null as number | null, {
-    event: window.events?.updater.onDownloadProgress,
+    event: events?.updater.onDownloadProgress,
   });
 });
 
@@ -76,7 +76,7 @@ export const currentVersionAtom = atom(async () => {
   if (!isBrowser) {
     return null;
   }
-  const currentVersion = await window.apis?.updater.currentVersion();
+  const currentVersion = await apis?.updater.currentVersion();
   return currentVersion;
 });
 
@@ -121,7 +121,7 @@ export const useAppUpdater = () => {
   const quitAndInstall = useCallback(() => {
     if (updateReady) {
       setAppQuitting(true);
-      window.apis?.updater.quitAndInstall().catch(err => {
+      apis?.updater.quitAndInstall().catch(err => {
         // TODO: add error toast here
         console.error(err);
       });
@@ -134,7 +134,7 @@ export const useAppUpdater = () => {
     }
     setCheckingForUpdates(true);
     try {
-      const updateInfo = await window.apis?.updater.checkForUpdates();
+      const updateInfo = await apis?.updater.checkForUpdates();
       return updateInfo?.version ?? false;
     } catch (err) {
       console.error('Error checking for updates:', err);
@@ -145,7 +145,7 @@ export const useAppUpdater = () => {
   }, [checkingForUpdates, setCheckingForUpdates]);
 
   const downloadUpdate = useCallback(() => {
-    window.apis?.updater.downloadUpdate().catch(err => {
+    apis?.updater.downloadUpdate().catch(err => {
       console.error('Error downloading update:', err);
     });
   }, []);

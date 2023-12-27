@@ -14,6 +14,9 @@
     {
       "path": "../../frontend/hooks"
     },
+    {
+      "path": "../../frontend/electron-api"
+    },
     { "path": "../../frontend/workspace" },
     {
       "path": "../../common/debug"

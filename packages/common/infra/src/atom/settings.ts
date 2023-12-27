@@ -72,12 +72,13 @@ const appSettingEffect = atomEffect(get => {
   // some values in settings should be synced into electron side
   if (environment.isDesktop) {
     console.log('set config', settings);
-    window.apis?.updater
+    // this api type in @affine/electron-api, but it is circular dependency this package, use any here
+    (window as any).apis?.updater
       .setConfig({
         autoCheckUpdate: settings.autoCheckUpdate,
         autoDownloadUpdate: settings.autoDownloadUpdate,
       })
-      .catch(err => {
+      .catch((err: any) => {
         console.error(err);
       });
   }

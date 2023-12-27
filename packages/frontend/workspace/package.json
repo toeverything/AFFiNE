@@ -14,6 +14,7 @@
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/debug": "workspace:*",
+    "@affine/electron-api": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@toeverything/infra": "workspace:*",

@@ -11,6 +11,7 @@
     { "path": "../../common/y-indexeddb" },
     { "path": "../../common/debug" },
     { "path": "../../common/infra" },
+    { "path": "../electron-api" },
     { "path": "../workspace" }
   ]
 }

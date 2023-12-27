@@ -1,3 +1,4 @@
+import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { difference } from 'lodash-es';
@@ -96,8 +97,8 @@ export function createLocalWorkspaceListProvider(): WorkspaceListProvider {
         JSON.stringify(allWorkspaceIDs.filter(x => x !== workspaceId))
       );
 
-      if (window.apis && environment.isDesktop) {
-        await window.apis.workspace.delete(workspaceId);
+      if (apis && environment.isDesktop) {
+        await apis.workspace.delete(workspaceId);
       }
 
       // notify all browser tabs, so they can update their workspace list

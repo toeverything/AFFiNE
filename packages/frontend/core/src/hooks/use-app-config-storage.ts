@@ -1,3 +1,5 @@
+import { apis } from '@affine/electron-api';
+import { assertExists } from '@blocksuite/global/utils';
 import {
   type AppConfigSchema,
   AppConfigStorage,
@@ -13,11 +15,13 @@ class AppConfigProxy {
   value: AppConfigSchema = defaultAppConfig;
 
   async getSync(): Promise<AppConfigSchema> {
-    return (this.value = await window.apis.configStorage.get());
+    assertExists(apis);
+    return (this.value = await apis.configStorage.get());
   }
 
   async setSync(): Promise<void> {
-    await window.apis.configStorage.set(this.value);
+    assertExists(apis);
+    await apis.configStorage.set(this.value);
   }
 
   get(): AppConfigSchema {

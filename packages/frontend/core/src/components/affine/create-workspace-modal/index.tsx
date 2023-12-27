@@ -5,6 +5,7 @@ import {
   Modal,
 } from '@affine/component/ui/modal';
 import { DebugLogger } from '@affine/debug';
+import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { workspaceManagerAtom } from '@affine/workspace/atom';
@@ -14,7 +15,6 @@ import {
   buildShowcaseWorkspace,
   initEmptyPage,
 } from '@toeverything/infra/blocksuite';
-import type { LoadDBFileResult } from '@toeverything/infra/type';
 import { useAtomValue } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect } from 'react';
@@ -112,12 +112,12 @@ export const CreateWorkspaceModal = ({
       // after it is done, it will effectively add a new workspace to app-data folder
       // so after that, we will be able to load it via importLocalWorkspace
       (async () => {
-        if (!window.apis) {
+        if (!apis) {
           return;
         }
         logger.info('load db file');
         setStep(undefined);
-        const result: LoadDBFileResult = await window.apis.dialog.loadDBFile();
+        const result = await apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           workspaceManager._addLocalWorkspace(result.workspaceId);
           onCreate(result.workspaceId);

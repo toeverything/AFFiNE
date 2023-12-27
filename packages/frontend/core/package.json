@@ -20,6 +20,7 @@
     "@affine/cmdk": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/debug": "workspace:*",
+    "@affine/electron-api": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",

@@ -20,6 +20,7 @@ import {
 } from '@affine/component/page-list';
 import { Menu } from '@affine/component/ui/menu';
 import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { apis, events } from '@affine/electron-api';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@affine/workspace';
@@ -141,7 +142,7 @@ export const RootAppSidebar = ({
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
-      return window.events?.applicationMenu.onNewPageAction(onClickNewPage);
+      return events?.applicationMenu.onNewPageAction(onClickNewPage);
     }
     return;
   }, [onClickNewPage]);
@@ -149,7 +150,7 @@ export const RootAppSidebar = ({
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   useEffect(() => {
     if (environment.isDesktop) {
-      window.apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
+      apis?.ui.handleSidebarVisibilityChange(sidebarOpen).catch(err => {
         console.error(err);
       });
     }

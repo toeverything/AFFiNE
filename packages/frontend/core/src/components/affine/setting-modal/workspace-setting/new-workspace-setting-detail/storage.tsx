@@ -2,17 +2,17 @@ import { FlexWrapper, toast } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { apis, events } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace/metadata';
-import type { MoveDBFileResult } from '@toeverything/infra/type';
 import { useMemo } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 const useDBFileSecondaryPath = (workspaceId: string) => {
   const [path, setPath] = useState<string | undefined>(undefined);
   useEffect(() => {
-    if (window.apis && window.events && environment.isDesktop) {
-      window.apis?.workspace
+    if (apis && events && environment.isDesktop) {
+      apis?.workspace
         .getMeta(workspaceId)
         .then(meta => {
           setPath(meta.secondaryDBPath);
@@ -20,7 +20,7 @@ const useDBFileSecondaryPath = (workspaceId: string) => {
         .catch(err => {
           console.error(err);
         });
-      return window.events.workspace.onMetaChange((newMeta: any) => {
+      return events.workspace.onMetaChange((newMeta: any) => {
         if (newMeta.workspaceId === workspaceId) {
           const meta = newMeta.meta;
           setPath(meta.secondaryDBPath);
@@ -43,7 +43,7 @@ export const StoragePanel = ({ workspaceMetadata }: StoragePanelProps) => {
 
   const [moveToInProgress, setMoveToInProgress] = useState<boolean>(false);
   const onRevealDBFile = useCallback(() => {
-    window.apis?.dialog.revealDBFile(workspaceId).catch(err => {
+    apis?.dialog.revealDBFile(workspaceId).catch(err => {
       console.error(err);
     });
   }, [workspaceId]);
@@ -53,9 +53,9 @@ export const StoragePanel = ({ workspaceMetadata }: StoragePanelProps) => {
       return;
     }
     setMoveToInProgress(true);
-    window.apis?.dialog
+    apis?.dialog
       .moveDBFile(workspaceId)
-      .then((result: MoveDBFileResult) => {
+      .then(result => {
         if (!result?.error && !result?.canceled) {
           toast(t['Move folder success']());
         } else if (result?.error) {

@@ -12,12 +12,8 @@ export default defineConfig({
     lib: {
       entry: {
         blocksuite: resolve(root, 'src/blocksuite/index.ts'),
-        index: resolve(root, 'src/index.ts'),
         atom: resolve(root, 'src/atom/index.ts'),
         command: resolve(root, 'src/command/index.ts'),
-        type: resolve(root, 'src/type.ts'),
-        'core/event-emitter': resolve(root, 'src/core/event-emitter.ts'),
-        'preload/electron': resolve(root, 'src/preload/electron.ts'),
         'app-config-storage': resolve(root, 'src/app-config-storage.ts'),
       },
       formats: ['es', 'cjs'],

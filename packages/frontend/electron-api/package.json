@@ -1,0 +1,14 @@
+{
+  "name": "@affine/electron-api",
+  "version": "0.10.3-canary.2",
+  "type": "module",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@toeverything/infra": "workspace:*",
+    "electron": "^27.1.0"
+  }
+}

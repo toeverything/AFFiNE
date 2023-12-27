@@ -1,6 +1,6 @@
-import type { RendererToHelper } from '@toeverything/infra/preload/electron';
 import { AsyncCall } from 'async-call-rpc';
 
+import type { RendererToHelper } from '../shared/type';
 import { events, handlers } from './exposed';
 import { logger } from './logger';
 

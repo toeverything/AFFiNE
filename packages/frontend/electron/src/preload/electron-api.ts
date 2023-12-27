@@ -1,37 +1,50 @@
 // Please add modules to `external` in `rollupOptions` to avoid wrong bundling.
 import { AsyncCall, type EventBasedChannel } from 'async-call-rpc';
-import type { app, dialog, shell } from 'electron';
 import { ipcRenderer } from 'electron';
 import { Subject } from 'rxjs';
 import { z } from 'zod';
 
-export interface ExposedMeta {
-  handlers: [string, string[]][];
-  events: [string, string[]][];
-}
+import type {
+  ExposedMeta,
+  HelperToRenderer,
+  RendererToHelper,
+} from '../shared/type';
 
-// render <-> helper
-export interface RendererToHelper {
-  postEvent: (channel: string, ...args: any[]) => void;
-}
+export const affine = {
+  ipcRenderer: {
+    send(channel: string, ...args: any[]) {
+      ipcRenderer.send(channel, ...args);
+    },
 
-export interface HelperToRenderer {
-  [key: string]: (...args: any[]) => Promise<any>;
-}
+    invoke(channel: string, ...args: any[]) {
+      return ipcRenderer.invoke(channel, ...args);
+    },
 
-// helper <-> main
-export interface HelperToMain {
-  getMeta: () => ExposedMeta;
-}
+    on(
+      channel: string,
+      listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
+    ) {
+      ipcRenderer.on(channel, listener);
+      return this;
+    },
 
-export type MainToHelper = Pick<
-  typeof dialog & typeof shell & typeof app,
-  | 'showOpenDialog'
-  | 'showSaveDialog'
-  | 'openExternal'
-  | 'showItemInFolder'
-  | 'getPath'
->;
+    once(
+      channel: string,
+      listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
+    ) {
+      ipcRenderer.once(channel, listener);
+      return this;
+    },
+
+    removeListener(
+      channel: string,
+      listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void
+    ) {
+      ipcRenderer.removeListener(channel, listener);
+      return this;
+    },
+  },
+};
 
 export function getElectronAPIs() {
   const mainAPIs = getMainAPIs();

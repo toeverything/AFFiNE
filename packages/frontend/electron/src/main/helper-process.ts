@@ -1,9 +1,5 @@
 import path from 'node:path';
 
-import type {
-  HelperToMain,
-  MainToHelper,
-} from '@toeverything/infra/preload/electron';
 import { type _AsyncVersionOf, AsyncCall } from 'async-call-rpc';
 import {
   app,
@@ -15,6 +11,7 @@ import {
   type WebContents,
 } from 'electron';
 
+import type { HelperToMain, MainToHelper } from '../shared/type';
 import { MessageEventChannel } from '../shared/utils';
 import { logger } from './logger';
 

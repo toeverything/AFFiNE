@@ -1,10 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
-import type {
-  HelperToMain,
-  MainToHelper,
-} from '@toeverything/infra/preload/electron';
 import { AsyncCall } from 'async-call-rpc';
 
+import type { HelperToMain, MainToHelper } from '../shared/type';
 import { exposed } from './provide';
 
 const helperToMainServer: HelperToMain = {

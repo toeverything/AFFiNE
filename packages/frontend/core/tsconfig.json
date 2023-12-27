@@ -24,6 +24,9 @@
       "path": "../../frontend/workspace"
     },
     {
+      "path": "../../frontend/electron-api"
+    },
+    {
       "path": "../../common/debug"
     },
     {
