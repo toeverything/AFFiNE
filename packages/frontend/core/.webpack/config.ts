@@ -277,19 +277,6 @@ export const createConfiguration: (
               },
             },
             {
-              test: /\.svg$/,
-              use: [
-                'thread-loader',
-                {
-                  loader: '@svgr/webpack',
-                  options: {
-                    icon: true,
-                  },
-                },
-              ],
-              exclude: [/node_modules/, /\.assets\.svg$/],
-            },
-            {
               test: /\.(png|jpg|gif|svg|webp|mp4)$/,
               type: 'asset/resource',
             },

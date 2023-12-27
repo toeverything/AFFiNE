@@ -92,7 +92,6 @@
     "@perfsee/webpack": "^1.8.4",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.8.0",
-    "@svgr/webpack": "^8.1.0",
     "@swc/core": "^1.3.93",
     "@testing-library/react": "^14.0.0",
     "@types/animejs": "^3",
