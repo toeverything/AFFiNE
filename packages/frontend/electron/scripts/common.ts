@@ -28,14 +28,7 @@ export const config = (): BuildOptions => {
     bundle: true,
     target: `node${NODE_MAJOR_VERSION}`,
     platform: 'node',
-    external: [
-      'electron',
-      'electron-updater',
-      '@toeverything/plugin-infra',
-      'yjs',
-      'semver',
-      'tinykeys',
-    ],
+    external: ['electron', 'electron-updater', 'yjs', 'semver', 'tinykeys'],
     format: 'cjs',
     loader: {
       '.node': 'copy',

@@ -30,6 +30,7 @@ import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
+import { ImagePreviewModal } from '../../../components/image-preview';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
@@ -192,6 +193,10 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
             </div>
           ) : null
         }
+      />
+      <ImagePreviewModal
+        pageId={currentPageId}
+        workspace={blockSuiteWorkspace}
       />
       <GlobalPageHistoryModal />
     </>

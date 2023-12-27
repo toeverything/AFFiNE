@@ -181,16 +181,6 @@ try {
     })
   );
 
-  // Build:plugins
-  await awaitChildProcess(
-    spawn('yarn', ['build:plugins'], {
-      cwd,
-      stdio: 'inherit',
-      shell: true,
-      env: process.env,
-    })
-  );
-
   // Start webpack
   await awaitChildProcess(
     spawn(

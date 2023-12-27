@@ -69,10 +69,8 @@ const allPackages = [
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',
-  'packages/common/sdk',
   'packages/common/theme',
   'packages/common/y-indexeddb',
-  'packages/plugins/copilot',
   'tools/cli',
   'tests/storybook',
 ];

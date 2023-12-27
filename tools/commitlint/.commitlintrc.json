@@ -23,10 +23,7 @@
         "y-provider",
         "debug",
         "storage",
-        "infra",
-        "plugin-cli",
-        "sdk",
-        "plugin"
+        "infra"
       ]
     ]
   }

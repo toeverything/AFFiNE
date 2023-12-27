@@ -102,7 +102,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo
           hard-link-nm: false
-          build-plugins: false
           nmHoistingLimits: workspaces
           enableScripts: false
       - name: Build AFFiNE native
@@ -179,7 +178,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo
           hard-link-nm: false
-          build-plugins: false
           nmHoistingLimits: workspaces
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -191,9 +189,6 @@ jobs:
         with:
           name: core
           path: packages/frontend/electron/resources/web-static
-
-      - name: Build Plugins
-        run: yarn run build:plugins
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build

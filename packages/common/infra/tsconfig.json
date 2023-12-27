@@ -9,9 +9,6 @@
   },
   "references": [
     {
-      "path": "../sdk"
-    },
-    {
       "path": "../env"
     },
     {

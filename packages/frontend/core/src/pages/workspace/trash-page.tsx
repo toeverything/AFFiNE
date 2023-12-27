@@ -58,7 +58,6 @@ export const loader: LoaderFunction = async () => {
 
 export const TrashPage = () => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  // todo(himself65): refactor to plugin
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
   assertExists(blockSuiteWorkspace);
 

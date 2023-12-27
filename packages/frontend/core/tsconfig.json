@@ -30,9 +30,6 @@
       "path": "../../common/env"
     },
     {
-      "path": "../../plugins/copilot"
-    },
-    {
       "path": "./tsconfig.node.json"
     },
     {

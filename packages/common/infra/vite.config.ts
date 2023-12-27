@@ -19,7 +19,6 @@ export default defineConfig({
         'core/event-emitter': resolve(root, 'src/core/event-emitter.ts'),
         'preload/electron': resolve(root, 'src/preload/electron.ts'),
         'app-config-storage': resolve(root, 'src/app-config-storage.ts'),
-        '__internal__/plugin': resolve(root, 'src/__internal__/plugin.ts'),
       },
       formats: ['es', 'cjs'],
       name: 'AffineInfra',

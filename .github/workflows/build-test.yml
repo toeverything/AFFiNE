@@ -108,44 +108,6 @@ jobs:
           yarn set version $(node -e "console.log(require('./package.json').packageManager.split('@')[1])")
           git diff --exit-code
 
-  e2e-plugin-test:
-    name: E2E Plugin Test
-    runs-on: ubuntu-latest
-    env:
-      DISTRIBUTION: browser
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          playwright-install: true
-          electron-install: false
-          full-cache: true
-      - name: Run playwright tests
-        run: yarn e2e --forbid-only
-        working-directory: tests/affine-plugin
-        env:
-          COVERAGE: true
-      - name: Collect code coverage report
-        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
-
-      - name: Upload e2e test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/lcov.info
-          flags: e2e-plugin-test
-          name: affine
-          fail_ci_if_error: false
-
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-e2e-plugin
-          path: ./test-results
-          if-no-files-found: ignore
-
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-latest
@@ -255,7 +217,6 @@ jobs:
           extra-flags: workspaces focus @affine/native
           electron-install: false
           build-infra: false
-          build-plugins: false
       - name: Setup filename
         id: filename
         shell: bash
@@ -288,7 +249,6 @@ jobs:
           extra-flags: workspaces focus @affine/storage
           electron-install: false
           build-infra: false
-          build-plugins: false
       - name: Build Rust
         uses: ./.github/actions/build-rust
         with:
@@ -312,7 +272,6 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-          build-plugins: false
           full-cache: true
       - name: Build Core
         # always skip cache because its fast, and cache configuration is always changing

@@ -12,8 +12,6 @@ export const blockSuiteFeatureFlags = z.object({
 });
 
 export const runtimeFlagsSchema = z.object({
-  enablePlugin: z.boolean(),
-  builtinPlugins: z.array(z.string()),
   enableTestProperties: z.boolean(),
   enableBroadcastChannelProvider: z.boolean(),
   enableDebugPage: z.boolean(),

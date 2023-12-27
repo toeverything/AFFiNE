@@ -43,14 +43,6 @@ const cwd = repoRootDir;
 const { SKIP_NX_CACHE } = process.env;
 const nxFlag = SKIP_NX_CACHE ? '--skip-nx-cache' : '';
 
-if (!process.env.SKIP_PLUGIN_BUILD) {
-  spawnSync('yarn', ['build:plugins'], {
-    stdio: 'inherit',
-    env: process.env,
-    cwd,
-  });
-}
-
 // step 1: build web dist
 if (!process.env.SKIP_WEB_BUILD) {
   spawnSync('yarn', ['nx', 'build', '@affine/core', nxFlag], {

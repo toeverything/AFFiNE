@@ -1,3 +1,4 @@
+import { toast } from '@affine/component';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import type { ImageBlockModel } from '@blocksuite/blocks';
@@ -19,6 +20,7 @@ import { useAtom } from 'jotai';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { Suspense, useCallback } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import type { FallbackProps } from 'react-error-boundary';
 import { ErrorBoundary } from 'react-error-boundary';
 import useSWR from 'swr';
@@ -41,7 +43,6 @@ import {
   unloaded,
 } from './index.css';
 import { hasAnimationPlayedAtom, previewBlockIdAtom } from './index.jotai';
-import { toast } from './toast';
 
 export type ImagePreviewModalProps = {
   workspace: Workspace;
@@ -440,7 +441,7 @@ const ImagePreviewModalImpl = (
                     return;
                   }
                   const dataUrl = URL.createObjectURL(blob);
-                  global.navigator.clipboard
+                  navigator.clipboard
                     .write([new ClipboardItem({ 'image/png': blob })])
                     .then(() => {
                       console.log('Image copied to clipboard');
@@ -554,7 +555,7 @@ export const ImagePreviewModal = (
     return null;
   }
 
-  return (
+  return ReactDOM.createPortal(
     <ImagePreviewErrorBoundary>
       <div
         data-testid="image-preview-modal"
@@ -592,6 +593,7 @@ export const ImagePreviewModal = (
           </svg>
         </button>
       </div>
-    </ImagePreviewErrorBoundary>
+    </ImagePreviewErrorBoundary>,
+    document.body
   );
 };

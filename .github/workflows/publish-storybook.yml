@@ -32,8 +32,6 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-      - name: Build Plugins
-        run: yarn run build:plugins
       - uses: chromaui/action-next@v1
         with:
           workingDir: tests/storybook

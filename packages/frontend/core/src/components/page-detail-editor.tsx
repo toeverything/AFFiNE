@@ -4,8 +4,6 @@ import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
-import { pluginEditorAtom } from '@toeverything/infra/__internal__/plugin';
-import { getCurrentStore } from '@toeverything/infra/atom';
 import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
@@ -110,31 +108,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
         disposableGroup.add(onLoad(page, editor));
       }
 
-      // todo: remove the following
-      // for now this is required for the image-preview plugin to work
-      const rootStore = getCurrentStore();
-      const editorItems = rootStore.get(pluginEditorAtom);
-      let disposes: (() => void)[] = [];
-      const renderTimeout = window.setTimeout(() => {
-        disposes = Object.entries(editorItems).map(([id, editorItem]) => {
-          const div = document.createElement('div');
-          div.setAttribute('plugin-id', id);
-          const cleanup = editorItem(div, editor);
-          assertExists(parent);
-          document.body.append(div);
-          return () => {
-            cleanup();
-            div.remove();
-          };
-        });
-      });
-
       return () => {
         disposableGroup.dispose();
-        clearTimeout(renderTimeout);
-        window.setTimeout(() => {
-          disposes.forEach(dispose => dispose());
-        });
       };
     },
     [onLoad, page]

@@ -48,8 +48,6 @@ jobs:
         uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Build Plugins
-        run: yarn run build:plugins
       - name: Build Core
         run: yarn nx build @affine/core --skip-nx-cache
         env:

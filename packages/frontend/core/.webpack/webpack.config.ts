@@ -1,4 +1,4 @@
-import { createConfiguration, rootPath, getPublicPath } from './config.js';
+import { createConfiguration, rootPath } from './config.js';
 import { merge } from 'webpack-merge';
 import { join, resolve } from 'node:path';
 import type { BuildFlags } from '@affine/cli/config';
@@ -20,7 +20,6 @@ export default async function (cli_env: any, _: any) {
   return merge(config, {
     entry: {
       app: resolve(rootPath, 'src/index.tsx'),
-      '_plugin/index.test': resolve(rootPath, 'src/_plugin/index.test.tsx'),
     },
     plugins: [
       new HTMLPlugin({
@@ -30,19 +29,6 @@ export default async function (cli_env: any, _: any) {
         minify: false,
         chunks: ['app'],
         filename: 'index.html',
-        templateParameters: {
-          GIT_SHORT_SHA: gitShortHash(),
-          DESCRIPTION,
-        },
-      }),
-      new HTMLPlugin({
-        template: join(rootPath, '.webpack', 'template.html'),
-        inject: 'body',
-        scriptLoading: 'module',
-        minify: false,
-        publicPath: getPublicPath(flags),
-        chunks: ['_plugin/index.test'],
-        filename: '_plugin/index.html',
         templateParameters: {
           GIT_SHORT_SHA: gitShortHash(),
           DESCRIPTION,

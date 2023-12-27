@@ -1,4 +1,3 @@
-import 'ses';
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
 import { createI18n } from '@affine/i18n';
@@ -19,7 +18,6 @@ import { setupGlobal, type Environment } from '@affine/env/global';
 import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
 import { setup } from '@affine/core/bootstrap/setup';
-import { bootstrapPluginSystem } from '@affine/core/bootstrap/register-plugins';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { currentWorkspaceAtom } from '@affine/workspace/atom';
 
@@ -117,9 +115,6 @@ window.localStorage.setItem(
 const store = createStore();
 _setCurrentStore(store);
 setup();
-bootstrapPluginSystem(store).catch(err => {
-  console.error('Failed to bootstrap plugin system', err);
-});
 workspaceManager
   .createWorkspace(WorkspaceFlavour.LOCAL, async w => {
     w.meta.setName('test-workspace');

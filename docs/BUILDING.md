@@ -73,12 +73,6 @@ yarn workspace @affine/native build
 yarn run build:infra
 ```
 
-### Build Plugins
-
-```sh
-yarn run build:plugins
-```
-
 ### Build Server Dependencies
 
 ```sh
@@ -102,7 +96,7 @@ yarn test
 ### E2E Test
 
 ```shell
-# there are `affine-local`, `affine-migration`, `affine-local`, `affine-plugin`, `affine-prototype` e2e tests,
+# there are `affine-local`, `affine-migration`, `affine-local`, `affine-prototype` e2e tests,
 #   which are run under different situations.
 cd tests/affine-local
 yarn e2e

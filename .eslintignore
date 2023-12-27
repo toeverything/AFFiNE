@@ -11,6 +11,4 @@ e2e-dist-*
 static
 web-static
 public
-packages/common/sdk/src/*.d.ts
-packages/common/sdk/src/*.js
 packages/frontend/i18n/src/i18n-generated.ts
