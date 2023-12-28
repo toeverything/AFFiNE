@@ -321,7 +321,7 @@ __metadata:
     "@blocksuite/blocks": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/global": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/icons": "npm:2.1.39"
-    "@blocksuite/inline": "npm:0.11.0-nightly-202312220916-e3abcbb"
+    "@blocksuite/inline": "npm:0.11.0-nightly-202312270831-214616d"
     "@blocksuite/lit": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/presets": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/store": "npm:0.11.0-nightly-202312220916-e3abcbb"
@@ -3447,6 +3447,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/global@npm:0.11.0-nightly-202312270831-214616d":
+  version: 0.11.0-nightly-202312270831-214616d
+  resolution: "@blocksuite/global@npm:0.11.0-nightly-202312270831-214616d"
+  dependencies:
+    zod: "npm:^3.22.4"
+  checksum: 39f1c0f6535cc8203a63449cf61a3fbebb7eb6ef54494deb911a4947adbeb3474ec13746c48f6db8eca71809c1620982f8b1154f80766eef8c4acda93c874c21
+  languageName: node
+  linkType: hard
+
 "@blocksuite/icons@npm:2.1.36":
   version: 2.1.36
   resolution: "@blocksuite/icons@npm:2.1.36"
@@ -3477,6 +3486,19 @@ __metadata:
     lit: ^3.0.2
     yjs: ^13
   checksum: 33f68338338981d43304e7408757ede7269bd5eb8be2fe92ec5e5a35dbbc20095fbec9bf26878d7e88484302bd4c466806bdc48c871c97aeab0c2d456fd062ab
+  languageName: node
+  linkType: hard
+
+"@blocksuite/inline@npm:0.11.0-nightly-202312270831-214616d":
+  version: 0.11.0-nightly-202312270831-214616d
+  resolution: "@blocksuite/inline@npm:0.11.0-nightly-202312270831-214616d"
+  dependencies:
+    "@blocksuite/global": "npm:0.11.0-nightly-202312270831-214616d"
+    zod: "npm:^3.22.4"
+  peerDependencies:
+    lit: ^3.0.2
+    yjs: ^13
+  checksum: de7143143f275da00ed85af2c545a607bc1a596781b7e5c57606b09e80e29b1a50dc0450a6cac693b0ed56f6f077706cd27e3505fcc60d056a40d086d5da3d2c
   languageName: node
   linkType: hard
 
