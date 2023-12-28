@@ -27,9 +27,9 @@ export const flattenTranslation = (
   if (!(obj instanceof Object)) return { [path ?? '']: obj };
 
   return Object.keys(obj).reduce((output, key) => {
-    return {
-      ...output,
-      ...flattenTranslation(obj[key], path ? path + '.' + key : key),
-    };
+    return Object.assign(
+      output,
+      flattenTranslation(obj[key], path ? path + '.' + key : key)
+    );
   }, {});
 };

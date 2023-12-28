@@ -244,8 +244,7 @@ const states: Partial<Record<ArticleId, EdgelessSwitchState>> = {
 
 export const articles: Record<ArticleId, ArticleOption> = ids.reduce(
   (acc, id) => {
-    return {
-      ...acc,
+    return Object.assign(acc, {
       [id]: {
         id,
         location: paperLocations[id],
@@ -254,7 +253,7 @@ export const articles: Record<ArticleId, ArticleOption> = ids.reduce(
         blocks: contents[id],
         initState: states[id],
       } satisfies ArticleOption,
-    };
+    });
   },
   {} as Record<ArticleId, ArticleOption>
 );

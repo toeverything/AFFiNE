@@ -42,10 +42,9 @@ export function createCloudAwarenessProvider(
       return;
     }
 
-    const changedClients = Object.values(changes).reduce((res, cur) => [
-      ...res,
-      ...cur,
-    ]);
+    const changedClients = Object.values(changes).reduce((res, cur) =>
+      res.concat(cur)
+    );
 
     const update = encodeAwarenessUpdate(awareness, changedClients);
     uint8ArrayToBase64(update)

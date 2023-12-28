@@ -23,10 +23,9 @@ export function createBroadcastChannelAwarenessProvider(
       return;
     }
 
-    const changedClients = Object.values(changes).reduce((res, cur) => [
-      ...res,
-      ...cur,
-    ]);
+    const changedClients = Object.values(changes).reduce((res, cur) =>
+      res.concat(cur)
+    );
 
     const update = encodeAwarenessUpdate(awareness, changedClients);
     channel.postMessage({
