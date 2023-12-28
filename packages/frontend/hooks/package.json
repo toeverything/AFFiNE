@@ -24,7 +24,7 @@
     "@blocksuite/block-std": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/lit": "0.11.0-nightly-202312270831-214616d",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
     "@testing-library/react": "^14.0.0",
