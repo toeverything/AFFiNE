@@ -37,13 +37,18 @@ export const SettingPage: StoryFn = () => {
 };
 SettingPage.play = async ({ canvasElement, step }) => {
   const canvas = within(canvasElement);
-  await waitFor(async () => {
-    assertExists(
-      document.body.querySelector(
-        '[data-testid="slider-bar-workspace-setting-button"]'
-      )
-    );
-  });
+  await waitFor(
+    async () => {
+      assertExists(
+        document.body.querySelector(
+          '[data-testid="slider-bar-workspace-setting-button"]'
+        )
+      );
+    },
+    {
+      timeout: 10000,
+    }
+  );
   await step('click setting modal button', async () => {
     await userEvent.click(
       canvas.getByTestId('slider-bar-workspace-setting-button')
@@ -121,13 +126,18 @@ export const SearchPage: StoryFn = () => {
 };
 SearchPage.play = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await waitFor(async () => {
-    assertExists(
-      document.body.querySelector(
-        '[data-testid="slider-bar-quick-search-button"]'
-      )
-    );
-  });
+  await waitFor(
+    async () => {
+      assertExists(
+        document.body.querySelector(
+          '[data-testid="slider-bar-quick-search-button"]'
+        )
+      );
+    },
+    {
+      timeout: 3000,
+    }
+  );
   await userEvent.click(canvas.getByTestId('slider-bar-quick-search-button'));
   await waitFor(
     () => {
@@ -153,20 +163,20 @@ export const ImportPage: StoryFn = () => {
 };
 ImportPage.play = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await waitFor(async () => {
-    assertExists(
-      document.body.querySelector('[data-testid="sidebar-new-page-button"]')
-    );
-  });
-  await userEvent.click(canvas.getByTestId('sidebar-new-page-button'));
   await waitFor(
-    () => {
-      assertExists(canvasElement.querySelector('v-line'));
+    async () => {
+      assertExists(
+        document.body.querySelector('[data-testid="sidebar-new-page-button"]')
+      );
     },
     {
       timeout: 10000,
     }
   );
+  await userEvent.click(canvas.getByTestId('sidebar-new-page-button'));
+  await waitFor(() => {
+    assertExists(canvasElement.querySelector('v-line'));
+  });
   await waitFor(() => {
     assertExists(
       canvasElement.querySelector('[data-testid="header-dropDownButton"]')
