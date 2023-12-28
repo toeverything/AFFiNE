@@ -24,7 +24,7 @@
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/presets": "0.11.0-nightly-202312270831-214616d",
     "async-call-rpc": "^6.3.1",
     "nanoid": "^5.0.3",
     "react": "^18.2.0",
