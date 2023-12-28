@@ -2,12 +2,18 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base",
-    "group:allNonMajor",
     ":preserveSemverRanges",
     ":disablePeerDependencies"
   ],
   "labels": ["dependencies"],
   "packageRules": [
+    {
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "excludePackagePatterns": ["^@blocksuite/"]
+    },
     {
       "matchPackageNames": ["napi", "napi-build", "napi-derive"],
       "groupName": "napi-rs"
