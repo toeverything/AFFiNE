@@ -29,7 +29,9 @@ import {
   SpanExporter,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
-import { PrismaInstrumentation } from '@prisma/instrumentation';
+import prismaInstrument from '@prisma/instrumentation';
+
+const { PrismaInstrumentation } = prismaInstrument;
 
 import { PrismaMetricProducer } from './prisma';
 
