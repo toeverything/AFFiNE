@@ -107,7 +107,7 @@ export const UserWithWorkspaceList = ({
         <SignInItem />
       )}
       <Divider size="thinner" />
-      <AFFiNEWorkspaceList workspaces={workspaces} onEventEnd={onEventEnd} />
+      <AFFiNEWorkspaceList onEventEnd={onEventEnd} />
       {workspaces.length > 0 ? <Divider size="thinner" /> : null}
       <AddWorkspace
         onAddWorkspace={onAddWorkspace}

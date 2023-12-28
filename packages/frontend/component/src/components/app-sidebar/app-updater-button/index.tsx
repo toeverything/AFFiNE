@@ -1,17 +1,18 @@
 import { Unreachable } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons';
-import { useAppUpdater } from '@toeverything/hooks/use-app-updater';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 
 import { Tooltip } from '../../../ui/tooltip';
 import * as styles from './index.css';
 
-export interface AddPageButtonPureProps {
-  onClickUpdate: () => void;
-  onDismissCurrentChangelog: () => void;
-  currentChangelogUnread: boolean;
+export interface AddPageButtonProps {
+  onQuitAndInstall: () => void;
+  onDownloadUpdate: () => void;
+  onDismissChangelog: () => void;
+  onOpenChangelog: () => void;
+  changelogUnread: boolean;
   updateReady: boolean;
   updateAvailable: {
     version: string;
@@ -33,8 +34,8 @@ interface ButtonContentProps {
   autoDownload: boolean;
   downloadProgress: number | null;
   appQuitting: boolean;
-  currentChangelogUnread: boolean;
-  onDismissCurrentChangelog: () => void;
+  changelogUnread: boolean;
+  onDismissChangelog: () => void;
 }
 
 function DownloadUpdate({ updateAvailable }: ButtonContentProps) {
@@ -114,14 +115,14 @@ function OpenDownloadPage({ updateAvailable }: ButtonContentProps) {
   );
 }
 
-function WhatsNew({ onDismissCurrentChangelog }: ButtonContentProps) {
+function WhatsNew({ onDismissChangelog }: ButtonContentProps) {
   const t = useAFFiNEI18N();
   const onClickClose: React.MouseEventHandler = useCallback(
     e => {
-      onDismissCurrentChangelog();
+      onDismissChangelog();
       e.stopPropagation();
     },
-    [onDismissCurrentChangelog]
+    [onDismissChangelog]
   );
   return (
     <>
@@ -149,42 +150,76 @@ const getButtonContentRenderer = (props: ButtonContentProps) => {
     }
   } else if (props.updateAvailable && !props.updateAvailable?.allowAutoUpdate) {
     return OpenDownloadPage;
-  } else if (props.currentChangelogUnread) {
+  } else if (props.changelogUnread) {
     return WhatsNew;
   }
   return null;
 };
 
-export function AppUpdaterButtonPure({
+export function AppUpdaterButton({
   updateReady,
-  onClickUpdate,
-  onDismissCurrentChangelog,
-  currentChangelogUnread,
+  changelogUnread,
+  onDismissChangelog,
+  onDownloadUpdate,
+  onQuitAndInstall,
+  onOpenChangelog,
   updateAvailable,
   autoDownload,
   downloadProgress,
   appQuitting,
   className,
   style,
-}: AddPageButtonPureProps) {
+}: AddPageButtonProps) {
+  const handleClick = useCallback(() => {
+    if (updateReady) {
+      onQuitAndInstall();
+    } else if (updateAvailable) {
+      if (updateAvailable.allowAutoUpdate) {
+        if (autoDownload) {
+          // wait for download to finish
+        } else {
+          onDownloadUpdate();
+        }
+      } else {
+        window.open(
+          `https://github.com/toeverything/AFFiNE/releases/tag/v${updateAvailable.version}`,
+          '_blank'
+        );
+      }
+    } else if (changelogUnread) {
+      window.open(runtimeConfig.changelogUrl, '_blank');
+      onOpenChangelog();
+    } else {
+      throw new Unreachable();
+    }
+  }, [
+    updateReady,
+    updateAvailable,
+    changelogUnread,
+    onQuitAndInstall,
+    autoDownload,
+    onDownloadUpdate,
+    onOpenChangelog,
+  ]);
+
   const contentProps = useMemo(
     () => ({
       updateReady,
       updateAvailable,
-      currentChangelogUnread,
+      changelogUnread,
       autoDownload,
       downloadProgress,
       appQuitting,
-      onDismissCurrentChangelog,
+      onDismissChangelog,
     }),
     [
       updateReady,
       updateAvailable,
-      currentChangelogUnread,
+      changelogUnread,
       autoDownload,
       downloadProgress,
       appQuitting,
-      onDismissCurrentChangelog,
+      onDismissChangelog,
     ]
   );
 
@@ -222,6 +257,10 @@ export function AppUpdaterButtonPure({
     updateReady,
   ]);
 
+  if (!updateAvailable && !changelogUnread) {
+    return null;
+  }
+
   return wrapWithTooltip(
     <button
       style={style}
@@ -229,86 +268,12 @@ export function AppUpdaterButtonPure({
       data-has-update={!!updateAvailable}
       data-updating={appQuitting}
       data-disabled={disabled}
-      onClick={onClickUpdate}
+      onClick={handleClick}
     >
       {ContentComponent ? <ContentComponent {...contentProps} /> : null}
       <div className={styles.particles} aria-hidden="true"></div>
       <span className={styles.halo} aria-hidden="true"></span>
     </button>,
     updateAvailable?.version
-  );
-}
-
-// Although it is called an input, it is actually a button.
-export function AppUpdaterButton({
-  className,
-  style,
-}: {
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  const {
-    quitAndInstall,
-    appQuitting,
-    autoDownload,
-    downloadUpdate,
-    readChangelog,
-    changelogUnread,
-    updateReady,
-    updateAvailable,
-    downloadProgress,
-    currentVersion,
-  } = useAppUpdater();
-
-  const handleClickUpdate = useCallback(() => {
-    if (updateReady) {
-      quitAndInstall();
-    } else if (updateAvailable) {
-      if (updateAvailable.allowAutoUpdate) {
-        if (autoDownload) {
-          // wait for download to finish
-        } else {
-          downloadUpdate();
-        }
-      } else {
-        window.open(
-          `https://github.com/toeverything/AFFiNE/releases/tag/v${currentVersion}`,
-          '_blank'
-        );
-      }
-    } else if (changelogUnread) {
-      window.open(runtimeConfig.changelogUrl, '_blank');
-      readChangelog();
-    } else {
-      throw new Unreachable();
-    }
-  }, [
-    updateReady,
-    updateAvailable,
-    changelogUnread,
-    quitAndInstall,
-    autoDownload,
-    downloadUpdate,
-    currentVersion,
-    readChangelog,
-  ]);
-
-  if (!updateAvailable && !changelogUnread) {
-    return null;
-  }
-
-  return (
-    <AppUpdaterButtonPure
-      appQuitting={appQuitting}
-      autoDownload={autoDownload}
-      updateReady={!!updateReady}
-      onClickUpdate={handleClickUpdate}
-      onDismissCurrentChangelog={readChangelog}
-      currentChangelogUnread={changelogUnread}
-      updateAvailable={updateAvailable}
-      downloadProgress={downloadProgress}
-      className={className}
-      style={style}
-    />
   );
 }

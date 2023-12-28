@@ -3,8 +3,6 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
 import { CollaborationIcon, SettingsIcon } from '@blocksuite/icons';
-import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
-import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useCallback } from 'react';
 
 import { Avatar } from '../../../ui/avatar';
@@ -72,6 +70,8 @@ export interface WorkspaceCardProps {
   onClick: (metadata: WorkspaceMetadata) => void;
   onSettingClick: (metadata: WorkspaceMetadata) => void;
   isOwner?: boolean;
+  avatar?: string;
+  name?: string;
 }
 
 export const WorkspaceCardSkeleton = () => {
@@ -96,11 +96,10 @@ export const WorkspaceCard = ({
   currentWorkspaceId,
   meta,
   isOwner = true,
+  name,
+  avatar,
 }: WorkspaceCardProps) => {
-  const information = useWorkspaceInfo(meta);
-  const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
-
-  const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
+  const displayName = name ?? UNTITLED_WORKSPACE_NAME;
   return (
     <StyledCard
       data-testid="workspace-card"
@@ -109,12 +108,10 @@ export const WorkspaceCard = ({
       }, [onClick, meta])}
       active={meta.id === currentWorkspaceId}
     >
-      <Avatar size={28} url={avatarUrl} name={name} colorfulFallback />
+      <Avatar size={28} url={avatar} name={name} colorfulFallback />
       <StyledWorkspaceInfo>
         <StyledWorkspaceTitleArea style={{ display: 'flex' }}>
-          <StyledWorkspaceTitle>
-            {information?.name ?? UNTITLED_WORKSPACE_NAME}
-          </StyledWorkspaceTitle>
+          <StyledWorkspaceTitle>{displayName}</StyledWorkspaceTitle>
 
           <StyledSettingLink
             size="small"

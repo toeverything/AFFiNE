@@ -1,12 +1,11 @@
-import type { Workspace, WorkspaceMetadata } from '@affine/workspace';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import { workspaceManagerAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
 import { useEffect, useState } from 'react';
 
-export function useWorkspaceInfo(
-  meta: WorkspaceMetadata,
-  workspace?: Workspace
-) {
+import { useWorkspaceBlobObjectUrl } from './use-workspace-blob';
+
+export function useWorkspaceInfo(meta: WorkspaceMetadata) {
   const workspaceManager = useAtomValue(workspaceManagerAtom);
 
   const [information, setInformation] = useState(
@@ -20,7 +19,20 @@ export function useWorkspaceInfo(
     return information.onUpdated.on(info => {
       setInformation(info);
     }).dispose;
-  }, [meta, workspace, workspaceManager]);
+  }, [meta, workspaceManager]);
 
   return information;
+}
+
+export function useWorkspaceName(meta: WorkspaceMetadata) {
+  const information = useWorkspaceInfo(meta);
+
+  return information?.name;
+}
+
+export function useWorkspaceAvatar(meta: WorkspaceMetadata) {
+  const information = useWorkspaceInfo(meta);
+  const avatar = useWorkspaceBlobObjectUrl(meta, information?.avatar);
+
+  return avatar;
 }

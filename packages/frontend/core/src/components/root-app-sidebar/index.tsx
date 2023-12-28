@@ -4,7 +4,6 @@ import {
   AppDownloadButton,
   AppSidebar,
   appSidebarOpenAtom,
-  AppUpdaterButton,
   CategoryDivider,
   MenuItem,
   MenuLinkItem,
@@ -49,6 +48,7 @@ import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { UserWithWorkspaceList } from '../pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceCard } from '../pure/workspace-slider-bar/workspace-card';
 import ImportPage from './import-page';
+import { UpdaterButton } from './updater-button';
 
 export type RootAppSidebarProps = {
   isPublicWorkspace: boolean;
@@ -299,7 +299,7 @@ export const RootAppSidebar = ({
         )}
       </SidebarScrollableContainer>
       <SidebarContainer>
-        {environment.isDesktop ? <AppUpdaterButton /> : <AppDownloadButton />}
+        {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}
         <div style={{ height: '4px' }} />
         <AddPageButton onClick={onClickNewPage} />
       </SidebarContainer>

@@ -4,8 +4,15 @@ import { WorkspaceList } from '@affine/component/workspace-list';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
-import { currentWorkspaceAtom } from '@affine/workspace/atom';
+import {
+  currentWorkspaceAtom,
+  workspaceListAtom,
+} from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  useWorkspaceAvatar,
+  useWorkspaceName,
+} from '@toeverything/hooks/use-workspace-info';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
@@ -54,6 +61,8 @@ const CloudWorkSpaceList = ({
         onSettingClick={onClickWorkspaceSetting}
         onDragEnd={onDragEnd}
         useIsWorkspaceOwner={useIsWorkspaceOwner}
+        useWorkspaceName={useWorkspaceName}
+        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
@@ -83,18 +92,21 @@ const LocalWorkspaces = ({
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
         onDragEnd={onDragEnd}
+        useIsWorkspaceOwner={useIsWorkspaceOwner}
+        useWorkspaceName={useWorkspaceName}
+        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
 };
 
 export const AFFiNEWorkspaceList = ({
-  workspaces,
   onEventEnd,
 }: {
-  workspaces: WorkspaceMetadata[];
   onEventEnd?: () => void;
 }) => {
+  const workspaces = useAtomValue(workspaceListAtom);
+
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
   const { jumpToSubPath } = useNavigateHelper();

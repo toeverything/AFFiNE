@@ -168,7 +168,12 @@ export const useAppUpdater = () => {
     [setSetting]
   );
 
-  const readChangelog = useAsyncCallback(async () => {
+  const openChangelog = useAsyncCallback(async () => {
+    window.open(runtimeConfig.changelogUrl, '_blank');
+    await setChangelogUnread(true);
+  }, [setChangelogUnread]);
+
+  const dismissChangelog = useAsyncCallback(async () => {
     await setChangelogUnread(true);
   }, [setChangelogUnread]);
 
@@ -183,7 +188,8 @@ export const useAppUpdater = () => {
     autoCheck: setting.autoCheckUpdate,
     autoDownload: setting.autoDownloadUpdate,
     changelogUnread,
-    readChangelog,
+    openChangelog,
+    dismissChangelog,
     updateReady,
     updateAvailable: useAtomValue(updateAvailableAtom),
     downloadProgress,

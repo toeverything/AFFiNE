@@ -21,6 +21,9 @@ export const Default = () => {
       onClick={() => {}}
       onSettingClick={() => {}}
       onDragEnd={_ => {}}
+      useWorkspaceAvatar={() => undefined}
+      useWorkspaceName={() => undefined}
+      useIsWorkspaceOwner={() => false}
     />
   );
 };
