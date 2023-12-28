@@ -179,6 +179,8 @@ legend {
 body {
   background: transparent;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 input {
