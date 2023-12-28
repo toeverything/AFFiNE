@@ -5,7 +5,7 @@ import {
   type GetInviteInfoQuery,
   getInviteInfoQuery,
 } from '@affine/graphql';
-import { fetcher } from '@affine/workspace/affine/gql';
+import { fetcher } from '@affine/graphql';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 import { type LoaderFunction, redirect, useLoaderData } from 'react-router-dom';

@@ -5,8 +5,8 @@ import {
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
+import { fetcher } from '@affine/graphql';
 
-import { fetcher } from '../../affine/gql';
 import type { BlobStorage } from '../../engine/blob';
 import { bufferToBlob } from '../../utils/buffer-to-blob';
 

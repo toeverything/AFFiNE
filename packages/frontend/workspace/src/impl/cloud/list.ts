@@ -4,12 +4,12 @@ import {
   deleteWorkspaceMutation,
   getWorkspacesQuery,
 } from '@affine/graphql';
+import { fetcher } from '@affine/graphql';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { difference } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import { fetcher } from '../../affine/gql';
 import { globalBlockSuiteSchema } from '../../global-schema';
 import type { WorkspaceListProvider } from '../../list';
 import { createLocalBlobStorage } from '../local/blob';

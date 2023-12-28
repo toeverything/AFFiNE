@@ -1,7 +1,7 @@
 import { setWorkspacePublicByIdMutation } from '@affine/graphql';
-import { useMutation } from '@affine/workspace/affine/gql';
 import { useCallback } from 'react';
 
+import { useMutation } from '../use-mutation';
 import { useMutateCloud } from './use-mutate-cloud';
 
 export function useToggleCloudPublic(workspaceId: string) {

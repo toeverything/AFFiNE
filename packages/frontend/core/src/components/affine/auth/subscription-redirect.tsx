@@ -9,16 +9,17 @@ import {
   subscriptionQuery,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
 
 import { useCurrentUser } from '../../../hooks/affine/use-current-user';
+import { useMutation } from '../../../hooks/use-mutation';
 import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../hooks/use-navigate-helper';
+import { useQuery } from '../../../hooks/use-query';
 import * as styles from './subscription-redirect.css';
 import { useSubscriptionSearch } from './use-subscription';
 

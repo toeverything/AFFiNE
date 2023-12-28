@@ -7,13 +7,13 @@ import {
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useQuery } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 
 import { SWRErrorBoundary } from '../../../../../components/pure/swr-error-bundary';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
+import { useQuery } from '../../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../../hooks/use-subscription';
 import { PlanLayout } from './layout';
 import { type FixedPrice, getPlanDetail, PlanCard } from './plan-card';

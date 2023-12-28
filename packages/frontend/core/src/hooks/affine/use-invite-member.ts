@@ -1,8 +1,8 @@
 import type { Permission } from '@affine/graphql';
 import { inviteByEmailMutation } from '@affine/graphql';
-import { useMutation } from '@affine/workspace/affine/gql';
 import { useCallback } from 'react';
 
+import { useMutation } from '../use-mutation';
 import { useMutateCloud } from './use-mutate-cloud';
 
 export function useInviteMember(workspaceId: string) {

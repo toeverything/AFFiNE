@@ -6,7 +6,8 @@ import { render } from '@testing-library/react';
 import type { Mock } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useMutation, useQuery } from '../gql';
+import { useMutation } from '../use-mutation';
+import { useQuery } from '../use-query';
 
 let fetch: Mock;
 describe('GraphQL wrapper for SWR', () => {

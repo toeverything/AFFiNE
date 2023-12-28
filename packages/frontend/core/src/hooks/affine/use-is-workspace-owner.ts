@@ -1,7 +1,8 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { getIsOwnerQuery } from '@affine/graphql';
-import { useQueryImmutable } from '@affine/workspace/affine/gql';
 import type { WorkspaceMetadata } from '@affine/workspace/metadata';
+
+import { useQueryImmutable } from '../use-query';
 
 export function useIsWorkspaceOwner(workspaceMetadata: WorkspaceMetadata) {
   const { data } = useQueryImmutable(

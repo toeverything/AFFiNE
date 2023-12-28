@@ -9,11 +9,6 @@ import {
   createAffineCloudBlobStorage,
   globalBlockSuiteSchema,
 } from '@affine/workspace';
-import {
-  useMutateQueryResource,
-  useMutation,
-  useQueryInfinite,
-} from '@affine/workspace/affine/gql';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
@@ -22,6 +17,12 @@ import { revertUpdate } from '@toeverything/y-indexeddb';
 import { useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { applyUpdate } from 'yjs';
+
+import {
+  useMutateQueryResource,
+  useMutation,
+} from '../../../hooks/use-mutation';
+import { useQueryInfinite } from '../../../hooks/use-query';
 
 const logger = new DebugLogger('page-history');
 

@@ -1,5 +1,6 @@
 import { quotaQuery } from '@affine/graphql';
-import { useQuery } from '@affine/workspace/affine/gql';
+
+import { useQuery } from './use-query';
 
 export const useUserQuota = () => {
   const { data } = useQuery({
