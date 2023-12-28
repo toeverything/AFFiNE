@@ -141,7 +141,7 @@ export const emptyCollectionIconWrapper = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '50%',
-  backgroundColor: 'var(--affine-background-secondary-color)',
+  backgroundColor: 'var(--affine-hover-color)',
 });
 
 export const emptyCollectionIcon = style({
@@ -152,7 +152,7 @@ export const emptyCollectionIcon = style({
 export const emptyCollectionMessage = style({
   fontSize: 'var(--affine-font-sm)',
   textAlign: 'center',
-  color: 'var(--affine-text-secondary-color)',
+  color: 'var(--affine-black-30)',
 });
 
 export const emptyCollectionNewButton = style({
