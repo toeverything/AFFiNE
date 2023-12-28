@@ -26,7 +26,7 @@
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/store": "0.11.0-nightly-202312270831-214616d",
     "@testing-library/react": "^14.0.0",
     "@toeverything/infra": "workspace:*",
     "@types/image-blob-reduce": "^4.1.3",
