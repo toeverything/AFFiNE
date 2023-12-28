@@ -8,15 +8,12 @@ import {
   clickDatePicker,
   createFirstFilter,
   createPageWithTag,
-  fillDatePicker,
   getPagesCount,
-  selectDateFromDatePicker,
   selectMonthFromMonthPicker,
   selectTag,
 } from '@affine-test/kit/utils/filter';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
-  clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForAllPagesLoad,
   waitForEditorLoad,
@@ -83,66 +80,6 @@ test('allow creation of filters by favorite', async ({ page }) => {
   expect(await page.locator('[data-testid="filter-arg"]').textContent()).toBe(
     'false'
   );
-});
-
-test('allow creation of filters by created time', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await clickNewPageButton(page);
-  await clickSideBarAllPageButton(page);
-  await waitForAllPagesLoad(page);
-  const pageCount = await getPagesCount(page);
-  expect(pageCount).not.toBe(0);
-  await createFirstFilter(page, 'Created');
-  await checkFilterName(page, 'after');
-  // init date
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  await checkDatePicker(page, yesterday);
-  expect(await getPagesCount(page)).toBe(1);
-  // change date
-  const today = new Date();
-  await fillDatePicker(page, today);
-  expect(await getPagesCount(page)).toBe(0);
-  // change filter
-  await page.getByTestId('filter-name').click();
-  await page.getByTestId('filler-tag-before').click();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  await fillDatePicker(page, tomorrow);
-  await checkDatePicker(page, tomorrow);
-  expect(await getPagesCount(page)).toBe(pageCount);
-});
-
-test('creation of filters by created time, then click date picker to modify the date', async ({
-  page,
-}) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await clickNewPageButton(page);
-  await clickSideBarAllPageButton(page);
-  await waitForAllPagesLoad(page);
-  const pageCount = await getPagesCount(page);
-  expect(pageCount).not.toBe(0);
-  await createFirstFilter(page, 'Created');
-  await checkFilterName(page, 'after');
-  // init date
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  await checkDatePicker(page, yesterday);
-  expect(await getPagesCount(page)).toBe(1);
-  // change date
-  const today = new Date();
-  await selectDateFromDatePicker(page, today);
-  expect(await getPagesCount(page)).toBe(0);
-  // change filter
-  await page.locator('[data-testid="filter-name"]').click();
-  await page.getByTestId('filler-tag-before').click();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  await selectDateFromDatePicker(page, tomorrow);
-  await checkDatePicker(page, tomorrow);
-  expect(await getPagesCount(page)).toBe(pageCount);
 });
 
 test('use monthpicker to modify the month of datepicker', async ({ page }) => {

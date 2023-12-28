@@ -12,6 +12,7 @@
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
+    "@affine/templates": "workspace:*",
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",

@@ -435,7 +435,6 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/native": "workspace:*"
-    "@affine/templates": "workspace:*"
     "@blocksuite/blocks": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/lit": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/presets": "npm:0.11.0-nightly-202312220916-e3abcbb"
