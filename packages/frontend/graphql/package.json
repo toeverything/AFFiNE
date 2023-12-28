@@ -18,7 +18,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "prettier": "^3.0.3",
-    "vitest": "1.0.4"
+    "vitest": "1.1.0"
   },
   "scripts": {
     "postinstall": "gql-gen --errors-only"

@@ -44,7 +44,7 @@
     "@testing-library/react": "^14.0.0",
     "@types/ws": "^8.5.7",
     "fake-indexeddb": "^5.0.0",
-    "vitest": "1.0.4",
+    "vitest": "1.1.0",
     "ws": "^8.14.2"
   },
   "version": "0.11.0"

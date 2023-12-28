@@ -30,8 +30,8 @@
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
     "vite": "^5.0.6",
-    "vite-plugin-dts": "3.6.0",
-    "vitest": "1.0.4",
+    "vite-plugin-dts": "3.7.0",
+    "vitest": "1.1.0",
     "yjs": "^13.6.10"
   },
   "peerDependencies": {

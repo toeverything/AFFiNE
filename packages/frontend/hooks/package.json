@@ -32,7 +32,7 @@
     "@types/image-blob-reduce": "^4.1.3",
     "@types/lodash.debounce": "^4.0.7",
     "fake-indexeddb": "^5.0.0",
-    "vitest": "1.0.4",
+    "vitest": "1.1.0",
     "y-provider": "workspace:*"
   },
   "peerDependencies": {
