@@ -2,6 +2,7 @@ import {
   checkBlobSizesQuery,
   deleteBlobMutation,
   fetchWithTraceReport,
+  getBaseUrl,
   listBlobsQuery,
   setBlobMutation,
 } from '@affine/graphql';
@@ -9,14 +10,6 @@ import { fetcher } from '@affine/graphql';
 
 import type { BlobStorage } from '../../engine/blob';
 import { bufferToBlob } from '../../utils/buffer-to-blob';
-
-function getBaseUrl(): string {
-  if (environment.isDesktop) {
-    return runtimeConfig.serverUrlPrefix;
-  }
-  const { protocol, hostname, port } = window.location;
-  return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
-}
 
 export const createAffineCloudBlobStorage = (
   workspaceId: string
