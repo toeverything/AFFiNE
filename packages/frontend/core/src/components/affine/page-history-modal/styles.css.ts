@@ -52,6 +52,9 @@ export const previewHeaderTitle = style({
   fontSize: 'var(--affine-font-xs)',
   fontWeight: 600,
   maxWidth: 400, // better responsiveness
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 export const previewHeaderTimestamp = style({
