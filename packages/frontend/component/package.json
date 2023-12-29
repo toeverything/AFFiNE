@@ -75,7 +75,7 @@
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/icons": "2.1.39",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/presets": "0.11.0-nightly-202312290334-cd5ff97",
     "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
     "@storybook/addon-actions": "^7.5.3",
     "@storybook/addon-essentials": "^7.5.3",
