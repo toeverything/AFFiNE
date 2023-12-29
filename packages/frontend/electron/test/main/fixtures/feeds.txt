@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:https://github.com/toeverything/AFFiNE/releases</id>
+  <link type="text/html" rel="alternate" href="https://github.com/toeverything/AFFiNE/releases"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/toeverything/AFFiNE/releases.atom"/>
+  <title>Release notes from AFFiNE</title>
+  <updated>2023-12-28T16:36:36+08:00</updated>
+  <entry>
+    <id>tag:github.com,2008:Repository/519859998/0.11.0-nightly-202312280901-e11e827</id>
+    <updated>2023-12-28T17:23:15+08:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/toeverything/AFFiNE/releases/tag/0.11.0-nightly-202312280901-e11e827"/>
+    <title>0.11.0-nightly-202312280901-e11e827</title>
+    <content>No content.</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/519859998/v0.11.1</id>
+    <updated>2023-12-27T19:40:15+08:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/toeverything/AFFiNE/releases/tag/v0.11.1"/>
+    <title>0.11.1</title>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/519859998/v0.11.1-beta.1</id>
+    <updated>2023-12-27T18:30:52+08:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/toeverything/AFFiNE/releases/tag/v0.11.1-beta.1"/>
+    <title>0.11.1-beta.1</title>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/519859998/v0.11.1-canary.1</id>
+    <updated>2023-12-27T10:47:52+08:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/toeverything/AFFiNE/releases/tag/v0.11.1-canary.1"/>
+    <title>0.11.1-canary.1</title>
+    <content type="html"></content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+</feed>
