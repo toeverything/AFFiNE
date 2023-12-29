@@ -1,5 +1,6 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useRef } from 'react';
 
 interface UseZoomControlsProps {
   zoomRef: RefObject<HTMLDivElement>;
@@ -21,6 +22,7 @@ export const useZoomControls = ({
     x: 0,
     y: 0,
   });
+  const zoomInScaleRef = useRef<number>(1);
 
   const handleDragStart = useCallback(
     (event: ReactMouseEvent) => {
@@ -124,6 +126,7 @@ export const useZoomControls = ({
     if (image && currentScale < 2) {
       const newScale = currentScale + 0.1;
       setCurrentScale(newScale);
+      zoomInScaleRef.current = newScale; // Update the ref
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
     }
@@ -134,6 +137,7 @@ export const useZoomControls = ({
     if (image && currentScale > 0.2) {
       const newScale = currentScale - 0.1;
       setCurrentScale(newScale);
+      zoomInScaleRef.current = newScale; // Update the ref
       image.style.width = `${image.naturalWidth * newScale}px`;
       image.style.height = `${image.naturalHeight * newScale}px`;
       const zoomedWidth = image.naturalWidth * newScale;
@@ -186,7 +190,7 @@ export const useZoomControls = ({
       const { deltaY } = event;
       if (deltaY > 0) {
         zoomOut();
-      } else if (deltaY < 0) {
+      } else if (deltaY < 0 && currentScale < 2 && zoomInScaleRef.current < 2) {
         zoomIn();
       }
     };
