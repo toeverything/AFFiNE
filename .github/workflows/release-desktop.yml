@@ -353,13 +353,35 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
+        if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          tag_name: ${{ (github.ref_type == 'tag' && github.ref_name) || needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
           draft: ${{ github.event.inputs.is-draft }}
           prerelease: ${{ github.event.inputs.is-pre-release }}
+          files: |
+            ./VERSION
+            ./*.zip
+            ./*.dmg
+            ./*.exe
+            ./*.AppImage
+            ./*.apk
+            ./*.yml
+      - name: Create Nightly Release Draft
+        if: ${{ github.ref_type == 'branch' }}
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          # Temporarily, treat release from branch as nightly release, artifact saved to AFFiNE-Releases.
+          # Need to improve internal build and nightly release logic.
+          repository: 'toeverything/AFFiNE-Releases'
+          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+          tag_name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+          body: ''
+          draft: false
+          prerelease: true
           files: |
             ./VERSION
             ./*.zip
