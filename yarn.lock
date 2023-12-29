@@ -317,7 +317,7 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/workspace": "workspace:*"
     "@aws-sdk/client-s3": "npm:3.481.0"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312220916-e3abcbb"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312281307-790d64f"
     "@blocksuite/blocks": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/global": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/icons": "npm:2.1.39"
@@ -3391,6 +3391,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blocksuite/block-std@npm:0.11.0-nightly-202312281307-790d64f":
+  version: 0.11.0-nightly-202312281307-790d64f
+  resolution: "@blocksuite/block-std@npm:0.11.0-nightly-202312281307-790d64f"
+  dependencies:
+    "@blocksuite/global": "npm:0.11.0-nightly-202312281307-790d64f"
+    lz-string: "npm:^1.5.0"
+    w3c-keyname: "npm:^2.2.8"
+    zod: "npm:^3.22.4"
+  peerDependencies:
+    "@blocksuite/store": 0.11.0-nightly-202312281307-790d64f
+  checksum: 39f6c26d1cf2da5368c01e89c1c181bc86783cd374387153bb26232eb3cdc44b84fe3c8d5531e880a090b0e4889c049db7ad9587bd124edb59b36fd6bd4e7846
+  languageName: node
+  linkType: hard
+
 "@blocksuite/blocks@npm:0.11.0-nightly-202312220916-e3abcbb":
   version: 0.11.0-nightly-202312220916-e3abcbb
   resolution: "@blocksuite/blocks@npm:0.11.0-nightly-202312220916-e3abcbb"
@@ -3443,6 +3457,15 @@ __metadata:
   dependencies:
     zod: "npm:^3.22.4"
   checksum: 90cadce741fe6917175848637fceddd90f8d18270ce95d92fd7c3035805e5add96dc363a20c6c1d89402f0d932ae0afcbba2d99afe65a624118b57cfdebcb13c
+  languageName: node
+  linkType: hard
+
+"@blocksuite/global@npm:0.11.0-nightly-202312281307-790d64f":
+  version: 0.11.0-nightly-202312281307-790d64f
+  resolution: "@blocksuite/global@npm:0.11.0-nightly-202312281307-790d64f"
+  dependencies:
+    zod: "npm:^3.22.4"
+  checksum: 57f8897c6290f25487c9a0a4933a009b5d4d31b0497127e53e18c3b75bfe879758347b79b5a1a56be03fceec4917b49cdcc189267b93b242f7a81e38ae0dbf84
   languageName: node
   linkType: hard
 
@@ -12812,7 +12835,7 @@ __metadata:
     "@affine/electron-api": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/workspace": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312220916-e3abcbb"
+    "@blocksuite/block-std": "npm:0.11.0-nightly-202312281307-790d64f"
     "@blocksuite/blocks": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/global": "npm:0.11.0-nightly-202312220916-e3abcbb"
     "@blocksuite/lit": "npm:0.11.0-nightly-202312220916-e3abcbb"
