@@ -21,7 +21,7 @@
     "@affine/electron-api": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/workspace": "workspace:*",
-    "@blocksuite/block-std": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/block-std": "0.11.0-nightly-202312290334-cd5ff97",
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
