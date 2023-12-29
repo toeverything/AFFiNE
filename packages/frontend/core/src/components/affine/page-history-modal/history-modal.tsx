@@ -8,7 +8,7 @@ import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import type { PageMode } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
-import type { Workspace } from '@blocksuite/store';
+import type { Page, Workspace } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
@@ -20,6 +20,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { encodeStateAsUpdate } from 'yjs';
 
 import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
@@ -31,7 +32,6 @@ import {
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
   historyListGroupByDay,
-  usePageHistory,
   usePageSnapshotList,
   useRestorePage,
   useSnapshotPage,
@@ -90,10 +90,8 @@ const timestampToLocalTime = (ts: string) => {
 };
 
 interface HistoryEditorPreviewProps {
-  workspaceId: string;
-  pageDocId: string;
   ts?: string;
-  snapshot?: ArrayBuffer;
+  snapshotPage?: Page;
   mode: PageMode;
   onModeChange: (mode: PageMode) => void;
   title: string;
@@ -101,11 +99,9 @@ interface HistoryEditorPreviewProps {
 
 const HistoryEditorPreview = ({
   ts,
-  snapshot,
+  snapshotPage,
   onModeChange,
   mode,
-  workspaceId,
-  pageDocId,
   title,
 }: HistoryEditorPreviewProps) => {
   const onSwitchToPageMode = useCallback(() => {
@@ -114,7 +110,6 @@ const HistoryEditorPreview = ({
   const onSwitchToEdgelessMode = useCallback(() => {
     onModeChange('edgeless');
   }, [onModeChange]);
-  const page = useSnapshotPage(workspaceId, pageDocId, ts, snapshot);
 
   return (
     <div className={styles.previewWrapper}>
@@ -139,11 +134,11 @@ const HistoryEditorPreview = ({
         </div>
       </div>
 
-      {page ? (
+      {snapshotPage ? (
         <BlockSuiteEditor
           className={styles.editor}
           mode={mode}
-          page={page}
+          page={snapshotPage}
           onModeChange={onModeChange}
         />
       ) : (
@@ -306,7 +301,7 @@ const PageHistoryManager = ({
     return workspace.getPage(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, workspace]);
 
-  const snapshot = usePageHistory(workspaceId, pageDocId, activeVersion);
+  const snapshotPage = useSnapshotPage(workspaceId, pageDocId, activeVersion);
 
   const t = useAFFiNEI18N();
 
@@ -314,14 +309,15 @@ const PageHistoryManager = ({
 
   const handleRestore = useMemo(
     () => async () => {
-      if (!activeVersion || !snapshot) {
+      if (!activeVersion || !snapshotPage) {
         return;
       }
+      const snapshot = encodeStateAsUpdate(snapshotPage.spaceDoc);
       await onRestore(activeVersion, new Uint8Array(snapshot));
       // close the modal after restore
       onClose();
     },
-    [activeVersion, onClose, onRestore, snapshot]
+    [activeVersion, onClose, onRestore, snapshotPage]
   );
 
   const defaultPreviewPageMode = useAtomValue(currentModeAtom);
@@ -352,10 +348,8 @@ const PageHistoryManager = ({
     <div className={styles.root}>
       <div className={styles.modalContent} data-empty={!activeVersion}>
         <HistoryEditorPreview
-          workspaceId={workspaceId}
-          pageDocId={pageDocId}
           ts={activeVersion}
-          snapshot={snapshot}
+          snapshotPage={snapshotPage}
           mode={mode}
           onModeChange={setMode}
           title={title}

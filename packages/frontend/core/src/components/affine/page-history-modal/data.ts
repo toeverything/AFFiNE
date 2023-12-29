@@ -146,12 +146,12 @@ export const usePageHistory = (
 export const useSnapshotPage = (
   workspaceId: string,
   pageDocId: string,
-  ts?: string,
-  snapshot?: ArrayBuffer
+  ts?: string
 ) => {
+  const snapshot = usePageHistory(workspaceId, pageDocId, ts);
   const page = useMemo(() => {
     if (!ts) {
-      return null;
+      return;
     }
     const pageId = pageDocId + '-' + ts;
     const historyShellWorkspace = getOrCreateWorkspace(workspaceId);
@@ -163,10 +163,13 @@ export const useSnapshotPage = (
       page.awarenessStore.setReadonly(page, true);
       const spaceDoc = page.spaceDoc;
       page
-        .load(() => applyUpdate(spaceDoc, new Uint8Array(snapshot)))
+        .load(() => {
+          applyUpdate(spaceDoc, new Uint8Array(snapshot));
+          historyShellWorkspace.schema.upgradePage(0, {}, spaceDoc);
+        })
         .catch(console.error); // must load before applyUpdate
     }
-    return page;
+    return page ?? undefined;
   }, [pageDocId, snapshot, ts, workspaceId]);
 
   return page;
