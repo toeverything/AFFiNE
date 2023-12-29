@@ -4,7 +4,11 @@ export * from './schema';
 export * from './utils';
 import '@affine/env/global';
 
+import { setupGlobal } from '@affine/env/global';
+
 import { gqlFetcherFactory } from './fetcher';
+
+setupGlobal();
 
 export function getBaseUrl(): string {
   if (environment.isDesktop) {
