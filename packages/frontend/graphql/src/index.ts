@@ -2,8 +2,19 @@ export * from './fetcher';
 export * from './graphql';
 export * from './schema';
 export * from './utils';
-import '@affine/env/global';
+
+import { setupGlobal } from '@affine/env/global';
 
 import { gqlFetcherFactory } from './fetcher';
 
-export const fetcher = gqlFetcherFactory('/graphql');
+setupGlobal();
+
+export function getBaseUrl(): string {
+  if (environment.isDesktop) {
+    return runtimeConfig.serverUrlPrefix;
+  }
+  const { protocol, hostname, port } = window.location;
+  return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+}
+
+export const fetcher = gqlFetcherFactory(getBaseUrl() + '/graphql');
