@@ -28,7 +28,7 @@
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/store": "0.11.0-nightly-202312290334-cd5ff97",
     "@electron-forge/cli": "^7.2.0",
     "@electron-forge/core": "^7.2.0",
     "@electron-forge/core-utils": "^7.2.0",

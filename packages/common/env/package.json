@@ -4,7 +4,7 @@
   "type": "module",
   "devDependencies": {
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/store": "0.11.0-nightly-202312290334-cd5ff97",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "vitest": "1.1.0",

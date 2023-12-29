@@ -15,7 +15,7 @@
     "@affine/templates": "workspace:*",
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/store": "0.11.0-nightly-202312290334-cd5ff97",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
     "tinykeys": "^2.1.0",
