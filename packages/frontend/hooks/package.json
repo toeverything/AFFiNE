@@ -22,7 +22,7 @@
     "@affine/env": "workspace:*",
     "@affine/workspace": "workspace:*",
     "@blocksuite/block-std": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/blocks": "0.11.0-nightly-202312281307-790d64f",
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",

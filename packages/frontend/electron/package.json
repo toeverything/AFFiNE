@@ -25,7 +25,7 @@
     "@affine-test/kit": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/blocks": "0.11.0-nightly-202312281307-790d64f",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
