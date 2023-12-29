@@ -72,7 +72,7 @@
   },
   "devDependencies": {
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
+    "@blocksuite/global": "0.11.0-nightly-202312290334-cd5ff97",
     "@blocksuite/icons": "2.1.39",
     "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
