@@ -7,7 +7,7 @@ import type {
   QueryVariables,
   RecursiveMaybeFields,
 } from '@affine/graphql';
-import { gqlFetcherFactory } from '@affine/graphql';
+import { getBaseUrl, gqlFetcherFactory } from '@affine/graphql';
 import type { GraphQLError } from 'graphql';
 import { useCallback, useMemo } from 'react';
 import type { Key, SWRConfiguration, SWRResponse } from 'swr';
@@ -22,7 +22,7 @@ import useSWRMutation from 'swr/mutation';
 
 setupGlobal();
 
-export const fetcher = gqlFetcherFactory('/graphql');
+export const fetcher = gqlFetcherFactory(getBaseUrl() + '/graphql');
 
 /**
  * A `useSWR` wrapper for sending graphql queries
