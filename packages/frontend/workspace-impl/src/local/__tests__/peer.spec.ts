@@ -20,7 +20,7 @@ describe('SyncPeer', () => {
     let prev: any;
     {
       const workspace = new Workspace({
-        id: 'test',
+        id: 'test - syncpeer - indexeddb',
 
         schema,
       });
@@ -48,7 +48,7 @@ describe('SyncPeer', () => {
 
     {
       const workspace = new Workspace({
-        id: 'test',
+        id: 'test - syncpeer - indexeddb',
 
         schema,
       });
@@ -66,7 +66,7 @@ describe('SyncPeer', () => {
 
   test('status', async () => {
     const workspace = new Workspace({
-      id: 'test - status',
+      id: 'test - syncpeer - status',
 
       schema,
     });

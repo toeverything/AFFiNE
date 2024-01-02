@@ -22,7 +22,7 @@ describe('SyncEngine', () => {
     let prev: any;
     {
       const workspace = new Workspace({
-        id: 'test',
+        id: 'test - syncengine - indexeddb',
 
         schema,
       });
@@ -54,7 +54,7 @@ describe('SyncEngine', () => {
 
     {
       const workspace = new Workspace({
-        id: 'test',
+        id: 'test - syncengine - indexeddb',
 
         schema,
       });
@@ -73,7 +73,7 @@ describe('SyncEngine', () => {
 
     {
       const workspace = new Workspace({
-        id: 'test',
+        id: 'test - syncengine - indexeddb',
 
         schema,
       });
@@ -92,7 +92,7 @@ describe('SyncEngine', () => {
 
     {
       const workspace = new Workspace({
-        id: 'test',
+        id: 'test - syncengine - indexeddb',
 
         schema,
       });
@@ -111,10 +111,12 @@ describe('SyncEngine', () => {
   });
 
   test('status', async () => {
-    const ydoc = new Doc({ guid: 'test - status' });
+    const ydoc = new Doc({ guid: 'test - syncengine - status' });
 
     const localStorage = createTestStorage(createIndexedDBStorage(ydoc.guid));
-    const remoteStorage = createTestStorage(createIndexedDBStorage(ydoc.guid));
+    const remoteStorage = createTestStorage(
+      createIndexedDBStorage(ydoc.guid + '1')
+    );
 
     localStorage.pausePull();
     localStorage.pausePush();
