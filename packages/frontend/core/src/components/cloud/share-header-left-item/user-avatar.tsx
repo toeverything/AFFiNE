@@ -1,8 +1,8 @@
 import { Avatar } from '@affine/component/ui/avatar';
 import { Menu, MenuIcon, MenuItem } from '@affine/component/ui/menu';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SignOutIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 

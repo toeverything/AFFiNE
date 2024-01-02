@@ -1,8 +1,8 @@
-import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
+} from '@affine/core/hooks/use-block-suite-page-meta';
+import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import {
   type FocusEvent,
   type InputHTMLAttributes,

@@ -12,9 +12,6 @@
       "path": "../../frontend/i18n"
     },
     {
-      "path": "../../frontend/hooks"
-    },
-    {
       "path": "../../frontend/electron-api"
     },
     { "path": "../../frontend/workspace" },

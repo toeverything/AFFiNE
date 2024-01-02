@@ -1,10 +1,10 @@
 import './page-detail-editor.css';
 
+import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
+import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
-import { useActiveBlocksuiteEditor } from '@toeverything/hooks/use-block-suite-editor';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';

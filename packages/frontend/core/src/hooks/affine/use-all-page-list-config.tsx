@@ -3,10 +3,10 @@ import {
   type AllPageListConfig,
   FavoriteTag,
 } from '@affine/component/page-list';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { PageMeta } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useCallback, useMemo } from 'react';
 

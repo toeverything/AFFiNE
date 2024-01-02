@@ -4,12 +4,12 @@ import {
   type ConfirmModalProps,
   Modal,
 } from '@affine/component/ui/modal';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { workspaceManagerAtom } from '@affine/workspace/atom';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   buildShowcaseWorkspace,

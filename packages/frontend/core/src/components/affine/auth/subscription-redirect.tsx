@@ -2,6 +2,7 @@ import { SignUpPage } from '@affine/component/auth-components';
 import { AffineShapeIcon } from '@affine/component/page-list';
 import { Button } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import {
   changePasswordMutation,
@@ -9,7 +10,6 @@ import {
   subscriptionQuery,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { nanoid } from 'nanoid';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
 

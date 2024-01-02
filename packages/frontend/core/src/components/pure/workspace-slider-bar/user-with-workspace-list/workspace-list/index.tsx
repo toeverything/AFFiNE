@@ -1,6 +1,10 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
+import {
+  useWorkspaceAvatar,
+  useWorkspaceName,
+} from '@affine/core/hooks/use-workspace-info';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
@@ -9,10 +13,6 @@ import {
   workspaceListAtom,
 } from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  useWorkspaceAvatar,
-  useWorkspaceName,
-} from '@toeverything/hooks/use-workspace-info';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';

@@ -1,10 +1,10 @@
 import { MenuItem as CollectionItem } from '@affine/component/app-sidebar';
+import { useBlockSuitePageReferences } from '@affine/core/hooks/use-block-suite-page-references';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useDraggable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useBlockSuitePageReferences } from '@toeverything/hooks/use-block-suite-page-references';
 import { useAtomValue } from 'jotai/index';
 import React, { useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';

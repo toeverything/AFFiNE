@@ -1,5 +1,9 @@
 import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
+import {
+  useBlockSuitePageMeta,
+  usePageMetaHelper,
+} from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -8,10 +12,6 @@ import {
 } from '@affine/workspace/atom';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
-import {
-  useBlockSuitePageMeta,
-  usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   type AffineCommand,

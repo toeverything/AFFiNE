@@ -5,6 +5,7 @@ import {
   MenuItem,
   MenuSeparator,
 } from '@affine/component/ui/menu';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
@@ -19,7 +20,6 @@ import {
   ImportIcon,
   PageIcon,
 } from '@blocksuite/icons';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 

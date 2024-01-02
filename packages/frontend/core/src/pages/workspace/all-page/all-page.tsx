@@ -9,6 +9,7 @@ import {
   useCollectionManager,
   VirtualizedPageList,
 } from '@affine/component/page-list';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
@@ -19,7 +20,6 @@ import {
   ViewLayersIcon,
 } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {

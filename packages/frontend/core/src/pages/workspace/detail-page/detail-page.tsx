@@ -4,13 +4,13 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { ResizePanel } from '@affine/component/resize-panel';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { appSettingAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {

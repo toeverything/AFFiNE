@@ -1,5 +1,5 @@
 import { AppUpdaterButton } from '@affine/component/app-sidebar/app-updater-button';
-import { useAppUpdater } from '@toeverything/hooks/use-app-updater';
+import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
 
 export const UpdaterButton = () => {
   const appUpdater = useAppUpdater();

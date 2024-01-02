@@ -1,10 +1,10 @@
 import { toast } from '@affine/component';
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { EdgelessIcon, HistoryIcon, PageIcon } from '@blocksuite/icons';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import {
   PreconditionStrategy,
   registerAffineCommand,

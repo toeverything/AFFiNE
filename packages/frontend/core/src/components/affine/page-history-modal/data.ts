@@ -1,3 +1,5 @@
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { DebugLogger } from '@affine/debug';
 import {
   fetchWithTraceReport,
@@ -11,8 +13,6 @@ import {
 } from '@affine/workspace';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { revertUpdate } from '@toeverything/y-indexeddb';
 import { useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';

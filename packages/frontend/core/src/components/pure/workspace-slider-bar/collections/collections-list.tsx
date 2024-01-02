@@ -9,13 +9,13 @@ import {
 } from '@affine/component/page-list';
 import { RenameModal } from '@affine/component/rename-modal';
 import { Button, IconButton } from '@affine/component/ui/button';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 

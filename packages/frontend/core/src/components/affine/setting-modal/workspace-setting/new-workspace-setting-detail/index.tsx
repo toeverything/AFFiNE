@@ -4,10 +4,10 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { useSelfHosted } from '@affine/core/hooks/affine/use-server-config';
+import { useWorkspace } from '@affine/core/hooks/use-workspace';
+import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useWorkspace } from '@toeverything/hooks/use-workspace';
-import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { EnableCloudPanel } from './enable-cloud';

@@ -3,7 +3,7 @@ import {
   appSidebarOpenAtom,
   SidebarSwitch,
 } from '@affine/component/app-sidebar';
-import { useIsTinyScreen } from '@toeverything/hooks/use-is-tiny-screen';
+import { useIsTinyScreen } from '@affine/core/hooks/use-is-tiny-screen';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';

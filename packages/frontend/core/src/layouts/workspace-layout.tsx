@@ -7,6 +7,8 @@ import {
   PageListDragOverlay,
 } from '@affine/component/page-list';
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -18,8 +20,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';

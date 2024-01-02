@@ -5,8 +5,8 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { type FC, useCallback } from 'react';
 
 import { useCurrentLoginStatus } from '../../../hooks/affine/use-current-login-status';

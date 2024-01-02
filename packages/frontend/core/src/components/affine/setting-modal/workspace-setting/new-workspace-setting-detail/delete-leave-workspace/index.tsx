@@ -1,6 +1,7 @@
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -9,7 +10,6 @@ import {
   workspaceManagerAtom,
 } from '@affine/workspace/atom';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 

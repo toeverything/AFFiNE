@@ -1,9 +1,9 @@
 import { Command } from '@affine/cmdk';
 import { useCommandState } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai';

@@ -1,3 +1,4 @@
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import {
   currentWorkspaceAtom,
@@ -5,7 +6,6 @@ import {
   workspaceListAtom,
 } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback } from 'react';

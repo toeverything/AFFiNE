@@ -7,6 +7,7 @@ import {
 } from '@affine/component/setting-components';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   createCustomerPortalMutation,
   getInvoicesCountQuery,
@@ -21,7 +22,6 @@ import {
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 

@@ -6,13 +6,13 @@ import {
 import { Button } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import type { PageMode } from '@affine/core/atoms';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { ToggleCollapseIcon } from '@blocksuite/icons';
 import type { Page, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Fragment,

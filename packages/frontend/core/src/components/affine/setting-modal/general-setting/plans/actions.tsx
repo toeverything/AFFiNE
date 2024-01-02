@@ -1,9 +1,9 @@
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { SubscriptionMutator } from '@affine/core/hooks/use-subscription';
 import {
   cancelSubscriptionMutation,
   resumeSubscriptionMutation,
 } from '@affine/graphql';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
 import { useState } from 'react';

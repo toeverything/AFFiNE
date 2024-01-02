@@ -13238,61 +13238,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/hooks@workspace:packages/frontend/hooks":
-  version: 0.0.0-use.local
-  resolution: "@toeverything/hooks@workspace:packages/frontend/hooks"
-  dependencies:
-    "@affine/debug": "workspace:*"
-    "@affine/electron-api": "workspace:*"
-    "@affine/env": "workspace:*"
-    "@affine/workspace": "workspace:*"
-    "@blocksuite/block-std": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@blocksuite/blocks": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@blocksuite/global": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@blocksuite/lit": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@blocksuite/presets": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@blocksuite/store": "npm:0.11.0-nightly-202312220916-e3abcbb"
-    "@testing-library/react": "npm:^14.0.0"
-    "@toeverything/infra": "workspace:*"
-    "@types/image-blob-reduce": "npm:^4.1.3"
-    "@types/lodash.debounce": "npm:^4.0.7"
-    fake-indexeddb: "npm:^5.0.0"
-    foxact: "npm:^0.2.20"
-    jotai: "npm:^2.5.1"
-    jotai-effect: "npm:^0.2.3"
-    lodash.debounce: "npm:^4.0.8"
-    p-queue: "npm:^8.0.0"
-    react: "npm:18.2.0"
-    rxjs: "npm:^7.8.1"
-    swr: "npm:2.2.4"
-    uuid: "npm:^9.0.1"
-    vitest: "npm:1.1.1"
-    y-provider: "workspace:*"
-  peerDependencies:
-    "@blocksuite/block-std": "*"
-    "@blocksuite/blocks": "*"
-    "@blocksuite/global": "*"
-    "@blocksuite/presets": "*"
-    "@blocksuite/store": "*"
-    y-provider: "workspace:*"
-  peerDependenciesMeta:
-    "@affine/env":
-      optional: true
-    "@blocksuite/block-std":
-      optional: true
-    "@blocksuite/blocks":
-      optional: true
-    "@blocksuite/global":
-      optional: true
-    "@blocksuite/presets":
-      optional: true
-    "@blocksuite/store":
-      optional: true
-    y-provider:
-      optional: true
-  languageName: unknown
-  linkType: soft
-
 "@toeverything/infra@workspace:*, @toeverything/infra@workspace:packages/common/infra":
   version: 0.0.0-use.local
   resolution: "@toeverything/infra@workspace:packages/common/infra"
@@ -14032,15 +13977,6 @@ __metadata:
   dependencies:
     "@types/lodash": "npm:*"
   checksum: 56b9a433348b11c31051c6fa9028540a033a08fb80b400c589d740446c19444d73b217cf1471d4036448ef686a83e8cf2a35d1fadcb3f2105f26701f94aebb07
-  languageName: node
-  linkType: hard
-
-"@types/lodash.debounce@npm:^4.0.7":
-  version: 4.0.9
-  resolution: "@types/lodash.debounce@npm:4.0.9"
-  dependencies:
-    "@types/lodash": "npm:*"
-  checksum: 8183a152e01928e3b97ca773f6ae6038b8695e76493ba8bf6b743ec143948a62294fbc9d49fa4a78b52265b3ba4892ef57534e0c13d04aa0f111671b5a944feb
   languageName: node
   linkType: hard
 
@@ -28846,16 +28782,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"p-queue@npm:^8.0.0":
-  version: 8.0.0
-  resolution: "p-queue@npm:8.0.0"
-  dependencies:
-    eventemitter3: "npm:^5.0.1"
-    p-timeout: "npm:^6.1.2"
-  checksum: 3d11784d48e5713989f712ccf33899157e88860a84c0e694fb8a1477f01ef1594a7633698ec1a4aebd38020f452a87adbe07733137c069f2fa5c392fe8e3fe99
-  languageName: node
-  linkType: hard
-
 "p-retry@npm:^4.5.0":
   version: 4.6.2
   resolution: "p-retry@npm:4.6.2"
@@ -28863,13 +28789,6 @@ __metadata:
     "@types/retry": "npm:0.12.0"
     retry: "npm:^0.13.1"
   checksum: 45c270bfddaffb4a895cea16cb760dcc72bdecb6cb45fef1971fa6ea2e91ddeafddefe01e444ac73e33b1b3d5d29fb0dd18a7effb294262437221ddc03ce0f2e
-  languageName: node
-  linkType: hard
-
-"p-timeout@npm:^6.1.2":
-  version: 6.1.2
-  resolution: "p-timeout@npm:6.1.2"
-  checksum: ca3ede368d792bd86fcfa4e133220536382225d31e5f62e2cedb8280df267b25f6684aa0056b22e8aa538cc85014b310058d8fdddeb0a1ff363093d56e87ac3a
   languageName: node
   linkType: hard
 

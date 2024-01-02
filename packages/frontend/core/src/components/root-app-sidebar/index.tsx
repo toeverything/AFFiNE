@@ -19,6 +19,7 @@ import {
 } from '@affine/component/page-list';
 import { Menu } from '@affine/component/ui/menu';
 import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { apis, events } from '@affine/electron-api';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -26,7 +27,6 @@ import type { Workspace } from '@affine/workspace';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import { type Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';

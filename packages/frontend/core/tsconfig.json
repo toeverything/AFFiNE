@@ -15,9 +15,6 @@
       "path": "../../frontend/graphql"
     },
     {
-      "path": "../../frontend/hooks"
-    },
-    {
       "path": "../../frontend/i18n"
     },
     {
@@ -31,6 +28,9 @@
     },
     {
       "path": "../../common/env"
+    },
+    {
+      "path": "../../common/y-indexeddb"
     },
     {
       "path": "./tsconfig.node.json"

@@ -7,6 +7,7 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
@@ -15,7 +16,6 @@ import {
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {

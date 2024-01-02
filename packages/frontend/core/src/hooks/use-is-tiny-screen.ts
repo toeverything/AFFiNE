@@ -1,6 +1,6 @@
 import 'foxact/use-debounced-state';
 
-import debounce from 'lodash.debounce';
+import { debounce } from 'lodash-es';
 import { type RefObject, useEffect, useState } from 'react';
 
 export function useIsTinyScreen({

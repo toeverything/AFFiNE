@@ -1,12 +1,12 @@
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@affine/workspace';
 import { workspaceManagerAtom } from '@affine/workspace/atom';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useState } from 'react';
 

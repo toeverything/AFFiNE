@@ -1,5 +1,5 @@
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { LOCALES, useI18N } from '@affine/i18n';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useMemo } from 'react';
 
 export function useLanguageHelper() {

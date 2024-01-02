@@ -3,15 +3,15 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
 import { Upload } from '@affine/core/components/pure/file-upload';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
+import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@affine/workspace';
 import { SyncPeerStep } from '@affine/workspace';
 import { CameraIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
-import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { useSetAtom } from 'jotai';
 import {
   type KeyboardEvent,

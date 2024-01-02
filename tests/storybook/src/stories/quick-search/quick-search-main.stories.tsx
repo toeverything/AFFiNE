@@ -5,12 +5,12 @@ import {
 } from '@affine/core/commands';
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
 import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
+import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { currentWorkspaceAtom } from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
-import { useWorkspace } from '@toeverything/hooks/use-workspace';
 import { useStore } from 'jotai';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { withRouter } from 'storybook-addon-react-router-v6';

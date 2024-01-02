@@ -1,7 +1,7 @@
+import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { assertExists } from '@blocksuite/global/utils';
 import { FrameIcon } from '@blocksuite/icons';
 import { FramePanel } from '@blocksuite/presets';
-import { useActiveBlocksuiteEditor } from '@toeverything/hooks/use-block-suite-editor';
 import { useCallback, useRef } from 'react';
 
 import type { EditorExtension } from '../types';

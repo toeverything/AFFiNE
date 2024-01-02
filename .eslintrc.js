@@ -61,7 +61,6 @@ const allPackages = [
   'packages/frontend/core',
   'packages/frontend/electron',
   'packages/frontend/graphql',
-  'packages/frontend/hooks',
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',

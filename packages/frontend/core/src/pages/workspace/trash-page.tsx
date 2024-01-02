@@ -4,12 +4,12 @@ import {
   TrashOperationCell,
   VirtualizedPageList,
 } from '@affine/component/page-list';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
