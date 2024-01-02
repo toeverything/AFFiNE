@@ -88,7 +88,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.481.0",
+    "@aws-sdk/client-s3": "3.484.0",
     "@perfsee/webpack": "^1.8.4",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.8.0",
@@ -113,7 +113,7 @@
     "swc-loader": "^0.2.3",
     "swc-plugin-coverage-instrument": "^0.0.20",
     "thread-loader": "^4.0.2",
-    "vitest": "1.1.0",
+    "vitest": "1.1.1",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
