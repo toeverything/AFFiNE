@@ -3,12 +3,21 @@ import './page-detail-editor.css';
 import { assertExists, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
+import { useActiveBlocksuiteEditor } from '@toeverything/hooks/use-block-suite-editor';
 import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
-import { memo, Suspense, useCallback, useMemo, useState } from 'react';
+import {
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { type PageMode, pageSettingFamily } from '../atoms';
@@ -115,6 +124,13 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     [onLoad, page]
   );
 
+  const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
+  const editor = useRef<AffineEditorContainer>(null);
+
+  useEffect(() => {
+    setActiveBlocksuiteEditor(editor.current);
+  }, [setActiveBlocksuiteEditor]);
+
   return (
     <Editor
       className={clsx(styles.editor, {
@@ -131,6 +147,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       onModeChange={setEditorMode}
       defaultSelectedBlockId={blockId}
       onLoadEditor={onLoadEditor}
+      ref={editor}
     />
   );
 });

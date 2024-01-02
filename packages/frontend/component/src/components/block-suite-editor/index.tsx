@@ -1,11 +1,11 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
-import { useBlocksuiteEditor } from '@toeverything/hooks/use-block-suite-editor';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
 import type { CSSProperties, ReactElement } from 'react';
 import {
+  forwardRef,
   memo,
   Suspense,
   useEffect,
@@ -137,104 +137,115 @@ function usePageRoot(page: Page) {
   return page.root;
 }
 
-const BlockSuiteEditorImpl = ({
-  mode,
-  page,
-  className,
-  defaultSelectedBlockId,
-  onLoadEditor,
-  onModeChange,
-  style,
-}: EditorProps): ReactElement => {
-  usePageRoot(page);
+const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
+  (
+    {
+      mode,
+      page,
+      className,
+      defaultSelectedBlockId,
+      onLoadEditor,
+      onModeChange,
+      style,
+    },
+    ref
+  ): ReactElement => {
+    usePageRoot(page);
 
-  const [, setEditorContainer] = useBlocksuiteEditor();
-  assertExists(page, 'page should not be null');
-  const editorRef = useRef<AffineEditorContainer | null>(null);
-  if (editorRef.current === null) {
-    editorRef.current = new AffineEditorContainer();
-    editorRef.current.autofocus = true;
-  }
-  const editor = editorRef.current;
-  assertExists(editorRef, 'editorRef.current should not be null');
+    assertExists(page, 'page should not be null');
+    const editorRef = useRef<AffineEditorContainer | null>(null);
+    if (editorRef.current === null) {
+      editorRef.current = new AffineEditorContainer();
+      editorRef.current.autofocus = true;
+    }
+    const editor = editorRef.current;
+    assertExists(editorRef, 'editorRef.current should not be null');
 
-  if (editor.mode !== mode) {
-    editor.mode = mode;
-  }
+    if (editor.mode !== mode) {
+      editor.mode = mode;
+    }
 
-  if (editor.page !== page) {
-    editor.page = page;
-    editor.docSpecs = editorSpecs.docModeSpecs;
-    editor.edgelessSpecs = editorSpecs.edgelessModeSpecs;
-  }
+    if (editor.page !== page) {
+      editor.page = page;
+      editor.docSpecs = editorSpecs.docModeSpecs;
+      editor.edgelessSpecs = editorSpecs.edgelessModeSpecs;
+    }
 
-  useLayoutEffect(() => {
-    if (editor) {
-      const disposes: (() => void)[] = [];
-      const disposeModeSwitch = editor.slots.pageModeSwitched.on(mode => {
-        onModeChange?.(mode);
-      });
-      disposes.push(() => disposeModeSwitch?.dispose());
-      if (onLoadEditor) {
-        disposes.push(onLoadEditor(editor));
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(editor);
+      } else {
+        ref.current = editor;
       }
-      return () => {
-        disposes.forEach(dispose => dispose());
-      };
     }
-    return;
-  }, [editor, onModeChange, onLoadEditor]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-    container.append(editor);
-    setEditorContainer(editor);
-    return () => {
-      editor.remove();
-      setEditorContainer(null);
-    };
-  }, [editor, setEditorContainer]);
-
-  const blockElement = useBlockElementById(
-    containerRef.current,
-    defaultSelectedBlockId
-  );
-
-  useEffect(() => {
-    if (blockElement) {
-      requestIdleCallback(() => {
-        blockElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'center',
+    useLayoutEffect(() => {
+      if (editor) {
+        const disposes: (() => void)[] = [];
+        const disposeModeSwitch = editor.slots.pageModeSwitched.on(mode => {
+          onModeChange?.(mode);
         });
-        const selectManager = editor.root?.selection;
-        if (!blockElement.path.length || !selectManager) {
-          return;
+        disposes.push(() => disposeModeSwitch?.dispose());
+        if (onLoadEditor) {
+          disposes.push(onLoadEditor(editor));
         }
-        const newSelection = selectManager.getInstance('block', {
-          path: blockElement.path,
-        });
-        selectManager.set([newSelection]);
-      });
-    }
-  }, [editor, blockElement]);
+        return () => {
+          disposes.forEach(dispose => dispose());
+        };
+      }
+      return;
+    }, [editor, onModeChange, onLoadEditor]);
 
-  // issue: https://github.com/toeverything/AFFiNE/issues/2004
-  return (
-    <div
-      data-testid={`editor-${page.id}`}
-      className={clsx(`editor-wrapper ${editor.mode}-mode`, className)}
-      style={style}
-      ref={containerRef}
-    />
-  );
-};
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) {
+        return;
+      }
+      container.append(editor);
+      return () => {
+        editor.remove();
+      };
+    }, [editor]);
+
+    const blockElement = useBlockElementById(
+      containerRef.current,
+      defaultSelectedBlockId
+    );
+
+    useEffect(() => {
+      if (blockElement) {
+        requestIdleCallback(() => {
+          blockElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center',
+          });
+          const selectManager = editor.root?.selection;
+          if (!blockElement.path.length || !selectManager) {
+            return;
+          }
+          const newSelection = selectManager.getInstance('block', {
+            path: blockElement.path,
+          });
+          selectManager.set([newSelection]);
+        });
+      }
+    }, [editor, blockElement]);
+
+    // issue: https://github.com/toeverything/AFFiNE/issues/2004
+    return (
+      <div
+        data-testid={`editor-${page.id}`}
+        className={clsx(`editor-wrapper ${editor.mode}-mode`, className)}
+        style={style}
+        ref={containerRef}
+      />
+    );
+  }
+);
+BlockSuiteEditorImpl.displayName = 'BlockSuiteEditorImpl';
 
 export const EditorLoading = memo(function EditorLoading() {
   return (
@@ -249,14 +260,16 @@ export const EditorLoading = memo(function EditorLoading() {
   );
 });
 
-export const BlockSuiteEditor = memo(function BlockSuiteEditor(
-  props: EditorProps
-): ReactElement {
-  return (
-    <Suspense fallback={<EditorLoading />}>
-      <BlockSuiteEditorImpl key={props.page.id} {...props} />
-    </Suspense>
-  );
-});
+export const BlockSuiteEditor = memo(
+  forwardRef<AffineEditorContainer, EditorProps>(
+    function BlockSuiteEditor(props, ref): ReactElement {
+      return (
+        <Suspense fallback={<EditorLoading />}>
+          <BlockSuiteEditorImpl key={props.page.id} ref={ref} {...props} />
+        </Suspense>
+      );
+    }
+  )
+);
 
 BlockSuiteEditor.displayName = 'BlockSuiteEditor';

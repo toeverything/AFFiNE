@@ -1,7 +1,7 @@
 import { assertExists } from '@blocksuite/global/utils';
 import { TocIcon } from '@blocksuite/icons';
 import { TOCPanel } from '@blocksuite/presets';
-import { useBlocksuiteEditor } from '@toeverything/hooks/use-block-suite-editor';
+import { useActiveBlocksuiteEditor } from '@toeverything/hooks/use-block-suite-editor';
 import { useCallback, useRef } from 'react';
 
 import type { EditorExtension } from '../types';
@@ -10,7 +10,7 @@ import * as styles from './outline.css';
 // A wrapper for TOCNotesPanel
 const EditorOutline = () => {
   const tocPanelRef = useRef<TOCPanel | null>(null);
-  const [editor] = useBlocksuiteEditor();
+  const [editor] = useActiveBlocksuiteEditor();
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
