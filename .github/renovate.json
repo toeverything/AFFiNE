@@ -47,7 +47,6 @@
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",
       "matchPackagePatterns": ["*"],
-      "rangeStrategy": "replace",
       "excludePackagePatterns": ["^@blocksuite/"],
       "matchUpdateTypes": ["minor", "patch"]
     },
