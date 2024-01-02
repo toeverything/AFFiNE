@@ -1,9 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import {
-  type Workspace,
-  workspaceManager,
-  type WorkspaceMetadata,
-} from '@affine/workspace';
+import type { Workspace, WorkspaceMetadata } from '@affine/workspace';
+import { workspaceManager } from '@affine/workspace-impl';
 import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { Observable } from 'rxjs';

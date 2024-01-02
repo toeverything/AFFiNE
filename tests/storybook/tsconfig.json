@@ -22,7 +22,7 @@
       "path": "../../packages/common/infra"
     },
     {
-      "path": "../../packages/frontend/workspace"
+      "path": "../../packages/common/workspace"
     },
     {
       "path": "./tsconfig.node.json"

@@ -26,6 +26,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/workspace": "workspace:*",
+    "@affine/workspace-impl": "workspace:*",
     "@blocksuite/block-std": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
     "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",

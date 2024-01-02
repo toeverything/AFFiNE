@@ -10,6 +10,7 @@ import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { _addLocalWorkspace } from '@affine/workspace-impl';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   buildShowcaseWorkspace,
@@ -119,7 +120,7 @@ export const CreateWorkspaceModal = ({
         setStep(undefined);
         const result = await apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
-          workspaceManager._addLocalWorkspace(result.workspaceId);
+          _addLocalWorkspace(result.workspaceId);
           onCreate(result.workspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {

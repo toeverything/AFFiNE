@@ -2,7 +2,7 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { affine } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace';
+import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
 import { useAtom, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { SessionProvider, useSession } from 'next-auth/react';

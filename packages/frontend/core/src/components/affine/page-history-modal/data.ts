@@ -7,10 +7,8 @@ import {
   listHistoryQuery,
   recoverDocMutation,
 } from '@affine/graphql';
-import {
-  createAffineCloudBlobStorage,
-  globalBlockSuiteSchema,
-} from '@affine/workspace';
+import { globalBlockSuiteSchema } from '@affine/workspace';
+import { createAffineCloudBlobStorage } from '@affine/workspace-impl';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
 import { revertUpdate } from '@toeverything/y-indexeddb';

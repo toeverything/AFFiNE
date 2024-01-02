@@ -8,7 +8,7 @@ import MockSessionContext, {
 import { ThemeProvider, useTheme } from 'next-themes';
 import { useDarkMode } from 'storybook-dark-mode';
 import { AffineContext } from '@affine/component/context';
-import { workspaceManager } from '@affine/workspace';
+import { workspaceManager } from '@affine/workspace-impl';
 import useSWR from 'swr';
 import type { Decorator } from '@storybook/react';
 import { createStore } from 'jotai/vanilla';

@@ -18,7 +18,10 @@
       "path": "../../frontend/i18n"
     },
     {
-      "path": "../../frontend/workspace"
+      "path": "../../common/workspace"
+    },
+    {
+      "path": "../../frontend/workspace-impl"
     },
     {
       "path": "../../frontend/electron-api"

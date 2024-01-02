@@ -32,7 +32,12 @@ mod:plugin-cli:
 mod:workspace:
   - changed-files:
       - any-glob-to-any-file:
-          - 'packages/frontend/workspace/**/*'
+          - 'packages/common/workspace/**/*'
+
+mod:workspace-impl:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/workspace-impl/**/*'
 
 mod:i18n:
   - changed-files:

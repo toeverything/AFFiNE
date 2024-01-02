@@ -27,10 +27,12 @@ type ClientHandler = {
 } & HelperHandlers;
 type ClientEvents = MainEvents & HelperEvents;
 
-export const appInfo = (window as any).appInfo as typeof exposedAppInfo | null;
-export const apis = (window as any).apis as ClientHandler | null;
-export const events = (window as any).events as ClientEvents | null;
-export const affine = (window as any).affine as
+export const appInfo = (globalThis as any).appInfo as
+  | typeof exposedAppInfo
+  | null;
+export const apis = (globalThis as any).apis as ClientHandler | null;
+export const events = (globalThis as any).events as ClientEvents | null;
+export const affine = (globalThis as any).affine as
   | typeof exposedAffineGlobal
   | null;
 
