@@ -1,6 +1,7 @@
 import type { ApolloDriverConfig } from '@nestjs/apollo';
 
 import type { LeafPaths } from '../utils/types';
+import type { AFFiNEStorageConfig } from './storage';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -165,11 +166,18 @@ export interface AFFiNEConfig {
   featureFlags: {
     earlyAccessPreview: boolean;
   };
+
+  /**
+   * Configuration for Object Storage, which defines how blobs and avatar assets are stored.
+   */
+  storage: AFFiNEStorageConfig;
+
   /**
    * object storage Config
    *
    * all artifacts and logs will be stored on instance disk,
    * and can not shared between instances if not configured
+   * @deprecated use `storage` instead
    */
   objectStorage: {
     /**

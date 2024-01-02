@@ -9,6 +9,7 @@ import parse from 'parse-duration';
 import pkg from '../../package.json' assert { type: 'json' };
 import type { AFFiNEConfig, ServerFlavor } from './def';
 import { applyEnvToConfig } from './env';
+import { getDefaultAFFiNEStorageConfig } from './storage';
 
 export const SERVER_FLAVOR = (process.env.SERVER_FLAVOR ??
   'allinone') as ServerFlavor;
@@ -59,11 +60,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_SUB_PATH: 'path',
       AFFINE_ENV: 'affineEnv',
       DATABASE_URL: 'db.url',
-      ENABLE_R2_OBJECT_STORAGE: ['objectStorage.r2.enabled', 'boolean'],
-      R2_OBJECT_STORAGE_ACCOUNT_ID: 'objectStorage.r2.accountId',
-      R2_OBJECT_STORAGE_ACCESS_KEY_ID: 'objectStorage.r2.accessKeyId',
-      R2_OBJECT_STORAGE_SECRET_ACCESS_KEY: 'objectStorage.r2.secretAccessKey',
-      R2_OBJECT_STORAGE_BUCKET: 'objectStorage.r2.bucket',
       ENABLE_CAPTCHA: ['auth.captcha.enable', 'boolean'],
       CAPTCHA_TURNSTILE_SECRET: ['auth.captcha.turnstile.secret', 'string'],
       OAUTH_GOOGLE_ENABLED: ['auth.oauthProviders.google.enabled', 'boolean'],
@@ -180,6 +176,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         password: '',
       },
     },
+    storage: getDefaultAFFiNEStorageConfig(),
     objectStorage: {
       r2: {
         enabled: false,
