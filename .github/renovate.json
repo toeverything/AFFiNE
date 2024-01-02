@@ -52,7 +52,6 @@
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "groupName": "version update",
       "matchPackagePatterns": ["*"],
       "rangeStrategy": "replace",
       "excludePackagePatterns": ["^@blocksuite/"]
