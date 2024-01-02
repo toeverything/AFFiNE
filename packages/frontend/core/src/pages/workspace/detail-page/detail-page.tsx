@@ -177,14 +177,17 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
           </>
         }
         main={
-          <div className={styles.editorContainer}>
-            <PageDetailEditor
-              pageId={currentPageId}
-              onLoad={onLoad}
-              workspace={blockSuiteWorkspace}
-            />
-            <HubIsland />
-          </div>
+          // Add a key to force rerender when page changed, to avoid error boundary persisting.
+          <AffineErrorBoundary key={currentPageId}>
+            <div className={styles.editorContainer}>
+              <PageDetailEditor
+                pageId={currentPageId}
+                onLoad={onLoad}
+                workspace={blockSuiteWorkspace}
+              />
+              <HubIsland />
+            </div>
+          </AffineErrorBoundary>
         }
         footer={isInTrash ? <TrashPageFooter pageId={page.id} /> : null}
         sidebar={
@@ -268,10 +271,5 @@ export const Component = () => {
 
   const pageId = params.pageId;
 
-  // Add a key to force rerender when page changed, to avoid error boundary persisting.
-  return (
-    <AffineErrorBoundary key={params.pageId}>
-      {pageId ? <DetailPage pageId={pageId} /> : null}
-    </AffineErrorBoundary>
-  );
+  return pageId ? <DetailPage pageId={pageId} /> : null;
 };

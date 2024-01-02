@@ -79,7 +79,7 @@ const ModalContainer = ({
       withoutCloseButton
       contentOptions={contentOptions}
     >
-      <AffineErrorBoundary>{children}</AffineErrorBoundary>
+      {children}
     </Modal>
   );
 };
@@ -138,12 +138,14 @@ const HistoryEditorPreview = ({
       </div>
 
       {snapshotPage ? (
-        <BlockSuiteEditor
-          className={styles.editor}
-          mode={mode}
-          page={snapshotPage}
-          onModeChange={onModeChange}
-        />
+        <AffineErrorBoundary>
+          <BlockSuiteEditor
+            className={styles.editor}
+            mode={mode}
+            page={snapshotPage}
+            onModeChange={onModeChange}
+          />
+        </AffineErrorBoundary>
       ) : (
         <div className={styles.loadingContainer}>
           <Loading size={24} />
