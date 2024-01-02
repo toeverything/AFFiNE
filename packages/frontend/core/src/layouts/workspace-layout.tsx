@@ -9,7 +9,7 @@ import {
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DndContext,

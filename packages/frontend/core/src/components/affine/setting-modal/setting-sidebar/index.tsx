@@ -6,13 +6,13 @@ import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
-import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace';
 import {
   waitForCurrentWorkspaceAtom,
   workspaceListAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import { Logo1Icon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';

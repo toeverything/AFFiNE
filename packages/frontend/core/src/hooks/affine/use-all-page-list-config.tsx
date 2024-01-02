@@ -4,8 +4,8 @@ import {
   FavoriteTag,
 } from '@affine/component/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useCallback, useMemo } from 'react';

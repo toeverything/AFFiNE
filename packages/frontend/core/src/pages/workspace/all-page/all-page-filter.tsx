@@ -3,8 +3,8 @@ import {
   SaveAsCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Collection, Filter } from '@affine/env/filter';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 

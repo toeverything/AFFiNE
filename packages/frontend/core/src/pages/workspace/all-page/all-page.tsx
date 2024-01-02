@@ -10,9 +10,9 @@ import {
   VirtualizedPageList,
 } from '@affine/component/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import {
   CloseIcon,
   DeleteIcon,

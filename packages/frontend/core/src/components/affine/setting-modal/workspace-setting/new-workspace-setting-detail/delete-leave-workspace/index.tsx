@@ -2,13 +2,13 @@ import { pushNotificationAtom } from '@affine/component/notification-center';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { WorkspaceSubPath } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   currentWorkspaceAtom,
   workspaceListAtom,
   workspaceManagerAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';

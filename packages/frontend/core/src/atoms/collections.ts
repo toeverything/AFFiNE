@@ -2,11 +2,11 @@ import type {
   CollectionsCRUD,
   CollectionsCRUDAtom,
 } from '@affine/component/page-list';
-import type { Collection, DeprecatedCollection } from '@affine/env/filter';
 import {
   currentWorkspaceAtom,
   waitForCurrentWorkspaceAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import type { Collection, DeprecatedCollection } from '@affine/env/filter';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Workspace } from '@blocksuite/store';
 import { type DBSchema, openDB } from 'idb';

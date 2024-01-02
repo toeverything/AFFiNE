@@ -1,5 +1,5 @@
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { useAtom, useAtomValue, useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';

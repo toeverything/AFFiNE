@@ -1,5 +1,5 @@
+import { workspaceManagerAtom } from '@affine/core/modules/workspace';
 import type { Workspace } from '@affine/workspace';
-import { workspaceManagerAtom } from '@affine/workspace/atom';
 import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 import { useAtomValue } from 'jotai';
 import { useEffect, useState } from 'react';

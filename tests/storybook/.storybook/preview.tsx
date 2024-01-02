@@ -19,7 +19,7 @@ import type { Preview } from '@storybook/react';
 import { useLayoutEffect, useRef } from 'react';
 import { setup } from '@affine/core/bootstrap/setup';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { currentWorkspaceAtom } from '@affine/workspace/atom';
+import { currentWorkspaceAtom } from '@affine/core/modules/workspace';
 
 setupGlobal();
 export const parameters = {

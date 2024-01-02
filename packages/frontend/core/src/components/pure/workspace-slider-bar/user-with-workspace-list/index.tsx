@@ -1,11 +1,11 @@
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
-import { Unreachable } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   workspaceListAtom,
   workspaceManagerAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { Unreachable } from '@affine/env/constant';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { Logo1Icon } from '@blocksuite/icons';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports

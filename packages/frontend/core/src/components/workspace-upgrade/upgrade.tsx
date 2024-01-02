@@ -1,17 +1,17 @@
 import { AffineShapeIcon } from '@affine/component/page-list'; // TODO: import from page-list temporarily, need to defined common svg icon/images management.
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
-import { WorkspaceSubPath } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   waitForCurrentWorkspaceAtom,
   workspaceManagerAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtomValue } from 'jotai';
 import { useState } from 'react';
 
-import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import * as styles from './upgrade.css';
 import { ArrowCircleIcon, HeartBreakIcon } from './upgrade-icon';
 

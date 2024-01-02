@@ -5,13 +5,13 @@ import {
   useWorkspaceAvatar,
   useWorkspaceName,
 } from '@affine/core/hooks/use-workspace-info';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace';
 import {
   currentWorkspaceAtom,
   workspaceListAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports

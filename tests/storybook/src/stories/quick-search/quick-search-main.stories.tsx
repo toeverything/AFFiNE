@@ -6,9 +6,9 @@ import {
 import { CMDKQuickSearchModal } from '@affine/core/components/pure/cmdk';
 import { HighlightLabel } from '@affine/core/components/pure/cmdk/highlight';
 import { useWorkspace } from '@affine/core/hooks/use-workspace';
+import { currentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { currentWorkspaceAtom } from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useStore } from 'jotai';

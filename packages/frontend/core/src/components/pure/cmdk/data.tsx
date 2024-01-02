@@ -4,12 +4,12 @@ import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
 } from '@affine/core/hooks/use-block-suite-page-meta';
-import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   currentWorkspaceAtom,
   waitForCurrentWorkspaceAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import type { Collection } from '@affine/env/filter';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
 import type { Page, PageMeta } from '@blocksuite/store';
 import { getCurrentStore } from '@toeverything/infra/atom';

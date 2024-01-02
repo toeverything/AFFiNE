@@ -3,10 +3,10 @@ import { Loading } from '@affine/component/ui/loading';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { type SyncEngineStatus, SyncEngineStep } from '@affine/workspace';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import {
   CloudWorkspaceIcon,
   InformationFillDuotoneIcon,

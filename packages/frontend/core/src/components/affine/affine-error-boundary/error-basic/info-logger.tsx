@@ -1,7 +1,7 @@
 import {
   currentWorkspaceAtom,
   workspaceListAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
 import { useAtomValue } from 'jotai/react';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
