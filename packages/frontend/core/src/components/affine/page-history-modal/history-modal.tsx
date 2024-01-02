@@ -1,4 +1,4 @@
-import { Scrollable } from '@affine/component';
+import { Loading, Scrollable } from '@affine/component';
 import {
   BlockSuiteEditor,
   EditorLoading,
@@ -8,11 +8,14 @@ import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import type { PageMode } from '@affine/core/atoms';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { ToggleCollapseIcon } from '@blocksuite/icons';
 import type { Page, Workspace } from '@blocksuite/store';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import {
+  Fragment,
   type PropsWithChildren,
   Suspense,
   useCallback,
@@ -142,7 +145,9 @@ const HistoryEditorPreview = ({
           onModeChange={onModeChange}
         />
       ) : (
-        <EditorLoading />
+        <div className={styles.loadingContainer}>
+          <Loading size={24} />
+        </div>
       )}
     </div>
   );
@@ -167,6 +172,8 @@ const PageHistoryList = ({
     return historyListGroupByDay(historyList);
   }, [historyList]);
 
+  const [collapsedMap, setCollapsedMap] = useState<Record<number, boolean>>({});
+
   const t = useAFFiNEI18N();
 
   useLayoutEffect(() => {
@@ -182,25 +189,57 @@ const PageHistoryList = ({
       </div>
       <Scrollable.Root className={styles.historyListScrollable}>
         <Scrollable.Viewport className={styles.historyListScrollableInner}>
-          {historyListByDay.map(([day, list]) => {
+          {historyListByDay.map(([day, list], i) => {
+            const collapsed = collapsedMap[i];
             return (
-              <div key={day} className={styles.historyItemGroup}>
-                <div className={styles.historyItemGroupTitle}>{day}</div>
-                {list.map(history => (
+              <Collapsible.Root
+                open={!collapsed}
+                key={day}
+                className={styles.historyItemGroup}
+              >
+                <Collapsible.Trigger
+                  role="button"
+                  onClick={() =>
+                    setCollapsedMap(prev => ({ ...prev, [i]: !collapsed }))
+                  }
+                  className={styles.historyItemGroupTitle}
+                >
                   <div
-                    className={styles.historyItem}
-                    key={history.timestamp}
-                    data-testid="version-history-item"
-                    onClick={e => {
-                      e.stopPropagation();
-                      onVersionChange(history.timestamp);
-                    }}
-                    data-active={activeVersion === history.timestamp}
+                    data-testid="page-list-group-header-collapsed-button"
+                    className={styles.collapsedIconContainer}
                   >
-                    <button>{timestampToLocalTime(history.timestamp)}</button>
+                    <ToggleCollapseIcon
+                      className={styles.collapsedIcon}
+                      data-collapsed={!!collapsed}
+                    />
                   </div>
-                ))}
-              </div>
+                  {day}
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  {list.map((history, idx) => {
+                    return (
+                      <Fragment key={history.timestamp}>
+                        <div
+                          className={styles.historyItem}
+                          data-testid="version-history-item"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onVersionChange(history.timestamp);
+                          }}
+                          data-active={activeVersion === history.timestamp}
+                        >
+                          <button>
+                            {timestampToLocalTime(history.timestamp)}
+                          </button>
+                        </div>
+                        {idx > list.length - 1 ? (
+                          <div className={styles.historyItemGap} />
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </Collapsible.Content>
+              </Collapsible.Root>
             );
           })}
           {loadMore ? (

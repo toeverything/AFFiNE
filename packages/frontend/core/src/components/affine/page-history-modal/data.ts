@@ -178,7 +178,11 @@ export const useSnapshotPage = (
 export const historyListGroupByDay = (histories: DocHistory[]) => {
   const map = new Map<string, DocHistory[]>();
   for (const history of histories) {
-    const day = new Date(history.timestamp).toLocaleDateString();
+    const day = new Date(history.timestamp).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
     const list = map.get(day) ?? [];
     list.push(history);
     map.set(day, list);
@@ -208,8 +212,8 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
       // should also update the page title, since it may be changed in the history
       const title = page.meta.title;
 
-      if (getPageMeta(pageDocId)?.title !== title) {
-        setPageTitle(pageDocId, title);
+      if (getPageMeta(pageId)?.title !== title) {
+        setPageTitle(pageId, title);
       }
 
       await recover({
@@ -230,6 +234,7 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
     getPageMeta,
     mutateQueryResource,
     page,
+    pageId,
     recover,
     setPageTitle,
     workspace.id,

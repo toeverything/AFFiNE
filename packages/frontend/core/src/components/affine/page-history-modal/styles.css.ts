@@ -71,6 +71,44 @@ export const editor = style({
   overflow: 'hidden',
 });
 
+export const rowWrapper = style({
+  display: 'flex',
+  height: '100%',
+  position: 'relative',
+  overflow: 'hidden',
+  ':before': {
+    content: '""',
+    width: 1,
+    height: '100%',
+    backgroundColor: 'var(--affine-border-color)',
+    position: 'absolute',
+    left: 16,
+    top: 0,
+    bottom: 0,
+    transform: 'translate(-50%)',
+  },
+  selectors: {
+    '&:is(:last-of-type, :first-of-type):not(:last-of-type:first-of-type)::before':
+      {
+        height: '50%',
+      },
+    '&:last-of-type:first-of-type::before': {
+      display: 'none',
+    },
+    '&:first-of-type::before': {
+      top: '50%',
+    },
+  },
+});
+
+export const loadingContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100%',
+  backgroundColor: 'var(--affine-background-primary-color)',
+});
+
 export const historyList = style({
   overflow: 'hidden',
   height: '100%',
@@ -85,7 +123,6 @@ export const historyListScrollable = style({
 
 export const historyListScrollableInner = style({
   display: 'flex',
-  gap: 16,
   flexDirection: 'column',
 });
 
@@ -102,31 +139,57 @@ export const historyListHeader = style({
 export const historyItemGroup = style({
   display: 'flex',
   flexDirection: 'column',
-  rowGap: 6,
 });
 
 export const historyItemGroupTitle = style({
   display: 'flex',
   alignItems: 'center',
-  padding: '12px',
-  fontWeight: 'bold',
+  padding: '0 12px 0 4px',
+  whiteSpace: 'nowrap',
+  color: 'var(--affine-text-secondary-color)',
+  gap: 4,
   backgroundColor: 'var(--affine-background-primary-color)',
-  position: 'sticky',
-  top: 0,
-});
-
-export const historyItem = style({
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0 12px',
-  height: 32,
-  cursor: 'pointer',
-  selectors: {
-    '&:hover, &[data-active=true]': {
-      backgroundColor: 'var(--affine-hover-color)',
-    },
+  height: 28,
+  ':hover': {
+    background: 'var(--affine-hover-color)',
   },
 });
+
+export const historyItem = style([
+  rowWrapper,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 32px',
+    height: 30,
+    cursor: 'pointer',
+    selectors: {
+      '&:hover, &[data-active=true]': {
+        backgroundColor: 'var(--affine-hover-color)',
+      },
+      // draw circle
+      '&::after': {
+        content: '""',
+        width: 7,
+        height: 7,
+        backgroundColor: 'var(--affine-background-secondary-color)',
+        borderRadius: '50%',
+        border: '1px solid var(--affine-border-color)',
+        position: 'absolute',
+        left: 16,
+        top: '50%',
+        bottom: 0,
+        transform: 'translate(-50%, -50%)',
+      },
+      '&[data-active=true]::after': {
+        backgroundColor: 'var(--affine-primary-color)',
+        borderColor: 'var(--affine-black-30)',
+      },
+    },
+  },
+]);
+
+export const historyItemGap = style([rowWrapper, { height: 16 }]);
 
 export const historyItemLoadMore = style([
   historyItem,
@@ -185,4 +248,28 @@ export const emptyHistoryPromptDescription = style({
   textAlign: 'center',
   fontSize: 'var(--affine-font-xs)',
   color: 'var(--affine-text-secondary-color)',
+});
+
+export const collapsedIcon = style({
+  transition: 'transform 0.2s ease-in-out',
+  selectors: {
+    '&[data-collapsed="false"]': {
+      transform: 'rotate(90deg)',
+    },
+  },
+});
+
+export const collapsedIconContainer = style({
+  fontSize: 24,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '2px',
+  transition: 'transform 0.2s',
+  color: 'inherit',
+  selectors: {
+    '&[data-collapsed="true"]': {
+      transform: 'rotate(-90deg)',
+    },
+  },
 });
