@@ -38,6 +38,7 @@
       "groupName": "electron-forge"
     },
     {
+      "groupName": "blocksuite-nightly",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
       "rangeStrategy": "replace",
@@ -51,6 +52,7 @@
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
+      "groupName": "version update",
       "matchPackagePatterns": ["*"],
       "rangeStrategy": "replace",
       "excludePackagePatterns": ["^@blocksuite/"]
