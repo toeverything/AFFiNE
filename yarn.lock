@@ -788,7 +788,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/workers@workspace:tools/workers"
   dependencies:
-    wrangler: "npm:^3.15.0"
+    wrangler: "npm:^3.22.1"
   languageName: unknown
   linkType: soft
 
@@ -4147,7 +4147,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cspotcode/source-map-support@npm:^0.8.0":
+"@cspotcode/source-map-support@npm:0.8.1, @cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
   dependencies:
@@ -27201,9 +27201,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"miniflare@npm:3.20231030.1":
-  version: 3.20231030.1
-  resolution: "miniflare@npm:3.20231030.1"
+"miniflare@npm:3.20231030.4":
+  version: 3.20231030.4
+  resolution: "miniflare@npm:3.20231030.4"
   dependencies:
     acorn: "npm:^8.8.0"
     acorn-walk: "npm:^8.2.0"
@@ -27219,7 +27219,7 @@ __metadata:
     zod: "npm:^3.20.6"
   bin:
     miniflare: bootstrap.js
-  checksum: 0d86d4234e856658394b4206c55d1a80b2a8cd78e5644a6c325db8c636964c9ec6e3b4f36c54789dc9566cb07be7c36faac7e0330de11ee85ef7885787a7b7d5
+  checksum: 7ff15450f57486399c4243c1113352013a6c1d8220b5aafb86b73a49db7c210a3b65465c89d44be1d7892b8c8e95f776ee67937b15ba34d54234dcd64239b004
   languageName: node
   linkType: hard
 
@@ -35615,24 +35615,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wrangler@npm:^3.15.0":
-  version: 3.17.1
-  resolution: "wrangler@npm:3.17.1"
+"wrangler@npm:^3.22.1":
+  version: 3.22.1
+  resolution: "wrangler@npm:3.22.1"
   dependencies:
     "@cloudflare/kv-asset-handler": "npm:^0.2.0"
+    "@cspotcode/source-map-support": "npm:0.8.1"
     "@esbuild-plugins/node-globals-polyfill": "npm:^0.2.3"
     "@esbuild-plugins/node-modules-polyfill": "npm:^0.2.2"
     blake3-wasm: "npm:^2.1.5"
     chokidar: "npm:^3.5.3"
     esbuild: "npm:0.17.19"
     fsevents: "npm:~2.3.2"
-    miniflare: "npm:3.20231030.1"
+    miniflare: "npm:3.20231030.4"
     nanoid: "npm:^3.3.3"
     path-to-regexp: "npm:^6.2.0"
     resolve.exports: "npm:^2.0.2"
     selfsigned: "npm:^2.0.1"
     source-map: "npm:0.6.1"
-    source-map-support: "npm:0.5.21"
     xxhash-wasm: "npm:^1.0.1"
   dependenciesMeta:
     fsevents:
@@ -35640,7 +35640,7 @@ __metadata:
   bin:
     wrangler: bin/wrangler.js
     wrangler2: bin/wrangler.js
-  checksum: 44ccfbaabe18e882d692791587966b372a0d38b7742c93a7d99242cd25287a675f452c8a3a21bbb6bea8294d9eaf13e9991a7cc2533608bf95dca744cacfa156
+  checksum: 41b39b54f96aa907a2e59ce54b6b25fac2916f8628627997e1ceb7f51f77011e9b9a90edbbbc0986f84978c3c04123bff43bce95bf8ec055f0a34c6bfb8c5266
   languageName: node
   linkType: hard
 
