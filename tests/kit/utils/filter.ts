@@ -148,10 +148,10 @@ export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
       .getByTestId('month-picker-current-year')
       .innerText());
     if (selectedYear > year) {
-      page.locator('[data-testid="month-picker-prev-button"]').click();
+      await page.locator('[data-testid="month-picker-prev-button"]').click();
       return await selectMonth();
     } else if (selectedYear < year) {
-      page.locator('[data-testid="month-picker-next-button"]').click();
+      await page.locator('[data-testid="month-picker-next-button"]').click();
       return await selectMonth();
     }
     // Click on the day cell
