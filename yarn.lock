@@ -420,6 +420,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/docs@workspace:docs/reference":
+  version: 0.0.0-use.local
+  resolution: "@affine/docs@workspace:docs/reference"
+  dependencies:
+    nodemon: "npm:^3.0.1"
+    serve: "npm:^14.2.1"
+    typedoc: "npm:^0.25.4"
+  languageName: unknown
+  linkType: soft
+
 "@affine/electron-api@workspace:*, @affine/electron-api@workspace:packages/frontend/electron-api":
   version: 0.0.0-use.local
   resolution: "@affine/electron-api@workspace:packages/frontend/electron-api"
@@ -25788,6 +25798,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lunr@npm:^2.3.9":
+  version: 2.3.9
+  resolution: "lunr@npm:2.3.9"
+  checksum: f2f6db34c046f5a767782fe2454e6dd69c75ba3c5cf5c1cb9cacca2313a99c2ba78ff8fa67dac866fb7c4ffd5f22e06684793f5f15ba14bddb598b94513d54bf
+  languageName: node
+  linkType: hard
+
 "luxon@npm:~3.4.0":
   version: 3.4.4
   resolution: "luxon@npm:3.4.4"
@@ -32046,6 +32063,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"shiki@npm:^0.14.1":
+  version: 0.14.7
+  resolution: "shiki@npm:0.14.7"
+  dependencies:
+    ansi-sequence-parser: "npm:^1.1.0"
+    jsonc-parser: "npm:^3.2.0"
+    vscode-oniguruma: "npm:^1.7.0"
+    vscode-textmate: "npm:^8.0.0"
+  checksum: be3f2444c65bd0c57802026f171cb42ad571d361ee885be0c292b60785f68c70f19b69310f5ffe7f7a93db4c5ef50211e0a0248794bc6bb48d242bc43fe72a62
+  languageName: node
+  linkType: hard
+
 "shiki@npm:^0.14.5":
   version: 0.14.5
   resolution: "shiki@npm:0.14.5"
@@ -33970,7 +33999,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.3.3, typescript@npm:^5.2.2, typescript@npm:^5.3.2":
+"typedoc@npm:^0.25.4":
+  version: 0.25.4
+  resolution: "typedoc@npm:0.25.4"
+  dependencies:
+    lunr: "npm:^2.3.9"
+    marked: "npm:^4.3.0"
+    minimatch: "npm:^9.0.3"
+    shiki: "npm:^0.14.1"
+  peerDependencies:
+    typescript: 4.6.x || 4.7.x || 4.8.x || 4.9.x || 5.0.x || 5.1.x || 5.2.x || 5.3.x
+  bin:
+    typedoc: bin/typedoc
+  checksum: 638f63d751ba86f1b0e04a303501b88b6e97ba093f82c3fa72a555c207e16fd316ec76c13f7d628e9ee26296f80fddc45b87d4b13714925c5e726047adb76d22
+  languageName: node
+  linkType: hard
+
+"typescript@npm:5.3.3":
   version: 5.3.3
   resolution: "typescript@npm:5.3.3"
   bin:
@@ -33980,13 +34025,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.2.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.3.2#optional!builtin<compat/typescript>":
+"typescript@npm:^5.2.2, typescript@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "typescript@npm:5.3.2"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 415e5fb6611f5713e460bad48039f00bcfdbde53a2f911727862d5aa9c5d5edd250059a419df382d8f031709e15a169c41eb62b6a401da5eec7ac0f4e359d6ac
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>":
   version: 5.3.3
   resolution: "typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>::version=5.3.3&hash=e012d7"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: c93786fcc9a70718ba1e3819bab56064ead5817004d1b8186f8ca66165f3a2d0100fee91fa64c840dcd45f994ca5d615d8e1f566d39a7470fc1e014dbb4cf15d
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.2.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.3.2#optional!builtin<compat/typescript>":
+  version: 5.3.2
+  resolution: "typescript@patch:typescript@npm%3A5.3.2#optional!builtin<compat/typescript>::version=5.3.2&hash=e012d7"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 1b45cdfb577a78ae7a9a9d0b77a7b772142cb98ba05e4e5aefba7044a028ded885bcecef63166407a5986645cea816fe4986894336aacd5e791796ea79a6a7ed
   languageName: node
   linkType: hard
 

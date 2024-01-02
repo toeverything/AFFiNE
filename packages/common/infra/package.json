@@ -7,7 +7,7 @@
     "./command": "./src/command/index.ts",
     "./atom": "./src/atom/index.ts",
     "./app-config-storage": "./src/app-config-storage.ts",
-    "./__internal__/*": "./src/__internal__/*.ts"
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
