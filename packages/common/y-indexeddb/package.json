@@ -42,7 +42,7 @@
     "fake-indexeddb": "^5.0.0",
     "vite": "^5.0.6",
     "vite-plugin-dts": "3.7.0",
-    "vitest": "1.1.0",
+    "vitest": "1.1.1",
     "y-indexeddb": "^9.0.11",
     "yjs": "^13.6.10"
   },
