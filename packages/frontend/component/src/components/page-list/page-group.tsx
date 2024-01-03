@@ -174,6 +174,7 @@ const requiredPropNames = [
   'selectedPageIds',
   'onSelectedPageIdsChange',
   'draggable',
+  'activeUsers',
 ] as const;
 
 type RequiredProps = Pick<PageListProps, (typeof requiredPropNames)[number]> & {
@@ -250,6 +251,10 @@ function pageMetaToPageItemProp(
         ? `/workspace/${props.blockSuiteWorkspace.id}/${pageMeta.id}`
         : undefined,
     onClick: props.selectable ? toggleSelection : undefined,
+    activeUsers:
+      props.activeUsers
+        ?.filter(u => u.page?.id === pageMeta.id)
+        .map(u => u.user) ?? [],
     icon: props.isPreferredEdgeless?.(pageMeta.id) ? (
       <EdgelessIcon />
     ) : (

@@ -155,6 +155,18 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
 export const PageDetailEditor = (props: PageDetailEditorProps) => {
   const { workspace, pageId } = props;
   const page = useBlockSuiteWorkspacePage(workspace, pageId);
+
+  useEffect(() => {
+    page?.awarenessStore.awareness.setLocalStateField('page', {
+      id: pageId,
+    });
+
+    return () =>
+      page?.awarenessStore.awareness.setLocalStateField('page', {
+        id: null,
+      });
+  }, [page?.awarenessStore.awareness, pageId]);
+
   if (!page) {
     return null;
   }

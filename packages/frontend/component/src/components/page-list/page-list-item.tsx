@@ -12,7 +12,8 @@ import { ColWrapper, formatDate, stopPropagation } from './utils';
 const PageListTitleCell = ({
   title,
   preview,
-}: Pick<PageListItemProps, 'title' | 'preview'>) => {
+  activeUsers,
+}: Pick<PageListItemProps, 'title' | 'preview' | 'activeUsers'>) => {
   const t = useAFFiNEI18N();
   return (
     <div data-testid="page-list-item-title" className={styles.titleCell}>
@@ -21,6 +22,26 @@ const PageListTitleCell = ({
         className={styles.titleCellMain}
       >
         {title || t['Untitled']()}
+
+        {activeUsers && activeUsers.length > 0 && (
+          <div>
+            {activeUsers.map((user, index) => (
+              <div
+                key={index}
+                style={{
+                  backgroundColor: user.color,
+                  color: 'white',
+                  display: 'inline-block',
+                  padding: '0 4px',
+                  borderRadius: '4px',
+                  marginLeft: '4px',
+                }}
+              >
+                {user.name}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       {preview ? (
         <div
@@ -176,7 +197,11 @@ export const PageListItem = (props: PageListItemProps) => {
             />
             <PageListIconCell icon={props.icon} />
           </div>
-          <PageListTitleCell title={props.title} preview={props.preview} />
+          <PageListTitleCell
+            title={props.title}
+            preview={props.preview}
+            activeUsers={props.activeUsers}
+          />
         </ColWrapper>
         <ColWrapper flex={4} alignment="end" style={{ overflow: 'visible' }}>
           <PageTagsCell tags={props.tags} />

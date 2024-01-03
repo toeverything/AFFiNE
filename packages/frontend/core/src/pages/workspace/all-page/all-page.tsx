@@ -9,6 +9,7 @@ import {
   useCollectionManager,
   VirtualizedPageList,
 } from '@affine/component/page-list';
+import { useActiveUsers } from '@affine/core/components/affine/awareness';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { Trans } from '@affine/i18n';
@@ -279,7 +280,7 @@ export const AllPage = () => {
   }, [filteredPageMetas, selectedPageIds]);
 
   const [hideHeaderCreateNewPage, setHideHeaderCreateNewPage] = useState(true);
-
+  const users = useActiveUsers();
   return (
     <div className={styles.root}>
       <AllPageHeader
@@ -292,6 +293,7 @@ export const AllPage = () => {
             ref={pageListRef}
             selectable="toggle"
             draggable
+            activeUsers={users}
             atTopThreshold={80}
             atTopStateChange={setHideHeaderCreateNewPage}
             onSelectionActiveChange={setShowFloatingToolbar}

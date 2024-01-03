@@ -1,5 +1,5 @@
 import type { Tag } from '@affine/env/filter';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type { Page, PageMeta, Workspace } from '@blocksuite/store';
 import type { ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
@@ -10,6 +10,7 @@ export type PageListItemProps = {
   icon: JSX.Element;
   title: ReactNode; // using ReactNode to allow for rich content rendering
   preview?: ReactNode; // using ReactNode to allow for rich content rendering
+  activeUsers?: { name: string; color: string }[];
   tags: Tag[];
   createDate: Date;
   updatedDate?: Date;
@@ -39,6 +40,7 @@ export type DateKey = 'createDate' | 'updatedDate';
 export interface PageListProps {
   // required data:
   pages: PageMeta[];
+  activeUsers: { user: { name: string; color: string }; page?: Page }[];
   blockSuiteWorkspace: Workspace;
   className?: string;
   hideHeader?: boolean; // whether or not to hide the header. default is false (showing header)
