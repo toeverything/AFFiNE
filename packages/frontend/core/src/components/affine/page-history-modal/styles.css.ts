@@ -32,9 +32,45 @@ export const previewWrapper = style({
   flexDirection: 'column',
   flexGrow: 1,
   height: '100%',
+  position: 'relative',
+  overflow: 'hidden',
   width: `calc(100% - ${historyListWidth})`,
   backgroundColor: 'var(--affine-background-secondary-color)',
 });
+
+export const previewContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  flexGrow: 1,
+  position: 'absolute',
+  bottom: 0,
+  left: 40,
+  borderTopLeftRadius: 8,
+  borderTopRightRadius: 8,
+  overflow: 'hidden',
+  boxShadow: 'var(--affine-shadow-3)',
+  height: 'calc(100% - 40px)',
+  width: `calc(100% - 80px)`,
+  backgroundColor: 'var(--affine-background-secondary-color)',
+});
+
+export const previewContainerStack1 = style([
+  previewContainer,
+  {
+    left: 48,
+    height: 'calc(100% - 32px)',
+    width: `calc(100% - 96px)`,
+  },
+]);
+
+export const previewContainerStack2 = style([
+  previewContainer,
+  {
+    left: 56,
+    height: 'calc(100% - 24px)',
+    width: `calc(100% - 112px)`,
+  },
+]);
 
 export const previewHeader = style({
   display: 'flex',

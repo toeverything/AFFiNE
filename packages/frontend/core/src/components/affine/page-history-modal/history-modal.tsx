@@ -120,41 +120,43 @@ const HistoryEditorPreview = ({
 
   return (
     <div className={styles.previewWrapper}>
-      <div className={styles.previewHeader}>
-        <StyledEditorModeSwitch switchLeft={mode === 'page'}>
-          <PageSwitchItem
-            data-testid="switch-page-mode-button"
-            active={mode === 'page'}
-            onClick={onSwitchToPageMode}
-          />
-          <EdgelessSwitchItem
-            data-testid="switch-edgeless-mode-button"
-            active={mode === 'edgeless'}
-            onClick={onSwitchToEdgelessMode}
-          />
-        </StyledEditorModeSwitch>
-
-        <div className={styles.previewHeaderTitle}>{title}</div>
-
-        <div className={styles.previewHeaderTimestamp}>
-          {ts ? timestampToLocalTime(ts) : null}
+      <div className={styles.previewContainerStack2} />
+      <div className={styles.previewContainerStack1} />
+      <div className={styles.previewContainer}>
+        <div className={styles.previewHeader}>
+          <StyledEditorModeSwitch switchLeft={mode === 'page'}>
+            <PageSwitchItem
+              data-testid="switch-page-mode-button"
+              active={mode === 'page'}
+              onClick={onSwitchToPageMode}
+            />
+            <EdgelessSwitchItem
+              data-testid="switch-edgeless-mode-button"
+              active={mode === 'edgeless'}
+              onClick={onSwitchToEdgelessMode}
+            />
+          </StyledEditorModeSwitch>
+          <div className={styles.previewHeaderTitle}>{title}</div>
+          <div className={styles.previewHeaderTimestamp}>
+            {ts ? timestampToLocalTime(ts) : null}
+          </div>
         </div>
+
+        {snapshotPage ? (
+          <AffineErrorBoundary>
+            <BlockSuiteEditor
+              className={styles.editor}
+              mode={mode}
+              page={snapshotPage}
+              onModeChange={onModeChange}
+            />
+          </AffineErrorBoundary>
+        ) : (
+          <div className={styles.loadingContainer}>
+            <Loading size={24} />
+          </div>
+        )}
       </div>
-
-      {snapshotPage ? (
-        <AffineErrorBoundary>
-          <BlockSuiteEditor
-            className={styles.editor}
-            mode={mode}
-            page={snapshotPage}
-            onModeChange={onModeChange}
-          />
-        </AffineErrorBoundary>
-      ) : (
-        <div className={styles.loadingContainer}>
-          <Loading size={24} />
-        </div>
-      )}
     </div>
   );
 };
@@ -182,43 +184,57 @@ const PlanPrompt = () => {
 
   const t = useAFFiNEI18N();
 
+  const planTitle = useMemo(() => {
+    return (
+      <div className={styles.planPromptTitle}>
+        {freePlan
+          ? t[
+              'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
+            ]()
+          : t['com.affine.history.confirm-restore-modal.plan-prompt.title']()}
+
+        <IconButton
+          size="small"
+          icon={<CloseIcon />}
+          onClick={closeFreePlanPrompt}
+        />
+      </div>
+    );
+  }, [closeFreePlanPrompt, freePlan, t]);
+
+  const planDescription = useMemo(() => {
+    if (freePlan) {
+      return (
+        <>
+          <Trans i18nKey="com.affine.history.confirm-restore-modal.free-plan-prompt.description">
+            Free users can view up to the <b>last 7 days</b> of page history.
+          </Trans>
+          {isOwner ? (
+            <span
+              className={styles.planPromptUpdateButton}
+              onClick={onClickUpgrade}
+            >
+              {t[
+                'com.affine.history.confirm-restore-modal.pro-plan-prompt.upgrade'
+              ]()}
+            </span>
+          ) : null}
+        </>
+      );
+    } else {
+      return (
+        <Trans i18nKey="com.affine.history.confirm-restore-modal.pro-plan-prompt.description">
+          Pro users can view up to the <b>last 30 days</b> of page history.
+        </Trans>
+      );
+    }
+  }, [freePlan, isOwner, onClickUpgrade, t]);
+
   return !planPromptClosed ? (
     <div className={styles.planPromptWrapper}>
       <div className={styles.planPrompt}>
-        <div className={styles.planPromptTitle}>
-          {freePlan
-            ? t[
-                'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
-              ]()
-            : t['com.affine.history.confirm-restore-modal.plan-prompt.title']()}
-
-          <IconButton
-            size="small"
-            icon={<CloseIcon />}
-            onClick={closeFreePlanPrompt}
-          />
-        </div>
-        {freePlan ? (
-          <>
-            <Trans i18nKey="com.affine.history.confirm-restore-modal.free-plan-prompt.description">
-              Free users can view up to the <b>last 7 days</b> of page history.
-            </Trans>
-            {isOwner ? (
-              <span
-                className={styles.planPromptUpdateButton}
-                onClick={onClickUpgrade}
-              >
-                {t[
-                  'com.affine.history.confirm-restore-modal.pro-plan-prompt.upgrade'
-                ]()}
-              </span>
-            ) : null}
-          </>
-        ) : (
-          <Trans i18nKey="com.affine.history.confirm-restore-modal.pro-plan-prompt.description">
-            Pro users can view up to the <b>last 30 days</b> of page history.
-          </Trans>
-        )}
+        {planTitle}
+        {planDescription}
       </div>
     </div>
   ) : null;
