@@ -315,6 +315,12 @@ jobs:
           electron-install: false
           full-cache: true
 
+      - name: Download storage.node
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+
       - name: Initialize database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
@@ -336,12 +342,6 @@ jobs:
           yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-
-      - name: Download storage.node
-        uses: actions/download-artifact@v4
-        with:
-          name: storage.node
-          path: ./packages/backend/server
 
       - name: Run server tests
         run: yarn workspace @affine/server test:coverage
@@ -407,6 +407,18 @@ jobs:
           playwright-install: true
           hard-link-nm: false
 
+      - name: Download storage.node
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+
+      - name: Download affine.linux-x64-gnu.node
+        uses: actions/download-artifact@v4
+        with:
+          name: affine.linux-x64-gnu.node
+          path: ./packages/frontend/native
+
       - name: Initialize database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
@@ -426,17 +438,6 @@ jobs:
         run: |
           yarn workspace @affine/server data-migration run
           yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
-      - name: Download storage.node
-        uses: actions/download-artifact@v4
-        with:
-          name: storage.node
-          path: ./packages/backend/server
-
-      - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v4
-        with:
-          name: affine.linux-x64-gnu.node
-          path: ./packages/frontend/native
 
       - name: ${{ matrix.tests.name }}
         run: |

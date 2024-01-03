@@ -37,8 +37,11 @@ export class WorkspaceBlobStorage {
     return blobs;
   }
 
-  async delete(workspaceId: string, key: string) {
-    return this.provider.delete(`${workspaceId}/${key}`);
+  /**
+   * we won't really delete the blobs until the doc blobs manager is implemented sounded
+   */
+  async delete(_workspaceId: string, _key: string) {
+    // return this.provider.delete(`${workspaceId}/${key}`);
   }
 
   async totalSize(workspaceId: string) {
