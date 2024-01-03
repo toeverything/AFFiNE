@@ -1,9 +1,8 @@
-import type { Storage } from '@affine/storage';
 import {
   Controller,
   ForbiddenException,
   Get,
-  Inject,
+  Logger,
   NotFoundException,
   Param,
   Res,
@@ -12,18 +11,19 @@ import type { Response } from 'express';
 
 import { CallTimer } from '../../metrics';
 import { PrismaService } from '../../prisma';
-import { StorageProvide } from '../../storage';
 import { DocID } from '../../utils/doc';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocHistoryManager, DocManager } from '../doc';
+import { WorkspaceBlobStorage } from '../storage';
 import { UserType } from '../users';
 import { PermissionService, PublicPageMode } from './permission';
 import { Permission } from './types';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
+  logger = new Logger(WorkspacesController.name);
   constructor(
-    @Inject(StorageProvide) private readonly storage: Storage,
+    private readonly storage: WorkspaceBlobStorage,
     private readonly permission: PermissionService,
     private readonly docManager: DocManager,
     private readonly historyManager: DocHistoryManager,
@@ -40,19 +40,26 @@ export class WorkspacesController {
     @Param('name') name: string,
     @Res() res: Response
   ) {
-    const blob = await this.storage.getBlob(workspaceId, name);
+    const { body, metadata } = await this.storage.get(workspaceId, name);
 
-    if (!blob) {
+    if (!body) {
       throw new NotFoundException(
         `Blob not found in workspace ${workspaceId}: ${name}`
       );
     }
 
-    res.setHeader('content-type', blob.contentType);
-    res.setHeader('last-modified', blob.lastModified);
-    res.setHeader('content-length', blob.size);
+    // metadata should always exists if body is not null
+    if (metadata) {
+      res.setHeader('content-type', metadata.contentType);
+      res.setHeader('last-modified', metadata.lastModified.toISOString());
+      res.setHeader('content-length', metadata.contentLength);
+      res.setHeader('x-checksum-crc32', metadata.checksumCRC32);
+    } else {
+      this.logger.warn(`Blob ${workspaceId}/${name} has no metadata`);
+    }
 
-    res.send(blob.data);
+    res.setHeader('cache-control', 'public, max-age=31536000, immutable');
+    body.pipe(res);
   }
 
   // get doc binary

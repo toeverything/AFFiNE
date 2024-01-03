@@ -12,10 +12,10 @@ export type R2StorageConfig = S3ClientConfigType & {
 };
 export type S3StorageConfig = S3ClientConfigType;
 
-export type StorageTargetConfig = {
+export type StorageTargetConfig<Ext = unknown> = {
   provider: StorageProviderType;
   bucket: string;
-};
+} & Ext;
 
 export interface AFFiNEStorageConfig {
   /**
@@ -29,7 +29,7 @@ export interface AFFiNEStorageConfig {
     r2?: R2StorageConfig;
   };
   storages: {
-    avatar: StorageTargetConfig;
+    avatar: StorageTargetConfig<{ publicLinkFactory: (key: string) => string }>;
     blob: StorageTargetConfig;
   };
 }
@@ -48,6 +48,7 @@ export function getDefaultAFFiNEStorageConfig(): AFFiNEStorageConfig {
       avatar: {
         provider: 'fs',
         bucket: 'avatars',
+        publicLinkFactory: key => `/api/avatars/${key}`,
       },
       blob: {
         provider: 'fs',

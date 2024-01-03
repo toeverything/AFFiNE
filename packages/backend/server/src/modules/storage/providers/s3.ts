@@ -21,8 +21,11 @@ import {
 import { autoMetadata, toBuffer } from './utils';
 
 export class S3StorageProvider implements StorageProvider {
-  logger: Logger;
-  client: S3Client;
+  private readonly logger: Logger;
+  protected client: S3Client;
+
+  readonly type = 's3';
+
   constructor(
     config: S3StorageConfig,
     public readonly bucket: string

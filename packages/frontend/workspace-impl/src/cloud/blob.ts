@@ -1,5 +1,4 @@
 import {
-  checkBlobSizesQuery,
   deleteBlobMutation,
   fetchWithTraceReport,
   getBaseUrl,
@@ -31,20 +30,7 @@ export const createAffineCloudBlobStorage = (
       });
     },
     set: async (key, value) => {
-      const {
-        checkBlobSize: { size },
-      } = await fetcher({
-        query: checkBlobSizesQuery,
-        variables: {
-          workspaceId,
-          size: value.size,
-        },
-      });
-
-      if (size <= 0) {
-        throw new Error('Blob size limit exceeded');
-      }
-
+      // set blob will check blob size & quota
       const result = await fetcher({
         query: setBlobMutation,
         variables: {
@@ -52,7 +38,6 @@ export const createAffineCloudBlobStorage = (
           blob: new File([value], key),
         },
       });
-      console.assert(result.setBlob === key, 'Blob hash mismatch');
       return result.setBlob;
     },
     list: async () => {

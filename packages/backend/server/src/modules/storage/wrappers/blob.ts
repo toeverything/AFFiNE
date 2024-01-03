@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { Config } from '../../../config';
+import { EventEmitter, type EventPayload, OnEvent } from '../../../event';
 import {
   BlobInputType,
   createStorageProvider,
@@ -10,7 +11,10 @@ import {
 @Injectable()
 export class WorkspaceBlobStorage {
   public readonly provider: StorageProvider;
-  constructor({ storage }: Config) {
+  constructor(
+    private readonly event: EventEmitter,
+    { storage }: Config
+  ) {
     this.provider = createStorageProvider(storage, 'blob');
   }
 
@@ -41,5 +45,26 @@ export class WorkspaceBlobStorage {
     const blobs = await this.list(workspaceId);
     // how could we ignore the ones get soft-deleted?
     return blobs.reduce((acc, item) => acc + item.size, 0);
+  }
+
+  @OnEvent('workspace.deleted')
+  async onWorkspaceDeleted(workspaceId: EventPayload<'workspace.deleted'>) {
+    const blobs = await this.list(workspaceId);
+
+    // to reduce cpu time holding
+    blobs.forEach(blob => {
+      this.event.emit('workspace.blob.deleted', {
+        workspaceId: workspaceId,
+        name: blob.key,
+      });
+    });
+  }
+
+  @OnEvent('workspace.blob.deleted')
+  async onDeleteWorkspaceBlob({
+    workspaceId,
+    name,
+  }: EventPayload<'workspace.blob.deleted'>) {
+    await this.delete(workspaceId, name);
   }
 }

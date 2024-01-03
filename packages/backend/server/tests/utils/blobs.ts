@@ -106,7 +106,11 @@ export async function setBlob(
       })
     )
     .field('map', JSON.stringify({ '0': ['variables.blob'] }))
-    .attach('0', buffer, 'blob.data')
+    .attach(
+      '0',
+      buffer,
+      `blob-${Math.random().toString(16).substring(2, 10)}.data`
+    )
     .expect(200);
   return res.body.data.setBlob;
 }

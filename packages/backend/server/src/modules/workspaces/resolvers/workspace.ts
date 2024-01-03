@@ -1,7 +1,5 @@
-import type { Storage } from '@affine/storage';
 import {
   ForbiddenException,
-  Inject,
   InternalServerErrorException,
   Logger,
   NotFoundException,
@@ -25,29 +23,23 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type {
-  User,
-  Workspace,
-  WorkspacePage as PrismaWorkspacePage,
-} from '@prisma/client';
+import type { User, Workspace } from '@prisma/client';
+import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
-import { MakeCache, PreventCache } from '../../cache';
-import { EventEmitter } from '../../event';
-import { PrismaService } from '../../prisma';
-import { StorageProvide } from '../../storage';
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
-import type { FileUpload } from '../../types';
-import { DocID } from '../../utils/doc';
-import { Auth, CurrentUser, Public } from '../auth';
-import { MailService } from '../auth/mailer';
-import { AuthService } from '../auth/service';
-import { QuotaManagementService } from '../quota';
-import { UsersService, UserType } from '../users';
-import { PermissionService, PublicPageMode } from './permission';
-import { Permission } from './types';
-import { defaultWorkspaceAvatar } from './utils';
+import { EventEmitter } from '../../../event';
+import { PrismaService } from '../../../prisma';
+import { CloudThrottlerGuard, Throttle } from '../../../throttler';
+import type { FileUpload } from '../../../types';
+import { Auth, CurrentUser, Public } from '../../auth';
+import { MailService } from '../../auth/mailer';
+import { AuthService } from '../../auth/service';
+import { WorkspaceBlobStorage } from '../../storage';
+import { UsersService, UserType } from '../../users';
+import { PermissionService } from '../permission';
+import { Permission } from '../types';
+import { defaultWorkspaceAvatar } from '../utils';
 
 registerEnumType(Permission, {
   name: 'Permission',
@@ -149,8 +141,7 @@ export class WorkspaceResolver {
     private readonly permissions: PermissionService,
     private readonly users: UsersService,
     private readonly event: EventEmitter,
-    private readonly quota: QuotaManagementService,
-    @Inject(StorageProvide) private readonly storage: Storage
+    private readonly blobStorage: WorkspaceBlobStorage
   ) {}
 
   @ResolveField(() => Permission, {
@@ -233,14 +224,6 @@ export class WorkspaceResolver {
         inviteId: id,
         accepted,
       }));
-  }
-
-  @ResolveField(() => Int, {
-    description: 'Blobs size of workspace',
-    complexity: 2,
-  })
-  async blobsSize(@Parent() workspace: WorkspaceType) {
-    return this.storage.blobsSize([workspace.id]);
   }
 
   @Query(() => Boolean, {
@@ -565,11 +548,14 @@ export class WorkspaceResolver {
     let avatar = '';
 
     if (metaJSON.avatar) {
-      const avatarBlob = await this.storage.getBlob(
+      const avatarBlob = await this.blobStorage.get(
         workspaceId,
         metaJSON.avatar
       );
-      avatar = avatarBlob?.data.toString('base64') || '';
+
+      if (avatarBlob.body) {
+        avatar = (await getStreamAsBuffer(avatarBlob.body)).toString('base64');
+      }
     }
 
     return {
@@ -652,257 +638,5 @@ export class WorkspaceResolver {
     }
 
     return this.permissions.revokeWorkspace(workspaceId, user.id);
-  }
-
-  @Query(() => [String], {
-    description: 'List blobs of workspace',
-  })
-  @MakeCache(['blobs'], ['workspaceId'])
-  async listBlobs(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    await this.permissions.checkWorkspace(workspaceId, user.id);
-
-    return this.storage.listBlobs(workspaceId);
-  }
-
-  @Query(() => WorkspaceBlobSizes)
-  async collectAllBlobSizes(@CurrentUser() user: UserType) {
-    const size = await this.quota.getUserUsage(user.id);
-    return { size };
-  }
-
-  @Query(() => WorkspaceBlobSizes)
-  async checkBlobSize(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('size', { type: () => Float }) blobSize: number
-  ) {
-    const canWrite = await this.permissions.tryCheckWorkspace(
-      workspaceId,
-      user.id,
-      Permission.Write
-    );
-    if (canWrite) {
-      const size = await this.quota.checkBlobQuota(workspaceId, blobSize);
-      return { size };
-    }
-    return false;
-  }
-
-  @Mutation(() => String)
-  @PreventCache(['blobs'], ['workspaceId'])
-  async setBlob(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args({ name: 'blob', type: () => GraphQLUpload })
-    blob: FileUpload
-  ) {
-    await this.permissions.checkWorkspace(
-      workspaceId,
-      user.id,
-      Permission.Write
-    );
-
-    const { quota, size } = await this.quota.getWorkspaceUsage(workspaceId);
-
-    const checkExceeded = (recvSize: number) => {
-      if (!quota) {
-        throw new ForbiddenException('cannot find user quota');
-      }
-      if (size + recvSize > quota) {
-        this.logger.log(
-          `storage size limit exceeded: ${size + recvSize} > ${quota}`
-        );
-        return true;
-      } else {
-        return false;
-      }
-    };
-
-    if (checkExceeded(0)) {
-      throw new ForbiddenException('storage size limit exceeded');
-    }
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const stream = blob.createReadStream();
-      const chunks: Uint8Array[] = [];
-      stream.on('data', chunk => {
-        chunks.push(chunk);
-
-        // check size after receive each chunk to avoid unnecessary memory usage
-        const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
-        if (checkExceeded(bufferSize)) {
-          reject(new ForbiddenException('storage size limit exceeded'));
-        }
-      });
-      stream.on('error', reject);
-      stream.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-
-        if (checkExceeded(buffer.length)) {
-          reject(new ForbiddenException('storage size limit exceeded'));
-        } else {
-          resolve(buffer);
-        }
-      });
-    });
-
-    return this.storage.uploadBlob(workspaceId, buffer);
-  }
-
-  @Mutation(() => Boolean)
-  @PreventCache(['blobs'], ['workspaceId'])
-  async deleteBlob(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('hash') hash: string
-  ) {
-    await this.permissions.checkWorkspace(workspaceId, user.id);
-
-    return this.storage.deleteBlob(workspaceId, hash);
-  }
-}
-
-registerEnumType(PublicPageMode, {
-  name: 'PublicPageMode',
-  description: 'The mode which the public page default in',
-});
-
-@ObjectType()
-class WorkspacePage implements Partial<PrismaWorkspacePage> {
-  @Field(() => String, { name: 'id' })
-  pageId!: string;
-
-  @Field()
-  workspaceId!: string;
-
-  @Field(() => PublicPageMode)
-  mode!: PublicPageMode;
-
-  @Field()
-  public!: boolean;
-}
-
-@UseGuards(CloudThrottlerGuard)
-@Auth()
-@Resolver(() => WorkspaceType)
-export class PagePermissionResolver {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly permission: PermissionService
-  ) {}
-
-  /**
-   * @deprecated
-   */
-  @ResolveField(() => [String], {
-    description: 'Shared pages of workspace',
-    complexity: 2,
-    deprecationReason: 'use WorkspaceType.publicPages',
-  })
-  async sharedPages(@Parent() workspace: WorkspaceType) {
-    const data = await this.prisma.workspacePage.findMany({
-      where: {
-        workspaceId: workspace.id,
-        public: true,
-      },
-    });
-
-    return data.map(row => row.pageId);
-  }
-
-  @ResolveField(() => [WorkspacePage], {
-    description: 'Public pages of a workspace',
-    complexity: 2,
-  })
-  async publicPages(@Parent() workspace: WorkspaceType) {
-    return this.prisma.workspacePage.findMany({
-      where: {
-        workspaceId: workspace.id,
-        public: true,
-      },
-    });
-  }
-
-  /**
-   * @deprecated
-   */
-  @Mutation(() => Boolean, {
-    name: 'sharePage',
-    deprecationReason: 'renamed to publicPage',
-  })
-  async deprecatedSharePage(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string
-  ) {
-    await this.publishPage(user, workspaceId, pageId, PublicPageMode.Page);
-    return true;
-  }
-
-  @Mutation(() => WorkspacePage)
-  async publishPage(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string,
-    @Args({
-      name: 'mode',
-      type: () => PublicPageMode,
-      nullable: true,
-      defaultValue: PublicPageMode.Page,
-    })
-    mode: PublicPageMode
-  ) {
-    const docId = new DocID(pageId, workspaceId);
-
-    if (docId.isWorkspace) {
-      throw new ForbiddenException('Expect page not to be workspace');
-    }
-
-    await this.permission.checkWorkspace(
-      docId.workspace,
-      user.id,
-      Permission.Read
-    );
-
-    return this.permission.publishPage(docId.workspace, docId.guid, mode);
-  }
-
-  /**
-   * @deprecated
-   */
-  @Mutation(() => Boolean, {
-    name: 'revokePage',
-    deprecationReason: 'use revokePublicPage',
-  })
-  async deprecatedRevokePage(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string
-  ) {
-    await this.revokePublicPage(user, workspaceId, pageId);
-    return true;
-  }
-
-  @Mutation(() => WorkspacePage)
-  async revokePublicPage(
-    @CurrentUser() user: UserType,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string
-  ) {
-    const docId = new DocID(pageId, workspaceId);
-
-    if (docId.isWorkspace) {
-      throw new ForbiddenException('Expect page not to be workspace');
-    }
-
-    await this.permission.checkWorkspace(
-      docId.workspace,
-      user.id,
-      Permission.Read
-    );
-
-    return this.permission.revokePublicPage(docId.workspace, docId.guid);
   }
 }

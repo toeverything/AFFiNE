@@ -9,12 +9,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/index.ts",
+    "start": "node --loader ts-node/esm/transpile-only.mjs --es-module-specifier-resolution node ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
     "test": "ava --concurrency 1 --serial",
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
-    "data-migration": "node --loader ts-node/esm.mjs --es-module-specifier-resolution node ./src/data/app.ts",
+    "data-migration": "node --loader ts-node/esm/transpile-only.mjs --es-module-specifier-resolution node ./src/data/app.ts",
     "predeploy": "yarn prisma migrate deploy && node --es-module-specifier-resolution node ./dist/data/app.js run"
   },
   "dependencies": {

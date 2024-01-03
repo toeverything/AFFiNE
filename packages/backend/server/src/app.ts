@@ -9,7 +9,6 @@ import { BusinessModules } from './modules';
 import { AuthModule } from './modules/auth';
 import { PrismaModule } from './prisma';
 import { SessionModule } from './session';
-import { StorageModule } from './storage';
 import { RateLimiterModule } from './throttler';
 
 const BasicModules = [
@@ -17,7 +16,6 @@ const BasicModules = [
   ConfigModule.forRoot(),
   CacheModule,
   EventModule,
-  StorageModule.forRoot(),
   SessionModule,
   RateLimiterModule,
   AuthModule,

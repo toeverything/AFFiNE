@@ -206,15 +206,15 @@ type WorkspaceType {
   """Owner of workspace"""
   owner: UserType!
 
-  """Blobs size of workspace"""
-  blobsSize: Int!
-
   """Shared pages of workspace"""
   sharedPages: [String!]! @deprecated(reason: "use WorkspaceType.publicPages")
 
   """Public pages of a workspace"""
   publicPages: [WorkspacePage!]!
   histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
+
+  """Blobs size of workspace"""
+  blobsSize: Int!
 }
 
 type InvitationWorkspaceType {
@@ -242,6 +242,12 @@ type InvitationType {
   invitee: UserType!
 }
 
+type DocHistoryType {
+  workspaceId: String!
+  id: String!
+  timestamp: DateTime!
+}
+
 type WorkspacePage {
   id: String!
   workspaceId: String!
@@ -253,12 +259,6 @@ type WorkspacePage {
 enum PublicPageMode {
   Page
   Edgeless
-}
-
-type DocHistoryType {
-  workspaceId: String!
-  id: String!
-  timestamp: DateTime!
 }
 
 type Query {
@@ -281,9 +281,9 @@ type Query {
   getInviteInfo(inviteId: String!): InvitationType!
 
   """List blobs of workspace"""
-  listBlobs(workspaceId: String!): [String!]!
-  collectAllBlobSizes: WorkspaceBlobSizes!
-  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
+  listBlobs(workspaceId: String!): [String!]! @deprecated(reason: "use `workspace.blobs` instead")
+  collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.storageUsage` instead")
+  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
 
   """Get current user"""
   currentUser: UserType
@@ -314,13 +314,13 @@ type Mutation {
   revoke(workspaceId: String!, userId: String!): Boolean!
   acceptInviteById(workspaceId: String!, inviteId: String!, sendAcceptMail: Boolean): Boolean!
   leaveWorkspace(workspaceId: String!, workspaceName: String!, sendLeaveMail: Boolean): Boolean!
-  setBlob(workspaceId: String!, blob: Upload!): String!
-  deleteBlob(workspaceId: String!, hash: String!): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "renamed to publicPage")
   publishPage(workspaceId: String!, pageId: String!, mode: PublicPageMode = Page): WorkspacePage!
   revokePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "use revokePublicPage")
   revokePublicPage(workspaceId: String!, pageId: String!): WorkspacePage!
   recoverDoc(workspaceId: String!, guid: String!, timestamp: DateTime!): DateTime!
+  setBlob(workspaceId: String!, blob: Upload!): String!
+  deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
   """Upload user avatar"""
   uploadAvatar(avatar: Upload!): UserType!

@@ -34,6 +34,8 @@ export class FsStorageProvider implements StorageProvider {
   private readonly path: string;
   private readonly logger: Logger;
 
+  readonly type = 'fs';
+
   constructor(
     config: FsStorageConfig,
     public readonly bucket: string

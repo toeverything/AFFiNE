@@ -1,3 +1,4 @@
+import { UseGuards } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -11,13 +12,14 @@ import {
 } from '@nestjs/graphql';
 import type { SnapshotHistory } from '@prisma/client';
 
-import { DocID } from '../../utils/doc';
-import { Auth, CurrentUser } from '../auth';
-import { DocHistoryManager } from '../doc/history';
-import { UserType } from '../users';
-import { PermissionService } from './permission';
-import { WorkspaceType } from './resolver';
-import { Permission } from './types';
+import { CloudThrottlerGuard } from '../../../throttler';
+import { DocID } from '../../../utils/doc';
+import { Auth, CurrentUser } from '../../auth';
+import { DocHistoryManager } from '../../doc/history';
+import { UserType } from '../../users';
+import { PermissionService } from '../permission';
+import { Permission } from '../types';
+import { WorkspaceType } from './workspace';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {
@@ -31,6 +33,7 @@ class DocHistoryType implements Partial<SnapshotHistory> {
   timestamp!: Date;
 }
 
+@UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
 export class DocHistoryResolver {
   constructor(

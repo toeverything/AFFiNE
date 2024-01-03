@@ -1,7 +1,6 @@
-import type { Storage } from '@affine/storage';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { StorageProvide } from '../../storage';
+import { WorkspaceBlobStorage } from '../storage';
 import { PermissionService } from '../workspaces/permission';
 import { QuotaService } from './service';
 
@@ -10,7 +9,7 @@ export class QuotaManagementService {
   constructor(
     private readonly quota: QuotaService,
     private readonly permissions: PermissionService,
-    @Inject(StorageProvide) private readonly storage: Storage
+    private readonly storage: WorkspaceBlobStorage
   ) {}
 
   async getUserQuota(userId: string) {
@@ -29,7 +28,12 @@ export class QuotaManagementService {
   // TODO: lazy calc, need to be optimized with cache
   async getUserUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
-    return this.storage.blobsSize(workspaces);
+
+    const sizes = await Promise.all(
+      workspaces.map(workspace => this.storage.totalSize(workspace))
+    );
+
+    return sizes.reduce((total, size) => total + size, 0);
   }
 
   // get workspace's owner quota and total size of used

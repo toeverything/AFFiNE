@@ -1,10 +1,7 @@
+// NODE:
+// This file has been deprecated after blob storage moved to cloudflare r2 storage.
+// It only exists for backward compatibility.
 import { createRequire } from 'node:module';
-
-import { type DynamicModule, type FactoryProvider } from '@nestjs/common';
-
-import { Config } from '../config';
-
-export const StorageProvide = Symbol('Storage');
 
 let storageModule: typeof import('@affine/storage');
 try {
@@ -15,25 +12,6 @@ try {
     process.arch === 'arm64'
       ? require('../../storage.arm64.node')
       : require('../../storage.node');
-}
-
-export class StorageModule {
-  static forRoot(): DynamicModule {
-    const storageProvider: FactoryProvider = {
-      provide: StorageProvide,
-      useFactory: async (config: Config) => {
-        return storageModule.Storage.connect(config.db.url);
-      },
-      inject: [Config],
-    };
-
-    return {
-      global: true,
-      module: StorageModule,
-      providers: [storageProvider],
-      exports: [storageProvider],
-    };
-  }
 }
 
 export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;

@@ -196,6 +196,7 @@ model VerificationToken {
   @@map("verificationtokens")
 }
 
+// deprecated, use [ObjectStorage]
 model Blob {
   id          Int       @id @default(autoincrement()) @db.Integer
   hash        String    @db.VarChar
@@ -210,6 +211,7 @@ model Blob {
   @@map("blobs")
 }
 
+// deprecated, use [ObjectStorage]
 model OptimizedBlob {
   id          Int       @id @default(autoincrement()) @db.Integer
   hash        String    @db.VarChar

@@ -1,10 +1,16 @@
-import type { Snapshot, Workspace } from '@prisma/client';
+import type { Snapshot, User, Workspace } from '@prisma/client';
 
 import { Flatten, Payload } from './types';
 
 interface EventDefinitions {
   workspace: {
     deleted: Payload<Workspace['id']>;
+    blob: {
+      deleted: Payload<{
+        workspaceId: Workspace['id'];
+        name: string;
+      }>;
+    };
   };
 
   snapshot: {
@@ -14,6 +20,10 @@ interface EventDefinitions {
       }
     >;
     deleted: Payload<Pick<Snapshot, 'id' | 'workspaceId'>>;
+  };
+
+  user: {
+    deleted: Payload<User>;
   };
 }
 

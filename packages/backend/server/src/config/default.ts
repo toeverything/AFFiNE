@@ -1,8 +1,6 @@
 /// <reference types="../global.d.ts" />
 
 import { createPrivateKey, createPublicKey } from 'node:crypto';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 
 import parse from 'parse-duration';
 
@@ -177,18 +175,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       },
     },
     storage: getDefaultAFFiNEStorageConfig(),
-    objectStorage: {
-      r2: {
-        enabled: false,
-        bucket: '',
-        accountId: '',
-        accessKeyId: '',
-        secretAccessKey: '',
-      },
-      fs: {
-        path: join(homedir(), '.affine-storage'),
-      },
-    },
     rateLimiter: {
       ttl: 60,
       limit: 60,

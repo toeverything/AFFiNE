@@ -173,32 +173,6 @@ export interface AFFiNEConfig {
   storage: AFFiNEStorageConfig;
 
   /**
-   * object storage Config
-   *
-   * all artifacts and logs will be stored on instance disk,
-   * and can not shared between instances if not configured
-   * @deprecated use `storage` instead
-   */
-  objectStorage: {
-    /**
-     * whether use remote object storage
-     */
-    r2: {
-      enabled: boolean;
-      accountId: string;
-      bucket: string;
-      accessKeyId: string;
-      secretAccessKey: string;
-    };
-    /**
-     * Only used when `enable` is `false`
-     */
-    fs: {
-      path: string;
-    };
-  };
-
-  /**
    * Rate limiter config
    */
   rateLimiter: {

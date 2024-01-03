@@ -6,11 +6,12 @@ import test from 'ava';
 import * as Sinon from 'sinon';
 
 import { ConfigModule } from '../src/config';
-import type { EventPayload } from '../src/event';
+import { EventModule, type EventPayload } from '../src/event';
 import { DocHistoryManager } from '../src/modules/doc';
 import { QuotaModule } from '../src/modules/quota';
+import { StorageModule } from '../src/modules/storage';
 import { PrismaModule, PrismaService } from '../src/prisma';
-import { FakeStorageModule, flushDB } from './utils';
+import { flushDB } from './utils';
 
 let app: INestApplication;
 let m: TestingModule;
@@ -24,7 +25,8 @@ test.beforeEach(async () => {
     imports: [
       PrismaModule,
       QuotaModule,
-      FakeStorageModule.forRoot(),
+      EventModule,
+      StorageModule,
       ScheduleModule.forRoot(),
       ConfigModule.forRoot(),
     ],

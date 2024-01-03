@@ -15,6 +15,8 @@ if (node.prod && env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
   };
   AFFiNE.storage.storages.avatar.provider = 'r2';
   AFFiNE.storage.storages.avatar.bucket = 'account-avatar';
+  AFFiNE.storage.storages.avatar.publicLinkFactory = key =>
+    `https://avatar.affineassets.com/${key}`;
 
   AFFiNE.storage.storages.blob.provider = 'r2';
   AFFiNE.storage.storages.blob.bucket = 'workspace-blobs';

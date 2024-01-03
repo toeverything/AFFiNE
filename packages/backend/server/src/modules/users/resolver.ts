@@ -17,6 +17,7 @@ import type { User } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
+import { EventEmitter } from '../../event';
 import { PrismaService } from '../../prisma/service';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
@@ -24,7 +25,7 @@ import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
 import { AuthService } from '../auth/service';
 import { FeatureManagementService } from '../features';
 import { QuotaService } from '../quota';
-import { StorageService } from '../storage/storage.service';
+import { AvatarStorage } from '../storage';
 import { DeleteAccount, RemoveAvatar, UserQuotaType, UserType } from './types';
 import { UsersService } from './users';
 
@@ -39,10 +40,11 @@ export class UserResolver {
   constructor(
     private readonly auth: AuthService,
     private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
+    private readonly storage: AvatarStorage,
     private readonly users: UsersService,
     private readonly feature: FeatureManagementService,
-    private readonly quota: QuotaService
+    private readonly quota: QuotaService,
+    private readonly event: EventEmitter
   ) {}
 
   @Throttle({
@@ -147,10 +149,20 @@ export class UserResolver {
     if (!user) {
       throw new BadRequestException(`User not found`);
     }
-    const url = await this.storage.uploadFile(`${user.id}-avatar`, avatar);
+
+    const link = await this.storage.put(
+      `${user.id}-avatar`,
+      avatar.createReadStream(),
+      {
+        contentType: avatar.mimetype,
+      }
+    );
+
     return this.prisma.user.update({
       where: { id: user.id },
-      data: { avatarUrl: url },
+      data: {
+        avatarUrl: link,
+      },
     });
   }
 
@@ -183,7 +195,8 @@ export class UserResolver {
   })
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
-    await this.users.deleteUser(user.id);
+    const deletedUser = await this.users.deleteUser(user.id);
+    this.event.emit('user.deleted', deletedUser);
     return { success: true };
   }
 

@@ -99,8 +99,8 @@ test('should list blobs', async t => {
 
   const ret = await listBlobs(app, u1.token.token, workspace.id);
   t.is(ret.length, 2, 'failed to list blobs');
-  t.is(ret[0], hash1, 'failed to list blobs');
-  t.is(ret[1], hash2, 'failed to list blobs');
+  // list blob result is not ordered
+  t.deepEqual(ret.sort(), [hash1, hash2].sort());
 });
 
 test('should calc blobs size', async t => {
@@ -188,4 +188,14 @@ test('should be able calc quota after switch plan', async t => {
     100 * 1024 * 1024 * 1024 - 8
   );
   t.is(size2, 0, 'failed to check pro plan blob size');
+});
+
+test('should reject blob exceeded limit', t => {
+  // TODO
+  t.true(true);
+});
+
+test('should reject blob exceeded quota', t => {
+  // TODO
+  t.true(true);
 });

@@ -6,6 +6,7 @@ import ava, { type TestFn } from 'ava';
 
 import { ConfigModule } from '../src/config';
 import { RevertCommand, RunCommand } from '../src/data/commands/run';
+import { EventModule } from '../src/event';
 import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
 import {
@@ -15,9 +16,10 @@ import {
   QuotaService,
   QuotaType,
 } from '../src/modules/quota';
+import { StorageModule } from '../src/modules/storage';
 import { PrismaModule } from '../src/prisma';
 import { RateLimiterModule } from '../src/throttler';
-import { FakeStorageModule, initFeatureConfigs } from './utils';
+import { initFeatureConfigs } from './utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -48,8 +50,9 @@ test.beforeEach(async t => {
       }),
       PrismaModule,
       AuthModule,
+      EventModule,
       QuotaModule,
-      FakeStorageModule.forRoot(),
+      StorageModule,
       RateLimiterModule,
       RevertCommand,
       RunCommand,
