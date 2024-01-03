@@ -1,6 +1,7 @@
 import {
   InviteModal,
   type InviteModalProps,
+  MemberLimitModal,
 } from '@affine/component/member-components';
 import {
   Pagination,
@@ -13,8 +14,18 @@ import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { Menu, MenuItem } from '@affine/component/ui/menu';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { openSettingModalAtom } from '@affine/core/atoms';
+import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import type { CheckedUser } from '@affine/core/hooks/affine/use-current-user';
+import { useCurrentUser } from '@affine/core/hooks/affine/use-current-user';
+import { useInviteMember } from '@affine/core/hooks/affine/use-invite-member';
+import { useMemberCount } from '@affine/core/hooks/affine/use-member-count';
+import { type Member, useMembers } from '@affine/core/hooks/affine/use-members';
+import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
+import { useUserQuota } from '@affine/core/hooks/use-quota';
+import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Permission } from '@affine/graphql';
+import { Permission, SubscriptionPlan } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { ArrowRightBigIcon, MoreVerticalIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
@@ -29,18 +40,6 @@ import {
   useState,
 } from 'react';
 
-import { openSettingModalAtom } from '../../../../../atoms';
-import type { CheckedUser } from '../../../../../hooks/affine/use-current-user';
-import { useCurrentUser } from '../../../../../hooks/affine/use-current-user';
-import { useInviteMember } from '../../../../../hooks/affine/use-invite-member';
-import { useMemberCount } from '../../../../../hooks/affine/use-member-count';
-import {
-  type Member,
-  useMembers,
-} from '../../../../../hooks/affine/use-members';
-import { useRevokeMemberPermission } from '../../../../../hooks/affine/use-revoke-member-permission';
-import { useUserQuota } from '../../../../../hooks/use-quota';
-import { AffineErrorBoundary } from '../../../affine-error-boundary';
 import * as style from './style.css';
 import type { WorkspaceSettingDetailProps } from './types';
 
@@ -69,6 +68,19 @@ export const CloudWorkspaceMembersPanel = ({
 }: MembersPanelProps) => {
   const workspaceId = workspaceMetadata.id;
   const memberCount = useMemberCount(workspaceId);
+
+  const checkMemberCountLimit = useCallback(
+    (memberCount: number, memberLimit?: number) => {
+      if (memberLimit === undefined) return false;
+      return memberCount >= memberLimit;
+    },
+    []
+  );
+
+  const quota = useUserQuota();
+  const [subscription] = useUserSubscription();
+  const plan = subscription?.plan ?? SubscriptionPlan.Free;
+  const isLimited = checkMemberCountLimit(memberCount, quota?.memberLimit);
 
   const t = useAFFiNEI18N();
   const { invite, isMutating } = useInviteMember(workspaceId);
@@ -107,6 +119,14 @@ export const CloudWorkspaceMembersPanel = ({
     [invite, pushNotification, t]
   );
 
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const handleUpgradeConfirm = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+    });
+  }, [setSettingModalAtom]);
+
   const listContainerRef = useRef<HTMLDivElement | null>(null);
   const [memberListHeight, setMemberListHeight] = useState<number | null>(null);
 
@@ -134,16 +154,6 @@ export const CloudWorkspaceMembersPanel = ({
     [pushNotification, revokeMemberPermission, t]
   );
 
-  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-  const handleUpgrade = useCallback(() => {
-    setSettingModalAtom({
-      open: true,
-      activeTab: 'plans',
-    });
-  }, [setSettingModalAtom]);
-
-  const quota = useUserQuota();
-
   const desc = useMemo(() => {
     if (!quota) return null;
 
@@ -157,7 +167,10 @@ export const CloudWorkspaceMembersPanel = ({
         {upgradable ? (
           <>
             ,
-            <div className={style.goUpgradeWrapper} onClick={handleUpgrade}>
+            <div
+              className={style.goUpgradeWrapper}
+              onClick={handleUpgradeConfirm}
+            >
               <span className={style.goUpgrade}>
                 {t['com.affine.payment.member.description.go-upgrade']()}
               </span>
@@ -167,7 +180,7 @@ export const CloudWorkspaceMembersPanel = ({
         ) : null}
       </span>
     );
-  }, [handleUpgrade, quota, t, upgradable]);
+  }, [handleUpgradeConfirm, quota, t, upgradable]);
 
   return (
     <>
@@ -179,12 +192,23 @@ export const CloudWorkspaceMembersPanel = ({
         {isOwner ? (
           <>
             <Button onClick={openModal}>{t['Invite Members']()}</Button>
-            <InviteModal
-              open={open}
-              setOpen={setOpen}
-              onConfirm={onInviteConfirm}
-              isMutating={isMutating}
-            />
+            {isLimited ? (
+              <MemberLimitModal
+                isFreePlan={plan === SubscriptionPlan.Free}
+                open={open}
+                plan={quota?.humanReadable.name ?? ''}
+                quota={quota?.humanReadable.memberLimit ?? ''}
+                setOpen={setOpen}
+                onConfirm={handleUpgradeConfirm}
+              />
+            ) : (
+              <InviteModal
+                open={open}
+                setOpen={setOpen}
+                onConfirm={onInviteConfirm}
+                isMutating={isMutating}
+              />
+            )}
           </>
         ) : null}
       </SettingRow>
