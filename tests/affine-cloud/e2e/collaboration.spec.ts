@@ -179,7 +179,7 @@ test('can collaborate with other user and name should display when editing', asy
   });
   const title = getBlockSuiteEditorTitle(page);
   await title.focus();
-
+  await page.keyboard.press('ArrowDown', { delay: 50 });
   {
     await expect(page2.getByText('TEST USER')).toBeVisible({
       timeout: 2000,

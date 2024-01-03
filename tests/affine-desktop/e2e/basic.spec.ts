@@ -62,38 +62,28 @@ test('app sidebar router forward/back', async ({ page }) => {
     });
   }
   {
-    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
-      'test3'
-    );
+    await expect(getBlockSuiteEditorTitle(page)).toHaveText('test3');
   }
 
   await page.click('[data-testid="app-sidebar-arrow-button-back"]');
   await page.click('[data-testid="app-sidebar-arrow-button-back"]');
   {
-    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
-      'test1'
-    );
+    await expect(getBlockSuiteEditorTitle(page)).toHaveText('test1');
   }
   await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
   await page.click('[data-testid="app-sidebar-arrow-button-forward"]');
   {
-    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
-      'test3'
-    );
+    await expect(getBlockSuiteEditorTitle(page)).toHaveText('test3');
   }
   await historyShortcut(page, 'goBack');
   await historyShortcut(page, 'goBack');
   {
-    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
-      'test1'
-    );
+    await expect(getBlockSuiteEditorTitle(page)).toHaveText('test1');
   }
   await historyShortcut(page, 'goForward');
   await historyShortcut(page, 'goForward');
   {
-    await expect(page.locator('.affine-doc-page-block-title')).toHaveText(
-      'test3'
-    );
+    await expect(getBlockSuiteEditorTitle(page)).toHaveText('test3');
   }
 });
 // }

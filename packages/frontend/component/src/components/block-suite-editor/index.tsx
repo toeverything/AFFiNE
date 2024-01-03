@@ -222,11 +222,11 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
             block: 'center',
             inline: 'center',
           });
-          const selectManager = editor.root?.selection;
+          const selectManager = editor.host?.selection;
           if (!blockElement.path.length || !selectManager) {
             return;
           }
-          const newSelection = selectManager.getInstance('block', {
+          const newSelection = selectManager.create('block', {
             path: blockElement.path,
           });
           selectManager.set([newSelection]);

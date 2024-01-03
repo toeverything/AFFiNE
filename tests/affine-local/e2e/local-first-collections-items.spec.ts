@@ -141,7 +141,7 @@ test('create temporary filter by click tag', async ({ page }) => {
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
-  await page.locator('affine-page-meta-data').click();
+  await page.locator('page-meta-tags').click();
   await page.locator('.add-tag').click();
   await page.keyboard.type('TODO Tag');
   await page.keyboard.press('Enter');
