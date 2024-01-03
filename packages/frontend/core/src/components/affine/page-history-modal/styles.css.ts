@@ -10,7 +10,7 @@ export const root = style({
   vars: {
     [headerHeight]: '52px',
     [footerHeight]: '68px',
-    [historyListWidth]: '160px',
+    [historyListWidth]: '240px',
   },
 });
 
@@ -272,4 +272,32 @@ export const collapsedIconContainer = style({
       transform: 'rotate(-90deg)',
     },
   },
+});
+
+export const planPromptWrapper = style({
+  padding: '4px 12px',
+});
+
+export const planPrompt = style({
+  gap: 6,
+  borderRadius: 8,
+  flexDirection: 'column',
+  padding: 10,
+  fontSize: 'var(--affine-font-xs)',
+  backgroundColor: 'var(--affine-background-secondary-color)',
+});
+
+export const planPromptTitle = style({
+  fontWeight: 600,
+  marginBottom: 14,
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  color: 'var(--affine-text-secondary-color)',
+});
+
+export const planPromptUpdateButton = style({
+  textDecoration: 'underline',
+  cursor: 'pointer',
+  marginLeft: 4,
 });

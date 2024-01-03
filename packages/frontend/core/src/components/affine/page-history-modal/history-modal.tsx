@@ -3,17 +3,21 @@ import {
   BlockSuiteEditor,
   EditorLoading,
 } from '@affine/component/block-suite-editor';
-import { Button } from '@affine/component/ui/button';
+import { Button, IconButton } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
-import type { PageMode } from '@affine/core/atoms';
+import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
+import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { SubscriptionPlan } from '@affine/graphql';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ToggleCollapseIcon } from '@blocksuite/icons';
+import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
 import type { Page, Workspace } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import { useAtom, useAtomValue } from 'jotai';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   Fragment,
   type PropsWithChildren,
@@ -154,6 +158,71 @@ const HistoryEditorPreview = ({
     </div>
   );
 };
+const planPromptClosedAtom = atom(false);
+
+const PlanPrompt = () => {
+  const [subscription] = useUserSubscription();
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
+  const freePlan = subscription?.plan === SubscriptionPlan.Free;
+
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
+
+  const closeFreePlanPrompt = useCallback(() => {
+    setPlanPromptClosed(true);
+  }, [setPlanPromptClosed]);
+
+  const onClickUpgrade = useCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+    });
+  }, [setSettingModalAtom]);
+
+  const t = useAFFiNEI18N();
+
+  return !planPromptClosed ? (
+    <div className={styles.planPromptWrapper}>
+      <div className={styles.planPrompt}>
+        <div className={styles.planPromptTitle}>
+          {freePlan
+            ? t[
+                'com.affine.history.confirm-restore-modal.plan-prompt.limited-title'
+              ]()
+            : t['com.affine.history.confirm-restore-modal.plan-prompt.title']()}
+
+          <IconButton
+            size="small"
+            icon={<CloseIcon />}
+            onClick={closeFreePlanPrompt}
+          />
+        </div>
+        {freePlan ? (
+          <>
+            <Trans i18nKey="com.affine.history.confirm-restore-modal.free-plan-prompt.description">
+              Free users can view up to the <b>last 7 days</b> of page history.
+            </Trans>
+            {isOwner ? (
+              <span
+                className={styles.planPromptUpdateButton}
+                onClick={onClickUpgrade}
+              >
+                {t[
+                  'com.affine.history.confirm-restore-modal.pro-plan-prompt.upgrade'
+                ]()}
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <Trans i18nKey="com.affine.history.confirm-restore-modal.pro-plan-prompt.description">
+            Pro users can view up to the <b>last 30 days</b> of page history.
+          </Trans>
+        )}
+      </div>
+    </div>
+  ) : null;
+};
 
 const PageHistoryList = ({
   pageDocId,
@@ -191,6 +260,7 @@ const PageHistoryList = ({
       </div>
       <Scrollable.Root className={styles.historyListScrollable}>
         <Scrollable.Viewport className={styles.historyListScrollableInner}>
+          <PlanPrompt />
           {historyListByDay.map(([day, list], i) => {
             const collapsed = collapsedMap[i];
             return (
@@ -252,7 +322,7 @@ const PageHistoryList = ({
               className={styles.historyItemLoadMore}
               onClick={loadMore}
             >
-              Load More
+              {t['com.affine.history.confirm-restore-modal.load-more']()}
             </Button>
           ) : null}
         </Scrollable.Viewport>
