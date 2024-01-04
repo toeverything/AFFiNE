@@ -9,10 +9,8 @@
     "packages/*/*",
     "tools/*",
     "docs/reference",
-    "!tools/@types",
     "tools/@types/*",
     "tests/*",
-    "!tests/affine-legacy",
     "tests/affine-legacy/*"
   ],
   "engines": {
