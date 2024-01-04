@@ -765,7 +765,7 @@ __metadata:
     "@storybook/testing-library": "npm:^0.2.2"
     "@tomfreudenberg/next-auth-mock": "npm:^0.5.6"
     "@vitejs/plugin-react": "npm:^4.2.0"
-    chromatic: "npm:^9.1.0"
+    chromatic: "npm:^10.0.0"
     concurrently: "npm:^8.2.2"
     foxact: "npm:^0.2.26"
     jest-mock: "npm:^29.7.0"
@@ -17253,14 +17253,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chromatic@npm:^9.1.0":
-  version: 9.1.0
-  resolution: "chromatic@npm:9.1.0"
+"chromatic@npm:^10.0.0":
+  version: 10.2.0
+  resolution: "chromatic@npm:10.2.0"
   bin:
     chroma: dist/bin.js
     chromatic: dist/bin.js
     chromatic-cli: dist/bin.js
-  checksum: e015aebb77ee266fc3a3da7d366cfb6132b27f540236dd23bcd5ed5985a9727f5e6398eb1880127e791d37febba04f80654519073d7e31b69fc59c256d1d6401
+  checksum: 8df1b4a828c7d5eb2614fcab9a1685f5be947a68f5f31733ebf2bbfab86f6b02c0ee99064bfe62b1457f05ddef285c1d36d5674208f778c815714c51c72a68bd
   languageName: node
   linkType: hard
 
