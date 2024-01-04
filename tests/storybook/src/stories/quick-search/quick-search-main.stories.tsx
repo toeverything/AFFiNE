@@ -54,6 +54,7 @@ function useRegisterCommands() {
           ],
           currentLanguage: undefined,
         },
+        editor: null,
       }),
       registerAffineCreationCommands({
         t,

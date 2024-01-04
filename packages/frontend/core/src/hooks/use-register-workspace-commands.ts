@@ -15,6 +15,7 @@ import {
 } from '../commands';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
 import { useLanguageHelper } from './affine/use-language-helper';
+import { useActiveBlocksuiteEditor } from './use-block-suite-editor';
 import { useNavigateHelper } from './use-navigate-helper';
 
 export function useRegisterWorkspaceCommands() {
@@ -26,6 +27,7 @@ export function useRegisterWorkspaceCommands() {
   const pageHelper = usePageHelper(currentWorkspace.blockSuiteWorkspace);
   const navigationHelper = useNavigateHelper();
   const [pageListMode, setPageListMode] = useAtom(allPageModeSelectAtom);
+  const [editor] = useActiveBlocksuiteEditor();
 
   // register AffineUpdatesCommands
   useEffect(() => {
@@ -69,12 +71,13 @@ export function useRegisterWorkspaceCommands() {
       t,
       theme,
       languageHelper,
+      editor,
     });
 
     return () => {
       unsub();
     };
-  }, [store, t, theme, languageHelper]);
+  }, [store, t, theme, languageHelper, editor]);
 
   // register AffineLayoutCommands
   useEffect(() => {

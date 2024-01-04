@@ -96,7 +96,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
-  const [, setEditor] = useState<AffineEditorContainer>();
+  const [editor, setEditor] = useState<AffineEditorContainer>();
   const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
@@ -125,11 +125,13 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
   );
 
   const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
-  const editor = useRef<AffineEditorContainer>(null);
+  const editorRef = useRef<AffineEditorContainer | null>(null);
 
   useEffect(() => {
-    setActiveBlocksuiteEditor(editor.current);
-  }, [setActiveBlocksuiteEditor]);
+    if (editor) {
+      setActiveBlocksuiteEditor(editorRef.current);
+    }
+  }, [editor, setActiveBlocksuiteEditor]);
 
   return (
     <Editor
@@ -147,7 +149,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       onModeChange={setEditorMode}
       defaultSelectedBlockId={blockId}
       onLoadEditor={onLoadEditor}
-      ref={editor}
+      ref={editorRef}
     />
   );
 });
