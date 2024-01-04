@@ -684,7 +684,7 @@ __metadata:
     "@types/supertest": "npm:^6.0.0"
     "@types/ws": "npm:^8.5.10"
     ava: "npm:^6.0.0"
-    c8: "npm:^8.0.1"
+    c8: "npm:^9.0.0"
     cookie-parser: "npm:^1.4.6"
     dotenv: "npm:^16.3.1"
     express: "npm:^4.18.2"
@@ -16757,25 +16757,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"c8@npm:^8.0.1":
-  version: 8.0.1
-  resolution: "c8@npm:8.0.1"
+"c8@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "c8@npm:9.0.0"
   dependencies:
     "@bcoe/v8-coverage": "npm:^0.2.3"
     "@istanbuljs/schema": "npm:^0.1.3"
     find-up: "npm:^5.0.0"
-    foreground-child: "npm:^2.0.0"
+    foreground-child: "npm:^3.1.1"
     istanbul-lib-coverage: "npm:^3.2.0"
     istanbul-lib-report: "npm:^3.0.1"
     istanbul-reports: "npm:^3.1.6"
-    rimraf: "npm:^3.0.2"
     test-exclude: "npm:^6.0.0"
     v8-to-istanbul: "npm:^9.0.0"
     yargs: "npm:^17.7.2"
     yargs-parser: "npm:^21.1.1"
   bin:
     c8: bin/c8.js
-  checksum: 4d9d85fca952708d637e4d3c7961dc7245a09c60abb4c25d42393df4fd0d85e7352c1bb5c154e047c79d3bed7f2c5c1afd1ceaeff8c966a66336dbf31a629980
+  checksum: 71ccdf112ed5e52d983f20e0453e5abe1a61d2240cc5affe465933fe9a4d010ac9a3276a969a7bbfa705ae7395ea705384569549e242cf0ffdc9bb68401de699
   languageName: node
   linkType: hard
 
@@ -21223,7 +21222,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"foreground-child@npm:^3.1.0":
+"foreground-child@npm:^3.1.0, foreground-child@npm:^3.1.1":
   version: 3.1.1
   resolution: "foreground-child@npm:3.1.1"
   dependencies:
