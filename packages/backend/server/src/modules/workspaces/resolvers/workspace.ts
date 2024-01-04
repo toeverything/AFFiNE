@@ -7,23 +7,14 @@ import {
 } from '@nestjs/common';
 import {
   Args,
-  Field,
-  Float,
-  ID,
-  InputType,
   Int,
   Mutation,
-  ObjectType,
-  OmitType,
   Parent,
-  PartialType,
-  PickType,
   Query,
-  registerEnumType,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User, Workspace } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
@@ -38,90 +29,14 @@ import { AuthService } from '../../auth/service';
 import { WorkspaceBlobStorage } from '../../storage';
 import { UsersService, UserType } from '../../users';
 import { PermissionService } from '../permission';
-import { Permission } from '../types';
+import {
+  InvitationType,
+  InviteUserType,
+  Permission,
+  UpdateWorkspaceInput,
+  WorkspaceType,
+} from '../types';
 import { defaultWorkspaceAvatar } from '../utils';
-
-registerEnumType(Permission, {
-  name: 'Permission',
-  description: 'User permission in workspace',
-});
-
-@ObjectType()
-export class InviteUserType extends OmitType(
-  PartialType(UserType),
-  ['id'],
-  ObjectType
-) {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => Permission, { description: 'User permission in workspace' })
-  permission!: Permission;
-
-  @Field({ description: 'Invite id' })
-  inviteId!: string;
-
-  @Field({ description: 'User accepted' })
-  accepted!: boolean;
-}
-
-@ObjectType()
-export class WorkspaceType implements Partial<Workspace> {
-  @Field(() => ID)
-  id!: string;
-
-  @Field({ description: 'is Public workspace' })
-  public!: boolean;
-
-  @Field({ description: 'Workspace created date' })
-  createdAt!: Date;
-
-  @Field(() => [InviteUserType], {
-    description: 'Members of workspace',
-  })
-  members!: InviteUserType[];
-}
-
-@ObjectType()
-export class InvitationWorkspaceType {
-  @Field(() => ID)
-  id!: string;
-
-  @Field({ description: 'Workspace name' })
-  name!: string;
-
-  @Field(() => String, {
-    // nullable: true,
-    description: 'Base64 encoded avatar',
-  })
-  avatar!: string;
-}
-
-@ObjectType()
-export class WorkspaceBlobSizes {
-  @Field(() => Float)
-  size!: number;
-}
-
-@ObjectType()
-export class InvitationType {
-  @Field({ description: 'Workspace information' })
-  workspace!: InvitationWorkspaceType;
-  @Field({ description: 'User information' })
-  user!: UserType;
-  @Field({ description: 'Invitee information' })
-  invitee!: UserType;
-}
-
-@InputType()
-export class UpdateWorkspaceInput extends PickType(
-  PartialType(WorkspaceType),
-  ['public'],
-  InputType
-) {
-  @Field(() => ID)
-  id!: string;
-}
 
 /**
  * Workspace resolver

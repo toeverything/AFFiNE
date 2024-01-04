@@ -17,8 +17,7 @@ import { DocID } from '../../../utils/doc';
 import { Auth, CurrentUser } from '../../auth';
 import { UserType } from '../../users';
 import { PermissionService, PublicPageMode } from '../permission';
-import { Permission } from '../types';
-import { WorkspaceType } from './workspace';
+import { Permission, WorkspaceType } from '../types';
 
 registerEnumType(PublicPageMode, {
   name: 'PublicPageMode',

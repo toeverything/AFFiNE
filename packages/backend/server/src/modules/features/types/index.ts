@@ -1,6 +1,8 @@
-import { URL } from 'node:url';
-
 import { z } from 'zod';
+
+import { FeatureType } from './common';
+import { featureCopilot } from './copilot';
+import { featureEarlyAccess } from './early-access';
 
 /// ======== common schema ========
 
@@ -20,30 +22,13 @@ export type CommonFeature = z.infer<typeof commonFeatureSchema>;
 
 /// ======== feature define ========
 
-export enum FeatureType {
-  EarlyAccess = 'early_access',
-}
-
-function checkHostname(host: string) {
-  try {
-    return new URL(`https://${host}`).hostname === host;
-  } catch (_) {
-    return false;
-  }
-}
-
-const featureEarlyAccess = z.object({
-  feature: z.literal(FeatureType.EarlyAccess),
-  configs: z.object({
-    whitelist: z
-      .string()
-      .startsWith('@')
-      .refine(domain => checkHostname(domain.slice(1)))
-      .array(),
-  }),
-});
-
 export const Features: Feature[] = [
+  {
+    feature: FeatureType.Copilot,
+    type: FeatureKind.Feature,
+    version: 1,
+    configs: {},
+  },
   {
     feature: FeatureType.EarlyAccess,
     type: FeatureKind.Feature,
@@ -60,6 +45,8 @@ export const FeatureSchema = commonFeatureSchema
   .extend({
     type: z.literal(FeatureKind.Feature),
   })
-  .and(z.discriminatedUnion('feature', [featureEarlyAccess]));
+  .and(z.discriminatedUnion('feature', [featureCopilot, featureEarlyAccess]));
 
 export type Feature = z.infer<typeof FeatureSchema>;
+
+export { FeatureType };

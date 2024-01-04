@@ -27,4 +27,5 @@ import {
   exports: [PermissionService],
 })
 export class WorkspaceModule {}
-export { InvitationType, WorkspaceType } from './resolvers';
+
+export type { InvitationType, WorkspaceType } from './types';

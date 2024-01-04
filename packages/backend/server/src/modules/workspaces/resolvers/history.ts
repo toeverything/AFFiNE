@@ -18,8 +18,7 @@ import { Auth, CurrentUser } from '../../auth';
 import { DocHistoryManager } from '../../doc/history';
 import { UserType } from '../../users';
 import { PermissionService } from '../permission';
-import { Permission } from '../types';
-import { WorkspaceType } from './workspace';
+import { Permission, WorkspaceType } from '../types';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {

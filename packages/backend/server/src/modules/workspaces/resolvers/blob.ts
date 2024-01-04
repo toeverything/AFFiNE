@@ -19,8 +19,7 @@ import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { UserType } from '../../users';
 import { PermissionService } from '../permission';
-import { Permission } from '../types';
-import { WorkspaceBlobSizes, WorkspaceType } from './workspace';
+import { Permission, WorkspaceBlobSizes, WorkspaceType } from '../types';
 
 @UseGuards(CloudThrottlerGuard)
 @Auth()

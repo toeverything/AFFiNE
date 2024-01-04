@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma';
 import { UserType } from '../users/types';
-import { getFeature } from './feature';
+import { FeatureConfigType, getFeature } from './feature';
 import { FeatureKind, FeatureType } from './types';
 
 @Injectable()
@@ -28,7 +28,9 @@ export class FeatureService {
     );
   }
 
-  async getFeature(feature: FeatureType) {
+  async getFeature<F extends FeatureType>(
+    feature: F
+  ): Promise<FeatureConfigType<F> | undefined> {
     const data = await this.prisma.features.findFirst({
       where: {
         feature,
@@ -40,7 +42,7 @@ export class FeatureService {
       },
     });
     if (data) {
-      return getFeature(this.prisma, data.id);
+      return getFeature(this.prisma, data.id) as FeatureConfigType<F>;
     }
     return undefined;
   }
