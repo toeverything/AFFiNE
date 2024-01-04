@@ -745,7 +745,7 @@ __metadata:
     "@blocksuite/block-std": "npm:0.11.0-nightly-202401020419-752a5b8"
     "@blocksuite/blocks": "npm:0.11.0-nightly-202401020419-752a5b8"
     "@blocksuite/global": "npm:0.11.0-nightly-202401020419-752a5b8"
-    "@blocksuite/icons": "npm:2.1.36"
+    "@blocksuite/icons": "npm:2.1.39"
     "@blocksuite/inline": "npm:0.11.0-nightly-202401020419-752a5b8"
     "@blocksuite/lit": "npm:0.11.0-nightly-202401020419-752a5b8"
     "@blocksuite/presets": "npm:0.11.0-nightly-202401020419-752a5b8"
@@ -3773,16 +3773,6 @@ __metadata:
   dependencies:
     zod: "npm:^3.22.4"
   checksum: 4607e97f1c16f8976db43f6de0300a0a9cb54dc4846ff6659a200e9150127ed238688f9d2e3b92f4515e57c14ad1778e59988519f94e9ed080d0ef7faf2a15f3
-  languageName: node
-  linkType: hard
-
-"@blocksuite/icons@npm:2.1.36":
-  version: 2.1.36
-  resolution: "@blocksuite/icons@npm:2.1.36"
-  peerDependencies:
-    "@types/react": ^18.0.25
-    react: ^18.2.0
-  checksum: a5118a2fdc8a4d94ec9cb0a3d0530f520172594572120bb447070975fd6e76ebc59ff5959d071bbef048c7e85344a770cd007e8a87d3404cd3c2a4d9eab394d4
   languageName: node
   linkType: hard
 
