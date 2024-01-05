@@ -269,12 +269,56 @@ switch (platform) {
           loadError = e
         }
         break
+      case 'riscv64':
+        if (isMusl()) {
+          localFileExisted = existsSync(
+            join(__dirname, 'affine.linux-riscv64-musl.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./affine.linux-riscv64-musl.node')
+            } else {
+              nativeBinding = require('@affine/native-linux-riscv64-musl')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        } else {
+          localFileExisted = existsSync(
+            join(__dirname, 'affine.linux-riscv64-gnu.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./affine.linux-riscv64-gnu.node')
+            } else {
+              nativeBinding = require('@affine/native-linux-riscv64-gnu')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        }
+        break
       default:
         throw new Error(`Unsupported architecture on Linux: ${arch}`)
     }
     break
   default:
     throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`)
+}
+
+if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
+  try {
+    nativeBinding = require('./affine.wasi.cjs')
+  } catch {
+    // ignore
+  }
+  if (!nativeBinding) {
+    try {
+      nativeBinding = require('@affine/native-wasm32-wasi')
+    } catch (err) {
+      console.error(err)
+    }
+  }
 }
 
 if (!nativeBinding) {

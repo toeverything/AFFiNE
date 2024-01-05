@@ -520,8 +520,7 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn vitest
-        working-directory: packages/frontend/electron
+        run: yarn workspace @affine/electron vitest
 
       - name: Download core artifact
         uses: ./.github/actions/download-core

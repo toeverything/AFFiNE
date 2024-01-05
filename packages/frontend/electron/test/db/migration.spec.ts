@@ -1,12 +1,16 @@
 import path from 'node:path';
 
-import {
-  copyToTemp,
-  migrateToSubdocAndReplaceDatabase,
-} from '@affine/electron/helper/db/migration';
 import { SqliteConnection } from '@affine/native';
 import { removeWithRetry } from '@affine-test/kit/utils/utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
 const tmpDir = path.join(__dirname, 'tmp');
@@ -14,18 +18,31 @@ const testDBFilePath = path.resolve(__dirname, 'old-db.affine');
 
 const appDataPath = path.join(tmpDir, 'app-data');
 
-vi.mock('@affine/electron/helper/main-rpc', () => ({
-  mainRPC: {
-    getPath: async () => appDataPath,
-  },
-}));
+beforeAll(() => {
+  vi.doMock('@affine/electron/helper/main-rpc', () => ({
+    mainRPC: {
+      getPath: async () => appDataPath,
+      channel: {
+        on: () => {},
+        send: () => {},
+      },
+    },
+  }));
+});
 
 afterEach(async () => {
   await removeWithRetry(tmpDir);
 });
 
+afterAll(() => {
+  vi.doUnmock('@affine/electron/helper/main-rpc');
+});
+
 describe('migrateToSubdocAndReplaceDatabase', () => {
   it('should migrate and replace the database', async () => {
+    const { copyToTemp, migrateToSubdocAndReplaceDatabase } = await import(
+      '@affine/electron/helper/db/migration'
+    );
     const copiedDbFilePath = await copyToTemp(testDBFilePath);
     await migrateToSubdocAndReplaceDatabase(copiedDbFilePath);
 
