@@ -47,7 +47,7 @@ import { defaultWorkspaceAvatar } from '../utils';
 @Auth()
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
-  private readonly logger = new Logger('WorkspaceResolver');
+  private readonly logger = new Logger(WorkspaceResolver.name);
 
   constructor(
     private readonly auth: AuthService,

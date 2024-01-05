@@ -46,13 +46,6 @@ class FakePrisma {
       },
     };
   }
-  get newFeaturesWaitingList() {
-    return {
-      async findUnique() {
-        return null;
-      },
-    };
-  }
 }
 
 test.beforeEach(async t => {

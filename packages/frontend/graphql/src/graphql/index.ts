@@ -383,6 +383,19 @@ query getWorkspacePublicPages($workspaceId: String!) {
 }`,
 };
 
+export const getWorkspaceFeaturesQuery = {
+  id: 'getWorkspaceFeaturesQuery' as const,
+  operationName: 'getWorkspaceFeatures',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspaceFeatures($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    features
+  }
+}`,
+};
+
 export const getWorkspaceQuery = {
   id: 'getWorkspaceQuery' as const,
   operationName: 'getWorkspace',
@@ -757,6 +770,48 @@ mutation uploadAvatar($avatar: Upload!) {
     avatarUrl
     email
   }
+}`,
+};
+
+export const addWorkspaceFeatureMutation = {
+  id: 'addWorkspaceFeatureMutation' as const,
+  operationName: 'addWorkspaceFeature',
+  definitionName: 'addWorkspaceFeature',
+  containsFile: false,
+  query: `
+mutation addWorkspaceFeature($workspaceId: String!, $feature: FeatureType!) {
+  addWorkspaceFeature(workspaceId: $workspaceId, feature: $feature)
+}`,
+};
+
+export const listWorkspaceFeaturesQuery = {
+  id: 'listWorkspaceFeaturesQuery' as const,
+  operationName: 'listWorkspaceFeatures',
+  definitionName: 'listWorkspaceFeatures',
+  containsFile: false,
+  query: `
+query listWorkspaceFeatures($feature: FeatureType!) {
+  listWorkspaceFeatures(feature: $feature) {
+    id
+    public
+    createdAt
+    memberCount
+    owner {
+      id
+    }
+    features
+  }
+}`,
+};
+
+export const removeWorkspaceFeatureMutation = {
+  id: 'removeWorkspaceFeatureMutation' as const,
+  operationName: 'removeWorkspaceFeature',
+  definitionName: 'removeWorkspaceFeature',
+  containsFile: false,
+  query: `
+mutation removeWorkspaceFeature($workspaceId: String!, $feature: FeatureType!) {
+  removeWorkspaceFeature(workspaceId: $workspaceId, feature: $feature)
 }`,
 };
 

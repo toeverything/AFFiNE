@@ -292,9 +292,7 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
-  async listFeatureWorkspaces(
-    feature: FeatureType
-  ): Promise<Omit<WorkspaceType, 'members'>[]> {
+  async listFeatureWorkspaces(feature: FeatureType): Promise<WorkspaceType[]> {
     return this.prisma.workspaceFeatures
       .findMany({
         where: {
@@ -314,7 +312,7 @@ export class FeatureService {
           },
         },
       })
-      .then(wss => wss.map(ws => ws.workspace));
+      .then(wss => wss.map(ws => ws.workspace as WorkspaceType));
   }
 
   async hasWorkspaceFeature(workspaceId: string, feature: FeatureType) {

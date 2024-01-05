@@ -124,7 +124,8 @@
       "node"
     ],
     "files": [
-      "tests/**/feature.spec.ts"
+      "tests/**/*.spec.ts",
+      "tests/**/*.e2e.ts"
     ],
     "require": [
       "./src/prelude.ts"

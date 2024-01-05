@@ -37,6 +37,12 @@ export const Features: Feature[] = [
       whitelist: ['@toeverything.info'],
     },
   },
+  {
+    feature: FeatureType.EarlyAccess,
+    type: FeatureKind.Feature,
+    version: 2,
+    configs: {},
+  },
 ];
 
 /// ======== schema infer ========

@@ -40,15 +40,6 @@ export class EarlyAccessFeatureConfig extends FeatureConfig {
       throw new Error('Invalid feature config: type is not EarlyAccess');
     }
   }
-
-  checkWhiteList(email: string) {
-    for (const domain in this.config.configs.whitelist) {
-      if (email.endsWith(domain)) {
-        return true;
-      }
-    }
-    return false;
-  }
 }
 
 const FeatureConfigMap = {
