@@ -34,7 +34,7 @@
     "@blocksuite/block-std": "0.11.0-nightly-202401020419-752a5b8",
     "@blocksuite/blocks": "0.11.0-nightly-202401020419-752a5b8",
     "@blocksuite/global": "0.11.0-nightly-202401020419-752a5b8",
-    "@blocksuite/icons": "2.1.39",
+    "@blocksuite/icons": "2.1.40",
     "@blocksuite/inline": "0.11.0-nightly-202401020419-752a5b8",
     "@blocksuite/lit": "0.11.0-nightly-202401020419-752a5b8",
     "@blocksuite/presets": "0.11.0-nightly-202401020419-752a5b8",
