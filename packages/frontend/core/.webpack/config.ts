@@ -377,7 +377,7 @@ export const createConfiguration: (
       },
       proxy: {
         '/api/worker/': {
-          target: 'https://affine-worker.toeverything.workers.dev',
+          target: 'https://affine.fail',
           changeOrigin: true,
           secure: false,
         },
