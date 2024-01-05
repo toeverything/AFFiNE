@@ -164,7 +164,7 @@ model WorkspaceFeatures {
   activated Boolean   @default(false)
 
   feature   Features  @relation(fields: [featureId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("workspace_features")
 }

@@ -113,9 +113,17 @@ export class FeatureManagementService implements OnModuleInit {
     return features.map(feature => feature.feature.name);
   }
 
+  async hasWorkspaceFeature(workspaceId: string, feature: FeatureType) {
+    return this.feature.hasWorkspaceFeature(workspaceId, feature);
+  }
+
   async removeWorkspaceFeature(workspaceId: string, feature: FeatureType) {
     return this.feature
       .removeWorkspaceFeature(workspaceId, feature)
       .then(c => c > 0);
+  }
+
+  async listFeatureWorkspaces(feature: FeatureType) {
+    return this.feature.listFeatureWorkspaces(feature);
   }
 }

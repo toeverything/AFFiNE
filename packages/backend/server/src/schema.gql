@@ -72,81 +72,6 @@ type RemoveAvatar {
   success: Boolean!
 }
 
-type TokenType {
-  token: String!
-  refresh: String!
-  sessionToken: String
-}
-
-type SubscriptionPrice {
-  type: String!
-  plan: SubscriptionPlan!
-  currency: String!
-  amount: Int!
-  yearlyAmount: Int!
-}
-
-enum SubscriptionPlan {
-  Free
-  Pro
-  Team
-  Enterprise
-  SelfHosted
-}
-
-type UserSubscription {
-  id: String!
-  plan: SubscriptionPlan!
-  recurring: SubscriptionRecurring!
-  status: SubscriptionStatus!
-  start: DateTime!
-  end: DateTime!
-  trialStart: DateTime
-  trialEnd: DateTime
-  nextBillAt: DateTime
-  canceledAt: DateTime
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
-
-enum SubscriptionRecurring {
-  Monthly
-  Yearly
-}
-
-enum SubscriptionStatus {
-  Active
-  PastDue
-  Unpaid
-  Canceled
-  Incomplete
-  Paused
-  IncompleteExpired
-  Trialing
-}
-
-type UserInvoice {
-  id: String!
-  plan: SubscriptionPlan!
-  recurring: SubscriptionRecurring!
-  currency: String!
-  amount: Int!
-  status: InvoiceStatus!
-  reason: String!
-  lastPaymentError: String
-  link: String
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
-
-enum InvoiceStatus {
-  Draft
-  Open
-  Void
-  Paid
-  Uncollectible
-}
-
 type InviteUserType {
   """User name"""
   name: String
@@ -240,6 +165,81 @@ type InvitationType {
 
   """Invitee information"""
   invitee: UserType!
+}
+
+type TokenType {
+  token: String!
+  refresh: String!
+  sessionToken: String
+}
+
+type SubscriptionPrice {
+  type: String!
+  plan: SubscriptionPlan!
+  currency: String!
+  amount: Int!
+  yearlyAmount: Int!
+}
+
+enum SubscriptionPlan {
+  Free
+  Pro
+  Team
+  Enterprise
+  SelfHosted
+}
+
+type UserSubscription {
+  id: String!
+  plan: SubscriptionPlan!
+  recurring: SubscriptionRecurring!
+  status: SubscriptionStatus!
+  start: DateTime!
+  end: DateTime!
+  trialStart: DateTime
+  trialEnd: DateTime
+  nextBillAt: DateTime
+  canceledAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum SubscriptionRecurring {
+  Monthly
+  Yearly
+}
+
+enum SubscriptionStatus {
+  Active
+  PastDue
+  Unpaid
+  Canceled
+  Incomplete
+  Paused
+  IncompleteExpired
+  Trialing
+}
+
+type UserInvoice {
+  id: String!
+  plan: SubscriptionPlan!
+  recurring: SubscriptionRecurring!
+  currency: String!
+  amount: Int!
+  status: InvoiceStatus!
+  reason: String!
+  lastPaymentError: String
+  link: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum InvoiceStatus {
+  Draft
+  Open
+  Void
+  Paid
+  Uncollectible
 }
 
 type DocHistoryType {
