@@ -61,7 +61,7 @@ export class FeatureManagementService implements OnModuleInit {
       });
       if (user) {
         const canEarlyAccess = await this.feature
-          .hasFeature(user.id, FeatureType.EarlyAccess)
+          .hasUserFeature(user.id, FeatureType.EarlyAccess)
           .catch(() => false);
         if (canEarlyAccess) {
           return true;
@@ -85,5 +85,37 @@ export class FeatureManagementService implements OnModuleInit {
     } else {
       return true;
     }
+  }
+
+  // ======== Workspace Feature ========
+  async addWorkspaceFeatures(
+    workspaceId: string,
+    feature: FeatureType,
+    version?: number,
+    reason?: string
+  ) {
+    const latestVersions = await this.feature.getFeaturesVersion();
+    // use latest version if not specified
+    const latestVersion = version || latestVersions[feature];
+    if (!Number.isInteger(latestVersion)) {
+      throw new Error(`Version of feature ${feature} not found`);
+    }
+    return this.feature.addWorkspaceFeature(
+      workspaceId,
+      feature,
+      latestVersion,
+      reason || 'add feature by api'
+    );
+  }
+
+  async getWorkspaceFeatures(workspaceId: string) {
+    const features = await this.feature.getWorkspaceFeatures(workspaceId);
+    return features.map(feature => feature.feature.name);
+  }
+
+  async removeWorkspaceFeature(workspaceId: string, feature: FeatureType) {
+    return this.feature
+      .removeWorkspaceFeature(workspaceId, feature)
+      .then(c => c > 0);
   }
 }
