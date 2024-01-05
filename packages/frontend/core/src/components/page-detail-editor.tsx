@@ -9,15 +9,7 @@ import { fontStyleOptions } from '@toeverything/infra/atom';
 import clsx from 'clsx';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
-import {
-  memo,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { type PageMode, pageSettingFamily } from '../atoms';
@@ -96,14 +88,14 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
   );
 
-  const [editor, setEditor] = useState<AffineEditorContainer>();
+  const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
   const blockId = useRouterHash();
 
   const onLoadEditor = useCallback(
     (editor: AffineEditorContainer) => {
       // debug current detail editor
       globalThis.currentEditor = editor;
-      setEditor(editor);
+      setActiveBlocksuiteEditor(editor);
       const disposableGroup = new DisposableGroup();
       disposableGroup.add(
         page.slots.blockUpdated.once(() => {
@@ -121,17 +113,8 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
         disposableGroup.dispose();
       };
     },
-    [onLoad, page]
+    [onLoad, page, setActiveBlocksuiteEditor]
   );
-
-  const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
-  const editorRef = useRef<AffineEditorContainer | null>(null);
-
-  useEffect(() => {
-    if (editor) {
-      setActiveBlocksuiteEditor(editorRef.current);
-    }
-  }, [editor, setActiveBlocksuiteEditor]);
 
   return (
     <Editor
@@ -149,7 +132,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       onModeChange={setEditorMode}
       defaultSelectedBlockId={blockId}
       onLoadEditor={onLoadEditor}
-      ref={editorRef}
     />
   );
 });
