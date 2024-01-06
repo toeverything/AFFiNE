@@ -68,6 +68,7 @@
     "jotai-devtools": "^0.7.0",
     "jotai-effect": "^0.2.3",
     "lit": "^3.0.2",
+    "lodash-es": "^4.17.21",
     "lottie-web": "^5.12.2",
     "mini-css-extract-plugin": "^2.7.6",
     "nanoid": "^5.0.3",
