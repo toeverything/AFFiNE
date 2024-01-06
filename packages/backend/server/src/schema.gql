@@ -131,6 +131,9 @@ type WorkspaceType {
   """Owner of workspace"""
   owner: UserType!
 
+  """Available features of workspace"""
+  availableFeatures: [FeatureType!]!
+
   """Enabled features of workspace"""
   features: [FeatureType!]!
 
@@ -299,9 +302,19 @@ type Query {
   currentUser: UserType
 
   """Get user by email"""
-  user(email: String!): UserType
+  user(email: String!): UserOrLimitedUser
   earlyAccessUsers: [UserType!]!
   prices: [SubscriptionPrice!]!
+}
+
+union UserOrLimitedUser = UserType | LimitedUserType
+
+type LimitedUserType {
+  """User email"""
+  email: String!
+
+  """User password has been set"""
+  hasPassword: Boolean
 }
 
 type Mutation {
@@ -326,6 +339,7 @@ type Mutation {
   leaveWorkspace(workspaceId: String!, workspaceName: String!, sendLeaveMail: Boolean): Boolean!
   addWorkspaceFeature(workspaceId: String!, feature: FeatureType!): Int!
   removeWorkspaceFeature(workspaceId: String!, feature: FeatureType!): Int!
+  setWorkspaceExperimentalFeature(workspaceId: String!, feature: FeatureType!, enable: Boolean!): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "renamed to publicPage")
   publishPage(workspaceId: String!, pageId: String!, mode: PublicPageMode = Page): WorkspacePage!
   revokePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "use revokePublicPage")

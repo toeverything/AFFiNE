@@ -19,7 +19,13 @@ import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
 import { FeatureManagementService } from '../features';
 import { QuotaService } from '../quota';
 import { AvatarStorage } from '../storage';
-import { DeleteAccount, RemoveAvatar, UserQuotaType, UserType } from './types';
+import {
+  DeleteAccount,
+  RemoveAvatar,
+  UserOrLimitedUser,
+  UserQuotaType,
+  UserType,
+} from './types';
 import { UsersService } from './users';
 
 /**
@@ -77,14 +83,17 @@ export class UserResolver {
       ttl: 60,
     },
   })
-  @Query(() => UserType, {
+  @Query(() => UserOrLimitedUser, {
     name: 'user',
     description: 'Get user by email',
     nullable: true,
   })
   @Public()
-  async user(@Args('email') email: string) {
-    if (!(await this.feature.canEarlyAccess(email))) {
+  async user(
+    @CurrentUser() currentUser?: UserType,
+    @Args('email') email?: string
+  ) {
+    if (!email || !(await this.feature.canEarlyAccess(email))) {
       return new GraphQLError(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
         {
@@ -95,13 +104,16 @@ export class UserResolver {
         }
       );
     }
+
     // TODO: need to limit a user can only get another user witch is in the same workspace
     const user = await this.users.findUserByEmail(email);
-    if (user?.password) {
-      const userResponse: UserType = user;
-      userResponse.hasPassword = true;
-    }
-    return user;
+    if (currentUser) return user;
+
+    // only return limited info when not logged in
+    return {
+      email: user?.email,
+      hasPassword: !!user?.password,
+    };
   }
 
   @Throttle({ default: { limit: 10, ttl: 60 } })

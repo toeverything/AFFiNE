@@ -1,0 +1,11 @@
+mutation setWorkspaceExperimentalFeature(
+  $workspaceId: String!
+  $feature: FeatureType!
+  $enable: Boolean!
+) {
+  setWorkspaceExperimentalFeature(
+    workspaceId: $workspaceId
+    feature: $feature
+    enable: $enable
+  )
+}

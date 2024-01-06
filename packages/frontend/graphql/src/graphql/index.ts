@@ -345,11 +345,31 @@ export const getUserQuery = {
   query: `
 query getUser($email: String!) {
   user(email: $email) {
-    id
-    name
-    avatarUrl
-    email
-    hasPassword
+    __typename
+    ... on UserType {
+      id
+      name
+      avatarUrl
+      email
+      hasPassword
+    }
+    ... on LimitedUserType {
+      email
+      hasPassword
+    }
+  }
+}`,
+};
+
+export const getWorkspaceFeaturesQuery = {
+  id: 'getWorkspaceFeaturesQuery' as const,
+  operationName: 'getWorkspaceFeatures',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspaceFeatures($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    features
   }
 }`,
 };
@@ -379,19 +399,6 @@ query getWorkspacePublicPages($workspaceId: String!) {
       id
       mode
     }
-  }
-}`,
-};
-
-export const getWorkspaceFeaturesQuery = {
-  id: 'getWorkspaceFeaturesQuery' as const,
-  operationName: 'getWorkspaceFeatures',
-  definitionName: 'workspace',
-  containsFile: false,
-  query: `
-query getWorkspaceFeatures($workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    features
   }
 }`,
 };
@@ -770,6 +777,34 @@ mutation uploadAvatar($avatar: Upload!) {
     avatarUrl
     email
   }
+}`,
+};
+
+export const availableFeaturesQuery = {
+  id: 'availableFeaturesQuery' as const,
+  operationName: 'availableFeatures',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query availableFeatures($id: String!) {
+  workspace(id: $id) {
+    availableFeatures
+  }
+}`,
+};
+
+export const setWorkspaceExperimentalFeatureMutation = {
+  id: 'setWorkspaceExperimentalFeatureMutation' as const,
+  operationName: 'setWorkspaceExperimentalFeature',
+  definitionName: 'setWorkspaceExperimentalFeature',
+  containsFile: false,
+  query: `
+mutation setWorkspaceExperimentalFeature($workspaceId: String!, $feature: FeatureType!, $enable: Boolean!) {
+  setWorkspaceExperimentalFeature(
+    workspaceId: $workspaceId
+    feature: $feature
+    enable: $enable
+  )
 }`,
 };
 

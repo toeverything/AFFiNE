@@ -114,8 +114,12 @@ test('should find default user', async t => {
       query: `
       query {
         user(email: "alex.yang@example.org") {
-          email
-          avatarUrl
+          ... on UserType {
+            email
+          }
+          ... on LimitedUserType {
+            email
+          }
         }
       }
     `,
