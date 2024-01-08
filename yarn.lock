@@ -688,7 +688,7 @@ __metadata:
     cookie-parser: "npm:^1.4.6"
     dotenv: "npm:^16.3.1"
     express: "npm:^4.18.2"
-    file-type: "npm:^18.7.0"
+    file-type: "npm:^19.0.0"
     get-stream: "npm:^8.0.1"
     graphql: "npm:^16.8.1"
     graphql-type-json: "npm:^0.3.2"
@@ -20484,14 +20484,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-type@npm:^18.7.0":
-  version: 18.7.0
-  resolution: "file-type@npm:18.7.0"
+"file-type@npm:^19.0.0":
+  version: 19.0.0
+  resolution: "file-type@npm:19.0.0"
   dependencies:
     readable-web-to-node-stream: "npm:^3.0.2"
     strtok3: "npm:^7.0.0"
     token-types: "npm:^5.0.1"
-  checksum: 95b70313d697484bb9613dd822a29554e9754b49f4d62f17e399649c981a12556776b4ee83b0a62b752fc9048ac79f6cf79ad13b2a750d89afa170902c7b0029
+  checksum: 8befa58f769b19d4a72c214694906b83b584310575300e63c08c48f9f2cfa6cb57fb4e1d08325961938d9dde3ecc4f5737b1604ddedfd759f5a1e65e5b0ca577
   languageName: node
   linkType: hard
 
