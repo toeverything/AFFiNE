@@ -34,6 +34,7 @@ const mockVariableMap = (vars: Partial<VariableMap>): VariableMap => {
     Created: 0,
     Updated: 0,
     'Is Favourited': false,
+    'Is Public': false,
     Tags: [],
     ...vars,
   };
