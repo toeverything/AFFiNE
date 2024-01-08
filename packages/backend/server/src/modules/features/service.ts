@@ -126,6 +126,11 @@ export class FeatureService {
       .then(r => r.count);
   }
 
+  /**
+   * get user's features, will included inactivated features
+   * @param userId user id
+   * @returns list of features
+   */
   async getUserFeatures(userId: string) {
     const features = await this.prisma.userFeatures.findMany({
       where: {
@@ -265,6 +270,11 @@ export class FeatureService {
       .then(r => r.count);
   }
 
+  /**
+   * get workspace's features, will included inactivated features
+   * @param workspaceId workspace id
+   * @returns list of features
+   */
   async getWorkspaceFeatures(workspaceId: string) {
     const features = await this.prisma.workspaceFeatures.findMany({
       where: {
