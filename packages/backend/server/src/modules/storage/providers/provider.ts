@@ -9,7 +9,7 @@ export interface GetObjectMetadata {
   contentType: string;
   contentLength: number;
   lastModified: Date;
-  checksumCRC32: string;
+  checksumCRC32?: string;
 }
 
 export interface PutObjectMetadata {

@@ -19,5 +19,7 @@ if (node.prod && env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
     `https://avatar.affineassets.com/${key}`;
 
   AFFiNE.storage.storages.blob.provider = 'r2';
-  AFFiNE.storage.storages.blob.bucket = 'workspace-blobs';
+  AFFiNE.storage.storages.blob.bucket = `workspace-blobs-${
+    AFFiNE.affine.canary ? 'canary' : 'prod'
+  }`;
 }

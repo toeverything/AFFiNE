@@ -1,7 +1,6 @@
-// NODE:
-// This file has been deprecated after blob storage moved to cloudflare r2 storage.
-// It only exists for backward compatibility.
 import { createRequire } from 'node:module';
+
+export const StorageProvide = Symbol('Storage');
 
 let storageModule: typeof import('@affine/storage');
 try {
@@ -13,6 +12,8 @@ try {
       ? require('../../storage.arm64.node')
       : require('../../storage.node');
 }
+
+export { storageModule as OctoBaseStorageModule };
 
 export const mergeUpdatesInApplyWay = storageModule.mergeUpdatesInApplyWay;
 
