@@ -7,7 +7,7 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { Workspace } from '@affine/workspace/workspace';
+import type { Workspace } from '@toeverything/infra/workspace';
 import { useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 

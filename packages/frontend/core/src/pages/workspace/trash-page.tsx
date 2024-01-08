@@ -69,7 +69,7 @@ export const TrashPage = () => {
   const filteredPageMetas = useFilteredPageMetas(
     'trash',
     pageMetas,
-    blockSuiteWorkspace
+    currentWorkspace
   );
 
   const { restoreFromTrash, permanentlyDeletePage } =
