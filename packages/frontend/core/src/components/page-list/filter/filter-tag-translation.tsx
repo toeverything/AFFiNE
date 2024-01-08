@@ -15,6 +15,8 @@ const useFilterTag = ({ name }: FilterTagProps) => {
       return t['Tags']();
     case 'Is Favourited':
       return t['com.affine.filter.is-favourited']();
+    case 'Is Public':
+      return t['com.affine.filter.is-public']();
     case 'after':
       return t['com.affine.filter.after']();
     case 'before':
