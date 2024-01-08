@@ -1,10 +1,12 @@
 import type { Filter } from '@affine/env/filter';
-import type { PageMeta } from '@blocksuite/store';
 import { type MouseEvent, useCallback, useState } from 'react';
 
-import { filterPageByRules } from '../../use-collection-manager';
+import {
+  filterPageByRules,
+  type PageDataForFilter,
+} from '../../use-collection-manager';
 
-export const useFilter = (list: PageMeta[]) => {
+export const useFilter = (list: PageDataForFilter[]) => {
   const [filters, changeFilters] = useState<Filter[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const clickFilter = useCallback(
@@ -30,11 +32,13 @@ export const useFilter = (list: PageMeta[]) => {
     updateFilters: changeFilters,
     clickFilter,
     createFilter: onCreateFilter,
-    filteredList: list.filter(v => {
-      if (v.trash) {
-        return false;
-      }
-      return filterPageByRules(filters, [], v);
-    }),
+    filteredList: list
+      .filter(pageData => {
+        if (pageData.meta.trash) {
+          return false;
+        }
+        return filterPageByRules(filters, [], pageData);
+      })
+      .map(pageData => pageData.meta),
   };
 };

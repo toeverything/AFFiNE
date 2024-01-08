@@ -201,6 +201,10 @@ export type AllPageListConfig = {
   allPages: PageMeta[];
   workspace: Workspace;
   isEdgeless: (id: string) => boolean;
+  /**
+   * Return `undefined` if the page is not public
+   */
+  getPublicMode: (id: string) => undefined | 'page' | 'edgeless';
   getPage: (id: string) => PageMeta | undefined;
   favoriteRender: (page: PageMeta) => ReactNode;
 };

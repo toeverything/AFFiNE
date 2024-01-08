@@ -48,18 +48,22 @@ export const RulesMode = ({
     setShowTips(false);
     localStorage.setItem('hide-rules-mode-include-page-tips', 'true');
   }, []);
-  allPageListConfig.allPages.forEach(v => {
-    if (v.trash) {
+  allPageListConfig.allPages.forEach(meta => {
+    if (meta.trash) {
       return;
     }
+    const pageData = {
+      meta,
+      publicMode: allPageListConfig.getPublicMode(meta.id),
+    };
     if (
       collection.filterList.length &&
-      filterPageByRules(collection.filterList, [], v)
+      filterPageByRules(collection.filterList, [], pageData)
     ) {
-      rulesPages.push(v);
+      rulesPages.push(meta);
     }
-    if (collection.allowList.includes(v.id)) {
-      allowListPages.push(v);
+    if (collection.allowList.includes(meta.id)) {
+      allowListPages.push(meta);
     }
   });
   const { node: selectPageNode, open } = useSelectPage({ allPageListConfig });
