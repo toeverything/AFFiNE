@@ -611,7 +611,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/native@workspace:packages/frontend/native"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.30"
+    "@napi-rs/cli": "npm:3.0.0-alpha.31"
     "@types/node": "npm:^20.9.3"
     "@types/uuid": "npm:^9.0.7"
     ava: "npm:^6.0.0"
@@ -728,7 +728,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/storage@workspace:packages/backend/storage"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.30"
+    "@napi-rs/cli": "npm:3.0.0-alpha.31"
     lib0: "npm:^0.2.87"
     nx: "npm:^17.1.3"
     nx-cloud: "npm:^16.5.2"
@@ -6706,13 +6706,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:3.0.0-alpha.30":
-  version: 3.0.0-alpha.30
-  resolution: "@napi-rs/cli@npm:3.0.0-alpha.30"
+"@napi-rs/cli@npm:3.0.0-alpha.31":
+  version: 3.0.0-alpha.31
+  resolution: "@napi-rs/cli@npm:3.0.0-alpha.31"
   dependencies:
     "@napi-rs/cross-toolchain": "npm:^0.0.14"
     "@octokit/rest": "npm:^20.0.2"
-    "@tybys/wasm-util": "npm:0.8.0"
+    "@tybys/wasm-util": "npm:0.8.1"
     clipanion: "npm:^3.2.1"
     colorette: "npm:^2.0.20"
     debug: "npm:^4.3.4"
@@ -6737,7 +6737,7 @@ __metadata:
   bin:
     napi: dist/cli.js
     napi-raw: cli.mjs
-  checksum: 4b0bb58c65e708982bfd4fc36a2e587ca29fb4d2be60afd9fcc67505b9faf7df9d0a3bf13dc83c46b13bb47922a03d96a5ca22ced59d567f94eef74add7b6ebf
+  checksum: 5b6bd720ea48d835c66001114bafa30fdcd0bbe322c171fde8aff94ebb34e9c0ef35281f60b0efbe96215a98a1eb1fdf9efd60c42105c013b8f2219efddabdff
   languageName: node
   linkType: hard
 
@@ -12917,12 +12917,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tybys/wasm-util@npm:0.8.0":
-  version: 0.8.0
-  resolution: "@tybys/wasm-util@npm:0.8.0"
+"@tybys/wasm-util@npm:0.8.1":
+  version: 0.8.1
+  resolution: "@tybys/wasm-util@npm:0.8.1"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 7fa650acfc3fdcaf103f0f7acdf6f4cf67125632eb0f91c92d826375e262547d69de28838cf7a4b69fb665d2fb6f153558528fa1fddd5615a5aa838a87ed7d16
+  checksum: 4e1bb353313225e6c6901b49e969f7963e7802ddad0f79148f759c898d4fcb6761225c9dd622343810b6108a95ae3dfc9a716628dc5c1e40acb776d36d885bc4
   languageName: node
   linkType: hard
 
