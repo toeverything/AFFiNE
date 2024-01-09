@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
+  NoSuchKey,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -21,7 +22,7 @@ import {
 import { autoMetadata, toBuffer } from './utils';
 
 export class S3StorageProvider implements StorageProvider {
-  private readonly logger: Logger;
+  protected logger: Logger;
   protected client: S3Client;
 
   readonly type = 's3';
@@ -96,9 +97,15 @@ export class S3StorageProvider implements StorageProvider {
         },
       };
     } catch (e) {
-      throw new Error(`Failed to read object \`${key}\``, {
-        cause: e,
-      });
+      // 404
+      if (e instanceof NoSuchKey) {
+        this.logger.verbose(`Object \`${key}\` not found`);
+        return {};
+      } else {
+        throw new Error(`Failed to read object \`${key}\``, {
+          cause: e,
+        });
+      }
     }
   }
 

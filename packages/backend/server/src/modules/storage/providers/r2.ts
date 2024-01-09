@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+
 import { R2StorageConfig } from '../../../config/storage';
 import { S3StorageProvider } from './s3';
 
@@ -12,5 +14,6 @@ export class R2StorageProvider extends S3StorageProvider {
       },
       bucket
     );
+    this.logger = new Logger(`${R2StorageProvider.name}:${bucket}`);
   }
 }
