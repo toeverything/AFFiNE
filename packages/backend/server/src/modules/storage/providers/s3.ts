@@ -30,7 +30,7 @@ export class S3StorageProvider implements StorageProvider {
     config: S3StorageConfig,
     public readonly bucket: string
   ) {
-    this.client = new S3Client(config);
+    this.client = new S3Client({ region: 'auto', ...config });
     this.logger = new Logger(`${S3StorageProvider.name}:${bucket}`);
   }
 
@@ -53,7 +53,8 @@ export class S3StorageProvider implements StorageProvider {
           // metadata
           ContentType: metadata.contentType,
           ContentLength: metadata.contentLength,
-          ChecksumCRC32: metadata.checksumCRC32,
+          // TODO: Cloudflare doesn't support CRC32, use md5 instead later.
+          // ChecksumCRC32: metadata.checksumCRC32,
         })
       );
 
@@ -90,8 +91,8 @@ export class S3StorageProvider implements StorageProvider {
           // always set when putting object
           contentType: obj.ContentType!,
           contentLength: obj.ContentLength!,
-          checksumCRC32: obj.ChecksumCRC32!,
           lastModified: obj.LastModified!,
+          checksumCRC32: obj.ChecksumCRC32,
         },
       };
     } catch (e) {

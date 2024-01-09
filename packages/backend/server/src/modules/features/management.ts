@@ -92,7 +92,7 @@ export class FeatureManagementService {
 
   async getWorkspaceFeatures(workspaceId: string) {
     const features = await this.feature.getWorkspaceFeatures(workspaceId);
-    return features.map(feature => feature.feature.name);
+    return features.filter(f => f.activated).map(f => f.feature.name);
   }
 
   async hasWorkspaceFeature(workspaceId: string, feature: FeatureType) {

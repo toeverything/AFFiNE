@@ -7,8 +7,7 @@
     "@blocksuite/store": "0.11.0-nightly-202401020419-752a5b8",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vitest": "1.1.3",
-    "zod": "^3.22.4"
+    "vitest": "1.1.3"
   },
   "exports": {
     "./automation": "./src/automation.ts",
@@ -21,10 +20,11 @@
   },
   "peerDependencies": {
     "@affine/templates": "workspace:*",
-    "@blocksuite/global": "0.0.0-20230409084303-221991d4-nightly"
+    "@blocksuite/global": "0.11.0-nightly-202401020419-752a5b8"
   },
   "dependencies": {
-    "lit": "^3.0.2"
+    "lit": "^3.0.2",
+    "zod": "^3.22.4"
   },
   "version": "0.11.0"
 }

@@ -1,29 +1,70 @@
-import { Injectable } from '@nestjs/common';
+import { Readable } from 'node:stream';
+
+import type { Storage } from '@affine/storage';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { Config } from '../../../config';
 import { EventEmitter, type EventPayload, OnEvent } from '../../../event';
+import { OctoBaseStorageModule } from '../../../storage';
 import {
   BlobInputType,
   createStorageProvider,
   StorageProvider,
 } from '../providers';
+import { toBuffer } from '../providers/utils';
 
 @Injectable()
-export class WorkspaceBlobStorage {
+export class WorkspaceBlobStorage implements OnModuleInit {
   public readonly provider: StorageProvider;
+
+  /**
+   * @deprecated for backwards compatibility, need to be removed in next stable release
+   */
+  private octobase: Storage | null = null;
+
   constructor(
     private readonly event: EventEmitter,
-    { storage }: Config
+    private readonly config: Config
   ) {
-    this.provider = createStorageProvider(storage, 'blob');
+    this.provider = createStorageProvider(this.config.storage, 'blob');
   }
 
-  put(workspaceId: string, key: string, blob: BlobInputType) {
-    return this.provider.put(`${workspaceId}/${key}`, blob);
+  async onModuleInit() {
+    if (!this.config.node.test) {
+      this.octobase = await OctoBaseStorageModule.Storage.connect(
+        this.config.db.url
+      );
+    }
   }
 
-  get(workspaceId: string, key: string) {
-    return this.provider.get(`${workspaceId}/${key}`);
+  async put(workspaceId: string, key: string, blob: BlobInputType) {
+    const buf = await toBuffer(blob);
+    await this.provider.put(`${workspaceId}/${key}`, buf);
+    if (this.octobase) {
+      await this.octobase.uploadBlob(workspaceId, buf);
+    }
+  }
+
+  async get(workspaceId: string, key: string) {
+    const result = await this.provider.get(`${workspaceId}/${key}`);
+    if (!result.body && this.octobase) {
+      const blob = await this.octobase.getBlob(workspaceId, key);
+
+      if (!blob) {
+        return result;
+      }
+
+      return {
+        body: Readable.from(blob.data),
+        metadata: {
+          contentType: blob.contentType,
+          contentLength: blob.size,
+          lastModified: new Date(blob.lastModified),
+        },
+      };
+    }
+
+    return result;
   }
 
   async list(workspaceId: string) {

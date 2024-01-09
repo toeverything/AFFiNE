@@ -32,6 +32,7 @@
     }
   },
   "dependencies": {
+    "@blocksuite/global": "0.11.0-nightly-202401020419-752a5b8",
     "idb": "^8.0.0",
     "nanoid": "^5.0.3",
     "y-provider": "workspace:*"

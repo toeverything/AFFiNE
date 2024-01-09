@@ -191,6 +191,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/cmdk@workspace:packages/common/cmdk"
   dependencies:
+    "@radix-ui/react-dialog": "npm:^1.0.5"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
   languageName: unknown
@@ -507,7 +508,7 @@ __metadata:
     zod: "npm:^3.22.4"
   peerDependencies:
     "@affine/templates": "workspace:*"
-    "@blocksuite/global": 0.0.0-20230409084303-221991d4-nightly
+    "@blocksuite/global": 0.11.0-nightly-202401020419-752a5b8
   languageName: unknown
   linkType: soft
 
@@ -611,7 +612,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/native@workspace:packages/frontend/native"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.30"
+    "@napi-rs/cli": "npm:3.0.0-alpha.33"
     "@types/node": "npm:^20.9.3"
     "@types/uuid": "npm:^9.0.7"
     ava: "npm:^6.0.0"
@@ -688,7 +689,7 @@ __metadata:
     cookie-parser: "npm:^1.4.6"
     dotenv: "npm:^16.3.1"
     express: "npm:^4.18.2"
-    file-type: "npm:^18.7.0"
+    file-type: "npm:^19.0.0"
     get-stream: "npm:^8.0.1"
     graphql: "npm:^16.8.1"
     graphql-type-json: "npm:^0.3.2"
@@ -728,7 +729,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/storage@workspace:packages/backend/storage"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.30"
+    "@napi-rs/cli": "npm:3.0.0-alpha.33"
     lib0: "npm:^0.2.87"
     nx: "npm:^17.1.3"
     nx-cloud: "npm:^16.5.2"
@@ -764,17 +765,20 @@ __metadata:
     "@storybook/test-runner": "npm:^0.16.0"
     "@storybook/testing-library": "npm:^0.2.2"
     "@tomfreudenberg/next-auth-mock": "npm:^0.5.6"
+    "@vanilla-extract/esbuild-plugin": "npm:^2.3.1"
     "@vitejs/plugin-react": "npm:^4.2.0"
     chromatic: "npm:^10.0.0"
     concurrently: "npm:^8.2.2"
     foxact: "npm:^0.2.26"
     jest-mock: "npm:^29.7.0"
     jotai: "npm:^2.5.1"
+    lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.3"
     react: "npm:18.2.0"
     react-dom: "npm:18.2.0"
     react-router-dom: "npm:^6.19.0"
     serve: "npm:^14.2.1"
+    ses: "npm:^1.0.0"
     storybook: "npm:^7.5.3"
     storybook-addon-react-router-v6: "npm:^2.0.10"
     storybook-dark-mode: "npm:^3.0.1"
@@ -5253,14 +5257,14 @@ __metadata:
   linkType: hard
 
 "@floating-ui/react-dom@npm:^2.0.0":
-  version: 2.0.4
-  resolution: "@floating-ui/react-dom@npm:2.0.4"
+  version: 2.0.2
+  resolution: "@floating-ui/react-dom@npm:2.0.2"
   dependencies:
     "@floating-ui/dom": "npm:^1.5.1"
   peerDependencies:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
-  checksum: 4240a718502c797fd2e174cd06dcd7321a6eda9c8966dbaf61864b9e16445e95649a59bfe7c19ee13f68c11f3693724d7970c7e618089a3d3915bd343639cfae
+  checksum: 63a26f3c36f00a2bdede202cb7a3be74b3c6599463c0a069745f6aed3181a33ce72936158209f6fd1c284d85fd494aa656e6cbc4266c096f3189ce1c13f83dfe
   languageName: node
   linkType: hard
 
@@ -6706,13 +6710,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:3.0.0-alpha.30":
-  version: 3.0.0-alpha.30
-  resolution: "@napi-rs/cli@npm:3.0.0-alpha.30"
+"@napi-rs/cli@npm:3.0.0-alpha.33":
+  version: 3.0.0-alpha.33
+  resolution: "@napi-rs/cli@npm:3.0.0-alpha.33"
   dependencies:
     "@napi-rs/cross-toolchain": "npm:^0.0.14"
     "@octokit/rest": "npm:^20.0.2"
-    "@tybys/wasm-util": "npm:0.8.0"
+    "@tybys/wasm-util": "npm:0.8.1"
     clipanion: "npm:^3.2.1"
     colorette: "npm:^2.0.20"
     debug: "npm:^4.3.4"
@@ -6737,7 +6741,7 @@ __metadata:
   bin:
     napi: dist/cli.js
     napi-raw: cli.mjs
-  checksum: 4b0bb58c65e708982bfd4fc36a2e587ca29fb4d2be60afd9fcc67505b9faf7df9d0a3bf13dc83c46b13bb47922a03d96a5ca22ced59d567f94eef74add7b6ebf
+  checksum: 7c131447812ded5fe499f7babd650861f1695ba53ef694a7a9f17bf958e144d3b4fb4bdac31db24ec68a378bd20007d0e241afa7b3a1e397054ceb8c2d89e6ee
   languageName: node
   linkType: hard
 
@@ -12843,6 +12847,7 @@ __metadata:
   resolution: "@toeverything/y-indexeddb@workspace:packages/common/y-indexeddb"
   dependencies:
     "@blocksuite/blocks": "npm:0.11.0-nightly-202401020419-752a5b8"
+    "@blocksuite/global": "npm:0.11.0-nightly-202401020419-752a5b8"
     "@blocksuite/store": "npm:0.11.0-nightly-202401020419-752a5b8"
     fake-indexeddb: "npm:^5.0.0"
     idb: "npm:^8.0.0"
@@ -12917,12 +12922,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tybys/wasm-util@npm:0.8.0":
-  version: 0.8.0
-  resolution: "@tybys/wasm-util@npm:0.8.0"
+"@tybys/wasm-util@npm:0.8.1":
+  version: 0.8.1
+  resolution: "@tybys/wasm-util@npm:0.8.1"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 7fa650acfc3fdcaf103f0f7acdf6f4cf67125632eb0f91c92d826375e262547d69de28838cf7a4b69fb665d2fb6f153558528fa1fddd5615a5aa838a87ed7d16
+  checksum: 4e1bb353313225e6c6901b49e969f7963e7802ddad0f79148f759c898d4fcb6761225c9dd622343810b6108a95ae3dfc9a716628dc5c1e40acb776d36d885bc4
   languageName: node
   linkType: hard
 
@@ -13727,9 +13732,9 @@ __metadata:
   linkType: hard
 
 "@types/prop-types@npm:*":
-  version: 15.7.11
-  resolution: "@types/prop-types@npm:15.7.11"
-  checksum: 7519ff11d06fbf6b275029fe03fff9ec377b4cb6e864cac34d87d7146c7f5a7560fd164bdc1d2dbe00b60c43713631251af1fd3d34d46c69cd354602bc0c7c54
+  version: 15.7.8
+  resolution: "@types/prop-types@npm:15.7.8"
+  checksum: 61dfad79da8b1081c450bab83b77935df487ae1cdd4660ec7df6be8e74725c15fa45cf486ce057addc956ca4ae78300b97091e2a25061133d1b9a1440bc896ae
   languageName: node
   linkType: hard
 
@@ -14182,7 +14187,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vanilla-extract/integration@npm:^6.0.0, @vanilla-extract/integration@npm:^6.2.4":
+"@vanilla-extract/esbuild-plugin@npm:^2.3.1":
+  version: 2.3.1
+  resolution: "@vanilla-extract/esbuild-plugin@npm:2.3.1"
+  dependencies:
+    "@vanilla-extract/integration": "npm:^6.2.0"
+  peerDependencies:
+    esbuild: ">=0.17.6"
+  peerDependenciesMeta:
+    esbuild:
+      optional: true
+  checksum: 4cec1f0d410e6f56ab9e5cd4775b09dcc9c94052df2d2c9659254d00dd883206513acff7c78b4e8b2f0f6f5f5e1293751e31a5a4b5e37d4a16e5afd5a51a1f3c
+  languageName: node
+  linkType: hard
+
+"@vanilla-extract/integration@npm:^6.0.0, @vanilla-extract/integration@npm:^6.2.0, @vanilla-extract/integration@npm:^6.2.4":
   version: 6.2.4
   resolution: "@vanilla-extract/integration@npm:6.2.4"
   dependencies:
@@ -20484,14 +20503,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-type@npm:^18.7.0":
-  version: 18.7.0
-  resolution: "file-type@npm:18.7.0"
+"file-type@npm:^19.0.0":
+  version: 19.0.0
+  resolution: "file-type@npm:19.0.0"
   dependencies:
     readable-web-to-node-stream: "npm:^3.0.2"
     strtok3: "npm:^7.0.0"
     token-types: "npm:^5.0.1"
-  checksum: 95b70313d697484bb9613dd822a29554e9754b49f4d62f17e399649c981a12556776b4ee83b0a62b752fc9048ac79f6cf79ad13b2a750d89afa170902c7b0029
+  checksum: 8befa58f769b19d4a72c214694906b83b584310575300e63c08c48f9f2cfa6cb57fb4e1d08325961938d9dde3ecc4f5737b1604ddedfd759f5a1e65e5b0ca577
   languageName: node
   linkType: hard
 
@@ -35169,6 +35188,7 @@ __metadata:
     vitest: "npm:1.1.3"
     yjs: "npm:^13.6.10"
   peerDependencies:
+    "@blocksuite/global": "*"
     yjs: ^13
   languageName: unknown
   linkType: soft

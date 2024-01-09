@@ -8,5 +8,8 @@
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.0.5"
+  },
   "version": "0.11.0"
 }

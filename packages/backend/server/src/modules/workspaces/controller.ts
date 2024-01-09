@@ -53,7 +53,6 @@ export class WorkspacesController {
       res.setHeader('content-type', metadata.contentType);
       res.setHeader('last-modified', metadata.lastModified.toISOString());
       res.setHeader('content-length', metadata.contentLength);
-      res.setHeader('x-checksum-crc32', metadata.checksumCRC32);
     } else {
       this.logger.warn(`Blob ${workspaceId}/${name} has no metadata`);
     }

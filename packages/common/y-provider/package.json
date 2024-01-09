@@ -31,6 +31,7 @@
     "yjs": "^13.6.10"
   },
   "peerDependencies": {
+    "@blocksuite/global": "*",
     "yjs": "^13"
   }
 }
