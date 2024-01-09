@@ -30,13 +30,13 @@ import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 import {
   collectionsCRUDAtom,
   pageCollectionBaseAtom,
-} from '../../atoms/collections';
-import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
-import { useNavigateHelper } from '../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../shared';
-import { getWorkspaceSetting } from '../../utils/workspace-setting';
-import { AllPage } from './all-page/all-page';
-import * as styles from './collection.css';
+} from '../../../atoms/collections';
+import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
+import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '../../../shared';
+import { getWorkspaceSetting } from '../../../utils/workspace-setting';
+import { AllPage } from '../all-page/all-page';
+import * as styles from '../collection.css';
 
 export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();

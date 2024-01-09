@@ -16,8 +16,20 @@ export const routes = [
         lazy: () => import('./pages/workspace/all-page/all-page'),
       },
       {
+        path: 'collection',
+        lazy: () => import('./pages/workspace/collections'),
+      },
+      {
         path: 'collection/:collectionId',
-        lazy: () => import('./pages/workspace/collection'),
+        lazy: () => import('./pages/workspace/collections/collection'),
+      },
+      {
+        path: 'tag',
+        lazy: () => import('./pages/workspace/tags'),
+      },
+      {
+        path: 'tag/:tagId',
+        lazy: () => import('./pages/workspace/tags/tag'),
       },
       {
         path: 'trash',
