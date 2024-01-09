@@ -9,9 +9,17 @@ import {
   useCollectionManager,
   useEditCollection,
 } from '@affine/component/page-list';
+import {
+  collectionsCRUDAtom,
+  pageCollectionBaseAtom,
+} from '@affine/core/atoms/collections';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
+import { getWorkspaceSetting } from '@affine/core/utils/workspace-setting';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -27,16 +35,8 @@ import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
-import {
-  collectionsCRUDAtom,
-  pageCollectionBaseAtom,
-} from '../../../atoms/collections';
-import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../../shared';
-import { getWorkspaceSetting } from '../../../utils/workspace-setting';
-import { AllPage } from '../all-page/all-page';
-import * as styles from '../collection.css';
+import * as styles from './tag.css';
+import { AllTag } from './tags';
 
 export const loader: LoaderFunction = async args => {
   const rootStore = getCurrentStore();
@@ -47,7 +47,7 @@ export const loader: LoaderFunction = async args => {
   return null;
 };
 
-export const Component = function CollectionPage() {
+export const Component = function TagPage() {
   const { collections, loading } = useAtomValue(pageCollectionBaseAtom);
   const navigate = useNavigateHelper();
   const params = useParams();
@@ -91,7 +91,7 @@ export const Component = function CollectionPage() {
   return isEmpty(collection) ? (
     <Placeholder collection={collection} />
   ) : (
-    <AllPage />
+    <AllTag />
   );
 };
 

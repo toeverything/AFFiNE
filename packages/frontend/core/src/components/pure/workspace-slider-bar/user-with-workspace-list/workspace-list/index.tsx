@@ -9,7 +9,8 @@ import {
   currentWorkspaceAtom,
   workspaceListAtom,
 } from '@affine/core/modules/workspace';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
 import type { DragEndEvent } from '@dnd-kit/core';

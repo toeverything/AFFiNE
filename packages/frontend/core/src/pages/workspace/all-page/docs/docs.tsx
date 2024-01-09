@@ -9,8 +9,21 @@ import {
   useCollectionManager,
   VirtualizedPageList,
 } from '@affine/component/page-list';
+import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { HubIsland } from '@affine/core/components/affine/hub-island';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
+import { Header } from '@affine/core/components/pure/header';
+import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
+import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
+import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
+import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
+import { useFilteredPageMeta } from '@affine/core/hooks/affine/use-filterd-page-meta';
+import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { performanceRenderLogger } from '@affine/core/shared';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -32,29 +45,16 @@ import {
 } from 'react';
 import { NIL } from 'uuid';
 
-import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { HubIsland } from '../../../components/affine/hub-island';
-import { usePageHelper } from '../../../components/blocksuite/block-suite-page-list/utils';
-import { Header } from '../../../components/pure/header';
-import { WindowsAppControls } from '../../../components/pure/header/windows-app-controls';
-import { WorkspaceModeFilterTab } from '../../../components/pure/workspace-mode-filter-tab';
-import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useDeleteCollectionInfo } from '../../../hooks/affine/use-delete-collection-info';
-import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { performanceRenderLogger } from '../../../shared';
-import { EmptyPageList } from '../page-list-empty';
-import { useFilteredPageMetas } from '../pages';
-import * as styles from './tag.css';
-import { FilterTagContainer } from './tag-filter';
+import { EmptyPageList } from '../../page-list-empty';
+import * as styles from './docs.css';
+import { FilterContainer } from './docs-filter';
 
 const PageListHeader = () => {
   const t = useAFFiNEI18N();
   const setting = useCollectionManager(collectionsCRUDAtom);
   const title = useMemo(() => {
     if (setting.isDefault) {
-      return t['com.affine.collections.header']();
+      return t['com.affine.all-pages.header']();
     }
     return (
       <>
@@ -243,22 +243,24 @@ const AllPageHeader = ({
             {isWindowsDesktop ? <WindowsAppControls /> : null}
           </div>
         }
-        center={<WorkspaceModeFilterTab />}
+        center={
+          <WorkspaceModeFilterTab workspaceId={workspace.id} active="docs" />
+        }
       />
-      <FilterTagContainer />
+      <FilterContainer />
     </>
   );
 };
 
 // even though it is called all page, it is also being used for collection route as well
-export const AllTag = () => {
+export const AllDocs = () => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { isPreferredEdgeless } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const pageOperationsRenderer = usePageOperationsRenderer();
-  const filteredPageMetas = useFilteredPageMetas(
+  const filteredPageMetas = useFilteredPageMeta(
     'all',
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
@@ -355,5 +357,5 @@ export const Component = () => {
     currentCollection(NIL);
   }, [currentCollection]);
 
-  return <AllTag />;
+  return <AllDocs />;
 };

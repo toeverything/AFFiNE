@@ -1,5 +1,5 @@
 import { AcceptInvitePage } from '@affine/component/member-components';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import {
   acceptInviteByInviteIdMutation,
   type GetInviteInfoQuery,
@@ -72,7 +72,7 @@ export const Component = () => {
       setOnceSignedInEvent(openWorkspace);
       jumpToSignIn(RouteLogic.REPLACE, {
         state: {
-          callbackURL: `/workspace/${inviteInfo.workspace.id}/all`,
+          callbackURL: `/workspace/${inviteInfo.workspace.id}/pages`,
         },
       });
     }

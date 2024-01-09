@@ -1,4 +1,4 @@
-import type { WorkspaceSubPath } from '@affine/env/workspace';
+import type { WorkspaceSubPath } from '@affine/core/shared';
 import { useCallback, useMemo } from 'react';
 import {
   type NavigateOptions,
@@ -42,13 +42,44 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToAllCollections = useCallback(
+    (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate(`/workspace/${workspaceId}/pages/collections`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
+  const jumpToAllTags = useCallback(
+    (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
+      return navigate(`/workspace/${workspaceId}/pages/tags`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToCollection = useCallback(
     (
       workspaceId: string,
       collectionId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(`/workspace/${workspaceId}/collection/${collectionId}`, {
+      return navigate(
+        `/workspace/${workspaceId}/pages/collections/${collectionId}`,
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
+    },
+    [navigate]
+  );
+  const jumpToTag = useCallback(
+    (
+      workspaceId: string,
+      tagId: string,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      return navigate(`/workspace/${workspaceId}/pages/tags/${tagId}`, {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -144,6 +175,9 @@ export function useNavigateHelper() {
       jumpToExpired,
       jumpToSignIn,
       jumpToCollection,
+      jumpToTag,
+      jumpToAllCollections,
+      jumpToAllTags,
     }),
     [
       jumpToPage,
@@ -156,6 +190,9 @@ export function useNavigateHelper() {
       jumpToExpired,
       jumpToSignIn,
       jumpToCollection,
+      jumpToTag,
+      jumpToAllCollections,
+      jumpToAllTags,
     ]
   );
 }

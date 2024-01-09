@@ -3,14 +3,13 @@ import {
   SaveAsCollectionButton,
   useCollectionManager,
 } from '@affine/component/page-list';
+import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { filterContainerStyle } from '@affine/core/components/filter-container.css';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Collection, Filter } from '@affine/env/filter';
 import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
-
-import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { filterContainerStyle } from '../../../components/filter-container.css';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 
 export const FilterTagContainer = () => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);

@@ -4,7 +4,7 @@ import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 export { BlockSuiteWorkspace };
 
 export enum WorkspaceSubPath {
-  ALL = 'all',
+  ALL = 'pages',
   TRASH = 'trash',
   SHARED = 'shared',
 }
@@ -18,7 +18,7 @@ export const WorkspaceSubPathName = {
 };
 
 export const pathGenerator = {
-  all: workspaceId => `/workspace/${workspaceId}/all`,
+  pages: workspaceId => `/workspace/${workspaceId}/pages`,
   trash: workspaceId => `/workspace/${workspaceId}/trash`,
   shared: workspaceId => `/workspace/${workspaceId}/shared`,
 } satisfies {

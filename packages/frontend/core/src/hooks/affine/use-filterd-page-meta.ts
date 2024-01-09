@@ -12,7 +12,7 @@ import { collectionsCRUDAtom } from '../../atoms/collections';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import type { BlockSuiteWorkspace } from '../../shared';
 
-export const useFilteredPageMetas = (
+export const useFilteredPageMeta = (
   route: 'all' | 'trash',
   pageMetas: PageMeta[],
   workspace: BlockSuiteWorkspace

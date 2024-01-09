@@ -85,7 +85,7 @@ const CollectionRenderer = ({
   );
   const location = useLocation();
   const currentPath = location.pathname.split('?')[0];
-  const path = `/workspace/${workspace.id}/collection/${collection.id}`;
+  const path = `/workspace/${workspace.id}/pages/collections/${collection.id}`;
 
   const onRename = useCallback(
     (name: string) => {

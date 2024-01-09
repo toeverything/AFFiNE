@@ -105,4 +105,10 @@ export const setPageModeAtom = atom(
 export type PageModeOption = 'all' | 'page' | 'edgeless';
 export const allPageModeSelectAtom = atom<PageModeOption>('all');
 
+export type FilterMode = 'docs' | 'collections' | 'tags';
+export const filterModeAtom = atomWithStorage<FilterMode>(
+  'all-page-filter-mode',
+  'docs'
+);
+
 export const openWorkspaceListModalAtom = atom(false);

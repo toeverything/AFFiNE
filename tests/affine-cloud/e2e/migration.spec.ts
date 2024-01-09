@@ -92,7 +92,7 @@ test.skip('migration', async ({ page, browser }) => {
   }
   await page.reload();
   await page.waitForTimeout(1000);
-  await page.goto(`${coreUrl}/workspace/${workspaceId}/all`);
+  await page.goto(`${coreUrl}/workspace/${workspaceId}/pages`);
   await page.getByTestId('upgrade-workspace-button').click();
   await expect(page.getByText('Refresh Current Page')).toBeVisible({
     timeout: 60000,

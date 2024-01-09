@@ -20,8 +20,8 @@ import { usePageHelper } from '../../components/blocksuite/block-suite-page-list
 import { Header } from '../../components/pure/header';
 import { WindowsAppControls } from '../../components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
+import { useFilteredPageMeta } from '../../hooks/affine/use-filterd-page-meta';
 import { EmptyPageList } from './page-list-empty';
-import { useFilteredPageMetas } from './pages';
 import * as styles from './trash-page.css';
 
 const isWindowsDesktop = environment.isDesktop && environment.isWindows;
@@ -62,7 +62,7 @@ export const TrashPage = () => {
   assertExists(blockSuiteWorkspace);
 
   const pageMetas = useBlockSuitePageMeta(blockSuiteWorkspace);
-  const filteredPageMetas = useFilteredPageMetas(
+  const filteredPageMetas = useFilteredPageMeta(
     'trash',
     pageMetas,
     blockSuiteWorkspace

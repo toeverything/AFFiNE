@@ -3,7 +3,7 @@ import { ConfirmModal } from '@affine/component/ui/modal';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon, ResetIcon } from '@blocksuite/icons';

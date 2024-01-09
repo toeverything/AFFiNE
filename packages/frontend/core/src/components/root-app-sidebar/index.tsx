@@ -13,6 +13,7 @@ import {
 } from '@affine/component/app-sidebar';
 import {
   createEmptyCollection,
+  currentCollectionAtom,
   MoveToTrash,
   useCollectionManager,
   useEditCollectionName,
@@ -20,17 +21,18 @@ import {
 import { Menu } from '@affine/component/ui/menu';
 import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import type { WorkspaceSubPath } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
-import { WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@affine/workspace';
 import { FolderIcon, SettingsIcon } from '@blocksuite/icons';
 import { type Page } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { forwardRef, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { NIL } from 'uuid';
 
 import { openWorkspaceListModalAtom } from '../../atoms';
 import { useHistoryAtom } from '../../atoms/history';
@@ -59,9 +61,7 @@ export type RootAppSidebarProps = {
   createPage: () => Page;
   currentPath: string;
   paths: {
-    all: (workspaceId: string) => string;
-    trash: (workspaceId: string) => string;
-    shared: (workspaceId: string) => string;
+    [Path in WorkspaceSubPath]: (workspaceId: string) => string;
   };
 };
 
@@ -136,9 +136,11 @@ export const RootAppSidebar = ({
   );
 
   const navigateHelper = useNavigateHelper();
-  const backToAll = useCallback(() => {
-    navigateHelper.jumpToSubPath(currentWorkspace.id, WorkspaceSubPath.ALL);
-  }, [currentWorkspace.id, navigateHelper]);
+
+  const currentCollection = useSetAtom(currentCollectionAtom);
+  const removeCurrentCollection = useCallback(() => {
+    currentCollection(NIL);
+  }, [currentCollection]);
   // Listen to the "New Page" action from the menu
   useEffect(() => {
     if (environment.isDesktop) {
@@ -246,9 +248,13 @@ export const RootAppSidebar = ({
         />
         <RouteMenuLinkItem
           icon={<FolderIcon />}
-          currentPath={currentPath}
-          path={paths.all(currentWorkspaceId)}
-          onClick={backToAll}
+          currentPath={
+            currentPath.startsWith(paths.pages(currentWorkspaceId))
+              ? paths.pages(currentWorkspaceId)
+              : currentPath
+          }
+          path={paths.pages(currentWorkspaceId)}
+          onClick={removeCurrentCollection}
         >
           <span data-testid="all-pages">
             {t['com.affine.workspaceSubPath.all']()}
@@ -294,9 +300,7 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.trash']()}
           </span>
         </RouteMenuLinkItem>
-        {blockSuiteWorkspace && (
-          <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
-        )}
+        <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
       </SidebarScrollableContainer>
       <SidebarContainer>
         {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}

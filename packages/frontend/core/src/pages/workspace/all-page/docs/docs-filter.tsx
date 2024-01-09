@@ -8,11 +8,11 @@ import type { Collection, Filter } from '@affine/env/filter';
 import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
-import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { filterContainerStyle } from '../../../components/filter-container.css';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { collectionsCRUDAtom } from '../../../../atoms/collections';
+import { filterContainerStyle } from '../../../../components/filter-container.css';
+import { useNavigateHelper } from '../../../../hooks/use-navigate-helper';
 
-export const FilterCollectionContainer = () => {
+export const FilterContainer = () => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const navigateHelper = useNavigateHelper();
   const setting = useCollectionManager(collectionsCRUDAtom);
