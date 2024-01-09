@@ -179,7 +179,7 @@ test('can collaborate with other user and name should display when editing', asy
   });
   const title = getBlockSuiteEditorTitle(page);
   await title.focus();
-
+  await page.keyboard.press('ArrowDown', { delay: 50 });
   {
     await expect(page2.getByText('TEST USER')).toBeVisible({
       timeout: 2000,
@@ -236,7 +236,8 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   const image = page.locator('affine-image');
 
   page.evaluate(async () => {
-    window.showOpenFilePicker = undefined;
+    // https://github.com/toeverything/blocksuite/blob/master/packages/blocks/src/_common/utils/filesys.ts#L20
+    (window as any).showOpenFilePicker = undefined;
   });
 
   const title = getBlockSuiteEditorTitle(page);

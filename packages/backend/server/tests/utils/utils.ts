@@ -1,12 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-import type { DynamicModule, FactoryProvider } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { PrismaClient, type User } from '@prisma/client';
 
 import { RevertCommand, RunCommand } from '../../src/data/commands/run';
-import { StorageProvide } from '../../src/storage';
 
 export async function flushDB() {
   const client = new PrismaClient();
@@ -52,24 +50,6 @@ export class FakePrisma {
       async update() {
         return this.findFirst();
       },
-    };
-  }
-}
-
-export class FakeStorageModule {
-  static forRoot(): DynamicModule {
-    const storageProvider: FactoryProvider = {
-      provide: StorageProvide,
-      useFactory: async () => {
-        return null;
-      },
-    };
-
-    return {
-      global: true,
-      module: FakeStorageModule,
-      providers: [storageProvider],
-      exports: [storageProvider],
     };
   }
 }

@@ -60,17 +60,14 @@
       "@affine/debug": ["./packages/common/debug"],
       "@affine/env": ["./packages/common/env/src"],
       "@affine/env/*": ["./packages/common/env/src/*"],
-      "@affine/workspace/*": ["./packages/frontend/workspace/src/*"],
+      "@affine/workspace/*": ["./packages/common/workspace/src/*"],
+      "@affine/workspace-impl/*": ["./packages/frontend/workspace-impl/src/*"],
       "@affine/graphql": ["./packages/frontend/graphql/src"],
-      "@affine/copilot": ["./packages/plugins/copilot/src"],
-      "@affine/copilot/*": ["./packages/plugins/copilot/src/*"],
       "@affine/electron/scripts/*": ["./packages/frontend/electron/scripts/*"],
       "@affine-test/kit/*": ["./tests/kit/*"],
       "@affine-test/fixtures/*": ["./tests/fixtures/*"],
       "@toeverything/y-indexeddb": ["./packages/common/y-indexeddb/src"],
-      "@toeverything/hooks/*": ["./packages/frontend/hooks/src/*"],
       "@toeverything/infra/*": ["./packages/common/infra/src/*"],
-      "@affine/sdk/*": ["./packages/common/sdk/src/*"],
       "@affine/native": ["./packages/frontend/native/index.d.ts"],
       "@affine/native/*": ["./packages/frontend/native/*"],
       "@affine/storage": ["./packages/backend/storage/index.d.ts"],
@@ -101,13 +98,13 @@
       "path": "./packages/frontend/graphql"
     },
     {
-      "path": "./packages/frontend/hooks"
-    },
-    {
       "path": "./packages/frontend/i18n"
     },
     {
-      "path": "./packages/frontend/workspace"
+      "path": "./packages/common/workspace"
+    },
+    {
+      "path": "./packages/frontend/workspace-impl"
     },
     // Common
     {
@@ -126,30 +123,11 @@
       "path": "./packages/common/infra"
     },
     {
-      "path": "./packages/common/sdk"
-    },
-    {
       "path": "./packages/common/y-indexeddb"
-    },
-    // Plugins
-    {
-      "path": "./packages/plugins/copilot"
-    },
-    {
-      "path": "./packages/plugins/hello-world"
-    },
-    {
-      "path": "./packages/plugins/image-preview"
-    },
-    {
-      "path": "./packages/plugins/vue-hello-world"
     },
     // Tools
     {
       "path": "./tools/cli"
-    },
-    {
-      "path": "./tools/plugin-cli"
     },
     // Tests
     {
@@ -160,9 +138,6 @@
     },
     {
       "path": "./tests/affine-local"
-    },
-    {
-      "path": "./tests/affine-plugin"
     },
     {
       "path": "./tests/affine-migration"

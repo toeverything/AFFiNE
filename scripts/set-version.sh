@@ -1,6 +1,7 @@
 #!/bin/bash
 
-for DIR in $(yarn workspaces list --json | jq -r '.location'); do
+for DIR_ITEM in $(yarn workspaces list --json | jq -r '.location'); do
+  DIR=$(echo -n "$DIR_ITEM" | sed -e 's/[[:blank:]]*$//' -e 's/[\n\r]*$//')
   if [ -f "$DIR/package.json" ]; then
     echo "Setting version for $DIR"
     jq ".version = \"$1\"" "$DIR"/package.json > tmp.json && mv tmp.json "$DIR"/package.json

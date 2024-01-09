@@ -1,3 +1,5 @@
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
 import { DebugLogger } from '@affine/debug';
 import {
   fetchWithTraceReport,
@@ -5,23 +7,20 @@ import {
   listHistoryQuery,
   recoverDocMutation,
 } from '@affine/graphql';
-import {
-  createAffineCloudBlobStorage,
-  globalBlockSuiteSchema,
-} from '@affine/workspace';
-import {
-  useMutateQueryResource,
-  useMutation,
-  useQueryInfinite,
-} from '@affine/workspace/affine/gql';
+import { globalBlockSuiteSchema } from '@affine/workspace';
+import { createAffineCloudBlobStorage } from '@affine/workspace-impl';
 import { assertEquals } from '@blocksuite/global/utils';
 import { Workspace } from '@blocksuite/store';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { revertUpdate } from '@toeverything/y-indexeddb';
 import { useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { applyUpdate } from 'yjs';
+
+import {
+  useMutateQueryResource,
+  useMutation,
+} from '../../../hooks/use-mutation';
+import { useQueryInfinite } from '../../../hooks/use-query';
 
 const logger = new DebugLogger('page-history');
 
@@ -145,12 +144,12 @@ export const usePageHistory = (
 export const useSnapshotPage = (
   workspaceId: string,
   pageDocId: string,
-  ts?: string,
-  snapshot?: ArrayBuffer
+  ts?: string
 ) => {
+  const snapshot = usePageHistory(workspaceId, pageDocId, ts);
   const page = useMemo(() => {
     if (!ts) {
-      return null;
+      return;
     }
     const pageId = pageDocId + '-' + ts;
     const historyShellWorkspace = getOrCreateWorkspace(workspaceId);
@@ -162,10 +161,13 @@ export const useSnapshotPage = (
       page.awarenessStore.setReadonly(page, true);
       const spaceDoc = page.spaceDoc;
       page
-        .load(() => applyUpdate(spaceDoc, new Uint8Array(snapshot)))
+        .load(() => {
+          applyUpdate(spaceDoc, new Uint8Array(snapshot));
+          historyShellWorkspace.schema.upgradePage(0, {}, spaceDoc);
+        })
         .catch(console.error); // must load before applyUpdate
     }
-    return page;
+    return page ?? undefined;
   }, [pageDocId, snapshot, ts, workspaceId]);
 
   return page;
@@ -174,7 +176,11 @@ export const useSnapshotPage = (
 export const historyListGroupByDay = (histories: DocHistory[]) => {
   const map = new Map<string, DocHistory[]>();
   for (const history of histories) {
-    const day = new Date(history.timestamp).toLocaleDateString();
+    const day = new Date(history.timestamp).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
     const list = map.get(day) ?? [];
     list.push(history);
     map.set(day, list);
@@ -204,8 +210,8 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
       // should also update the page title, since it may be changed in the history
       const title = page.meta.title;
 
-      if (getPageMeta(pageDocId)?.title !== title) {
-        setPageTitle(pageDocId, title);
+      if (getPageMeta(pageId)?.title !== title) {
+        setPageTitle(pageId, title);
       }
 
       await recover({
@@ -226,6 +232,7 @@ export const useRestorePage = (workspace: Workspace, pageId: string) => {
     getPageMeta,
     mutateQueryResource,
     page,
+    pageId,
     recover,
     setPageTitle,
     workspace.id,

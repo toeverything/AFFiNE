@@ -1,5 +1,6 @@
 import { Button } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type {
   Subscription,
   SubscriptionMutator,
@@ -13,9 +14,7 @@ import {
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation } from '@affine/workspace/affine/gql';
 import { DoneIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { useAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -31,6 +30,7 @@ import {
 import { openPaymentDisableAtom } from '../../../../../atoms';
 import { authAtom } from '../../../../../atoms/index';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
+import { useMutation } from '../../../../../hooks/use-mutation';
 import { CancelAction, ResumeAction } from './actions';
 import { BulledListIcon } from './icons/bulled-list';
 import { ConfirmLoadingModal } from './modals';

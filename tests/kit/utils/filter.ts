@@ -138,36 +138,21 @@ export const selectDateFromDatePicker = async (page: Page, date: Date) => {
   await datePickerPopup.waitFor({ state: 'hidden' });
 };
 
-const checkIsLastYear = (date: Date): boolean => {
-  const targetYear = date.getFullYear();
-  const currentYear = new Date().getFullYear();
-  const lastYear = currentYear - 1;
-  return targetYear === lastYear;
-};
-
-const checkIsNextYear = (date: Date): boolean => {
-  const targetYear = date.getFullYear();
-  const currentYear = new Date().getFullYear();
-  const nextYear = currentYear + 1;
-  return targetYear === nextYear;
-};
-
 export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
   const month = date.toLocaleString('en-US', { month: 'long' });
-  const year = date.getFullYear().toString();
+  const year = date.getFullYear();
   // Open the month picker popup
   await clickMonthPicker(page);
   const selectMonth = async (): Promise<void> => {
-    if (checkIsLastYear(date)) {
-      const lastYearButton = page.locator(
-        '[data-testid="month-picker-prev-button"]'
-      );
-      await lastYearButton.click();
-    } else if (checkIsNextYear(date)) {
-      const nextYearButton = page.locator(
-        '[data-testid="month-picker-next-button"]'
-      );
-      await nextYearButton.click();
+    const selectedYear = +(await page
+      .getByTestId('month-picker-current-year')
+      .innerText());
+    if (selectedYear > year) {
+      await page.locator('[data-testid="month-picker-prev-button"]').click();
+      return await selectMonth();
+    } else if (selectedYear < year) {
+      await page.locator('[data-testid="month-picker-next-button"]').click();
+      return await selectMonth();
     }
     // Click on the day cell
     const monthCell = page.locator(`[aria-label="Choose ${month} ${year}"]`);
@@ -199,7 +184,7 @@ export const createPageWithTag = async (
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
-  await page.locator('affine-page-meta-data').click();
+  await page.locator('page-meta-tags').click();
   await page.locator('.add-tag').click();
   for (const name of options.tags) {
     await createTag(page, name);

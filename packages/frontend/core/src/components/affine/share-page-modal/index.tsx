@@ -1,8 +1,8 @@
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { workspaceManagerAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { Workspace } from '@affine/workspace';
-import { workspaceManagerAtom } from '@affine/workspace/atom';
 import type { Page } from '@blocksuite/store';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtomValue } from 'jotai';
 import { useState } from 'react';
 

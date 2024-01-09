@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { Command, CommandRunner } from 'nest-commander';
 
 import { PrismaService } from '../../prisma';
@@ -10,8 +11,8 @@ import { PrismaService } from '../../prisma';
 interface Migration {
   file: string;
   name: string;
-  up: (db: PrismaService) => Promise<void>;
-  down: (db: PrismaService) => Promise<void>;
+  up: (db: PrismaService, injector: ModuleRef) => Promise<void>;
+  down: (db: PrismaService, injector: ModuleRef) => Promise<void>;
 }
 
 export async function collectMigrations(): Promise<Migration[]> {
@@ -46,7 +47,10 @@ export async function collectMigrations(): Promise<Migration[]> {
 })
 export class RunCommand extends CommandRunner {
   logger = new Logger(RunCommand.name);
-  constructor(private readonly db: PrismaService) {
+  constructor(
+    private readonly db: PrismaService,
+    private readonly injector: ModuleRef
+  ) {
     super();
   }
 
@@ -103,14 +107,14 @@ export class RunCommand extends CommandRunner {
     });
 
     try {
-      await migration.up(this.db);
+      await migration.up(this.db, this.injector);
     } catch (e) {
       await this.db.dataMigration.delete({
         where: {
           id: record.id,
         },
       });
-      await migration.down(this.db);
+      await migration.down(this.db, this.injector);
       this.logger.error('Failed to run data migration', e);
       process.exit(1);
     }
@@ -134,7 +138,10 @@ export class RunCommand extends CommandRunner {
 export class RevertCommand extends CommandRunner {
   logger = new Logger(RevertCommand.name);
 
-  constructor(private readonly db: PrismaService) {
+  constructor(
+    private readonly db: PrismaService,
+    private readonly injector: ModuleRef
+  ) {
     super();
   }
 
@@ -168,7 +175,7 @@ export class RevertCommand extends CommandRunner {
 
     try {
       this.logger.log(`Reverting ${name}...`);
-      await migration.down(this.db);
+      await migration.down(this.db, this.injector);
       this.logger.log('Done reverting');
     } catch (e) {
       this.logger.error(`Failed to revert data migration ${name}`, e);

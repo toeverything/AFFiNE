@@ -1,8 +1,8 @@
 import { toast } from '@affine/component';
 import { PublicLinkDisableModal } from '@affine/component/disable-public-link';
 import { ShareMenu } from '@affine/core/components/affine/share-page-modal/share-menu';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import { type Page } from '@blocksuite/store';
 import { expect } from '@storybook/jest';
 import type { Meta, StoryFn } from '@storybook/react';

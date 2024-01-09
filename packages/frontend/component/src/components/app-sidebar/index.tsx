@@ -61,7 +61,7 @@ export function AppSidebar(props: AppSidebarProps): ReactElement {
         // so that the sidebar can be closed on mobile by default
         setOpen(!isFloating);
       }
-      setFloating(isFloating && !!open);
+      setFloating(isFloating);
     }
 
     const dOnResize = debounce(onResize, 50);

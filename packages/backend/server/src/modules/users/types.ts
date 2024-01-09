@@ -1,4 +1,4 @@
-import { Field, Float, ID, ObjectType } from '@nestjs/graphql';
+import { createUnionType, Field, Float, ID, ObjectType } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
 
 @ObjectType('UserQuotaHumanReadable')
@@ -66,6 +66,29 @@ export class UserType implements Partial<User> {
   })
   hasPassword?: boolean;
 }
+
+@ObjectType()
+export class LimitedUserType implements Partial<User> {
+  @Field({ description: 'User email' })
+  email!: string;
+
+  @Field(() => Boolean, {
+    description: 'User password has been set',
+    nullable: true,
+  })
+  hasPassword?: boolean;
+}
+
+export const UserOrLimitedUser = createUnionType({
+  name: 'UserOrLimitedUser',
+  types: () => [UserType, LimitedUserType] as const,
+  resolveType(value) {
+    if (value.id) {
+      return UserType;
+    }
+    return LimitedUserType;
+  },
+});
 
 @ObjectType()
 export class DeleteAccount {

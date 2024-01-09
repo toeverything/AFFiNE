@@ -1,11 +1,10 @@
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import {
   currentWorkspaceAtom,
   waitForCurrentWorkspaceAtom,
   workspaceListAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback } from 'react';
@@ -19,6 +18,7 @@ import {
   openSignOutModalAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
+import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { signOutCloud } from '../utils/cloud-utils';
 

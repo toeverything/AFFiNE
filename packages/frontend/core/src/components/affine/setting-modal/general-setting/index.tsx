@@ -3,7 +3,6 @@ import {
   AppearanceIcon,
   InformationIcon,
   KeyboardIcon,
-  PluginIcon,
 } from '@blocksuite/icons';
 import type { ReactElement, SVGProps } from 'react';
 
@@ -14,13 +13,11 @@ import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
 import { PaymentIcon, UpgradeIcon } from './icons';
 import { AFFiNECloudPlans } from './plans';
-import { Plugins } from './plugins';
 import { Shortcuts } from './shortcuts';
 
 export type GeneralSettingKeys =
   | 'shortcuts'
   | 'appearance'
-  | 'plugins'
   | 'about'
   | 'plans'
   | 'billing';
@@ -51,12 +48,6 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       title: t['com.affine.keyboardShortcuts.title'](),
       icon: KeyboardIcon,
       testId: 'shortcuts-panel-trigger',
-    },
-    {
-      key: 'plugins',
-      title: 'Plugins',
-      icon: PluginIcon,
-      testId: 'plugins-panel-trigger',
     },
     {
       key: 'about',
@@ -96,8 +87,6 @@ export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {
       return <Shortcuts />;
     case 'appearance':
       return <AppearanceSettings />;
-    case 'plugins':
-      return <Plugins />;
     case 'about':
       return <AboutAffine />;
     case 'plans':

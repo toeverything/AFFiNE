@@ -1,0 +1,175 @@
+{
+  "type": "info",
+  "id": "XdwdkEYm8fFZcYAdDa0qT",
+  "blockVersions": {
+    "affine:code": 1,
+    "affine:paragraph": 1,
+    "affine:page": 2,
+    "affine:list": 1,
+    "affine:note": 1,
+    "affine:divider": 1,
+    "affine:image": 1,
+    "affine:surface": 5,
+    "affine:bookmark": 1,
+    "affine:frame": 1,
+    "affine:database": 3,
+    "affine:surface-ref": 1,
+    "affine:data-view": 1,
+    "affine:attachment": 1,
+    "affine:embed-github": 1,
+    "affine:embed-html": 1
+  },
+  "pageVersion": 2,
+  "workspaceVersion": 2,
+  "properties": {
+    "tags": {
+      "options": [
+        {
+          "id": "icg1n5UdkP",
+          "value": "Travel",
+          "color": "var(--affine-tag-gray)"
+        },
+        {
+          "id": "Oe5dSe1DDJ",
+          "value": "Quick summary",
+          "color": "var(--affine-tag-green)"
+        },
+        {
+          "id": "g1L5dXKctL",
+          "value": "OKR",
+          "color": "var(--affine-tag-purple)"
+        },
+        {
+          "id": "q3mceOl_zi",
+          "value": "Streamline your workflow",
+          "color": "var(--affine-tag-teal)"
+        },
+        {
+          "id": "ze07JVwBu4",
+          "value": "Plan",
+          "color": "var(--affine-tag-teal)"
+        },
+        {
+          "id": "8qcYPCTK0h",
+          "value": "Review",
+          "color": "var(--affine-tag-orange)"
+        },
+        {
+          "id": "wg-fBtd2eI",
+          "value": "Engage",
+          "color": "var(--affine-tag-pink)"
+        },
+        {
+          "id": "QYFD_HeQc-",
+          "value": "Create",
+          "color": "var(--affine-tag-blue)"
+        },
+        {
+          "id": "ZHBa2NtdSo",
+          "value": "Learn",
+          "color": "var(--affine-tag-yellow)"
+        }
+      ]
+    }
+  },
+  "pages": [
+    {
+      "id": "rzyBHDgN5KIlEYzB9oBaD",
+      "title": "Getting Started👇",
+      "createDate": 1691548231530,
+      "tags": [
+        "ZHBa2NtdSo",
+        "QYFD_HeQc-",
+        "wg-fBtd2eI"
+      ],
+      "updatedDate": 1691676331623,
+      "favorite": true,
+      "jumpOnce": false
+    },
+    {
+      "id": "9iIScyvuIB_kUKbs1AYOQ",
+      "title": "AFFiNE - not just a note-taking app",
+      "createDate": 1691548220794,
+      "tags": [],
+      "updatedDate": 1691676775642,
+      "favorite": false
+    },
+    {
+      "id": "-P-O4GSfVGTkI16zJRVa4",
+      "title": "Templates Galleries   ",
+      "createDate": 1691551731225,
+      "tags": [],
+      "updatedDate": 1691654611175,
+      "favorite": false
+    },
+    {
+      "id": "0nee_XzkrN23Xy7HMoXL-",
+      "title": "Personal Home",
+      "createDate": 1691552082822,
+      "tags": [],
+      "updatedDate": 1691654606912,
+      "favorite": false
+    },
+    {
+      "id": "nPPyOV0JBNKu5hvW9hE00",
+      "title": "Working Home",
+      "createDate": 1691552090989,
+      "tags": [],
+      "updatedDate": 1691646748171,
+      "favorite": false
+    },
+    {
+      "id": "wbXL4bZcblxLKC6ETqcQ1",
+      "title": "AFFiNE's Personal project management",
+      "createDate": 1691564303138,
+      "tags": [],
+      "updatedDate": 1691646845195
+    },
+    {
+      "id": "e5cYLNpIRUb-nwpSZGdix",
+      "title": "Personal-Knowledge Management ",
+      "createDate": 1691574859042,
+      "tags": [],
+      "updatedDate": 1691648159371
+    },
+    {
+      "id": "b1F2xKjgZ4ISHhXNe1kck",
+      "title": "Annual Performance Review",
+      "createDate": 1691575011078,
+      "tags": [
+        "8qcYPCTK0h"
+      ],
+      "updatedDate": 1691645074511,
+      "favorite": false
+    },
+    {
+      "id": "Scod6coKmJJ-waH1-jkiW",
+      "title": "Brief Event planning  ",
+      "createDate": 1691634722239,
+      "tags": [
+        "ze07JVwBu4"
+      ],
+      "updatedDate": 1691647069662,
+      "favorite": false
+    },
+    {
+      "id": "GWsRbUtMF4Ee6foVg-H9R",
+      "title": "Meeting Summary ",
+      "createDate": 1691635388447,
+      "tags": [
+        "Oe5dSe1DDJ"
+      ],
+      "updatedDate": 1691645873930
+    },
+    {
+      "id": "RCpxnWMtBWmUZy5awgJBh",
+      "title": "OKR Template",
+      "createDate": 1691636192263,
+      "tags": [
+        "q3mceOl_zi",
+        "g1L5dXKctL"
+      ],
+      "updatedDate": 1691645102104
+    }
+  ]
+}

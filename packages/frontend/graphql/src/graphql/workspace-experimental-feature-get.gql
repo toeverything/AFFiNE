@@ -1,0 +1,5 @@
+query availableFeatures($id: String!) {
+  workspace(id: $id) {
+    availableFeatures
+  }
+}

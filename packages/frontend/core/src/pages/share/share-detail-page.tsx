@@ -1,11 +1,11 @@
 import { MainContainer } from '@affine/component/workspace';
 import { DebugLogger } from '@affine/debug';
 import { fetchWithTraceReport } from '@affine/graphql';
+import { globalBlockSuiteSchema } from '@affine/workspace';
 import {
   createAffineCloudBlobStorage,
   createStaticBlobStorage,
-  globalBlockSuiteSchema,
-} from '@affine/workspace';
+} from '@affine/workspace-impl';
 import { assertExists } from '@blocksuite/global/utils';
 import { type Page, Workspace } from '@blocksuite/store';
 import { noop } from 'foxact/noop';

@@ -1,4 +1,4 @@
-import type { ExposedMeta } from '@toeverything/infra/preload/electron';
+import type { ExposedMeta } from '../shared/type';
 
 /**
  * A naive DI implementation to get rid of circular dependency.

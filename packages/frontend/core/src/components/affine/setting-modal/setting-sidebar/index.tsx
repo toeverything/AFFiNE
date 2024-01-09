@@ -4,16 +4,16 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { WorkspaceMetadata } from '@affine/workspace';
+import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
+import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import {
   waitForCurrentWorkspaceAtom,
   workspaceListAtom,
-} from '@affine/workspace/atom';
+} from '@affine/core/modules/workspace';
+import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type { WorkspaceMetadata } from '@affine/workspace';
 import { Logo1Icon } from '@blocksuite/icons';
-import { useWorkspaceBlobObjectUrl } from '@toeverything/hooks/use-workspace-blob';
-import { useWorkspaceInfo } from '@toeverything/hooks/use-workspace-info';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
 import { type ReactElement, Suspense, useCallback } from 'react';
@@ -127,9 +127,6 @@ export const SettingSidebar = ({
       </div>
       <div className={sidebarItemsWrapper}>
         {generalSettingList.map(({ title, icon, key, testId }) => {
-          if (!runtimeConfig.enablePlugin && key === 'plugins') {
-            return null;
-          }
           return (
             <div
               className={clsx(sidebarSelectItem, {

@@ -44,7 +44,7 @@ const commandsIsVisible = async (page: Page, label: string) => {
 async function assertTitle(page: Page, text: string) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
-    const locator = page.locator('.affine-doc-page-block-title').nth(0);
+    const locator = getBlockSuiteEditorTitle(page);
     const actual = await locator.inputValue();
     expect(actual).toBe(text);
   }
@@ -97,7 +97,7 @@ async function assertResultList(page: Page, texts: string[]) {
 async function titleIsFocused(page: Page) {
   const edgeless = page.locator('affine-edgeless-page');
   if (!edgeless) {
-    const title = page.locator('.affine-doc-page-block-title');
+    const title = getBlockSuiteEditorTitle(page);
     await expect(title).toBeVisible();
     await expect(title).toBeFocused();
   }
@@ -441,4 +441,31 @@ test('Create a new page with special characters in the title and search for this
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
   await assertTitle(page, specialTitle);
+});
+
+test('disable quick search when the link-popup is visitable', async ({
+  page,
+}) => {
+  const specialTitle = '"test"';
+
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+
+  await openQuickSearchByShortcut(page);
+  const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
+  await expect(quickSearch).toBeVisible();
+  await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+
+  await getBlockSuiteEditorTitle(page).click();
+  await getBlockSuiteEditorTitle(page).fill(specialTitle);
+  await page.keyboard.press('Enter', { delay: 10 });
+  await page.keyboard.insertText('123456');
+  await page.getByText('123456').dblclick();
+
+  await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
+  const linkPopup = page.locator('.affine-link-popover');
+  await expect(linkPopup).toBeVisible();
+  const currentQuickSearch = page.locator('[data-testid=cmdk-quick-search]');
+  await expect(currentQuickSearch).not.toBeVisible();
 });

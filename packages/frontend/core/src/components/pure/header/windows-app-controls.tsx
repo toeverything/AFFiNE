@@ -1,3 +1,4 @@
+import { apis, events } from '@affine/electron-api';
 import { useAtomValue } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { useCallback } from 'react';
@@ -8,7 +9,7 @@ import * as style from './style.css';
 const maximizedAtom = atomWithObservable(() => {
   return new Observable<boolean>(subscriber => {
     subscriber.next(false);
-    return window.events?.ui.onMaximized(maximized => {
+    return events?.ui.onMaximized(maximized => {
       return subscriber.next(maximized);
     });
   });
@@ -76,17 +77,17 @@ const unmaximizedSVG = (
 
 export const WindowsAppControls = () => {
   const handleMinimizeApp = useCallback(() => {
-    window.apis?.ui.handleMinimizeApp().catch(err => {
+    apis?.ui.handleMinimizeApp().catch(err => {
       console.error(err);
     });
   }, []);
   const handleMaximizeApp = useCallback(() => {
-    window.apis?.ui.handleMaximizeApp().catch(err => {
+    apis?.ui.handleMaximizeApp().catch(err => {
       console.error(err);
     });
   }, []);
   const handleCloseApp = useCallback(() => {
-    window.apis?.ui.handleCloseApp().catch(err => {
+    apis?.ui.handleCloseApp().catch(err => {
       console.error(err);
     });
   }, []);

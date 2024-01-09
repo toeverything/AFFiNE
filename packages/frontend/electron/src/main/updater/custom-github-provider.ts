@@ -24,6 +24,17 @@ interface GithubUpdateInfo extends UpdateInfo {
   tag: string;
 }
 
+interface GithubRelease {
+  id: number;
+  tag_name: string;
+  target_commitish: string;
+  name: string;
+  draft: boolean;
+  prerelease: boolean;
+  created_at: string;
+  published_at: string;
+}
+
 const hrefRegExp = /\/tag\/([^/]+)$/;
 
 export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
@@ -54,7 +65,7 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
 
     const feed = parseXml(feedXml);
     // noinspection TypeScriptValidateJSTypes
-    const latestRelease = feed.element(
+    let latestRelease = feed.element(
       'entry',
       false,
       `No published versions on GitHub`
@@ -74,6 +85,10 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
         );
       }
 
+      const releaseTag = await this.getLatestTagByRelease(
+        currentChannel,
+        cancellationToken
+      );
       for (const element of feed.getElements('entry')) {
         // noinspection TypeScriptValidateJSTypes
         const hrefElement = hrefRegExp.exec(
@@ -90,9 +105,16 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
         const hrefChannel =
           (semver.prerelease(hrefTag)?.[0] as string) || 'stable';
 
-        const isNextPreRelease = hrefChannel === currentChannel;
+        let isNextPreRelease = false;
+        if (releaseTag) {
+          isNextPreRelease = releaseTag === hrefTag;
+        } else {
+          isNextPreRelease = hrefChannel === currentChannel;
+        }
+
         if (isNextPreRelease) {
           tag = hrefTag;
+          latestRelease = element;
           break;
         }
       }
@@ -154,7 +176,7 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
     }
 
     const result = parseUpdateInfo(rawData, channelFile, channelFileUrl);
-    if (result.releaseName === null) {
+    if (result.releaseName == null) {
       result.releaseName = latestRelease.elementValueOrEmpty('title');
     }
 
@@ -174,6 +196,51 @@ export class CustomGitHubProvider extends BaseGitHubProvider<GithubUpdateInfo> {
 
   private get basePath(): string {
     return `/${this.options.owner}/${this.options.repo}/releases`;
+  }
+
+  /**
+   * Use release api to get latest version to filter draft version.
+   * But this api have low request limit 60-times/1-hour, use this to help, not depend on it
+   * https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28
+   * https://api.github.com/repos/toeverything/affine/releases
+   * https://docs.github.com/en/rest/rate-limit/rate-limit?apiVersion=2022-11-28#about-rate-limits
+   */
+  private async getLatestTagByRelease(
+    currentChannel: string,
+    cancellationToken: CancellationToken
+  ) {
+    try {
+      const releasesStr = await this.httpRequest(
+        newUrlFromBase(`/repos${this.basePath}`, this.baseApiUrl),
+        {
+          accept: 'Accept: application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        cancellationToken
+      );
+
+      if (!releasesStr) {
+        return null;
+      }
+
+      const releases: GithubRelease[] = JSON.parse(releasesStr);
+      for (const release of releases) {
+        if (release.draft) {
+          continue;
+        }
+
+        const releaseTag = release.tag_name;
+        const releaseChannel =
+          (semver.prerelease(releaseTag)?.[0] as string) || 'stable';
+        if (releaseChannel === currentChannel) {
+          return release.tag_name;
+        }
+      }
+    } catch (e: any) {
+      console.info(`Cannot parse release: ${e.stack || e.message}`);
+    }
+
+    return null;
   }
 
   resolveFiles(updateInfo: GithubUpdateInfo): Array<ResolvedUpdateFileInfo> {

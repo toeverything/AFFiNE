@@ -1,14 +1,14 @@
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { SubscriptionMutator } from '@affine/core/hooks/use-subscription';
 import {
   cancelSubscriptionMutation,
   resumeSubscriptionMutation,
 } from '@affine/graphql';
-import { useMutation } from '@affine/workspace/affine/gql';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
 import { useState } from 'react';
 
+import { useMutation } from '../../../../../hooks/use-mutation';
 import { ConfirmLoadingModal, DowngradeModal } from './modals';
 
 /**

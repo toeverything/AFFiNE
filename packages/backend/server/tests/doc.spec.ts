@@ -22,8 +22,9 @@ import {
 import { EventModule } from '../src/event';
 import { DocManager, DocModule } from '../src/modules/doc';
 import { QuotaModule } from '../src/modules/quota';
+import { StorageModule } from '../src/modules/storage';
 import { PrismaModule, PrismaService } from '../src/prisma';
-import { FakeStorageModule, flushDB } from './utils';
+import { flushDB } from './utils';
 
 const createModule = () => {
   return Test.createTestingModule({
@@ -32,7 +33,7 @@ const createModule = () => {
       CacheModule,
       EventModule,
       QuotaModule,
-      FakeStorageModule.forRoot(),
+      StorageModule,
       ConfigModule.forRoot(),
       DocModule,
       RevertCommand,

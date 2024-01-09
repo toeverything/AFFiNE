@@ -1,8 +1,8 @@
 import { toast } from '@affine/component';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { WorkspaceSubPath } from '@affine/env/workspace';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';

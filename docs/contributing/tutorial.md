@@ -17,7 +17,6 @@ The codebase is organized as follows:
 - `packages/` contains all code running in production.
   - `backend/` contains backend code, more information from <https://github.com/toeverything/OctoBase>.
   - `frontend/` contains frontend code, including the web app, the electron app and business libraries.
-  - `plugins/` contains all build-in plugins.
   - `common` contains the isomorphic code or basic libraries without business.
 - `tools/` contains tools to help developing or CI, not used in production.
 - `tests/` contains testings across different libraries, including e2e testings and integration testings.

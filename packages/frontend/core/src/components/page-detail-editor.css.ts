@@ -20,6 +20,6 @@ globalStyle(`${editor} .affine-doc-viewport`, {
   paddingBottom: '150px',
 });
 
-globalStyle('.is-public-page affine-page-meta-data', {
+globalStyle('.is-public-page page-meta-tags', {
   display: 'none',
 });

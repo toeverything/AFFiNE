@@ -33,7 +33,7 @@ export default defineConfig({
       '**/dist',
       '**/build',
       '**/out,',
-      '**/frontend/electron',
+      '**/packages/frontend/electron',
     ],
     testTimeout: 5000,
     coverage: {

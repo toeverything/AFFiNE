@@ -1,90 +1,39 @@
 {
   "name": "@toeverything/infra",
   "type": "module",
-  "module": "./dist/index.js",
-  "main": "./dist/index.cjs",
-  "types": "./dist/src/index.d.ts",
+  "private": true,
   "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
-    "./blocksuite": {
-      "types": "./dist/src/blocksuite/index.d.ts",
-      "import": "./dist/blocksuite.js",
-      "require": "./dist/blocksuite.cjs"
-    },
-    "./command": {
-      "types": "./dist/src/command/index.d.ts",
-      "import": "./dist/command.js",
-      "require": "./dist/command.cjs"
-    },
-    "./core/*": {
-      "types": "./dist/src/core/*.d.ts",
-      "import": "./dist/core/*.js",
-      "require": "./dist/core/*.cjs"
-    },
-    "./preload/*": {
-      "types": "./dist/src/preload/*.d.ts",
-      "import": "./dist/preload/*.js",
-      "require": "./dist/preload/*.cjs"
-    },
-    "./atom": {
-      "type": "./dist/src/atom.d.ts",
-      "import": "./dist/atom.js",
-      "require": "./dist/atom.cjs"
-    },
-    "./type": {
-      "type": "./dist/src/type.d.ts",
-      "import": "./dist/type.js",
-      "require": "./dist/type.cjs"
-    },
-    "./app-config-storage": {
-      "type": "./dist/src/app-config-storage.d.ts",
-      "import": "./dist/app-config-storage.js",
-      "require": "./dist/app-config-storage.cjs"
-    },
-    "./__internal__/*": {
-      "type": "./dist/src/__internal__/*.d.ts",
-      "import": "./dist/__internal__/*.js",
-      "require": "./dist/__internal__/*.cjs"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch"
+    "./blocksuite": "./src/blocksuite/index.ts",
+    "./command": "./src/command/index.ts",
+    "./atom": "./src/atom/index.ts",
+    "./app-config-storage": "./src/app-config-storage.ts",
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
-    "@affine/sdk": "workspace:*",
-    "@blocksuite/blocks": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/global": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/store": "0.11.0-nightly-202312220916-e3abcbb",
+    "@affine/templates": "workspace:*",
+    "@blocksuite/blocks": "0.11.0-nightly-202401020419-752a5b8",
+    "@blocksuite/global": "0.11.0-nightly-202401020419-752a5b8",
+    "@blocksuite/store": "0.11.0-nightly-202401020419-752a5b8",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
+    "nanoid": "^5.0.3",
     "tinykeys": "^2.1.0",
+    "yjs": "^13.6.10",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/lit": "0.11.0-nightly-202312220916-e3abcbb",
-    "@blocksuite/presets": "0.11.0-nightly-202312220916-e3abcbb",
-    "@testing-library/react": "^14.0.0",
+    "@blocksuite/lit": "0.11.0-nightly-202401020419-752a5b8",
+    "@blocksuite/presets": "0.11.0-nightly-202401020419-752a5b8",
     "async-call-rpc": "^6.3.1",
-    "electron": "link:../../frontend/electron/node_modules/electron",
-    "nanoid": "^5.0.3",
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
     "vite": "^5.0.6",
-    "vite-plugin-dts": "3.6.0",
-    "vitest": "1.0.4",
-    "yjs": "^13.6.10"
+    "vite-plugin-dts": "3.7.0",
+    "vitest": "1.1.3"
   },
   "peerDependencies": {
     "@affine/templates": "*",

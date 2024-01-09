@@ -7,6 +7,7 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine-test/kit": "workspace:*",
+    "@affine/electron-api": "workspace:*",
     "@playwright/test": "^1.39.0",
     "@types/fs-extra": "^11.0.2",
     "fs-extra": "^11.1.1",

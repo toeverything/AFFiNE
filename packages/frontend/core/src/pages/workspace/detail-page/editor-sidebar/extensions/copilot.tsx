@@ -1,8 +1,7 @@
-import { editorContainerAtom } from '@affine/component/block-suite-editor';
+import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { assertExists } from '@blocksuite/global/utils';
 import { AiIcon } from '@blocksuite/icons';
 import { CopilotPanel } from '@blocksuite/presets';
-import { useAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
 
 import type { EditorExtension } from '../types';
@@ -11,7 +10,7 @@ import * as styles from './outline.css';
 // A wrapper for CopilotPanel
 const EditorCopilotPanel = () => {
   const copilotPanelRef = useRef<CopilotPanel | null>(null);
-  const [editorContainer] = useAtom(editorContainerAtom);
+  const [editor] = useActiveBlocksuiteEditor();
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
@@ -23,7 +22,7 @@ const EditorCopilotPanel = () => {
     }
   }, []);
 
-  if (!editorContainer) {
+  if (!editor) {
     return;
   }
 
@@ -31,8 +30,8 @@ const EditorCopilotPanel = () => {
     copilotPanelRef.current = new CopilotPanel();
   }
 
-  if (editorContainer !== copilotPanelRef.current?.editor) {
-    (copilotPanelRef.current as CopilotPanel).editor = editorContainer;
+  if (editor !== copilotPanelRef.current?.editor) {
+    (copilotPanelRef.current as CopilotPanel).editor = editor;
     // (copilotPanelRef.current as CopilotPanel).fitPadding = [20, 20, 20, 20];
   }
 

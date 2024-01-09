@@ -1,5 +1,6 @@
 import type { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { SettingsIcon } from '@blocksuite/icons';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 import { appSettingAtom } from '@toeverything/infra/atom';
 import {
   PreconditionStrategy,
@@ -16,11 +17,13 @@ export function registerAffineSettingsCommands({
   store,
   theme,
   languageHelper,
+  editor,
 }: {
   t: ReturnType<typeof useAFFiNEI18N>;
   store: ReturnType<typeof createStore>;
   theme: ReturnType<typeof useTheme>;
   languageHelper: ReturnType<typeof useLanguageHelper>;
+  editor: AffineEditorContainer | null;
 }) {
   const unsubs: Array<() => void> = [];
   const { onLanguageChange, languagesList, currentLanguage } = languageHelper;
@@ -36,7 +39,18 @@ export function registerAffineSettingsCommands({
       icon: <SettingsIcon />,
       run() {
         const quickSearchModalState = store.get(openQuickSearchModalAtom);
-        store.set(openQuickSearchModalAtom, !quickSearchModalState);
+
+        if (!editor) {
+          return store.set(openQuickSearchModalAtom, !quickSearchModalState);
+        }
+        // Due to a conflict with the shortcut for creating a link after selecting text in blocksuite,
+        // opening the quick search modal is disabled when link-popup is visitable.
+        const textSelection = editor.host?.std.selection.find('text');
+        if (textSelection && textSelection.from.length > 0) {
+          const linkPopup = document.querySelector('link-popup');
+          if (linkPopup) return;
+        }
+        return store.set(openQuickSearchModalAtom, !quickSearchModalState);
       },
     })
   );

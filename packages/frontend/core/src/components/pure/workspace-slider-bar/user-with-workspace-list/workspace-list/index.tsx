@@ -1,10 +1,17 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { WorkspaceList } from '@affine/component/workspace-list';
+import {
+  useWorkspaceAvatar,
+  useWorkspaceName,
+} from '@affine/core/hooks/use-workspace-info';
+import {
+  currentWorkspaceAtom,
+  workspaceListAtom,
+} from '@affine/core/modules/workspace';
 import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
-import { currentWorkspaceAtom } from '@affine/workspace/atom';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { useAtomValue, useSetAtom } from 'jotai';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -54,6 +61,8 @@ const CloudWorkSpaceList = ({
         onSettingClick={onClickWorkspaceSetting}
         onDragEnd={onDragEnd}
         useIsWorkspaceOwner={useIsWorkspaceOwner}
+        useWorkspaceName={useWorkspaceName}
+        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
@@ -83,18 +92,21 @@ const LocalWorkspaces = ({
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
         onDragEnd={onDragEnd}
+        useIsWorkspaceOwner={useIsWorkspaceOwner}
+        useWorkspaceName={useWorkspaceName}
+        useWorkspaceAvatar={useWorkspaceAvatar}
       />
     </div>
   );
 };
 
 export const AFFiNEWorkspaceList = ({
-  workspaces,
   onEventEnd,
 }: {
-  workspaces: WorkspaceMetadata[];
   onEventEnd?: () => void;
 }) => {
+  const workspaces = useAtomValue(workspaceListAtom);
+
   const setOpenCreateWorkspaceModal = useSetAtom(openCreateWorkspaceModalAtom);
 
   const { jumpToSubPath } = useNavigateHelper();

@@ -35,6 +35,23 @@ spec:
           - name: DATABASE_URL
             value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.gcloud.cloudSqlInternal }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
           {{ end }}
+          {{ if .Values.app.objectStorage.r2.enabled }}
+          - name: R2_OBJECT_STORAGE_ACCOUNT_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: accountId
+          - name: R2_OBJECT_STORAGE_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: accessKeyId
+          - name: R2_OBJECT_STORAGE_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.app.objectStorage.r2.secretName }}"
+                key: secretAccessKey
+          {{ end }}
         resources:
           requests:
             cpu: '100m'

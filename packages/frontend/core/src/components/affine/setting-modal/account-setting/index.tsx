@@ -7,6 +7,7 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   allBlobSizesQuery,
   removeAvatarMutation,
@@ -14,9 +15,7 @@ import {
   uploadAvatarMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import bytes from 'bytes';
 import { useSetAtom } from 'jotai';
 import {
@@ -35,6 +34,8 @@ import {
 } from '../../../../atoms';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { useSelfHosted } from '../../../../hooks/affine/use-server-config';
+import { useMutation } from '../../../../hooks/use-mutation';
+import { useQuery } from '../../../../hooks/use-query';
 import { useUserSubscription } from '../../../../hooks/use-subscription';
 import { validateAndReduceImage } from '../../../../utils/reduce-image';
 import { Upload } from '../../../pure/file-upload';

@@ -19,25 +19,10 @@ mod:dev:
           - 'tools/cli/**/*'
           - 'packages/common/debug/**/*'
 
-mod:plugin:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/plugins/**/*'
-
-plugin:copilot:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/plugins/copilot/**/*'
-
 mod:infra:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/common/infra/**/*'
-
-mod:sdk:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/common/sdk/**/*'
 
 mod:plugin-cli:
   - changed-files:
@@ -47,7 +32,12 @@ mod:plugin-cli:
 mod:workspace:
   - changed-files:
       - any-glob-to-any-file:
-          - 'packages/frontend/workspace/**/*'
+          - 'packages/common/workspace/**/*'
+
+mod:workspace-impl:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/frontend/workspace-impl/**/*'
 
 mod:i18n:
   - changed-files:
@@ -58,11 +48,6 @@ mod:env:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/common/env/**/*'
-
-mod:hooks:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'packages/frontend/hooks/**/*'
 
 mod:component:
   - changed-files:

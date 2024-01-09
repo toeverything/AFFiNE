@@ -1,7 +1,6 @@
 import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { ImagePreviewModal } from '@affine/image-preview-plugin/src/component';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { ImagePreviewModal } from '@affine/core/components/image-preview';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Page } from '@blocksuite/store';
 import type { Meta } from '@storybook/react';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';

@@ -5,6 +5,8 @@ export * from './utils';
 
 import { setupGlobal } from '@affine/env/global';
 
+import { gqlFetcherFactory } from './fetcher';
+
 setupGlobal();
 
 export function getBaseUrl(): string {
@@ -14,3 +16,5 @@ export function getBaseUrl(): string {
   const { protocol, hostname, port } = window.location;
   return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
 }
+
+export const fetcher = gqlFetcherFactory(getBaseUrl() + '/graphql');

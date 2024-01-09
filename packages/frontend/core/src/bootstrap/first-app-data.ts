@@ -1,7 +1,7 @@
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { workspaceManager } from '@affine/workspace';
+import { workspaceManager } from '@affine/workspace-impl';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   buildShowcaseWorkspace,

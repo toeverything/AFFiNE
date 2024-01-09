@@ -1,8 +1,9 @@
 import type { Workspace } from '@blocksuite/store';
-import { useBlockSuitePagePreview } from '@toeverything/hooks/use-block-suite-page-preview';
-import { useBlockSuiteWorkspacePage } from '@toeverything/hooks/use-block-suite-workspace-page';
 import { useAtomValue } from 'jotai';
 import { Suspense } from 'react';
+
+import { useBlockSuitePagePreview } from './use-block-suite-page-preview';
+import { useBlockSuiteWorkspacePage } from './use-block-suite-workspace-page';
 
 interface PagePreviewInnerProps {
   workspace: Workspace;

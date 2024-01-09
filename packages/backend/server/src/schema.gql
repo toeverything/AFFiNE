@@ -72,6 +72,113 @@ type RemoveAvatar {
   success: Boolean!
 }
 
+type InviteUserType {
+  """User name"""
+  name: String
+
+  """User email"""
+  email: String
+
+  """User avatar url"""
+  avatarUrl: String
+
+  """User email verified"""
+  emailVerified: DateTime
+
+  """User created date"""
+  createdAt: DateTime
+
+  """User password has been set"""
+  hasPassword: Boolean
+  id: ID!
+
+  """User permission in workspace"""
+  permission: Permission!
+
+  """Invite id"""
+  inviteId: String!
+
+  """User accepted"""
+  accepted: Boolean!
+}
+
+"""User permission in workspace"""
+enum Permission {
+  Read
+  Write
+  Admin
+  Owner
+}
+
+type WorkspaceType {
+  id: ID!
+
+  """is Public workspace"""
+  public: Boolean!
+
+  """Workspace created date"""
+  createdAt: DateTime!
+
+  """Members of workspace"""
+  members(skip: Int, take: Int): [InviteUserType!]!
+
+  """Permission of current signed in user in workspace"""
+  permission: Permission!
+
+  """member count of workspace"""
+  memberCount: Int!
+
+  """Owner of workspace"""
+  owner: UserType!
+
+  """Available features of workspace"""
+  availableFeatures: [FeatureType!]!
+
+  """Enabled features of workspace"""
+  features: [FeatureType!]!
+
+  """Shared pages of workspace"""
+  sharedPages: [String!]! @deprecated(reason: "use WorkspaceType.publicPages")
+
+  """Public pages of a workspace"""
+  publicPages: [WorkspacePage!]!
+  histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
+
+  """Blobs size of workspace"""
+  blobsSize: Int!
+}
+
+"""The type of workspace feature"""
+enum FeatureType {
+  Copilot
+  EarlyAccess
+}
+
+type InvitationWorkspaceType {
+  id: ID!
+
+  """Workspace name"""
+  name: String!
+
+  """Base64 encoded avatar"""
+  avatar: String!
+}
+
+type WorkspaceBlobSizes {
+  size: Float!
+}
+
+type InvitationType {
+  """Workspace information"""
+  workspace: InvitationWorkspaceType!
+
+  """User information"""
+  user: UserType!
+
+  """Invitee information"""
+  invitee: UserType!
+}
+
 type TokenType {
   token: String!
   refresh: String!
@@ -147,99 +254,10 @@ enum InvoiceStatus {
   Uncollectible
 }
 
-type InviteUserType {
-  """User name"""
-  name: String
-
-  """User email"""
-  email: String
-
-  """User avatar url"""
-  avatarUrl: String
-
-  """User email verified"""
-  emailVerified: DateTime
-
-  """User created date"""
-  createdAt: DateTime
-
-  """User password has been set"""
-  hasPassword: Boolean
-  id: ID!
-
-  """User permission in workspace"""
-  permission: Permission!
-
-  """Invite id"""
-  inviteId: String!
-
-  """User accepted"""
-  accepted: Boolean!
-}
-
-"""User permission in workspace"""
-enum Permission {
-  Read
-  Write
-  Admin
-  Owner
-}
-
-type WorkspaceType {
-  id: ID!
-
-  """is Public workspace"""
-  public: Boolean!
-
-  """Workspace created date"""
-  createdAt: DateTime!
-
-  """Members of workspace"""
-  members(skip: Int, take: Int): [InviteUserType!]!
-
-  """Permission of current signed in user in workspace"""
-  permission: Permission!
-
-  """member count of workspace"""
-  memberCount: Int!
-
-  """Owner of workspace"""
-  owner: UserType!
-
-  """Blobs size of workspace"""
-  blobsSize: Int!
-
-  """Shared pages of workspace"""
-  sharedPages: [String!]! @deprecated(reason: "use WorkspaceType.publicPages")
-
-  """Public pages of a workspace"""
-  publicPages: [WorkspacePage!]!
-  histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
-}
-
-type InvitationWorkspaceType {
-  id: ID!
-
-  """Workspace name"""
-  name: String!
-
-  """Base64 encoded avatar"""
-  avatar: String!
-}
-
-type WorkspaceBlobSizes {
-  size: Float!
-}
-
-type InvitationType {
-  """Workspace information"""
-  workspace: InvitationWorkspaceType!
-
-  """User information"""
-  user: UserType!
-
-  """Invitee information"""
-  invitee: UserType!
+type DocHistoryType {
+  workspaceId: String!
+  id: String!
+  timestamp: DateTime!
 }
 
 type WorkspacePage {
@@ -253,12 +271,6 @@ type WorkspacePage {
 enum PublicPageMode {
   Page
   Edgeless
-}
-
-type DocHistoryType {
-  workspaceId: String!
-  id: String!
-  timestamp: DateTime!
 }
 
 type Query {
@@ -279,19 +291,30 @@ type Query {
 
   """Update workspace"""
   getInviteInfo(inviteId: String!): InvitationType!
+  listWorkspaceFeatures(feature: FeatureType!): [WorkspaceType!]!
 
   """List blobs of workspace"""
-  listBlobs(workspaceId: String!): [String!]!
-  collectAllBlobSizes: WorkspaceBlobSizes!
-  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes!
+  listBlobs(workspaceId: String!): [String!]! @deprecated(reason: "use `workspace.blobs` instead")
+  collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.storageUsage` instead")
+  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
 
   """Get current user"""
   currentUser: UserType
 
   """Get user by email"""
-  user(email: String!): UserType
+  user(email: String!): UserOrLimitedUser
   earlyAccessUsers: [UserType!]!
   prices: [SubscriptionPrice!]!
+}
+
+union UserOrLimitedUser = UserType | LimitedUserType
+
+type LimitedUserType {
+  """User email"""
+  email: String!
+
+  """User password has been set"""
+  hasPassword: Boolean
 }
 
 type Mutation {
@@ -314,13 +337,16 @@ type Mutation {
   revoke(workspaceId: String!, userId: String!): Boolean!
   acceptInviteById(workspaceId: String!, inviteId: String!, sendAcceptMail: Boolean): Boolean!
   leaveWorkspace(workspaceId: String!, workspaceName: String!, sendLeaveMail: Boolean): Boolean!
-  setBlob(workspaceId: String!, blob: Upload!): String!
-  deleteBlob(workspaceId: String!, hash: String!): Boolean!
+  addWorkspaceFeature(workspaceId: String!, feature: FeatureType!): Int!
+  removeWorkspaceFeature(workspaceId: String!, feature: FeatureType!): Int!
+  setWorkspaceExperimentalFeature(workspaceId: String!, feature: FeatureType!, enable: Boolean!): Boolean!
   sharePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "renamed to publicPage")
   publishPage(workspaceId: String!, pageId: String!, mode: PublicPageMode = Page): WorkspacePage!
   revokePage(workspaceId: String!, pageId: String!): Boolean! @deprecated(reason: "use revokePublicPage")
   revokePublicPage(workspaceId: String!, pageId: String!): WorkspacePage!
   recoverDoc(workspaceId: String!, guid: String!, timestamp: DateTime!): DateTime!
+  setBlob(workspaceId: String!, blob: Upload!): String!
+  deleteBlob(workspaceId: String!, hash: String!): Boolean!
 
   """Upload user avatar"""
   uploadAvatar(avatar: Upload!): UserType!

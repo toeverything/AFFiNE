@@ -4,14 +4,14 @@ import {
   useCollectionManager,
 } from '@affine/component/page-list';
 import { ResizePanel } from '@affine/component/resize-panel';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
-import { appSettingAtom, currentPageIdAtom } from '@toeverything/infra/atom';
+import { appSettingAtom } from '@toeverything/infra/atom';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   memo,
@@ -26,14 +26,16 @@ import type { Map as YMap } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
 import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { currentModeAtom } from '../../../atoms/mode';
+import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
+import { ImagePreviewModal } from '../../../components/image-preview';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
+import { useDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
@@ -113,6 +115,7 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
+  useDocumentTitle(pageMeta?.title ? `${pageMeta.title} · AFFiNE` : null);
 
   const onLoad = useCallback(
     (page: Page, editor: AffineEditorContainer) => {
@@ -174,14 +177,17 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
           </>
         }
         main={
-          <div className={styles.editorContainer}>
-            <PageDetailEditor
-              pageId={currentPageId}
-              onLoad={onLoad}
-              workspace={blockSuiteWorkspace}
-            />
-            <HubIsland />
-          </div>
+          // Add a key to force rerender when page changed, to avoid error boundary persisting.
+          <AffineErrorBoundary key={currentPageId}>
+            <div className={styles.editorContainer}>
+              <PageDetailEditor
+                pageId={currentPageId}
+                onLoad={onLoad}
+                workspace={blockSuiteWorkspace}
+              />
+              <HubIsland />
+            </div>
+          </AffineErrorBoundary>
         }
         footer={isInTrash ? <TrashPageFooter pageId={page.id} /> : null}
         sidebar={
@@ -192,6 +198,10 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
             </div>
           ) : null
         }
+      />
+      <ImagePreviewModal
+        pageId={currentPageId}
+        workspace={blockSuiteWorkspace}
       />
       <GlobalPageHistoryModal />
     </>
@@ -261,10 +271,5 @@ export const Component = () => {
 
   const pageId = params.pageId;
 
-  // Add a key to force rerender when page changed, to avoid error boundary persisting.
-  return (
-    <AffineErrorBoundary key={params.pageId}>
-      {pageId ? <DetailPage pageId={pageId} /> : null}
-    </AffineErrorBoundary>
-  );
+  return pageId ? <DetailPage pageId={pageId} /> : null;
 };

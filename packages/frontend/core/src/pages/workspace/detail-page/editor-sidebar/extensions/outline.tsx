@@ -1,8 +1,7 @@
-import { editorContainerAtom } from '@affine/component/block-suite-editor';
+import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { assertExists } from '@blocksuite/global/utils';
 import { TocIcon } from '@blocksuite/icons';
 import { TOCPanel } from '@blocksuite/presets';
-import { useAtom } from 'jotai';
 import { useCallback, useRef } from 'react';
 
 import type { EditorExtension } from '../types';
@@ -11,7 +10,7 @@ import * as styles from './outline.css';
 // A wrapper for TOCNotesPanel
 const EditorOutline = () => {
   const tocPanelRef = useRef<TOCPanel | null>(null);
-  const [editorContainer] = useAtom(editorContainerAtom);
+  const [editor] = useActiveBlocksuiteEditor();
 
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {
@@ -20,7 +19,7 @@ const EditorOutline = () => {
     }
   }, []);
 
-  if (!editorContainer) {
+  if (!editor) {
     return;
   }
 
@@ -28,8 +27,8 @@ const EditorOutline = () => {
     tocPanelRef.current = new TOCPanel();
   }
 
-  if (editorContainer !== tocPanelRef.current?.editor) {
-    (tocPanelRef.current as TOCPanel).editor = editorContainer;
+  if (editor !== tocPanelRef.current?.editor) {
+    (tocPanelRef.current as TOCPanel).editor = editor;
     (tocPanelRef.current as TOCPanel).fitPadding = [20, 20, 20, 20];
   }
 

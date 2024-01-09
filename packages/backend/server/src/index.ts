@@ -5,7 +5,6 @@ startAutoMetrics();
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
-import { static as staticMiddleware } from 'express';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from './app';
@@ -42,10 +41,6 @@ const config = app.get(Config);
 
 const host = config.node.prod ? '0.0.0.0' : 'localhost';
 const port = config.port ?? 3010;
-
-if (!config.objectStorage.r2.enabled) {
-  app.use('/assets', staticMiddleware(config.objectStorage.fs.path));
-}
 
 if (config.redis.enabled) {
   const redisIoAdapter = new RedisIoAdapter(app);

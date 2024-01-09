@@ -15,13 +15,16 @@
       "path": "../../frontend/graphql"
     },
     {
-      "path": "../../frontend/hooks"
-    },
-    {
       "path": "../../frontend/i18n"
     },
     {
-      "path": "../../frontend/workspace"
+      "path": "../../common/workspace"
+    },
+    {
+      "path": "../../frontend/workspace-impl"
+    },
+    {
+      "path": "../../frontend/electron-api"
     },
     {
       "path": "../../common/debug"
@@ -30,7 +33,7 @@
       "path": "../../common/env"
     },
     {
-      "path": "../../plugins/copilot"
+      "path": "../../common/y-indexeddb"
     },
     {
       "path": "./tsconfig.node.json"

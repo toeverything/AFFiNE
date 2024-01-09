@@ -1,7 +1,7 @@
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useTheme } from 'next-themes';
 import {
   type FC,

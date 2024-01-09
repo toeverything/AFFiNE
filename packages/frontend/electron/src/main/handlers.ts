@@ -1,12 +1,3 @@
-import type {
-  ClipboardHandlerManager,
-  ConfigStorageHandlerManager,
-  DebugHandlerManager,
-  ExportHandlerManager,
-  UIHandlerManager,
-  UnwrapManagerHandlerToServerSide,
-  UpdaterHandlerManager,
-} from '@toeverything/infra/index';
 import { ipcMain } from 'electron';
 
 import { clipboardHandlers } from './clipboard';
@@ -25,33 +16,6 @@ export const debugHandlers = {
   },
 };
 
-type AllHandlers = {
-  debug: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    DebugHandlerManager
-  >;
-  clipboard: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    ClipboardHandlerManager
-  >;
-  export: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    ExportHandlerManager
-  >;
-  ui: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    UIHandlerManager
-  >;
-  updater: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    UpdaterHandlerManager
-  >;
-  configStorage: UnwrapManagerHandlerToServerSide<
-    Electron.IpcMainInvokeEvent,
-    ConfigStorageHandlerManager
-  >;
-};
-
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
   debug: debugHandlers,
@@ -60,7 +24,7 @@ export const allHandlers = {
   export: exportHandlers,
   updater: updaterHandlers,
   configStorage: configStorageHandlers,
-} satisfies AllHandlers;
+};
 
 export const registerHandlers = () => {
   // TODO: listen to namespace instead of individual event types

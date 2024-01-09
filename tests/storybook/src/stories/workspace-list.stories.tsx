@@ -1,6 +1,6 @@
 import type { WorkspaceListProps } from '@affine/component/workspace-list';
 import { WorkspaceList } from '@affine/component/workspace-list';
-import { workspaceListAtom } from '@affine/workspace/atom';
+import { workspaceListAtom } from '@affine/core/modules/workspace';
 import type { Meta } from '@storybook/react';
 import { useAtomValue } from 'jotai';
 
@@ -21,6 +21,9 @@ export const Default = () => {
       onClick={() => {}}
       onSettingClick={() => {}}
       onDragEnd={_ => {}}
+      useWorkspaceAvatar={() => undefined}
+      useWorkspaceName={() => undefined}
+      useIsWorkspaceOwner={() => false}
     />
   );
 };

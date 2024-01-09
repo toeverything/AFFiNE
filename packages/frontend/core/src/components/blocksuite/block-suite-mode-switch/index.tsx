@@ -1,6 +1,6 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect } from 'react';

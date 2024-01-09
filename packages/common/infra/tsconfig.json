@@ -4,13 +4,9 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
-    "moduleResolution": "bundler",
     "outDir": "lib"
   },
   "references": [
-    {
-      "path": "../sdk"
-    },
     {
       "path": "../env"
     },

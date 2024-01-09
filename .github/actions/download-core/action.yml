@@ -9,7 +9,7 @@ runs:
   using: 'composite'
   steps:
     - name: Download tar.gz
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: core
         path: .

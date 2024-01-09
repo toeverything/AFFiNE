@@ -1,12 +1,12 @@
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { type Workspace } from '@affine/workspace';
+import { useWorkspace } from '@affine/core/hooks/use-workspace';
 import {
   currentWorkspaceAtom,
   workspaceListAtom,
   workspaceListLoadingStatusAtom,
   workspaceManagerAtom,
-} from '@affine/workspace/atom';
-import { useWorkspace } from '@toeverything/hooks/use-workspace';
+} from '@affine/core/modules/workspace';
+import { type Workspace } from '@affine/workspace';
 import { useAtom, useAtomValue } from 'jotai';
 import { type ReactElement, Suspense, useEffect, useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';

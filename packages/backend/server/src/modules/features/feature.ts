@@ -19,7 +19,20 @@ class FeatureConfig {
   }
 }
 
+export class CopilotFeatureConfig extends FeatureConfig {
+  override config!: Feature & { feature: FeatureType.Copilot };
+  constructor(data: any) {
+    super(data);
+
+    if (this.config.feature !== FeatureType.Copilot) {
+      throw new Error('Invalid feature config: type is not Copilot');
+    }
+  }
+}
+
 export class EarlyAccessFeatureConfig extends FeatureConfig {
+  override config!: Feature & { feature: FeatureType.EarlyAccess };
+
   constructor(data: any) {
     super(data);
 
@@ -27,25 +40,18 @@ export class EarlyAccessFeatureConfig extends FeatureConfig {
       throw new Error('Invalid feature config: type is not EarlyAccess');
     }
   }
-
-  checkWhiteList(email: string) {
-    for (const domain in this.config.configs.whitelist) {
-      if (email.endsWith(domain)) {
-        return true;
-      }
-    }
-    return false;
-  }
 }
 
 const FeatureConfigMap = {
+  [FeatureType.Copilot]: CopilotFeatureConfig,
   [FeatureType.EarlyAccess]: EarlyAccessFeatureConfig,
 };
 
-const FeatureCache = new Map<
-  number,
-  InstanceType<(typeof FeatureConfigMap)[FeatureType]>
->();
+export type FeatureConfigType<F extends FeatureType> = InstanceType<
+  (typeof FeatureConfigMap)[F]
+>;
+
+const FeatureCache = new Map<number, FeatureConfigType<FeatureType>>();
 
 export async function getFeature(prisma: PrismaService, featureId: number) {
   const cachedQuota = FeatureCache.get(featureId);

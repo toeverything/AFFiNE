@@ -11,7 +11,6 @@
         "{projectRoot}/.storybook/**/*",
         "{workspaceRoot}/packages/frontend/core/src/**/*",
         "{workspaceRoot}/packages/common/infra/**/*",
-        "{workspaceRoot}/packages/common/sdk/**/*",
         {
           "runtime": "node -v"
         },

@@ -1,5 +1,5 @@
 import { NotFoundPage } from '@affine/component/not-found-page';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useSession } from 'next-auth/react';
 import type { ReactElement } from 'react';

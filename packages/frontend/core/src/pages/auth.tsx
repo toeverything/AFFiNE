@@ -13,8 +13,8 @@ import {
   changePasswordMutation,
   sendVerifyChangeEmailMutation,
 } from '@affine/graphql';
+import { fetcher } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { fetcher, useMutation } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai/react';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
@@ -29,6 +29,7 @@ import { z } from 'zod';
 import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
+import { useMutation } from '../hooks/use-mutation';
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 const authTypeSchema = z.enum([

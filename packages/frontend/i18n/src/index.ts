@@ -45,10 +45,9 @@ export function useI18N() {
   return i18n;
 }
 
-const resources = LOCALES.reduce<Resource>(
-  (acc, { tag, res }) => ({ ...acc, [tag]: { translation: res } }),
-  {}
-);
+const resources = LOCALES.reduce<Resource>((acc, { tag, res }) => {
+  return Object.assign(acc, { [tag]: { translation: res } });
+}, {});
 
 const fallbackLng = 'en';
 const standardizeLocale = (language: string) => {
@@ -68,7 +67,6 @@ const standardizeLocale = (language: string) => {
 };
 
 export const createI18n = (): I18nextProviderProps['i18n'] => {
-  // @ts-expect-error ts bug
   const i18n: I18nextProviderProps['i18n'] = i18next.createInstance();
   i18n
     .use(initReactI18next)

@@ -1,17 +1,17 @@
 import {
-  type AddPageButtonPureProps,
-  AppUpdaterButtonPure,
+  type AddPageButtonProps,
+  AppUpdaterButton,
 } from '@affine/component/app-sidebar';
 import type { Meta, StoryFn } from '@storybook/react';
 import type { PropsWithChildren } from 'react';
 
 export default {
   title: 'AFFiNE/AppUpdaterButton',
-  component: AppUpdaterButtonPure,
+  component: AppUpdaterButton,
   parameters: {
     chromatic: { disableSnapshot: true },
   },
-} satisfies Meta<typeof AppUpdaterButtonPure>;
+} satisfies Meta<typeof AppUpdaterButton>;
 
 const Container = ({ children }: PropsWithChildren) => (
   <main
@@ -28,10 +28,10 @@ const Container = ({ children }: PropsWithChildren) => (
   </main>
 );
 
-export const Default: StoryFn<AddPageButtonPureProps> = props => {
+export const Default: StoryFn<AddPageButtonProps> = props => {
   return (
     <Container>
-      <AppUpdaterButtonPure {...props} />
+      <AppUpdaterButton {...props} />
     </Container>
   );
 };
@@ -44,17 +44,18 @@ Default.args = {
     allowAutoUpdate: true,
   },
   downloadProgress: 42,
-  currentChangelogUnread: true,
+  changelogUnread: true,
+  autoDownload: false,
 };
 
-export const Updated: StoryFn<AddPageButtonPureProps> = props => {
+export const Updated: StoryFn<AddPageButtonProps> = props => {
   return (
     <Container>
-      <AppUpdaterButtonPure {...props} updateAvailable={null} />
+      <AppUpdaterButton {...props} updateAvailable={null} />
     </Container>
   );
 };
 
 Updated.args = {
-  currentChangelogUnread: true,
+  changelogUnread: true,
 };

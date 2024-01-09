@@ -3,6 +3,7 @@ import {
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import { pushNotificationAtom } from '@affine/component/notification-center';
+import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   HtmlTransformer,
@@ -49,7 +50,7 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
       break;
     case 'pdf':
       if (environment.isDesktop && page.meta.mode === 'page') {
-        await window.apis?.export.savePDFFileAs(
+        await apis?.export.savePDFFileAs(
           (page.root as PageBlockModel).title.toString()
         );
       } else {

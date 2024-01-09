@@ -2,10 +2,12 @@
   "name": "@affine/templates",
   "private": true,
   "sideEffect": false,
-  "exports": {
-    "./*.md": "./*.md",
-    "./v1/*.json": "./v1/*.json",
-    "./preloading.json": "./preloading.json"
+  "version": "0.11.0",
+  "scripts": {
+    "postinstall": "node ./build.mjs"
   },
-  "version": "0.11.0"
+  "type": "module",
+  "exports": {
+    ".": "./templates.gen.ts"
+  }
 }

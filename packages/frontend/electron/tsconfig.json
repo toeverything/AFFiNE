@@ -23,9 +23,6 @@
       "path": "../../common/infra"
     },
     {
-      "path": "../../common/sdk"
-    },
-    {
       "path": "../../common/env"
     },
     {

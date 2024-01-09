@@ -1,9 +1,16 @@
 import path from 'node:path';
 
+import type { apis } from '@affine/electron-api';
 import { test } from '@affine-test/kit/electron';
 import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
 import fs from 'fs-extra';
+
+declare global {
+  interface Window {
+    apis: typeof apis;
+  }
+}
 
 test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const w = await workspace.current();

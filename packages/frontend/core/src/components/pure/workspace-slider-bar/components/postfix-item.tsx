@@ -1,8 +1,8 @@
 import { toast } from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { Workspace } from '@blocksuite/store';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useCallback, useState } from 'react';
 
 import { AddFavouriteButton } from '../favorite/add-favourite-button';

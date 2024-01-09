@@ -4,7 +4,7 @@ import {
   TRACE_ID_BYTES,
   traceReporter,
 } from '@affine/graphql';
-import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace';
+import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from '@affine/workspace-impl';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { signIn, signOut } from 'next-auth/react';
 

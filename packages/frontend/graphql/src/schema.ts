@@ -32,6 +32,12 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+/** The type of workspace feature */
+export enum FeatureType {
+  Copilot = 'Copilot',
+  EarlyAccess = 'EarlyAccess',
+}
+
 export enum InvoiceStatus {
   Draft = 'Draft',
   Open = 'Open',
@@ -357,14 +363,30 @@ export type GetUserQueryVariables = Exact<{
 
 export type GetUserQuery = {
   __typename?: 'Query';
-  user: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    avatarUrl: string | null;
-    email: string;
-    hasPassword: boolean | null;
-  } | null;
+  user:
+    | {
+        __typename: 'LimitedUserType';
+        email: string;
+        hasPassword: boolean | null;
+      }
+    | {
+        __typename: 'UserType';
+        id: string;
+        name: string;
+        avatarUrl: string | null;
+        email: string;
+        hasPassword: boolean | null;
+      }
+    | null;
+};
+
+export type GetWorkspaceFeaturesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetWorkspaceFeaturesQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; features: Array<FeatureType> };
 };
 
 export type GetWorkspacePublicByIdQueryVariables = Exact<{
@@ -724,6 +746,66 @@ export type UploadAvatarMutation = {
   };
 };
 
+export type AvailableFeaturesQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type AvailableFeaturesQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    availableFeatures: Array<FeatureType>;
+  };
+};
+
+export type SetWorkspaceExperimentalFeatureMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  feature: FeatureType;
+  enable: Scalars['Boolean']['input'];
+}>;
+
+export type SetWorkspaceExperimentalFeatureMutation = {
+  __typename?: 'Mutation';
+  setWorkspaceExperimentalFeature: boolean;
+};
+
+export type AddWorkspaceFeatureMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  feature: FeatureType;
+}>;
+
+export type AddWorkspaceFeatureMutation = {
+  __typename?: 'Mutation';
+  addWorkspaceFeature: number;
+};
+
+export type ListWorkspaceFeaturesQueryVariables = Exact<{
+  feature: FeatureType;
+}>;
+
+export type ListWorkspaceFeaturesQuery = {
+  __typename?: 'Query';
+  listWorkspaceFeatures: Array<{
+    __typename?: 'WorkspaceType';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    memberCount: number;
+    features: Array<FeatureType>;
+    owner: { __typename?: 'UserType'; id: string };
+  }>;
+};
+
+export type RemoveWorkspaceFeatureMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  feature: FeatureType;
+}>;
+
+export type RemoveWorkspaceFeatureMutation = {
+  __typename?: 'Mutation';
+  removeWorkspaceFeature: number;
+};
+
 export type InviteByEmailMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   email: Scalars['String']['input'];
@@ -806,6 +888,11 @@ export type Queries =
       response: GetUserQuery;
     }
   | {
+      name: 'getWorkspaceFeaturesQuery';
+      variables: GetWorkspaceFeaturesQueryVariables;
+      response: GetWorkspaceFeaturesQuery;
+    }
+  | {
       name: 'getWorkspacePublicByIdQuery';
       variables: GetWorkspacePublicByIdQueryVariables;
       response: GetWorkspacePublicByIdQuery;
@@ -859,6 +946,16 @@ export type Queries =
       name: 'subscriptionQuery';
       variables: SubscriptionQueryVariables;
       response: SubscriptionQuery;
+    }
+  | {
+      name: 'availableFeaturesQuery';
+      variables: AvailableFeaturesQueryVariables;
+      response: AvailableFeaturesQuery;
+    }
+  | {
+      name: 'listWorkspaceFeaturesQuery';
+      variables: ListWorkspaceFeaturesQueryVariables;
+      response: ListWorkspaceFeaturesQuery;
     };
 
 export type Mutations =
@@ -1001,6 +1098,21 @@ export type Mutations =
       name: 'uploadAvatarMutation';
       variables: UploadAvatarMutationVariables;
       response: UploadAvatarMutation;
+    }
+  | {
+      name: 'setWorkspaceExperimentalFeatureMutation';
+      variables: SetWorkspaceExperimentalFeatureMutationVariables;
+      response: SetWorkspaceExperimentalFeatureMutation;
+    }
+  | {
+      name: 'addWorkspaceFeatureMutation';
+      variables: AddWorkspaceFeatureMutationVariables;
+      response: AddWorkspaceFeatureMutation;
+    }
+  | {
+      name: 'removeWorkspaceFeatureMutation';
+      variables: RemoveWorkspaceFeatureMutationVariables;
+      response: RemoveWorkspaceFeatureMutation;
     }
   | {
       name: 'inviteByEmailMutation';

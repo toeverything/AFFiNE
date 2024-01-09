@@ -1,6 +1,7 @@
 import { serverConfigQuery } from '@affine/graphql';
-import { useQueryImmutable } from '@affine/workspace/affine/gql';
 import type { BareFetcher, Middleware } from 'swr';
+
+import { useQueryImmutable } from '../use-query';
 
 const wrappedFetcher = (fetcher: BareFetcher<any> | null, ...args: any[]) =>
   fetcher?.(...args).catch(() => null);

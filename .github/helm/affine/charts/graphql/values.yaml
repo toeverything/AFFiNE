@@ -34,7 +34,6 @@ app:
       accountId: ''
       accessKeyId: ''
       secretAccessKey: ''
-      bucket: ''
   oauth:
     email:
       secretName: 'oauth-email'

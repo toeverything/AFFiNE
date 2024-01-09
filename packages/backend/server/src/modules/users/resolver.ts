@@ -1,12 +1,6 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  HttpStatus,
-  UseGuards,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus, UseGuards } from '@nestjs/common';
 import {
   Args,
-  Context,
   Int,
   Mutation,
   Query,
@@ -17,15 +11,21 @@ import type { User } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
+import { EventEmitter } from '../../event';
 import { PrismaService } from '../../prisma/service';
 import { CloudThrottlerGuard, Throttle } from '../../throttler';
 import type { FileUpload } from '../../types';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
-import { AuthService } from '../auth/service';
 import { FeatureManagementService } from '../features';
 import { QuotaService } from '../quota';
-import { StorageService } from '../storage/storage.service';
-import { DeleteAccount, RemoveAvatar, UserQuotaType, UserType } from './types';
+import { AvatarStorage } from '../storage';
+import {
+  DeleteAccount,
+  RemoveAvatar,
+  UserOrLimitedUser,
+  UserQuotaType,
+  UserType,
+} from './types';
 import { UsersService } from './users';
 
 /**
@@ -37,12 +37,12 @@ import { UsersService } from './users';
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
-    private readonly auth: AuthService,
     private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
+    private readonly storage: AvatarStorage,
     private readonly users: UsersService,
     private readonly feature: FeatureManagementService,
-    private readonly quota: QuotaService
+    private readonly quota: QuotaService,
+    private readonly event: EventEmitter
   ) {}
 
   @Throttle({
@@ -83,14 +83,17 @@ export class UserResolver {
       ttl: 60,
     },
   })
-  @Query(() => UserType, {
+  @Query(() => UserOrLimitedUser, {
     name: 'user',
     description: 'Get user by email',
     nullable: true,
   })
   @Public()
-  async user(@Args('email') email: string) {
-    if (!(await this.feature.canEarlyAccess(email))) {
+  async user(
+    @CurrentUser() currentUser?: UserType,
+    @Args('email') email?: string
+  ) {
+    if (!email || !(await this.feature.canEarlyAccess(email))) {
       return new GraphQLError(
         `You don't have early access permission\nVisit https://community.affine.pro/c/insider-general/ for more information`,
         {
@@ -101,13 +104,16 @@ export class UserResolver {
         }
       );
     }
+
     // TODO: need to limit a user can only get another user witch is in the same workspace
     const user = await this.users.findUserByEmail(email);
-    if (user?.password) {
-      const userResponse: UserType = user;
-      userResponse.hasPassword = true;
-    }
-    return user;
+    if (currentUser) return user;
+
+    // only return limited info when not logged in
+    return {
+      email: user?.email,
+      hasPassword: !!user?.password,
+    };
   }
 
   @Throttle({ default: { limit: 10, ttl: 60 } })
@@ -147,10 +153,20 @@ export class UserResolver {
     if (!user) {
       throw new BadRequestException(`User not found`);
     }
-    const url = await this.storage.uploadFile(`${user.id}-avatar`, avatar);
+
+    const link = await this.storage.put(
+      `${user.id}-avatar`,
+      avatar.createReadStream(),
+      {
+        contentType: avatar.mimetype,
+      }
+    );
+
     return this.prisma.user.update({
       where: { id: user.id },
-      data: { avatarUrl: url },
+      data: {
+        avatarUrl: link,
+      },
     });
   }
 
@@ -183,70 +199,8 @@ export class UserResolver {
   })
   @Mutation(() => DeleteAccount)
   async deleteAccount(@CurrentUser() user: UserType): Promise<DeleteAccount> {
-    await this.users.deleteUser(user.id);
+    const deletedUser = await this.users.deleteUser(user.id);
+    this.event.emit('user.deleted', deletedUser);
     return { success: true };
-  }
-
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
-  @Mutation(() => Int)
-  async addToEarlyAccess(
-    @CurrentUser() currentUser: UserType,
-    @Args('email') email: string
-  ): Promise<number> {
-    if (!this.feature.isStaff(currentUser.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
-    const user = await this.users.findUserByEmail(email);
-    if (user) {
-      return this.feature.addEarlyAccess(user.id);
-    } else {
-      const user = await this.auth.createAnonymousUser(email);
-      return this.feature.addEarlyAccess(user.id);
-    }
-  }
-
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
-  @Mutation(() => Int)
-  async removeEarlyAccess(
-    @CurrentUser() currentUser: UserType,
-    @Args('email') email: string
-  ): Promise<number> {
-    if (!this.feature.isStaff(currentUser.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
-    const user = await this.users.findUserByEmail(email);
-    if (!user) {
-      throw new BadRequestException(`User ${email} not found`);
-    }
-    return this.feature.removeEarlyAccess(user.id);
-  }
-
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60,
-    },
-  })
-  @Query(() => [UserType])
-  async earlyAccessUsers(
-    @Context() ctx: { isAdminQuery: boolean },
-    @CurrentUser() user: UserType
-  ): Promise<UserType[]> {
-    if (!this.feature.isStaff(user.email)) {
-      throw new ForbiddenException('You are not allowed to do this');
-    }
-    // allow query other user's subscription
-    ctx.isAdminQuery = true;
-    return this.feature.listEarlyAccess();
   }
 }

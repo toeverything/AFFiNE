@@ -3,7 +3,7 @@ import path from 'node:path';
 import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, test, vi } from 'vitest';
 
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
@@ -22,6 +22,10 @@ vi.doMock('@affine/electron/helper/main-rpc', () => ({
 
 afterEach(async () => {
   await removeWithRetry(tmpDir);
+});
+
+afterAll(() => {
+  vi.doUnmock('@affine/electron/helper/main-rpc');
 });
 
 describe('list workspaces', () => {

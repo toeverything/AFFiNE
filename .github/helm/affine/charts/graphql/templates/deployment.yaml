@@ -136,11 +136,6 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.app.objectStorage.r2.secretName }}"
                 key: secretAccessKey
-          - name: R2_OBJECT_STORAGE_BUCKET
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.objectStorage.r2.secretName }}"
-                key: bucket
           {{ end }}
           {{ if .Values.app.captcha.enabled }}
           - name: CAPTCHA_TURNSTILE_SECRET

@@ -1,11 +1,18 @@
+import type { affine } from '@affine/electron-api';
 // Credit: https://github.com/spaceagetv/electron-playwright-helpers/blob/main/src/ipc_helpers.ts
 import type { Page } from '@playwright/test';
 import type { ElectronApplication } from 'playwright';
 
+declare global {
+  interface Window {
+    affine: typeof affine;
+  }
+}
+
 export function ipcRendererInvoke(page: Page, channel: string, ...args: any[]) {
   return page.evaluate(
     ({ channel, args }) => {
-      return window.affine.ipcRenderer.invoke(channel, ...args);
+      return window.affine?.ipcRenderer.invoke(channel, ...args);
     },
     { channel, args }
   );
@@ -14,7 +21,7 @@ export function ipcRendererInvoke(page: Page, channel: string, ...args: any[]) {
 export function ipcRendererSend(page: Page, channel: string, ...args: any[]) {
   return page.evaluate(
     ({ channel, args }) => {
-      window.affine.ipcRenderer.send(channel, ...args);
+      window.affine?.ipcRenderer.send(channel, ...args);
     },
     { channel, args }
   );

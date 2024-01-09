@@ -4,20 +4,26 @@ import { dbSubjects } from '@affine/electron/helper/db/subjects';
 import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import fs from 'fs-extra';
 import { v4 } from 'uuid';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
 
-vi.doMock('@affine/electron/helper/main-rpc', () => ({
-  mainRPC: {
-    getPath: async () => appDataPath,
-  },
-}));
+beforeAll(() => {
+  vi.doMock('@affine/electron/helper/main-rpc', () => ({
+    mainRPC: {
+      getPath: async () => appDataPath,
+    },
+  }));
+});
 
 afterEach(async () => {
   await removeWithRetry(tmpDir);
+});
+
+afterAll(() => {
+  vi.doUnmock('@affine/electron/helper/main-rpc');
 });
 
 let testYDoc: YDoc;

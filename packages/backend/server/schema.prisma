@@ -1,7 +1,7 @@
 generator client {
   provider        = "prisma-client-js"
   binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
-  previewFeatures = ["metrics", "tracing"]
+  previewFeatures = ["metrics", "tracing", "relationJoins", "nativeDistinct"]
 }
 
 datasource db {
@@ -40,6 +40,7 @@ model Workspace {
   pages           WorkspacePage[]
   permissions     WorkspaceUserPermission[]
   pagePermissions WorkspacePageUserPermission[]
+  features        WorkspaceFeatures[]
 
   @@map("workspaces")
 }
@@ -135,10 +136,37 @@ model UserFeatures {
   // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
   activated Boolean   @default(false)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   feature Features @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_features")
+}
+
+// feature gates is a way to enable/disable features for a workspace
+// for example:
+// - copilet is a feature that allow some users in a workspace to access the copilet feature
+model WorkspaceFeatures {
+  id          Int    @id @default(autoincrement())
+  workspaceId String @map("workspace_id") @db.VarChar(36)
+  featureId   Int    @map("feature_id") @db.Integer
+
+  // we will record the reason why the feature is enabled/disabled
+  // for example:
+  // - copilet_v1: "owner buy the copilet feature package"
+  reason    String    @db.VarChar
+  // record the feature enabled time
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  // record the quota expired time, pay plan is a subscription, so it will expired
+  expiredAt DateTime? @map("expired_at") @db.Timestamptz(6)
+  // whether the feature is activated
+  // for example:
+  // - if owner unsubscribe a feature package, we will set the feature to deactivated, but dont delete it
+  activated Boolean   @default(false)
+
+  feature   Features  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_features")
 }
 
 model Features {
@@ -151,7 +179,8 @@ model Features {
   configs   Json     @db.Json
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  UserFeatureGates UserFeatures[]
+  UserFeatureGates  UserFeatures[]
+  WorkspaceFeatures WorkspaceFeatures[]
 
   @@unique([feature, version])
   @@map("features")
@@ -196,6 +225,7 @@ model VerificationToken {
   @@map("verificationtokens")
 }
 
+// deprecated, use [ObjectStorage]
 model Blob {
   id          Int       @id @default(autoincrement()) @db.Integer
   hash        String    @db.VarChar
@@ -210,6 +240,7 @@ model Blob {
   @@map("blobs")
 }
 
+// deprecated, use [ObjectStorage]
 model OptimizedBlob {
   id          Int       @id @default(autoincrement()) @db.Integer
   hash        String    @db.VarChar

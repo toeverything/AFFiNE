@@ -6,11 +6,12 @@ import {
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 
 import type { PageMode } from '../../atoms';
+import { useMutation } from '../use-mutation';
+import { useQuery } from '../use-query';
 
 type NoParametersKeys<T> = {
   [K in keyof T]: T[K] extends () => any ? K : never;

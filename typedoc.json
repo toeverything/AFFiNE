@@ -1,0 +1,9 @@
+{
+  "entryPoints": ["packages/common/infra", "packages/common/workspace"],
+  "out": "docs/reference/dist",
+  "entryPointStrategy": "packages",
+  "includeVersion": false,
+  "logLevel": "Error",
+  "readme": "./docs/reference/readme.md",
+  "name": "AFFiNE Development Reference"
+}

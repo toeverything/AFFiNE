@@ -7,7 +7,9 @@ import {
   PageListDragOverlay,
 } from '@affine/component/page-list';
 import { MainContainer, WorkspaceFallback } from '@affine/component/workspace';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   DndContext,
@@ -18,8 +20,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
-import { useWorkspaceStatus } from '@toeverything/hooks/use-workspace-status';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
@@ -27,7 +27,6 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Map as YMap } from 'yjs';
 
 import { openQuickSearchModalAtom, openSettingModalAtom } from '../atoms';
-import { AdapterProviderWrapper } from '../components/adapter-worksapce-wrapper';
 import { AppContainer } from '../components/affine/app-container';
 import { SyncAwareness } from '../components/affine/awareness';
 import { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
@@ -41,6 +40,7 @@ import {
   AllWorkspaceModals,
   CurrentWorkspaceModals,
 } from '../providers/modal-provider';
+import { SWRConfigProvider } from '../providers/swr-config-provider';
 import { pathGenerator } from '../shared';
 
 const CMDKQuickSearchModal = lazy(() =>
@@ -78,7 +78,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
   children,
 }: PropsWithChildren) {
   return (
-    <AdapterProviderWrapper>
+    <SWRConfigProvider>
       {/* load all workspaces is costly, do not block the whole UI */}
       <Suspense>
         <AllWorkspaceModals />
@@ -87,7 +87,7 @@ export const WorkspaceLayout = function WorkspaceLayout({
       <Suspense fallback={<WorkspaceFallback />}>
         <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
       </Suspense>
-    </AdapterProviderWrapper>
+    </SWRConfigProvider>
   );
 };
 

@@ -74,3 +74,4 @@ export class ConfigModule {
 
 export type { AFFiNEConfig } from './def';
 export { SERVER_FLAVOR } from './default';
+export * from './storage';

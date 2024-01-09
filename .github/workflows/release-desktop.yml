@@ -61,7 +61,7 @@ jobs:
           SKIP_NX_CACHE: 'true'
 
       - name: Upload core artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core
           path: packages/frontend/electron/resources/web-static
@@ -102,7 +102,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo
           hard-link-nm: false
-          build-plugins: false
           nmHoistingLimits: workspaces
           enableScripts: false
       - name: Build AFFiNE native
@@ -111,7 +110,7 @@ jobs:
           target: ${{ matrix.spec.target }}
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: core
           path: packages/frontend/electron/resources/web-static
@@ -147,7 +146,7 @@ jobs:
           mv packages/frontend/electron/out/*/make/AppImage/x64/*.AppImage ./builds/affine-${{ env.BUILD_TYPE }}-linux-x64.AppImage
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
@@ -179,7 +178,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo
           hard-link-nm: false
-          build-plugins: false
           nmHoistingLimits: workspaces
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -187,13 +185,10 @@ jobs:
           target: ${{ matrix.spec.target }}
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: core
           path: packages/frontend/electron/resources/web-static
-
-      - name: Build Plugins
-        run: yarn run build:plugins
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
@@ -216,7 +211,7 @@ jobs:
         run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/* -DestinationPath archive.zip
 
       - name: Save packaged artifacts for signing
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: |
@@ -250,7 +245,7 @@ jobs:
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
       - name: Download and overwrite packaged artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: .
@@ -271,7 +266,7 @@ jobs:
           echo $FILES_TO_BE_SIGNED
 
       - name: Save installer for signing
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: archive.zip
@@ -297,7 +292,7 @@ jobs:
     runs-on: ${{ matrix.spec.runner }}
     steps:
       - name: Download and overwrite installer artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: .
@@ -312,7 +307,7 @@ jobs:
           mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.msi ./builds/affine-${{ env.BUILD_TYPE }}-windows-x64.msi
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
@@ -323,29 +318,29 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: core
           path: web-static
       - name: Zip web-static
         run: zip -r web-static.zip web-static
       - name: Download Artifacts (macos-x64)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine-darwin-x64-builds
           path: ./
       - name: Download Artifacts (macos-arm64)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine-darwin-arm64-builds
           path: ./
       - name: Download Artifacts (windows-x64)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine-win32-x64-builds
           path: ./
       - name: Download Artifacts (linux-x64)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine-linux-x64-builds
           path: ./
@@ -358,12 +353,35 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft
+        if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
           body: ''
           draft: ${{ github.event.inputs.is-draft }}
           prerelease: ${{ github.event.inputs.is-pre-release }}
+          files: |
+            ./VERSION
+            ./*.zip
+            ./*.dmg
+            ./*.exe
+            ./*.AppImage
+            ./*.apk
+            ./*.yml
+      - name: Create Nightly Release Draft
+        if: ${{ github.ref_type == 'branch' }}
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          # Temporarily, treat release from branch as nightly release, artifact saved to AFFiNE-Releases.
+          # Need to improve internal build and nightly release logic.
+          repository: 'toeverything/AFFiNE-Releases'
+          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+          tag_name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+          body: ''
+          draft: false
+          prerelease: true
           files: |
             ./VERSION
             ./*.zip

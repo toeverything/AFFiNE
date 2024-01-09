@@ -32,7 +32,7 @@ jobs:
       - name: Build Server
         run: yarn workspace @affine/server build
       - name: Upload server dist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: server-dist
           path: ./packages/backend/server/dist
@@ -48,8 +48,6 @@ jobs:
         uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Build Plugins
-        run: yarn run build:plugins
       - name: Build Core
         run: yarn nx build @affine/core --skip-nx-cache
         env:
@@ -65,7 +63,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       - name: Upload core artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core
           path: ./packages/frontend/core/dist
@@ -89,7 +87,7 @@ jobs:
           package: '@affine/storage'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storage.node
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/storage/storage.node
@@ -113,7 +111,7 @@ jobs:
           package: '@affine/storage'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storage.node
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: storage.arm64.node
           path: ./packages/backend/storage/storage.node
@@ -130,22 +128,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download core artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: core
           path: ./packages/frontend/core/dist
       - name: Download server dist
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: server-dist
           path: ./packages/backend/server/dist
       - name: Download storage.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/server
       - name: Download storage.node arm64
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: storage.arm64.node
           path: ./packages/backend/storage
@@ -242,7 +240,6 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           ENABLE_CAPTCHA: true
           CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
           OAUTH_EMAIL_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}

@@ -1,11 +1,12 @@
 import {
   currentWorkspaceAtom,
   workspaceListAtom,
-} from '@affine/workspace/atom';
-import { currentPageIdAtom } from '@toeverything/infra/atom';
+} from '@affine/core/modules/workspace';
 import { useAtomValue } from 'jotai/react';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+
+import { currentPageIdAtom } from '../../../../atoms/mode';
 
 export interface DumpInfoProps {
   error: any;

@@ -13,14 +13,12 @@ const editorFlags: BlockSuiteFeatureFlags = {
 export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
     stable: {
-      enablePlugin: true,
-      builtinPlugins: ['/plugins/image-preview'],
       enableTestProperties: false,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
       changelogUrl: 'https://affine.pro/what-is-new',
       downloadUrl: 'https://affine.pro/download',
-      imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
+      imageProxyUrl: '/api/worker/image-proxy',
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
@@ -57,20 +55,12 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     },
     // canary will be aggressive and enable all features
     canary: {
-      enablePlugin: true,
-      builtinPlugins: [
-        '/plugins/copilot',
-        '/plugins/hello-world',
-        '/plugins/image-preview',
-        '/plugins/vue-hello-world',
-        '/plugins/outline',
-      ],
       enableTestProperties: true,
       enableBroadcastChannelProvider: true,
       enableDebugPage: true,
       changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
       downloadUrl: 'https://affine.pro/download',
-      imageProxyUrl: 'https://workers.toeverything.workers.dev/proxy/image',
+      imageProxyUrl: '/api/worker/image-proxy',
       enablePreloading: true,
       enableNewSettingModal: true,
       enableNewSettingUnstableApi: false,
@@ -100,16 +90,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const currentBuildPreset = buildPreset[currentBuild];
 
   const environmentPreset = {
-    builtinPlugins: [
-      '/plugins/copilot',
-      '/plugins/hello-world',
-      '/plugins/image-preview',
-      '/plugins/vue-hello-world',
-      '/plugins/outline',
-    ],
-    enablePlugin: process.env.ENABLE_PLUGIN
-      ? process.env.ENABLE_PLUGIN === 'true'
-      : currentBuildPreset.enablePlugin,
     enableTestProperties: process.env.ENABLE_TEST_PROPERTIES
       ? process.env.ENABLE_TEST_PROPERTIES === 'true'
       : currentBuildPreset.enableTestProperties,

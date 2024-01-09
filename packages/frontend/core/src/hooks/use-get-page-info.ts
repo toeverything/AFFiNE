@@ -1,6 +1,6 @@
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import type { Workspace } from '@blocksuite/store';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useCallback, useMemo } from 'react';
 

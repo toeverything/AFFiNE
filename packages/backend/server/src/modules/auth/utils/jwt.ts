@@ -38,7 +38,7 @@ export const jwtEncode = async (
       exp: now + (maxAge ?? config.auth.accessTokenExpiresIn),
       iss: config.serverId,
       sub: user.id,
-      aud: user.name,
+      aud: 'https://affine.pro',
       jti: randomUUID({
         disableEntropyCache: true,
       }),

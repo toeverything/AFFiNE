@@ -10,17 +10,17 @@ import {
   useEditCollection,
 } from '@affine/component/page-list';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import {
   CloseIcon,
   FilterIcon,
   PageIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
 import { useSetAtom } from 'jotai';

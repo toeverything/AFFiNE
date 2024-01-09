@@ -1,6 +1,6 @@
 import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceFallback } from '@affine/component/workspace';
-import { workspaceListAtom } from '@affine/workspace/atom';
+import { workspaceListAtom } from '@affine/core/modules/workspace';
 import { useAtomValue } from 'jotai';
 import { lazy, useEffect, useLayoutEffect, useState } from 'react';
 import { type LoaderFunction, redirect } from 'react-router-dom';

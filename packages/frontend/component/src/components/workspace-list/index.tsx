@@ -24,21 +24,28 @@ export interface WorkspaceListProps {
   disabled?: boolean;
   currentWorkspaceId?: string | null;
   items: WorkspaceMetadata[];
-  onClick: (workspaceMetadata: WorkspaceMetadata) => void;
-  onSettingClick: (workspaceMetadata: WorkspaceMetadata) => void;
+  onClick: (workspace: WorkspaceMetadata) => void;
+  onSettingClick: (workspace: WorkspaceMetadata) => void;
   onDragEnd: (event: DragEndEvent) => void;
-  useIsWorkspaceOwner?: (workspaceMetadata: WorkspaceMetadata) => boolean;
+  useIsWorkspaceOwner: (workspaceMetadata: WorkspaceMetadata) => boolean;
+  useWorkspaceAvatar: (
+    workspaceMetadata: WorkspaceMetadata
+  ) => string | undefined;
+  useWorkspaceName: (
+    workspaceMetadata: WorkspaceMetadata
+  ) => string | undefined;
 }
 
 interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
   item: WorkspaceMetadata;
-  useIsWorkspaceOwner?: (workspaceMetadata: WorkspaceMetadata) => boolean;
 }
 
 const SortableWorkspaceItem = ({
   disabled,
   item,
   useIsWorkspaceOwner,
+  useWorkspaceAvatar,
+  useWorkspaceName,
   currentWorkspaceId,
   onClick,
   onSettingClick,
@@ -59,6 +66,8 @@ const SortableWorkspaceItem = ({
     [disabled, transform, transition]
   );
   const isOwner = useIsWorkspaceOwner?.(item);
+  const avatar = useWorkspaceAvatar?.(item);
+  const name = useWorkspaceName?.(item);
   return (
     <div
       className={workspaceItemStyle}
@@ -74,6 +83,8 @@ const SortableWorkspaceItem = ({
         onClick={onClick}
         onSettingClick={onSettingClick}
         isOwner={isOwner}
+        name={name}
+        avatar={avatar}
       />
     </div>
   );

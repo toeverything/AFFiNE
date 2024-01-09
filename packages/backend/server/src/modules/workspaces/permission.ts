@@ -34,6 +34,9 @@ export class PermissionService {
           accepted: true,
           type: Permission.Owner,
         },
+        select: {
+          workspaceId: true,
+        },
       })
       .then(data => data.map(({ workspaceId }) => workspaceId));
   }

@@ -61,7 +61,6 @@ const allPackages = [
   'packages/frontend/core',
   'packages/frontend/electron',
   'packages/frontend/graphql',
-  'packages/frontend/hooks',
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',
@@ -69,10 +68,8 @@ const allPackages = [
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',
-  'packages/common/sdk',
   'packages/common/theme',
   'packages/common/y-indexeddb',
-  'packages/plugins/copilot',
   'tools/cli',
   'tests/storybook',
 ];

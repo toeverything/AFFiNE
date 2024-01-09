@@ -1,6 +1,6 @@
+import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { PageMeta } from '@blocksuite/store';
 import { useDroppable } from '@dnd-kit/core';
-import { useBlockSuitePageMeta } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useMemo } from 'react';
 
 import { getDropItemId } from '../../../../hooks/affine/use-sidebar-drag';

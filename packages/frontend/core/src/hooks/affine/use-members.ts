@@ -2,7 +2,8 @@ import {
   type GetMembersByWorkspaceIdQuery,
   getMembersByWorkspaceIdQuery,
 } from '@affine/graphql';
-import { useQuery } from '@affine/workspace/affine/gql';
+
+import { useQuery } from '../use-query';
 
 export type Member = Omit<
   GetMembersByWorkspaceIdQuery['workspace']['members'][number],

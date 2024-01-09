@@ -13,21 +13,33 @@ import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
+const removeOnboardingPages = async (page: Page) => {
+  await page.getByTestId('all-pages').click();
+  await page.getByTestId('page-list-header-selection-checkbox').click();
+  // click again to select all
+  await page.getByTestId('page-list-header-selection-checkbox').click();
+  await page.getByTestId('page-list-toolbar-delete').click();
+  // confirm delete
+  await page.getByTestId('confirm-delete-page').click();
+};
+
+test.beforeEach(async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+});
+
 const createAndPinCollection = async (
   page: Page,
   options?: {
     collectionName?: string;
-    skipInitialPage?: boolean;
   }
 ) => {
-  if (!options?.skipInitialPage) {
-    await openHomePage(page);
-    await waitForEditorLoad(page);
-  }
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
+
   await page.getByTestId('all-pages').click();
+
   const cell = page.getByTestId('page-list-item-title').getByText('test page');
   await expect(cell).toBeVisible();
   await page.getByTestId('create-first-filter').click({
@@ -50,6 +62,7 @@ const createAndPinCollection = async (
 };
 
 test('Show collections items in sidebar', async ({ page }) => {
+  await removeOnboardingPages(page);
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
@@ -73,9 +86,7 @@ test('Show collections items in sidebar', async ({ page }) => {
   await deleteCollection.click();
   await page.waitForTimeout(50);
   expect(await items.count()).toBe(0);
-  await createAndPinCollection(page, {
-    skipInitialPage: true,
-  });
+  await createAndPinCollection(page);
   expect(await items.count()).toBe(1);
   await clickSideBarAllPageButton(page);
   await createLocalWorkspace(
@@ -91,6 +102,7 @@ test('Show collections items in sidebar', async ({ page }) => {
 });
 
 test('edit collection', async ({ page }) => {
+  await removeOnboardingPages(page);
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
@@ -107,6 +119,7 @@ test('edit collection', async ({ page }) => {
 });
 
 test('edit collection and change filter date', async ({ page }) => {
+  await removeOnboardingPages(page);
   await createAndPinCollection(page);
   const collections = page.getByTestId('collections');
   const items = collections.getByTestId('collection-item');
@@ -125,12 +138,10 @@ test('edit collection and change filter date', async ({ page }) => {
 });
 
 test('create temporary filter by click tag', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');
-  await page.locator('affine-page-meta-data').click();
+  await page.locator('page-meta-tags').click();
   await page.locator('.add-tag').click();
   await page.keyboard.type('TODO Tag');
   await page.keyboard.press('Enter');
@@ -148,8 +159,7 @@ test('create temporary filter by click tag', async ({ page }) => {
 });
 
 test('add collection from sidebar', async ({ page }) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
+  await removeOnboardingPages(page);
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('test page');

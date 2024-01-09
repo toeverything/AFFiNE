@@ -12,7 +12,6 @@ export const loading = style({
     [speedVar]: '1.5s',
   },
   textRendering: 'optimizeLegibility',
-  WebkitFontSmoothing: 'antialiased',
   transform: 'rotate(-90deg)',
   animation: `${rotate} ${speedVar} infinite linear`,
 });

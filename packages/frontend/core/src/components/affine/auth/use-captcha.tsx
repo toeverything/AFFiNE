@@ -1,3 +1,4 @@
+import { apis } from '@affine/electron-api';
 import { fetchWithTraceReport } from '@affine/graphql';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { atom, useAtom, useSetAtom } from 'jotai';
@@ -32,7 +33,7 @@ const generateChallengeResponse = async (challenge: string) => {
     return undefined;
   }
 
-  return await window.apis?.ui?.getChallengeResponse(challenge);
+  return await apis?.ui?.getChallengeResponse(challenge);
 };
 
 const captchaAtom = atom<string | undefined>(undefined);

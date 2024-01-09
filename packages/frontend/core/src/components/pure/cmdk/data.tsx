@@ -1,18 +1,18 @@
 import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
-import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import {
-  currentWorkspaceAtom,
-  waitForCurrentWorkspaceAtom,
-} from '@affine/workspace/atom';
-import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
-import type { Page, PageMeta } from '@blocksuite/store';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
-import { currentPageIdAtom, getCurrentStore } from '@toeverything/infra/atom';
+} from '@affine/core/hooks/use-block-suite-page-meta';
+import {
+  currentWorkspaceAtom,
+  waitForCurrentWorkspaceAtom,
+} from '@affine/core/modules/workspace';
+import type { Collection } from '@affine/env/filter';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
+import type { Page, PageMeta } from '@blocksuite/store';
+import { getCurrentStore } from '@toeverything/infra/atom';
 import {
   type AffineCommand,
   AffineCommandRegistry,
@@ -29,6 +29,7 @@ import {
   recentPageIdsBaseAtom,
 } from '../../../atoms';
 import { collectionsCRUDAtom } from '../../../atoms/collections';
+import { currentPageIdAtom } from '../../../atoms/mode';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';

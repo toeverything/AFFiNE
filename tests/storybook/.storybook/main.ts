@@ -46,8 +46,10 @@ export default {
       assetsInclude: ['**/*.md'],
       resolve: {
         alias: {
-          '@toeverything/infra': fileURLToPath(
-            new URL('../../../packages/common/infra/src', import.meta.url)
+          // workaround for https://github.com/vitejs/vite/issues/9731
+          // it seems vite does not resolve self reference correctly?
+          '@affine/core': fileURLToPath(
+            new URL('../../../packages/frontend/core/src', import.meta.url)
           ),
         },
       },

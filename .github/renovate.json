@@ -1,27 +1,35 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base",
-    "group:allNonMajor",
-    ":preserveSemverRanges",
-    ":disablePeerDependencies"
-  ],
+  "extends": ["config:recommended", ":disablePeerDependencies"],
   "labels": ["dependencies"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/__fixtures__/**"
+  ],
   "packageRules": [
     {
       "matchPackageNames": ["napi", "napi-build", "napi-derive"],
+      "rangeStrategy": "replace",
       "groupName": "napi-rs"
     },
     {
       "matchPackagePatterns": ["^eslint", "^@typescript-eslint"],
+      "rangeStrategy": "replace",
       "groupName": "linter"
     },
     {
       "matchPackagePatterns": ["^@nestjs"],
+      "rangeStrategy": "replace",
       "groupName": "nestjs"
     },
     {
       "matchPackagePatterns": ["^@opentelemetry"],
+      "rangeStrategy": "replace",
       "groupName": "opentelemetry"
     },
     {
@@ -30,16 +38,32 @@
         "@prisma/instrumentation",
         "prisma"
       ],
+      "rangeStrategy": "replace",
       "groupName": "prisma"
     },
     {
       "matchPackagePatterns": ["^@electron-forge"],
+      "rangeStrategy": "replace",
       "groupName": "electron-forge"
     },
     {
+      "groupName": "blocksuite-nightly",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
+      "rangeStrategy": "replace",
       "followTag": "nightly"
+    },
+    {
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
+      "matchPackagePatterns": ["*"],
+      "excludePackagePatterns": ["^@blocksuite/"],
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchPackagePatterns": ["*"],
+      "rangeStrategy": "replace",
+      "excludePackagePatterns": ["^@blocksuite/"]
     }
   ],
   "commitMessagePrefix": "chore: ",

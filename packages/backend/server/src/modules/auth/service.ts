@@ -51,7 +51,7 @@ export class AuthService {
         exp: now + this.config.auth.accessTokenExpiresIn,
         iss: this.config.serverId,
         sub: user.id,
-        aud: user.name,
+        aud: 'https://affine.pro',
         jti: randomUUID({
           disableEntropyCache: true,
         }),
@@ -80,7 +80,7 @@ export class AuthService {
         iat: now,
         iss: this.config.serverId,
         sub: user.id,
-        aud: user.name,
+        aud: 'https://affine.pro',
         jti: randomUUID({
           disableEntropyCache: true,
         }),
@@ -100,6 +100,7 @@ export class AuthService {
           iss: [this.config.serverId],
           leeway: this.config.auth.leeway,
           requiredSpecClaims: ['exp', 'iat', 'iss', 'sub'],
+          aud: ['https://affine.pro'],
         })
       ).data as UserClaim;
 

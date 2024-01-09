@@ -21,14 +21,6 @@ inputs:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
     default: 'true'
-  build-infra:
-    description: 'Build infra'
-    required: false
-    default: 'true'
-  build-plugins:
-    description: 'Build plugins'
-    required: false
-    default: 'true'
   nmHoistingLimits:
     description: 'Set nmHoistingLimits in .yarnrc.yml'
     required: false
@@ -190,13 +182,3 @@ runs:
       run: node ./node_modules/electron/install.js
       env:
         electron_config_cache: ./node_modules/.cache/electron
-
-    - name: Build Infra
-      shell: bash
-      if: inputs.build-infra == 'true'
-      run: yarn run build:infra
-
-    - name: Build Plugins
-      if: inputs.build-plugins == 'true'
-      shell: bash
-      run: yarn run build:plugins

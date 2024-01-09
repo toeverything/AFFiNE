@@ -3,7 +3,7 @@ import { setTimeout } from 'node:timers/promises';
 
 import { removeWithRetry } from '@affine-test/kit/utils/utils';
 import { v4 } from 'uuid';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 const tmpDir = path.join(__dirname, 'tmp');
 const appDataPath = path.join(tmpDir, 'app-data');
@@ -46,6 +46,10 @@ afterEach(async () => {
   existProcess();
   await removeWithRetry(tmpDir);
   vi.useRealTimers();
+});
+
+afterAll(() => {
+  vi.doUnmock('@affine/electron/helper/main-rpc');
 });
 
 test('can get a valid WorkspaceSQLiteDB', async () => {

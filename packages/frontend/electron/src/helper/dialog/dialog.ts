@@ -2,13 +2,6 @@ import path from 'node:path';
 
 import { ValidationResult } from '@affine/native';
 import { WorkspaceVersion } from '@toeverything/infra/blocksuite';
-import type {
-  FakeDialogResult,
-  LoadDBFileResult,
-  MoveDBFileResult,
-  SaveDBFileResult,
-  SelectDBFileLocationResult,
-} from '@toeverything/infra/type';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
@@ -27,6 +20,45 @@ import {
   getWorkspaceMeta,
   getWorkspacesBasePath,
 } from '../workspace/meta';
+
+export type ErrorMessage =
+  | 'DB_FILE_ALREADY_LOADED'
+  | 'DB_FILE_PATH_INVALID'
+  | 'DB_FILE_INVALID'
+  | 'DB_FILE_MIGRATION_FAILED'
+  | 'FILE_ALREADY_EXISTS'
+  | 'UNKNOWN_ERROR';
+
+export interface LoadDBFileResult {
+  workspaceId?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+export interface SaveDBFileResult {
+  filePath?: string;
+  canceled?: boolean;
+  error?: ErrorMessage;
+}
+
+export interface SelectDBFileLocationResult {
+  filePath?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+export interface MoveDBFileResult {
+  filePath?: string;
+  error?: ErrorMessage;
+  canceled?: boolean;
+}
+
+// provide a backdoor to set dialog path for testing in playwright
+export interface FakeDialogResult {
+  canceled?: boolean;
+  filePath?: string;
+  filePaths?: string[];
+}
 
 // NOTE:
 // we are using native dialogs because HTML dialogs do not give full file paths

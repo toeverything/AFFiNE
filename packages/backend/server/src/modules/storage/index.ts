@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { FSService } from './fs';
-import { S3 } from './s3';
-import { StorageService } from './storage.service';
+import { AvatarStorage, WorkspaceBlobStorage } from './wrappers';
 
 @Module({
-  providers: [S3, StorageService, FSService],
-  exports: [StorageService],
+  providers: [WorkspaceBlobStorage, AvatarStorage],
+  exports: [WorkspaceBlobStorage, AvatarStorage],
 })
 export class StorageModule {}
+
+export { AvatarStorage, WorkspaceBlobStorage };

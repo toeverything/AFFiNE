@@ -1,9 +1,9 @@
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,
-} from '@toeverything/hooks/use-block-suite-page-meta';
-import { useBlockSuiteWorkspaceHelper } from '@toeverything/hooks/use-block-suite-workspace-helper';
+} from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteWorkspaceHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';

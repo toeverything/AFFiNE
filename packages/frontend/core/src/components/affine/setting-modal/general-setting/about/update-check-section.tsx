@@ -1,9 +1,9 @@
 import { Loading } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
-import { useAppUpdater } from '@toeverything/hooks/use-app-updater';
 import clsx from 'clsx';
 import { useCallback, useMemo, useState } from 'react';
 

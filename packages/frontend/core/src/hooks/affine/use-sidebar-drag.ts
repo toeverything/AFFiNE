@@ -1,9 +1,9 @@
 import { toast } from '@affine/component';
 import type { DraggableTitleCellData } from '@affine/component/page-list';
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
-import { usePageMetaHelper } from '@toeverything/hooks/use-block-suite-page-meta';
 import { useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 

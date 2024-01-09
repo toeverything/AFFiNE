@@ -108,44 +108,6 @@ jobs:
           yarn set version $(node -e "console.log(require('./package.json').packageManager.split('@')[1])")
           git diff --exit-code
 
-  e2e-plugin-test:
-    name: E2E Plugin Test
-    runs-on: ubuntu-latest
-    env:
-      DISTRIBUTION: browser
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          playwright-install: true
-          electron-install: false
-          full-cache: true
-      - name: Run playwright tests
-        run: yarn e2e --forbid-only
-        working-directory: tests/affine-plugin
-        env:
-          COVERAGE: true
-      - name: Collect code coverage report
-        run: yarn exec nyc report -t .nyc_output --report-dir .coverage --reporter=lcov
-
-      - name: Upload e2e test coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./.coverage/lcov.info
-          flags: e2e-plugin-test
-          name: affine
-          fail_ci_if_error: false
-
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results-e2e-plugin
-          path: ./test-results
-          if-no-files-found: ignore
-
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-latest
@@ -169,7 +131,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
@@ -194,7 +156,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-migration
           path: ./tests/affine-migration/test-results
@@ -216,7 +178,7 @@ jobs:
           full-cache: true
 
       - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
@@ -254,8 +216,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/native
           electron-install: false
-          build-infra: false
-          build-plugins: false
       - name: Setup filename
         id: filename
         shell: bash
@@ -269,7 +229,7 @@ jobs:
           package: '@affine/native'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.filename.outputs.filename }}
           path: ./packages/frontend/native/${{ steps.filename.outputs.filename }}
@@ -287,8 +247,6 @@ jobs:
         with:
           extra-flags: workspaces focus @affine/storage
           electron-install: false
-          build-infra: false
-          build-plugins: false
       - name: Build Rust
         uses: ./.github/actions/build-rust
         with:
@@ -296,7 +254,7 @@ jobs:
           package: '@affine/storage'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       - name: Upload storage.node
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: storage.node
           path: ./packages/backend/storage/storage.node
@@ -312,7 +270,6 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
-          build-plugins: false
           full-cache: true
       - name: Build Core
         # always skip cache because its fast, and cache configuration is always changing
@@ -320,7 +277,7 @@ jobs:
       - name: zip core
         run: tar -czf dist.tar.gz --directory=packages/frontend/core/dist .
       - name: Upload core artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core
           path: dist.tar.gz
@@ -358,6 +315,12 @@ jobs:
           electron-install: false
           full-cache: true
 
+      - name: Download storage.node
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+
       - name: Initialize database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
@@ -379,12 +342,6 @@ jobs:
           yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
         env:
           DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
-
-      - name: Download storage.node
-        uses: actions/download-artifact@v3
-        with:
-          name: storage.node
-          path: ./packages/backend/server
 
       - name: Run server tests
         run: yarn workspace @affine/server test:coverage
@@ -450,6 +407,18 @@ jobs:
           playwright-install: true
           hard-link-nm: false
 
+      - name: Download storage.node
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.node
+          path: ./packages/backend/server
+
+      - name: Download affine.linux-x64-gnu.node
+        uses: actions/download-artifact@v4
+        with:
+          name: affine.linux-x64-gnu.node
+          path: ./packages/frontend/native
+
       - name: Initialize database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
@@ -469,17 +438,6 @@ jobs:
         run: |
           yarn workspace @affine/server data-migration run
           yarn workspace @affine/server exec node --loader ts-node/esm/transpile-only ./scripts/init-db.ts
-      - name: Download storage.node
-        uses: actions/download-artifact@v3
-        with:
-          name: storage.node
-          path: ./packages/backend/server
-
-      - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v3
-        with:
-          name: affine.linux-x64-gnu.node
-          path: ./packages/frontend/native
 
       - name: ${{ matrix.tests.name }}
         run: |
@@ -490,7 +448,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-server
           path: ./tests/affine-cloud/test-results
@@ -554,7 +512,7 @@ jobs:
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
 
       - name: Download ${{ steps.filename.outputs.filename }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ steps.filename.outputs.filename }}
           path: ./packages/frontend/native
@@ -562,8 +520,7 @@ jobs:
       - name: Run unit tests
         if: ${{ matrix.spec.test }}
         shell: bash
-        run: yarn vitest
-        working-directory: packages/frontend/electron
+        run: yarn workspace @affine/electron vitest
 
       - name: Download core artifact
         uses: ./.github/actions/download-core
@@ -596,7 +553,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results

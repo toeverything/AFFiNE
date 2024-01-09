@@ -1,3 +1,5 @@
+import { apis } from '@affine/electron-api';
+import { assertExists } from '@blocksuite/global/utils';
 import { useCallback } from 'react';
 import { redirect } from 'react-router-dom';
 
@@ -23,7 +25,8 @@ export const Component = () => {
 
   const openApp = useCallback(() => {
     if (environment.isDesktop) {
-      window.apis.ui.handleOpenMainApp().catch(err => {
+      assertExists(apis);
+      apis.ui.handleOpenMainApp().catch(err => {
         console.log('failed to open main app', err);
       });
     } else {

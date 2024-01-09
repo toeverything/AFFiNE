@@ -12,11 +12,7 @@
     "types": ["node"],
     "allowJs": true
   },
-  "include": [
-    "./scripts",
-    "esbuild.main.config.ts",
-    "esbuild.plugin.config.ts"
-  ],
+  "include": ["./scripts"],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"

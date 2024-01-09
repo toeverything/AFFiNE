@@ -33,32 +33,6 @@ You accept and agree to the following terms and conditions for your past, presen
 
 9. This Agreement will be governed by the laws of Republic of Singapore without reference to conflict of laws principles.
 
-## List of Contributors
+## How To Sign
 
-The below-signed are contributors to a code repository that is part of the project named "AFFiNE". Each below-signed contributor has read, understand and agrees to the terms above in the section within this document entitled "AFFiNE Contributor License Agreement" as of the date beside their real name (or entity name) and GitHub account name.
-
----
-
-<!--
-Example:
-
-- Dark Sky, @darkskygit, 2022/07/22
--->
-
-- Dark Sky, @darkskygit, 2022/07/22
-- Lin Onetwo, @linonetwo, 2022/02/14
-- zqran, @zqran, 2023/02/17
-- Alessio Gravili, @AlessioGr, 2023/03/04
-- Victor Nanka, @victornanka, 2023/03/09
-- Aditya Sharma, @adityash1, 2023/03/21
-- Fangdun Tsai, @fundon, 2023/03/21
-- Zhilin Liu, @lzlme, 2023/04/09
-- Skye Sun, @skyesun, 2023/04/14
-- Jordy Delgado, @Jdelgad8, 2023/04/17
-- Howard Do, @howarddo2208, 2023/04/20
-- 三咲智子 Kevin Deng, @sxzz, 2023/04/21
-- Moeyua, @moeyua, 2023/04/22
-- Shishu, @shishudesu, 2023/05/19
-- Kushagra Singh, @kush002, 2023/06/28
-- Sarvesh Kumar, @sarvesh521 2023/08/25
-- 微扰理论 Qinghao Huang, @wfnuser 2023/09/29
+Visit https://cla-assistant.io/toeverything/AFFiNE and sign it.

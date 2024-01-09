@@ -1,4 +1,4 @@
-import { waitForCurrentWorkspaceAtom } from '@affine/workspace/atom';
+import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAtomValue } from 'jotai';
 import { Suspense, useEffect } from 'react';
 

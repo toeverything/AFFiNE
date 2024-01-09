@@ -7,6 +7,7 @@ import {
 } from '@affine/component/setting-components';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   createCustomerPortalMutation,
   getInvoicesCountQuery,
@@ -20,14 +21,14 @@ import {
 } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation, useQuery } from '@affine/workspace/affine/gql';
 import { ArrowRightSmallIcon } from '@blocksuite/icons';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { openSettingModalAtom } from '../../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../../hooks/affine/use-current-login-status';
+import { useMutation } from '../../../../../hooks/use-mutation';
+import { useQuery } from '../../../../../hooks/use-query';
 import {
   type SubscriptionMutator,
   useUserSubscription,

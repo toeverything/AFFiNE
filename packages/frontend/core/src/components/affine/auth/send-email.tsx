@@ -7,17 +7,17 @@ import {
 } from '@affine/component/auth-components';
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import {
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
   sendSetPasswordEmailMutation,
 } from '@affine/graphql';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { useMutation } from '@affine/workspace/affine/gql';
-import { useAsyncCallback } from '@toeverything/hooks/affine-async-hooks';
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
+import { useMutation } from '../../../hooks/use-mutation';
 import type { AuthPanelProps } from './index';
 
 const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {

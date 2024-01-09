@@ -5,7 +5,6 @@
   -webkit-overflow-scrolling: touch;
   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
   box-sizing: border-box;
-  /*transition: all 0.1s;*/
 }
 
 :root {
@@ -180,6 +179,8 @@ legend {
 body {
   background: transparent;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 input {

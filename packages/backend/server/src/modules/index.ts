@@ -8,6 +8,7 @@ import { DocModule } from './doc';
 import { PaymentModule } from './payment';
 import { QuotaModule } from './quota';
 import { SelfHostedModule } from './self-hosted';
+import { StorageModule } from './storage';
 import { SyncModule } from './sync';
 import { UsersModule } from './users';
 import { WorkspaceModule } from './workspaces';
@@ -27,7 +28,8 @@ switch (SERVER_FLAVOR) {
       WorkspaceModule,
       UsersModule,
       SyncModule,
-      DocModule
+      DocModule,
+      StorageModule
     );
     break;
   case 'graphql':
@@ -39,7 +41,8 @@ switch (SERVER_FLAVOR) {
       UsersModule,
       DocModule,
       PaymentModule,
-      QuotaModule
+      QuotaModule,
+      StorageModule
     );
     break;
   case 'allinone':
@@ -53,7 +56,8 @@ switch (SERVER_FLAVOR) {
       QuotaModule,
       SyncModule,
       DocModule,
-      PaymentModule
+      PaymentModule,
+      StorageModule
     );
     break;
 }
