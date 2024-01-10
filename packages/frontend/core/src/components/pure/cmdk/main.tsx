@@ -1,4 +1,4 @@
-import { formatDate } from '@affine/component/page-list';
+import { formatDate } from '@affine/core/components/page-list';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';

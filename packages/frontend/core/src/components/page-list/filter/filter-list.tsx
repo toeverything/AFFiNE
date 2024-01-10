@@ -1,11 +1,9 @@
+import { Button, IconButton, Menu } from '@affine/component';
 import type { Filter } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, PlusIcon } from '@blocksuite/icons';
 
-import { Button } from '../../../ui/button';
-import { IconButton } from '../../../ui/button';
-import { Menu } from '../../../ui/menu';
 import { Condition } from './condition';
 import * as styles from './index.css';
 import { CreateFilterMenu } from './vars';

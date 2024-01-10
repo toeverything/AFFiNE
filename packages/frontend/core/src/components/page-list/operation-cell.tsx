@@ -1,3 +1,11 @@
+import {
+  ConfirmModal,
+  IconButton,
+  Menu,
+  MenuIcon,
+  MenuItem,
+  Tooltip,
+} from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   DeletePermanentlyIcon,
@@ -10,10 +18,6 @@ import {
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { IconButton } from '../../ui/button';
-import { Menu, MenuIcon, MenuItem } from '../../ui/menu';
-import { ConfirmModal } from '../../ui/modal';
-import { Tooltip } from '../../ui/tooltip';
 import { FavoriteTag } from './components/favorite-tag';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import * as styles from './page-list.css';

@@ -1,3 +1,4 @@
+import { MenuIcon, MenuItem, MenuSeparator } from '@affine/component';
 import type {
   Filter,
   LiteralValue,
@@ -8,7 +9,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 
-import { MenuIcon, MenuItem, MenuSeparator } from '../../../ui/menu';
 import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { tBoolean, tDate, tDateRange, tTag } from './logical/custom-type';

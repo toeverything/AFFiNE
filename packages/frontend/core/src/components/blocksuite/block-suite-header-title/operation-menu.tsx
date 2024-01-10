@@ -1,10 +1,14 @@
-import { Export, FavoriteTag, MoveToTrash } from '@affine/component/page-list';
 import {
   Menu,
   MenuIcon,
   MenuItem,
   MenuSeparator,
 } from '@affine/component/ui/menu';
+import {
+  Export,
+  FavoriteTag,
+  MoveToTrash,
+} from '@affine/core/components/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceFlavour } from '@affine/env/workspace';

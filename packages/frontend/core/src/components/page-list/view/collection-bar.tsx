@@ -1,3 +1,4 @@
+import { Button, Tooltip } from '@affine/component';
 import type { DeleteCollectionInfo, PropertiesMeta } from '@affine/env/filter';
 import type { GetPageInfoById } from '@affine/env/page-info';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -5,8 +6,6 @@ import { ViewLayersIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useState } from 'react';
 
-import { Button } from '../../../ui/button';
-import { Tooltip } from '../../../ui/tooltip';
 import {
   type CollectionsCRUDAtom,
   useCollectionManager,

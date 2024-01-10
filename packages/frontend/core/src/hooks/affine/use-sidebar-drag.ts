@@ -1,5 +1,5 @@
 import { toast } from '@affine/component';
-import type { DraggableTitleCellData } from '@affine/component/page-list';
+import type { DraggableTitleCellData } from '@affine/core/components/page-list';
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';

@@ -1,12 +1,15 @@
+import {
+  Button,
+  Modal,
+  RadioButton,
+  RadioButtonGroup,
+} from '@affine/component';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
-import { RadioButton, RadioButtonGroup } from '../../../../index';
-import { Button } from '../../../../ui/button';
-import { Modal } from '../../../../ui/modal';
 import * as styles from './edit-collection.css';
 import { PagesMode } from './pages-mode';
 import { RulesMode } from './rules-mode';

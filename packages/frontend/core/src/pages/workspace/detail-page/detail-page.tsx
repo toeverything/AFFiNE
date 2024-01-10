@@ -1,8 +1,4 @@
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
-import {
-  createTagFilter,
-  useCollectionManager,
-} from '@affine/component/page-list';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
@@ -32,6 +28,10 @@ import { HubIsland } from '../../../components/affine/hub-island';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
 import { ImagePreviewModal } from '../../../components/image-preview';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
+import {
+  createTagFilter,
+  useCollectionManager,
+} from '../../../components/page-list';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';

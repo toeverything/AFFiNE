@@ -1,3 +1,6 @@
+import { Button } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
+import { Menu } from '@affine/component';
 import type {
   Collection,
   DeleteCollectionInfo,
@@ -8,9 +11,6 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import { useCallback, useState } from 'react';
 
-import { Button } from '../../../ui/button';
-import { FlexWrapper } from '../../../ui/layout';
-import { Menu } from '../../../ui/menu';
 import { CreateFilterMenu } from '../filter/vars';
 import type { useCollectionManager } from '../use-collection-manager';
 import * as styles from './collection-list.css';

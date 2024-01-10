@@ -1,6 +1,6 @@
-import { ExportMenuItems } from '@affine/component/page-list';
 import { Button } from '@affine/component/ui/button';
 import { Divider } from '@affine/component/ui/divider';
+import { ExportMenuItems } from '@affine/core/components/page-list';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { LinkIcon } from '@blocksuite/icons';

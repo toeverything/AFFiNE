@@ -1,10 +1,10 @@
+import { Menu } from '@affine/component';
 import type { Tag } from '@affine/env/filter';
 import { MoreHorizontalIcon } from '@blocksuite/icons';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
-import { Menu } from '../../ui/menu';
 import * as styles from './page-tags.css';
 import { stopPropagation } from './utils';
 
