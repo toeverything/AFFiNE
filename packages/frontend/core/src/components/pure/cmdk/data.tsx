@@ -1,4 +1,3 @@
-import { commandScore } from '@affine/cmdk';
 import { useCollectionManager } from '@affine/component/page-list';
 import {
   useBlockSuitePageMeta,
@@ -19,6 +18,7 @@ import {
   type CommandCategory,
   PreconditionStrategy,
 } from '@toeverything/infra/command';
+import { commandScore } from 'cmdk';
 import { atom, useAtomValue } from 'jotai';
 import { groupBy } from 'lodash-es';
 import { useCallback, useEffect, useMemo, useState } from 'react';

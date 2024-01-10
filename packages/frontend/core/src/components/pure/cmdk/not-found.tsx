@@ -1,5 +1,5 @@
-import { useCommandState } from '@affine/cmdk';
 import { SearchIcon } from '@blocksuite/icons';
+import { useCommandState } from 'cmdk';
 import { useAtomValue } from 'jotai';
 
 import { cmdkQueryAtom } from './data';

@@ -1,11 +1,10 @@
-import { Command } from '@affine/cmdk';
-import { useCommandState } from '@affine/cmdk';
 import { formatDate } from '@affine/component/page-list';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { PageMeta } from '@blocksuite/store';
 import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
+import { Command, useCommandState } from 'cmdk';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Suspense,
@@ -225,17 +224,6 @@ export const CMDKContainer = ({
       className={clsx(className, styles.panelContainer)}
       value={value}
       onValueChange={setValue}
-      // Handle KeyboardEvent conflicts with blocksuite
-      onKeyDown={(e: React.KeyboardEvent) => {
-        if (
-          e.key === 'ArrowDown' ||
-          e.key === 'ArrowUp' ||
-          e.key === 'ArrowLeft' ||
-          e.key === 'ArrowRight'
-        ) {
-          e.stopPropagation();
-        }
-      }}
     >
       {/* todo: add page context here */}
       {isInEditor ? (

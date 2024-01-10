@@ -187,16 +187,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/cmdk@workspace:*, @affine/cmdk@workspace:packages/common/cmdk":
-  version: 0.0.0-use.local
-  resolution: "@affine/cmdk@workspace:packages/common/cmdk"
-  dependencies:
-    "@radix-ui/react-dialog": "npm:^1.0.5"
-    react: "npm:18.2.0"
-    react-dom: "npm:18.2.0"
-  languageName: unknown
-  linkType: soft
-
 "@affine/commitlint-config@workspace:tools/commitlint":
   version: 0.0.0-use.local
   resolution: "@affine/commitlint-config@workspace:tools/commitlint"
@@ -308,7 +298,6 @@ __metadata:
   resolution: "@affine/core@workspace:packages/frontend/core"
   dependencies:
     "@affine-test/fixtures": "workspace:*"
-    "@affine/cmdk": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/debug": "workspace:*"
     "@affine/electron-api": "workspace:*"
@@ -359,6 +348,7 @@ __metadata:
     async-call-rpc: "npm:^6.3.1"
     bytes: "npm:^3.1.2"
     clsx: "npm:^2.0.0"
+    cmdk: "patch:cmdk@npm%3A0.2.0#~/.yarn/patches/cmdk-npm-0.2.0-302237a911.patch"
     copy-webpack-plugin: "npm:^11.0.0"
     css-loader: "npm:^6.8.1"
     css-spring: "npm:^4.1.0"
@@ -9422,7 +9412,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-dialog@npm:^1.0.4, @radix-ui/react-dialog@npm:^1.0.5":
+"@radix-ui/react-dialog@npm:@radix-ui/react-dialog@latest":
   version: 1.0.5
   resolution: "@radix-ui/react-dialog@npm:1.0.5"
   dependencies:
@@ -17092,6 +17082,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cmdk@npm:0.2.0":
+  version: 0.2.0
+  resolution: "cmdk@npm:0.2.0"
+  dependencies:
+    "@radix-ui/react-dialog": "npm:1.0.0"
+    command-score: "npm:0.1.2"
+  peerDependencies:
+    react: ^18.0.0
+    react-dom: ^18.0.0
+  checksum: e178e3d3276e0b5fd158c9c99716c0405427871f48fa97c15c4be2de24be4a478cf0205ffa04244628dbe103dd8573a1bd1aa68f04f8b60633d4ffc04e5eee62
+  languageName: node
+  linkType: hard
+
+"cmdk@patch:cmdk@npm%3A0.2.0#~/.yarn/patches/cmdk-npm-0.2.0-302237a911.patch":
+  version: 0.2.0
+  resolution: "cmdk@patch:cmdk@npm%3A0.2.0#~/.yarn/patches/cmdk-npm-0.2.0-302237a911.patch::version=0.2.0&hash=640d85"
+  dependencies:
+    "@radix-ui/react-dialog": "npm:1.0.0"
+    command-score: "npm:0.1.2"
+  peerDependencies:
+    react: ^18.0.0
+    react-dom: ^18.0.0
+  checksum: 758bacb7761a72c6fa03a1b20ea2514ff14ad6b3d00cc1d8bc6781a216b0a719f991eacded9f923ddcf1b58b8efb304209b268c17bd7d6f5671aa3352934b754
+  languageName: node
+  linkType: hard
+
 "co@npm:^4.6.0":
   version: 4.6.0
   resolution: "co@npm:4.6.0"
@@ -17234,6 +17250,13 @@ __metadata:
   version: 2.0.3
   resolution: "comma-separated-tokens@npm:2.0.3"
   checksum: e3bf9e0332a5c45f49b90e79bcdb4a7a85f28d6a6f0876a94f1bb9b2bfbdbbb9292aac50e1e742d8c0db1e62a0229a106f57917e2d067fca951d81737651700d
+  languageName: node
+  linkType: hard
+
+"command-score@npm:0.1.2":
+  version: 0.1.2
+  resolution: "command-score@npm:0.1.2"
+  checksum: 84f6a69e6b215d3fc8c9ed402d109587f511e4cc84cd5da10a7857b50fb1638953e32dcce8ed8f3549b0bfe499e82601fb7fb6891c9c71b48933d4bb8bac238a
   languageName: node
   linkType: hard
 

@@ -108,9 +108,6 @@
     },
     // Common
     {
-      "path": "./packages/common/cmdk"
-    },
-    {
       "path": "./packages/common/debug"
     },
     {
