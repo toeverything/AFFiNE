@@ -186,15 +186,17 @@ export class NextAuthController {
     }
 
     let nextAuthTokenCookie: (CookieOption & { value: string }) | undefined;
-    const cookiePrefix = this.config.node.prod ? '__Secure-' : '';
-    const sessionCookieName = `${cookiePrefix}next-auth.session-token`;
+    const secureCookiePrefix = '__Secure-';
+    const sessionCookieName = `next-auth.session-token`;
     // next-auth credentials login only support JWT strategy
     // https://next-auth.js.org/configuration/providers/credentials
     // let's store the session token in the database
     if (
       credentialsSignIn &&
       (nextAuthTokenCookie = cookies?.find(
-        ({ name }) => name === sessionCookieName
+        ({ name }) =>
+          name === sessionCookieName ||
+          name === `${secureCookiePrefix}${sessionCookieName}`
       ))
     ) {
       const cookieExpires = new Date();

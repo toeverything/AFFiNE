@@ -91,6 +91,7 @@ export interface AFFiNEConfig {
    * @env NODE_ENV
    */
   readonly env: string;
+
   /**
    * fast AFFiNE environment judge
    */

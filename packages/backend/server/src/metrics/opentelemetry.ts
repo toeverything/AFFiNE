@@ -33,6 +33,7 @@ import prismaInstrument from '@prisma/instrumentation';
 
 const { PrismaInstrumentation } = prismaInstrument;
 
+import { parseEnvValue } from '../config/def';
 import { PrismaMetricProducer } from './prisma';
 
 abstract class OpentelemetryFactor {
@@ -155,6 +156,9 @@ export function getMeter(name = 'business') {
 }
 
 export function start() {
+  if (parseEnvValue(process.env.DISABLE_TELEMETRY, 'boolean')) {
+    return;
+  }
   const sdk = createSDK();
 
   if (sdk) {

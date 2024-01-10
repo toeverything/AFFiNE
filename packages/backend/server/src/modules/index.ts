@@ -1,5 +1,8 @@
+import { join } from 'node:path';
+
 import { DynamicModule, Type } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 import { SERVER_FLAVOR } from '../config';
 import { GqlModule } from '../graphql.module';
@@ -29,7 +32,10 @@ switch (SERVER_FLAVOR) {
       UsersModule,
       SyncModule,
       DocModule,
-      StorageModule
+      StorageModule,
+      ServeStaticModule.forRoot({
+        rootPath: join('/app', 'static'),
+      })
     );
     break;
   case 'graphql':

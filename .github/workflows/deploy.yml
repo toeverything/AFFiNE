@@ -29,6 +29,7 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
+          extra-flags: workspaces focus @affine/server
       - name: Build Server
         run: yarn workspace @affine/server build
       - name: Upload server dist
@@ -62,6 +63,7 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
       - name: Upload core artifact
         uses: actions/upload-artifact@v4
         with:
@@ -69,10 +71,10 @@ jobs:
           path: ./packages/frontend/core/dist
           if-no-files-found: error
 
-  build-storage:
-    name: Build Storage
+  build-core-selfhost:
+    name: Build @affine/core
     runs-on: ubuntu-latest
-
+    environment: ${{ github.event.inputs.flavor }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
@@ -80,22 +82,33 @@ jobs:
         uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Build Rust
-        uses: ./.github/actions/build-rust
-        with:
-          target: 'x86_64-unknown-linux-gnu'
-          package: '@affine/storage'
-          nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - name: Upload storage.node
+      - name: Build Core
+        run: yarn nx build @affine/core --skip-nx-cache
+        env:
+          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          SHOULD_REPORT_TRACE: false
+          PUBLIC_PATH: '/'
+      - name: Download selfhost fonts
+        run: node ./scripts/download-blocksuite-fonts.mjs
+      - name: Upload core artifact
         uses: actions/upload-artifact@v4
         with:
-          name: storage.node
-          path: ./packages/backend/storage/storage.node
+          name: selfhost-core
+          path: ./packages/frontend/core/dist
           if-no-files-found: error
 
-  build-storage-arm64:
-    name: Build Storage arm64
+  build-storage:
+    name: Build Storage - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targets:
+          - name: x86_64-unknown-linux-gnu
+            file: storage.node
+          - name: aarch64-unknown-linux-gnu
+            file: storage.arm64.node
+          - name: armv7-unknown-linux-gnueabihf
+            file: storage.armv7.node
 
     steps:
       - uses: actions/checkout@v4
@@ -104,16 +117,19 @@ jobs:
         uses: ./.github/actions/setup-version
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          extra-flags: workspaces focus @affine/storage
       - name: Build Rust
         uses: ./.github/actions/build-rust
         with:
-          target: 'aarch64-unknown-linux-gnu'
+          target: ${{ matrix.targets.name }}
           package: '@affine/storage'
           nx_token: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      - name: Upload storage.node
+      - name: Upload ${{ matrix.targets.file }}
         uses: actions/upload-artifact@v4
         with:
-          name: storage.arm64.node
+          name: ${{ matrix.targets.file }}
           path: ./packages/backend/storage/storage.node
           if-no-files-found: error
 
@@ -123,8 +139,8 @@ jobs:
     needs:
       - build-server
       - build-core
+      - build-core-selfhost
       - build-storage
-      - build-storage-arm64
     steps:
       - uses: actions/checkout@v4
       - name: Download core artifact
@@ -147,8 +163,15 @@ jobs:
         with:
           name: storage.arm64.node
           path: ./packages/backend/storage
-      - name: move storage.arm64.node
-        run: mv ./packages/backend/storage/storage.node ./packages/backend/server/storage.arm64.node
+      - name: Download storage.node arm64
+        uses: actions/download-artifact@v4
+        with:
+          name: storage.armv7.node
+          path: .
+      - name: move storage files
+        run: |
+          mv ./packages/backend/storage/storage.node ./packages/backend/server/storage.arm64.node
+          mv storage.node ./packages/backend/server/storage.armv7.node
       - name: Setup env
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
@@ -190,9 +213,19 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@toeverything'
 
+      - name: Remove core dist
+        run: rm -rf ./packages/frontend/core/dist
+
+      - name: Download selfhost core artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: selfhost-core
+          path: ./packages/frontend/core/dist
+
       - name: Install Node.js dependencies
         run: |
-          yarn config set --json supportedArchitectures.cpu '["x64", "arm64"]'
+          yarn config set --json supportedArchitectures.cpu '["x64", "arm64", "arm"]'
+          yarn config set --json supportedArchitectures.libc '["glibc"]'
           yarn workspaces focus @affine/server --production
 
       - name: Generate Prisma client
@@ -204,7 +237,7 @@ jobs:
           context: .
           push: true
           pull: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
           tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}

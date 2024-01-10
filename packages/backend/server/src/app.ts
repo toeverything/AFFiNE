@@ -3,7 +3,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { CacheInterceptor, CacheModule } from './cache';
-import { ConfigModule } from './config';
+import { ConfigModule, SERVER_FLAVOR } from './config';
 import { EventModule } from './event';
 import { BusinessModules } from './modules';
 import { AuthModule } from './modules/auth';
@@ -29,6 +29,6 @@ const BasicModules = [
     },
   ],
   imports: [...BasicModules, ...BusinessModules],
-  controllers: [AppController],
+  controllers: SERVER_FLAVOR === 'selfhosted' ? [] : [AppController],
 })
 export class AppModule {}

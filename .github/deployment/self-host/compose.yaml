@@ -1,0 +1,57 @@
+services:
+  affine:
+    image: ghcr.io/toeverything/affine-graphql:beta
+    container_name: affine
+    command:
+      [
+        'sh',
+        '-c',
+        './node_modules/.bin/dotenv -e /root/.affine/.env -- npm run predeploy && node --es-module-specifier-resolution=node ./dist/index.js',
+      ]
+    ports:
+      - '3010:3010'
+      - '5555:5555'
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ~/.affine/storage:/root/.affine/storage
+      - ~/.affine/.env:/root/.affine/.env
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '1000m'
+    restart: unless-stopped
+    environment:
+      - DISABLE_TELEMETRY=true
+      - NODE_ENV=production
+      - SERVER_FLAVOR=selfhosted
+  redis:
+    image: redis
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - ~/.affine/redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: unless-stopped
+    volumes:
+      - ~/.affine/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U affine']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: affine
+      POSTGRES_PASSWORD: affine
+      POSTGRES_DB: affine
+      PGDATA: /var/lib/postgresql/data/pgdata

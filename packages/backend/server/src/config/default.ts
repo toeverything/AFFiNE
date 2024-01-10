@@ -49,6 +49,7 @@ const jwtKeyPair = (function () {
 })();
 
 export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
+  let isHttps: boolean | null = null;
   const defaultConfig = {
     serverId: 'affine-nestjs-server',
     version: pkg.version,
@@ -56,6 +57,7 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       AFFINE_SERVER_PORT: ['port', 'int'],
       AFFINE_SERVER_HOST: 'host',
       AFFINE_SERVER_SUB_PATH: 'path',
+      AFFIHE_SERVER_HTTPS: 'https',
       AFFINE_ENV: 'affineEnv',
       DATABASE_URL: 'db.url',
       ENABLE_CAPTCHA: ['auth.captcha.enable', 'boolean'],
@@ -117,7 +119,10 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       earlyAccessPreview: false,
     },
     get https() {
-      return !this.node.dev;
+      return isHttps ?? !this.node.dev;
+    },
+    set https(value: boolean) {
+      isHttps = value;
     },
     host: 'localhost',
     port: 3010,

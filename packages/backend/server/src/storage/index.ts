@@ -10,7 +10,9 @@ try {
   storageModule =
     process.arch === 'arm64'
       ? require('../../storage.arm64.node')
-      : require('../../storage.node');
+      : process.arch === 'arm'
+        ? require('../../storage.armv7.node')
+        : require('../../storage.node');
 }
 
 export { storageModule as OctoBaseStorageModule };

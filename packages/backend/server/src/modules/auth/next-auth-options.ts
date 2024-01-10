@@ -179,7 +179,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
       );
     }
 
-    if (config.auth.oauthProviders.google) {
+    if (config.auth.oauthProviders.google?.enabled) {
       nextAuthOptions.providers.push(
         // @ts-expect-error esm interop issue
         Google.default({

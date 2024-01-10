@@ -72,7 +72,10 @@ const OptimizeOptionOptions: (
 
 export const getPublicPath = (buildFlags: BuildFlags) => {
   const { BUILD_TYPE } = process.env;
-  const publicPath = process.env.PUBLIC_PATH ?? '/';
+  if (typeof process.env.PUBLIC_PATH === 'string') {
+    return process.env.PUBLIC_PATH;
+  }
+  const publicPath = '/';
   if (process.env.COVERAGE || buildFlags.distribution === 'desktop') {
     return publicPath;
   }
