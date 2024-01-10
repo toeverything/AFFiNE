@@ -178,7 +178,7 @@ export function NormalPageHeader({
 
 export function DetailPageHeader(props: PageHeaderProps) {
   const { page } = props;
-  const { isJournal } = useJournalInfoHelper(page.meta);
+  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
   const isInTrash = page.meta.trash;
 
   return isJournal && !isInTrash ? (

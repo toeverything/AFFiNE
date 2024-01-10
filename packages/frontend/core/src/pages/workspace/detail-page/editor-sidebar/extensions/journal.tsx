@@ -43,7 +43,7 @@ interface PageItemProps extends HTMLAttributes<HTMLDivElement> {
   right?: ReactNode;
 }
 const PageItem = ({ page, right, className, ...attrs }: PageItemProps) => {
-  const { isJournal } = useJournalInfoHelper(page.meta);
+  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
 
   const Icon = isJournal
     ? TodayIcon
@@ -77,7 +77,10 @@ interface JournalBlockProps extends EditorExtensionProps {
 
 const EditorJournalPanel = (props: EditorExtensionProps) => {
   const { workspace, page } = props;
-  const { journalDate, isJournal } = useJournalInfoHelper(page?.meta);
+  const { journalDate, isJournal } = useJournalInfoHelper(
+    page.workspace,
+    page.id
+  );
   const { openJournal } = useJournalHelper(workspace);
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
 

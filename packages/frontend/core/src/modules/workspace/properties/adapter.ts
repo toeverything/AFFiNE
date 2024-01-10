@@ -107,17 +107,12 @@ export class WorkspacePropertiesAdapter {
     return this.favouriates[id]?.type === type;
   }
 
-  isJournalPage(id: string) {
-    this.ensurePageProperties(id);
-    return !!this.getJournalPageDate(id);
-  }
-
-  getJournalPageDate(id: string) {
+  getJournalPageDateString(id: string) {
     this.ensurePageProperties(id);
     return this.pageProperties[id].system[PageSystemPropertyId.Journal].value;
   }
 
-  setJournalPageDate(id: string, date: string) {
+  setJournalPageDateString(id: string, date: string) {
     this.ensurePageProperties(id);
     const pageProperties = this.pageProperties[id];
     pageProperties.system[PageSystemPropertyId.Journal].value = date;

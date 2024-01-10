@@ -1,30 +1,33 @@
-import type { PageMeta } from '@blocksuite/store';
 import { initEmptyPage } from '@toeverything/infra/blocksuite';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
 import type { BlockSuiteWorkspace } from '../shared';
+import { timestampToLocalDate } from '../utils';
+import { useWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useBlockSuiteWorkspaceHelper } from './use-block-suite-workspace-helper';
 import { useNavigateHelper } from './use-navigate-helper';
 
 type MaybeDate = Date | string | number;
 export const JOURNAL_DATE_FORMAT = 'YYYY-MM-DD';
 
-function isPageJournal(pageMeta?: PageMeta) {
+function isJournalString(j?: string | false) {
   if (!runtimeConfig.enableJournal) return false;
-  return !!(pageMeta && pageMeta.title.match(/^\d{4}-\d{2}-\d{2}$/));
+  return j ? !!j?.match(/^\d{4}-\d{2}-\d{2}$/) : false;
 }
 
-function getJournalDate(pageMeta?: PageMeta) {
-  if (!isPageJournal(pageMeta)) return null;
-  if (!pageMeta?.title) return null;
-  if (!dayjs(pageMeta.title).isValid()) return null;
-  return dayjs(pageMeta.title);
+function toDayjs(j?: string | false) {
+  if (!j || !isJournalString(j)) return null;
+  const day = dayjs(j);
+  if (!day.isValid()) return null;
+  return day;
 }
 
 export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const bsWorkspaceHelper = useBlockSuiteWorkspaceHelper(workspace);
   const navigateHelper = useNavigateHelper();
+
+  const adapter = useWorkspacePropertiesAdapter();
 
   /**
    * @internal
@@ -36,9 +39,17 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       initEmptyPage(page, title).catch(err =>
         console.error('Failed to load journal page', err)
       );
+      adapter.setJournalPageDateString(page.id, title);
       return page;
     },
-    [bsWorkspaceHelper]
+    [adapter, bsWorkspaceHelper]
+  );
+
+  const isPageJournal = useCallback(
+    (pageId: string) => {
+      return isJournalString(adapter.getJournalPageDateString(pageId));
+    },
+    [adapter]
   );
 
   /**
@@ -48,14 +59,15 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     (maybeDate: MaybeDate) => {
       const day = dayjs(maybeDate);
       return Array.from(workspace.pages.values()).filter(page => {
-        if (!isPageJournal(page.meta)) return false;
+        const pageId = page.id;
+        if (!isPageJournal(pageId)) return false;
         if (page.meta.trash) return false;
-        const journalDate = getJournalDate(page.meta);
+        const journalDate = adapter.getJournalPageDateString(page.id);
         if (!journalDate) return false;
         return day.isSame(journalDate, 'day');
       });
     },
-    [workspace.pages]
+    [adapter, isPageJournal, workspace.pages]
   );
 
   /**
@@ -89,26 +101,59 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     openJournal(date);
   }, [openJournal]);
 
+  const getJournalDateString = useCallback(
+    (pageId: string) => {
+      return adapter.getJournalPageDateString(pageId);
+    },
+    [adapter]
+  );
+
+  const getLocalizedJournalDateString = useCallback(
+    (pageId: string) => {
+      const journalDateString = getJournalDateString(pageId);
+      if (!journalDateString) return null;
+      return timestampToLocalDate(journalDateString);
+    },
+    [getJournalDateString]
+  );
+
   return useMemo(
     () => ({
       getJournalsByDate,
       getJournalByDate,
+      getJournalDateString,
+      getLocalizedJournalDateString,
       openJournal,
       openToday,
+      isPageJournal,
     }),
-    [getJournalByDate, getJournalsByDate, openJournal, openToday]
+    [
+      getJournalByDate,
+      getJournalDateString,
+      getJournalsByDate,
+      getLocalizedJournalDateString,
+      isPageJournal,
+      openJournal,
+      openToday,
+    ]
   );
 };
 
-export const useJournalInfoHelper = (pageMeta?: PageMeta) => {
-  const isJournal = isPageJournal(pageMeta);
-  const journalDate = useMemo(() => getJournalDate(pageMeta), [pageMeta]);
+export const useJournalInfoHelper = (
+  workspace: BlockSuiteWorkspace,
+  pageId?: string | null
+) => {
+  const { isPageJournal, getJournalDateString } = useJournalHelper(workspace);
+  const journalDate = useMemo(
+    () => (pageId ? toDayjs(getJournalDateString(pageId)) : null),
+    [getJournalDateString, pageId]
+  );
 
   return useMemo(
     () => ({
-      isJournal,
+      isJournal: pageId ? isPageJournal(pageId) : false,
       journalDate,
     }),
-    [isJournal, journalDate]
+    [isPageJournal, journalDate, pageId]
   );
 };
