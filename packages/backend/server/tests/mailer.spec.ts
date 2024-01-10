@@ -9,7 +9,8 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';
 import { MailService } from '../src/modules/auth/mailer';
-import { FeatureManagementService } from '../src/modules/features';
+import { FeatureKind, FeatureManagementService } from '../src/modules/features';
+import { Quotas } from '../src/modules/quota';
 import { PrismaService } from '../src/prisma';
 import { createWorkspace, getInviteInfo, inviteUser, signUp } from './utils';
 
@@ -84,6 +85,32 @@ const FakePrisma = {
         return {
           id: randomUUID(),
           createdAt: new Date(),
+        };
+      },
+    };
+  },
+  get features() {
+    return {
+      async findFirst() {
+        return {
+          id: 1,
+          type: FeatureKind.Quota,
+          feature: Quotas[0].feature,
+          configs: Quotas[0].configs,
+          version: Quotas[0].version,
+          createdAt: new Date(),
+        };
+      },
+    };
+  },
+  get userFeatures() {
+    return {
+      async findFirst() {
+        return {
+          createdAt: new Date(),
+          featureId: 1,
+          reason: '',
+          expiredAt: null,
         };
       },
     };
