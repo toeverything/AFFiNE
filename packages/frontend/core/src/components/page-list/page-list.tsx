@@ -1,3 +1,5 @@
+import { Scrollable } from '@affine/component';
+import { useHasScrollTop } from '@affine/component/app-sidebar';
 import clsx from 'clsx';
 import {
   type ForwardedRef,
@@ -10,8 +12,6 @@ import {
   useRef,
 } from 'react';
 
-import { Scrollable } from '../../ui/scrollbar';
-import { useHasScrollTop } from '../app-sidebar/sidebar-containers/use-has-scroll-top';
 import { PageGroup } from './page-group';
 import { PageListTableHeader } from './page-header';
 import * as styles from './page-list.css';

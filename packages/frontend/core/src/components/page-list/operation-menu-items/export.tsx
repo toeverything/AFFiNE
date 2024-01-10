@@ -1,3 +1,4 @@
+import { MenuIcon, MenuItem, MenuSub } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
   ExportIcon,
@@ -8,7 +9,6 @@ import {
 } from '@blocksuite/icons';
 import { type ReactNode, useMemo } from 'react';
 
-import { MenuIcon, MenuItem, MenuSub } from '../../../ui/menu';
 import { transitionStyle } from './index.css';
 
 interface ExportMenuItemProps<T> {

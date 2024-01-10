@@ -11,12 +11,6 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/component/app-sidebar';
-import {
-  createEmptyCollection,
-  MoveToTrash,
-  useCollectionManager,
-  useEditCollectionName,
-} from '@affine/component/page-list';
 import { Menu } from '@affine/component/ui/menu';
 import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
@@ -41,6 +35,12 @@ import { getDropItemId } from '../../hooks/affine/use-sidebar-drag';
 import { useTrashModalHelper } from '../../hooks/affine/use-trash-modal-helper';
 import { useRegisterBrowserHistoryCommands } from '../../hooks/use-browser-history-commands';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
+import {
+  createEmptyCollection,
+  MoveToTrash,
+  useCollectionManager,
+  useEditCollectionName,
+} from '../page-list';
 import { CollectionsList } from '../pure/workspace-slider-bar/collections';
 import { AddCollectionButton } from '../pure/workspace-slider-bar/collections/add-collection-button';
 import { AddFavouriteButton } from '../pure/workspace-slider-bar/favorite/add-favourite-button';

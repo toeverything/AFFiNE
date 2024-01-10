@@ -1,14 +1,14 @@
 import { AnimatedCollectionsIcon, toast } from '@affine/component';
 import { MenuLinkItem as SidebarMenuLinkItem } from '@affine/component/app-sidebar';
+import { RenameModal } from '@affine/component/rename-modal';
+import { Button, IconButton } from '@affine/component/ui/button';
 import {
   CollectionOperations,
   filterPage,
   stopPropagation,
   useCollectionManager,
   useSavedCollections,
-} from '@affine/component/page-list';
-import { RenameModal } from '@affine/component/rename-modal';
-import { Button, IconButton } from '@affine/component/ui/button';
+} from '@affine/core/components/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';

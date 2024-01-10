@@ -1,7 +1,7 @@
 import { SignUpPage } from '@affine/component/auth-components';
-import { AffineShapeIcon } from '@affine/component/page-list';
 import { Button } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
+import { AffineShapeIcon } from '@affine/core/components/page-list';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import {

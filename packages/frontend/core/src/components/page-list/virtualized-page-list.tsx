@@ -1,3 +1,4 @@
+import { Scrollable } from '@affine/component';
 import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
@@ -11,7 +12,6 @@ import {
 } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { Scrollable } from '../../ui/scrollbar';
 import { PageGroupHeader, PageMetaListItemRenderer } from './page-group';
 import { PageListTableHeader } from './page-header';
 import { PageListInnerWrapper } from './page-list';

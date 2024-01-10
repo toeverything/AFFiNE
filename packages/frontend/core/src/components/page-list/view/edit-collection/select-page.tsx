@@ -1,11 +1,10 @@
+import { Button, Menu } from '@affine/component';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
 
-import { Button } from '../../../../ui/button';
-import { Menu } from '../../../../ui/menu';
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
 import { VirtualizedPageList } from '../../virtualized-page-list';

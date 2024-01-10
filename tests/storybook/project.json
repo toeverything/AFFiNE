@@ -9,6 +9,7 @@
         "default",
         "^production",
         "{projectRoot}/.storybook/**/*",
+        "{workspaceRoot}/packages/frontend/components/src/**/*",
         "{workspaceRoot}/packages/frontend/core/src/**/*",
         "{workspaceRoot}/packages/common/infra/**/*",
         {

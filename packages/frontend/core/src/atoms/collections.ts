@@ -1,7 +1,3 @@
-import type {
-  CollectionsCRUD,
-  CollectionsCRUDAtom,
-} from '@affine/component/page-list';
 import {
   currentWorkspaceAtom,
   waitForCurrentWorkspaceAtom,
@@ -14,6 +10,10 @@ import { atom } from 'jotai';
 import { atomWithObservable } from 'jotai/utils';
 import { Observable, of } from 'rxjs';
 
+import type {
+  CollectionsCRUD,
+  CollectionsCRUDAtom,
+} from '../components/page-list';
 import { getUserSetting } from '../utils/user-setting';
 import { getWorkspaceSetting } from '../utils/workspace-setting';
 import { sessionAtom } from './cloud-user';

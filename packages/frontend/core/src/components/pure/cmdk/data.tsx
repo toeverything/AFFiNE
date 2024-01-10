@@ -1,4 +1,4 @@
-import { useCollectionManager } from '@affine/component/page-list';
+import { useCollectionManager } from '@affine/core/components/page-list';
 import {
   useBlockSuitePageMeta,
   usePageMetaHelper,

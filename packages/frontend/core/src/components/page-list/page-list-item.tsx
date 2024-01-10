@@ -1,9 +1,9 @@
+import { Checkbox } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useDraggable } from '@dnd-kit/core';
 import { type PropsWithChildren, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
-import { Checkbox } from '../../ui/checkbox';
 import * as styles from './page-list-item.css';
 import { PageTags } from './page-tags';
 import type { DraggableTitleCellData, PageListItemProps } from './types';

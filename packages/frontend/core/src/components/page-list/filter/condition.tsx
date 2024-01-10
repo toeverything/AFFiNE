@@ -1,9 +1,9 @@
+import { Menu, MenuItem } from '@affine/component';
 import type { Filter, Literal } from '@affine/env/filter';
 import type { PropertiesMeta } from '@affine/env/filter';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
-import { Menu, MenuItem } from '../../../ui/menu';
 import { FilterTag } from './filter-tag-translation';
 import * as styles from './index.css';
 import { literalMatcher } from './literal-matcher';

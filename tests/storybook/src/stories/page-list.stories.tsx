@@ -11,7 +11,7 @@ import {
   PageListScrollContainer,
   PageTags,
   type PageTagsProps,
-} from '@affine/component/page-list';
+} from '@affine/core/components/page-list';
 import { __unstableSchemas, AffineSchemas } from '@blocksuite/blocks/models';
 import { PageIcon, TagsIcon } from '@blocksuite/icons';
 import { Schema, Workspace } from '@blocksuite/store';

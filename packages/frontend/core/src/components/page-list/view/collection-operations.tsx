@@ -1,3 +1,9 @@
+import {
+  Menu,
+  MenuIcon,
+  MenuItem,
+  type MenuItemProps,
+} from '@affine/component';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { DeleteIcon, EditIcon, FilterIcon } from '@blocksuite/icons';
@@ -8,7 +14,6 @@ import {
   useMemo,
 } from 'react';
 
-import { Menu, MenuIcon, MenuItem, type MenuItemProps } from '../../../ui/menu';
 import type { useCollectionManager } from '../use-collection-manager';
 import type { AllPageListConfig } from '.';
 import * as styles from './collection-operations.css';

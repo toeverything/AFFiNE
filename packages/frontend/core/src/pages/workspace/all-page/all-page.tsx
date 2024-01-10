@@ -8,7 +8,7 @@ import {
   type PageListHandle,
   useCollectionManager,
   VirtualizedPageList,
-} from '@affine/component/page-list';
+} from '@affine/core/components/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { Trans } from '@affine/i18n';

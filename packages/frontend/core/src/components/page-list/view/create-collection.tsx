@@ -1,9 +1,7 @@
+import { Button, Input, Modal } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useCallback, useMemo, useState } from 'react';
 
-import { Button } from '../../../ui/button';
-import Input from '../../../ui/input';
-import { Modal } from '../../../ui/modal';
 import * as styles from './create-collection.css';
 
 export interface CreateCollectionModalProps {

@@ -8,7 +8,7 @@ import {
   currentCollectionAtom,
   useCollectionManager,
   useEditCollection,
-} from '@affine/component/page-list';
+} from '@affine/core/components/page-list';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';

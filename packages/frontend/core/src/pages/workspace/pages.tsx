@@ -2,7 +2,7 @@ import {
   filterPage,
   filterPageByRules,
   useCollectionManager,
-} from '@affine/component/page-list';
+} from '@affine/core/components/page-list';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';

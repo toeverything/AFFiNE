@@ -1,3 +1,4 @@
+import { Checkbox, type CheckboxProps } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MultiSelectIcon, SortDownIcon, SortUpIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
@@ -10,7 +11,6 @@ import {
   useMemo,
 } from 'react';
 
-import { Checkbox, type CheckboxProps } from '../../ui/checkbox';
 import * as styles from './page-list.css';
 import {
   pageListHandlersAtom,
