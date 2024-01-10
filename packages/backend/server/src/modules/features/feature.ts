@@ -42,9 +42,22 @@ export class EarlyAccessFeatureConfig extends FeatureConfig {
   }
 }
 
+export class UnlimitedWorkspaceFeatureConfig extends FeatureConfig {
+  override config!: Feature & { feature: FeatureType.UnlimitedWorkspace };
+
+  constructor(data: any) {
+    super(data);
+
+    if (this.config.feature !== FeatureType.UnlimitedWorkspace) {
+      throw new Error('Invalid feature config: type is not EarlyAccess');
+    }
+  }
+}
+
 const FeatureConfigMap = {
   [FeatureType.Copilot]: CopilotFeatureConfig,
   [FeatureType.EarlyAccess]: EarlyAccessFeatureConfig,
+  [FeatureType.UnlimitedWorkspace]: UnlimitedWorkspaceFeatureConfig,
 };
 
 export type FeatureConfigType<F extends FeatureType> = InstanceType<

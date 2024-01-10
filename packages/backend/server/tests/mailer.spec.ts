@@ -129,7 +129,11 @@ test.beforeEach(async t => {
     .overrideProvider(PrismaService)
     .useValue(FakePrisma)
     .overrideProvider(FeatureManagementService)
-    .useValue({})
+    .useValue({
+      hasWorkspaceFeature() {
+        return false;
+      },
+    })
     .compile();
   const app = module.createNestApplication();
   app.use(

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { FeatureType } from './common';
 import { featureCopilot } from './copilot';
 import { featureEarlyAccess } from './early-access';
+import { featureUnlimitedWorkspace } from './unlimited-workspace';
 
 /// ======== common schema ========
 
@@ -43,6 +44,12 @@ export const Features: Feature[] = [
     version: 2,
     configs: {},
   },
+  {
+    feature: FeatureType.UnlimitedWorkspace,
+    type: FeatureKind.Feature,
+    version: 1,
+    configs: {},
+  },
 ];
 
 /// ======== schema infer ========
@@ -51,7 +58,13 @@ export const FeatureSchema = commonFeatureSchema
   .extend({
     type: z.literal(FeatureKind.Feature),
   })
-  .and(z.discriminatedUnion('feature', [featureCopilot, featureEarlyAccess]));
+  .and(
+    z.discriminatedUnion('feature', [
+      featureCopilot,
+      featureEarlyAccess,
+      featureUnlimitedWorkspace,
+    ])
+  );
 
 export type Feature = z.infer<typeof FeatureSchema>;
 
