@@ -7,6 +7,7 @@
     "./command": "./src/command/index.ts",
     "./atom": "./src/atom/index.ts",
     "./app-config-storage": "./src/app-config-storage.ts",
+    "./livedata": "./src/livedata/index.ts",
     ".": "./src/index.ts"
   },
   "dependencies": {
@@ -16,9 +17,11 @@
     "@blocksuite/blocks": "0.12.0-nightly-202401180838-f0c45fd",
     "@blocksuite/global": "0.12.0-nightly-202401180838-f0c45fd",
     "@blocksuite/store": "0.12.0-nightly-202401180838-f0c45fd",
+    "foxact": "^0.2.20",
     "jotai": "^2.5.1",
     "jotai-effect": "^0.2.3",
     "nanoid": "^5.0.3",
+    "react": "18.2.0",
     "tinykeys": "^2.1.0",
     "yjs": "^13.6.10",
     "zod": "^3.22.4"
