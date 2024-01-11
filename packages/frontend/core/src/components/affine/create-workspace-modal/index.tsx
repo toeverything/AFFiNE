@@ -121,6 +121,9 @@ export const CreateWorkspaceModal = ({
         const result = await apis.dialog.loadDBFile();
         if (result.workspaceId && !canceled) {
           _addLocalWorkspace(result.workspaceId);
+          workspaceManager.list.revalidate().catch(err => {
+            logger.error("can't revalidate workspace list", err);
+          });
           onCreate(result.workspaceId);
         } else if (result.error || result.canceled) {
           if (result.error) {
