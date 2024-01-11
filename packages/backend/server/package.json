@@ -114,6 +114,7 @@
     "typescript": "^5.3.2"
   },
   "ava": {
+    "timeout": "1m",
     "extensions": {
       "ts": "module"
     },

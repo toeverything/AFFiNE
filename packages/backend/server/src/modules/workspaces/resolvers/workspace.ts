@@ -1,7 +1,6 @@
 import {
   ForbiddenException,
   HttpStatus,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
   UseGuards,
@@ -398,8 +397,15 @@ export class WorkspaceResolver {
             `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
           );
         }
-
-        return new InternalServerErrorException(e);
+        return new GraphQLError(
+          'failed to send invite email, please try again',
+          {
+            extensions: {
+              status: HttpStatus[HttpStatus.INTERNAL_SERVER_ERROR],
+              code: HttpStatus.INTERNAL_SERVER_ERROR,
+            },
+          }
+        );
       }
     }
     return inviteId;

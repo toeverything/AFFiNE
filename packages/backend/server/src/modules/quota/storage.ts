@@ -44,11 +44,11 @@ export class QuotaManagementService {
     const { user: owner } =
       await this.permissions.getWorkspaceOwner(workspaceId);
     if (!owner) throw new NotFoundException('Workspace owner not found');
-    const { storageQuota } = await this.getUserQuota(owner.id);
+    const { storageQuota, blobLimit } = await this.getUserQuota(owner.id);
     // get all workspaces size of owner used
     const usageSize = await this.getUserUsage(owner.id);
 
-    return { quota: storageQuota, size: usageSize };
+    return { quota: storageQuota, size: usageSize, limit: blobLimit };
   }
 
   async checkBlobQuota(workspaceId: string, size: number) {

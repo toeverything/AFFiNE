@@ -144,6 +144,9 @@ type WorkspaceType {
   publicPages: [WorkspacePage!]!
   histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
 
+  """List blobs of workspace"""
+  blobs: [String!]!
+
   """Blobs size of workspace"""
   blobsSize: Int!
 }

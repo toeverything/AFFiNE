@@ -37,6 +37,23 @@ export const Quotas: Quota[] = [
       memberLimit: 10,
     },
   },
+  {
+    feature: QuotaType.RestrictedPlanV1,
+    type: FeatureKind.Quota,
+    version: 1,
+    configs: {
+      // quota name
+      name: 'Restricted',
+      // single blob limit 10MB
+      blobLimit: OneMB,
+      // total blob limit 1GB
+      storageQuota: 10 * OneMB,
+      // history period of validity 30 days
+      historyPeriod: 30 * OneDay,
+      // member limit 10
+      memberLimit: 10,
+    },
+  },
 ];
 
 export const Quota_FreePlanV1 = {
