@@ -6,18 +6,8 @@ import { ServerOptions } from 'socket.io';
 export class RedisIoAdapter extends IoAdapter {
   private adapterConstructor: ReturnType<typeof createAdapter> | undefined;
 
-  async connectToRedis(
-    host: string,
-    port: number,
-    username: string,
-    password: string,
-    db: number
-  ): Promise<void> {
-    const pubClient = new Redis(port, host, {
-      username,
-      password,
-      db,
-    });
+  async connectToRedis(redis: Redis): Promise<void> {
+    const pubClient = redis;
     pubClient.on('error', err => {
       console.error(err);
     });

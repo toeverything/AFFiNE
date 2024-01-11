@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { mergeMap, Observable, of } from 'rxjs';
 
-import { LocalCache } from './cache';
+import { LocalCache } from './providers/cache';
 
 export const MakeCache = (key: string[], args?: string[]) =>
   SetMetadata('cacheKey', [key, args]);

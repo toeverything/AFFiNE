@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import Keyv from 'keyv';
 
 export interface CacheSetOptions {
@@ -50,11 +51,12 @@ export interface Cache {
   mapLen(map: string): Promise<number>;
 }
 
+@Injectable()
 export class LocalCache implements Cache {
   private readonly kv: Keyv;
 
-  constructor() {
-    this.kv = new Keyv();
+  constructor(opts: Keyv.Options<any> = {}) {
+    this.kv = new Keyv(opts);
   }
 
   // standard operation

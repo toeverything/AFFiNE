@@ -211,6 +211,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         apiVersion: '2023-10-16',
       },
     },
+    metrics: {
+      enabled: false,
+    },
   } satisfies AFFiNEConfig;
 
   applyEnvToConfig(defaultConfig);

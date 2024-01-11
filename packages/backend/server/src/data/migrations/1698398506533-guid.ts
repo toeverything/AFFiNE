@@ -1,11 +1,11 @@
+import { PrismaClient } from '@prisma/client';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
-import { PrismaService } from '../../prisma';
 import { DocID } from '../../utils/doc';
 
 export class Guid1698398506533 {
   // do the migration
-  static async up(db: PrismaService) {
+  static async up(db: PrismaClient) {
     let turn = 0;
     let lastTurnCount = 100;
     while (lastTurnCount === 100) {

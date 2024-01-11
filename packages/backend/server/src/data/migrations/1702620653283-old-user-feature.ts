@@ -1,9 +1,9 @@
-import { QuotaType } from '../../modules/quota/types';
-import { PrismaService } from '../../prisma';
+import { PrismaClient } from '@prisma/client';
 
+import { QuotaType } from '../../modules/quota/types';
 export class OldUserFeature1702620653283 {
   // do the migration
-  static async up(db: PrismaService) {
+  static async up(db: PrismaClient) {
     await db.$transaction(async tx => {
       const latestFreePlan = await tx.features.findFirstOrThrow({
         where: { feature: QuotaType.FreePlanV1 },
@@ -31,7 +31,7 @@ export class OldUserFeature1702620653283 {
 
   // revert the migration
   // WARN: this will drop all user features
-  static async down(db: PrismaService) {
+  static async down(db: PrismaClient) {
     await db.userFeatures.deleteMany({});
   }
 }

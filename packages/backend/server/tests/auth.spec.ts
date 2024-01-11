@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 
+import { CacheModule } from '../src/cache';
 import { ConfigModule } from '../src/config';
 import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { GqlModule } from '../src/graphql.module';
@@ -39,6 +40,7 @@ test.beforeEach(async () => {
         https: true,
       }),
       PrismaModule,
+      CacheModule,
       GqlModule,
       AuthModule,
       RateLimiterModule,

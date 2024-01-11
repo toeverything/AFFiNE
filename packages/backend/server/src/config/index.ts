@@ -5,8 +5,6 @@ import { merge } from 'lodash-es';
 import type { DeepPartial } from '../utils/types';
 import type { AFFiNEConfig } from './def';
 
-import '../prelude';
-
 type ConstructorOf<T> = {
   new (): T;
 };

@@ -1,9 +1,10 @@
+import { PrismaClient } from '@prisma/client';
+
 import type { UserType } from '../../modules/users';
-import { PrismaService } from '../../prisma';
 
 export class UnamedAccount1703756315970 {
   // do the migration
-  static async up(db: PrismaService) {
+  static async up(db: PrismaClient) {
     await db.$transaction(async tx => {
       // only find users with empty names
       const users = await db.$queryRaw<
@@ -27,5 +28,5 @@ export class UnamedAccount1703756315970 {
   }
 
   // revert the migration
-  static async down(_db: PrismaService) {}
+  static async down(_db: PrismaClient) {}
 }

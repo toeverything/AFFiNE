@@ -1,8 +1,7 @@
-import { PrismaService } from '../../prisma';
-
+import { PrismaClient } from '@prisma/client';
 export class PagePermission1699005339766 {
   // do the migration
-  static async up(db: PrismaService) {
+  static async up(db: PrismaClient) {
     let turn = 0;
     let lastTurnCount = 50;
     const done = new Set<string>();
@@ -88,7 +87,7 @@ export class PagePermission1699005339766 {
   }
 
   // revert the migration
-  static async down(db: PrismaService) {
+  static async down(db: PrismaClient) {
     await db.workspaceUserPermission.deleteMany({});
     await db.workspacePageUserPermission.deleteMany({});
   }

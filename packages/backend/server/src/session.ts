@@ -1,44 +1,13 @@
-import KeyvRedis from '@keyv/redis';
-import {
-  FactoryProvider,
-  Global,
-  Inject,
-  Injectable,
-  Module,
-} from '@nestjs/common';
-import Redis from 'ioredis';
-import Keyv from 'keyv';
+import { Global, Injectable, Module } from '@nestjs/common';
 
-import { Config } from './config';
-
-export const KeyvProvide = Symbol('KeyvProvide');
-
-export const KeyvProvider: FactoryProvider<Keyv> = {
-  provide: KeyvProvide,
-  useFactory(config: Config) {
-    if (config.redis.enabled) {
-      return new Keyv({
-        store: new KeyvRedis(
-          new Redis(config.redis.port, config.redis.host, {
-            username: config.redis.username,
-            password: config.redis.password,
-            db: config.redis.database + 2,
-          })
-        ),
-      });
-    } else {
-      return new Keyv();
-    }
-  },
-  inject: [Config],
-};
+import { SessionCache } from './cache/instances';
 
 @Injectable()
 export class SessionService {
   private readonly prefix = 'session:';
   private readonly sessionTtl = 30 * 60 * 1000; // 30 min
 
-  constructor(@Inject(KeyvProvide) private readonly cache: Keyv) {}
+  constructor(private readonly cache: SessionCache) {}
 
   /**
    * get session
@@ -46,7 +15,7 @@ export class SessionService {
    * @returns
    */
   async get(key: string) {
-    return this.cache.get(this.prefix + key);
+    return this.cache.get<string>(this.prefix + key);
   }
 
   /**
@@ -57,7 +26,9 @@ export class SessionService {
    * @returns return true if success
    */
   async set(key: string, value?: any, sessionTtl = this.sessionTtl) {
-    return this.cache.set(this.prefix + key, value, sessionTtl);
+    return this.cache.set<string>(this.prefix + key, value, {
+      ttl: sessionTtl,
+    });
   }
 
   async delete(key: string) {
@@ -67,7 +38,7 @@ export class SessionService {
 
 @Global()
 @Module({
-  providers: [KeyvProvider, SessionService],
-  exports: [KeyvProvider, SessionService],
+  providers: [SessionService],
+  exports: [SessionService],
 })
 export class SessionModule {}

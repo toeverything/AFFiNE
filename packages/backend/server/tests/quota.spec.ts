@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
+import { CacheModule } from '../src/cache';
 import { ConfigModule } from '../src/config';
 import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { EventModule } from '../src/event';
@@ -49,6 +50,7 @@ test.beforeEach(async t => {
         https: true,
       }),
       PrismaModule,
+      CacheModule,
       AuthModule,
       EventModule,
       QuotaModule,

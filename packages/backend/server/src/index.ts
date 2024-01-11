@@ -1,6 +1,7 @@
 /// <reference types="./global.d.ts" />
-import { start as startAutoMetrics } from './metrics';
-startAutoMetrics();
+// keep the config import at the top
+// eslint-disable-next-line simple-import-sort/imports
+import './prelude';
 
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -12,6 +13,7 @@ import { Config } from './config';
 import { ExceptionLogger } from './middleware/exception-logger';
 import { serverTimingAndCache } from './middleware/timing';
 import { RedisIoAdapter } from './modules/sync/redis-adapter';
+import { CacheRedis } from './cache/redis';
 
 const { NODE_ENV, AFFINE_ENV } = process.env;
 const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -42,15 +44,10 @@ const config = app.get(Config);
 const host = config.node.prod ? '0.0.0.0' : 'localhost';
 const port = config.port ?? 3010;
 
-if (config.redis.enabled) {
+if (!config.node.test && config.redis.enabled) {
+  const redis = app.get(CacheRedis, { strict: false });
   const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis(
-    config.redis.host,
-    config.redis.port,
-    config.redis.username,
-    config.redis.password,
-    config.redis.database
-  );
+  await redisIoAdapter.connectToRedis(redis);
   app.useWebSocketAdapter(redisIoAdapter);
 }
 

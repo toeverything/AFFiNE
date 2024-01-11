@@ -33,7 +33,6 @@ import prismaInstrument from '@prisma/instrumentation';
 
 const { PrismaInstrumentation } = prismaInstrument;
 
-import { parseEnvValue } from '../config/def';
 import { PrismaMetricProducer } from './prisma';
 
 abstract class OpentelemetryFactor {
@@ -116,7 +115,8 @@ class DebugOpentelemetryFactor extends OpentelemetryFactor {
   }
 }
 
-function createSDK() {
+// TODO(@forehalo): make it configurable
+export function createSDK() {
   let factor: OpentelemetryFactor | null = null;
   if (process.env.NODE_ENV === 'production') {
     factor = new GCloudOpentelemetryFactor();
@@ -129,21 +129,11 @@ function createSDK() {
   return factor?.create();
 }
 
-let OPENTELEMETRY_STARTED = false;
-
-function ensureStarted() {
-  if (!OPENTELEMETRY_STARTED) {
-    OPENTELEMETRY_STARTED = true;
-    start();
-  }
-}
-
 function getMeterProvider() {
-  ensureStarted();
   return metrics.getMeterProvider();
 }
 
-function registerCustomMetrics() {
+export function registerCustomMetrics() {
   const hostMetricsMonitoring = new HostMetrics({
     name: 'instance-host-metrics',
     meterProvider: getMeterProvider() as MeterProvider,
@@ -153,16 +143,4 @@ function registerCustomMetrics() {
 
 export function getMeter(name = 'business') {
   return getMeterProvider().getMeter(name);
-}
-
-export function start() {
-  if (parseEnvValue(process.env.DISABLE_TELEMETRY, 'boolean')) {
-    return;
-  }
-  const sdk = createSDK();
-
-  if (sdk) {
-    sdk.start();
-    registerCustomMetrics();
-  }
 }

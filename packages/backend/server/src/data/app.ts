@@ -1,3 +1,5 @@
+import '../prelude';
+
 import { Logger, Module } from '@nestjs/common';
 import { CommandFactory } from 'nest-commander';
 
@@ -13,6 +15,9 @@ import { RevertCommand, RunCommand } from './commands/run';
         manager: {
           enableUpdateAutoMerging: false,
         },
+      },
+      metrics: {
+        enabled: false,
       },
     }),
     BusinessAppModule,

@@ -357,6 +357,10 @@ export interface AFFiNEConfig {
     };
   };
 
+  metrics: {
+    enabled: boolean;
+  };
+
   payment: {
     stripe: {
       keys: {

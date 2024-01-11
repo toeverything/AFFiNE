@@ -1,15 +1,14 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import {
   CommonFeature,
   FeatureKind,
   FeatureType,
 } from '../../../modules/features';
-import { PrismaService } from '../../../prisma';
 
 // upgrade features from lower version to higher version
 export async function upsertFeature(
-  db: PrismaService,
+  db: PrismaClient,
   feature: CommonFeature
 ): Promise<void> {
   const hasEqualOrGreaterVersion =
@@ -34,7 +33,7 @@ export async function upsertFeature(
   }
 }
 
-export async function migrateNewFeatureTable(prisma: PrismaService) {
+export async function migrateNewFeatureTable(prisma: PrismaClient) {
   const waitingList = await prisma.newFeaturesWaitingList.findMany();
   for (const oldUser of waitingList) {
     const user = await prisma.user.findFirst({

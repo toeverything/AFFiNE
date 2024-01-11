@@ -127,3 +127,5 @@ export const metrics = new Proxy<Record<KnownMetricScopes, ScopedMetrics>>(
     },
   }
 );
+
+export function stopMetrics() {}

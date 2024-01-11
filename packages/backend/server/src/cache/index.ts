@@ -1,26 +1,34 @@
-import { FactoryProvider, Global, Module } from '@nestjs/common';
+import { Global, Module, Provider, Type } from '@nestjs/common';
 import { Redis } from 'ioredis';
 
-import { Config } from '../config';
-import { LocalCache } from './cache';
-import { RedisCache } from './redis';
+import { SessionCache, ThrottlerCache } from './instances';
+import { LocalCache } from './providers/cache';
+import { RedisCache } from './providers/redis';
+import { CacheRedis, SessionRedis, ThrottlerRedis } from './redis';
 
-const CacheProvider: FactoryProvider = {
-  provide: LocalCache,
-  useFactory: (config: Config) => {
-    return config.redis.enabled
-      ? new RedisCache(new Redis(config.redis))
-      : new LocalCache();
-  },
-  inject: [Config],
-};
+function makeCacheProvider(CacheToken: Type, RedisToken: Type): Provider {
+  return {
+    provide: CacheToken,
+    useFactory: (redis?: Redis) => {
+      return redis ? new RedisCache(redis) : new LocalCache();
+    },
+    inject: [{ token: RedisToken, optional: true }],
+  };
+}
+
+const CacheProvider = makeCacheProvider(LocalCache, CacheRedis);
+const SessionCacheProvider = makeCacheProvider(SessionCache, SessionRedis);
+const ThrottlerCacheProvider = makeCacheProvider(
+  ThrottlerCache,
+  ThrottlerRedis
+);
 
 @Global()
 @Module({
-  providers: [CacheProvider],
-  exports: [CacheProvider],
+  providers: [CacheProvider, SessionCacheProvider, ThrottlerCacheProvider],
+  exports: [CacheProvider, SessionCacheProvider, ThrottlerCacheProvider],
 })
 export class CacheModule {}
-export { LocalCache as Cache };
+export { LocalCache as Cache, SessionCache, ThrottlerCache };
 
 export { CacheInterceptor, MakeCache, PreventCache } from './interceptor';

@@ -5,42 +5,50 @@ import {
   ThrottlerGuard,
   ThrottlerModule,
   ThrottlerModuleOptions,
+  ThrottlerOptionsFactory,
 } from '@nestjs/throttler';
-import Redis from 'ioredis';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
+import { ThrottlerCache } from './cache';
 import { Config } from './config';
 import { getRequestResponseFromContext } from './utils/nestjs';
+
+@Injectable()
+class CustomOptionsFactory implements ThrottlerOptionsFactory {
+  constructor(
+    private readonly config: Config,
+    private readonly cache: ThrottlerCache
+  ) {}
+  createThrottlerOptions() {
+    const options: ThrottlerModuleOptions = {
+      throttlers: [
+        {
+          ttl: this.config.rateLimiter.ttl,
+          limit: this.config.rateLimiter.limit,
+        },
+      ],
+      skipIf: () => {
+        return !this.config.node.prod || this.config.affine.canary;
+      },
+    };
+
+    if (this.config.redis.enabled) {
+      new Logger(RateLimiterModule.name).log('Use Redis');
+      options.storage = new ThrottlerStorageRedisService(
+        // @ts-expect-error hidden field
+        this.cache.redis
+      );
+    }
+
+    return options;
+  }
+}
 
 @Global()
 @Module({
   imports: [
     ThrottlerModule.forRootAsync({
-      inject: [Config],
-      useFactory: (config: Config): ThrottlerModuleOptions => {
-        const options: ThrottlerModuleOptions = {
-          throttlers: [
-            {
-              ttl: config.rateLimiter.ttl,
-              limit: config.rateLimiter.limit,
-            },
-          ],
-          skipIf: () => {
-            return !config.node.prod || config.affine.canary;
-          },
-        };
-        if (config.redis.enabled) {
-          new Logger(RateLimiterModule.name).log('Use Redis');
-          options.storage = new ThrottlerStorageRedisService(
-            new Redis(config.redis.port, config.redis.host, {
-              username: config.redis.username,
-              password: config.redis.password,
-              db: config.redis.database + 1,
-            })
-          );
-        }
-        return options;
-      },
+      useClass: CustomOptionsFactory,
     }),
   ],
 })

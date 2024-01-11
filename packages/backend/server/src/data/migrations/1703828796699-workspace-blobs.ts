@@ -1,11 +1,11 @@
 import { ModuleRef } from '@nestjs/core';
+import { PrismaClient } from '@prisma/client';
 
 import { WorkspaceBlobStorage } from '../../modules/storage';
-import { PrismaService } from '../../prisma';
 
 export class WorkspaceBlobs1703828796699 {
   // do the migration
-  static async up(db: PrismaService, injector: ModuleRef) {
+  static async up(db: PrismaClient, injector: ModuleRef) {
     const blobStorage = injector.get(WorkspaceBlobStorage, { strict: false });
     let hasMore = true;
     let turn = 0;
@@ -32,7 +32,7 @@ export class WorkspaceBlobs1703828796699 {
   }
 
   // revert the migration
-  static async down(_db: PrismaService) {
+  static async down(_db: PrismaClient) {
     // old data kept, no need to downgrade the migration
   }
 }

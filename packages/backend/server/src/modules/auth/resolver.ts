@@ -167,8 +167,13 @@ export class AuthResolver {
     @CurrentUser() user: UserType,
     @Args('token') token: string
   ) {
+    const key = await this.session.get(token);
+    if (!key) {
+      throw new ForbiddenException('Invalid token');
+    }
+
     // email has set token in `sendVerifyChangeEmail`
-    const [id, email] = (await this.session.get(token)).split(',');
+    const [id, email] = key.split(',');
     if (!id || id !== user.id || !email) {
       throw new ForbiddenException('Invalid token');
     }

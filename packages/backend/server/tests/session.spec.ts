@@ -3,6 +3,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
+import { CacheModule } from '../src/cache';
 import { ConfigModule } from '../src/config';
 import { SessionModule, SessionService } from '../src/session';
 
@@ -19,6 +20,7 @@ test.beforeEach(async t => {
           enabled: false,
         },
       }),
+      CacheModule,
       SessionModule,
     ],
   }).compile();
