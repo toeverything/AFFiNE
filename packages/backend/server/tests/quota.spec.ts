@@ -1,14 +1,8 @@
 /// <reference types="../src/global.d.ts" />
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
-import { CacheModule } from '../src/cache';
-import { ConfigModule } from '../src/config';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
-import { EventModule } from '../src/event';
-import { AuthModule } from '../src/modules/auth';
 import { AuthService } from '../src/modules/auth/service';
 import {
   QuotaManagementService,
@@ -18,64 +12,32 @@ import {
   QuotaType,
 } from '../src/modules/quota';
 import { StorageModule } from '../src/modules/storage';
-import { PrismaModule } from '../src/prisma';
-import { RateLimiterModule } from '../src/throttler';
-import { initFeatureConfigs } from './utils';
+import { createTestingModule } from './utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
   quota: QuotaService;
   storageQuota: QuotaManagementService;
-  app: TestingModule;
+  module: TestingModule;
 }>;
 
-// cleanup database before each test
-test.beforeEach(async () => {
-  const client = new PrismaClient();
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.$disconnect();
-});
-
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        auth: {
-          accessTokenExpiresIn: 1,
-          refreshTokenExpiresIn: 1,
-          leeway: 1,
-        },
-        host: 'example.org',
-        https: true,
-      }),
-      PrismaModule,
-      CacheModule,
-      AuthModule,
-      EventModule,
-      QuotaModule,
-      StorageModule,
-      RateLimiterModule,
-      RevertCommand,
-      RunCommand,
-    ],
-  }).compile();
+  const module = await createTestingModule({
+    imports: [StorageModule, QuotaModule],
+  });
 
   const quota = module.get(QuotaService);
   const storageQuota = module.get(QuotaManagementService);
   const auth = module.get(AuthService);
 
-  t.context.app = module;
+  t.context.module = module;
   t.context.quota = quota;
   t.context.storageQuota = storageQuota;
   t.context.auth = auth;
-
-  // init features
-  await initFeatureConfigs(module);
 });
 
 test.afterEach.always(async t => {
-  await t.context.app.close();
+  await t.context.module.close();
 });
 
 test('should be able to set quota', async t => {

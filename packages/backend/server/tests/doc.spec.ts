@@ -1,9 +1,7 @@
 import { mock } from 'node:test';
 
-import type { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import test from 'ava';
-import { register } from 'prom-client';
 import * as Sinon from 'sinon';
 import {
   applyUpdate,
@@ -12,37 +10,19 @@ import {
   encodeStateAsUpdate,
 } from 'yjs';
 
-import { CacheModule } from '../src/cache';
-import { Config, ConfigModule } from '../src/config';
-import {
-  collectMigrations,
-  RevertCommand,
-  RunCommand,
-} from '../src/data/commands/run';
-import { EventModule } from '../src/event';
+import { Config } from '../src/config';
 import { DocManager, DocModule } from '../src/modules/doc';
 import { QuotaModule } from '../src/modules/quota';
 import { StorageModule } from '../src/modules/storage';
-import { PrismaModule, PrismaService } from '../src/prisma';
-import { flushDB } from './utils';
+import { PrismaService } from '../src/prisma';
+import { createTestingModule, initTestingDB } from './utils';
 
 const createModule = () => {
-  return Test.createTestingModule({
-    imports: [
-      PrismaModule,
-      CacheModule,
-      EventModule,
-      QuotaModule,
-      StorageModule,
-      ConfigModule.forRoot(),
-      DocModule,
-      RevertCommand,
-      RunCommand,
-    ],
-  }).compile();
+  return createTestingModule({
+    imports: [QuotaModule, StorageModule, DocModule],
+  });
 };
 
-let app: INestApplication;
 let m: TestingModule;
 let timer: Sinon.SinonFakeTimers;
 
@@ -51,44 +31,34 @@ test.beforeEach(async () => {
   timer = Sinon.useFakeTimers({
     toFake: ['setInterval'],
   });
-  await flushDB();
   m = await createModule();
-  app = m.createNestApplication();
-  app.enableShutdownHooks();
-  await app.init();
-
-  // init features
-  const run = m.get(RunCommand);
-  const revert = m.get(RevertCommand);
-  const migrations = await collectMigrations();
-  await Promise.allSettled(migrations.map(m => revert.run([m.name])));
-  await run.run();
+  await m.init();
+  await initTestingDB(m.get(PrismaService));
 });
 
 test.afterEach.always(async () => {
-  await app.close();
   await m.close();
   timer.restore();
 });
 
 test('should setup update poll interval', async t => {
-  register.clear();
   const m = await createModule();
   const manager = m.get(DocManager);
   const fake = mock.method(manager, 'setup');
 
-  await m.createNestApplication().init();
+  await m.init();
 
   t.is(fake.mock.callCount(), 1);
   // @ts-expect-error private member
   t.truthy(manager.job);
+  m.close();
 });
 
 test('should be able to stop poll', async t => {
   const manager = m.get(DocManager);
   const fake = mock.method(manager, 'destroy');
 
-  await app.close();
+  await m.close();
 
   t.is(fake.mock.callCount(), 1);
   // @ts-expect-error private member

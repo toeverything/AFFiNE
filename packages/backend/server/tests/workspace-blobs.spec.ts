@@ -1,19 +1,15 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
 import test from 'ava';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
-import { RevertCommand, RunCommand } from '../src/data/commands/run';
 import { QuotaService, QuotaType } from '../src/modules/quota';
 import {
   checkBlobSize,
   collectAllBlobSizes,
+  createTestingApp,
   createWorkspace,
   getWorkspaceBlobsSize,
-  initFeatureConfigs,
   listBlobs,
   setBlob,
   signUp,
@@ -22,36 +18,13 @@ import {
 let app: INestApplication;
 let quota: QuotaService;
 
-const client = new PrismaClient();
-
-// cleanup database before each test
 test.beforeEach(async () => {
-  await client.$connect();
-  await client.user.deleteMany({});
-  await client.snapshot.deleteMany({});
-  await client.update.deleteMany({});
-  await client.workspace.deleteMany({});
-  await client.$disconnect();
-});
-
-test.beforeEach(async () => {
-  const module = await Test.createTestingModule({
+  const { app: testApp } = await createTestingApp({
     imports: [AppModule],
-    providers: [RevertCommand, RunCommand],
-  }).compile();
-  app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  quota = module.get(QuotaService);
+  });
 
-  // init features
-  await initFeatureConfigs(module);
-
-  await app.init();
+  app = testApp;
+  quota = app.get(QuotaService);
 });
 
 test.afterEach.always(async () => {

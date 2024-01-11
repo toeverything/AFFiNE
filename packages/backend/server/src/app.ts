@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module, Type } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AppController } from './app.controller';
@@ -13,7 +13,7 @@ import { PrismaModule } from './prisma';
 import { SessionModule } from './session';
 import { RateLimiterModule } from './throttler';
 
-export const BasicModules = [
+export const FunctionalityModules: Array<Type | DynamicModule> = [
   ConfigModule.forRoot(),
   CacheModule,
   PrismaModule,
@@ -26,7 +26,7 @@ export const BasicModules = [
 
 // better module registration logic
 if (AFFiNE.redis.enabled) {
-  BasicModules.push(RedisModule);
+  FunctionalityModules.push(RedisModule);
 }
 
 @Module({
@@ -36,7 +36,7 @@ if (AFFiNE.redis.enabled) {
       useClass: CacheInterceptor,
     },
   ],
-  imports: [...BasicModules, ...BusinessModules],
+  imports: [...FunctionalityModules, ...BusinessModules],
   controllers: SERVER_FLAVOR === 'selfhosted' ? [] : [AppController],
 })
 export class AppModule {}

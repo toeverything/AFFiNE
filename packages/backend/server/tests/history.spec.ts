@@ -1,40 +1,26 @@
-import { INestApplication } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import type { Snapshot } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
 
-import { ConfigModule } from '../src/config';
-import { EventModule, type EventPayload } from '../src/event';
+import { type EventPayload } from '../src/event';
 import { DocHistoryManager } from '../src/modules/doc';
 import { QuotaModule } from '../src/modules/quota';
 import { StorageModule } from '../src/modules/storage';
-import { PrismaModule, PrismaService } from '../src/prisma';
-import { flushDB } from './utils';
+import { PrismaService } from '../src/prisma';
+import { createTestingModule } from './utils';
 
-let app: INestApplication;
 let m: TestingModule;
 let manager: DocHistoryManager;
 let db: PrismaService;
 
 // cleanup database before each test
 test.beforeEach(async () => {
-  await flushDB();
-  m = await Test.createTestingModule({
-    imports: [
-      PrismaModule,
-      QuotaModule,
-      EventModule,
-      StorageModule,
-      ScheduleModule.forRoot(),
-      ConfigModule.forRoot(),
-    ],
+  m = await createTestingModule({
+    imports: [StorageModule, QuotaModule],
     providers: [DocHistoryManager],
-  }).compile();
+  });
 
-  app = m.createNestApplication();
-  await app.init();
   manager = m.get(DocHistoryManager);
   Sinon.stub(manager, 'getExpiredDateFromNow').resolves(
     new Date(Date.now() + 1000)
@@ -42,8 +28,7 @@ test.beforeEach(async () => {
   db = m.get(PrismaService);
 });
 
-test.afterEach(async () => {
-  await app.close();
+test.afterEach.always(async () => {
   await m.close();
   Sinon.restore();
 });

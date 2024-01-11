@@ -1,18 +1,22 @@
 import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { hashSync } from '@node-rs/argon2';
 import { type User } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule } from '../src/app';
 import { MailService } from '../src/modules/auth/mailer';
 import { FeatureKind, FeatureManagementService } from '../src/modules/features';
 import { Quotas } from '../src/modules/quota';
 import { PrismaService } from '../src/prisma';
-import { createWorkspace, getInviteInfo, inviteUser, signUp } from './utils';
+import {
+  createTestingApp,
+  createWorkspace,
+  getInviteInfo,
+  inviteUser,
+  signUp,
+} from './utils';
 
 const FakePrisma = {
   fakeUser: {
@@ -123,26 +127,20 @@ const test = ava as TestFn<{
 }>;
 
 test.beforeEach(async t => {
-  const module = await Test.createTestingModule({
+  const { module, app } = await createTestingApp({
     imports: [AppModule],
-  })
-    .overrideProvider(PrismaService)
-    .useValue(FakePrisma)
-    .overrideProvider(FeatureManagementService)
-    .useValue({
-      hasWorkspaceFeature() {
-        return false;
-      },
-    })
-    .compile();
-  const app = module.createNestApplication();
-  app.use(
-    graphqlUploadExpress({
-      maxFileSize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    })
-  );
-  await app.init();
+    tapModule: module => {
+      module
+        .overrideProvider(PrismaService)
+        .useValue(FakePrisma)
+        .overrideProvider(FeatureManagementService)
+        .useValue({
+          hasWorkspaceFeature() {
+            return false;
+          },
+        });
+    },
+  });
 
   const mail = module.get(MailService);
   t.context.app = app;

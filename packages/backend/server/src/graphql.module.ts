@@ -21,11 +21,12 @@ import { GQLLoggerPlugin } from './graphql/logger-plugin';
           csrfPrevention: {
             requestHeaders: ['content-type'],
           },
-          autoSchemaFile: join(
-            fileURLToPath(import.meta.url),
-            '..',
-            'schema.gql'
-          ),
+          autoSchemaFile: config.node.test
+            ? join(
+                fileURLToPath(import.meta.url),
+                '../../node_modules/.cache/schema.gql'
+              )
+            : join(fileURLToPath(import.meta.url), '..', 'schema.gql'),
           context: ({ req, res }: { req: Request; res: Response }) => ({
             req,
             res,

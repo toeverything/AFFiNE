@@ -101,7 +101,7 @@ test('list recursively', async t => {
   t.is(r5.length, 20);
 });
 
-test.only('delete', async t => {
+test('delete', async t => {
   const provider = createProvider();
   const key = 'testKey';
   const body = Buffer.from('testBody');

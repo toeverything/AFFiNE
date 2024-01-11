@@ -12,6 +12,7 @@ import { QuotaManagementService } from './storage';
  * - quota statistics
  */
 @Module({
+  // FIXME: Quota really need to know `Storage`?
   imports: [StorageModule],
   providers: [PermissionService, QuotaService, QuotaManagementService],
   exports: [QuotaService, QuotaManagementService],
