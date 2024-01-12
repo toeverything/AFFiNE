@@ -16,9 +16,12 @@ import {
 import type { Request } from 'express';
 import { nanoid } from 'nanoid';
 
-import { Config } from '../../config';
-import { SessionService } from '../../session';
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
+import {
+  CloudThrottlerGuard,
+  Config,
+  SessionService,
+  Throttle,
+} from '../../fundamentals';
 import { UserType } from '../users';
 import { Auth, CurrentUser } from './guard';
 import { AuthService } from './service';

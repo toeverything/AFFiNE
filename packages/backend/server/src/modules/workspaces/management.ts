@@ -9,7 +9,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
+import { CloudThrottlerGuard, Throttle } from '../../fundamentals';
 import { Auth, CurrentUser } from '../auth';
 import { FeatureManagementService, FeatureType } from '../features';
 import { UserType } from '../users';

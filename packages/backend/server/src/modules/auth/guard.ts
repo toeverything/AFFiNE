@@ -10,8 +10,10 @@ import { Reflector } from '@nestjs/core';
 import type { NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
-import { PrismaService } from '../../prisma';
-import { getRequestResponseFromContext } from '../../utils/nestjs';
+import {
+  getRequestResponseFromContext,
+  PrismaService,
+} from '../../fundamentals';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 

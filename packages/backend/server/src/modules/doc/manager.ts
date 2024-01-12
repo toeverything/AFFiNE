@@ -16,12 +16,16 @@ import {
   transact,
 } from 'yjs';
 
-import { Cache } from '../../cache';
-import { Config } from '../../config';
-import { EventEmitter, type EventPayload, OnEvent } from '../../event';
-import { metrics } from '../../metrics/metrics';
-import { PrismaService } from '../../prisma';
-import { mergeUpdatesInApplyWay as jwstMergeUpdates } from '../../storage';
+import {
+  Cache,
+  Config,
+  EventEmitter,
+  type EventPayload,
+  mergeUpdatesInApplyWay as jwstMergeUpdates,
+  metrics,
+  OnEvent,
+  PrismaService,
+} from '../../fundamentals';
 
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
   if (yBinary.equals(jwstBinary)) {

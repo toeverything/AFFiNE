@@ -11,11 +11,13 @@ import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import type { User } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
-import { Config } from '../../config';
-import { PrismaService } from '../../prisma';
-import { verifyChallengeResponse } from '../../storage';
+import {
+  Config,
+  MailService,
+  PrismaService,
+  verifyChallengeResponse,
+} from '../../fundamentals';
 import { Quota_FreePlanV1 } from '../quota';
-import { MailService } from './mailer';
 
 export type UserClaim = Pick<
   User,
@@ -192,6 +194,7 @@ export class AuthService {
         name,
         email,
         password: hashedPassword,
+        // TODO(@forehalo): handle in event system
         features: {
           create: {
             reason: 'created by api sign up',

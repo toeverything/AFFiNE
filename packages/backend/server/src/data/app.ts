@@ -4,7 +4,7 @@ import { Logger, Module } from '@nestjs/common';
 import { CommandFactory } from 'nest-commander';
 
 import { AppModule as BusinessAppModule } from '../app';
-import { ConfigModule } from '../config';
+import { ConfigModule } from '../fundamentals/config';
 import { CreateCommand, NameQuestion } from './commands/create';
 import { RevertCommand, RunCommand } from './commands/run';
 
@@ -15,9 +15,6 @@ import { RevertCommand, RunCommand } from './commands/run';
         manager: {
           enableUpdateAutoMerging: false,
         },
-      },
-      metrics: {
-        enabled: false,
       },
     }),
     BusinessAppModule,

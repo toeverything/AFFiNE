@@ -9,8 +9,7 @@ import type {
 } from '@prisma/client';
 import Stripe from 'stripe';
 
-import { Config } from '../../config';
-import { PrismaService } from '../../prisma';
+import { Config, PrismaService } from '../../fundamentals';
 import { FeatureManagementService } from '../features';
 import { QuotaService, QuotaType } from '../quota';
 import { ScheduleManager } from './schedule';

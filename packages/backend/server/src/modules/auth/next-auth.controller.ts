@@ -22,11 +22,14 @@ import { nanoid } from 'nanoid';
 import type { AuthAction, CookieOption, NextAuthOptions } from 'next-auth';
 import { AuthHandler } from 'next-auth/core';
 
-import { Config } from '../../config';
-import { metrics } from '../../metrics';
-import { PrismaService } from '../../prisma/service';
-import { SessionService } from '../../session';
-import { AuthThrottlerGuard, Throttle } from '../../throttler';
+import {
+  AuthThrottlerGuard,
+  Config,
+  metrics,
+  PrismaService,
+  SessionService,
+  Throttle,
+} from '../../fundamentals';
 import { NextAuthOptionsProvide } from './next-auth-options';
 import { AuthService } from './service';
 

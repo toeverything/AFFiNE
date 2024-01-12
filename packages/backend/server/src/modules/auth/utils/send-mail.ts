@@ -2,9 +2,7 @@ import { Logger } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 import type { SendVerificationRequestParams } from 'next-auth/providers/email';
 
-import { Config } from '../../../config';
-import { SessionService } from '../../../session';
-import { MailService } from '../mailer';
+import { Config, MailService, SessionService } from '../../../fundamentals';
 
 export async function sendVerificationRequest(
   config: Config,

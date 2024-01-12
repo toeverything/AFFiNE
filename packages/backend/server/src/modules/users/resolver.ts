@@ -11,10 +11,13 @@ import type { User } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
-import { EventEmitter } from '../../event';
-import { PrismaService } from '../../prisma/service';
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
-import type { FileUpload } from '../../types';
+import {
+  CloudThrottlerGuard,
+  EventEmitter,
+  type FileUpload,
+  PrismaService,
+  Throttle,
+} from '../../fundamentals';
 import { Auth, CurrentUser, Public, Publicable } from '../auth/guard';
 import { FeatureManagementService } from '../features';
 import { QuotaService } from '../quota';

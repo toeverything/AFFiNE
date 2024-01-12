@@ -10,7 +10,7 @@ import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { ConfigModule } from '../src/config';
+import { ConfigModule } from '../src/fundamentals/config';
 import { AuthService } from '../src/modules/auth/service';
 import { createTestingModule } from './utils';
 

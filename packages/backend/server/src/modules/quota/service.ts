@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../prisma';
+import { PrismaService } from '../../fundamentals';
 import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';

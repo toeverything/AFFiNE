@@ -2,10 +2,13 @@
 import { TestingModule } from '@nestjs/testing';
 import test from 'ava';
 
-import { ConfigModule } from '../src/config';
+import { ConfigModule } from '../src/fundamentals/config';
+import {
+  mintChallengeResponse,
+  verifyChallengeResponse,
+} from '../src/fundamentals/storage';
 import { AuthResolver } from '../src/modules/auth/resolver';
 import { AuthService } from '../src/modules/auth/service';
-import { mintChallengeResponse, verifyChallengeResponse } from '../src/storage';
 import { createTestingModule } from './utils';
 
 let authService: AuthService;

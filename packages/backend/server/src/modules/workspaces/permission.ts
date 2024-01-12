@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { PrismaService } from '../../prisma';
+import { PrismaService } from '../../fundamentals';
 import { Permission } from './types';
 
 export enum PublicPageMode {

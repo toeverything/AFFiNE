@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
-import { CloudThrottlerGuard, Throttle } from '../../throttler';
+import { CloudThrottlerGuard, Throttle } from '../../fundamentals';
 import { Auth, CurrentUser } from '../auth/guard';
 import { AuthService } from '../auth/service';
 import { FeatureManagementService } from '../features';

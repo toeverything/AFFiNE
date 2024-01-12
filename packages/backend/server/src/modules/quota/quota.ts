@@ -1,4 +1,4 @@
-import { PrismaService } from '../../prisma';
+import { PrismaService } from '../../fundamentals';
 import { formatDate, formatSize, Quota, QuotaSchema } from './types';
 
 const QuotaCache = new Map<number, QuotaConfig>();

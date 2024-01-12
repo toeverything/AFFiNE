@@ -3,13 +3,13 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { hashSync } from '@node-rs/argon2';
 import { type User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { AppModule } from '../src/app';
-import { MailService } from '../src/modules/auth/mailer';
+import { MailService } from '../src/fundamentals/mailer';
 import { FeatureKind, FeatureManagementService } from '../src/modules/features';
 import { Quotas } from '../src/modules/quota';
-import { PrismaService } from '../src/prisma';
 import {
   createTestingApp,
   createWorkspace,
@@ -131,7 +131,7 @@ test.beforeEach(async t => {
     imports: [AppModule],
     tapModule: module => {
       module
-        .overrideProvider(PrismaService)
+        .overrideProvider(PrismaClient)
         .useValue(FakePrisma)
         .overrideProvider(FeatureManagementService)
         .useValue({

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
-import { DocID } from '../../utils/doc';
+import { DocID } from '../../modules/utils/doc';
 
 export class Guid1698398506533 {
   // do the migration

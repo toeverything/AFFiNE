@@ -7,9 +7,8 @@ import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
 import { AppModule } from '../src/app';
-import { MailService } from '../src/modules/auth/mailer';
+import { MailService } from '../src/fundamentals/mailer';
 import { AuthService } from '../src/modules/auth/service';
-import { PrismaService } from '../src/prisma';
 import {
   acceptInviteById,
   createTestingApp,
@@ -33,7 +32,7 @@ test.beforeEach(async t => {
     imports: [AppModule],
   });
   t.context.app = app;
-  t.context.client = app.get(PrismaService);
+  t.context.client = app.get(PrismaClient);
   t.context.auth = app.get(AuthService);
   t.context.mail = app.get(MailService);
 });

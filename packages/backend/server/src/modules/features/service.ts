@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../prisma';
+import { PrismaService } from '../../fundamentals';
 import { UserType } from '../users/types';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';

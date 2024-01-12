@@ -9,8 +9,9 @@ import {
 import { GqlContextType } from '@nestjs/graphql';
 import { Request, Response } from 'express';
 
-import { REQUEST_ID } from '../constants';
 const TrivialExceptions = [NotFoundException];
+
+export const REQUEST_ID_HEADER = 'x-request-id';
 
 @Catch()
 export class ExceptionLogger implements ExceptionFilter {
@@ -21,7 +22,7 @@ export class ExceptionLogger implements ExceptionFilter {
     const ctx = host.switchToHttp();
 
     const request = ctx.getRequest<Request>();
-    const requestId = request?.header(REQUEST_ID);
+    const requestId = request?.header(REQUEST_ID_HEADER);
 
     const shouldVerboseLog = !TrivialExceptions.some(
       e => exception instanceof e

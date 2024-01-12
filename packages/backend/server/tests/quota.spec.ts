@@ -3,7 +3,7 @@
 import { TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
-import { AuthService } from '../src/modules/auth/service';
+import { AuthService } from '../src/modules/auth';
 import {
   QuotaManagementService,
   QuotaModule,

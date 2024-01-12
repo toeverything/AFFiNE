@@ -12,9 +12,12 @@ import {
 import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
-import { MakeCache, PreventCache } from '../../../cache';
-import { CloudThrottlerGuard } from '../../../throttler';
-import type { FileUpload } from '../../../types';
+import {
+  CloudThrottlerGuard,
+  type FileUpload,
+  MakeCache,
+  PreventCache,
+} from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { FeatureManagementService, FeatureType } from '../../features';
 import { QuotaManagementService } from '../../quota';

@@ -1,18 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
-import { AFFiNEStorageConfig, Config } from '../../../config';
-import { type EventPayload, OnEvent } from '../../../event';
-import {
+import type {
   BlobInputType,
-  createStorageProvider,
+  EventPayload,
   PutObjectMetadata,
   StorageProvider,
-} from '../providers';
+} from '../../../fundamentals';
+import { Config, createStorageProvider, OnEvent } from '../../../fundamentals';
 
 @Injectable()
 export class AvatarStorage {
   public readonly provider: StorageProvider;
-  private readonly storageConfig: AFFiNEStorageConfig['storages']['avatar'];
+  private readonly storageConfig: Config['storage']['storages']['avatar'];
 
   constructor(private readonly config: Config) {
     this.provider = createStorageProvider(this.config.storage, 'avatar');

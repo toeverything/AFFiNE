@@ -16,8 +16,7 @@ import type { User, UserInvoice, UserSubscription } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { groupBy } from 'lodash-es';
 
-import { Config } from '../../config';
-import { PrismaService } from '../../prisma';
+import { Config, PrismaService } from '../../fundamentals';
 import { Auth, CurrentUser, Public } from '../auth';
 import { UserType } from '../users';
 import {

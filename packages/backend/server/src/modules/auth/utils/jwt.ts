@@ -4,8 +4,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Algorithm, sign, verify as jwtVerify } from '@node-rs/jsonwebtoken';
 import { JWT } from 'next-auth/jwt';
 
-import { Config } from '../../../config';
-import { PrismaService } from '../../../prisma';
+import { Config, PrismaService } from '../../../fundamentals';
 import { getUtcTimestamp, UserClaim } from '../service';
 
 export const jwtEncode = async (

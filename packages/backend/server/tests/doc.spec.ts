@@ -1,6 +1,7 @@
 import { mock } from 'node:test';
 
 import { TestingModule } from '@nestjs/testing';
+import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
 import {
@@ -10,11 +11,10 @@ import {
   encodeStateAsUpdate,
 } from 'yjs';
 
-import { Config } from '../src/config';
+import { Config } from '../src/fundamentals/config';
 import { DocManager, DocModule } from '../src/modules/doc';
 import { QuotaModule } from '../src/modules/quota';
 import { StorageModule } from '../src/modules/storage';
-import { PrismaService } from '../src/prisma';
 import { createTestingModule, initTestingDB } from './utils';
 
 const createModule = () => {
@@ -33,7 +33,7 @@ test.beforeEach(async () => {
   });
   m = await createModule();
   await m.init();
-  await initTestingDB(m.get(PrismaService));
+  await initTestingDB(m.get(PrismaClient));
 });
 
 test.afterEach.always(async () => {
@@ -96,7 +96,7 @@ test('should poll when intervel due', async t => {
 });
 
 test('should merge update when intervel due', async t => {
-  const db = m.get(PrismaService);
+  const db = m.get(PrismaClient);
   const manager = m.get(DocManager);
 
   const doc = new YDoc();
@@ -161,7 +161,7 @@ test('should merge update when intervel due', async t => {
 });
 
 test('should have sequential update number', async t => {
-  const db = m.get(PrismaService);
+  const db = m.get(PrismaClient);
   const manager = m.get(DocManager);
   const doc = new YDoc();
   const text = doc.getText('content');
@@ -278,7 +278,7 @@ test('should throw if meet max retry times', async t => {
 });
 
 test('should not update snapshot if state is outdated', async t => {
-  const db = m.get(PrismaService);
+  const db = m.get(PrismaClient);
   const manager = m.get(DocManager);
 
   await db.snapshot.create({

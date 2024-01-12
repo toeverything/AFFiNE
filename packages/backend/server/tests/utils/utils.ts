@@ -6,7 +6,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AppModule, FunctionalityModules } from '../../src/app';
 import { UserFeaturesInit1698652531198 } from '../../src/data/migrations/1698652531198-user-features-init';
-import { GqlModule } from '../../src/graphql.module';
+import { GqlModule } from '../../src/fundamentals/graphql';
 
 async function flushDB(client: PrismaClient) {
   const result: { tablename: string }[] =

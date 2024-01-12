@@ -1,9 +1,10 @@
 /// <reference types="../src/global.d.ts" />
 
 import { INestApplication, Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { ConfigModule } from '../src/config';
+import { ConfigModule } from '../src/fundamentals/config';
 import { AuthService } from '../src/modules/auth/service';
 import {
   FeatureManagementService,
@@ -14,12 +15,11 @@ import {
 import { UserType } from '../src/modules/users/types';
 import { WorkspaceResolver } from '../src/modules/workspaces/resolvers';
 import { Permission } from '../src/modules/workspaces/types';
-import { PrismaService } from '../src/prisma';
 import { createTestingApp } from './utils';
 
 @Injectable()
 class WorkspaceResolverMock {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   async createWorkspace(user: UserType, _init: null) {
     const workspace = await this.prisma.workspace.create({

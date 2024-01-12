@@ -11,12 +11,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
-import { metrics } from '../../../metrics';
-import { CallTimer } from '../../../metrics/utils';
-import { DocID } from '../../../utils/doc';
+import { CallTimer, metrics } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { DocManager } from '../../doc';
 import { UserType } from '../../users';
+import { DocID } from '../../utils/doc';
 import { PermissionService } from '../../workspaces/permission';
 import { Permission } from '../../workspaces/types';
 import {

@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { Config } from '../../config';
-import { PrismaService } from '../../prisma';
+import { Config, PrismaService } from '../../fundamentals';
 import { FeatureService } from './service';
 import { FeatureType } from './types';
 

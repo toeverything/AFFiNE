@@ -9,13 +9,12 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 
-import { CallTimer } from '../../metrics';
-import { PrismaService } from '../../prisma';
-import { DocID } from '../../utils/doc';
+import { CallTimer, PrismaService } from '../../fundamentals';
 import { Auth, CurrentUser, Publicable } from '../auth';
 import { DocHistoryManager, DocManager } from '../doc';
 import { WorkspaceBlobStorage } from '../storage';
 import { UserType } from '../users';
+import { DocID } from '../utils/doc';
 import { PermissionService, PublicPageMode } from './permission';
 import { Permission } from './types';
 

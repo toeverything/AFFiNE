@@ -2,7 +2,7 @@ import { FactoryProvider } from '@nestjs/common';
 import { omit } from 'lodash-es';
 import Stripe from 'stripe';
 
-import { Config } from '../../config';
+import { Config } from '../../fundamentals';
 
 export const StripeProvider: FactoryProvider = {
   provide: Stripe,

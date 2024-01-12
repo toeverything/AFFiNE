@@ -3,10 +3,13 @@ import { isDeepStrictEqual } from 'node:util';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { Config } from '../../config';
-import { type EventPayload, OnEvent } from '../../event';
-import { metrics } from '../../metrics';
-import { PrismaService } from '../../prisma';
+import {
+  Config,
+  type EventPayload,
+  metrics,
+  OnEvent,
+  PrismaService,
+} from '../../fundamentals';
 import { QuotaService } from '../quota';
 import { Permission } from '../workspaces/types';
 import { isEmptyBuffer } from './manager';

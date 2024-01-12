@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { Field, ObjectType, Query } from '@nestjs/graphql';
 
-import { SERVER_FLAVOR } from '../config';
-
 @ObjectType()
 export class ServerConfigType {
   @Field({ description: 'server version' })
@@ -22,7 +20,7 @@ export class ServerConfigResolver {
   serverConfig(): ServerConfigType {
     return {
       version: AFFiNE.version,
-      flavor: SERVER_FLAVOR,
+      flavor: AFFiNE.flavor,
       baseUrl: AFFiNE.baseUrl,
     };
   }

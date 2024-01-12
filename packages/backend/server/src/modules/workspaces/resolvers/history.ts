@@ -12,11 +12,11 @@ import {
 } from '@nestjs/graphql';
 import type { SnapshotHistory } from '@prisma/client';
 
-import { CloudThrottlerGuard } from '../../../throttler';
-import { DocID } from '../../../utils/doc';
+import { CloudThrottlerGuard } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
-import { DocHistoryManager } from '../../doc/history';
+import { DocHistoryManager } from '../../doc';
 import { UserType } from '../../users';
+import { DocID } from '../../utils/doc';
 import { PermissionService } from '../permission';
 import { Permission, WorkspaceType } from '../types';
 

@@ -1,18 +1,18 @@
 import { TestingModule } from '@nestjs/testing';
 import type { Snapshot } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
 
-import { type EventPayload } from '../src/event';
+import { type EventPayload } from '../src/fundamentals/event';
 import { DocHistoryManager } from '../src/modules/doc';
 import { QuotaModule } from '../src/modules/quota';
 import { StorageModule } from '../src/modules/storage';
-import { PrismaService } from '../src/prisma';
 import { createTestingModule } from './utils';
 
 let m: TestingModule;
 let manager: DocHistoryManager;
-let db: PrismaService;
+let db: PrismaClient;
 
 // cleanup database before each test
 test.beforeEach(async () => {
@@ -25,7 +25,7 @@ test.beforeEach(async () => {
   Sinon.stub(manager, 'getExpiredDateFromNow').resolves(
     new Date(Date.now() + 1000)
   );
-  db = m.get(PrismaService);
+  db = m.get(PrismaClient);
 });
 
 test.afterEach.always(async () => {

@@ -5,7 +5,7 @@ import {
 import type { INestApplication } from '@nestjs/common';
 import ava, { type TestFn } from 'ava';
 
-import { MailService } from '../src/modules/auth/mailer';
+import { MailService } from '../src/fundamentals/mailer';
 import { AuthService } from '../src/modules/auth/service';
 import {
   changeEmail,

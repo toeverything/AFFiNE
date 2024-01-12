@@ -11,11 +11,10 @@ import {
 } from '@nestjs/graphql';
 import type { WorkspacePage as PrismaWorkspacePage } from '@prisma/client';
 
-import { PrismaService } from '../../../prisma';
-import { CloudThrottlerGuard } from '../../../throttler';
-import { DocID } from '../../../utils/doc';
+import { CloudThrottlerGuard, PrismaService } from '../../../fundamentals';
 import { Auth, CurrentUser } from '../../auth';
 import { UserType } from '../../users';
+import { DocID } from '../../utils/doc';
 import { PermissionService, PublicPageMode } from '../permission';
 import { Permission, WorkspaceType } from '../types';
 

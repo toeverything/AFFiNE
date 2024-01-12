@@ -3,15 +3,19 @@ import { Readable } from 'node:stream';
 import type { Storage } from '@affine/storage';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
-import { Config } from '../../../config';
-import { EventEmitter, type EventPayload, OnEvent } from '../../../event';
-import { OctoBaseStorageModule } from '../../../storage';
-import {
+import type {
   BlobInputType,
-  createStorageProvider,
+  EventPayload,
   StorageProvider,
-} from '../providers';
-import { toBuffer } from '../providers/utils';
+} from '../../../fundamentals';
+import {
+  Config,
+  createStorageProvider,
+  EventEmitter,
+  OctoBaseStorageModule,
+  OnEvent,
+  toBuffer,
+} from '../../../fundamentals';
 
 @Injectable()
 export class WorkspaceBlobStorage implements OnModuleInit {

@@ -10,7 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Request } from 'express';
 import Stripe from 'stripe';
 
-import { Config } from '../../config';
+import { Config } from '../../fundamentals';
 
 @Controller('/api/stripe')
 export class StripeWebhook {

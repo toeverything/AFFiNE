@@ -3,9 +3,9 @@
 import { TestingModule } from '@nestjs/testing';
 import ava, { type TestFn } from 'ava';
 
-import { CacheModule } from '../src/cache';
-import { ConfigModule } from '../src/config';
-import { SessionModule, SessionService } from '../src/session';
+import { CacheModule } from '../src/fundamentals/cache';
+import { ConfigModule } from '../src/fundamentals/config';
+import { SessionModule, SessionService } from '../src/fundamentals/session';
 import { createTestingModule } from './utils';
 
 const test = ava as TestFn<{

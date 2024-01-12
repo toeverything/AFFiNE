@@ -4,7 +4,6 @@ import ava, { type TestFn } from 'ava';
 import request from 'supertest';
 
 import { AppModule } from '../src/app';
-import { PrismaService } from '../src/prisma';
 import {
   acceptInviteById,
   createTestingApp,
@@ -29,7 +28,7 @@ test.beforeEach(async t => {
     imports: [AppModule],
   });
 
-  t.context.client = app.get(PrismaService);
+  t.context.client = app.get(PrismaClient);
   t.context.app = app;
 });
 

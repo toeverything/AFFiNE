@@ -20,12 +20,15 @@ import { GraphQLError } from 'graphql';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { applyUpdate, Doc } from 'yjs';
 
-import { EventEmitter } from '../../../event';
-import { PrismaService } from '../../../prisma';
-import { CloudThrottlerGuard, Throttle } from '../../../throttler';
-import type { FileUpload } from '../../../types';
+import {
+  CloudThrottlerGuard,
+  EventEmitter,
+  type FileUpload,
+  MailService,
+  PrismaService,
+  Throttle,
+} from '../../../fundamentals';
 import { Auth, CurrentUser, Public } from '../../auth';
-import { MailService } from '../../auth/mailer';
 import { AuthService } from '../../auth/service';
 import { FeatureManagementService, FeatureType } from '../../features';
 import { QuotaManagementService } from '../../quota';
