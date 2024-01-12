@@ -5,12 +5,11 @@ import {
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type {
-  PageService} from '@blocksuite/blocks';
+import type { PageService } from '@blocksuite/blocks';
 import {
   HtmlTransformer,
   MarkdownTransformer,
-  type PageBlockModel
+  type PageBlockModel,
 } from '@blocksuite/blocks';
 import type { Page } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
@@ -47,12 +46,11 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
         await pageService.exportManager.exportPdf();
       }
       break;
-    case 'png':{
+    case 'png': {
       if (!pageService) return;
       await pageService.exportManager.exportPng();
       break;
     }
-      
   }
 }
 
