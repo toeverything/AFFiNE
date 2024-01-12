@@ -5,12 +5,13 @@ import {
 import { pushNotificationAtom } from '@affine/component/notification-center';
 import { apis } from '@affine/electron-api';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import type {
+  PageService} from '@blocksuite/blocks';
 import {
   HtmlTransformer,
   MarkdownTransformer,
-  type PageBlockModel,
+  type PageBlockModel
 } from '@blocksuite/blocks';
-import { ContentParser } from '@blocksuite/blocks/content-parser';
 import type { Page } from '@blocksuite/store';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -18,29 +19,17 @@ import { useCallback } from 'react';
 
 type ExportType = 'pdf' | 'html' | 'png' | 'markdown';
 
-const contentParserWeakMap = new WeakMap<Page, ContentParser>();
-
-const getContentParser = (page: Page) => {
-  if (!contentParserWeakMap.has(page)) {
-    contentParserWeakMap.set(
-      page,
-      new ContentParser(page, {
-        imageProxyEndpoint: !environment.isDesktop
-          ? runtimeConfig.imageProxyUrl
-          : undefined,
-      })
-    );
-  }
-  return contentParserWeakMap.get(page) as ContentParser;
-};
-
 interface ExportHandlerOptions {
   page: Page;
   type: ExportType;
 }
 
 async function exportHandler({ page, type }: ExportHandlerOptions) {
-  const contentParser = getContentParser(page);
+  const editorRoot = document.querySelector('editor-host');
+  let pageService: PageService | null = null;
+  if (editorRoot) {
+    pageService = editorRoot.spec.getService('affine:page') as PageService;
+  }
   switch (type) {
     case 'html':
       await HtmlTransformer.exportPage(page);
@@ -54,12 +43,16 @@ async function exportHandler({ page, type }: ExportHandlerOptions) {
           (page.root as PageBlockModel).title.toString()
         );
       } else {
-        await contentParser['exportPdf']();
+        if (!pageService) return;
+        await pageService.exportManager.exportPdf();
       }
       break;
-    case 'png':
-      await contentParser['exportPng']();
+    case 'png':{
+      if (!pageService) return;
+      await pageService.exportManager.exportPng();
       break;
+    }
+      
   }
 }
 
