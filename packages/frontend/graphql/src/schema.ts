@@ -36,7 +36,6 @@ export interface Scalars {
 export enum FeatureType {
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
-  UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
 
 export enum InvoiceStatus {
