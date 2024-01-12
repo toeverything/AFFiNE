@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { QuickSearchInput } from '.';
+import { QuickSearchInput } from './index';
 
 export default {
   title: 'Components/AppSidebar/QuickSearchInput',

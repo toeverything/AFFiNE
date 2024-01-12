@@ -1,7 +1,7 @@
 import { InformationIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 
-import { Input, type InputProps } from '.';
+import { Input, type InputProps } from './index';
 
 export default {
   title: 'UI/Input',

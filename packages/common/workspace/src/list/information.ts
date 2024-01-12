@@ -3,7 +3,7 @@ import { Slot } from '@blocksuite/global/utils';
 
 import type { WorkspaceMetadata } from '../metadata';
 import type { Workspace } from '../workspace';
-import type { WorkspaceListProvider } from '.';
+import type { WorkspaceListProvider } from './index';
 
 const logger = new DebugLogger('affine:workspace:list:information');
 
