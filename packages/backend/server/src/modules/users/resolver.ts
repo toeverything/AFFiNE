@@ -109,6 +109,9 @@ export class UserResolver {
     const user = await this.users.findUserByEmail(email);
     if (currentUser) return user;
 
+    // return empty response when user not exists
+    if (!user) return null;
+
     // only return limited info when not logged in
     return {
       email: user?.email,
