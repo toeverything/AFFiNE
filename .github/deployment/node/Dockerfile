@@ -1,4 +1,4 @@
-FROM node:18-bookworm-slim
+FROM node:20-bookworm-slim
 
 COPY ./packages/backend/server /app
 COPY ./packages/frontend/core/dist /app/static
