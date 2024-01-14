@@ -6,7 +6,7 @@ import { type User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { AppModule } from '../src/app';
+import { AppModule } from '../src/app.module';
 import { MailService } from '../src/fundamentals/mailer';
 import { FeatureKind, FeatureManagementService } from '../src/modules/features';
 import { Quotas } from '../src/modules/quota';

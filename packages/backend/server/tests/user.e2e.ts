@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import test from 'ava';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
+import { AppModule } from '../src/app.module';
 import { createTestingApp, currentUser, signUp } from './utils';
 
 let app: INestApplication;

@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
+import { AppModule } from '../src/app.module';
 import {
   acceptInviteById,
   createTestingApp,

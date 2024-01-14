@@ -6,7 +6,7 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { type TestFn } from 'ava';
 
-import { AppModule } from '../src/app';
+import { AppModule } from '../src/app.module';
 import { MailService } from '../src/fundamentals/mailer';
 import { AuthService } from '../src/modules/auth/service';
 import {

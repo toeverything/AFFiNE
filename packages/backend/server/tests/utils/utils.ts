@@ -4,7 +4,7 @@ import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
-import { AppModule, FunctionalityModules } from '../../src/app';
+import { AppModule, FunctionalityModules } from '../../src/app.module';
 import { UserFeaturesInit1698652531198 } from '../../src/data/migrations/1698652531198-user-features-init';
 import { GqlModule } from '../../src/fundamentals/graphql';
 

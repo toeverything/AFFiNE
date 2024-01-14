@@ -14,8 +14,8 @@
     "test": "ava --concurrency 1 --serial",
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
-    "data-migration": "node --loader ts-node/esm/transpile-only.mjs --es-module-specifier-resolution node ./src/data/app.ts",
-    "predeploy": "yarn prisma migrate deploy && node --es-module-specifier-resolution node ./dist/data/app.js run"
+    "data-migration": "node --loader ts-node/esm/transpile-only.mjs --es-module-specifier-resolution node ./src/data/index.ts",
+    "predeploy": "yarn prisma migrate deploy && node --es-module-specifier-resolution node ./dist/data/index.js run"
   },
   "dependencies": {
     "@apollo/server": "^4.9.5",

@@ -4,7 +4,7 @@ import test from 'ava';
 test('should be able to bootstrap sync server', async t => {
   // set env before import
   process.env.SERVER_FLAVOR = 'sync';
-  const { AppModule } = await import('../src/app');
+  const { AppModule } = await import('../src/app.module');
   await t.notThrowsAsync(async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],

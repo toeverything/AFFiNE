@@ -9,7 +9,7 @@ import ava, { type TestFn } from 'ava';
 import type { Express } from 'express';
 import request from 'supertest';
 
-import { AppModule } from '../src/app';
+import { AppModule } from '../src/app.module';
 import { FeatureManagementService } from '../src/modules/features';
 import { createTestingApp } from './utils';
 
