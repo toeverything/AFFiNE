@@ -1,4 +1,4 @@
-<!-- To indicate your agreement, simply edit this file and submit a pull request. -->
+<!-- To indicate your agreement, simply edit this file and submit a pull request . --> 
 
 # AFFiNE Contributor License Agreement
 
