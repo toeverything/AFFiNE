@@ -42,7 +42,9 @@ export const Features: Feature[] = [
     feature: FeatureType.EarlyAccess,
     type: FeatureKind.Feature,
     version: 2,
-    configs: {},
+    configs: {
+      whitelist: [],
+    },
   },
   {
     feature: FeatureType.UnlimitedWorkspace,
