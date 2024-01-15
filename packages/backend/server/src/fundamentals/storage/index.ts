@@ -9,7 +9,7 @@ try {
   const require = createRequire(import.meta.url);
   storageModule =
     process.arch === 'arm64'
-      ? require('../.././storage.arm64.node')
+      ? require('../../../storage.arm64.node')
       : process.arch === 'arm'
         ? require('../../../storage.armv7.node')
         : require('../../../storage.node');

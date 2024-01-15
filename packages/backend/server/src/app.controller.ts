@@ -11,6 +11,7 @@ export class AppController {
     return {
       compatibility: this.config.version,
       message: `AFFiNE ${this.config.version} Server`,
+      flavor: this.config.flavor,
     };
   }
 }

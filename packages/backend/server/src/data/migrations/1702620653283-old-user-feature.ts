@@ -16,7 +16,6 @@ export class OldUserFeature1702620653283 {
         where: { NOT: { features: { some: { NOT: { id: { gt: 0 } } } } } },
         select: { id: true },
       });
-      console.log(`migrating ${userIds.join('|')} users`);
 
       await tx.userFeatures.createMany({
         data: userIds.map(({ id: userId }) => ({
