@@ -1,9 +1,8 @@
 import { runCli } from '@magic-works/i18n-codegen';
-import type { StorybookConfig } from '@storybook/react-vite';
+import type { StorybookConfig } from '@storybook/react-webpack5';
 import { fileURLToPath } from 'node:url';
-import { mergeConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
-import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
+import webpack from 'webpack';
+import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import { getRuntimeConfig } from '../../../packages/frontend/core/.webpack/runtime-config';
 
 runCli(
@@ -31,9 +30,14 @@ export default {
     'storybook-addon-react-router-v6',
   ],
   framework: {
-    name: '@storybook/react-vite',
+    name: '@storybook/react-webpack5',
+    options: {
+      builder: {
+        useSWC: true,
+      },
+    },
   },
-  async viteFinal(config, _options) {
+  webpackFinal: async config => {
     const runtimeConfig = getRuntimeConfig({
       distribution: 'browser',
       mode: 'development',
@@ -42,35 +46,62 @@ export default {
     });
     // disable for storybook build
     runtimeConfig.enableCloud = false;
-    return mergeConfig(config, {
-      assetsInclude: ['**/*.md'],
+    return {
+      ...config,
       resolve: {
-        alias: {
-          // workaround for https://github.com/vitejs/vite/issues/9731
-          // it seems vite does not resolve self reference correctly?
-          '@affine/core': fileURLToPath(
-            new URL('../../../packages/frontend/core/src', import.meta.url)
-          ),
+        ...config.resolve,
+        // some package use '.js' to import '.ts' files for compatibility with moduleResolution: node
+        extensionAlias: {
+          '.js': ['.js', '.tsx', '.ts'],
+          '.mjs': ['.mjs', '.mts'],
         },
       },
       plugins: [
-        vanillaExtractPlugin(),
-        tsconfigPaths({
-          root: fileURLToPath(new URL('../../../', import.meta.url)),
-          ignoreConfigErrors: true,
+        new VanillaExtractPlugin(),
+        new webpack.DefinePlugin({
+          'process.env': JSON.stringify({}),
+          'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
+          'process.env.SHOULD_REPORT_TRACE': JSON.stringify(
+            Boolean(process.env.SHOULD_REPORT_TRACE === 'true')
+          ),
+          'process.env.TRACE_REPORT_ENDPOINT': JSON.stringify(
+            process.env.TRACE_REPORT_ENDPOINT
+          ),
+          'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
+            process.env.CAPTCHA_SITE_KEY
+          ),
+          'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN),
+          'process.env.BUILD_TYPE': JSON.stringify(process.env.BUILD_TYPE),
+          runtimeConfig: JSON.stringify(runtimeConfig),
         }),
+        ...(config.plugins ?? []),
       ],
-      define: {
-        'process.on': 'undefined',
-        'process.env': {},
-        'process.env.COVERAGE': JSON.stringify(!!process.env.COVERAGE),
-        'process.env.SHOULD_REPORT_TRACE': `${Boolean(
-          process.env.SHOULD_REPORT_TRACE === 'true'
-        )}`,
-        'process.env.TRACE_REPORT_ENDPOINT': `"${process.env.TRACE_REPORT_ENDPOINT}"`,
-        'process.env.CAPTCHA_SITE_KEY': `"${process.env.CAPTCHA_SITE_KEY}"`,
-        runtimeConfig: runtimeConfig,
+    };
+  },
+  swc: async config => {
+    return {
+      ...config,
+      jsc: {
+        // https://swc.rs/docs/configuring-swc/
+        preserveAllComments: true,
+        parser: {
+          syntax: 'typescript',
+          dynamicImport: true,
+          topLevelAwait: false,
+          tsx: true,
+          decorators: true,
+        },
+        target: 'es2022',
+        externalHelpers: false,
+        transform: {
+          react: {
+            runtime: 'automatic',
+          },
+          useDefineForClassFields: false,
+          legacyDecorator: true,
+          decoratorMetadata: true,
+        },
       },
-    });
+    };
   },
 } as StorybookConfig;

@@ -120,9 +120,9 @@ function runBlockMigration(
 }
 
 function migrateSurface(data: YMap<unknown>) {
-  for (const [, value] of <IterableIterator<[string, YMap<unknown>]>>(
-    data.entries()
-  )) {
+  for (const [, value] of data.entries() as IterableIterator<
+    [string, YMap<unknown>]
+  >) {
     if (value.get('type') === 'connector') {
       migrateSurfaceConnector(value);
     }

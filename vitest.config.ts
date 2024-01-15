@@ -2,14 +2,16 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vitest/config';
+
+import { RollupPluginSwc } from './scripts/rollup-plugin-swc';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), vanillaExtractPlugin()],
+  plugins: [vanillaExtractPlugin(), RollupPluginSwc()],
   assetsInclude: ['**/*.md'],
+  esbuild: false,
   resolve: {
     alias: {
       // prevent tests using two different sources of yjs

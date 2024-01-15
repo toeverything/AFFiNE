@@ -140,6 +140,7 @@ export const createConfiguration: (
 
     resolve: {
       symlinks: true,
+      // some package use '.js' to import '.ts' files for compatibility with moduleResolution: node
       extensionAlias: {
         '.js': ['.js', '.tsx', '.ts'],
         '.mjs': ['.mjs', '.mts'],
@@ -267,6 +268,8 @@ export const createConfiguration: (
                       },
                     },
                     useDefineForClassFields: false,
+                    legacyDecorator: true,
+                    decoratorMetadata: true,
                   },
                   experimental: {
                     plugins: [
