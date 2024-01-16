@@ -23,6 +23,11 @@ export const getPagePreviewText = (page: Page) => {
       console.error('Unexpected empty block');
       break;
     }
+    if (block.flavour === 'affine:surface') {
+      // The surface block is a special block that contains canvas data,
+      // it should not be included in the preview.
+      continue;
+    }
     if (block.children) {
       queue.unshift(...block.children);
     }
@@ -40,11 +45,7 @@ export const getPagePreviewText = (page: Page) => {
     } else {
       // Other block e.g. image/attachment/bookmark
       const type = block.flavour.split('affine:')[1] ?? null;
-      if (
-        type &&
-        // Filter out some types that are not useful for preview
-        !['frame'].includes(type)
-      ) {
+      if (type) {
         previewLenNeeded -= type.length + 2;
         preview.push(`[${type}]`);
       }
