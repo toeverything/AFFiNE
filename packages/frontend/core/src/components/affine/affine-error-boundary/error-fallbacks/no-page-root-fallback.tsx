@@ -1,4 +1,4 @@
-import { NoPageRootError } from '@affine/component/block-suite-editor';
+import { NoPageRootError } from '@affine/core/components/blocksuite/block-suite-editor';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 
 import { ContactUS, ErrorDetail } from '../error-basic/error-detail';

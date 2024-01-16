@@ -1,4 +1,4 @@
-import { BlockSuiteEditor } from '@affine/component/block-suite-editor';
+import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { ImagePreviewModal } from '@affine/core/components/image-preview';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import type { Page } from '@blocksuite/store';

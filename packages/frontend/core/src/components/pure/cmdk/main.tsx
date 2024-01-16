@@ -8,9 +8,9 @@ import { Command, useCommandState } from 'cmdk';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Suspense,
-  useCallback,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -194,11 +194,7 @@ export const CMDKContainer = ({
   const isInEditor = pageMeta !== undefined;
   const [opening, setOpening] = useState(open);
 
-  const handleFocus = useCallback((ref: HTMLInputElement | null) => {
-    if (ref) {
-      window.setTimeout(() => ref.focus(), 0);
-    }
-  }, []);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // fix list height animation on openning
   useLayoutEffect(() => {
@@ -206,6 +202,7 @@ export const CMDKContainer = ({
       setOpening(true);
       const timeout = setTimeout(() => {
         setOpening(false);
+        inputRef.current?.focus();
       }, 150);
       return () => {
         clearTimeout(timeout);
@@ -235,7 +232,7 @@ export const CMDKContainer = ({
       ) : null}
       <Command.Input
         placeholder={t['com.affine.cmdk.placeholder']()}
-        ref={handleFocus}
+        ref={inputRef}
         {...rest}
         value={query}
         onValueChange={onQueryChange}
