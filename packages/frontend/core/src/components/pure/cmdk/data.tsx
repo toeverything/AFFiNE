@@ -7,6 +7,7 @@ import {
   currentWorkspaceAtom,
   waitForCurrentWorkspaceAtom,
 } from '@affine/core/modules/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import type { Collection } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { EdgelessIcon, PageIcon, ViewLayersIcon } from '@blocksuite/icons';
@@ -31,7 +32,6 @@ import {
 import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { currentPageIdAtom } from '../../../atoms/mode';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../../shared';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CMDKCommand, CommandContext } from './types';
 

@@ -7,7 +7,7 @@ import {
   waitForCurrentWorkspaceAtom,
   workspaceManagerAtom,
 } from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useAtomValue } from 'jotai';
 import { useState } from 'react';

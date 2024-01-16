@@ -3,7 +3,8 @@ import {
   waitForCurrentWorkspaceAtom,
   workspaceListAtom,
 } from '@affine/core/modules/workspace';
-import { WorkspaceFlavour, WorkspaceSubPath } from '@affine/env/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertExists } from '@blocksuite/global/utils';
 import { useAtom, useAtomValue } from 'jotai';
 import type { ReactElement } from 'react';

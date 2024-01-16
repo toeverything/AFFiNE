@@ -1,6 +1,7 @@
 import { Menu } from '@affine/component/ui/menu';
 import { WorkspaceFallback } from '@affine/component/workspace';
 import { workspaceListAtom } from '@affine/core/modules/workspace';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAtomValue } from 'jotai';
 import { lazy, useEffect, useLayoutEffect, useState } from 'react';
 import { type LoaderFunction, redirect } from 'react-router-dom';
@@ -9,7 +10,6 @@ import { createFirstAppData } from '../bootstrap/first-app-data';
 import { UserWithWorkspaceList } from '../components/pure/workspace-slider-bar/user-with-workspace-list';
 import { appConfigStorage } from '../hooks/use-app-config-storage';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../shared';
 
 const AllWorkspaceModals = lazy(() =>
   import('../providers/modal-provider').then(({ AllWorkspaceModals }) => ({
