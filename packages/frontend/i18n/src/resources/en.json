@@ -912,6 +912,7 @@
   "com.affine.storage.extend.hint": "The usage has reached its maximum capacity, AFFiNE Cloud is currently in early access phase and is not supported for upgrading, please be patient and wait for our pricing plan. ",
   "com.affine.storage.extend.link": "To get more information click here.",
   "com.affine.storage.maximum-tips": "You have reached the maximum capacity limit for your current account",
+  "com.affine.storage.maximum-tips.pro": "Pro users will have unlimited storage capacity during the alpha test period of the team version",
   "com.affine.storage.plan": "Plan",
   "com.affine.storage.title": "AFFiNE Cloud Storage",
   "com.affine.storage.upgrade": "Upgrade",

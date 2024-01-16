@@ -68,7 +68,11 @@ export const StorageProgress = ({
       {upgradable ? (
         <Tooltip
           options={{ hidden: percent < 100 }}
-          content={t['com.affine.storage.maximum-tips']()}
+          content={
+            plan === 'Free'
+              ? t['com.affine.storage.maximum-tips']()
+              : t['com.affine.storage.maximum-tips.pro']()
+          }
         >
           <span tabIndex={0}>
             <Button
