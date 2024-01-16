@@ -880,3 +880,20 @@ mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $send
   )
 }`,
 };
+
+export const workspaceQuotaQuery = {
+  id: 'workspaceQuotaQuery' as const,
+  operationName: 'workspaceQuota',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query workspaceQuota($id: String!) {
+  workspace(id: $id) {
+    quota {
+      storageQuota
+      usedSize
+      blobLimit
+    }
+  }
+}`,
+};

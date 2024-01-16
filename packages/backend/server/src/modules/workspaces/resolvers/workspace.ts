@@ -31,7 +31,7 @@ import {
 import { Auth, CurrentUser, Public } from '../../auth';
 import { AuthService } from '../../auth/service';
 import { FeatureManagementService, FeatureType } from '../../features';
-import { QuotaManagementService } from '../../quota';
+import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { UsersService, UserType } from '../../users';
 import { PermissionService } from '../permission';
@@ -147,6 +147,15 @@ export class WorkspaceResolver {
         inviteId: id,
         accepted,
       }));
+  }
+
+  @ResolveField(() => QuotaQueryType, {
+    name: 'quota',
+    description: 'quota of workspace',
+    complexity: 2,
+  })
+  workspaceQuota(@Parent() workspace: WorkspaceType) {
+    return this.quota.getWorkspaceUsage(workspace.id);
   }
 
   @Query(() => Boolean, {

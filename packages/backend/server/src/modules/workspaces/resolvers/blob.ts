@@ -128,7 +128,7 @@ export class WorkspaceBlobResolver {
       Permission.Write
     );
 
-    const { quota, size, limit } =
+    const { storageQuota, usedSize, blobLimit } =
       await this.quota.getWorkspaceUsage(workspaceId);
 
     const unlimited = await this.feature.hasWorkspaceFeature(
@@ -137,7 +137,7 @@ export class WorkspaceBlobResolver {
     );
 
     const checkExceeded = (recvSize: number) => {
-      if (!quota) {
+      if (!storageQuota) {
         throw new GraphQLError('cannot find user quota', {
           extensions: {
             status: HttpStatus[HttpStatus.FORBIDDEN],
@@ -145,13 +145,15 @@ export class WorkspaceBlobResolver {
           },
         });
       }
-      const total = size + recvSize;
+      const total = usedSize + recvSize;
       // only skip total storage check if workspace has unlimited feature
-      if (total > quota && !unlimited) {
-        this.logger.log(`storage size limit exceeded: ${total} > ${quota}`);
+      if (total > storageQuota && !unlimited) {
+        this.logger.log(
+          `storage size limit exceeded: ${total} > ${storageQuota}`
+        );
         return true;
-      } else if (recvSize > limit) {
-        this.logger.log(`blob size limit exceeded: ${recvSize} > ${limit}`);
+      } else if (recvSize > blobLimit) {
+        this.logger.log(`blob size limit exceeded: ${recvSize} > ${blobLimit}`);
         return true;
       } else {
         return false;

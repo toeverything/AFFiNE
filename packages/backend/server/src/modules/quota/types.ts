@@ -1,3 +1,4 @@
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { z } from 'zod';
 
 import { commonFeatureSchema, FeatureKind } from '../features';
@@ -36,6 +37,20 @@ export const QuotaSchema = commonFeatureSchema
   .and(z.discriminatedUnion('feature', [quotaPlan]));
 
 export type Quota = z.infer<typeof QuotaSchema>;
+
+/// ======== query types ========
+
+@ObjectType()
+export class QuotaQueryType {
+  @Field(() => Int)
+  storageQuota!: number;
+
+  @Field(() => Int)
+  usedSize!: number;
+
+  @Field(() => Int)
+  blobLimit!: number;
+}
 
 /// ======== utils ========
 

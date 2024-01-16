@@ -21,4 +21,4 @@ export class QuotaModule {}
 
 export { QuotaManagementService, QuotaService };
 export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas } from './schema';
-export { QuotaType } from './types';
+export { QuotaQueryType, QuotaType } from './types';

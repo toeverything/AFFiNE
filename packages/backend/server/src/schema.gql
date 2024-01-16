@@ -131,6 +131,9 @@ type WorkspaceType {
   """Owner of workspace"""
   owner: UserType!
 
+  """quota of workspace"""
+  quota: QuotaQueryType!
+
   """Available features of workspace"""
   availableFeatures: [FeatureType!]!
 
@@ -181,6 +184,12 @@ type InvitationType {
 
   """Invitee information"""
   invitee: UserType!
+}
+
+type QuotaQueryType {
+  storageQuota: Int!
+  usedSize: Int!
+  blobLimit: Int!
 }
 
 type TokenType {

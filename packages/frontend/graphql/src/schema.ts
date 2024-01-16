@@ -827,6 +827,23 @@ export type AcceptInviteByInviteIdMutation = {
   acceptInviteById: boolean;
 };
 
+export type WorkspaceQuotaQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type WorkspaceQuotaQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    quota: {
+      __typename?: 'QuotaQueryType';
+      storageQuota: number;
+      usedSize: number;
+      blobLimit: number;
+    };
+  };
+};
+
 export type Queries =
   | {
       name: 'checkBlobSizesQuery';
@@ -957,6 +974,11 @@ export type Queries =
       name: 'listWorkspaceFeaturesQuery';
       variables: ListWorkspaceFeaturesQueryVariables;
       response: ListWorkspaceFeaturesQuery;
+    }
+  | {
+      name: 'workspaceQuotaQuery';
+      variables: WorkspaceQuotaQueryVariables;
+      response: WorkspaceQuotaQuery;
     };
 
 export type Mutations =
