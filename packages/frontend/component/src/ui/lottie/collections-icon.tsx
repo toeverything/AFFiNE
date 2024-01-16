@@ -2,8 +2,8 @@ import clsx from 'clsx';
 import Lottie, { type LottieRef } from 'lottie-react';
 import { useEffect, useRef } from 'react';
 
-import * as styles from './collections-icon.css';
 import animationData from './collections-icon.json';
+import * as styles from './styles.css';
 
 export interface CollectionsIconProps {
   closed: boolean; // eg, when collections icon is a "dragged over" state

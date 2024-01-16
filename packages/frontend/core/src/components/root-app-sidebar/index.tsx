@@ -294,9 +294,7 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.trash']()}
           </span>
         </RouteMenuLinkItem>
-        {blockSuiteWorkspace && (
-          <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
-        )}
+        <ImportPage blocksuiteWorkspace={blockSuiteWorkspace} />
       </SidebarScrollableContainer>
       <SidebarContainer>
         {environment.isDesktop ? <UpdaterButton /> : <AppDownloadButton />}
