@@ -7,7 +7,7 @@ import {
   TableCell,
   TableHead,
   TableHeadRow,
-} from '.';
+} from './index';
 
 export default {
   title: 'UI/Table',

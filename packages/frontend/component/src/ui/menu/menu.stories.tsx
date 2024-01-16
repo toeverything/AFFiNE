@@ -13,7 +13,7 @@ import {
   MenuSeparator,
   MenuSub,
   MenuTrigger,
-} from '.';
+} from './index';
 
 export default {
   title: 'UI/Menu',

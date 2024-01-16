@@ -2,7 +2,7 @@ import { SettingsIcon } from '@blocksuite/icons';
 import type { Meta, StoryFn } from '@storybook/react';
 import { useState } from 'react';
 
-import { MenuItem, MenuLinkItem } from '.';
+import { MenuItem, MenuLinkItem } from './index';
 
 export default {
   title: 'Components/AppSidebar/MenuItem',

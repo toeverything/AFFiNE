@@ -1,7 +1,7 @@
 import type { Meta, StoryFn } from '@storybook/react';
 import { type PropsWithChildren } from 'react';
 
-import { Spotlight } from '.';
+import { Spotlight } from './index';
 
 export default {
   title: 'Components/AppSidebar/Spotlight',

@@ -5,8 +5,8 @@ import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { fixWorkspaceVersion } from '@toeverything/infra/blocksuite';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import type { BlobStorage } from '.';
 import type { WorkspaceFactory } from './factory';
+import type { BlobStorage } from './index';
 import type { WorkspaceList } from './list';
 import type { WorkspaceMetadata } from './metadata';
 import { WorkspacePool } from './pool';
