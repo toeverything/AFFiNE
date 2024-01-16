@@ -47,22 +47,26 @@ export class FeatureManagementService {
     return this.feature.listFeatureUsers(FeatureType.EarlyAccess);
   }
 
+  async isEarlyAccessUser(email: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (user) {
+      const canEarlyAccess = await this.feature
+        .hasUserFeature(user.id, FeatureType.EarlyAccess)
+        .catch(() => false);
+
+      return canEarlyAccess;
+    }
+    return false;
+  }
+
   /// check early access by email
   async canEarlyAccess(email: string) {
     if (this.config.featureFlags.earlyAccessPreview && !this.isStaff(email)) {
-      const user = await this.prisma.user.findFirst({
-        where: {
-          email,
-        },
-      });
-      if (user) {
-        const canEarlyAccess = await this.feature
-          .hasUserFeature(user.id, FeatureType.EarlyAccess)
-          .catch(() => false);
-
-        return canEarlyAccess;
-      }
-      return false;
+      return this.isEarlyAccessUser(email);
     } else {
       return true;
     }
