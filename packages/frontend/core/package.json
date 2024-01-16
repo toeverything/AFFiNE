@@ -107,7 +107,7 @@
     "@types/uuid": "^9.0.5",
     "@types/webpack-env": "^1.18.2",
     "@vanilla-extract/css": "^1.13.0",
-    "copy-webpack-plugin": "^11.0.0",
+    "copy-webpack-plugin": "^12.0.0",
     "css-loader": "^6.8.1",
     "express": "^4.18.2",
     "fake-indexeddb": "^5.0.0",
