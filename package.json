@@ -88,7 +88,7 @@
     "eslint-plugin-unused-imports": "^3.0.0",
     "eslint-plugin-vue": "^9.18.1",
     "fake-indexeddb": "5.0.2",
-    "happy-dom": "^12.10.3",
+    "happy-dom": "^13.0.0",
     "husky": "^8.0.3",
     "lint-staged": "^15.1.0",
     "msw": "^2.0.8",
