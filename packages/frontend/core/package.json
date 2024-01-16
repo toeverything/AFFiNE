@@ -115,7 +115,7 @@
     "lodash-es": "^4.17.21",
     "mime-types": "^2.1.35",
     "raw-loader": "^4.0.2",
-    "source-map-loader": "^4.0.1",
+    "source-map-loader": "^5.0.0",
     "style-loader": "^3.3.3",
     "swc-loader": "^0.2.3",
     "swc-plugin-coverage-instrument": "^0.0.20",
