@@ -679,7 +679,7 @@ export class SubscriptionService {
     user: User,
     couponType: CouponType
   ): Promise<string | null> {
-    const earlyAccess = await this.features.canEarlyAccess(user.email);
+    const earlyAccess = await this.features.isEarlyAccessUser(user.email);
     if (earlyAccess) {
       try {
         const coupon = await this.stripe.coupons.retrieve(couponType);
