@@ -1,5 +1,7 @@
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
+import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { assertExists } from '@blocksuite/global/utils';
+import { DateTimeIcon, PageIcon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import { use } from 'foxact/use';
@@ -15,6 +17,7 @@ import {
 import { type Map as YMap } from 'yjs';
 
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
+import type { InlineRenderers } from './specs';
 
 export type ErrorBoundaryProps = {
   onReset?: () => void;
@@ -63,6 +66,55 @@ function usePageRoot(page: Page) {
 
   return page.root;
 }
+
+// TODO: this is a placeholder proof-of-concept implementation
+function CustomPageReference({
+  reference,
+}: {
+  reference: HTMLElementTagNameMap['affine-reference'];
+}) {
+  const workspace = reference.page.workspace;
+  const meta = usePageMetaHelper(workspace);
+  assertExists(
+    reference.delta.attributes?.reference?.pageId,
+    'pageId should exist for page reference'
+  );
+  const referencedPage = meta.getPageMeta(
+    reference.delta.attributes.reference.pageId
+  );
+  const title = referencedPage?.title ?? 'not found';
+  let icon = <PageIcon />;
+  let lTitle = title.toLowerCase();
+  if (title.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)) {
+    lTitle = new Date(title).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    icon = <DateTimeIcon />;
+  }
+  return (
+    <a
+      target="_blank"
+      rel="noopener noreferrer"
+      className="page-reference"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '0 0.25em',
+        columnGap: '0.25em',
+      }}
+    >
+      {icon} {lTitle}
+    </a>
+  );
+}
+
+const customRenderers: InlineRenderers = {
+  pageReference(reference) {
+    return <CustomPageReference reference={reference} />;
+  },
+};
 
 /**
  * TODO: Define error to unexpected state together in the future.
@@ -132,6 +184,7 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         ref={onRefChange}
         className={className}
         style={style}
+        customRenderers={customRenderers}
         defaultSelectedBlockId={defaultSelectedBlockId}
       />
     );

@@ -1,5 +1,6 @@
 import { createReactComponentFromLit } from '@affine/component';
 import {
+  BiDirectionalLinkPanel,
   DocEditor,
   DocTitle,
   EdgelessEditor,
@@ -7,9 +8,14 @@ import {
 } from '@blocksuite/presets';
 import { type Page } from '@blocksuite/store';
 import clsx from 'clsx';
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useMemo, useRef } from 'react';
 
-import { docModeSpecs, edgelessModeSpecs } from './specs';
+import {
+  docModeSpecs,
+  edgelessModeSpecs,
+  type InlineRenderers,
+  patchSpecs,
+} from './specs';
 import * as styles from './styles.css';
 
 const adapted = {
@@ -29,18 +35,27 @@ const adapted = {
     react: React,
     elementClass: EdgelessEditor,
   }),
+  BiDirectionalLinkPanel: createReactComponentFromLit({
+    react: React,
+    elementClass: BiDirectionalLinkPanel,
+  }),
 };
 
 interface BlocksuiteDocEditorProps {
   page: Page;
+  customRenderers?: InlineRenderers;
   // todo: add option to replace docTitle with custom component (e.g., for journal page)
 }
 
 export const BlocksuiteDocEditor = forwardRef<
   DocEditor,
   BlocksuiteDocEditorProps
->(function BlocksuiteDocEditor({ page }, ref) {
+>(function BlocksuiteDocEditor({ page, customRenderers }, ref) {
   const titleRef = useRef<DocTitle>(null);
+
+  const specs = useMemo(() => {
+    return patchSpecs(docModeSpecs, customRenderers);
+  }, [customRenderers]);
 
   useEffect(() => {
     // auto focus the title
@@ -72,8 +87,13 @@ export const BlocksuiteDocEditor = forwardRef<
           className={styles.adapterWrapperContainer}
           ref={ref}
           page={page}
-          specs={docModeSpecs}
+          specs={specs}
           hasViewport={false}
+        />
+        <adapted.BiDirectionalLinkPanel
+          data-affine-bidirectional-link-panel
+          className={styles.adapterWrapperContainer}
+          page={page}
         />
       </div>
     </div>
@@ -83,13 +103,16 @@ export const BlocksuiteDocEditor = forwardRef<
 export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteDocEditorProps
->(function BlocksuiteEdgelessEditor({ page }, ref) {
+>(function BlocksuiteEdgelessEditor({ page, customRenderers }, ref) {
+  const specs = useMemo(() => {
+    return patchSpecs(edgelessModeSpecs, customRenderers);
+  }, [customRenderers]);
   return (
     <adapted.EdgelessEditor
       className={styles.adapterWrapperContainer}
       ref={ref}
       page={page}
-      specs={edgelessModeSpecs}
+      specs={specs}
     />
   );
 });

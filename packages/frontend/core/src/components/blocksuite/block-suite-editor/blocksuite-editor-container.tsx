@@ -17,7 +17,8 @@ import {
   useState,
 } from 'react';
 
-import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './adaper';
+import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
+import type { InlineRenderers } from './specs';
 import * as styles from './styles.css';
 
 // copy forwardSlot from blocksuite, but it seems we need to dispose the pipe
@@ -41,6 +42,7 @@ interface BlocksuiteEditorContainerProps {
   className?: string;
   style?: React.CSSProperties;
   defaultSelectedBlockId?: string;
+  customRenderers?: InlineRenderers;
 }
 
 // mimic the interface of the webcomponent and expose slots & host
@@ -94,7 +96,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, defaultSelectedBlockId },
+  { page, mode, className, style, defaultSelectedBlockId, customRenderers },
   ref
 ) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -153,7 +155,11 @@ export const BlocksuiteEditorContainer = forwardRef<
       get model() {
         return page.root as any;
       },
-      updateComplete: Promise.resolve(), // todo: is this correct?
+      get updateComplete() {
+        return mode === 'page'
+          ? docRef.current?.updateComplete
+          : edgelessRef.current?.updateComplete;
+      },
     };
 
     const proxy = new Proxy(api, {
@@ -230,9 +236,17 @@ export const BlocksuiteEditorContainer = forwardRef<
       ref={rootRef}
     >
       {mode === 'page' ? (
-        <BlocksuiteDocEditor page={page} ref={docRef} />
+        <BlocksuiteDocEditor
+          page={page}
+          ref={docRef}
+          customRenderers={customRenderers}
+        />
       ) : (
-        <BlocksuiteEdgelessEditor page={page} ref={edgelessRef} />
+        <BlocksuiteEdgelessEditor
+          page={page}
+          ref={edgelessRef}
+          customRenderers={customRenderers}
+        />
       )}
     </div>
   );
