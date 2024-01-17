@@ -15,7 +15,7 @@ import {
   SessionService,
 } from '../../fundamentals';
 import { FeatureType } from '../features';
-import { Quota_FreePlanV1 } from '../quota';
+import { Quota_FreePlanV1_1 } from '../quota';
 import {
   decode,
   encode,
@@ -52,7 +52,7 @@ export const NextAuthOptionsProvider: FactoryProvider<NextAuthOptions> = {
             activated: true,
             feature: {
               connect: {
-                feature_version: Quota_FreePlanV1,
+                feature_version: Quota_FreePlanV1_1,
               },
             },
           },

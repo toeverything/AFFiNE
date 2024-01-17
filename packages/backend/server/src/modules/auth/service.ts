@@ -17,7 +17,7 @@ import {
   PrismaService,
   verifyChallengeResponse,
 } from '../../fundamentals';
-import { Quota_FreePlanV1 } from '../quota';
+import { Quota_FreePlanV1_1 } from '../quota';
 
 export type UserClaim = Pick<
   User,
@@ -201,7 +201,7 @@ export class AuthService {
             activated: true,
             feature: {
               connect: {
-                feature_version: Quota_FreePlanV1,
+                feature_version: Quota_FreePlanV1_1,
               },
             },
           },
@@ -231,7 +231,7 @@ export class AuthService {
             activated: true,
             feature: {
               connect: {
-                feature_version: Quota_FreePlanV1,
+                feature_version: Quota_FreePlanV1_1,
               },
             },
           },

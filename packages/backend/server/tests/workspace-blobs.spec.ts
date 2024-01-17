@@ -182,7 +182,7 @@ test('should reject blob exceeded limit', async t => {
   const buffer2 = Buffer.from(Array.from({ length: OneMB + 1 }, () => 0));
   await t.notThrowsAsync(setBlob(app, u1.token.token, workspace1.id, buffer2));
 
-  const buffer3 = Buffer.from(Array.from({ length: 10 * OneMB + 1 }, () => 0));
+  const buffer3 = Buffer.from(Array.from({ length: 100 * OneMB + 1 }, () => 0));
   await t.throwsAsync(setBlob(app, u1.token.token, workspace1.id, buffer3));
 });
 

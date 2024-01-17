@@ -20,5 +20,5 @@ import { QuotaManagementService } from './storage';
 export class QuotaModule {}
 
 export { QuotaManagementService, QuotaService };
-export { Quota_FreePlanV1, Quota_ProPlanV1, Quotas } from './schema';
+export { Quota_FreePlanV1_1, Quota_ProPlanV1, Quotas } from './schema';
 export { QuotaQueryType, QuotaType } from './types';

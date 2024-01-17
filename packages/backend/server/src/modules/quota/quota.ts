@@ -44,6 +44,10 @@ export class QuotaConfig {
     }
   }
 
+  get version() {
+    return this.config.version;
+  }
+
   /// feature name of quota
   get name() {
     return this.config.feature;
