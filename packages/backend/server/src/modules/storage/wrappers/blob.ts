@@ -1,7 +1,4 @@
-import { Readable } from 'node:stream';
-
-import type { Storage } from '@affine/storage';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import type {
   BlobInputType,
@@ -12,19 +9,12 @@ import {
   Config,
   createStorageProvider,
   EventEmitter,
-  OctoBaseStorageModule,
   OnEvent,
-  toBuffer,
 } from '../../../fundamentals';
 
 @Injectable()
-export class WorkspaceBlobStorage implements OnModuleInit {
+export class WorkspaceBlobStorage {
   public readonly provider: StorageProvider;
-
-  /**
-   * @deprecated for backwards compatibility, need to be removed in next stable release
-   */
-  private octobase: Storage | null = null;
 
   constructor(
     private readonly event: EventEmitter,
@@ -33,42 +23,12 @@ export class WorkspaceBlobStorage implements OnModuleInit {
     this.provider = createStorageProvider(this.config.storage, 'blob');
   }
 
-  async onModuleInit() {
-    if (!this.config.node.test) {
-      this.octobase = await OctoBaseStorageModule.Storage.connect(
-        this.config.db.url
-      );
-    }
-  }
-
   async put(workspaceId: string, key: string, blob: BlobInputType) {
-    const buf = await toBuffer(blob);
-    await this.provider.put(`${workspaceId}/${key}`, buf);
-    if (this.octobase) {
-      await this.octobase.uploadBlob(workspaceId, buf);
-    }
+    await this.provider.put(`${workspaceId}/${key}`, blob);
   }
 
   async get(workspaceId: string, key: string) {
-    const result = await this.provider.get(`${workspaceId}/${key}`);
-    if (!result.body && this.octobase) {
-      const blob = await this.octobase.getBlob(workspaceId, key);
-
-      if (!blob) {
-        return result;
-      }
-
-      return {
-        body: Readable.from(blob.data),
-        metadata: {
-          contentType: blob.contentType,
-          contentLength: blob.size,
-          lastModified: new Date(blob.lastModified),
-        },
-      };
-    }
-
-    return result;
+    return this.provider.get(`${workspaceId}/${key}`);
   }
 
   async list(workspaceId: string) {
