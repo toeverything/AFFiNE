@@ -219,6 +219,7 @@ __metadata:
     "@emotion/react": "npm:^11.11.1"
     "@emotion/server": "npm:^11.11.0"
     "@emotion/styled": "npm:^11.11.0"
+    "@lit/react": "npm:^1.0.2"
     "@popperjs/core": "npm:^2.11.8"
     "@radix-ui/react-avatar": "npm:^1.0.4"
     "@radix-ui/react-collapsible": "npm:^1.0.3"
@@ -6485,6 +6486,15 @@ __metadata:
   version: 1.1.2
   resolution: "@lit-labs/ssr-dom-shim@npm:1.1.2"
   checksum: a930f7de57b952dc21317a5754aa0411e000bb4991053cde771c111b7792c4a4cdc896922f0353c832215bed71400431c5ab5a6252c8f4f70bb9ce0b37fe4752
+  languageName: node
+  linkType: hard
+
+"@lit/react@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "@lit/react@npm:1.0.2"
+  peerDependencies:
+    "@types/react": 17 || 18
+  checksum: 78bc607f9022ceefa5c714a701b71e444df8d6c88c75b0fe728b7157d3ec00a7fa459bc3c4ce5a4b5315079159c9759be4738e5ade656f8d74e32f729f75efc4
   languageName: node
   linkType: hard
 
