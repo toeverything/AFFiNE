@@ -1,5 +1,6 @@
-import { createUnionType, Field, Float, ID, ObjectType } from '@nestjs/graphql';
+import { createUnionType, Field, ID, ObjectType } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
+import { SafeIntResolver } from 'graphql-scalars';
 
 @ObjectType('UserQuotaHumanReadable')
 export class UserQuotaHumanReadableType {
@@ -24,13 +25,13 @@ export class UserQuotaType {
   @Field({ name: 'name' })
   name!: string;
 
-  @Field(() => Float, { name: 'blobLimit' })
+  @Field(() => SafeIntResolver, { name: 'blobLimit' })
   blobLimit!: number;
 
-  @Field(() => Float, { name: 'storageQuota' })
+  @Field(() => SafeIntResolver, { name: 'storageQuota' })
   storageQuota!: number;
 
-  @Field(() => Float, { name: 'historyPeriod' })
+  @Field(() => SafeIntResolver, { name: 'historyPeriod' })
   historyPeriod!: number;
 
   @Field({ name: 'memberLimit' })

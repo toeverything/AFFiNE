@@ -689,6 +689,7 @@ __metadata:
     file-type: "npm:^19.0.0"
     get-stream: "npm:^8.0.1"
     graphql: "npm:^16.8.1"
+    graphql-scalars: "npm:^1.22.4"
     graphql-type-json: "npm:^0.3.2"
     graphql-upload: "npm:^16.0.2"
     ioredis: "npm:^5.3.2"
@@ -21875,6 +21876,17 @@ __metadata:
   peerDependencies:
     graphql: 14 - 16
   checksum: a9c6f2eeaad972cdecb91437c15c785a282263fd0ef36f6fc5648e0945da488cdc10ab4736891ee1fbb928c7bf6e0bc8e0284df514254adefe02cc406ba5fce5
+  languageName: node
+  linkType: hard
+
+"graphql-scalars@npm:^1.22.4":
+  version: 1.22.4
+  resolution: "graphql-scalars@npm:1.22.4"
+  dependencies:
+    tslib: "npm:^2.5.0"
+  peerDependencies:
+    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 110c1fa29d7564d9967c974de2df08c99d7ed43af98097e5a5729f952c064b21f66a9f5a68143c50eeac6a4ce14f0999aed2ce8f043d02331d133b0c59a9c1ec
   languageName: node
   linkType: hard
 

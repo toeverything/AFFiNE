@@ -28,6 +28,8 @@ export interface Scalars {
   Float: { input: number; output: number };
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: string; output: string };
+  /** The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification. */
+  SafeInt: { input: number; output: number };
   /** The `Upload` scalar type represents a file upload. */
   Upload: { input: File; output: File };
 }
@@ -93,7 +95,7 @@ export interface UpdateWorkspaceInput {
 
 export type CheckBlobSizesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
-  size: Scalars['Float']['input'];
+  size: Scalars['SafeInt']['input'];
 }>;
 
 export type CheckBlobSizesQuery = {

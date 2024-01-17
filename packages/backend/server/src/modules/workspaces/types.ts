@@ -1,6 +1,5 @@
 import {
   Field,
-  Float,
   ID,
   InputType,
   ObjectType,
@@ -10,6 +9,7 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import type { Workspace } from '@prisma/client';
+import { SafeIntResolver } from 'graphql-scalars';
 
 import { UserType } from '../users/types';
 
@@ -78,7 +78,7 @@ export class InvitationWorkspaceType {
 
 @ObjectType()
 export class WorkspaceBlobSizes {
-  @Field(() => Float)
+  @Field(() => SafeIntResolver)
   size!: number;
 }
 

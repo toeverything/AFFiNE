@@ -23,12 +23,17 @@ type UserQuotaHumanReadable {
 
 type UserQuota {
   name: String!
-  blobLimit: Float!
-  storageQuota: Float!
-  historyPeriod: Float!
+  blobLimit: SafeInt!
+  storageQuota: SafeInt!
+  historyPeriod: SafeInt!
   memberLimit: Int!
   humanReadable: UserQuotaHumanReadable!
 }
+
+"""
+The `SafeInt` scalar type represents non-fractional signed whole numeric values that are considered safe as defined by the ECMAScript specification.
+"""
+scalar SafeInt @specifiedBy(url: "https://www.ecma-international.org/ecma-262/#sec-number.issafeinteger")
 
 type UserType {
   id: ID!
@@ -172,7 +177,7 @@ type InvitationWorkspaceType {
 }
 
 type WorkspaceBlobSizes {
-  size: Float!
+  size: SafeInt!
 }
 
 type InvitationType {
@@ -309,7 +314,7 @@ type Query {
   """List blobs of workspace"""
   listBlobs(workspaceId: String!): [String!]! @deprecated(reason: "use `workspace.blobs` instead")
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.storageUsage` instead")
-  checkBlobSize(workspaceId: String!, size: Float!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
+  checkBlobSize(workspaceId: String!, size: SafeInt!): WorkspaceBlobSizes! @deprecated(reason: "no more needed")
 
   """Get current user"""
   currentUser: UserType

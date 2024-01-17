@@ -13,7 +13,7 @@ export const checkBlobSizesQuery = {
   definitionName: 'checkBlobSize',
   containsFile: false,
   query: `
-query checkBlobSizes($workspaceId: String!, $size: Float!) {
+query checkBlobSizes($workspaceId: String!, $size: SafeInt!) {
   checkBlobSize(workspaceId: $workspaceId, size: $size) {
     size
   }

@@ -1,7 +1,6 @@
 import { HttpStatus, Logger, UseGuards } from '@nestjs/common';
 import {
   Args,
-  Float,
   Int,
   Mutation,
   Parent,
@@ -10,6 +9,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { GraphQLError } from 'graphql';
+import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
@@ -100,7 +100,7 @@ export class WorkspaceBlobResolver {
   async checkBlobSize(
     @CurrentUser() user: UserType,
     @Args('workspaceId') workspaceId: string,
-    @Args('size', { type: () => Float }) blobSize: number
+    @Args('size', { type: () => SafeIntResolver }) blobSize: number
   ) {
     const canWrite = await this.permissions.tryCheckWorkspace(
       workspaceId,
