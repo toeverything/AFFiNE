@@ -170,9 +170,6 @@ export async function loginUser(
   await page.getByTestId('continue-login-button').click({
     delay: 200,
   });
-  await page.getByTestId('sign-in-with-password').click({
-    delay: 200,
-  });
   await page.getByTestId('password-input').fill('123456');
   if (config?.beforeLogin) {
     await config.beforeLogin();

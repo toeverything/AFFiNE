@@ -61,16 +61,13 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     setIsValidEmail(true);
     // 0 for no access for internal beta
-    let user: GetUserQuery['user'] | null | 0 = null;
-    await verifyUser({ email })
-      .then(({ user: u }) => {
-        user = u;
-      })
+    const user: GetUserQuery['user'] | null | 0 = await verifyUser({ email })
+      .then(({ user }) => user)
       .catch(err => {
         const e = err?.[0];
         if (e instanceof GraphQLError && e.extensions?.code === 402) {
           setAuthState('noAccess');
-          user = 0;
+          return 0;
         } else {
           throw err;
         }
@@ -83,11 +80,16 @@ export const SignIn: FC<AuthPanelProps> = ({
 
     if (verifyToken) {
       if (user) {
-        const res = await signIn(email, verifyToken, challenge);
-        if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
-          return setAuthState('noAccess');
+        // provider password sign-in if user has by default
+        if (user.hasPassword) {
+          setAuthState('signInWithPassword');
+        } else {
+          const res = await signIn(email, verifyToken, challenge);
+          if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+            return setAuthState('noAccess');
+          }
+          setAuthState('afterSignInSendEmail');
         }
-        setAuthState('afterSignInSendEmail');
       } else {
         const res = await signUp(email, verifyToken, challenge);
         if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {

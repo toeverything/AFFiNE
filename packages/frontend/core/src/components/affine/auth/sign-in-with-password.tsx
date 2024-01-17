@@ -14,10 +14,13 @@ import { useCallback, useState } from 'react';
 
 import { signInCloud } from '../../../utils/cloud-utils';
 import type { AuthPanelProps } from './index';
-import { forgetPasswordButton } from './style.css';
+import * as styles from './style.css';
+import { INTERNAL_BETA_URL, useAuth } from './use-auth';
+import { useCaptcha } from './use-captcha';
 
 export const SignInWithPassword: FC<AuthPanelProps> = ({
   setAuthState,
+  setEmailType,
   email,
   onSignedIn,
 }) => {
@@ -26,6 +29,13 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const {
+    signIn,
+    allowSendEmail,
+    resetCountDown,
+    isMutating: sendingEmail,
+  } = useAuth();
+  const [verifyToken, challenge] = useCaptcha();
 
   const onSignIn = useAsyncCallback(async () => {
     const res = await signInCloud('credentials', {
@@ -42,6 +52,31 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
     onSignedIn?.();
   }, [email, password, onSignedIn, update]);
 
+  const sendMagicLink = useAsyncCallback(async () => {
+    if (allowSendEmail && verifyToken && !sendingEmail) {
+      const res = await signIn(email, verifyToken, challenge);
+      if (res?.status === 403 && res?.url === INTERNAL_BETA_URL) {
+        resetCountDown();
+        return setAuthState('noAccess');
+      }
+      setAuthState('afterSignInSendEmail');
+    }
+  }, [
+    email,
+    signIn,
+    allowSendEmail,
+    sendingEmail,
+    setAuthState,
+    verifyToken,
+    challenge,
+    resetCountDown,
+  ]);
+
+  const sendChangePasswordEmail = useCallback(() => {
+    setEmailType('changePassword');
+    setAuthState('sendEmail');
+  }, [setAuthState, setEmailType]);
+
   return (
     <>
       <ModalHeader
@@ -51,7 +86,6 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
 
       <Wrapper
         marginTop={30}
-        marginBottom={50}
         style={{
           position: 'relative',
         }}
@@ -73,29 +107,43 @@ export const SignInWithPassword: FC<AuthPanelProps> = ({
           errorHint={t['com.affine.auth.password.error']()}
           onEnter={onSignIn}
         />
-        <span></span>
-        <button
-          className={forgetPasswordButton}
-          // onClick={useCallback(() => {
-          //   setAuthState('sendPasswordEmail');
-          // }, [setAuthState])}
+        <div
+          className={styles.forgetPasswordButtonRow}
+          style={{ display: 'none' }} // Not implemented yet.
         >
-          {t['com.affine.auth.forget']()}
-        </button>
+          <a
+            className={styles.linkButton}
+            onClick={sendChangePasswordEmail}
+            style={{
+              color: 'var(--affine-text-secondary-color)',
+              fontSize: 'var(--affine-font-sm)',
+            }}
+          >
+            {t['com.affine.auth.forget']()}
+          </a>
+        </div>
+        <div className={styles.sendMagicLinkButtonRow}>
+          <a
+            data-testid="send-magic-link-button"
+            className={styles.linkButton}
+            onClick={sendMagicLink}
+          >
+            {t['com.affine.auth.sign.auth.code.send-email.sign-in']()}
+          </a>
+        </div>
+        <Button
+          data-testid="sign-in-button"
+          type="primary"
+          size="extraLarge"
+          style={{ width: '100%' }}
+          onClick={onSignIn}
+        >
+          {t['com.affine.auth.sign.in']()}
+        </Button>
       </Wrapper>
-      <Button
-        data-testid="sign-in-button"
-        type="primary"
-        size="extraLarge"
-        style={{ width: '100%' }}
-        onClick={onSignIn}
-      >
-        {t['com.affine.auth.sign.in']()}
-      </Button>
-
       <BackButton
         onClick={useCallback(() => {
-          setAuthState('afterSignInSendEmail');
+          setAuthState('signIn');
         }, [setAuthState])}
       />
     </>

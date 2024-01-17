@@ -6,6 +6,7 @@ import {
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { type FC, useCallback } from 'react';
 
@@ -43,9 +44,12 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
         subTitle={t['com.affine.auth.sign.up.sent.email.subtitle']()}
       />
       <AuthContent style={{ height: 100 }}>
-        {t['com.affine.auth.sign.sent.email.message.start']()}
-        <a href={`mailto:${email}`}>{email}</a>
-        {t['com.affine.auth.sign.sent.email.message.end']()}
+        <Trans
+          i18nKey="com.affine.auth.sign.sent.email.message.sent-tips"
+          values={{ email }}
+          components={{ a: <a href={`mailto:${email}`} /> }}
+        />
+        {t['com.affine.auth.sign.sent.email.message.sent-tips.sign-up']()}
       </AuthContent>
 
       <div className={style.resendWrapper}>
@@ -63,15 +67,15 @@ export const AfterSignUpSendEmail: FC<AuthPanelProps> = ({
             </Button>
           </>
         ) : (
-          <>
-            <span className="resend-code-hint">
-              {t['com.affine.auth.sign.auth.code.on.resend.hint']()}
-            </span>
+          <div className={style.sentRow}>
+            <div className={style.sentMessage}>
+              {t['com.affine.auth.sent']()}
+            </div>
             <CountDownRender
               className={style.resendCountdown}
               timeLeft={resendCountDown}
             />
-          </>
+          </div>
         )}
       </div>
 

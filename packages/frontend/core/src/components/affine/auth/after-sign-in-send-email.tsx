@@ -53,9 +53,12 @@ export const AfterSignInSendEmail = ({
         subTitle={t['com.affine.auth.sign.in.sent.email.subtitle']()}
       />
       <AuthContent style={{ height: 100 }}>
-        {t['com.affine.auth.sign.sent.email.message.start']()}
-        <a href={`mailto:${email}`}>{email}</a>
-        {t['com.affine.auth.sign.sent.email.message.end']()}
+        <Trans
+          i18nKey="com.affine.auth.sign.sent.email.message.sent-tips"
+          values={{ email }}
+          components={{ a: <a href={`mailto:${email}`} /> }}
+        />
+        {t['com.affine.auth.sign.sent.email.message.sent-tips.sign-in']()}
       </AuthContent>
 
       <div className={style.resendWrapper}>
@@ -73,15 +76,15 @@ export const AfterSignInSendEmail = ({
             </Button>
           </>
         ) : (
-          <>
-            <span className="resend-code-hint">
-              {t['com.affine.auth.sign.auth.code.on.resend.hint']()}
-            </span>
+          <div className={style.sentRow}>
+            <div className={style.sentMessage}>
+              {t['com.affine.auth.sent']()}
+            </div>
             <CountDownRender
               className={style.resendCountdown}
               timeLeft={resendCountDown}
             />
-          </>
+          </div>
         )}
       </div>
 
@@ -90,16 +93,18 @@ export const AfterSignInSendEmail = ({
         {subscriptionData ? null : ( // If with payment, just support email sign in to avoid duplicate redirect to the same stripe url.
           <React.Fragment>
             &nbsp;
-            {/*prettier-ignore*/}
-            <Trans i18nKey="com.affine.auth.sign.auth.code.message.password">
-              Or <span
-                className="link"
-                data-testid='sign-in-with-password'
-                onClick={onSignInWithPasswordClick}
-              >
-                sign in with password
-              </span> instead.
-            </Trans>
+            <Trans
+              i18nKey="com.affine.auth.sign.auth.code.message.password"
+              components={{
+                1: (
+                  <span
+                    className="link"
+                    data-testid="sign-in-with-password"
+                    onClick={onSignInWithPasswordClick}
+                  />
+                ),
+              }}
+            />
           </React.Fragment>
         )}
       </div>

@@ -150,9 +150,18 @@ export const useAuth = () => {
     signInCloud('google').catch(console.error);
   }, []);
 
+  const resetCountDown = useCallback(() => {
+    setAuthStore({
+      isMutating: false,
+      allowSendEmail: false,
+      resendCountDown: 0,
+    });
+  }, [setAuthStore]);
+
   return {
     allowSendEmail: authStore.allowSendEmail,
     resendCountDown: authStore.resendCountDown,
+    resetCountDown,
     isMutating: authStore.isMutating,
     signUp,
     signIn,
