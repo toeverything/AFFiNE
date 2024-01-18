@@ -28,6 +28,7 @@ export const mainHeader = style([
   header,
   {
     padding: '0 16px',
+    gap: 12,
   },
 ]);
 
@@ -57,4 +58,12 @@ export const standaloneExtensionSwitcherWrapper = style({
   flexShrink: 0,
   height: '52px',
   position: 'relative',
+});
+
+export const journalWeekPicker = style({
+  minWidth: 100,
+  flexGrow: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });

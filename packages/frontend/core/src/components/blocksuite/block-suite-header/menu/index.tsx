@@ -4,13 +4,15 @@ import {
   MenuItem,
   MenuSeparator,
 } from '@affine/component/ui/menu';
-import {
-  Export,
-  FavoriteTag,
-  MoveToTrash,
-} from '@affine/core/components/page-list';
+import { currentModeAtom } from '@affine/core/atoms/mode';
+import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { Export, MoveToTrash } from '@affine/core/components/page-list';
+import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
+import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
+import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { toast } from '@affine/core/utils';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
@@ -27,21 +29,21 @@ import {
 import { useAtomValue } from 'jotai';
 import { useCallback, useState } from 'react';
 
-import { currentModeAtom } from '../../../atoms/mode';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useExportPage } from '../../../hooks/affine/use-export-page';
-import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
-import { toast } from '../../../utils';
-import { PageHistoryModal } from '../../affine/page-history-modal/history-modal';
-import { HeaderDropDownButton } from '../../pure/header-drop-down-button';
-import { usePageHelper } from '../block-suite-page-list/utils';
+import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
+import { usePageHelper } from '../../block-suite-page-list/utils';
+import { useFavorite } from '../favorite';
 
 type PageMenuProps = {
   rename?: () => void;
   pageId: string;
+  isJournal?: boolean;
 };
 // fixme: refactor this file
-export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
+export const PageHeaderMenuButton = ({
+  rename,
+  pageId,
+  isJournal,
+}: PageMenuProps) => {
   const t = useAFFiNEI18N();
 
   // fixme(himself65): remove these hooks ASAP
@@ -54,9 +56,10 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
     meta => meta.id === pageId
   );
   const currentMode = useAtomValue(currentModeAtom);
-  const favorite = pageMeta?.favorite ?? false;
 
-  const { togglePageMode, toggleFavorite, duplicate } =
+  const { favorite, toggleFavorite } = useFavorite(pageId);
+
+  const { togglePageMode, duplicate } =
     useBlockSuiteMetaHelper(blockSuiteWorkspace);
   const { importFile } = usePageHelper(blockSuiteWorkspace);
   const { setTrashModal } = useTrashModalHelper(blockSuiteWorkspace);
@@ -78,14 +81,6 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
     });
   }, [pageId, pageMeta, setTrashModal]);
 
-  const handleFavorite = useCallback(() => {
-    toggleFavorite(pageId);
-    toast(
-      favorite
-        ? t['com.affine.toastMessage.removedFavorites']()
-        : t['com.affine.toastMessage.addedFavorites']()
-    );
-  }, [favorite, pageId, t, toggleFavorite]);
   const handleSwitchMode = useCallback(() => {
     togglePageMode(pageId);
     toast(
@@ -107,18 +102,20 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
 
   const EditMenu = (
     <>
-      <MenuItem
-        preFix={
-          <MenuIcon>
-            <EditIcon />
-          </MenuIcon>
-        }
-        data-testid="editor-option-menu-rename"
-        onSelect={rename}
-        style={menuItemStyle}
-      >
-        {t['Rename']()}
-      </MenuItem>
+      {!isJournal && (
+        <MenuItem
+          preFix={
+            <MenuIcon>
+              <EditIcon />
+            </MenuIcon>
+          }
+          data-testid="editor-option-menu-rename"
+          onSelect={rename}
+          style={menuItemStyle}
+        >
+          {t['Rename']()}
+        </MenuItem>
+      )}
       <MenuItem
         preFix={
           <MenuIcon>
@@ -136,7 +133,7 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
       </MenuItem>
       <MenuItem
         data-testid="editor-option-menu-favorite"
-        onSelect={handleFavorite}
+        onSelect={toggleFavorite}
         style={menuItemStyle}
         preFix={
           <MenuIcon>
@@ -162,18 +159,20 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
         {t['com.affine.header.option.add-tag']()}
       </MenuItem> */}
       <MenuSeparator />
-      <MenuItem
-        preFix={
-          <MenuIcon>
-            <DuplicateIcon />
-          </MenuIcon>
-        }
-        data-testid="editor-option-menu-duplicate"
-        onSelect={handleDuplicate}
-        style={menuItemStyle}
-      >
-        {t['com.affine.header.option.duplicate']()}
-      </MenuItem>
+      {!isJournal && (
+        <MenuItem
+          preFix={
+            <MenuIcon>
+              <DuplicateIcon />
+            </MenuIcon>
+          }
+          data-testid="editor-option-menu-duplicate"
+          onSelect={handleDuplicate}
+          style={menuItemStyle}
+        >
+          {t['com.affine.header.option.duplicate']()}
+        </MenuItem>
+      )}
       <MenuItem
         preFix={
           <MenuIcon>
@@ -232,7 +231,6 @@ export const PageHeaderMenuButton = ({ rename, pageId }: PageMenuProps) => {
           onOpenChange={setHistoryModalOpen}
         />
       ) : null}
-      <FavoriteTag active={!!pageMeta?.favorite} onClick={handleFavorite} />
     </>
   );
 };

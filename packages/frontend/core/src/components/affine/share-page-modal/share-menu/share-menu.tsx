@@ -6,6 +6,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
 import { WebIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
+import clsx from 'clsx';
 
 import { useIsSharedPage } from '../../../../hooks/affine/use-is-shared-page';
 import * as styles from './index.css';
@@ -15,6 +16,7 @@ import { SharePage } from './share-page';
 export interface ShareMenuProps {
   workspaceMetadata: WorkspaceMetadata;
   currentPage: Page;
+  isJournal?: boolean;
   onEnableAffineCloud: () => void;
 }
 
@@ -50,7 +52,11 @@ const LocalShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button data-testid="local-share-menu-button" type="primary">
+      <Button
+        className={clsx({ [styles.journalShareButton]: props.isJournal })}
+        data-testid="local-share-menu-button"
+        type="primary"
+      >
         {t['com.affine.share-menu.shareButton']()}
       </Button>
     </Menu>
@@ -76,7 +82,11 @@ const CloudShareMenu = (props: ShareMenuProps) => {
         modal: false,
       }}
     >
-      <Button data-testid="cloud-share-menu-button" type="primary">
+      <Button
+        className={clsx({ [styles.journalShareButton]: props.isJournal })}
+        data-testid="cloud-share-menu-button"
+        type="primary"
+      >
         {isSharedPage
           ? t['com.affine.share-menu.sharedButton']()
           : t['com.affine.share-menu.shareButton']()}
