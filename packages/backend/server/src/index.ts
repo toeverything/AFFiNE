@@ -5,9 +5,10 @@ import './prelude';
 import { createApp } from './app';
 
 const app = await createApp();
-await app.listen(AFFiNE.port, AFFiNE.host);
+const listeningHost = AFFiNE.deploy ? '0.0.0.0' : 'localhost';
+await app.listen(AFFiNE.port, listeningHost);
 
 console.log(
-  `AFFiNE Server has been started on http://${AFFiNE.host}:${AFFiNE.port}.`
+  `AFFiNE Server has been started on http://${listeningHost}:${AFFiNE.port}.`
 );
 console.log(`And the public server should be recognized as ${AFFiNE.baseUrl}`);

@@ -4,11 +4,7 @@ const env = process.env;
 const node = AFFiNE.node;
 
 // TODO(@forehalo): detail explained
-AFFiNE.host = 'localhost';
-AFFiNE.port = 3010;
-
 if (node.prod) {
-  AFFiNE.host = '0.0.0.0';
   // Storage
   if (env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
     AFFiNE.storage.providers.r2 = {
