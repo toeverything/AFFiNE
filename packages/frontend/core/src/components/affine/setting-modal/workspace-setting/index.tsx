@@ -1,18 +1,27 @@
 import type { WorkspaceMetadata } from '@affine/workspace/metadata';
 
 import { useIsWorkspaceOwner } from '../../../../hooks/affine/use-is-workspace-owner';
+import { ExperimentalFeatures } from './experimental-features';
 import { WorkspaceSettingDetail } from './new-workspace-setting-detail';
 
 export const WorkspaceSetting = ({
   workspaceMetadata,
+  subTab,
 }: {
   workspaceMetadata: WorkspaceMetadata;
+  subTab: 'preference' | 'experimental-features';
 }) => {
   const isOwner = useIsWorkspaceOwner(workspaceMetadata);
-  return (
-    <WorkspaceSettingDetail
-      workspaceMetadata={workspaceMetadata}
-      isOwner={isOwner}
-    />
-  );
+
+  switch (subTab) {
+    case 'preference':
+      return (
+        <WorkspaceSettingDetail
+          workspaceMetadata={workspaceMetadata}
+          isOwner={isOwner}
+        />
+      );
+    case 'experimental-features':
+      return <ExperimentalFeatures />;
+  }
 };

@@ -141,7 +141,7 @@ export const AFFiNEWorkspaceList = ({
     (workspaceMetadata: WorkspaceMetadata) => {
       setOpenSettingModalAtom({
         open: true,
-        activeTab: 'workspace',
+        activeTab: 'workspace:preference',
         workspaceMetadata,
       });
       onEventEnd?.();

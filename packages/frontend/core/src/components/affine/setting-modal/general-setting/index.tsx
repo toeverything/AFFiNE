@@ -8,6 +8,7 @@ import type { ReactElement, SVGProps } from 'react';
 
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useSelfHosted } from '../../../../hooks/affine/use-server-config';
+import type { GeneralSettingKey } from '../types';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
 import { BillingSettings } from './billing';
@@ -15,15 +16,8 @@ import { PaymentIcon, UpgradeIcon } from './icons';
 import { AFFiNECloudPlans } from './plans';
 import { Shortcuts } from './shortcuts';
 
-export type GeneralSettingKeys =
-  | 'shortcuts'
-  | 'appearance'
-  | 'about'
-  | 'plans'
-  | 'billing';
-
 interface GeneralSettingListItem {
-  key: GeneralSettingKeys;
+  key: GeneralSettingKey;
   title: string;
   icon: (props: SVGProps<SVGSVGElement>) => ReactElement;
   testId: string;
@@ -78,7 +72,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
 };
 
 interface GeneralSettingProps {
-  generalKey: GeneralSettingKeys;
+  generalKey: GeneralSettingKey;
 }
 
 export const GeneralSetting = ({ generalKey }: GeneralSettingProps) => {

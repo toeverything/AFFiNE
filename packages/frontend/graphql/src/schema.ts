@@ -749,6 +749,15 @@ export type UploadAvatarMutation = {
   };
 };
 
+export type EnabledFeaturesQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type EnabledFeaturesQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; features: Array<FeatureType> };
+};
+
 export type AvailableFeaturesQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -966,6 +975,11 @@ export type Queries =
       name: 'subscriptionQuery';
       variables: SubscriptionQueryVariables;
       response: SubscriptionQuery;
+    }
+  | {
+      name: 'enabledFeaturesQuery';
+      variables: EnabledFeaturesQueryVariables;
+      response: EnabledFeaturesQuery;
     }
   | {
       name: 'availableFeaturesQuery';

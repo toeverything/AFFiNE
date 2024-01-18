@@ -40,10 +40,9 @@ const activeExtensionAtom = selectAtom(
 );
 const widthAtom = selectAtom(baseStateAtom, state => state.width);
 
-export const editorExtensionsAtom = selectAtom(baseStateAtom, state =>
-  state.extensions.filter(e => {
-    return e.name !== 'copilot' || runtimeConfig.enableCopilot;
-  })
+export const editorExtensionsAtom = selectAtom(
+  baseStateAtom,
+  state => state.extensions
 );
 
 // get/set sidebar open state

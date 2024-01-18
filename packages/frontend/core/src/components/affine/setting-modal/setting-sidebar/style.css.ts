@@ -31,6 +31,9 @@ export const sidebarSubtitle = style({
 });
 
 export const sidebarItemsWrapper = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
   selectors: {
     '&.scroll': {
       flexGrow: 1,
@@ -42,9 +45,10 @@ export const sidebarItemsWrapper = style({
 export const sidebarSelectItem = style({
   display: 'flex',
   alignItems: 'center',
-  margin: '0px 16px 4px 16px',
+  margin: '0px 16px',
   padding: '0px 8px',
   height: '30px',
+  flexShrink: 0,
   fontSize: 'var(--affine-font-sm)',
   borderRadius: '8px',
   cursor: 'pointer',
@@ -56,11 +60,28 @@ export const sidebarSelectItem = style({
     '&.active': {
       background: 'var(--affine-hover-color)',
     },
-    [`${sidebarItemsWrapper} &:last-of-type`]: {
-      marginBottom: 0,
+  },
+});
+
+export const sidebarSelectSubItem = style({
+  display: 'flex',
+  alignItems: 'center',
+  margin: '0px 16px',
+  padding: '0px 8px 0px 32px',
+  height: '30px',
+  flexShrink: 0,
+  fontSize: 'var(--affine-font-sm)',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  userSelect: 'none',
+  color: 'var(--affine-text-secondary-color)',
+  selectors: {
+    '&.active, &:hover': {
+      color: 'var(--affine-text-primary-color)',
     },
   },
 });
+
 globalStyle(`${settingSlideBar} .icon`, {
   width: '16px',
   height: '16px',

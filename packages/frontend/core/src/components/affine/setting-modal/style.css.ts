@@ -23,6 +23,7 @@ export const centerContainer = style({
 });
 
 export const content = style({
+  position: 'relative',
   width: '100%',
   marginBottom: '24px',
   minHeight: 'calc(100% - 48px)',

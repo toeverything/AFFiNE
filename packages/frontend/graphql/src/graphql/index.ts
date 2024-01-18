@@ -780,6 +780,19 @@ mutation uploadAvatar($avatar: Upload!) {
 }`,
 };
 
+export const enabledFeaturesQuery = {
+  id: 'enabledFeaturesQuery' as const,
+  operationName: 'enabledFeatures',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query enabledFeatures($id: String!) {
+  workspace(id: $id) {
+    features
+  }
+}`,
+};
+
 export const availableFeaturesQuery = {
   id: 'availableFeaturesQuery' as const,
   operationName: 'availableFeatures',

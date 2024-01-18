@@ -4,38 +4,30 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
+import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
+import { useWorkspaceAvailableFeatures } from '@affine/core/hooks/use-workspace-features';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import {
   waitForCurrentWorkspaceAtom,
   workspaceListAtom,
 } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { WorkspaceMetadata } from '@affine/workspace';
 import { Logo1Icon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { useAtom, useAtomValue } from 'jotai/react';
-import { type ReactElement, Suspense, useCallback } from 'react';
+import { type ReactElement, Suspense, useCallback, useMemo } from 'react';
 
 import { authAtom } from '../../../../atoms';
 import { useCurrentLoginStatus } from '../../../../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../../../../hooks/affine/use-current-user';
 import { UserPlanButton } from '../../auth/user-plan-button';
-import type {
-  GeneralSettingKeys,
-  GeneralSettingList,
-} from '../general-setting';
-import {
-  accountButton,
-  currentWorkspaceLabel,
-  settingSlideBar,
-  sidebarFooter,
-  sidebarItemsWrapper,
-  sidebarSelectItem,
-  sidebarSubtitle,
-  sidebarTitle,
-} from './style.css';
+import { useGeneralSettingList } from '../general-setting';
+import type { ActiveTab, WorkspaceSubTab } from '../types';
+import * as style from './style.css';
 
 export type UserInfoProps = {
   onAccountSettingClick: () => void;
@@ -50,7 +42,7 @@ export const UserInfo = ({
   return (
     <div
       data-testid="user-info-card"
-      className={clsx(accountButton, {
+      className={clsx(style.accountButton, {
         active: active,
       })}
       onClick={onAccountSettingClick}
@@ -79,7 +71,7 @@ export const SignInButton = () => {
 
   return (
     <div
-      className={accountButton}
+      className={style.accountButton}
       onClick={useCallback(() => {
         setAuthModal({ openModal: true, state: 'signIn' });
       }, [setAuthModal])}
@@ -101,41 +93,48 @@ export const SignInButton = () => {
 };
 
 export const SettingSidebar = ({
-  generalSettingList,
-  onGeneralSettingClick,
-  onWorkspaceSettingClick,
+  activeTab,
+  onTabChange,
   selectedWorkspaceId,
-  selectedGeneralKey,
-  onAccountSettingClick,
 }: {
-  generalSettingList: GeneralSettingList;
-  onGeneralSettingClick: (key: GeneralSettingKeys) => void;
-  onWorkspaceSettingClick: (workspaceMetadata: WorkspaceMetadata) => void;
+  activeTab: ActiveTab;
+  onTabChange: (
+    key: ActiveTab,
+    workspaceMetadata: WorkspaceMetadata | null
+  ) => void;
   selectedWorkspaceId: string | null;
-  selectedGeneralKey: string | null;
-  onAccountSettingClick: () => void;
 }) => {
   const t = useAFFiNEI18N();
   const loginStatus = useCurrentLoginStatus();
+  const generalList = useGeneralSettingList();
+  const onAccountSettingClick = useCallback(() => {
+    onTabChange('account', null);
+  }, [onTabChange]);
+  const onWorkspaceSettingClick = useCallback(
+    (subTab: WorkspaceSubTab, workspaceMetadata: WorkspaceMetadata) => {
+      onTabChange(`workspace:${subTab}`, workspaceMetadata);
+    },
+    [onTabChange]
+  );
   return (
-    <div className={settingSlideBar} data-testid="settings-sidebar">
-      <div className={sidebarTitle}>
+    <div className={style.settingSlideBar} data-testid="settings-sidebar">
+      <div className={style.sidebarTitle}>
         {t['com.affine.settingSidebar.title']()}
       </div>
-      <div className={sidebarSubtitle}>
+      <div className={style.sidebarSubtitle}>
         {t['com.affine.settingSidebar.settings.general']()}
       </div>
-      <div className={sidebarItemsWrapper}>
-        {generalSettingList.map(({ title, icon, key, testId }) => {
+      <div className={style.sidebarItemsWrapper}>
+        {generalList.map(({ title, icon, key, testId }) => {
           return (
             <div
-              className={clsx(sidebarSelectItem, {
-                active: key === selectedGeneralKey,
+              className={clsx(style.sidebarSelectItem, {
+                active: key === activeTab,
               })}
               key={key}
               title={title}
               onClick={() => {
-                onGeneralSettingClick(key);
+                onTabChange(key, null);
               }}
               data-testid={testId}
             >
@@ -146,19 +145,20 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      <div className={sidebarSubtitle}>
+      <div className={style.sidebarSubtitle}>
         {t['com.affine.settingSidebar.settings.workspace']()}
       </div>
-      <div className={clsx(sidebarItemsWrapper, 'scroll')}>
+      <div className={clsx(style.sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
           <WorkspaceList
             onWorkspaceSettingClick={onWorkspaceSettingClick}
             selectedWorkspaceId={selectedWorkspaceId}
+            activeSubTab={activeTab.split(':')[1] as WorkspaceSubTab}
           />
         </Suspense>
       </div>
 
-      <div className={sidebarFooter}>
+      <div className={style.sidebarFooter}>
         {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
           <SignInButton />
         ) : null}
@@ -167,7 +167,7 @@ export const SettingSidebar = ({
           <Suspense>
             <UserInfo
               onAccountSettingClick={onAccountSettingClick}
-              active={selectedGeneralKey === 'account'}
+              active={activeTab === 'account'}
             />
           </Suspense>
         ) : null}
@@ -179,12 +179,16 @@ export const SettingSidebar = ({
 export const WorkspaceList = ({
   onWorkspaceSettingClick,
   selectedWorkspaceId,
+  activeSubTab,
 }: {
-  onWorkspaceSettingClick: (workspaceMetadata: WorkspaceMetadata) => void;
+  onWorkspaceSettingClick: (
+    subTab: WorkspaceSubTab,
+    workspaceMetadata: WorkspaceMetadata
+  ) => void;
   selectedWorkspaceId: string | null;
+  activeSubTab: WorkspaceSubTab;
 }) => {
   const workspaces = useAtomValue(workspaceListAtom);
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   return (
     <>
       {workspaces.map(workspace => {
@@ -192,11 +196,12 @@ export const WorkspaceList = ({
           <Suspense key={workspace.id} fallback={<WorkspaceListItemSkeleton />}>
             <WorkspaceListItem
               meta={workspace}
-              onClick={() => {
-                onWorkspaceSettingClick(workspace);
+              onClick={subTab => {
+                onWorkspaceSettingClick(subTab, workspace);
               }}
-              isCurrent={workspace.id === currentWorkspace.id}
-              isActive={workspace.id === selectedWorkspaceId}
+              activeSubTab={
+                workspace.id === selectedWorkspaceId ? activeSubTab : undefined
+              }
             />
           </Suspense>
         );
@@ -205,48 +210,106 @@ export const WorkspaceList = ({
   );
 };
 
+const subTabConfigs = [
+  {
+    key: 'preference',
+    title: 'com.affine.settings.workspace.preferences',
+  },
+  {
+    key: 'experimental-features',
+    title: 'com.affine.settings.workspace.experimental-features',
+  },
+] satisfies {
+  key: WorkspaceSubTab;
+  title: keyof ReturnType<typeof useAFFiNEI18N>;
+}[];
+
 const WorkspaceListItem = ({
+  activeSubTab,
   meta,
   onClick,
-  isCurrent,
-  isActive,
 }: {
   meta: WorkspaceMetadata;
-  onClick: () => void;
-  isCurrent: boolean;
-  isActive: boolean;
+  activeSubTab?: WorkspaceSubTab;
+  onClick: (subTab: WorkspaceSubTab) => void;
 }) => {
   const information = useWorkspaceInfo(meta);
-
   const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
-
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
+  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const isCurrent = currentWorkspace.id === meta.id;
+  const t = useAFFiNEI18N();
+  const isOwner = useIsWorkspaceOwner(meta);
+  const availableFeatures = useWorkspaceAvailableFeatures();
+
+  const onClickPreference = useCallback(() => {
+    onClick('preference');
+  }, [onClick]);
+
+  const subTabs = useMemo(() => {
+    return subTabConfigs
+      .filter(({ key }) => {
+        if (key === 'experimental-features') {
+          return (
+            isOwner &&
+            currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
+            availableFeatures.length > 0
+          );
+        }
+        return true;
+      })
+      .map(({ key, title }) => {
+        return (
+          <div
+            onClick={() => {
+              onClick(key);
+            }}
+            className={clsx(style.sidebarSelectSubItem, {
+              active: activeSubTab === key,
+            })}
+            key={key}
+          >
+            {t[title]()}
+          </div>
+        );
+      });
+  }, [
+    activeSubTab,
+    availableFeatures.length,
+    currentWorkspace.flavour,
+    isOwner,
+    onClick,
+    t,
+  ]);
 
   return (
-    <div
-      className={clsx(sidebarSelectItem, { active: isActive })}
-      title={name}
-      onClick={onClick}
-      data-testid="workspace-list-item"
-    >
-      <Avatar
-        size={14}
-        url={avatarUrl}
-        name={name}
-        colorfulFallback
-        style={{
-          marginRight: '10px',
-        }}
-      />
-      <span className="setting-name">{name}</span>
-      {isCurrent ? (
-        <Tooltip content="Current" side="top">
-          <div
-            className={currentWorkspaceLabel}
-            data-testid="current-workspace-label"
-          ></div>
-        </Tooltip>
-      ) : null}
-    </div>
+    <>
+      <div
+        className={clsx(style.sidebarSelectItem, { active: !!activeSubTab })}
+        title={name}
+        onClick={onClickPreference}
+        data-testid="workspace-list-item"
+      >
+        <Avatar
+          size={14}
+          url={avatarUrl}
+          name={name}
+          colorfulFallback
+          style={{
+            marginRight: '10px',
+          }}
+        />
+        <span className="setting-name">{name}</span>
+        {isCurrent ? (
+          <Tooltip content="Current" side="top">
+            <div
+              className={style.currentWorkspaceLabel}
+              data-testid="current-workspace-label"
+            ></div>
+          </Tooltip>
+        ) : null}
+      </div>
+      {activeSubTab && subTabs.length > 1 ? subTabs : null}
+    </>
   );
 };
