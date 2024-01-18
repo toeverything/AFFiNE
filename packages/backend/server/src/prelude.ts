@@ -13,10 +13,8 @@ import {
 
 const configDir = join(fileURLToPath(import.meta.url), '../config');
 async function loadRemote(remoteDir: string, file: string) {
-  console.log(remoteDir, configDir);
   const filePath = join(configDir, file);
   if (configDir !== remoteDir) {
-    console.log('cp remote file');
     cpSync(join(remoteDir, file), filePath, {
       force: true,
     });
