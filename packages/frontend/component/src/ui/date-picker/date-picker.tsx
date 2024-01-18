@@ -5,7 +5,7 @@ import {
 } from '@blocksuite/icons';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
-import { type HTMLAttributes, useCallback, useState } from 'react';
+import { type HTMLAttributes, useCallback, useEffect, useState } from 'react';
 import DatePicker, { type ReactDatePickerProps } from 'react-datepicker';
 
 import * as styles from './index.css';
@@ -24,9 +24,10 @@ const months = [
   'December',
 ];
 export interface AFFiNEDatePickerProps
-  extends Omit<ReactDatePickerProps, 'onChange'> {
+  extends Omit<ReactDatePickerProps, 'onChange' | 'onSelect'> {
   value?: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
+  onSelect?: (value: string) => void;
 }
 
 interface HeaderLayoutProps extends HTMLAttributes<HTMLDivElement> {
@@ -74,6 +75,10 @@ const HeaderLayout = ({
 export const AFFiNEDatePicker = ({
   value,
   onChange,
+  onSelect,
+
+  calendarClassName,
+
   ...props
 }: AFFiNEDatePickerProps) => {
   const [openMonthPicker, setOpenMonthPicker] = useState(false);
@@ -86,10 +91,16 @@ export const AFFiNEDatePicker = ({
   const handleCloseMonthPicker = useCallback(() => {
     setOpenMonthPicker(false);
   }, []);
-  const handleSelectDate = (date: Date | null) => {
+  const handleDateChange = (date: Date | null) => {
     if (date) {
       setSelectedDate(date);
-      onChange(dayjs(date).format('YYYY-MM-DD'));
+      onChange?.(dayjs(date).format('YYYY-MM-DD'));
+      setOpenMonthPicker(false);
+    }
+  };
+  const handleDateSelect = (date: Date | null) => {
+    if (date) {
+      onSelect?.(dayjs(date).format('YYYY-MM-DD'));
       setOpenMonthPicker(false);
     }
   };
@@ -207,17 +218,23 @@ export const AFFiNEDatePicker = ({
       />
     );
   };
+
+  useEffect(() => {
+    setSelectedDate(value ? dayjs(value).toDate() : null);
+  }, [value]);
+
   return (
     <DatePicker
       onClickOutside={handleCloseMonthPicker}
       className={styles.inputStyle}
-      calendarClassName={styles.calendarStyle}
+      calendarClassName={clsx(styles.calendarStyle, calendarClassName)}
       weekDayClassName={() => styles.weekStyle}
       dayClassName={() => styles.dayStyle}
       popperClassName={styles.popperStyle}
       monthClassName={() => styles.mouthsStyle}
       selected={selectedDate}
-      onChange={handleSelectDate}
+      onChange={handleDateChange}
+      onSelect={handleDateSelect}
       showPopperArrow={false}
       dateFormat="MMM dd"
       showMonthYearPicker={openMonthPicker}

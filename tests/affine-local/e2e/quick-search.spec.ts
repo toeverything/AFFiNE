@@ -460,8 +460,8 @@ test('disable quick search when the link-popup is visitable', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
   await page.keyboard.press('Enter', { delay: 10 });
-  await page.keyboard.insertText('123456');
-  await page.getByText('123456').dblclick();
+  await page.keyboard.insertText('1234567890');
+  await page.getByText('1234567890').dblclick();
 
   await withCtrlOrMeta(page, () => page.keyboard.press('k', { delay: 50 }));
   const linkPopup = page.locator('.affine-link-popover');

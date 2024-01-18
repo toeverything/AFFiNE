@@ -151,28 +151,22 @@ export const dayStyle = style([
     fontWeight: '400',
     borderRadius: '8px',
     selectors: {
-      '&:hover': {
+      '&[aria-selected="false"]:hover': {
         background: 'var(--affine-hover-color)',
         borderRadius: '8px',
         transition: 'background-color 0.3s ease-in-out',
       },
       '&[aria-selected="true"]': {
-        color: 'var(--affine-black)',
-        background: 'var(--affine-hover-color)',
-      },
-      '&[aria-selected="true"]:hover': {
-        background: 'var(--affine-hover-color)',
+        color: 'var(--affine-pure-white)',
+        background: 'var(--affine-primary-color)',
+        fontWeight: '500',
       },
       '&[tabindex="0"][aria-selected="false"]': {
         background: 'var(--affine-background-overlay-panel-color)',
       },
       '&.react-datepicker__day--today[aria-selected="false"]': {
-        background: 'var(--affine-primary-color)',
-        color: 'var(--affine-palette-line-white)',
-      },
-      '&.react-datepicker__day--today[aria-selected="false"]:hover': {
-        color: 'var(--affine-black)',
-        background: 'var(--affine-hover-color)',
+        fontWeight: '600',
+        color: 'var(--affine-primary-color)',
       },
       '&.react-datepicker__day--outside-month[aria-selected="false"]': {
         color: 'var(--affine-text-disable-color)',
