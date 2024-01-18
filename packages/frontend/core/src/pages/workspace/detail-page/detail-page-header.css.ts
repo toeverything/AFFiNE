@@ -35,7 +35,7 @@ export const mainHeader = style([
 export const sidebarHeader = style([
   header,
   {
-    padding: '0 14px',
+    padding: '0 16px',
     gap: '12px',
   },
 ]);

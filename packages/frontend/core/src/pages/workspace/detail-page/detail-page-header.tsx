@@ -11,6 +11,7 @@ import { JournalTodayButton } from '@affine/core/components/blocksuite/block-sui
 import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-suite-header/menu';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import type { Workspace } from '@affine/workspace';
 import { RightSidebarIcon } from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
@@ -187,7 +188,11 @@ export function DetailPageHeader(props: PageHeaderProps) {
   );
 }
 
-function WindowsSidebarHeader() {
+interface SidebarHeaderProps {
+  workspace: BlockSuiteWorkspace;
+  page: Page;
+}
+function WindowsSidebarHeader(props: SidebarHeaderProps) {
   return (
     <>
       <Header className={styles.sidebarHeader} style={{ paddingRight: 0 }}>
@@ -196,26 +201,22 @@ function WindowsSidebarHeader() {
         <WindowsAppControls />
       </Header>
       <div className={styles.standaloneExtensionSwitcherWrapper}>
-        <ExtensionTabs />
+        <ExtensionTabs {...props} />
       </div>
     </>
   );
 }
 
-function NonWindowsSidebarHeader() {
+function NonWindowsSidebarHeader(props: SidebarHeaderProps) {
   return (
     <Header className={styles.sidebarHeader}>
-      <ExtensionTabs />
+      <ExtensionTabs {...props} />
       <div className={styles.spacer} />
       <ToggleSidebarButton />
     </Header>
   );
 }
 
-export function RightSidebarHeader() {
-  return isWindowsDesktop ? (
-    <WindowsSidebarHeader />
-  ) : (
-    <NonWindowsSidebarHeader />
-  );
-}
+export const RightSidebarHeader = isWindowsDesktop
+  ? WindowsSidebarHeader
+  : NonWindowsSidebarHeader;
