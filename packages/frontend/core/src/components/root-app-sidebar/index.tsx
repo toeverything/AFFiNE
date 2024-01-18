@@ -48,6 +48,7 @@ import FavoriteList from '../pure/workspace-slider-bar/favorite/favorite-list';
 import { UserWithWorkspaceList } from '../pure/workspace-slider-bar/user-with-workspace-list';
 import { WorkspaceCard } from '../pure/workspace-slider-bar/workspace-card';
 import ImportPage from './import-page';
+import { AppSidebarJournalButton } from './journal-button';
 import { UpdaterButton } from './updater-button';
 
 export type RootAppSidebarProps = {
@@ -254,6 +255,11 @@ export const RootAppSidebar = ({
             {t['com.affine.workspaceSubPath.all']()}
           </span>
         </RouteMenuLinkItem>
+        {runtimeConfig.enableJournal ? (
+          <AppSidebarJournalButton
+            workspace={currentWorkspace.blockSuiteWorkspace}
+          />
+        ) : null}
         {runtimeConfig.enableNewSettingModal ? (
           <MenuItem
             data-testid="slider-bar-workspace-setting-button"
