@@ -1,16 +1,28 @@
-import { AFFiNEDatePicker, Scrollable } from '@affine/component';
+import {
+  AFFiNEDatePicker,
+  IconButton,
+  Menu,
+  Scrollable,
+} from '@affine/component';
+import { MoveToTrash } from '@affine/core/components/page-list';
+import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import {
   useJournalHelper,
   useJournalInfoHelper,
 } from '@affine/core/hooks/use-journal';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { EdgelessIcon, PageIcon, TodayIcon } from '@blocksuite/icons';
+import {
+  EdgelessIcon,
+  MoreHorizontalIcon,
+  PageIcon,
+  TodayIcon,
+} from '@blocksuite/icons';
 import type { Page } from '@blocksuite/store';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { EditorExtension, EditorExtensionProps } from '..';
@@ -26,30 +38,30 @@ const CountDisplay = ({
 }: { count: number; max?: number } & HTMLAttributes<HTMLSpanElement>) => {
   return <span {...attrs}>{count > max ? `${max}+` : count}</span>;
 };
-interface PageItemProps extends HTMLAttributes<HTMLButtonElement> {
+interface PageItemProps extends HTMLAttributes<HTMLDivElement> {
   page: Page;
   right?: ReactNode;
 }
 const PageItem = ({ page, right, className, ...attrs }: PageItemProps) => {
   const { isJournal } = useJournalInfoHelper(page.meta);
 
-  const icon = isJournal ? (
-    <TodayIcon width={20} height={20} />
-  ) : page.meta.mode === 'edgeless' ? (
-    <EdgelessIcon width={20} height={20} />
-  ) : (
-    <PageIcon width={20} height={20} />
-  );
+  const Icon = isJournal
+    ? TodayIcon
+    : page.meta.mode === 'edgeless'
+      ? EdgelessIcon
+      : PageIcon;
   return (
-    <button
+    <div
       aria-label={page.meta.title}
       className={clsx(className, styles.pageItem)}
       {...attrs}
     >
-      <div className={styles.pageItemIcon}>{icon}</div>
+      <div className={styles.pageItemIcon}>
+        <Icon width={20} height={20} />
+      </div>
       <span className={styles.pageItemLabel}>{page.meta.title}</span>
       {right}
-    </button>
+    </div>
   );
 };
 
@@ -59,10 +71,13 @@ interface NavItem {
   label: string;
   count: number;
 }
+interface JournalBlockProps extends EditorExtensionProps {
+  date: dayjs.Dayjs;
+}
 
 const EditorJournalPanel = (props: EditorExtensionProps) => {
   const { workspace, page } = props;
-  const { journalDate } = useJournalInfoHelper(page?.meta);
+  const { journalDate, isJournal } = useJournalInfoHelper(page?.meta);
   const { openJournal } = useJournalHelper(workspace);
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
 
@@ -79,15 +94,15 @@ const EditorJournalPanel = (props: EditorExtensionProps) => {
   );
 
   return (
-    <div className={styles.journalPanel}>
+    <div className={styles.journalPanel} data-is-journal={isJournal}>
       <AFFiNEDatePicker
         inline
         value={date}
         onSelect={onDateSelect}
         calendarClassName={styles.calendar}
       />
-
-      <JournalDailyCountBlock {...props} />
+      <JournalConflictBlock date={dayjs(date)} {...props} />
+      <JournalDailyCountBlock date={dayjs(date)} {...props} />
     </div>
   );
 };
@@ -116,10 +131,9 @@ const DailyCountEmptyFallback = ({ name }: { name: NavItemName }) => {
     </div>
   );
 };
-const JournalDailyCountBlock = ({ workspace, page }: EditorExtensionProps) => {
+const JournalDailyCountBlock = ({ workspace, date }: JournalBlockProps) => {
   const nodeRef = useRef<HTMLDivElement>(null);
   const t = useAFFiNEI18N();
-  const { journalDate } = useJournalInfoHelper(page?.meta);
   const [activeItem, setActiveItem] = useState<NavItemName>('createdToday');
 
   const navigateHelper = useNavigateHelper();
@@ -129,16 +143,13 @@ const JournalDailyCountBlock = ({ workspace, page }: EditorExtensionProps) => {
       const pages: Page[] = [];
       Array.from(workspace.pages.values()).forEach(page => {
         if (page.meta.trash) return;
-        if (
-          page.meta[field] &&
-          dayjs(page.meta[field]).isSame(journalDate, 'day')
-        ) {
+        if (page.meta[field] && dayjs(page.meta[field]).isSame(date, 'day')) {
           pages.push(page);
         }
       });
       return sortPagesByDate(pages, field);
     },
-    [journalDate, workspace.pages]
+    [date, workspace.pages]
   );
 
   const createdToday = useMemo(
@@ -224,6 +235,96 @@ const JournalDailyCountBlock = ({ workspace, page }: EditorExtensionProps) => {
         })}
       </main>
     </div>
+  );
+};
+
+const MAX_CONFLICT_COUNT = 5;
+interface ConflictListProps
+  extends JournalBlockProps,
+    PropsWithChildren,
+    HTMLAttributes<HTMLDivElement> {
+  pages: Page[];
+}
+const ConflictList = ({
+  page: currentPage,
+  pages,
+  workspace,
+  children,
+  className,
+  ...attrs
+}: ConflictListProps) => {
+  const navigateHelper = useNavigateHelper();
+  const { setTrashModal } = useTrashModalHelper(workspace);
+
+  const handleOpenTrashModal = useCallback(
+    (page: Page) => {
+      if (!page.meta) return;
+      setTrashModal({
+        open: true,
+        pageIds: [page.id],
+        pageTitles: [page.meta.title],
+      });
+    },
+    [setTrashModal]
+  );
+
+  return (
+    <div className={clsx(styles.journalConflictWrapper, className)} {...attrs}>
+      {pages.map(page => {
+        const isCurrent = page.id === currentPage.id;
+        return (
+          <PageItem
+            aria-label={page.meta.title}
+            aria-selected={isCurrent}
+            page={page}
+            key={page.id}
+            right={
+              <Menu
+                items={
+                  <MoveToTrash onSelect={() => handleOpenTrashModal(page)} />
+                }
+              >
+                <IconButton type="plain">
+                  <MoreHorizontalIcon />
+                </IconButton>
+              </Menu>
+            }
+            onClick={() => navigateHelper.openPage(workspace.id, page.id)}
+          />
+        );
+      })}
+      {children}
+    </div>
+  );
+};
+const JournalConflictBlock = (props: JournalBlockProps) => {
+  const { workspace, date } = props;
+  const t = useAFFiNEI18N();
+  const journalHelper = useJournalHelper(workspace);
+  const pages = journalHelper.getJournalsByDate(date.format('YYYY-MM-DD'));
+
+  if (pages.length <= 1) return null;
+
+  return (
+    <ConflictList
+      className={styles.journalConflictBlock}
+      pages={pages.slice(0, MAX_CONFLICT_COUNT)}
+      {...props}
+    >
+      {pages.length > MAX_CONFLICT_COUNT ? (
+        <Menu
+          items={
+            <ConflictList pages={pages.slice(MAX_CONFLICT_COUNT)} {...props} />
+          }
+        >
+          <div className={styles.journalConflictMoreTrigger}>
+            {t['com.affine.journal.conflict-show-more']({
+              count: (pages.length - MAX_CONFLICT_COUNT).toFixed(0),
+            })}
+          </div>
+        </Menu>
+      ) : null}
+    </ConflictList>
   );
 };
 

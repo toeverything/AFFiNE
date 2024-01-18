@@ -1,7 +1,8 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 const interactive = style({
   position: 'relative',
+  cursor: 'pointer',
 
   selectors: {
     '&:hover': {
@@ -134,6 +135,12 @@ export const pageItem = style([
     padding: '0 4px',
     gap: 8,
     height: 30,
+
+    selectors: {
+      '&[aria-selected="true"]': {
+        backgroundColor: 'var(--affine-hover-color)',
+      },
+    },
   },
 ]);
 export const pageItemIcon = style({
@@ -151,4 +158,45 @@ export const pageItemLabel = style({
   fontSize: 'var(--affine-font-size-sm)',
   color: 'var(--affine-text-primary-color)',
   textAlign: 'left',
+  selectors: {
+    '[aria-selected="true"] &': {
+      // TODO: wait for design
+      color: 'var(--affine-primary-color)',
+    },
+  },
 });
+
+// conflict
+export const journalConflictBlock = style({
+  padding: '0 16px 16px 16px',
+});
+export const journalConflictWrapper = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
+  rowGap: 4,
+  columnGap: 8,
+});
+export const journalConflictMoreTrigger = style([
+  interactive,
+  {
+    color: 'var(--affine-text-secondary-color)',
+    height: 30,
+    borderRadius: 4,
+    padding: '0px 8px',
+    fontSize: 'var(--affine-font-size-sm)',
+    display: 'flex',
+    alignItems: 'center',
+  },
+]);
+
+// TODO: when date-picker's cell is customizable, we should implement by custom cell
+// override date-picker's active day when is not journal
+globalStyle(
+  `.${journalPanel}[data-is-journal="false"] .react-datepicker__day[aria-selected="true"]`,
+  {
+    backgroundColor: 'transparent',
+    color: 'var(--affine-text-primary-color)',
+    fontWeight: 500,
+    border: '1px solid var(--affine-primary-color)',
+  }
+);

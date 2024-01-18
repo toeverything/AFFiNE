@@ -1047,5 +1047,6 @@
   "com.affine.journal.created-today": "Created today",
   "com.affine.journal.updated-today": "Updated today",
   "com.affine.journal.daily-count-created-empty-tips": "You haven't created anything yet",
-  "com.affine.journal.daily-count-updated-empty-tips": "You haven't updated anything yet"
+  "com.affine.journal.daily-count-updated-empty-tips": "You haven't updated anything yet",
+  "com.affine.journal.conflict-show-more": "{{count}} more articles"
 }
