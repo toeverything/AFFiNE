@@ -1028,5 +1028,12 @@
   "com.affine.page-operation.add-linked-page": "Add linked page",
   "com.affine.onboarding.workspace-guide.title": "Start AFFiNE by creating your own Workspace here!",
   "com.affine.onboarding.workspace-guide.content": "A Workspace is your virtual space to capture, create and plan as just one person or together as a team.",
-  "com.affine.onboarding.workspace-guide.got-it": "Got it!"
+  "com.affine.onboarding.workspace-guide.got-it": "Got it!",
+  "com.affine.calendar.weekdays.sun": "Sun",
+  "com.affine.calendar.weekdays.mon": "Mon",
+  "com.affine.calendar.weekdays.tue": "Tue",
+  "com.affine.calendar.weekdays.wed": "Wed",
+  "com.affine.calendar.weekdays.thu": "Thu",
+  "com.affine.calendar.weekdays.fri": "Fri",
+  "com.affine.calendar.weekdays.sat": "Sat"
 }
