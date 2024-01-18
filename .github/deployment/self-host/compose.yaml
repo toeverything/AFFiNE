@@ -3,7 +3,7 @@ services:
     image: ghcr.io/toeverything/affine-graphql:beta
     container_name: affine_selfhosted
     command:
-      ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
+      ['sh', '-c', 'node ./scripts/self-host-predeploy.js && node ./dist/index.js']
     ports:
       - '3010:3010'
       - '5555:5555'
