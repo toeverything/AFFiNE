@@ -1,9 +1,9 @@
 import {
   registerFramePanelComponents,
-  registerTOCPanelComponents,
+  registerOutlinePanelComponents,
 } from '@blocksuite/presets';
 
-registerTOCPanelComponents(components => {
+registerOutlinePanelComponents(components => {
   for (const compName in components) {
     if (window.customElements.get(compName)) continue;
 
