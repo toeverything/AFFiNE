@@ -92,7 +92,9 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
       return this.node.dev
         ? 'http://localhost:8080'
         : `${this.https ? 'https' : 'http'}://${this.host}${
-            this.host === 'localhost' ? `:${this.port}` : ''
+            this.host === 'localhost' || this.host === '0.0.0.0'
+              ? `:${this.port}`
+              : ''
           }`;
     },
     get baseUrl() {
