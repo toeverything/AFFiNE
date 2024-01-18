@@ -44,7 +44,7 @@
     "@types/uuid": "^9.0.7",
     "builder-util-runtime": "^9.2.3",
     "cross-env": "^7.0.3",
-    "electron": "^27.1.0",
+    "electron": "^28.0.0",
     "electron-log": "^5.0.1",
     "electron-squirrel-startup": "1.0.0",
     "electron-window-state": "^5.0.3",
