@@ -1,4 +1,5 @@
 import { MainContainer } from '@affine/component/workspace';
+import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { DebugLogger } from '@affine/debug';
 import { fetchWithTraceReport } from '@affine/graphql';
 import { globalBlockSuiteSchema } from '@affine/workspace';
@@ -119,6 +120,8 @@ export const loader: LoaderFunction = async ({ params }) => {
 
 export const Component = (): ReactElement => {
   const { page, publishMode } = useLoaderData() as LoaderData;
+  usePageDocumentTitle(page.meta);
+
   return (
     <AppContainer>
       <MainContainer>
