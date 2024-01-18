@@ -11,6 +11,7 @@ type MaybeDate = Date | string | number;
 export const JOURNAL_DATE_FORMAT = 'YYYY-MM-DD';
 
 function isPageJournal(pageMeta?: PageMeta) {
+  if (!runtimeConfig.enableJournal) return false;
   return !!(pageMeta && pageMeta.title.match(/^\d{4}-\d{2}-\d{2}$/));
 }
 

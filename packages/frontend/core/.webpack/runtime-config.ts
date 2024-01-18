@@ -30,6 +30,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
+      enableJournal: false,
       serverUrlPrefix: 'https://app.affine.pro',
       editorFlags,
       appVersion: packageJson.version,
@@ -40,6 +41,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       return {
         ...this.stable,
         enablePageHistory: true,
+        enableJournal: false,
         serverUrlPrefix: 'https://insider.affine.pro',
         appBuildType: 'beta' as const,
       };
@@ -70,6 +72,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       enableEnhanceShareMode: false,
       enablePayment: true,
       enablePageHistory: true,
+      enableJournal: true,
       serverUrlPrefix: 'https://affine.fail',
       editorFlags,
       appVersion: packageJson.version,
@@ -133,6 +136,11 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
       : buildFlags.mode === 'development'
         ? true
         : currentBuildPreset.enablePageHistory,
+    enableJournal: process.env.ENABLE_JOURNAL
+      ? process.env.ENABLE_JOURNAL === 'true'
+      : buildFlags.mode === 'development'
+        ? true
+        : currentBuildPreset.enableJournal,
   };
 
   if (buildFlags.mode === 'development') {
