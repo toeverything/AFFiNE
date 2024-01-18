@@ -33,6 +33,7 @@ export const FunctionalityModules: Array<Type | DynamicModule> = [
     },
   ],
   imports: [...FunctionalityModules, ...BusinessModules],
-  controllers: [AppController],
+  controllers:
+    process.env.SERVER_FLAVOR === 'selfhosted' ? [] : [AppController],
 })
 export class AppModule {}

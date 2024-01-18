@@ -73,7 +73,7 @@ spec:
             value: "{{ .Values.app.path }}"
           - name: AFFINE_SERVER_HOST
             value: "{{ .Values.app.host }}"
-          - name: AFFINE_SERVER_HOST
+          - name: AFFINE_SERVER_HTTPS
             value: "{{ .Values.app.https }}"
           - name: ENABLE_R2_OBJECT_STORAGE
             value: "{{ .Values.app.objectStorage.r2.enabled }}"

@@ -10,6 +10,13 @@ declare global {
     // eslint-disable-next-line no-var
     var AFFiNE: AFFiNEConfig;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace NodeJS {
+    interface ProcessEnv {
+      SERVER_FLAVOR: ServerFlavor | '';
+    }
+  }
 }
 
 export enum ExternalAccount {
