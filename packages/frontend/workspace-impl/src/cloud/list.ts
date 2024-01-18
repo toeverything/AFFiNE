@@ -10,6 +10,7 @@ import { globalBlockSuiteSchema } from '@affine/workspace';
 import { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
 import { difference } from 'lodash-es';
 import { nanoid } from 'nanoid';
+import { getSession } from 'next-auth/react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { createLocalBlobStorage } from '../local/blob';
@@ -18,6 +19,10 @@ import { CLOUD_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY } from './consts';
 import { createAffineStaticStorage } from './sync';
 
 async function getCloudWorkspaceList() {
+  const session = await getSession();
+  if (!session) {
+    return [];
+  }
   try {
     const { workspaces } = await fetcher({
       query: getWorkspacesQuery,
