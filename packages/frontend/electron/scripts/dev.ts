@@ -1,7 +1,7 @@
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 
-import type { ChildProcessWithoutNullStreams } from 'child_process';
 import type { BuildContext } from 'esbuild';
 import * as esbuild from 'esbuild';
 import kill from 'tree-kill';

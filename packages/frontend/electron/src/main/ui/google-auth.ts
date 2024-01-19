@@ -1,5 +1,6 @@
+import { parse } from 'node:url';
+
 import { app, BrowserWindow, shell } from 'electron';
-import { parse } from 'url';
 
 import { logger } from '../logger';
 

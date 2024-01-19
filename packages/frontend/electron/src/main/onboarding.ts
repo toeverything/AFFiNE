@@ -1,5 +1,6 @@
+import { join } from 'node:path';
+
 import { BrowserWindow, type Display, screen } from 'electron';
-import { join } from 'path';
 
 import { isMacOS } from '../shared/utils';
 import { mainWindowOrigin } from './constants';

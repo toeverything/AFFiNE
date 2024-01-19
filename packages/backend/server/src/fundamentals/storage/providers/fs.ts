@@ -11,9 +11,9 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join, parse, resolve } from 'node:path';
+import { Readable } from 'node:stream';
 
 import { Logger } from '@nestjs/common';
-import { Readable } from 'stream';
 
 import { FsStorageConfig } from '../../config/storage';
 import {

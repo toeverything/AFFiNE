@@ -1,7 +1,8 @@
 import 'electron-updater'; // Prevent BaseUpdater is undefined.
 
+import { randomBytes } from 'node:crypto';
+
 import { type AllPublishOptions, UUID } from 'builder-util-runtime';
-import { randomBytes } from 'crypto';
 import type { AppAdapter } from 'electron-updater/out/AppAdapter';
 import type { DownloadUpdateOptions } from 'electron-updater/out/AppUpdater';
 import type { InstallOptions } from 'electron-updater/out/BaseUpdater';
