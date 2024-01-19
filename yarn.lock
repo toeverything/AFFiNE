@@ -324,7 +324,7 @@ __metadata:
     "@emotion/server": "npm:^11.11.0"
     "@emotion/styled": "npm:^11.11.0"
     "@marsidev/react-turnstile": "npm:^0.4.0"
-    "@perfsee/webpack": "npm:^1.8.4"
+    "@perfsee/webpack": "npm:^1.10.0"
     "@pmmmwh/react-refresh-webpack-plugin": "npm:^0.5.11"
     "@radix-ui/react-collapsible": "npm:^1.0.3"
     "@radix-ui/react-dialog": "npm:^1.0.4"
@@ -552,7 +552,6 @@ __metadata:
     "@istanbuljs/schema": "npm:^0.1.3"
     "@magic-works/i18n-codegen": "npm:^0.5.0"
     "@nx/vite": "npm:17.2.8"
-    "@perfsee/sdk": "npm:^1.9.0"
     "@playwright/test": "npm:^1.40.0"
     "@taplo/cli": "npm:^0.5.2"
     "@testing-library/react": "npm:^14.1.2"
@@ -5223,15 +5222,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/core@npm:^1.4.2":
-  version: 1.5.0
-  resolution: "@floating-ui/core@npm:1.5.0"
-  dependencies:
-    "@floating-ui/utils": "npm:^0.1.3"
-  checksum: 3182715a30493f44a32158f4d77ab5b6c212064b160cb84b5b8405ec2845bd8a9167c25292709e841cad9e70c6b9efdc30f876044e3b0909139fea8eca00c631
-  languageName: node
-  linkType: hard
-
 "@floating-ui/core@npm:^1.5.3":
   version: 1.5.3
   resolution: "@floating-ui/core@npm:1.5.3"
@@ -5241,17 +5231,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/dom@npm:^1.2.1, @floating-ui/dom@npm:^1.5.1":
-  version: 1.5.3
-  resolution: "@floating-ui/dom@npm:1.5.3"
-  dependencies:
-    "@floating-ui/core": "npm:^1.4.2"
-    "@floating-ui/utils": "npm:^0.1.3"
-  checksum: d2d5ae7a0949c0ebf7fbf97a21612bf94dbd29cb6c847e00588b8e2a5575ade27c47cb19f5d230fc21a571d99aa0c714b301c9221d33921047408c0ed9d91a30
-  languageName: node
-  linkType: hard
-
-"@floating-ui/dom@npm:^1.5.4":
+"@floating-ui/dom@npm:^1.2.1, @floating-ui/dom@npm:^1.5.1, @floating-ui/dom@npm:^1.5.4":
   version: 1.5.4
   resolution: "@floating-ui/dom@npm:1.5.4"
   dependencies:
@@ -5296,13 +5276,6 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: fff23fc3c55b35ff2e358687a7a12264651aff320c38fac54e23a6f80da7b4ac66a3a8cc793736a52d44a79f277613bcd6504ccd0c2436907a09fde17107fda2
-  languageName: node
-  linkType: hard
-
-"@floating-ui/utils@npm:^0.1.3":
-  version: 0.1.6
-  resolution: "@floating-ui/utils@npm:0.1.6"
-  checksum: 450ec4ecc1dd8161b1904d4e1e9d95e653cc06f79af6c3b538b79efb10541d90bcc88646ab3cdffc5b92e00c4804ca727b025d153ad285f42dbbb39aec219ec9
   languageName: node
   linkType: hard
 
@@ -8982,13 +8955,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@perfsee/bundle-analyzer@npm:1.8.4":
-  version: 1.8.4
-  resolution: "@perfsee/bundle-analyzer@npm:1.8.4"
+"@perfsee/bundle-analyzer@npm:1.10.0":
+  version: 1.10.0
+  resolution: "@perfsee/bundle-analyzer@npm:1.10.0"
   dependencies:
     "@eyhn/msgpack-stream": "npm:^2.8.4"
-    "@perfsee/jsonr": "npm:1.8.4"
-    "@perfsee/utils": "npm:1.3.0"
+    "@perfsee/jsonr": "npm:1.10.0"
+    "@perfsee/utils": "npm:1.10.0"
     acorn: "npm:^8.7.1"
     acorn-walk: "npm:^8.2.0"
     htmlparser2: "npm:^8.0.1"
@@ -8996,26 +8969,26 @@ __metadata:
     query-string: "npm:^7.1.1"
     tar: "npm:^6.1.11"
     tslib: "npm:^2.4.0"
-  checksum: 7dee52e4f239181d3dfabb5abf7fac694dc2ded996fa342407d7de1c813d1abf1224fb5a8e0cb0320bb6b06eb0ea841dd7a26baca6ff85408d5c0c1c1d252296
+  checksum: 879ca687d12e5c3515da5a4bc0bb7e990e1eb1e5d9301253d38d290341396c4b1bf8be0790d10ee2f4efb578b287edd69f8362c6d2360a6021cf84763737ffba
   languageName: node
   linkType: hard
 
-"@perfsee/jsonr@npm:1.8.4":
-  version: 1.8.4
-  resolution: "@perfsee/jsonr@npm:1.8.4"
+"@perfsee/jsonr@npm:1.10.0":
+  version: 1.10.0
+  resolution: "@perfsee/jsonr@npm:1.10.0"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 58e0e0bb60b5eb1d58811c39a5ed8a48536af38eade20c8480b96689a37f9871b1ce0198afd79901279916eb3d47e57a53619e3a9e693bded19a312b4495c55b
+  checksum: 802ff1ee59b5609ac4a44edf1888dce1b9bc3392564d42073f71036217ca7f4e5f7639438fc953cc465436d075da0d1ada4743938cdf510176fa3a47208ba053
   languageName: node
   linkType: hard
 
-"@perfsee/plugin-utils@npm:1.8.4":
-  version: 1.8.4
-  resolution: "@perfsee/plugin-utils@npm:1.8.4"
+"@perfsee/plugin-utils@npm:1.10.0":
+  version: 1.10.0
+  resolution: "@perfsee/plugin-utils@npm:1.10.0"
   dependencies:
-    "@perfsee/bundle-analyzer": "npm:1.8.4"
-    "@perfsee/jsonr": "npm:1.8.4"
-    "@perfsee/utils": "npm:1.3.0"
+    "@perfsee/bundle-analyzer": "npm:1.10.0"
+    "@perfsee/jsonr": "npm:1.10.0"
+    "@perfsee/utils": "npm:1.10.0"
     chalk: "npm:^4.1.2"
     debug: "npm:4.3.4"
     env-ci: "npm:^7.2.1"
@@ -9029,46 +9002,30 @@ __metadata:
     tar: "npm:^6.1.11"
     tslib: "npm:^2.4.0"
     uuid: "npm:^9.0.0"
-  checksum: 8c856750c71b367f5883f73f9c30508d1e0a18cca07715f25a2ded6db249be108e1c2270a0094012f0d73d478790ec4cb8c21cfd1cdd88da4ce9fc179549f8ac
+  checksum: bdb52e4a2e8a2ed97d0e1bcf35d4b1739e90f09e9996a230a08c2625386f6ddc88880029616c276baa3e04acadf566689636c80273d0fcbc5c5db37bd632699b
   languageName: node
   linkType: hard
 
-"@perfsee/sdk@npm:^1.9.0":
-  version: 1.9.0
-  resolution: "@perfsee/sdk@npm:1.9.0"
-  dependencies:
-    chalk: "npm:^4.1.2"
-    clipanion: "npm:^3.1.0"
-    graphql: "npm:^16.0.0"
-    lodash: "npm:^4.17.21"
-    node-fetch: "npm:^2.6.2"
-    simple-git: "npm:^3.15.0"
-  bin:
-    perfsee: bin/cli.js
-  checksum: a6c77aa0051e37447e2a7e199ae2f57799a5018447f7d4bbdaa41090d271f13b140e099cfc2cfd63aedc49f49aceeccd049051e74d0dee406bcd13b1e29f83c3
-  languageName: node
-  linkType: hard
-
-"@perfsee/utils@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@perfsee/utils@npm:1.3.0"
+"@perfsee/utils@npm:1.10.0":
+  version: 1.10.0
+  resolution: "@perfsee/utils@npm:1.10.0"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 20dafb2d0391501c28d50df51ba4db262f9d8058768245731a04c565e4f8563e9c3bfba228788c0fd394dcc0b4128a9d5a6137861755870967d4a1f7a02015ee
+  checksum: 0878af2344caf672681640cc5181eec9fb6cf7c624ee1a7530099213a5efcd3b5bee9307fc071c0b45fc7c12d76d7bc6d0f52cadba287e45ca776cb8d29da17a
   languageName: node
   linkType: hard
 
-"@perfsee/webpack@npm:^1.8.4":
-  version: 1.8.4
-  resolution: "@perfsee/webpack@npm:1.8.4"
+"@perfsee/webpack@npm:^1.10.0":
+  version: 1.10.0
+  resolution: "@perfsee/webpack@npm:1.10.0"
   dependencies:
-    "@perfsee/bundle-analyzer": "npm:1.8.4"
-    "@perfsee/plugin-utils": "npm:1.8.4"
+    "@perfsee/bundle-analyzer": "npm:1.10.0"
+    "@perfsee/plugin-utils": "npm:1.10.0"
     chalk: "npm:^4.1.2"
     tslib: "npm:^2.4.0"
   peerDependencies:
     webpack: ">= 4"
-  checksum: 83f4a50f5ca72d287f69ebf3d8e6ab5ca199925a6719370b6a519f99d32685b6632d984b77d04f78c6faac94b3b9fc9805e8e4f60911d1f3093b85aa156c448a
+  checksum: aa313e2dd2953a7d40cfc43415e8068d4d98f07dee247bc800efade1d5f5a595bfec98a2d3b58862489c8eb383238d27b5c2325b2919ec6bd9acd2bd71729132
   languageName: node
   linkType: hard
 
@@ -17037,7 +16994,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clipanion@npm:^3.1.0, clipanion@npm:^3.2.1":
+"clipanion@npm:^3.2.1":
   version: 3.2.1
   resolution: "clipanion@npm:3.2.1"
   dependencies:
@@ -21943,7 +21900,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql@npm:0.13.1 - 16, graphql@npm:^16.0.0, graphql@npm:^16.8.1":
+"graphql@npm:0.13.1 - 16, graphql@npm:^16.8.1":
   version: 16.8.1
   resolution: "graphql@npm:16.8.1"
   checksum: 7a09d3ec5f75061afe2bd2421a2d53cf37273d2ecaad8f34febea1f1ac205dfec2834aec3419fa0a10fcc9fb345863b2f893562fb07ea825da2ae82f6392893c
@@ -31358,16 +31315,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serialize-javascript@npm:^6.0.1":
-  version: 6.0.1
-  resolution: "serialize-javascript@npm:6.0.1"
-  dependencies:
-    randombytes: "npm:^2.1.0"
-  checksum: f756b1ff34b655b2183c64dd6683d28d4d9b9a80284b264cac9fd421c73890491eafd6c5c2bbe93f1f21bf78b572037c5a18d24b044c317ee1c9dc44d22db94c
-  languageName: node
-  linkType: hard
-
-"serialize-javascript@npm:^6.0.2":
+"serialize-javascript@npm:^6.0.1, serialize-javascript@npm:^6.0.2":
   version: 6.0.2
   resolution: "serialize-javascript@npm:6.0.2"
   dependencies:
