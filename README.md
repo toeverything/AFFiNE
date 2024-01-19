@@ -138,24 +138,6 @@ We would like to express our gratitude to all the individuals who have already c
   <img alt="contributors" src="https://opencollective.com/affine/contributors.svg?width=890&button=false" />
 </a>
 
-## Data Compatibility
-
-Data compatibility is a very important issue for us. We will try our best to ensure that the data is compatible with the previous version.
-
-If you encounter any problems when upgrading the version, please feel free to [contact us](mailto:developer@toeverything.info).
-
-| AFFiNE Version  | Export/Import workspace | Data auto migration |
-| --------------- | ----------------------- | ------------------- |
-| <= 0.5.4        | ❌️                     | ❌                  |
-| 0.6.x           | ✅️                     | ✅                  |
-| 0.7.x           | ✅️                     | ✅                  |
-| 0.8.x (current) | ✅                      | ✅                  |
-| 0.9.x (next)    | 🚧                      | 🚧                  |
-
-- ❌️: Not compatible
-- ✅: Compatible
-- 🚧: Work in progress
-
 ## Self-Host
 
 > We know that the self-host version has been out of date for a long time.
