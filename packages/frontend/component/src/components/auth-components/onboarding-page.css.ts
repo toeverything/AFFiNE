@@ -1,28 +1,65 @@
 import { globalStyle, style } from '@vanilla-extract/css';
 
+export const layout = style({
+  backgroundColor: 'var(--affine-background-primary-color)',
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  selectors: {
+    '&[data-is-macos-electron="true"]': {
+      margin: '8px',
+      borderRadius: '8px',
+      height: 'calc(100vh - 16px)',
+    },
+  },
+});
+
+export const header = style({
+  paddingTop: '24px',
+  paddingRight: '24px',
+
+  position: 'sticky',
+  top: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  ['WebkitAppRegion' as string]: 'drag',
+  selectors: {
+    '&[data-is-windows-electron="true"]': {
+      paddingTop: '0',
+      paddingRight: '0',
+      gap: '16px',
+    },
+  },
+});
+export const footer = style({
+  padding: '20px',
+  position: 'sticky',
+  bottom: 0,
+  backgroundColor: 'var(--affine-background-primary-color)',
+});
+
 export const scrollableContainer = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-  height: '100vh',
-  padding: '0 200px',
-  backgroundColor: 'var(--affine-background-primary-color)',
+  padding: '80px 200px 160px',
+
   '@media': {
     'screen and (max-width: 1024px)': {
-      padding: '80px 36px',
-      alignItems: 'center',
+      padding: '0px 36px 80px',
     },
   },
 });
 
 export const onboardingContainer = style({
   maxWidth: '600px',
-  padding: '160px 0',
   '@media': {
     'screen and (max-width: 1024px)': {
       padding: '40px 0',
-      width: '100%',
+      maxWidth: '100%',
     },
   },
 });
@@ -49,7 +86,6 @@ export const optionsWrapper = style({
   flexDirection: 'column',
   alignItems: 'flex-start',
   gap: '16px',
-  // flexShrink: 0,
   flexGrow: 1,
 });
 
@@ -95,10 +131,13 @@ export const openAFFiNEButton = style({
   alignSelf: 'flex-start',
 });
 
-export const rightCornerButton = style({
+export const disableButton = style({
   position: 'absolute',
-  top: '24px',
-  right: '24px',
+  display: 'none',
+  pointerEvents: 'none',
+});
+export const windowsAppButton = style({
+  marginRight: '24px',
 });
 
 export const thankContainer = style({
@@ -122,9 +161,6 @@ export const thankText = style({
 
 export const linkGroup = style({
   display: 'flex',
-  position: 'absolute',
-  bottom: '24px',
-  right: '24px',
   fontSize: 'var(--affine-font-xs)',
   height: '16px',
   gap: '6px',

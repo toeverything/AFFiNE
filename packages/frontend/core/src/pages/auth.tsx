@@ -27,6 +27,7 @@ import {
 import { z } from 'zod';
 
 import { SubscriptionRedirect } from '../components/affine/auth/subscription-redirect';
+import { WindowsAppControls } from '../components/pure/header/windows-app-controls';
 import { useCurrentLoginStatus } from '../hooks/affine/use-current-login-status';
 import { useCurrentUser } from '../hooks/affine/use-current-user';
 import { useMutation } from '../hooks/use-mutation';
@@ -97,7 +98,13 @@ export const AuthPage = (): ReactElement | null => {
 
   switch (authType) {
     case 'onboarding':
-      return <OnboardingPage user={user} onOpenAffine={onOpenAffine} />;
+      return (
+        <OnboardingPage
+          user={user}
+          onOpenAffine={onOpenAffine}
+          windowControl={<WindowsAppControls />}
+        />
+      );
     case 'signUp': {
       return (
         <SignUpPage
