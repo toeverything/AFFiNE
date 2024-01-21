@@ -97,15 +97,15 @@ export class MailService {
 
   async sendSignInEmail(url: string, options: Options) {
     const html = emailTemplate({
-      title: 'Sign in to AFFiNE',
+      title: 'Create AFFiNE Account',
       content:
-        'Click the button below to securely sign in. The magic link will expire in 30 minutes.',
-      buttonContent: 'Sign in to AFFiNE',
+        'Click the button below to complete your account creation and sign in. This magic link will expire in 30 minutes.',
+      buttonContent: 'Create Account & Sign In',
       buttonUrl: url,
     });
     return this.sendMail({
       html,
-      subject: 'Sign in to AFFiNE',
+      subject: 'Your AFFiNE account is waiting for you!',
       ...options,
     });
   }
