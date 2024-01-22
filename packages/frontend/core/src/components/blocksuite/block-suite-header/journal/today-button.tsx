@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { useJournalHelper } from '@affine/core/hooks/use-journal';
+import { useJournalRouteHelper } from '@affine/core/hooks/use-journal';
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { useCallback } from 'react';
@@ -10,7 +10,7 @@ export interface JournalTodayButtonProps {
 
 export const JournalTodayButton = ({ workspace }: JournalTodayButtonProps) => {
   const t = useAFFiNEI18N();
-  const journalHelper = useJournalHelper(workspace);
+  const journalHelper = useJournalRouteHelper(workspace);
 
   const onToday = useCallback(() => {
     journalHelper.openToday();

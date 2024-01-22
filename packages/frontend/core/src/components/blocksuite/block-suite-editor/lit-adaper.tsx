@@ -1,4 +1,5 @@
 import { createReactComponentFromLit } from '@affine/component';
+import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import {
   BiDirectionalLinkPanel,
   DocEditor,
@@ -8,8 +9,15 @@ import {
 } from '@blocksuite/presets';
 import { type Page } from '@blocksuite/store';
 import clsx from 'clsx';
-import React, { forwardRef, useEffect, useMemo, useRef } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 
+import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   docModeSpecs,
   edgelessModeSpecs,
@@ -52,6 +60,22 @@ export const BlocksuiteDocEditor = forwardRef<
   BlocksuiteDocEditorProps
 >(function BlocksuiteDocEditor({ page, customRenderers }, ref) {
   const titleRef = useRef<DocTitle>(null);
+  const docRef = useRef<DocEditor | null>(null);
+  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
+
+  const onDocRef = useCallback(
+    (el: DocEditor) => {
+      docRef.current = el;
+      if (ref) {
+        if (typeof ref === 'function') {
+          ref(el);
+        } else {
+          ref.current = el;
+        }
+      }
+    },
+    [ref]
+  );
 
   const specs = useMemo(() => {
     return patchSpecs(docModeSpecs, customRenderers);
@@ -63,6 +87,8 @@ export const BlocksuiteDocEditor = forwardRef<
       if (titleRef.current) {
         const richText = titleRef.current.querySelector('rich-text');
         richText?.inlineEditor?.focusEnd();
+      } else {
+        docRef.current?.querySelector('affine-doc-page')?.focusFirstParagraph();
       }
     });
   }, []);
@@ -70,12 +96,16 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <div className={styles.docEditorRoot}>
       <div className={clsx('affine-doc-viewport', styles.affineDocViewport)}>
-        <adapted.DocTitle page={page} ref={titleRef} />
+        {!isJournal ? (
+          <adapted.DocTitle page={page} ref={titleRef} />
+        ) : (
+          <BlocksuiteEditorJournalDocTitle page={page} />
+        )}
         {/* We will replace page meta tags with our own implementation */}
         <adapted.PageMetaTags page={page} />
         <adapted.DocEditor
           className={styles.docContainer}
-          ref={ref}
+          ref={onDocRef}
           page={page}
           specs={specs}
           hasViewport={false}

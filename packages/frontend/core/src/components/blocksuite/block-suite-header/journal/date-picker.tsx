@@ -1,7 +1,7 @@
 import { WeekDatePicker, type WeekDatePickerHandle } from '@affine/component';
 import {
-  useJournalHelper,
   useJournalInfoHelper,
+  useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import type { Page } from '@blocksuite/store';
@@ -20,7 +20,7 @@ export const JournalWeekDatePicker = ({
 }: JournalWeekDatePickerProps) => {
   const handleRef = useRef<WeekDatePickerHandle>(null);
   const { journalDate } = useJournalInfoHelper(workspace, page.id);
-  const { openJournal } = useJournalHelper(workspace);
+  const { openJournal } = useJournalRouteHelper(workspace);
   const [date, setDate] = useState(
     (journalDate ?? dayjs()).format('YYYY-MM-DD')
   );

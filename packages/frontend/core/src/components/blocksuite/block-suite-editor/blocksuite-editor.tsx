@@ -1,7 +1,9 @@
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useJournalHelper } from '@affine/core/hooks/use-journal';
+import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { assertExists } from '@blocksuite/global/utils';
-import { DateTimeIcon, PageIcon } from '@blocksuite/icons';
+import { LinkedPageIcon, TodayIcon } from '@blocksuite/icons';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page } from '@blocksuite/store';
 import { use } from 'foxact/use';
@@ -12,12 +14,14 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
 } from 'react';
 import { type Map as YMap } from 'yjs';
 
 import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
 import type { InlineRenderers } from './specs';
+import * as styles from './styles.css';
 
 export type ErrorBoundaryProps = {
   onReset?: () => void;
@@ -67,54 +71,55 @@ function usePageRoot(page: Page) {
   return page.root;
 }
 
-// TODO: this is a placeholder proof-of-concept implementation
-function CustomPageReference({
-  reference,
-}: {
+interface PageReferenceProps {
   reference: HTMLElementTagNameMap['affine-reference'];
-}) {
-  const workspace = reference.page.workspace;
-  const meta = usePageMetaHelper(workspace);
+  pageMetaHelper: ReturnType<typeof usePageMetaHelper>;
+  journalHelper: ReturnType<typeof useJournalHelper>;
+  t: ReturnType<typeof useAFFiNEI18N>;
+}
+
+// TODO: this is a placeholder proof-of-concept implementation
+function customPageReference({
+  reference,
+  pageMetaHelper,
+  journalHelper,
+  t,
+}: PageReferenceProps) {
+  const { isPageJournal, getLocalizedJournalDateString } = journalHelper;
   assertExists(
     reference.delta.attributes?.reference?.pageId,
     'pageId should exist for page reference'
   );
-  const referencedPage = meta.getPageMeta(
-    reference.delta.attributes.reference.pageId
-  );
-  const title = referencedPage?.title ?? 'not found';
-  let icon = <PageIcon />;
-  let lTitle = title.toLowerCase();
-  if (title.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)) {
-    lTitle = new Date(title).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-    icon = <DateTimeIcon />;
+  const pageId = reference.delta.attributes.reference.pageId;
+  const referencedPage = pageMetaHelper.getPageMeta(pageId);
+  let title =
+    referencedPage?.title ?? t['com.affine.editor.reference-not-found']();
+  let icon = <LinkedPageIcon className={styles.pageReferenceIcon} />;
+  const isJournal = isPageJournal(pageId);
+  const localizedJournalDate = getLocalizedJournalDateString(pageId);
+  if (isJournal && localizedJournalDate) {
+    title = localizedJournalDate;
+    icon = <TodayIcon className={styles.pageReferenceIcon} />;
   }
   return (
-    <a
-      target="_blank"
-      rel="noopener noreferrer"
-      className="page-reference"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '0 0.25em',
-        columnGap: '0.25em',
-      }}
-    >
-      {icon} <span className="affine-reference-title">{lTitle}</span>
-    </a>
+    <>
+      {icon}
+      <span className="affine-reference-title">{title}</span>
+    </>
   );
 }
 
-const customRenderers: InlineRenderers = {
+// we cannot pass components to lit renderers, but give them the rendered elements
+const customRenderersFactory: (
+  opts: Omit<PageReferenceProps, 'reference'>
+) => InlineRenderers = opts => ({
   pageReference(reference) {
-    return <CustomPageReference reference={reference} />;
+    return customPageReference({
+      ...opts,
+      reference,
+    });
   },
-};
+});
 
 /**
  * TODO: Define error to unexpected state together in the future.
@@ -176,6 +181,18 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         editorDisposeRef.current();
       };
     }, []);
+
+    const pageMetaHelper = usePageMetaHelper(page.workspace);
+    const journalHelper = useJournalHelper(page.workspace);
+    const t = useAFFiNEI18N();
+
+    const customRenderers = useMemo(() => {
+      return customRenderersFactory({
+        pageMetaHelper,
+        journalHelper,
+        t,
+      });
+    }, [journalHelper, pageMetaHelper, t]);
 
     return (
       <BlocksuiteEditorContainer

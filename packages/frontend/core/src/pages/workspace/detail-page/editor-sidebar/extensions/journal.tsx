@@ -6,9 +6,11 @@ import {
 } from '@affine/component';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
+import { useBlockSuiteWorkspacePageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
 import {
   useJournalHelper,
   useJournalInfoHelper,
+  useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -44,6 +46,7 @@ interface PageItemProps extends HTMLAttributes<HTMLDivElement> {
 }
 const PageItem = ({ page, right, className, ...attrs }: PageItemProps) => {
   const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
+  const title = useBlockSuiteWorkspacePageTitle(page.workspace, page.id);
 
   const Icon = isJournal
     ? TodayIcon
@@ -59,7 +62,7 @@ const PageItem = ({ page, right, className, ...attrs }: PageItemProps) => {
       <div className={styles.pageItemIcon}>
         <Icon width={20} height={20} />
       </div>
-      <span className={styles.pageItemLabel}>{page.meta.title}</span>
+      <span className={styles.pageItemLabel}>{title}</span>
       {right}
     </div>
   );
@@ -81,7 +84,7 @@ const EditorJournalPanel = (props: EditorExtensionProps) => {
     page.workspace,
     page.id
   );
-  const { openJournal } = useJournalHelper(workspace);
+  const { openJournal } = useJournalRouteHelper(workspace);
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
 
   useEffect(() => {

@@ -1049,5 +1049,6 @@
   "com.affine.journal.daily-count-created-empty-tips": "You haven't created anything yet",
   "com.affine.journal.daily-count-updated-empty-tips": "You haven't updated anything yet",
   "com.affine.journal.conflict-show-more": "{{count}} more articles",
-  "com.affine.journal.app-sidebar-title": "Journals"
+  "com.affine.journal.app-sidebar-title": "Journals",
+  "com.affine.editor.reference-not-found": "Linked page not found"
 }

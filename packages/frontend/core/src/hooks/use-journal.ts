@@ -25,8 +25,6 @@ function toDayjs(j?: string | false) {
 
 export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const bsWorkspaceHelper = useBlockSuiteWorkspaceHelper(workspace);
-  const navigateHelper = useNavigateHelper();
-
   const adapter = useWorkspacePropertiesAdapter(workspace);
 
   /**
@@ -82,24 +80,14 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
     [_createJournal, getJournalsByDate]
   );
 
-  /**
-   * open journal by date, create one if not exist
-   */
-  const openJournal = useCallback(
-    (maybeDate: MaybeDate) => {
-      const page = getJournalByDate(maybeDate);
-      navigateHelper.openPage(workspace.id, page.id);
+  const isPageTodayJournal = useCallback(
+    (pageId: string) => {
+      const date = dayjs().format(JOURNAL_DATE_FORMAT);
+      const d = adapter.getJournalPageDateString(pageId);
+      return isPageJournal(pageId) && d === date;
     },
-    [getJournalByDate, navigateHelper, workspace.id]
+    [adapter, isPageJournal]
   );
-
-  /**
-   * open today's journal
-   */
-  const openToday = useCallback(() => {
-    const date = dayjs().format(JOURNAL_DATE_FORMAT);
-    openJournal(date);
-  }, [openJournal]);
 
   const getJournalDateString = useCallback(
     (pageId: string) => {
@@ -123,9 +111,8 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       getJournalByDate,
       getJournalDateString,
       getLocalizedJournalDateString,
-      openJournal,
-      openToday,
       isPageJournal,
+      isPageTodayJournal,
     }),
     [
       getJournalByDate,
@@ -133,9 +120,40 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
       getJournalsByDate,
       getLocalizedJournalDateString,
       isPageJournal,
+      isPageTodayJournal,
+    ]
+  );
+};
+
+// split useJournalRouteHelper since it requires a <Route /> context, which may not work in lit
+export const useJournalRouteHelper = (workspace: BlockSuiteWorkspace) => {
+  const navigateHelper = useNavigateHelper();
+  const { getJournalByDate } = useJournalHelper(workspace);
+  /**
+   * open journal by date, create one if not exist
+   */
+  const openJournal = useCallback(
+    (maybeDate: MaybeDate) => {
+      const page = getJournalByDate(maybeDate);
+      navigateHelper.openPage(workspace.id, page.id);
+    },
+    [getJournalByDate, navigateHelper, workspace.id]
+  );
+
+  /**
+   * open today's journal
+   */
+  const openToday = useCallback(() => {
+    const date = dayjs().format(JOURNAL_DATE_FORMAT);
+    openJournal(date);
+  }, [openJournal]);
+
+  return useMemo(
+    () => ({
       openJournal,
       openToday,
-    ]
+    }),
+    [openJournal, openToday]
   );
 };
 
@@ -143,17 +161,28 @@ export const useJournalInfoHelper = (
   workspace: BlockSuiteWorkspace,
   pageId?: string | null
 ) => {
-  const { isPageJournal, getJournalDateString } = useJournalHelper(workspace);
-  const journalDate = useMemo(
-    () => (pageId ? toDayjs(getJournalDateString(pageId)) : null),
-    [getJournalDateString, pageId]
-  );
+  const {
+    isPageJournal,
+    getJournalDateString,
+    getLocalizedJournalDateString,
+    isPageTodayJournal,
+  } = useJournalHelper(workspace);
 
   return useMemo(
     () => ({
       isJournal: pageId ? isPageJournal(pageId) : false,
-      journalDate,
+      journalDate: pageId ? toDayjs(getJournalDateString(pageId)) : null,
+      localizedJournalDate: pageId
+        ? getLocalizedJournalDateString(pageId)
+        : null,
+      isTodayJournal: pageId ? isPageTodayJournal(pageId) : false,
     }),
-    [isPageJournal, journalDate, pageId]
+    [
+      getJournalDateString,
+      getLocalizedJournalDateString,
+      isPageJournal,
+      isPageTodayJournal,
+      pageId,
+    ]
   );
 };

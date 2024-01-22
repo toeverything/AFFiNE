@@ -1,8 +1,8 @@
 import { MenuItem } from '@affine/component/app-sidebar';
 import { currentPageIdAtom } from '@affine/core/atoms/mode';
 import {
-  useJournalHelper,
   useJournalInfoHelper,
+  useJournalRouteHelper,
 } from '@affine/core/hooks/use-journal';
 import type { BlockSuiteWorkspace } from '@affine/core/shared';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -19,7 +19,7 @@ export const AppSidebarJournalButton = ({
 }: AppSidebarJournalButtonProps) => {
   const t = useAFFiNEI18N();
   const currentPageId = useAtomValue(currentPageIdAtom);
-  const { openToday } = useJournalHelper(workspace);
+  const { openToday } = useJournalRouteHelper(workspace);
   const { journalDate, isJournal } = useJournalInfoHelper(
     workspace,
     currentPageId

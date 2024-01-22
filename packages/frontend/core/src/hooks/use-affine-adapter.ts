@@ -5,7 +5,7 @@ import { useEffect, useMemo, useReducer } from 'react';
 import {
   currentWorkspacePropertiesAdapterAtom,
   WorkspacePropertiesAdapter,
-} from '../modules/workspace';
+} from '../modules/workspace/properties';
 
 const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
   const [, forceUpdate] = useReducer(c => c + 1, 0);

@@ -3,6 +3,8 @@ import type { Workspace } from '@blocksuite/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 
+import { useJournalInfoHelper } from './use-journal';
+
 const weakMap = new WeakMap<Workspace, Map<string, Atom<string>>>();
 
 function getAtom(w: Workspace, pageId: string): Atom<string> {
@@ -35,5 +37,10 @@ export function useBlockSuiteWorkspacePageTitle(
 ) {
   const titleAtom = getAtom(blockSuiteWorkspace, pageId);
   assertExists(titleAtom);
-  return useAtomValue(titleAtom);
+  const title = useAtomValue(titleAtom);
+  const { localizedJournalDate } = useJournalInfoHelper(
+    blockSuiteWorkspace,
+    pageId
+  );
+  return localizedJournalDate || title;
 }

@@ -139,6 +139,7 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
         }
       } catch {}
       setPageMode(currentPageId, mode);
+      // fixme: it seems pageLinkClicked is not triggered sometimes?
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
       });

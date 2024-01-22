@@ -30,3 +30,18 @@ export const docContainer = style({
   display: 'block',
   flexGrow: 1,
 });
+
+export const titleTodayTag = style({
+  fontSize: 'var(--affine-font-base)',
+  fontWeight: 400,
+  color: 'var(--affine-brand-color)',
+  padding: '0 4px',
+  borderRadius: '4px',
+  marginLeft: '4px',
+});
+
+export const pageReferenceIcon = style({
+  verticalAlign: 'middle',
+  fontSize: '1.1em',
+  transform: 'translate(2px, -1px)',
+});
