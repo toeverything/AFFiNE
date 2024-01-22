@@ -400,7 +400,9 @@ test('can use cmdk to search page content and scroll to it, then the block will 
     await page.keyboard.press('Enter', { delay: 10 });
   }
   await page.keyboard.insertText('123456');
-  const textBlock = page.locator('affine-editor-container').getByText('123456');
+  const textBlock = page
+    .locator('[data-affine-editor-container]')
+    .getByText('123456');
   await expect(textBlock).toBeVisible();
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
@@ -414,7 +416,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   await waitForScrollToFinish(page);
   const isVisitable = await checkElementIsInView(
     page,
-    page.locator('affine-editor-container').getByText('123456')
+    page.locator('[data-affine-editor-container]').getByText('123456')
   );
   expect(isVisitable).toBe(true);
   const selectionElement = page.locator('affine-block-selection');

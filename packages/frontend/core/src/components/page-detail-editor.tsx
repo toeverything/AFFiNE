@@ -14,7 +14,6 @@ import { useLocation } from 'react-router-dom';
 
 import { type PageMode, pageSettingFamily } from '../atoms';
 import { useAppSettingHelper } from '../hooks/affine/use-app-setting-helper';
-import { useBlockSuiteMetaHelper } from '../hooks/affine/use-block-suite-meta-helper';
 import { BlockSuiteEditor as Editor } from './blocksuite/block-suite-editor';
 import * as styles from './page-detail-editor.css';
 
@@ -41,16 +40,12 @@ function useRouterHash() {
 }
 
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
-  workspace,
   page,
   pageId,
   onLoad,
   isPublic,
   publishMode,
 }: PageDetailEditorProps & { page: Page }) {
-  const { switchToEdgelessMode, switchToPageMode } =
-    useBlockSuiteMetaHelper(workspace);
-
   const pageSettingAtom = pageSettingFamily(pageId);
   const pageSetting = useAtomValue(pageSettingAtom);
 
@@ -73,20 +68,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
     assertExists(fontStyle);
     return fontStyle.value;
   }, [appSettings.fontStyle]);
-
-  const setEditorMode = useCallback(
-    (mode: 'page' | 'edgeless') => {
-      if (isPublic) {
-        return;
-      }
-      if (mode === 'edgeless') {
-        switchToEdgelessMode(pageId);
-      } else {
-        switchToPageMode(pageId);
-      }
-    },
-    [isPublic, switchToEdgelessMode, pageId, switchToPageMode]
-  );
 
   const [, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
   const blockId = useRouterHash();
@@ -111,6 +92,7 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
 
       return () => {
         disposableGroup.dispose();
+        setActiveBlocksuiteEditor(null);
       };
     },
     [onLoad, page, setActiveBlocksuiteEditor]
@@ -129,7 +111,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       }
       mode={mode}
       page={page}
-      onModeChange={setEditorMode}
       defaultSelectedBlockId={blockId}
       onLoadEditor={onLoadEditor}
     />

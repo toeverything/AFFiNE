@@ -1,4 +1,5 @@
 // TODO: Check `input` , `loading`, not migrated from `design`
+export * from './lit-react';
 export * from './styles';
 export * from './ui/avatar';
 export * from './ui/button';

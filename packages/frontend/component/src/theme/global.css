@@ -309,3 +309,10 @@ body {
   position: relative;
   overflow: hidden;
 }
+
+/**
+ * A hack to make the anchor wrapper not affect the layout of the page.
+ */
+[data-lit-react-wrapper] {
+  display: contents;
+}

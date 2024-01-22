@@ -1,8 +1,5 @@
 import { Loading, Scrollable } from '@affine/component';
-import {
-  BlockSuiteEditor,
-  EditorLoading,
-} from '@affine/component/block-suite-editor';
+import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
 import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
@@ -32,6 +29,7 @@ import { encodeStateAsUpdate } from 'yjs';
 
 import { currentModeAtom } from '../../../atoms/mode';
 import { pageHistoryModalAtom } from '../../../atoms/page-history';
+import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { StyledEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch/style';
 import {
   EdgelessSwitchItem,
@@ -141,7 +139,6 @@ const HistoryEditorPreview = ({
               className={styles.editor}
               mode={mode}
               page={snapshotPage}
-              onModeChange={onModeChange}
             />
           </AffineErrorBoundary>
         ) : (
