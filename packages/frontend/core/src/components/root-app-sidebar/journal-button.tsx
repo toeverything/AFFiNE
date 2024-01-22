@@ -19,9 +19,11 @@ export const AppSidebarJournalButton = ({
 }: AppSidebarJournalButtonProps) => {
   const t = useAFFiNEI18N();
   const currentPageId = useAtomValue(currentPageIdAtom);
-  const currentPage = currentPageId ? workspace.getPage(currentPageId) : null;
   const { openToday } = useJournalHelper(workspace);
-  const { journalDate, isJournal } = useJournalInfoHelper(currentPage?.meta);
+  const { journalDate, isJournal } = useJournalInfoHelper(
+    workspace,
+    currentPageId
+  );
   const params = useParams();
   const isJournalActive = isJournal && !!params.pageId;
 

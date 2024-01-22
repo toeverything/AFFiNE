@@ -19,7 +19,7 @@ export const JournalWeekDatePicker = ({
   page,
 }: JournalWeekDatePickerProps) => {
   const handleRef = useRef<WeekDatePickerHandle>(null);
-  const { journalDate } = useJournalInfoHelper(page.meta);
+  const { journalDate } = useJournalInfoHelper(workspace, page.id);
   const { openJournal } = useJournalHelper(workspace);
   const [date, setDate] = useState(
     (journalDate ?? dayjs()).format('YYYY-MM-DD')

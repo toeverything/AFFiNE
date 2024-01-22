@@ -10,6 +10,7 @@ import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useUserSubscription } from '@affine/core/hooks/use-subscription';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { timestampToLocalTime } from '@affine/core/utils';
 import { SubscriptionPlan } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -86,14 +87,6 @@ const ModalContainer = ({
       {children}
     </Modal>
   );
-};
-
-const localTimeFormatter = new Intl.DateTimeFormat('en', {
-  timeStyle: 'short',
-});
-
-const timestampToLocalTime = (ts: string) => {
-  return localTimeFormatter.format(new Date(ts));
 };
 
 interface HistoryEditorPreviewProps {

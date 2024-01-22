@@ -1,5 +1,6 @@
 import { usePageMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useBlockSuiteWorkspacePage } from '@affine/core/hooks/use-block-suite-workspace-page';
+import { timestampToLocalDate } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import {
   fetchWithTraceReport,
@@ -176,11 +177,7 @@ export const useSnapshotPage = (
 export const historyListGroupByDay = (histories: DocHistory[]) => {
   const map = new Map<string, DocHistory[]>();
   for (const history of histories) {
-    const day = new Date(history.timestamp).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    const day = timestampToLocalDate(history.timestamp);
     const list = map.get(day) ?? [];
     list.push(history);
     map.set(day, list);

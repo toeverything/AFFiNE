@@ -52,7 +52,7 @@ export const Component = (): ReactElement => {
       setCurrentWorkspace(null);
       return undefined;
     }
-    setCurrentWorkspace(workspace ?? null);
+    setCurrentWorkspace(workspace);
 
     // for debug purpose
     window.currentWorkspace = workspace;

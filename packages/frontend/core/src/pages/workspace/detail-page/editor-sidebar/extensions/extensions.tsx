@@ -27,7 +27,7 @@ export const ExtensionTabs = ({ page }: ExtensionTabsProps) => {
     FeatureType.Copilot
   );
 
-  const { isJournal } = useJournalInfoHelper(page.meta);
+  const { isJournal } = useJournalInfoHelper(page.workspace, page.id);
 
   const exts = useAtomValue(editorExtensionsAtom).filter(ext => {
     if (ext.name === 'copilot' && !copilotEnabled) return false;
